@@ -30,9 +30,9 @@ export const Button: React.FC<ButtonProps> = ({
     switch (variant) {
       case 'primary':
         return {
-          backgroundColor: colors.primary.royalBlue,
+          backgroundColor: colors.primary.lavender,
           borderWidth: 1,
-          borderColor: colors.primary.royalBlue,
+          borderColor: colors.primary.lavender,
           ...shadows.md,
         };
       case 'accent':
@@ -60,9 +60,9 @@ export const Button: React.FC<ButtonProps> = ({
         };
       default:
         return {
-          backgroundColor: colors.primary.royalBlue,
+          backgroundColor: colors.primary.lavender,
           borderWidth: 1,
-          borderColor: colors.primary.royalBlue,
+          borderColor: colors.primary.lavender,
           ...shadows.md,
         };
     }
@@ -161,7 +161,7 @@ export const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'tertiary' ? colors.primary.royalBlue : colors.text.onPrimary}
+          color={variant === 'tertiary' ? colors.primary.lavender : colors.text.onPrimary}
         />
       ) : (
         <>

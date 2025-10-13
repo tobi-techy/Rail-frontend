@@ -62,7 +62,7 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
 
   const containerStyle: ViewStyle = {
     ...sizeStyles.container,
-    backgroundColor: value ? colors.primary.royalBlue : colors.surface.light,
+    backgroundColor: value ? colors.primary.lavender : colors.surface.light,
     borderRadius: sizeStyles.container.height / 2,
     padding: 3,
     justifyContent: 'center',

@@ -22,13 +22,13 @@ export const TextLink: React.FC<TextLinkProps> = ({
   const getVariantColor = () => {
     switch (variant) {
       case 'primary':
-        return colors.primary.royalBlue;
+        return colors.primary.lavender;
       case 'secondary':
         return colors.text.secondary;
       case 'accent':
         return colors.accent.limeGreen;
       default:
-        return colors.primary.royalBlue;
+        return colors.primary.lavender;
     }
   };
 

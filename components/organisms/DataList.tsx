@@ -124,8 +124,8 @@ export const DataList: React.FC<DataListProps> = ({
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor={colors.primary.royalBlue}
-                colors={[colors.primary.royalBlue]}
+                tintColor={colors.primary.lavender}
+                colors={[colors.primary.lavender]}
               />
             ) : undefined
           }

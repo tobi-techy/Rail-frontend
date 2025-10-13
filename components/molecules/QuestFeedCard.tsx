@@ -26,7 +26,7 @@ export const QuestFeedCard: React.FC<QuestFeedCardProps> = ({
   title,
   description,
   iconName,
-  iconBackgroundColor = `${colors.primary.royalBlue}20`,
+  iconBackgroundColor = `${colors.primary.lavender}20`,
   onPress,
   className,
 }) => {

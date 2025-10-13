@@ -62,7 +62,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
           name={metric.icon}
           library="ionicons"
           size={24}
-          color={colors.primary.royalBlue}
+          color={colors.primary.lavender}
         />
         <Icon
           name={getTrendIcon(metric.trend)}
@@ -223,7 +223,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
           <View className="items-center">
             <View
               className="w-12 h-12 rounded-full items-center justify-center mb-2"
-              style={{ backgroundColor: colors.primary.royalBlue }}
+              style={{ backgroundColor: colors.primary.lavender }}
             >
               <Icon
                 name="add"

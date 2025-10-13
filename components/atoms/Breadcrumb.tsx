@@ -64,7 +64,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
                   fontSize: typography.styles.body.size,
                   color: index === items.length - 1 
                     ? colors.text.primary 
-                    : colors.primary.royalBlue,
+                    : colors.primary.lavender,
                   fontWeight: index === items.length - 1 ? '600' : '400',
                 }}
               >

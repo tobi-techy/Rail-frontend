@@ -40,7 +40,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
       className={`${className || ''}`}
       {...props}
       style={{
-        backgroundColor: colors.primary.royalBlue,
+        backgroundColor: colors.primary.lavender,
         overflow: 'hidden', // Add overflow hidden to contain the chart
       }}
     >
@@ -78,7 +78,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
         width={chartWidth}
         color={colors.accent.limeGreen} // This is the vibrant "blow-like" green line color
         startFillColor={colors.primary.lavender} // The gradient starts with the same vibrant green
-        endFillColor={colors.primary.royalBlue} //
+        endFillColor={colors.primary.lavender} //
       />
 
       {/* Bottom Content with Padding */}

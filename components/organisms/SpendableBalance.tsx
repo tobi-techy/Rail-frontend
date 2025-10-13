@@ -105,7 +105,7 @@ export const SpendableBalance: React.FC<SpendableBalanceProps> = ({
           <TouchableOpacity
             style={{
               flex: 1,
-              backgroundColor: colors.primary.royalBlue,
+              backgroundColor: colors.primary.lavender,
               borderRadius: borderRadius.lg,
               paddingVertical: spacing.md,
               paddingHorizontal: spacing.lg,

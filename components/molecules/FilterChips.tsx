@@ -76,12 +76,12 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
               key={chip.id}
               onPress={() => onChipPress(chip.value)}
               style={{
-                backgroundColor: isSelected ? colors.primary.royalBlue : colors.surface.light,
+                backgroundColor: isSelected ? colors.primary.lavender : colors.surface.light,
                 paddingHorizontal: spacing.md,
                 paddingVertical: spacing.sm,
                 borderRadius: borderRadius.full,
                 borderWidth: 1,
-                borderColor: isSelected ? colors.primary.royalBlue : colors.border.primary,
+                borderColor: isSelected ? colors.primary.lavender : colors.border.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}

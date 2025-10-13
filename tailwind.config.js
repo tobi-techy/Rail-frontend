@@ -5,18 +5,23 @@ module.exports = {
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
+      colors: {
+        // New brand color palette
+        'brand-magenta': '#FB088F',
+        'brand-pink': '#F39ABE',
+        'brand-lavender': '#949FFF',
+        'brand-dark': '#1E1A3E',
+        'brand-dark-blue': '#1E1F4B',
+        'brand-lime': '#D4FF00',
+        'brand-soft-green': '#ADF48C',
+        'brand-light-bg': '#EAE8FF',
+      },
       fontFamily: {
-        // MDNichrome font variants
-        'mdnichrome-thin': ['MDNichromeTest-ThinOblique'],
-        'mdnichrome-light': ['MDNichromeTest-LightOblique'],
-        'mdnichrome-regular': ['MDNichromeTest-RegularOblique'],
-        'mdnichrome-infra': ['MDNichromeTest-InfraOblique'],
-        'mdnichrome-dark': ['MDNichromeTest-DarkOblique'],
-        'mdnichrome-bold': ['MDNichromeTest-BoldOblique'],
-        'mdnichrome-black': ['MDNichromeTest-BlackOblique'],
-        'mdnichrome-ultra': ['MDNichromeTest-UltraOblique'],
+        // Boldonse font (primary display font)
+        'boldonse': ['Boldonse-Regular'],
+        'boldonse-regular': ['Boldonse-Regular'],
 
-        // SF Pro Rounded font variants
+        // SF Pro Rounded font variants (body text and UI)
         'sf-pro-ultralight': ['SF-Pro-Rounded-Ultralight'],
         'sf-pro-thin': ['SF-Pro-Rounded-Thin'],
         'sf-pro-light': ['SF-Pro-Rounded-Light'],
@@ -27,14 +32,26 @@ module.exports = {
         'sf-pro-heavy': ['SF-Pro-Rounded-Heavy'],
         'sf-pro-black': ['SF-Pro-Rounded-Black'],
 
-        // Semantic font aliases
-        heading: ['SF-Pro-Rounded-Bold'],
-        'heading-light': ['SF-Pro-Rounded-Semibold'],
+        // Semantic font aliases - updated to use Boldonse for display
+        heading: ['Boldonse-Regular'],
+        'heading-light': ['Boldonse-Regular'],
         body: ['SF-Pro-Rounded-Regular'],
         'body-light': ['SF-Pro-Rounded-Light'],
+        'body-medium': ['SF-Pro-Rounded-Medium'],
+        'body-bold': ['SF-Pro-Rounded-Bold'],
         caption: ['SF-Pro-Rounded-Medium'],
-        display: ['MDNichromeTest-BoldOblique'],
-        'display-artistic': ['MDNichromeTest-UltraOblique'],
+        display: ['Boldonse-Regular'],
+        'display-artistic': ['Boldonse-Regular'],
+
+        // Legacy MDNichrome aliases (deprecated - use Boldonse instead)
+        'mdnichrome-thin': ['MDNichromeTest-ThinOblique'],
+        'mdnichrome-light': ['MDNichromeTest-LightOblique'],
+        'mdnichrome-regular': ['MDNichromeTest-RegularOblique'],
+        'mdnichrome-infra': ['MDNichromeTest-InfraOblique'],
+        'mdnichrome-dark': ['MDNichromeTest-DarkOblique'],
+        'mdnichrome-bold': ['MDNichromeTest-BoldOblique'],
+        'mdnichrome-black': ['MDNichromeTest-BlackOblique'],
+        'mdnichrome-ultra': ['MDNichromeTest-UltraOblique'],
       },
     },
   },

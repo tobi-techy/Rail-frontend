@@ -112,7 +112,7 @@ export const AITipCard: React.FC<AITipCardProps> = ({
               name={isBookmarked ? 'bookmark' : 'bookmark'}
               size={20}
               color={
-                isBookmarked ? colors.primary.royalBlue : colors.text.tertiary
+                isBookmarked ? colors.primary.lavender : colors.text.tertiary
               }
             />
           </TouchableOpacity>
@@ -166,7 +166,7 @@ export const AITipCard: React.FC<AITipCardProps> = ({
                 fontFamily: typography.fonts.primary,
                 fontSize: 14,
                 fontWeight: typography.weights.medium,
-                color: colors.primary.royalBlue,
+                color: colors.primary.lavender,
                 marginRight: spacing.xs,
               }}
             >
@@ -176,7 +176,7 @@ export const AITipCard: React.FC<AITipCardProps> = ({
               library="feather"
               name="arrow-right"
               size={16}
-              color={colors.primary.royalBlue}
+              color={colors.primary.lavender}
             />
           </View>
         </View>

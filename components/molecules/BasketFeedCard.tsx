@@ -85,7 +85,7 @@ export const BasketFeedCard: React.FC<BasketFeedCardProps> = ({
                 width: 48,
                 height: 48,
                 borderRadius: 24,
-                backgroundColor: colors.primary.royalBlue,
+                backgroundColor: colors.primary.lavender,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginRight: spacing.sm,

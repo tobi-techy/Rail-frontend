@@ -7,55 +7,58 @@
  * Color palette based on design.json specifications
  */
 export const colors = {
-  // Primary colors from design.json
+  // Primary colors - updated palette
   primary: {
-    royalBlue: '#5852FF',
-    dark: '#0A0427',
+    magenta: '#FB088F',
+    pink: '#F39ABE',
     lavender: '#949FFF',
-    lavendertint: '#D7D6FF',
+    dark: '#1E1A3E',
+    darkBlue: '#1E1F4B',
   },
 
-  // Accent colors from design.json
+  // Accent colors - updated palette
   accent: {
-    limeGreen: '#B9FF4B',
+    limeGreen: '#D4FF00',
+    softGreen: '#ADF48C',
   },
 
-  // Background colors from design.json
+  // Background colors
   background: {
     main: '#FFFFFF',
-    dark: '#000000',
+    light: '#EAE8FF',
+    dark: '#1E1A3E',
   },
 
-  // Surface colors from design.json
+  // Surface colors
   surface: {
     card: '#F7F7F7',
-    light: '#EAE2FF',
+    light: '#EAE8FF',
   },
 
-  // Text colors from design.json
+  // Text colors
   text: {
-    primary: '#000000',
-    secondary: '#545454',
-    tertiary: '#A0A0A0',
+    primary: '#1E1A3E',
+    secondary: '#1E1F4B',
+    tertiary: '#949FFF',
     onPrimary: '#FFFFFF',
-    onAccent: '#000000',
+    onAccent: '#1E1A3E',
   },
 
-  // Semantic colors from design.json
+  // Semantic colors
   semantic: {
-    success: '#28A745',
-    danger: '#DC3545',
-    warning: '#FFC107',
+    success: '#ADF48C',
+    danger: '#FB088F',
+    warning: '#D4FF00',
   },
 
   // Additional utility colors
   border: {
-    primary: '#EAE2FF',
-    secondary: '#A0A0A0',
+    primary: '#EAE8FF',
+    secondary: '#949FFF',
     tertiary: '#F7F7F7',
   },
 
-  overlay: 'rgba(0, 0, 0, 0.5)',
+  overlay: 'rgba(30, 26, 62, 0.5)',
 } as const;
 
 /**
@@ -63,46 +66,46 @@ export const colors = {
  */
 export const typography = {
   fonts: {
-    primary: 'Gilroy', // For headings
-    secondary: 'MD Nichrome', // For body text and UI
+    primary: 'Boldonse', // For headings and display text
+    secondary: 'SF-Pro-Rounded-Regular', // For body text and UI
     // New Tailwind-style font mappings
-    display: 'MDNichrome-Bold', // For large, impactful text
-    heading: 'MDNichrome-Regular', // For section headers
-    subheading: 'MDNichrome-Light', // For subsection headers
-    body: 'Gilroy-Regular', // Main body text
-    'body-bold': 'Gilroy-Bold',
-    'body-medium': 'Gilroy-Medium',
-    'body-light': 'Gilroy-Light',
+    display: 'Boldonse-Regular', // For large, impactful text
+    heading: 'Boldonse-Regular', // For section headers
+    subheading: 'SF-Pro-Rounded-Semibold', // For subsection headers
+    body: 'SF-Pro-Rounded-Regular', // Main body text
+    'body-bold': 'SF-Pro-Rounded-Bold',
+    'body-medium': 'SF-Pro-Rounded-Medium',
+    'body-light': 'SF-Pro-Rounded-Light',
   },
 
   styles: {
     h1: {
-      font: 'MD Nichrome',
+      font: 'Boldonse',
       size: 36,
-      weight: 'bold',
+      weight: 'regular',
     },
     h2: {
-      font: 'MD Nichrome',
+      font: 'Boldonse',
       size: 24,
-      weight: 'bold',
+      weight: 'regular',
     },
     h3: {
-      font: 'MD Nichrome',
+      font: 'Boldonse',
       size: 18,
-      weight: 'bold',
+      weight: 'regular',
     },
     body: {
-      font: 'Gilroy',
+      font: 'SF-Pro-Rounded-Regular',
       size: 16,
       weight: 'regular',
     },
     label: {
-      font: 'MD Nichrome',
+      font: 'SF-Pro-Rounded-Medium',
       size: 12,
       weight: 'medium',
     },
     caption: {
-      font: 'Gilroy',
+      font: 'SF-Pro-Rounded-Regular',
       size: 12,
       weight: 'regular',
     },

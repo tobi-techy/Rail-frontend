@@ -129,7 +129,7 @@ export default function App() {
       style={{ width: width, backgroundColor: item.backgroundColor }}>
       <View className="w-full flex-1 items-start px-4 pt-24 ">
         <Text
-          className={`tracking-wides w-full font-display-artistic text-[50px] uppercase ${item.textColor}`}>
+          className={`tracking-wides w-full font-display-artistic font-black text-[34px] uppercase ${item.textColor}`}>
           {item.title}
         </Text>
         <Text className={`mt-4 max-w-xs font-caption text-base font-bold  opacity-80`}>

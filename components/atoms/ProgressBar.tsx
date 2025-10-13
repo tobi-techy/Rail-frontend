@@ -15,7 +15,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   progress,
   height = 8,
   backgroundColor = colors.surface.light, // #EAE2FF from design.json
-  progressColor = colors.primary.royalBlue, // #5852FF from design.json
+  progressColor = colors.primary.lavender, // Updated to use new color palette
   className,
   style,
   color,

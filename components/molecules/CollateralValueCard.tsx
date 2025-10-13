@@ -220,7 +220,7 @@ export const CollateralValueCard: React.FC<CollateralValueCardProps> = ({
                 fontSize: typography.styles.label.size,
                 fontWeight: typography.styles.label.weight,
               },
-              { color: colors.primary.royalBlue }
+              { color: colors.primary.lavender }
             ]}
           >
             {formatPercentage(collateralRatio)}

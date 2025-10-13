@@ -74,7 +74,7 @@ export const DailyQuestCard: React.FC<DailyQuestCardProps> = ({
               <ProgressBar
                 progress={progressPercentage}
                 height={6}
-                progressColor={isCompleted ? colors.semantic.success : colors.primary.royalBlue}
+                progressColor={isCompleted ? colors.semantic.success : colors.primary.lavender}
                 backgroundColor={colors.surface.card}
               />
             </View>

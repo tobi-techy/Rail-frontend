@@ -166,7 +166,7 @@ export const QuestProgress: React.FC<QuestProgressProps> = ({
                 fontFamily: typography.fonts.secondary,
                 fontSize: typography.styles.label.size,
                 fontWeight: typography.weights.semibold,
-                color: colors.primary.royalBlue,
+                color: colors.primary.lavender,
               }}
             >
               {progress}%
@@ -176,7 +176,7 @@ export const QuestProgress: React.FC<QuestProgressProps> = ({
           <ProgressBar
             progress={progress}
             height={8}
-            progressColor={colors.primary.royalBlue}
+            progressColor={colors.primary.lavender}
             backgroundColor={colors.surface.card}
           />
         </View>

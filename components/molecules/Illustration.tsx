@@ -59,7 +59,7 @@ export const Illustration: React.FC<IllustrationProps> = ({
               style={{
                 width: getSizeStyles().width * 0.6,
                 height: getSizeStyles().height * 0.6,
-                backgroundColor: colors.primary.royalBlue,
+                backgroundColor: colors.primary.lavender,
               }}
             />
           </View>

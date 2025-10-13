@@ -213,7 +213,7 @@ export const RoundUpAccumulation: React.FC<RoundUpAccumulationProps> = ({
           <TouchableOpacity
             style={{
               flex: 1,
-              backgroundColor: monthlyGoal ? colors.surface.light : colors.primary.royalBlue,
+              backgroundColor: monthlyGoal ? colors.surface.light : colors.primary.lavender,
               borderRadius: borderRadius.lg,
               paddingVertical: spacing.md,
               paddingHorizontal: spacing.lg,

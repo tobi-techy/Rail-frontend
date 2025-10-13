@@ -46,7 +46,7 @@ export const BattlePassCard: React.FC<BattlePassCardProps> = ({
         style={[
           shadows.md,
           {
-            backgroundColor: colors.primary.royalBlue,
+            backgroundColor: colors.primary.lavender,
             borderWidth: 0,
           },
           {paddingTop: spacing.xxl}

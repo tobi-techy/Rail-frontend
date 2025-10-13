@@ -95,11 +95,11 @@ export const BattlePass: React.FC<BattlePassProps> = ({
             backgroundColor: tier.isUnlocked
               ? tier.isPremium
                 ? colors.accent.limeGreen
-                : colors.primary.royalBlue
+                : colors.primary.lavender
               : colors.surface.card,
             borderWidth: isActive ? 3 : 1,
             borderColor: isActive
-              ? colors.primary.royalBlue
+              ? colors.primary.lavender
               : tier.isUnlocked
               ? colors.border.primary
               : colors.border.secondary,
@@ -147,7 +147,7 @@ export const BattlePass: React.FC<BattlePassProps> = ({
             fontFamily: typography.fonts.secondary,
             fontSize: 10,
             fontWeight: typography.weights.bold,
-            color: isActive ? colors.primary.royalBlue : colors.text.secondary,
+            color: isActive ? colors.primary.lavender : colors.text.secondary,
             textAlign: 'center',
           }}
         >
@@ -271,7 +271,7 @@ export const BattlePass: React.FC<BattlePassProps> = ({
               fontFamily: typography.fonts.secondary,
               fontSize: typography.styles.label.size,
               fontWeight: typography.weights.semibold,
-              color: colors.primary.royalBlue,
+              color: colors.primary.lavender,
             }}
           >
             {Math.round(progressPercentage)}%
@@ -281,7 +281,7 @@ export const BattlePass: React.FC<BattlePassProps> = ({
         <ProgressBar
           progress={progressPercentage}
           height={8}
-          progressColor={colors.primary.royalBlue}
+          progressColor={colors.primary.lavender}
           backgroundColor={colors.surface.card}
         />
       </View>
