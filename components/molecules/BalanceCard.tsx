@@ -14,7 +14,7 @@ export interface BalanceCardProps extends ViewProps {
   percentChange?: string;
   timeframe?: string;
   currency?: string;
-  onSendPress?: () => void;
+  onWithdrawPress?: () => void;
   onReceivePress?: () => void;
   onHistoryPress?: () => void;
   onMorePress?: () => void;
@@ -56,7 +56,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   percentChange = '0.00%',
   timeframe = '1D',
   currency = 'USD',
-  onSendPress,
+  onWithdrawPress,
   onReceivePress,
   onHistoryPress,
   onMorePress,
@@ -113,7 +113,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
           icon="shopping-basket"
           label="Create"
           bgColor="bg-[#F7F7F7]"
-          onPress={onSendPress}
+          onPress={onWithdrawPress}
         />
 
         <ActionButton

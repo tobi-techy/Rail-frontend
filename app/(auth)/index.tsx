@@ -1,20 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
   StatusBar,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import {  Button } from '../../components/ui';
 import { InputField } from '@/components';
+import { useRegister } from '@/api/hooks';
+import { useAuthStore } from '@/stores';
 
 export default function SignUp() {
+  const scrollViewRef = useRef<any>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -24,7 +26,9 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  
+  const { mutate: register, isPending: isLoading } = useRegister();
+  const setPendingEmail = useAuthStore(state => state.setPendingEmail);
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -66,28 +70,62 @@ export default function SignUp() {
   const handleSignUp = async () => {
     if (!validateForm()) return;
 
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // Navigate to phone verification screen after signup
-      router.push('/(auth)/phone-verification');
-    }, 2000);
+    register(
+      {
+        email: formData.email,
+        password: formData.password,
+      },
+      {
+        onSuccess: (response) => {
+          // Store pending email/identifier for verification
+          setPendingEmail(response.identifier || formData.email);
+          // Navigate to verify email screen
+          router.push('/(auth)/verify-email');
+        },
+        onError: (error: any) => {
+          console.error('Registration error:', error);
+          
+          // Handle specific error codes
+          const errorCode = error?.error?.code;
+          const errorMessage = error?.error?.message;
+          
+          let displayMessage = 'Failed to create account. Please try again.';
+          
+          switch (errorCode) {
+            case 'USER_EXISTS':
+              displayMessage = 'An account with this email already exists. Please sign in.';
+              break;
+            case 'VALIDATION_ERROR':
+              displayMessage = errorMessage || 'Please check your email and password.';
+              break;
+            case 'VERIFICATION_SEND_FAILED':
+              displayMessage = 'Failed to send verification code. Please try again.';
+              break;
+            default:
+              displayMessage = errorMessage || displayMessage;
+          }
+          
+          setErrors({
+            email: displayMessage,
+          });
+        },
+      }
+    );
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1">
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView
+        ref={scrollViewRef}
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 120 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bottomOffset={40}>
           {/* Content */}
-          <View className="flex-1 px-6 pb-6">
+          <View className="px-6 pt-4">
             {/* Title */}
             <View className="mb-8 mt-4">
               <Text className="font-body-bold text-[40px] text-gray-900">
@@ -107,9 +145,9 @@ export default function SignUp() {
                 value={formData.fullName}
                 onChangeText={(value) => updateField('fullName', value)}
                 error={errors.fullName}
-                // leftIcon="person-outline"
                 autoCapitalize="words"
                 textContentType="name"
+                returnKeyType="next"
                 className="text-[14px]"
               />
 
@@ -121,10 +159,11 @@ export default function SignUp() {
                 value={formData.email}
                 onChangeText={(value) => updateField('email', value)}
                 error={errors.email}
-                // leftIcon="mail-outline"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 textContentType="emailAddress"
+                returnKeyType="next"
+                editable={!isLoading}
                 className="text-[14px]"
               />
 
@@ -135,12 +174,15 @@ export default function SignUp() {
                 placeholder="Create a strong password"
                 value={formData.password}
                 onChangeText={(value) => updateField('password', value)}
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 100);
+                }}
                 error={errors.password}
-                // leftIcon="lock-closed-outline"
-                // rightIcon={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                // onRightIconPress={() => setShowPassword(!showPassword)}
-                secureTextEntry={!showPassword}
-                textContentType="newPassword"
+                isPasswordVisible={showPassword}
+                onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
+                returnKeyType="next"
               />
 
               <InputField
@@ -150,17 +192,24 @@ export default function SignUp() {
                 placeholder="Confirm your password"
                 value={formData.confirmPassword}
                 onChangeText={(value) => updateField('confirmPassword', value)}
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 100);
+                }}
                 error={errors.confirmPassword}
-                // leftIcon="lock-closed-outline" 
-                // rightIcon={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
-                // onRightIconPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                secureTextEntry={!showConfirmPassword}
-                textContentType="newPassword"
+                isPasswordVisible={showConfirmPassword}
+                onTogglePasswordVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  Keyboard.dismiss();
+                  handleSignUp();
+                }}
               />
             </View>
 
             {/* Terms */}
-            <View className="mt-6">
+            <View className="mt-6 mb-6">
               <Text className="text-center font-sf-pro-semibold text-sm text-gray-500">
                 By creating an account, you agree to our{' '}
                 <Text className="text-gray-900 underline">Terms of Service</Text> and{' '}
@@ -169,7 +218,7 @@ export default function SignUp() {
             </View>
 
             {/* Sign Up Button */}
-            <View className="absolute bottom-0 left-0 right-0 mx-[24px] gap-y-2">
+            <View className="gap-y-2 pb-4">
               <Button
                 title="Create Account"
                 onPress={handleSignUp}
@@ -183,8 +232,7 @@ export default function SignUp() {
               </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

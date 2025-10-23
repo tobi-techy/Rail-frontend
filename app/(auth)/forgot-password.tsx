@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Button } from '../../components/ui';
 import { InputField } from '@/components';
 
@@ -53,13 +51,11 @@ export default function ForgotPassword() {
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1">
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={40}>
           <View className="flex-1 px-6 pb-6">
             <View className="mb-8 mt-4">
               <Text className="font-body-bold text-[40px] text-gray-900" accessibilityRole="header">
@@ -118,8 +114,7 @@ export default function ForgotPassword() {
               </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

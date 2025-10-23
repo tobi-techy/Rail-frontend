@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
 import { HeaderAction, ProgressDots, TOTAL_ONBOARDING_STEPS } from './components';
 import Public from '@/assets/Icons/public.svg';
+import { useAuthStore } from '@/stores/authStore';
 
 const NotificationIllustration = () => (
   <View className="relative h-28 w-28">
@@ -17,7 +18,24 @@ const NotificationIllustration = () => (
 );
 
 export default function EnableNotificationsScreen() {
-  const finish = () => router.replace('/(tabs)');
+  const setHasCompletedOnboarding = useAuthStore((state) => state.setHasCompletedOnboarding);
+  
+  const finish = () => {
+    // Mark onboarding as complete
+    setHasCompletedOnboarding(true);
+    
+    // Update user's onboarding status
+    const currentUser = useAuthStore.getState().user;
+    if (currentUser) {
+      useAuthStore.setState({
+        user: { ...currentUser, onboardingStatus: 'completed' },
+        onboardingStatus: 'completed',
+      });
+    }
+    
+    // Navigate to main app
+    router.replace('/(tabs)');
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white">

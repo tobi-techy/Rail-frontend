@@ -10,6 +10,7 @@ import {
   StatusBar,
   ViewStyle,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { cards, onBoard1, onBoard2, onBoard3, onBoard4 } from '../assets/images';
 import { Button } from '@/components/ui';
 
@@ -100,6 +101,18 @@ const SLIDE_INTERVAL = 6000; // 4 seconds
 export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<OnboardingSlide>>(null);
+
+  // Mark that user has seen the welcome screen
+  useEffect(() => {
+    const setWelcomeFlag = async () => {
+      try {
+        await AsyncStorage.setItem('hasSeenWelcome', 'true');
+      } catch (error) {
+        console.error('Error setting welcome flag:', error);
+      }
+    };
+    setWelcomeFlag();
+  }, []);
 
   // --- Auto-scroll Logic ---
   useEffect(() => {
@@ -200,11 +213,11 @@ export default function App() {
       {renderIndicators()}
 
       {/* --- "Get Started" Button --- */}
-      <View className="absolute bottom-10 w-full gap-y-2 items-center px-6">
-        <Button title="Create an account" variant="primary" onPress={() => router.push('/(tabs)')} />
-        <TouchableOpacity onPress={() => router.push('/(auth)/signin')}>
+      <View className="absolute bottom-6  w-full gap-y-2 items-center px-6">
+        <Button title="Create an account" variant="primary" onPress={() => router.push('/(auth)')} />
+        <TouchableOpacity onPress={() => router.push('/(auth)/login-passcode')}>
           <Text className="text-center font-sf-pro-medium text-[14px] text-border-primary">
-            Already have an account?, Sign In
+            Already have an account?
           </Text>
         </TouchableOpacity>
       </View>

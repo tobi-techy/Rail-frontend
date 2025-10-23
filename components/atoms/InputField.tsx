@@ -17,7 +17,6 @@ interface InputFieldProps extends Omit<TextInputProps, 'onFocus' | 'onBlur'> {
   icon?: keyof typeof Ionicons.glyphMap;
   isPasswordVisible?: boolean;
   onTogglePasswordVisibility?: () => void;
-  isFocused?: boolean;
   onFocus?: (e: NativeSyntheticEvent<any>) => void;
   onBlur?: (e: NativeSyntheticEvent<any>) => void;
 }
@@ -33,11 +32,11 @@ export const InputField: React.FC<InputFieldProps> = ({
   placeholder,
   isPasswordVisible = false,
   onTogglePasswordVisibility,
-  isFocused = false,
   onFocus,
   onBlur,
   ...props
 }) => {
+  const [isFocused, setIsFocused] = React.useState(false);
   const getKeyboardType = () => {
     switch (type) {
       case 'email':
@@ -56,6 +55,16 @@ export const InputField: React.FC<InputFieldProps> = ({
 
   const isPassword = type === 'password';
   const hasError = !!error;
+
+  const handleFocus = (e: NativeSyntheticEvent<any>) => {
+    setIsFocused(true);
+    onFocus?.(e);
+  };
+
+  const handleBlur = (e: NativeSyntheticEvent<any>) => {
+    setIsFocused(false);
+    onBlur?.(e);
+  };
 
   return (
     <View className="mb-4">
@@ -96,8 +105,12 @@ export const InputField: React.FC<InputFieldProps> = ({
           autoCapitalize={getAutoCapitalize()}
           autoCorrect={false}
           secureTextEntry={isPassword && !isPasswordVisible}
-          onFocus={onFocus}
-          onBlur={onBlur}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          editable={true}
+          selectTextOnFocus={true}
+          autoComplete="off"
+          textContentType={isPassword ? "oneTimeCode" : props.textContentType}
           className="flex-1 font-body text-body text-text-primary"
           {...props}
         />

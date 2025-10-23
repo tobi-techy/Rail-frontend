@@ -36,3 +36,8 @@ export const HeaderAction = ({
     <Feather name={icon} size={22} color="#111827" />
   </TouchableOpacity>
 );
+
+// Default export to satisfy expo-router
+export default function OnboardingComponents() {
+  return null;
+}

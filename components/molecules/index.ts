@@ -26,3 +26,4 @@ export * from './TransactionItem';
 export * from './TransactionList';
 export * from './VirtualCardDisplay';
 export * from './VirtualCreditCardFeed';
+export * from './PasscodeInput';

@@ -65,6 +65,7 @@ module.exports = {
         // Body text variants
         body: ['SF-Pro-Rounded-Regular'],
         'body-bold': ['SF-Pro-Rounded-Bold'],
+        'body-semibold': ['SF-Pro-Rounded-Semibold'],
         'body-medium': ['SF-Pro-Rounded-Medium'],
         'body-light': ['SF-Pro-Rounded-Light'],
         

@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Input, Button } from '../../components/ui';
 import { InputField } from '@/components';
+import { useLogin } from '@/api/hooks';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function SignIn() {
   const [formData, setFormData] = useState({
@@ -20,7 +20,8 @@ export default function SignIn() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  
+  const { mutate: login, isPending: isLoading } = useLogin();
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -47,33 +48,80 @@ export default function SignIn() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSignIn = async () => {
+  const handleSignIn = () => {
     if (!validateForm()) return;
 
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // In a real app, check if email is verified
-      // For demo, navigate to email verification
-      router.push({
-        pathname: '/(auth)/verify-email',
-        params: { email: formData.email },
-      });
-    }, 2000);
+    login(
+      {
+        email: formData.email,
+        password: formData.password,
+      },
+      {
+        onSuccess: (response) => {
+          // Check if user already has a passcode or needs to create one
+          const hasPasscode = response.user?.hasPasscode;
+          const onboardingStatus = response.user?.onboardingStatus;
+          
+          if (hasPasscode) {
+            // Returning user with passcode - go to login-passcode screen
+            router.replace('/(auth)/login-passcode');
+          } else if (onboardingStatus === 'completed') {
+            // User completed onboarding but no passcode - direct to home
+            router.replace('/(tabs)');
+          } else {
+            // New user or incomplete onboarding - navigate to create passcode
+            router.replace('/(auth)/create-passcode');
+          }
+        },
+        onError: (error: any) => {
+          console.error('Login error:', error);
+          
+          // Handle specific error codes
+          const errorCode = error?.error?.code;
+          const errorMessage = error?.error?.message;
+          
+          let displayMessage = 'Invalid email or password';
+          
+          switch (errorCode) {
+            case 'INVALID_CREDENTIALS':
+              displayMessage = 'Invalid email or password. Please try again.';
+              break;
+            case 'ACCOUNT_INACTIVE':
+              displayMessage = 'Your account is inactive. Please contact support.';
+              break;
+            case 'UNAUTHORIZED':
+              // Check if email needs verification
+              if (errorMessage?.toLowerCase().includes('verif')) {
+                useAuthStore.setState({ pendingVerificationEmail: formData.email });
+                router.push('/(auth)/verify-email');
+                return;
+              }
+              displayMessage = errorMessage || displayMessage;
+              break;
+            case 'VALIDATION_ERROR':
+              displayMessage = 'Please check your email and password.';
+              break;
+            default:
+              displayMessage = errorMessage || displayMessage;
+          }
+          
+          setErrors({
+            password: displayMessage,
+          });
+        },
+      }
+    );
   };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1">
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={40}>
           {/* Content */}
           <View className="flex-1 px-6 pb-6">
             {/* Title */}
@@ -114,12 +162,13 @@ export default function SignIn() {
               />
             </View>
 
-            {/* Forgot Password */}
-            <View className="mt-4">
+            {/* Forgot Password & Passcode Login */}
+            <View className="mt-4 flex-row justify-end">
+              
               <TouchableOpacity
                 onPress={() => router.push('/(auth)/forgot-password')}
                 className="self-end">
-                <Text className="font-body text-[14px] font-bold text-gray-600">
+                <Text className="font-body text-[14px] font-bold text-blue-600">
                   Forgot Password?
                 </Text>
               </TouchableOpacity>
@@ -141,8 +190,7 @@ export default function SignIn() {
               </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

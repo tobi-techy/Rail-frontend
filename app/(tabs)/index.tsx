@@ -89,6 +89,7 @@ const Dashboard = () => {
             timeframe="Last 30d"
             className="rounded-x"
             onReceivePress={() => router.push('/deposit')}
+            onWithdrawPress={() => router.push('/withdraw')}
           />
           
          

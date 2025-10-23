@@ -1,6 +1,7 @@
-import { View, Text, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import React, { useLayoutEffect, useState } from 'react';
 import { useNavigation } from 'expo-router';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Avatar } from '@rneui/base';
 import { CategoryCard } from '@/components/molecules/CategoryCard';
 import { avatar, cards, checkmark } from '@/assets/images';
@@ -200,7 +201,7 @@ const Invest = () => {
   };
   
   return (
-    <ScrollView className="flex-1">
+    <KeyboardAwareScrollView className="flex-1" keyboardShouldPersistTaps="handled">
       <View className="flex-row items-center gap-x-3 mx-auto">
         <View className='bg-gray-100 mt-6 w-[80%] h-[50px] flex-row items-center px-2 rounded-full'>
           <TextInput className='flex-1 pl-2' placeholder='Search Stocks, Etfs & investors' />
@@ -239,7 +240,7 @@ const Invest = () => {
         </ScrollView>
       </View>
 
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 };
 

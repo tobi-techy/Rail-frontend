@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, Alert, AccessibilityInfo } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { OTPInput, Button } from '../../components/ui';
+import { useAuthStore } from '../../stores/authStore';
+import { useVerifyCode, useResendCode } from '../../api/hooks';
 
 export default function VerifyEmail() {
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const pendingEmail = useAuthStore((state) => state.pendingVerificationEmail);
   const [otp, setOtp] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResendLoading, setIsResendLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const [error, setError] = useState('');
   const [isInvalid, setIsInvalid] = useState(false);
+
+  const { mutate: verifyEmail, isPending: isVerifying } = useVerifyCode();
+  const { mutate: resendCode, isPending: isResendLoading } = useResendCode();
 
   useEffect(() => {
     if (resendTimer > 0) {
@@ -25,89 +28,125 @@ export default function VerifyEmail() {
 
   // Validate OTP code and handle routing
   const validateOTP = useCallback(
-    async (code: string) => {
+    (code: string) => {
       if (code.length !== 6) {
-        return false;
+        return;
       }
 
-      setIsLoading(true);
+      setError('');
+      setIsInvalid(false);
 
-      // Simulate API call
-      return new Promise<boolean>((resolve) => {
-        setTimeout(() => {
-          setIsLoading(false);
-          // For demo purposes, accept only 123456 as valid code
-          const isValid = code === '123456';
-
-          if (isValid) {
-            // Success state
-            setIsInvalid(false);
-            setError('');
-
-            router.replace('/(auth)/onboarding/trust-device');
-          } else {
-            // Error state
+      verifyEmail(
+        { email: pendingEmail || '', code },
+        {
+          onSuccess: (response) => {
+            // Store user info and tokens from verification
+            // Note: The hook already updates the auth store
+            // Navigate to passcode setup
+            router.replace('/(auth)/create-passcode');
+          },
+          onError: (err: any) => {
+            const errorCode = err?.error?.code;
+            const errorMessage = err?.error?.message;
+            
+            let displayMessage = 'Invalid verification code. Please try again.';
+            
+            switch (errorCode) {
+              case 'INVALID_CODE':
+                displayMessage = 'Invalid or expired code. Please check and try again.';
+                break;
+              case 'ALREADY_VERIFIED':
+                displayMessage = 'This email is already verified. Please sign in.';
+                // Navigate to signin after a delay
+                setTimeout(() => router.replace('/(auth)/signin'), 2000);
+                break;
+              case 'VALIDATION_ERROR':
+                displayMessage = 'Please enter a valid 6-digit code.';
+                break;
+              default:
+                displayMessage = errorMessage || displayMessage;
+            }
+            
             setIsInvalid(true);
-            setError('Invalid verification code. Try 123456 for demo.');
+            setError(displayMessage);
 
             // Announce error to screen readers
             AccessibilityInfo.isScreenReaderEnabled().then((screenReaderEnabled) => {
               if (screenReaderEnabled) {
-                AccessibilityInfo.announceForAccessibility(
-                  'Invalid verification code. Please try again.'
-                );
+                AccessibilityInfo.announceForAccessibility(displayMessage);
               }
             });
-          }
-
-          resolve(isValid);
-        }, 1500);
-      });
+          },
+        }
+      );
     },
-    [router]
+    [verifyEmail]
   );
 
-  const handleOTPComplete = async (code: string) => {
+  const handleOTPComplete = (code: string) => {
     setOtp(code);
     setError('');
 
     // Auto-validate when all digits are entered
-    await validateOTP(code);
+    validateOTP(code);
   };
 
-  const handleVerify = async () => {
+  const handleVerify = () => {
     if (otp.length !== 6) {
       setError('Please enter the complete 6-digit code');
       setIsInvalid(true);
       return;
     }
 
-    await validateOTP(otp);
+    validateOTP(otp);
   };
 
-  const handleResendCode = async () => {
+  const handleResendCode = () => {
     if (!canResend) return;
 
-    setIsResendLoading(true);
     setError('');
     setIsInvalid(false);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsResendLoading(false);
-      setResendTimer(60);
-      setCanResend(false);
-      setOtp(''); // Clear current OTP input
+    resendCode(
+      { email: pendingEmail || '' },
+      {
+        onSuccess: (response) => {
+          setResendTimer(60);
+          setCanResend(false);
+          setOtp(''); // Clear current OTP input
 
-      Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
+          Alert.alert('Code Sent', response.message || 'A new verification code has been sent to your email.');
 
-      // Announce to screen readers
-      AccessibilityInfo.isScreenReaderEnabled().then((screenReaderEnabled) => {
-        if (screenReaderEnabled) {
-          AccessibilityInfo.announceForAccessibility('New verification code sent to your email');
-        }
-      });
-    }, 1500);
+          // Announce to screen readers
+          AccessibilityInfo.isScreenReaderEnabled().then((screenReaderEnabled) => {
+            if (screenReaderEnabled) {
+              AccessibilityInfo.announceForAccessibility('New verification code sent to your email');
+            }
+          });
+        },
+        onError: (err: any) => {
+          const errorCode = err?.error?.code;
+          const errorMessage = err?.error?.message;
+          
+          let displayMessage = 'Failed to resend code. Please try again.';
+          
+          switch (errorCode) {
+            case 'TOO_MANY_REQUESTS':
+              displayMessage = 'Too many requests. Please wait before requesting a new code.';
+              break;
+            case 'ALREADY_VERIFIED':
+              displayMessage = 'Your email is already verified. Please sign in.';
+              setTimeout(() => router.replace('/(auth)/signin'), 2000);
+              break;
+            default:
+              displayMessage = errorMessage || displayMessage;
+          }
+          
+          setError(displayMessage);
+          Alert.alert('Error', displayMessage);
+        },
+      }
+    );
   };
 
   const handlePasteCode = () => {
@@ -139,8 +178,8 @@ export default function VerifyEmail() {
             </Text>
             <Text
               className="mt-1 font-heading-light text-[28px] text-gray-900"
-              accessibilityLabel={`Email: ${email || 'your email'}`}>
-              {email || 'your email'}
+              accessibilityLabel={`Email: ${pendingEmail || 'your email'}`}>
+              {pendingEmail || 'your email'}
             </Text>
           </View>
         </View>
@@ -180,8 +219,8 @@ export default function VerifyEmail() {
           <Button
             title="Verify Email"
             onPress={handleVerify}
-            loading={isLoading}
-            disabled={otp.length !== 6 || isLoading}
+            loading={isVerifying}
+            disabled={otp.length !== 6 || isVerifying}
             className="rounded-full"
             accessibilityLabel="Verify Email"
             accessibilityHint="Tap to verify your email with the entered code"
