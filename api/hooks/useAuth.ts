@@ -14,7 +14,6 @@ import type {
   ResendCodeRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
-  ChangePasswordRequest,
   User,
 } from '../types';
 
@@ -135,14 +134,7 @@ export function useResetPassword() {
   });
 }
 
-/**
- * Change password mutation
- */
-export function useChangePassword() {
-  return useMutation({
-    mutationFn: (data: ChangePasswordRequest) => authService.changePassword(data),
-  });
-}
+
 
 /**
  * Verify email mutation

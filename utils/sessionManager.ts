@@ -45,7 +45,6 @@ export class SessionManager {
     }
 
     try {
-      console.log('[SessionManager] Refreshing access token...');
       const response = await authService.refreshToken({ refreshToken });
       
       useAuthStore.setState({
@@ -53,7 +52,6 @@ export class SessionManager {
         refreshToken: response.refreshToken,
       });
 
-      console.log('[SessionManager] Token refreshed successfully');
       
       // Schedule next refresh if expiresAt is available
       if (response.expiresAt) {
@@ -83,16 +81,11 @@ export class SessionManager {
     const refreshTime = Math.max(0, timeUntilExpiry - REFRESH_BUFFER);
 
     if (refreshTime > 0) {
-      console.log(
-        `[SessionManager] Scheduling token refresh in ${Math.round(refreshTime / 1000 / 60)} minutes`
-      );
-      
       this.refreshTimer = setTimeout(() => {
         this.refreshToken();
       }, refreshTime);
     } else {
       // Token is already expired or expires very soon
-      console.log('[SessionManager] Token expired or expiring soon, refreshing immediately');
       this.refreshToken();
     }
   }
@@ -102,7 +95,6 @@ export class SessionManager {
    * Clears ALL auth data including user data - requires full re-authentication
    */
   static handleSessionExpired(): void {
-    console.log('[SessionManager] 7-day session expired, clearing all auth data');
     
     // Clear any refresh timers
     this.cleanup();
@@ -117,7 +109,6 @@ export class SessionManager {
    * Only clears the passcode session, not the full auth session
    */
   static handlePasscodeSessionExpired(): void {
-    console.log('[SessionManager] Passcode session expired, clearing passcode session token');
     
     // Clear passcode session timer
     if (this.passcodeSessionTimer) {
@@ -152,16 +143,11 @@ export class SessionManager {
     const timeUntilExpiry = this.getTimeUntilExpiry(expiresAt);
     
     if (timeUntilExpiry > 0) {
-      console.log(
-        `[SessionManager] Scheduling passcode session expiry in ${Math.round(timeUntilExpiry / 1000 / 60)} minutes`
-      );
-      
       this.passcodeSessionTimer = setTimeout(() => {
         this.handlePasscodeSessionExpired();
       }, timeUntilExpiry);
     } else {
       // Passcode session is already expired
-      console.log('[SessionManager] Passcode session already expired');
       this.handlePasscodeSessionExpired();
     }
   }
@@ -173,31 +159,18 @@ export class SessionManager {
    */
   static initialize(): void {
     if (this.initialized) {
-      console.log('[SessionManager] Already initialized');
       return;
     }
 
     const state = useAuthStore.getState();
     const { accessToken, refreshToken, isAuthenticated, passcodeSessionExpiresAt, checkTokenExpiry, user } = state;
-    
-    console.log('[SessionManager] Initializing with state:', {
-      hasUser: !!user,
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-      isAuthenticated,
-      hasPasscodeSession: !!passcodeSessionExpiresAt,
-    });
-    
     if (!isAuthenticated || !accessToken || !refreshToken) {
-      console.log('[SessionManager] No active session to initialize - missing required tokens');
       return;
     }
 
-    console.log('[SessionManager] Initializing session management');
     
     // Check if 7-day token has expired
     if (checkTokenExpiry()) {
-      console.log('[SessionManager] 7-day token expired');
       this.handleSessionExpired();
       return;
     }
@@ -205,7 +178,6 @@ export class SessionManager {
     // Check if passcode session has expired
     if (passcodeSessionExpiresAt) {
       if (this.isPasscodeSessionExpired()) {
-        console.log('[SessionManager] Passcode session expired');
         this.handlePasscodeSessionExpired();
       } else {
         // Schedule passcode session expiry
@@ -234,11 +206,9 @@ export class SessionManager {
       const { isAuthenticated, accessToken, checkTokenExpiry } = useAuthStore.getState();
       
       if (isAuthenticated && accessToken) {
-        console.log('[SessionManager] Running session health check');
         
         // Check if 7-day token has expired
         if (checkTokenExpiry()) {
-          console.log('[SessionManager] 7-day token expired during health check');
           this.handleSessionExpired();
           return;
         }
@@ -258,7 +228,6 @@ export class SessionManager {
    * Cleanup and reset session manager
    */
   static cleanup(): void {
-    console.log('[SessionManager] Cleaning up');
     
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);

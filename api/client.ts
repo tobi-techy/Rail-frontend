@@ -20,7 +20,7 @@ interface ApiClient extends Omit<AxiosInstance, 'get' | 'post' | 'put' | 'patch'
 
 // Environment-based configuration
 const API_CONFIG = {
-  baseURL: process.env.API_BASE_URL || 'http://localhost:8080/api',
+  baseURL: process.env.API_BASE_URL || (__DEV__ ? 'http://localhost:8080/api' : 'https://api.stack.com/api'),
   timeout: parseInt(process.env.API_TIMEOUT || '30000'),
   headers: {
     'Content-Type': 'application/json',
@@ -69,15 +69,7 @@ apiClient.interceptors.request.use(
       updateLastActivity();
     }
 
-    // Log request in development
-    if (__DEV__) {
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
-        params: config.params,
-        data: config.data,
-        hasToken: !!accessToken,
-        isAuthenticated,
-      });
-    }
+    // Log request in development (removed for production)
 
     return config;
   },
@@ -95,10 +87,7 @@ apiClient.interceptors.request.use(
  */
 apiClient.interceptors.response.use(
   (response) => {
-    // Log response in development
-    if (__DEV__) {
-      console.log(`[API Response] ${response.config.url}`, response.data);
-    }
+    // Log response in development (removed for production)
 
     // Return the data directly for successful responses
     // The backend returns data directly without wrapping in { data: ... }

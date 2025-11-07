@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Icon } from '@/components/atoms/Icon';
 import { ArrowLeft } from 'lucide-react-native';
+import { useVerifyPasscode } from '@/api/hooks';
 
 const BACKSPACE_KEY = 'backspace';
 
@@ -29,7 +30,10 @@ export default function AuthorizeTransactionScreen() {
   const [passcode, setPasscode] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const PIN_LENGTH = 6;
+
+  const verifyPasscodeMutation = useVerifyPasscode();
 
   const handleKeypadPress = useCallback(
     (key: KeypadKey) => {
@@ -56,16 +60,25 @@ export default function AuthorizeTransactionScreen() {
 
   const handlePasscodeSubmit = async (code: string) => {
     setIsLoading(true);
-    
-    // TODO: Implement passcode verification API call
-    // For now, simulate API call
-    setTimeout(() => {
-      console.log('Passcode submitted:', code);
-      console.log('Transaction details:', { transactionId, amount, type, recipient });
+
+    try {
+      const result = await verifyPasscodeMutation.mutateAsync({ passcode: code });
+
+      if (result.verified) {
+        // Passcode verified, proceed with transaction
+        console.log('Passcode verified, transaction authorized:', { transactionId, amount, type, recipient });
+        // TODO: Call transaction authorization API here
+        router.replace('/transaction-success');
+      } else {
+        // This shouldn't happen with the API, but handle error
+        setError('Invalid passcode');
+      }
+    } catch (error) {
+      console.error('Passcode verification failed:', error);
+      setError('Failed to verify passcode');
+    } finally {
       setIsLoading(false);
-      // Navigate to success or error state
-      // router.replace('/transaction-success');
-    }, 500);
+    }
   };
 
   const handleBack = () => {

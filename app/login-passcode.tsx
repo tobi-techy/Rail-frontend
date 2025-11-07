@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { Icon } from '@/components/atoms/Icon';
 import { Fingerprint,  Trash } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
@@ -73,8 +74,35 @@ export default function LoginPasscodeScreen() {
   );
 
   const handleBiometricAuth = async () => {
-    // TODO: Implement biometric authentication
-    console.log('Biometric authentication');
+    try {
+      // Check if biometric authentication is available
+      const isBiometricAvailable = await LocalAuthentication.hasHardwareAsync();
+      const isBiometricEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (!isBiometricAvailable || !isBiometricEnrolled) {
+        setError('Biometric authentication not available or not enrolled');
+        return;
+      }
+
+      // Authenticate using biometrics
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to access your account',
+        fallbackLabel: 'Use passcode',
+        cancelLabel: 'Cancel',
+        disableDeviceFallback: false,
+      });
+
+      if (result.success) {
+        // Biometric success - simulate passcode verification (since biometric replaces passcode)
+        // In a real app, you might have a separate flow or verify with backend
+        handlePasscodeSubmit('biometric');
+      } else {
+        setError('Biometric authentication failed');
+      }
+    } catch (error) {
+      console.error('Biometric authentication error:', error);
+      setError('Biometric authentication failed');
+    }
   };
 
   const handlePasscodeSubmit = (code: string) => {

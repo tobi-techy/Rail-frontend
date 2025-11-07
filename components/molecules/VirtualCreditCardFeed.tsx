@@ -83,7 +83,7 @@ export const VirtualCreditCardFeed: React.FC<VirtualCreditCardFeedProps> = ({
   }, [activeCardId, data]);
 
   const handleViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: Array<{ item: any }> }) => {
+    ({ viewableItems }: { viewableItems: { item: any }[] }) => {
       const cardItem = viewableItems.find(
         ({ item }) => item.type === 'card',
       );

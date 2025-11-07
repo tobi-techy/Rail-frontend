@@ -35,7 +35,7 @@ export interface BasketCardProps
     currentValue: number;
   };
   /** Optional badges to display on the right (for social proof/tags) */
-  badges?: Array<{ color: string; icon: string }>;
+  badges?: { color: string; icon: string }[];
   /** Function to call when the card is pressed */
   onPress?: () => void;
   /** Additional class names for styling */

@@ -8,10 +8,10 @@ interface BasketItemCardProps {
   aum: string;
   performance: string;
   performanceType: 'positive' | 'negative';
-  badges: Array<{
+  badges: {
     color: string;
     icon?: string;
-  }>;
+  }[];
   className?: string;
 }
 

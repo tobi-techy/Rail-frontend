@@ -287,7 +287,7 @@ export const RoundUpAccumulation: React.FC<RoundUpAccumulationProps> = ({
                 { color: colors.text.secondary }
               ]}
             >
-              You've reached your monthly savings goal
+              You&apos;ve reached your monthly savings goal
             </Text>
           </View>
         </View>

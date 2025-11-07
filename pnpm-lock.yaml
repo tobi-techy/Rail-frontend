@@ -38,6 +38,9 @@ importers:
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
+      crypto-js:
+        specifier: ^4.2.0
+        version: 4.2.0
       d3-scale:
         specifier: ^4.0.2
         version: 4.0.2
@@ -77,6 +80,9 @@ importers:
       expo-router:
         specifier: ~6.0.13
         version: 6.0.13(1e82f56eac962c4154cd28a6061e74b6)
+      expo-secure-store:
+        specifier: ^15.0.7
+        version: 15.0.7(expo@54.0.17)
       expo-splash-screen:
         specifier: ^31.0.10
         version: 31.0.10(expo@54.0.17)
@@ -2176,6 +2182,9 @@ packages:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
 
+  crypto-js@4.2.0:
+    resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
+
   crypto-random-string@2.0.0:
     resolution: {integrity: sha512-v1plID3y9r/lPhviJ1wrXpLeyUIGAZ2SHNYTEapm7/8A9nLPoyvVp3RK/EPFqn5kEznyWgYZNsRtYYIWbuG8KA==}
     engines: {node: '>=8'}
@@ -2760,6 +2769,11 @@ packages:
         optional: true
       react-server-dom-webpack:
         optional: true
+
+  expo-secure-store@15.0.7:
+    resolution: {integrity: sha512-9q7+G1Zxr5P6J5NRIlm86KulvmYwc6UnQlYPjQLDu1drDnerz6AT6l884dPu29HgtDTn4rR0heYeeGFhMKM7/Q==}
+    peerDependencies:
+      expo: '*'
 
   expo-server@1.0.2:
     resolution: {integrity: sha512-QlQLjFuwgCiBc+Qq0IyBBHiZK1RS0NJSsKVB5iECMJrR04q7PhkaF7dON0fhvo00COy4fT9rJ5brrJDpFro/gA==}
@@ -7732,6 +7746,8 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
+  crypto-js@4.2.0: {}
+
   crypto-random-string@2.0.0: {}
 
   css-in-js-utils@3.1.0:
@@ -8440,6 +8456,10 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
       - supports-color
+
+  expo-secure-store@15.0.7(expo@54.0.17):
+    dependencies:
+      expo: 54.0.17(@babel/core@7.28.4)(@expo/metro-runtime@5.0.5(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.17)(react@19.1.0)))(expo-router@6.0.13)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
 
   expo-server@1.0.2: {}
 

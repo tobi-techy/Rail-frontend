@@ -27,12 +27,12 @@ export interface BasketFeedCardProps {
     isPositive: boolean;
     chartData: number[];
   };
-  stocks: Array<{
+  stocks: {
     id: string;
     symbol: string;
     logoUrl?: string;
     allocation: number;
-  }>;
+  }[];
   onPress: () => void;
   className?: string;
 }

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { walletService } from '../api/services';
+import { encryptObject, decryptObject } from '../utils/encryption';
 
 export interface Token {
   id: string;
@@ -125,6 +126,37 @@ const initialState: WalletState = {
   error: null,
   selectedToken: null,
 };
+
+// Custom storage with encryption for sensitive wallet data
+const createEncryptedStorage = () => ({
+  getItem: async (name: string) => {
+    try {
+      const encrypted = await AsyncStorage.getItem(name);
+      if (encrypted) {
+        return decryptObject(encrypted);
+      }
+      return null;
+    } catch (error) {
+      console.error('Encrypted storage getItem error:', error);
+      return null;
+    }
+  },
+  setItem: async (name: string, value: string) => {
+    try {
+      const encrypted = encryptObject(JSON.parse(value));
+      await AsyncStorage.setItem(name, encrypted);
+    } catch (error) {
+      console.error('Encrypted storage setItem error:', error);
+    }
+  },
+  removeItem: async (name: string) => {
+    try {
+      await AsyncStorage.removeItem(name);
+    } catch (error) {
+      console.error('Encrypted storage removeItem error:', error);
+    }
+  },
+});
 
 export const useWalletStore = create<WalletState & WalletActions>()(
   persist(
@@ -303,11 +335,10 @@ export const useWalletStore = create<WalletState & WalletActions>()(
     }),
     {
       name: 'wallet-storage',
-      // Use AsyncStorage for React Native and create a JSON storage wrapper
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createEncryptedStorage(),
       partialize: (state) => ({
-        tokens: state.tokens,
-        transactions: state.transactions,
+        tokens: state.tokens, // Sensitive: balances and holdings
+        transactions: state.transactions, // Sensitive: transaction history
         selectedToken: state.selectedToken,
       }),
     }

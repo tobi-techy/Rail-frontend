@@ -112,8 +112,11 @@ export function useProtectedRoute() {
         // Reset navigation ref to allow routing logic to run again
         hasNavigatedRef.current = false;
         
+        // Get fresh state from store to avoid stale closure values
+        const freshState = useAuthStore.getState();
+        
         // Check if passcode session expired/cleared
-        if (authState.isAuthenticated && SessionManager.isPasscodeSessionExpired()) {
+        if (freshState.isAuthenticated && SessionManager.isPasscodeSessionExpired()) {
           console.log('[Auth] Passcode session expired - need to re-authenticate with passcode');
           SessionManager.handlePasscodeSessionExpired();
           // Navigation will happen automatically in the routing effect
@@ -121,13 +124,12 @@ export function useProtectedRoute() {
         }
         
         // Update last activity since user is now active
-        if (authState.isAuthenticated) {
-          useAuthStore.getState().updateLastActivity();
+        if (freshState.isAuthenticated) {
+          freshState.updateLastActivity();
         }
         
         // Check if 7-day token has expired
-        const { checkTokenExpiry } = useAuthStore.getState();
-        if (authState.isAuthenticated && checkTokenExpiry()) {
+        if (freshState.isAuthenticated && freshState.checkTokenExpiry()) {
           console.log('[Auth] 7-day token expired after app resume');
           SessionManager.handleSessionExpired();
           return;
@@ -140,7 +142,7 @@ export function useProtectedRoute() {
     return () => {
       subscription.remove();
     };
-  }, [authState.isAuthenticated, authState.accessToken]);
+  }, []); // No dependencies needed - we fetch fresh state inside the handler
 
   // Handle routing based on auth state
   // Runs on mount, auth changes, and when app comes to foreground
