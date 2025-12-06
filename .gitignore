@@ -9,16 +9,85 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
-# expo router
+
+# Expo
 expo-env.d.ts
 
+# Environment variables (CRITICAL: Never commit these)
+.env
+.env.local
+.env.production
+.env.*.local
 
+# iOS
+ios/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace
 
-ios
-android
+# Android
+android/
+*.apk
+*.aab
+*.ap_
+*.dex
+bin/
+gen/
+out/
+.gradle/
+build/
+local.properties
+
+# Testing
+coverage/
+*.lcov
+.nyc_output
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Package managers
+pnpm-lock.yaml
 
 # macOS
 .DS_Store
+.AppleDouble
+.LSOverride
 
-# Temporary files created by Metro to check the health of the file watcher
+# Temporary files
 .metro-health-check*
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Secrets and credentials
+*.pem
+*.cert
+*.crt
+secrets/
+credentials/

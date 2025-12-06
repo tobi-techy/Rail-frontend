@@ -1,0 +1,56 @@
+[install]
+# Optimize for React Native and Expo
+auto = "fallback"
+exact = false
+production = false
+optional = true
+dev = true
+peer = true
+frozenLockfile = false
+
+[install.cache]
+# Enable aggressive caching for faster installs
+dir = "~/.bun/install/cache"
+disable = false
+disableManifest = false
+
+[install.lockfile]
+# Generate lockfile for reproducible builds
+save = true
+print = "yarn"
+
+[install.scopes]
+# Configure registry scopes if needed
+# "@myorg" = { url = "https://registry.myorg.com", token = "$NPM_TOKEN" }
+
+[run]
+# Optimize script execution
+bun = true
+shell = "system"
+
+[test]
+# Jest compatibility
+preload = ["./jest.setup.js"]
+coverage = true
+coverageThreshold = 80
+
+[define]
+# Environment variable definitions for build optimization
+"process.env.NODE_ENV" = "development"
+
+# Performance optimizations
+[loader]
+".png" = "file"
+".jpg" = "file"
+".jpeg" = "file"
+".svg" = "file"
+".gif" = "file"
+".webp" = "file"
+".ttf" = "file"
+".otf" = "file"
+".woff" = "file"
+".woff2" = "file"
+
+# Telemetry
+[telemetry]
+disabled = false

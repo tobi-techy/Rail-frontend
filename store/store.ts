@@ -1,15 +1,18 @@
-import { create } from 'zustand';
+/**
+ * Root store - Re-exports all application stores
+ * This provides a single entry point for importing stores throughout the app
+ */
 
-export interface BearState {
-  bears: number;
-  increasePopulation: () => void;
-  removeAllBears: () => void;
-  updateBears: (newBears: number) => void;
-}
+export { useAuthStore } from '../stores/authStore';
+export type { User } from '../stores/authStore';
 
-export const useStore = create<BearState>((set) => ({
-  bears: 0,
-  increasePopulation: () => set((state) => ({ bears: state.bears + 1 })),
-  removeAllBears: () => set({ bears: 0 }),
-  updateBears: (newBears) => set({ bears: newBears }),
-}));
+export { useWalletStore } from '../stores/walletStore';
+export type { Token, Transaction } from '../stores/walletStore';
+
+export { useWithdrawalStore } from '../stores/withdrawalStore';
+export type {
+  Network,
+  BridgeProvider,
+  Recipient,
+  TransactionDetails,
+} from '../stores/withdrawalStore';
