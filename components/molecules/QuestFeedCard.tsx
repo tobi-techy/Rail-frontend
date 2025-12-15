@@ -3,13 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Card } from '../atoms/Card';
 import { Icon } from '../atoms/Icon';
 import { Button } from '../atoms/Button';
-import {
-  colors,
-  spacing,
-  typography,
-  borderRadius,
-  shadows,
-} from '../../design/tokens';
+import { colors, spacing, typography, shadows } from '../../design/tokens';
 
 export interface QuestFeedCardProps {
   id: string;
@@ -26,37 +20,15 @@ export const QuestFeedCard: React.FC<QuestFeedCardProps> = ({
   title,
   description,
   iconName,
-  iconBackgroundColor = `${colors.primary.lavender}20`,
+  iconBackgroundColor = `${colors.primary.accent}20`,
   onPress,
   className,
 }) => {
   return (
-    <TouchableOpacity
-      onPress={() => onPress(id)}
-      activeOpacity={0.8}
-      className={className}
-    >
-      <Card
-        variant="default"
-        padding="small"
-        style={[shadows.sm, { backgroundColor: colors.surface.card }]}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          {/* Left side: Icon and Text */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              flex: 1,
-              marginRight: spacing.md,
-            }}
-          >
+    <TouchableOpacity onPress={() => onPress(id)} activeOpacity={0.8} className={className}>
+      <Card padding="small" style={[shadows.card, { backgroundColor: colors.background.surface }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.md }}>
             <View
               style={{
                 width: 56,
@@ -68,33 +40,18 @@ export const QuestFeedCard: React.FC<QuestFeedCardProps> = ({
                 marginRight: spacing.md,
               }}
             >
-              <Icon
-                library="feather"
-                name={iconName}
-                size={28}
-                color={colors.text.primary}
-              />
+              <Icon library="feather" name={iconName} size={28} color={colors.text.primary} />
             </View>
 
             <View style={{ flex: 1 }}>
               <Text
-                style={{
-                  fontFamily: typography.fonts.primary,
-                  fontSize: 18,
-                  fontWeight: typography.weights.bold,
-                  color: colors.text.primary,
-                }}
+                style={{ fontFamily: typography.fonts.headline2, fontSize: 18, color: colors.text.primary }}
                 numberOfLines={1}
               >
                 {title}
               </Text>
               <Text
-                style={{
-                  fontFamily: typography.fonts.secondary,
-                  fontSize: 14,
-                  color: colors.text.secondary,
-                  marginTop: 2,
-                }}
+                style={{ fontFamily: typography.fonts.caption, fontSize: 14, color: colors.text.secondary, marginTop: 2 }}
                 numberOfLines={1}
               >
                 {description}
@@ -102,13 +59,12 @@ export const QuestFeedCard: React.FC<QuestFeedCardProps> = ({
             </View>
           </View>
 
-          {/* Right side: Button */}
           <Button
             title="Go"
             onPress={() => onPress(id)}
             variant="primary"
             size="sm"
-            style={{ backgroundColor: colors.text.primary, width: 70 }}
+            style={{ backgroundColor: colors.primary.accent, width: 70 }}
           />
         </View>
       </Card>

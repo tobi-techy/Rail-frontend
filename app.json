@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "rail",
+    "name": "Rail",
     "slug": "rail",
     "version": "1.0.0",
     "scheme": "rail",
@@ -34,11 +34,8 @@
       "tsconfigPaths": true
     },
     "orientation": "portrait",
-    "icon": "./assets/app-icon/ios-light.png",
+    "icon": "./assets/app-icon/app-icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "backgroundColor": "#000000"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -50,16 +47,12 @@
         "NSFaceIDUsageDescription": "Use Face ID to authenticate and secure your account",
         "NSCameraUsageDescription": "Camera access is required for QR code scanning"
       },
-      "icon": {
-        "dark": "./assets/app-icon/ios-dark.png",
-        "light": "./assets/app-icon/ios-light.png",
-        "tinted": "./assets/app-icon/ios-tinted.png"
-      }
+      "icon": "./assets/app-icon/app-icon.png"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/app-icon/logo-dark.png",
+        "backgroundColor": "#000000"
       },
       "package": "com.railfinance.rail",
       "permissions": [

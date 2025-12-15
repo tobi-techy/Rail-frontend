@@ -1,19 +1,11 @@
-const getBaseURL = (): string => {
-  const url = process.env.EXPO_PUBLIC_API_URL;
-  
-  if (!url && !__DEV__) {
-    throw new Error('EXPO_PUBLIC_API_URL must be set in production');
-  }
-  
-  return url || 'http://localhost:8080/api';
-};
+import { env, isDev } from '../utils/env';
 
 export const API_CONFIG = {
-  baseURL: getBaseURL(),
+  baseURL: env.EXPO_PUBLIC_API_URL,
   timeout: 30000,
   retries: 3,
   retryDelay: 1000,
-};
+} as const;
 
 export const ENDPOINTS = {
   AUTH: {
@@ -22,6 +14,10 @@ export const ENDPOINTS = {
     LOGOUT: '/auth/logout',
     REFRESH: '/auth/refresh',
     VERIFY_EMAIL: '/auth/verify-email',
+    VERIFY_CODE: '/auth/verify-code',
+    RESEND_CODE: '/auth/resend-code',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    RESET_PASSWORD: '/auth/reset-password',
   },
   WALLET: {
     BALANCE: '/wallet/balance',
@@ -33,4 +29,12 @@ export const ENDPOINTS = {
   PORTFOLIO: {
     OVERVIEW: '/portfolio/overview',
   },
-};
+  USER: {
+    PROFILE: '/user/profile',
+    UPDATE: '/user/update',
+  },
+  PASSCODE: {
+    CREATE: '/security/passcode/create',
+    VERIFY: '/security/passcode/verify',
+  },
+} as const;

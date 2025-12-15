@@ -1,97 +1,119 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useRef, useCallback } from 'react';
 import {
-  TouchableOpacity,
-  TouchableOpacityProps,
+  Pressable,
+  PressableProps,
   Text,
   ActivityIndicator,
   View,
+  Animated,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
 
-interface ButtonProps extends TouchableOpacityProps {
+interface ButtonProps extends Omit<PressableProps, 'style'> {
   title: string;
-  variant?: 'primary' | 'secondary' | 'outline' | 'indigo';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: 'black' | 'white';
+  size?: 'small' | 'large';
   loading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  disabled?: boolean;
+  className?: string;
+  enableSound?: boolean;
+  enableHaptics?: boolean;
 }
 
-export const Button = forwardRef<View, ButtonProps>(({
-  title,
-  variant = 'primary',
-  size = 'lg',
-  loading = false,
-  leftIcon,
-  rightIcon,
-  disabled,
-  className = '',
-  ...props
-}, ref) => {
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'secondary':
-        return 'bg-gray-100 border border-gray-200';
-      case 'outline':
-        return 'bg-transparent border-2 border-gray-300';
-      case 'indigo':
-        return 'bg-indigo-500 shadow-md';
-      default:
-        return 'bg-[#000] border-2 border-gray-900';
-    }
-  };
+const playClickSound = async () => {
+  try {
+    const { sound } = await Audio.Sound.createAsync(
+      require('@/assets/sounds/click.mp3'),
+      { volume: 0.3 }
+    );
+    await sound.playAsync();
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) sound.unloadAsync();
+    });
+  } catch {}
+};
 
-  const getTextStyles = () => {
-    switch (variant) {
-      case 'secondary':
-        return 'text-gray-900';
-      case 'outline':
-        return 'text-gray-900';
-      default:
-        return 'text-white';
-    }
-  };
+export const Button = forwardRef<View, ButtonProps>(
+  (
+    {
+      title,
+      variant = 'black',
+      size = 'large',
+      loading = false,
+      leftIcon,
+      rightIcon,
+      disabled,
+      className = '',
+      enableSound = true,
+      enableHaptics = true,
+      onPress,
+      ...props
+    },
+    ref
+  ) => {
+    const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  const getSizeStyles = () => {
-    switch (size) {
-      case 'sm':
-        return 'px-6 py-3';
-      case 'md':
-        return 'px-6 py-4';
-      default:
-        return 'px-6 py-5';
-    }
-  };
+    const handlePressIn = useCallback(() => {
+      Animated.spring(scaleAnim, {
+        toValue: 0.96,
+        useNativeDriver: true,
+        speed: 50,
+        bounciness: 4,
+      }).start();
+    }, [scaleAnim]);
 
-  const getTextSize = () => {
-    switch (size) {
-      case 'sm':
-        return 'text-sm';
-      case 'md':
-        return 'text-base';
-      default:
-        return 'text-lg';
-    }
-  };
+    const handlePressOut = useCallback(() => {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 50,
+        bounciness: 8,
+      }).start();
+    }, [scaleAnim]);
 
-  return (
-    <TouchableOpacity
-      ref={ref}
-      disabled={disabled || loading}
-      className={`w-full flex-row items-center justify-center rounded-full ${getVariantStyles()} ${getSizeStyles()} ${
-        disabled ? 'opacity-50' : ''
-      } ${className}`}
-      {...props}>
-      {loading ? (
-        <ActivityIndicator color={variant === 'primary' || variant === 'indigo' ? '#fff' : '#111'} size="small" />
-      ) : (
-        <View className="flex-row items-center">
-          {leftIcon && <View className="mr-2">{leftIcon}</View>}
-          <Text className={`font-button text-[16px] ${getTextStyles()}`}>{title}</Text>
-          {rightIcon && <View className="ml-2">{rightIcon}</View>}
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-});
+    const handlePress = useCallback(
+      (e: any) => {
+        if (enableHaptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (enableSound) playClickSound();
+        onPress?.(e);
+      },
+      [enableHaptics, enableSound, onPress]
+    );
+
+    const variantStyles = variant === 'white' ? 'bg-white border border-gray-200' : 'bg-black';
+    const textStyles = variant === 'white' ? 'text-black' : 'text-white';
+    const sizeStyles = size === 'small' ? 'px-4 py-3' : 'px-6 py-5';
+    const textSize = size === 'small' ? 'text-sm' : 'text-lg';
+    const widthStyles = size === 'small' ? 'w-[30%]' : 'w-full';
+
+    return (
+      <Animated.View style={{ transform: [{ scale: scaleAnim }], width: size === 'small' ? '30%' : '100%' }}>
+        <Pressable
+          ref={ref}
+          disabled={disabled || loading}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          onPress={handlePress}
+          className={`flex-row items-center justify-center rounded-full ${variantStyles} ${sizeStyles} ${
+            disabled ? 'opacity-50' : ''
+          } ${className}`}
+          {...props}>
+          {loading ? (
+            <ActivityIndicator color={variant === 'black' ? '#fff' : '#000'} size="small" />
+          ) : (
+            <View className="flex-row items-center">
+              {leftIcon && <View className="mr-2">{leftIcon}</View>}
+              <Text className={`font-button ${textSize} ${textStyles}`}>{title}</Text>
+              {rightIcon && <View className="ml-2">{rightIcon}</View>}
+            </View>
+          )}
+        </Pressable>
+      </Animated.View>
+    );
+  }
+);
 
 Button.displayName = 'Button';

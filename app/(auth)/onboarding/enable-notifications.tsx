@@ -46,7 +46,7 @@ export default function EnableNotificationsScreen() {
         </View>
 
         <View className="mt-14">
-         <Public width={100} height={150} />
+         <Public width={200} height={250} fill={"#000"} />
           <View className="mt-8">
             <Text className="font-heading text-[32px] text-gray-900">Enable Notifications</Text>
             <Text className="mt-4 font-body text-base leading-6 text-gray-600">

@@ -1,22 +1,15 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StatusBar,
-  Keyboard,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, Keyboard, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import {  Button } from '../../components/ui';
+import { Button } from '../../components/ui';
 import { InputField } from '@/components';
 import { useRegister } from '@/api/hooks';
 import { useAuthStore } from '@/stores';
 
 const scrollViewContentStyle = { paddingBottom: 120 };
 
-export default function SignUp() {  
+export default function SignUp() {
   const [formData, setFormData] = useState({
     email: '',
     phone: '',
@@ -26,9 +19,9 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const { mutate: register, isPending: isLoading } = useRegister();
-  const setPendingEmail = useAuthStore(state => state.setPendingEmail);
+  const setPendingEmail = useAuthStore((state) => state.setPendingEmail);
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -75,7 +68,7 @@ export default function SignUp() {
         email: formData.email,
         password: formData.password,
         // Phone is optional and might need backend support, passing it if your backend supports it
-        // phone: formData.phone 
+        // phone: formData.phone
       },
       {
         onSuccess: (response) => {
@@ -86,13 +79,13 @@ export default function SignUp() {
         },
         onError: (error: any) => {
           console.error('Registration error:', error);
-          
+
           // Handle specific error codes
           const errorCode = error?.error?.code;
           const errorMessage = error?.error?.message;
-          
+
           let displayMessage = 'Failed to create account. Please try again.';
-          
+
           switch (errorCode) {
             case 'USER_EXISTS':
               displayMessage = 'An account with this email already exists. Please sign in.';
@@ -106,7 +99,7 @@ export default function SignUp() {
             default:
               displayMessage = errorMessage || displayMessage;
           }
-          
+
           setErrors({
             email: displayMessage,
           });
@@ -123,68 +116,66 @@ export default function SignUp() {
         className="flex-1"
         contentContainerStyle={scrollViewContentStyle}
         showsVerticalScrollIndicator={false}>
-          {/* Content */}
-          <View className="px-6 pt-4">
-            {/* Title */}
-            <View className="mb-8 mt-4">
-              <Text className="font-display text-[60px] text-gray-900">
-                Create Account
-              </Text>
-              <Text className="mt-2 font-body-medium text-[14px] text-gray-600">
-                Sign up to start your journey
-              </Text>
-            </View>
+        {/* Content */}
+        <View className="px-6 pt-4">
+          {/* Title */}
+          <View className="mb-8 mt-4">
+            <Text className="font-display text-[60px] text-gray-900">Create Account</Text>
+            <Text className="mt-2 font-body-medium text-[14px] text-gray-600">
+              Sign up to start your journey
+            </Text>
+          </View>
 
-            {/* Form */}
-            <View className="gap-y-4">
-              <InputField
-                required
-                type="email"
-                label="Email Address"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChangeText={(value) => updateField('email', value)}
-                error={errors.email}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                textContentType="emailAddress"
-                returnKeyType="next"
-                editable={!isLoading}
-                className="text-[14px]"
-              />
+          {/* Form */}
+          <View className="gap-y-4">
+            <InputField
+              required
+              type="email"
+              label="Email Address"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChangeText={(value) => updateField('email', value)}
+              error={errors.email}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              textContentType="emailAddress"
+              returnKeyType="next"
+              editable={!isLoading}
+              className="text-[14px]"
+            />
 
-              <InputField
-                required
-                type="password"
-                label="Password"
-                placeholder="Create a strong password"
-                value={formData.password}
-                onChangeText={(value) => updateField('password', value)}
-                error={errors.password}
-                isPasswordVisible={showPassword}
-                onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
-                returnKeyType="next"
-              />
+            <InputField
+              required
+              type="password"
+              label="Password"
+              placeholder="Create a strong password"
+              value={formData.password}
+              onChangeText={(value) => updateField('password', value)}
+              error={errors.password}
+              isPasswordVisible={showPassword}
+              onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
+              returnKeyType="next"
+            />
 
-              <InputField
-                required
-                type="password"
-                label="Confirm Password"
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChangeText={(value) => updateField('confirmPassword', value)}
-                error={errors.confirmPassword}
-                isPasswordVisible={showConfirmPassword}
-                onTogglePasswordVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
-                returnKeyType="done"
-                onSubmitEditing={() => {
-                  Keyboard.dismiss();
-                  handleSignUp();
-                }}
-              />
-            </View>
+            <InputField
+              required
+              type="password"
+              label="Confirm Password"
+              placeholder="Confirm your password"
+              value={formData.confirmPassword}
+              onChangeText={(value) => updateField('confirmPassword', value)}
+              error={errors.confirmPassword}
+              isPasswordVisible={showConfirmPassword}
+              onTogglePasswordVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
+              returnKeyType="done"
+              onSubmitEditing={() => {
+                Keyboard.dismiss();
+                handleSignUp();
+              }}
+            />
+          </View>
 
-          <View className='mt-[240px]'>
+          <View className="mt-[200px]">
             {/* Terms */}
             <View className="mb-6">
               <Text className="text-center font-label text-sm text-gray-500">
@@ -209,7 +200,7 @@ export default function SignUp() {
               </TouchableOpacity>
             </View>
           </View>
-          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

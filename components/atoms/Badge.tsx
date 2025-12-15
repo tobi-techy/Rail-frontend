@@ -3,7 +3,7 @@ import { View, Text, ViewProps } from 'react-native';
 import { colors, typography, borderRadius, spacing } from '../../design/tokens';
 
 export interface BadgeProps extends ViewProps {
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'low' | 'medium' | 'high';
+  variant?: 'default' | 'success' | 'destructive' | 'secondary';
   size?: 'small' | 'medium' | 'large';
   children: React.ReactNode;
   className?: string;
@@ -17,80 +17,27 @@ export const Badge: React.FC<BadgeProps> = ({
   style,
   ...props
 }) => {
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'success':
-        return {
-          backgroundColor: colors.semantic.success,
-          color: colors.text.onPrimary,
-        };
-      case 'warning':
-        return {
-          backgroundColor: colors.semantic.warning,
-          color: colors.text.onAccent,
-        };
-      case 'danger':
-        return {
-          backgroundColor: colors.semantic.danger,
-          color: colors.text.onPrimary,
-        };
-      case 'low':
-        return {
-          backgroundColor: colors.semantic.success,
-          color: colors.text.onPrimary,
-        };
-      case 'medium':
-        return {
-          backgroundColor: colors.semantic.warning,
-          color: colors.text.onAccent,
-        };
-      case 'high':
-        return {
-          backgroundColor: colors.semantic.danger,
-          color: colors.text.onPrimary,
-        };
-      default:
-        return {
-          backgroundColor: colors.surface.light,
-          color: colors.text.primary,
-        };
-    }
-  };
+  const variantStyles = {
+    default: { bg: colors.background.surface, text: colors.text.primary },
+    success: { bg: colors.semantic.success, text: '#FFFFFF' },
+    destructive: { bg: colors.semantic.destructive, text: '#FFFFFF' },
+    secondary: { bg: colors.primary.secondary, text: '#FFFFFF' },
+  }[variant];
 
-  const getSizeStyles = () => {
-    switch (size) {
-      case 'small':
-        return {
-          paddingHorizontal: spacing.sm,
-          paddingVertical: spacing.xs,
-          fontSize: typography.styles.caption.size,
-        };
-      case 'large':
-        return {
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.sm,
-          fontSize: typography.styles.body.size,
-        };
-      default: // medium
-        return {
-          paddingHorizontal: spacing.sm + 2,
-          paddingVertical: spacing.xs + 1,
-          fontSize: typography.styles.label.size,
-        };
-    }
-  };
-
-  const variantStyles = getVariantStyles();
-  const sizeStyles = getSizeStyles();
+  const sizeStyles = {
+    small: { px: spacing.sm, py: spacing.xs, fontSize: 12 },
+    medium: { px: spacing.sm + 2, py: spacing.xs + 1, fontSize: 12 },
+    large: { px: spacing.md, py: spacing.sm, fontSize: 14 },
+  }[size];
 
   return (
     <View
       style={[
         {
-          backgroundColor: variantStyles.backgroundColor,
+          backgroundColor: variantStyles.bg,
           borderRadius: borderRadius.full,
-          paddingHorizontal: sizeStyles.paddingHorizontal,
-          paddingVertical: sizeStyles.paddingVertical,
+          paddingHorizontal: sizeStyles.px,
+          paddingVertical: sizeStyles.py,
           alignSelf: 'flex-start',
         },
         style,
@@ -100,10 +47,10 @@ export const Badge: React.FC<BadgeProps> = ({
     >
       <Text
         style={{
-          color: variantStyles.color,
+          color: variantStyles.text,
           fontSize: sizeStyles.fontSize,
-          fontFamily: typography.fonts.secondary,
-          fontWeight: typography.weights.medium,
+          fontFamily: typography.fonts.caption,
+          fontWeight: '500',
           textAlign: 'center',
         }}
       >

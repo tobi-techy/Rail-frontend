@@ -1,221 +1,92 @@
 /**
- * Design tokens extracted from design.json
- * Provides centralized access to colors, typography, spacing, and other design values
+ * Design tokens from RAIL-DESIGN.json v1.4.0
+ * Vivid Minimalism: High-contrast white/black with energetic blue accent
+ * Typography: Pramukh Rounded for headings, SF Pro Rounded for body/UI
  */
 
-/**
- * Color palette based on design.json specifications
- */
 export const colors = {
-  // Primary colors - updated palette
   primary: {
-    magenta: '#FB088F',
-    pink: '#F39ABE',
-    lavender: '#949FFF',
-    dark: '#1E1A3E',
-    darkBlue: '#1E1F4B',
+    accent: '#1B84FF',
+    secondary: '#487984',
   },
-
-  // Accent colors - updated palette
-  accent: {
-    limeGreen: '#D4FF00',
-    softGreen: '#ADF48C',
-  },
-
-  // Background colors
   background: {
     main: '#FFFFFF',
-    light: '#EAE8FF',
-    dark: '#1E1A3E',
+    surface: '#F5F5F5',
   },
-
-  // Surface colors
-  surface: {
-    card: '#F7F7F7',
-    light: '#EAE8FF',
-  },
-
-  // Text colors
   text: {
-    primary: '#1E1A3E',
-    secondary: '#1E1F4B',
-    tertiary: '#949FFF',
+    primary: '#121212',
+    secondary: '#757575',
     onPrimary: '#FFFFFF',
-    onAccent: '#1E1A3E',
   },
-
-  // Semantic colors
   semantic: {
-    success: '#ADF48C',
-    danger: '#FB088F',
-    warning: '#D4FF00',
+    success: '#00C853',
+    destructive: '#F44336',
   },
-
-  // Additional utility colors
-  border: {
-    primary: '#EAE8FF',
-    secondary: '#949FFF',
-    tertiary: '#F7F7F7',
-  },
-
-  overlay: 'rgba(30, 26, 62, 0.5)',
+  overlay: 'rgba(0, 0, 0, 0.7)',
 } as const;
 
-/**
- * Typography system based on design.json specifications
- */
 export const typography = {
   fonts: {
-    primary: 'PramukhRounded-Black',
-    secondary: 'PramukhRounded-Regular',
-    display: 'PramukhRounded-Black',
-    heading: 'PramukhRounded-Bold',
-    subheading: 'PramukhRounded-Semibold',
-    body: 'PramukhRounded-Regular',
-    'body-bold': 'PramukhRounded-Bold',
-    'body-medium': 'PramukhRounded-Semibold',
-    'body-light': 'PramukhRounded-Light',
+    // Headings - Pramukh Rounded
+    display: 'PramukhRounded-Bold',
+    headline: 'PramukhRounded-Bold',
+    headline2: 'PramukhRounded-Semibold',
+    // Body/UI - SF Pro Rounded
+    subtitle: 'SF-Pro-Rounded-Medium',
+    body: 'SF-Pro-Rounded-Regular',
+    caption: 'SF-Pro-Rounded-Regular',
+    button: 'SF-Pro-Rounded-Semibold',
+    numeric: 'SF-Pro-Rounded-Regular',
   },
-
   styles: {
-    h1: {
-      font: 'PramukhRounded-Black',
-      size: 36,
-      weight: 'black',
-    },
-    h2: {
-      font: 'PramukhRounded-Bold',
-      size: 24,
-      weight: 'bold',
-    },
-    h3: {
-      font: 'PramukhRounded-Bold',
-      size: 18,
-      weight: 'bold',
-    },
-    body: {
-      font: 'PramukhRounded-Regular',
-      size: 16,
-      weight: 'regular',
-    },
-    label: {
-      font: 'PramukhRounded-Semibold',
-      size: 12,
-      weight: 'semibold',
-    },
-    caption: {
-      font: 'PramukhRounded-Regular',
-      size: 12,
-      weight: 'regular',
-    },
-  },
-
-  weights: {
-    regular: '400',
-    medium: '500',
-    semibold: '600',
-    bold: '700',
-  },
-
-  lineHeights: {
-    tight: 1.2,
-    normal: 1.4,
-    relaxed: 1.6,
+    displayLarge: { size: 48, weight: 'bold', lineHeight: 1.1 },
+    headline1: { size: 32, weight: 'bold', lineHeight: 1.2 },
+    headline2: { size: 24, weight: '600', lineHeight: 1.3 },
+    subtitle1: { size: 18, weight: '500', lineHeight: 1.4 },
+    body1: { size: 16, weight: '400', lineHeight: 1.5 },
+    caption: { size: 14, weight: '400', lineHeight: 1.5 },
+    buttonLarge: { size: 18, weight: '600', lineHeight: 1.1 },
   },
 } as const;
 
-/**
- * Layout system based on design.json specifications
- */
-export const layout = {
-  containerPadding: 24,
-  elementSpacing: 16,
-  cornerRadius: 20,
-} as const;
-
-/**
- * Spacing system based on 8px grid
- */
 export const spacing = {
-  xs: 4, // 0.5 * 8px
-  sm: 8, // 1 * 8px
-  md: 16, // 2 * 8px (elementSpacing from design.json)
-  lg: 24, // 3 * 8px (containerPadding from design.json)
-  xl: 32, // 4 * 8px
-  xxl: 48, // 6 * 8px
-  xxxl: 64, // 8 * 8px
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
 } as const;
 
-/**
- * Border radius values based on design.json
- */
 export const borderRadius = {
-  sm: 4,
-  md: 8,
-  lg: 12, // Button corner radius from design.json
-  xl: 16, // Quest card corner radius from design.json
-  xxl: 20, // Default corner radius from design.json
-  modal: 24, // Modal corner radius from design.json
-  fab: 28, // FAB corner radius from design.json
+  sm: 8,
+  md: 16,
+  lg: 24,
   full: 9999,
 } as const;
 
-/**
- * Shadow definitions
- */
 export const shadows = {
-  sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  md: {
+  card: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 3,
   },
 } as const;
 
-/**
- * Animation durations
- */
-export const animations = {
-  fast: 150,
-  normal: 250,
-  slow: 350,
+export const components = {
+  button: { height: 48, borderRadius: 8 },
+  input: { height: 48, borderRadius: 8 },
+  card: { borderRadius: 16, padding: 16 },
+  icon: { sizeM: 24, sizeL: 32 },
 } as const;
 
-/**
- * Breakpoints for responsive design
- */
-export const breakpoints = {
-  sm: 375, // Small phones
-  md: 414, // Large phones
-  lg: 768, // Tablets
-  xl: 1024, // Large tablets
-} as const;
-
-/**
- * Complete design tokens object
- */
 export const designTokens = {
   colors,
   typography,
-  layout,
   spacing,
   borderRadius,
   shadows,
-  animations,
-  breakpoints,
+  components,
 } as const;

@@ -1,5 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, StatusBar } from 'react-native';
+import { View, Animated, StatusBar, Dimensions, Image, StyleSheet } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { splashVideo } from '@/assets/images';
+
+const { width, height } = Dimensions.get('window');
 
 interface SplashScreenProps {
   onAnimationComplete?: () => void;
@@ -10,51 +14,66 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   onAnimationComplete,
   isReady = false,
 }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const logoScale = useRef(new Animated.Value(0.8)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  const player = useVideoPlayer(splashVideo, (p) => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+
+  const shake = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 5, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -5, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 4, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -4, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+    ]).start();
+  };
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 8,
-        useNativeDriver: true,
-      }),
+      Animated.timing(logoOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.spring(logoScale, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }),
     ]).start();
+
+    const shakeInterval = setInterval(shake, 2000);
+    return () => clearInterval(shakeInterval);
   }, []);
 
   useEffect(() => {
     if (isReady) {
-      const timer = setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1.1,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-        ]).start(() => onAnimationComplete?.());
-      }, 500);
-      return () => clearTimeout(timer);
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => onAnimationComplete?.());
     }
-  }, [isReady, onAnimationComplete]);
+  }, [isReady, onAnimationComplete, fadeAnim]);
 
   return (
-    <View className="flex-1 justify-center items-center bg-black">
-      <StatusBar barStyle="light-content" backgroundColor="#000000" translucent />
-      <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
-        <Text className="text-white text-[60px] font-display-artistic font-bold">RAIL</Text>
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      <StatusBar barStyle="light-content" backgroundColor="#000" translucent />
+      <VideoView
+        player={player}
+        style={styles.video}
+        contentFit="cover"
+        nativeControls={false}
+      />
+      <Animated.View style={[styles.logoContainer, { opacity: logoOpacity, transform: [{ scale: logoScale }, { translateX: shakeAnim }] }]}>
+        <Image source={require('@/assets/app-icon/logo-transparent.png')} style={styles.logo} resizeMode="contain" />
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#000' },
+  video: { width, height, position: 'absolute' },
+  logoContainer: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' },
+  logo: { width: 120, height: 120 },
+});

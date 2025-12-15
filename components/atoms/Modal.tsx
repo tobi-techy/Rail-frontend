@@ -21,70 +21,41 @@ export const Modal: React.FC<ModalProps> = ({
   className,
   style,
 }) => {
-  const backdropStyle: ViewStyle = {
-    flex: 1,
-    backgroundColor: colors.overlay, // rgba(0, 0, 0, 0.5)
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  };
-
-  const modalContentStyle: ViewStyle = {
-    backgroundColor: colors.background.main, // #FFFFFF
-    borderRadius: borderRadius.modal, // 24px from design.json
-    padding: 20,
-    maxWidth: '90%',
-    maxHeight: '80%',
-  };
-
-  const closeButtonStyle: ViewStyle = {
-    alignSelf: 'flex-end',
-    padding: 8,
-    marginBottom: 8,
-  };
-
-  const closeButtonTextStyle = {
-    fontSize: 18,
-    color: colors.text.secondary,
-    fontWeight: 'bold' as const,
-  };
-
-  const combinedModalStyle = [modalContentStyle, style];
-
-  const handleBackdropPress = () => {
-    if (closeOnBackdrop) {
-      onClose();
-    }
-  };
-
   return (
-    <RNModal
-      visible={isVisible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <RNModal visible={isVisible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity
-        style={backdropStyle}
+        style={{
+          flex: 1,
+          backgroundColor: colors.overlay,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20,
+        }}
         activeOpacity={1}
-        onPress={handleBackdropPress}
+        onPress={closeOnBackdrop ? onClose : undefined}
       >
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={(e) => e.stopPropagation()}
-        >
+        <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
           <View
             className={className}
-            style={combinedModalStyle}
+            style={[
+              {
+                backgroundColor: colors.background.main,
+                borderRadius: borderRadius.lg,
+                padding: 20,
+                maxWidth: '90%',
+                maxHeight: '80%',
+              },
+              style,
+            ]}
           >
             {showCloseButton && (
               <TouchableOpacity
-                style={closeButtonStyle}
+                style={{ alignSelf: 'flex-end', padding: 8, marginBottom: 8 }}
                 onPress={onClose}
                 accessibilityLabel="Close modal"
                 accessibilityRole="button"
               >
-                <Text style={closeButtonTextStyle}>×</Text>
+                <Text style={{ fontSize: 18, color: colors.text.secondary, fontWeight: 'bold' }}>×</Text>
               </TouchableOpacity>
             )}
             {children}

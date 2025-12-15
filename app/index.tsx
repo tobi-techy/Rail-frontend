@@ -13,12 +13,23 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { onBoard1, onBoard2, onBoard3, onBoard4 } from '../assets/images';
 import { Button } from '@/components/ui';
+import CurrencyExchange from '@/assets/Icons/currency-exchange-13.svg';
+import Finance from '@/assets/Icons/finance-26.svg';
+import Wallet from '@/assets/Icons/wallet-3.svg';
+import Ethereum from '@/assets/Icons/ethereum-33.svg';
+import PieChart from '@/assets/Icons/pie-chart-15.svg';
+import DataExploration from '@/assets/Icons/data-exploration-20.svg';
+import CreditCard from '@/assets/Icons/credit-card-8.svg';
+import Savings from '@/assets/Icons/savings-1.svg';
+import { Apple } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
 interface OnboardingSlide {
   key: string;
-  title: string;
+  titleTop: string;
+  titleBottom: [string, string];
+  icons: React.FC<{ width: number; height: number; fill?: string }>[];
   description: string;
   video: any;
   backgroundColor: string;
@@ -31,7 +42,9 @@ interface OnboardingSlide {
 const onboardingSlides: OnboardingSlide[] = [
   {
     key: '1',
-    title: 'Finance built\n for the internet generation.',
+    titleTop: 'Finance built',
+    titleBottom: ['for the', 'internet generation.'],
+    icons: [CurrencyExchange, Finance],
     description:
       "We're flipping the script—no suits, no gatekeeping, just DeFi speed and TradFi clout. Your money, your rules.",
     video: onBoard1,
@@ -43,7 +56,9 @@ const onboardingSlides: OnboardingSlide[] = [
   },
   {
     key: '2',
-    title: 'Top-Up\nIn A Blink',
+    titleTop: 'Top-Up',
+    titleBottom: ['In A', 'Blink'],
+    icons: [Wallet, Ethereum],
     description:
       "Stablecoins on EVM & Solana hit your wallet faster than your ex's apology. Zero waiting, all flexing.",
     video: onBoard2,
@@ -55,7 +70,9 @@ const onboardingSlides: OnboardingSlide[] = [
   },
   {
     key: '3',
-    title: 'Invest\nLike A Stan',
+    titleTop: 'Invest',
+    titleBottom: ['Like A', 'Stan'],
+    icons: [PieChart, DataExploration],
     description:
       "Pre-built baskets curated by the smartest nerds. Tech moonshots, eco glow-ups—pick your vibe, we'll handle the rest.",
     video: onBoard3,
@@ -67,7 +84,9 @@ const onboardingSlides: OnboardingSlide[] = [
   },
   {
     key: '4',
-    title: 'Swipe\nStack & Repeat',
+    titleTop: 'Swipe',
+    titleBottom: ['Stack &', 'Repeat'],
+    icons: [CreditCard, Savings],
     description:
       'Cop a card that rounds up every latte and yeets the spare change straight into your portfolio. Cash-back? More like bag-back.',
     video: onBoard4,
@@ -88,16 +107,30 @@ function VideoSlide({ item }: { item: OnboardingSlide }) {
     player.play();
   });
 
+  const [Icon1, Icon2] = item.icons;
+
   return (
     <View
       className="h-full w-full flex-1 items-center overflow-hidden"
       style={{ width: width, backgroundColor: item.backgroundColor }}>
       <View className="w-full flex-1 items-start px-4 pt-24">
-        <Text
-          className={`tracking-wides w-full font-display text-[50px] font-black uppercase ${item.textColor}`}>
-          {item.title}
-        </Text>
-        <Text className="mt-4 max-w-xs font-body text-[12px] text-[#fff] opacity-80">
+        <View className="flex-row flex-wrap items-center">
+          <Text className={`font-display text-[50px] font-black uppercase ${item.textColor}`}>
+            {item.titleTop}{' '}
+          </Text>
+          <Icon1 width={40} height={40} fill="#fff" />
+        </View>
+        <View className="flex-row flex-wrap items-center">
+          <Text className={`font-display text-[50px] font-black uppercase ${item.textColor}`}>
+            {item.titleBottom[0]}{' '}
+          </Text>
+          <Icon2 width={40} height={40} fill="#fff" />
+          <Text className={`font-display text-[50px] font-black uppercase ${item.textColor}`}>
+            {' '}
+            {item.titleBottom[1]}
+          </Text>
+        </View>
+        <Text className="mt-4 font-body text-[14px] leading-5 text-white/80">
           {item.description}
         </Text>
       </View>
@@ -195,15 +228,19 @@ export default function App() {
 
       <View className="absolute bottom-6 w-full items-center gap-y-2 px-6">
         <Button
-          title="Create an account"
-          variant="primary"
-          onPress={() => router.push('/(auth)/create-passcode')}
+          title="Sign in with Apple"
+          leftIcon={<Apple size={24} color="#000" />}
+          size="large"
+          onPress={() => router.push('/(tabs)')}
+          variant="black"
         />
-        <TouchableOpacity onPress={() => router.push('/login-passcode')}>
-          <Text className="text-center font-body-medium text-[14px] text-border-primary">
-            Already have an account?
-          </Text>
-        </TouchableOpacity>
+        <Button
+          title="Create an account"
+          leftIcon={<Apple size={24} color="#000" />}
+          size="large"
+          onPress={() => router.push('/(tabs)')}
+          variant="white"
+        />
       </View>
     </View>
   );

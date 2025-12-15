@@ -3,10 +3,7 @@ import * as Sentry from '@sentry/react-native';
 const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
 
 export function initSentry() {
-  if (!SENTRY_DSN) {
-    if (!__DEV__) {
-      console.warn('Sentry DSN not configured');
-    }
+  if (!SENTRY_DSN || SENTRY_DSN.includes('your-sentry-dsn')) {
     return;
   }
 

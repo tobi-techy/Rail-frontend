@@ -13,15 +13,9 @@ import { ActionSlideshow, SlideData } from '@/components/molecules/ActionSlidesh
 const Dashboard = () => {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Fetch portfolio overview with automatic refetching
-  const { 
-    data: portfolio, 
-    isLoading, 
-    isError, 
-    error,
-    refetch 
-  } = usePortfolioOverview();
+  const { data: portfolio, isLoading, isError, error, refetch } = usePortfolioOverview();
 
   // Pull to refresh handler
   const onRefresh = useCallback(async () => {
@@ -49,22 +43,21 @@ const Dashboard = () => {
     navigation.setOptions({
       headerShown: true,
       headerLeft: () => (
-        <View className='flex-row items-center gap-x-3 pl-[14px]'>
-          <Grid3X3Icon size={28} strokeWidth={0.8} fill={"#000"} color={"#fff"}  />
-      
+        <View className="flex-row items-center gap-x-3 pl-[14px]">
+          <Grid3X3Icon size={28} strokeWidth={0.8} fill={'#000'} color={'#fff'} />
         </View>
       ),
       headerRight: () => (
-        <View className='flex-row gap-x-[12px] items-center pr-[14px]'>
-         <Bell size={24} strokeWidth={2} color={"#000"} />
-         <User size={24} strokeWidth={2} color={"#000"}  />
+        <View className="flex-row items-center gap-x-[12px] pr-[14px]">
+          <Bell size={24} strokeWidth={2} color={'#000'} />
+          <User size={24} strokeWidth={2} color={'#000'} />
         </View>
       ),
-      title: "",
+      title: '',
       headerStyle: {
         backgroundColor: 'transparent',
       },
-    })
+    });
   }, [navigation]);
 
   const transactions = useMemo<Transaction[]>(
@@ -113,8 +106,8 @@ const Dashboard = () => {
     []
   );
 
-   // Default slides with custom actions
-   const defaultSlides: SlideData[] = [
+  // Default slides with custom actions
+  const defaultSlides: SlideData[] = [
     {
       id: '1',
       title: 'Verify Your Identity',
@@ -156,35 +149,27 @@ const Dashboard = () => {
   // Only show error if no cached data exists and it's not a 404
   const is404 = error?.error?.code === 'HTTP_404';
   const showError = isError && !portfolio && !is404;
-  
+
   // Use loading placeholder values when no data yet
   const displayBalance = portfolio ? formatCurrency(portfolio.totalPortfolio) : '$---';
   const displayPerformance = portfolio ? formatPercentage(portfolio.performanceLast30d) : '---%';
   const displayBuyingPower = portfolio ? formatCurrency(portfolio.buyingPower) : '$---';
 
   return (
-    <ScrollView 
+    <ScrollView
       className="flex-1"
       refreshControl={
-        <RefreshControl 
-          refreshing={refreshing} 
-          onRefresh={onRefresh}
-          tintColor="#000"
-        />
-      }
-    >
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
+      }>
       <View className="px-[14px] py-4">
         {/* Error Banner (only shows if no cached data) */}
         {showError && (
           <View className="mb-4 rounded-2xl bg-red-50 px-4 py-3">
-            <Text className="text-sm font-body-bold text-red-900">Unable to load portfolio</Text>
+            <Text className="font-body-bold text-sm text-red-900">Unable to load portfolio</Text>
             <Text className="mt-1 text-xs text-red-700">
               {error?.error?.message || 'Please check your connection.'}
             </Text>
-            <Text 
-              className="mt-2 text-xs font-body-bold text-red-600" 
-              onPress={() => refetch()}
-            >
+            <Text className="font-body-bold mt-2 text-xs text-red-600" onPress={() => refetch()}>
               Tap to retry
             </Text>
           </View>
@@ -200,24 +185,31 @@ const Dashboard = () => {
             className="rounded-x"
           />
 
-      <View className="flex-row w-[80%] gap-3 mt-4">
-       <Button title='Add funds' onPress={( ) => router.navigate("/deposit")} leftIcon={<PlusIcon size={24} color="white" />}  className="w-[40%]" />
-       <Button title='Withdraw' onPress={( ) => router.navigate("/withdraw")} leftIcon={<ArrowDown size={24} color="black" />} variant='secondary' className="w-[40%]" />
-      </View>
+          <View className="mt-4 flex-row gap-3">
+            <Button
+              title="Receive"
+              onPress={() => router.navigate('/deposit')}
+              leftIcon={<PlusIcon size={24} color="white" />}
+              size="small"
+            />
+            <Button
+              title="Send"
+              onPress={() => router.navigate('/withdraw')}
+              leftIcon={<ArrowDown size={24} color="black" />}
+              size="small"
+              variant="white"
+            />
+          </View>
         </View>
 
-          {/* Action Slideshow */}
-      <ActionSlideshow 
-        slides={defaultSlides}
-        autoPlay={true}
-        autoPlayInterval={5000}
-      />
+        {/* Action Slideshow */}
+        <ActionSlideshow slides={defaultSlides} autoPlay={true} autoPlayInterval={5000} />
 
         {/* My Baskets Section */}
         <View className="mb-6">
-          <Text className="text-[24px] font-body-bold mb-3">My baskets</Text>
-          
-          <View className="flex-row mb-4">
+          <Text className="font-body-bold mb-3 text-[18px]">My baskets</Text>
+
+          <View className="mb-4 flex-row">
             <BasketItemCard
               code="GME-08"
               status="Safe"
@@ -226,11 +218,11 @@ const Dashboard = () => {
               performanceType="positive"
               badges={[
                 { color: '#FF6B6B', icon: 'trending-up' },
-                { color: '#4CAF50', icon: 'shield-checkmark' }
+                { color: '#4CAF50', icon: 'shield-checkmark' },
               ]}
               className="mr-3 flex-1"
             />
-            
+
             <BasketItemCard
               code="FRVR"
               status="Safe"
@@ -239,7 +231,7 @@ const Dashboard = () => {
               performanceType="positive"
               badges={[
                 { color: '#4CAF50', icon: 'shield-checkmark' },
-                { color: '#2196F3', icon: 'time' }
+                { color: '#2196F3', icon: 'time' },
               ]}
               className="flex-1"
             />
@@ -248,7 +240,7 @@ const Dashboard = () => {
 
         {/* Transaction History Section */}
         <View className="mb-8">
-          <View className="rounded-3xl px- py-5">
+          <View className="px- rounded-3xl py-5">
             <TransactionList
               title="Transaction History"
               transactions={transactions}

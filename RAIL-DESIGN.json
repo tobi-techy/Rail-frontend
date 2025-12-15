@@ -1,0 +1,168 @@
+{
+  "name": "Rail Design System",
+  "version": "1.4.0",
+  "principles": [
+    "Vivid Minimalism: High-contrast white/black with a single, energetic blue accent.",
+    "Data Clarity: Strict use of monospace numerics for perfect data alignment.",
+    "Brand Cohesion: Pramukh Rounded used consistently for all major headings to enhance modern, friendly tone."
+  ],
+  "theme": {
+    "default": "Light Mode",
+    "primary_mode": "Light Mode (Maximized white space for optimal data clarity)"
+  },
+  "color_palette": {
+    "semantics": {
+      "PrimaryAccent": {
+        "hex": "#1B84FF", 
+        "description": "Vivid Digital Blue - Energetic, modern, and clean."
+      },
+      "SecondaryAccent": {
+        "hex": "#487984",
+        "description": "Cool Muted Blue-Green - Used for subtle progress indicators."
+      },
+      "Background": {
+        "hex": "#FFFFFF",
+        "description": "Pure White - Dominant color for main screens (Fuse UI style)."
+      },
+      "Surface": {
+        "hex": "#F5F5F5",
+        "description": "Off-White/Light Gray - Used for card backgrounds."
+      },
+      "TextPrimary": {
+        "hex": "#121212",
+        "description": "Near-Black - For all body text and headings."
+      },
+      "TextSecondary": {
+        "hex": "#757575",
+        "description": "Medium Gray - For supplementary information."
+      },
+      "Success": {
+        "hex": "#00C853",
+        "description": "Standard green for positive gains."
+      },
+      "Destructive": {
+        "hex": "#F44336",
+        "description": "Standard red for losses and warnings."
+      },
+      "Overlay": {
+        "hex": "#000000B3",
+        "description": "Semi-transparent black (70% opacity) for modal backgrounds."
+      }
+    }
+  },
+  "typography": {
+    "font_family": {
+      "primary": "SF Pro Rounded",
+      "secondary": "Pramukh Rounded",
+      "numeric": "SF Pro Rounded - Monospace/Lining Figures (For critical data and financial alignment)"
+    },
+    "tokens": {
+      "DisplayLarge": {
+        "font_family": "secondary", 
+        "size": "48px",
+        "weight": "Bold",
+        "line_height": "1.1",
+        "color": "TextPrimary",
+        "use_case": "Hero text, app onboarding main titles."
+      },
+      "Headline1": {
+        "font_family": "secondary",
+        "size": "32px",
+        "weight": "Bold",
+        "line_height": "1.2",
+        "use_case": "Main Balance/AUM value, large section titles."
+      },
+      "Headline2": {
+        "font_family": "secondary",
+        "size": "24px",
+        "weight": "SemiBold",
+        "line_height": "1.3",
+        "use_case": "Section titles, card headers."
+      },
+      "Subtitle1": {
+        "font_family": "primary", 
+        "size": "18px",
+        "weight": "Medium",
+        "line_height": "1.4",
+        "use_case": "List item titles, Conductor names."
+      },
+      "Body1": {
+        "font_family": "primary",
+        "size": "16px",
+        "weight": "Regular",
+        "line_height": "1.5",
+        "use_case": "Standard paragraph text, transaction details."
+      },
+      "Caption": {
+        "font_family": "primary",
+        "size": "14px",
+        "weight": "Regular",
+        "line_height": "1.5",
+        "use_case": "Secondary details, helper text (TextSecondary color)."
+      },
+      "ButtonLarge": {
+        "font_family": "primary", 
+        "size": "18px",
+        "weight": "SemiBold",
+        "line_height": "1.1"
+      }
+    }
+  },
+  "spacing": {
+    "scale_unit": "8px",
+    "tokens": {
+      "unit_xs": "4px",
+      "unit_s": "8px",
+      "unit_m": "16px",
+      "unit_l": "24px",
+      "unit_xl": "32px",
+      "unit_xxl": "48px"
+    },
+    "use_cases": {
+      "GutterPadding": "unit_l",
+      "ElementSpacing": "unit_m",
+      "MicroSpacing": "unit_s"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary_cta": {
+        "background_color": "PrimaryAccent",
+        "text_color": "Background",
+        "corner_radius": "unit_s",
+        "height": "48px",
+        "border_style": "none"
+      },
+      "secondary_cta": {
+        "background_color": "Background",
+        "text_color": "PrimaryAccent",
+        "border_color": "PrimaryAccent",
+        "corner_radius": "unit_s",
+        "height": "48px",
+        "border_style": "1px solid"
+      }
+    },
+    "cards": {
+      "elevation": "3dp",
+      "background_color": "Surface",
+      "corner_radius": "unit_m",
+      "padding": "unit_m",
+      "shadow": "subtle, soft gray shadow"
+    },
+    "icons": {
+      "size_m": "24px",
+      "size_l": "32px",
+      "color": "TextPrimary"
+    },
+    "input_fields": {
+      "background_color": "Surface",
+      "border_radius": "unit_s",
+      "height": "48px",
+      "placeholder_color": "TextSecondary"
+    }
+  },
+  "brand_visual_rules": {
+    "imagery_style": "Pixelated, high-contrast, mosaic-style",
+    "usage": "Strictly limited to onboarding, marketing pages, loading screens, and non-transactional modals to maintain Core UI clarity."
+  }
+}

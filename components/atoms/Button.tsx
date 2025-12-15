@@ -9,7 +9,7 @@ import {
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
-  variant?: 'primary' | 'secondary' | 'outline' | 'indigo';
+  variant?: 'primary' | 'secondary';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   leftIcon?: React.ReactNode;
@@ -25,68 +25,35 @@ export const Button = forwardRef<View, ButtonProps>(({
   rightIcon,
   disabled,
   className = '',
+  testID,
   ...props
 }, ref) => {
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'secondary':
-        return 'bg-gray-100 border border-gray-200';
-      case 'outline':
-        return 'bg-transparent border-2 border-gray-300';
-      case 'indigo':
-        return 'bg-indigo-500 shadow-md';
-      default:
-        return 'bg-gray-900 border-2 border-gray-900';
-    }
-  };
-
-  const getTextStyles = () => {
-    switch (variant) {
-      case 'secondary':
-        return 'text-gray-900';
-      case 'outline':
-        return 'text-gray-900';
-      default:
-        return 'text-white';
-    }
-  };
-
-  const getSizeStyles = () => {
-    switch (size) {
-      case 'sm':
-        return 'px-6 py-3';
-      case 'md':
-        return 'px-6 py-4';
-      default:
-        return 'px-6 py-5';
-    }
-  };
-
-  const getTextSize = () => {
-    switch (size) {
-      case 'sm':
-        return 'text-sm';
-      case 'md':
-        return 'text-base';
-      default:
-        return 'text-lg';
-    }
-  };
+  const isPrimary = variant === 'primary';
+  const baseStyle = isPrimary
+    ? 'bg-primary-accent'
+    : 'bg-background-main border border-primary-accent';
+  const textColor = isPrimary ? 'text-white' : 'text-primary-accent';
+  const loaderColor = isPrimary ? '#FFFFFF' : '#1B84FF';
 
   return (
     <TouchableOpacity
       ref={ref}
       disabled={disabled || loading}
-      className={`w-full flex-row items-center justify-center rounded-full ${getVariantStyles()} ${getSizeStyles()} ${
+      testID={testID}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      className={`w-full flex-row items-center justify-center rounded-sm h-12 ${baseStyle} ${
         disabled ? 'opacity-50' : ''
       } ${className}`}
       {...props}>
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' || variant === 'indigo' ? '#fff' : '#111'} size="small" />
+        <ActivityIndicator color={loaderColor} size="small" />
       ) : (
         <View className="flex-row items-center">
           {leftIcon && <View className="mr-2">{leftIcon}</View>}
-          <Text className={`font-body-semibold ${getTextSize()} ${getTextStyles()}`}>{title}</Text>
+          <Text className={`font-button text-button-lg ${textColor}`}>{title}</Text>
           {rightIcon && <View className="ml-2">{rightIcon}</View>}
         </View>
       )}

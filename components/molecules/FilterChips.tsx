@@ -34,17 +34,13 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingHorizontal: spacing.lg,
-          gap: spacing.sm,
-        }}
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}
       >
-        {/* Clear All Chip */}
         {showClearAll && hasSelectedChips && (
           <TouchableOpacity
             onPress={onClearAll}
             style={{
-              backgroundColor: colors.semantic.danger,
+              backgroundColor: colors.semantic.destructive,
               paddingHorizontal: spacing.md,
               paddingVertical: spacing.sm,
               borderRadius: borderRadius.full,
@@ -54,34 +50,26 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
             accessibilityLabel="Clear all filters"
             accessibilityRole="button"
           >
-            <Text
-              style={{
-                color: colors.text.onPrimary,
-                fontSize: typography.styles.label.size,
-                fontFamily: typography.fonts.secondary,
-                fontWeight: typography.weights.medium,
-              }}
-            >
+            <Text style={{ color: '#FFFFFF', fontSize: 12, fontFamily: typography.fonts.caption, fontWeight: '500' }}>
               Clear All
             </Text>
           </TouchableOpacity>
         )}
 
-        {/* Filter Chips */}
         {chips.map((chip) => {
           const isSelected = selectedChips.includes(chip.value);
-          
+
           return (
             <TouchableOpacity
               key={chip.id}
               onPress={() => onChipPress(chip.value)}
               style={{
-                backgroundColor: isSelected ? colors.primary.lavender : colors.surface.light,
+                backgroundColor: isSelected ? colors.primary.accent : colors.background.surface,
                 paddingHorizontal: spacing.md,
                 paddingVertical: spacing.sm,
                 borderRadius: borderRadius.full,
                 borderWidth: 1,
-                borderColor: isSelected ? colors.primary.lavender : colors.border.primary,
+                borderColor: isSelected ? colors.primary.accent : colors.background.surface,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -91,10 +79,10 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
             >
               <Text
                 style={{
-                  color: isSelected ? colors.text.onPrimary : colors.text.primary,
-                  fontSize: typography.styles.label.size,
-                  fontFamily: typography.fonts.secondary,
-                  fontWeight: typography.weights.medium,
+                  color: isSelected ? '#FFFFFF' : colors.text.primary,
+                  fontSize: 12,
+                  fontFamily: typography.fonts.caption,
+                  fontWeight: '500',
                 }}
               >
                 {chip.label}

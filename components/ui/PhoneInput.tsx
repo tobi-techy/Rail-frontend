@@ -62,23 +62,16 @@ export const PhoneInput = forwardRef<TextInput, PhoneInputProps>(
     const animatedValue = useRef(new Animated.Value(0)).current;
     const inputRef = useRef<TextInput>(null);
 
-    // Format phone number based on country
     const formatPhoneNumber = (phone: string, country: CountryCode) => {
-      // Remove all non-numeric characters
       const cleaned = phone.replace(/\D/g, '');
-      
       if (country.code === 'CA' || country.code === 'US') {
-        // North American format: (XXX) XXX-XXXX
         if (cleaned.length >= 6) {
           return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
         } else if (cleaned.length >= 3) {
           return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
-        } else {
-          return cleaned;
         }
+        return cleaned;
       }
-      
-      // For other countries, return with spaces every 3-4 digits
       return cleaned.replace(/(\d{3,4})(?=\d)/g, '$1 ');
     };
 
@@ -93,43 +86,24 @@ export const PhoneInput = forwardRef<TextInput, PhoneInputProps>(
       setShowPicker(false);
       const formatted = formatPhoneNumber(value, country);
       onChangeText(value, country.dialCode, formatted);
-      // Focus input after selecting country
       setTimeout(() => inputRef.current?.focus(), 100);
     };
 
     const handleFocus = () => {
       setIsFocused(true);
-      Animated.timing(animatedValue, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: false,
-      }).start();
+      Animated.timing(animatedValue, { toValue: 1, duration: 200, useNativeDriver: false }).start();
     };
 
     const handleBlur = () => {
       setIsFocused(false);
       if (!value) {
-        Animated.timing(animatedValue, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: false,
-        }).start();
+        Animated.timing(animatedValue, { toValue: 0, duration: 200, useNativeDriver: false }).start();
       }
     };
 
     const borderColor = animatedValue.interpolate({
       inputRange: [0, 1],
-      outputRange: ['#E5E7EB', '#374151'],
-    });
-
-    const labelScale = animatedValue.interpolate({
-      inputRange: [0, 1],
-      outputRange: [1, 0.85],
-    });
-
-    const labelTranslateY = animatedValue.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, -28],
+      outputRange: ['#F5F5F5', '#1B84FF'],
     });
 
     const formattedValue = formatPhoneNumber(value, selectedCountry);
@@ -137,31 +111,19 @@ export const PhoneInput = forwardRef<TextInput, PhoneInputProps>(
     return (
       <View className={`w-full ${containerClassName}`}>
         <View className="relative">
-          {/* Animated Border */}
-          <Animated.View
-            style={{
-              borderColor,
-              borderWidth: 2,
-            }}
-            className="rounded-2xl bg-gray-50 focus:bg-white"
-          >
-            {/* Input Container */}
+          <Animated.View style={{ borderColor, borderWidth: 2 }} className="rounded-sm bg-surface">
             <View className="flex-row items-center">
-              {/* Country Picker */}
               {showCountryPicker && (
                 <TouchableOpacity
                   onPress={() => setShowPicker(true)}
-                  className="flex-row items-center border-r border-gray-200 px-4 py-4"
+                  className="flex-row items-center border-r border-surface px-4 py-4"
                 >
                   <Text className="mr-1 text-lg">{selectedCountry.flag}</Text>
-                  <Text className="mr-1 font-body-medium text-base text-gray-700">
-                    {selectedCountry.dialCode}
-                  </Text>
-                  <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                  <Text className="mr-1 font-body text-body text-text-primary">{selectedCountry.dialCode}</Text>
+                  <Ionicons name="chevron-down" size={16} color="#757575" />
                 </TouchableOpacity>
               )}
 
-              {/* Text Input */}
               <View className="flex-1 relative">
                 <TextInput
                   ref={inputRef}
@@ -169,96 +131,62 @@ export const PhoneInput = forwardRef<TextInput, PhoneInputProps>(
                   onChangeText={handleTextChange}
                   onFocus={handleFocus}
                   onBlur={handleBlur}
-                  className="px-4 py-4 font-body-medium text-base text-gray-900"
-                  placeholderTextColor="#9CA3AF"
+                  className="px-4 py-4 font-body text-body text-text-primary"
+                  placeholderTextColor="#757575"
                   keyboardType="phone-pad"
                   textContentType="telephoneNumber"
                   {...props}
                 />
-                
-                {/* Floating Label */}
-                {label && (
-                  <Animated.Text
-                    style={{
-                      transform: [
-                        { scale: labelScale },
-                        { translateY: labelTranslateY },
-                      ],
-                    }}
-                    className={`absolute left-4 font-body-medium text-gray-500 ${
-                      isFocused || value ? 'top-2 text-sm' : 'top-4 text-base'
-                    }`}
-                  >
-                    {label}
-                  </Animated.Text>
-                )}
               </View>
 
-              {/* Clear Button */}
               {value && (
                 <TouchableOpacity
                   onPress={() => onChangeText('', selectedCountry.dialCode, '')}
-                  className="mr-4 rounded-full bg-gray-300 p-1"
+                  className="mr-4 rounded-full bg-surface p-1"
                 >
-                  <Ionicons name="close" size={16} color="#6B7280" />
+                  <Ionicons name="close" size={16} color="#757575" />
                 </TouchableOpacity>
               )}
             </View>
           </Animated.View>
         </View>
 
-        {/* Error Message */}
         {error && (
-          <View className="mt-2 flex-row items-center rounded-xl bg-red-50 px-3 py-2">
-            <View className="mr-2 rounded-full bg-red-100 p-1">
-              <Ionicons name="close-circle" size={16} color="#DC2626" />
+          <View className="mt-2 flex-row items-center rounded-sm bg-destructive/10 px-3 py-2">
+            <View className="mr-2 rounded-full bg-destructive/20 p-1">
+              <Ionicons name="close-circle" size={16} color="#F44336" />
             </View>
-            <Text className="font-body-medium text-sm text-red-700">{error}</Text>
+            <Text className="font-body text-caption text-destructive">{error}</Text>
           </View>
         )}
 
-        {/* Country Picker Modal */}
-        <Modal
-          visible={showPicker}
-          animationType="slide"
-          presentationStyle="pageSheet"
-        >
-          <View className="flex-1 bg-white">
-            {/* Header */}
-            <View className="border-b border-gray-200 px-6 py-4">
+        <Modal visible={showPicker} animationType="slide" presentationStyle="pageSheet">
+          <View className="flex-1 bg-background-main">
+            <View className="border-b border-surface px-6 py-4">
               <View className="flex-row items-center justify-between">
                 <TouchableOpacity onPress={() => setShowPicker(false)}>
-                  <Ionicons name="close" size={24} color="#374151" />
+                  <Ionicons name="close" size={24} color="#121212" />
                 </TouchableOpacity>
-                <Text className="font-label text-lg text-gray-900">
-                  Select Country
-                </Text>
+                <Text className="font-headline-2 text-subtitle text-text-primary">Select Country</Text>
                 <View style={{ width: 24 }} />
               </View>
             </View>
 
-            {/* Country List */}
             <ScrollView className="flex-1">
               {countryCodes.map((country) => (
                 <TouchableOpacity
                   key={country.code}
                   onPress={() => handleCountrySelect(country)}
-                  className={`flex-row items-center border-b border-gray-100 px-6 py-4 ${
-                    selectedCountry.code === country.code ? 'bg-gray-50' : ''
+                  className={`flex-row items-center border-b border-surface px-6 py-4 ${
+                    selectedCountry.code === country.code ? 'bg-surface' : ''
                   }`}
                 >
                   <Text className="mr-3 text-2xl">{country.flag}</Text>
                   <View className="flex-1">
-                    <Text className="font-body-medium text-base text-gray-900">
-                      {country.country}
-                    </Text>
-                    <Text className="font-body text-sm text-gray-500">
-                      {country.dialCode}
-                    </Text>
+                    <Text className="font-body text-body text-text-primary">{country.country}</Text>
+                    <Text className="font-caption text-caption text-text-secondary">{country.dialCode}</Text>
                   </View>
-                  {selectedCountry.code === country.code && (
-                    <Ionicons name="checkmark" size={20} color="#059669" />
-                  )}
+                  {selectedCountry.code === country.code && <Ionicons name="checkmark" size={20} color="#00C853" />}
                 </TouchableOpacity>
               ))}
             </ScrollView>

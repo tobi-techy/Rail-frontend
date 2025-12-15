@@ -4,7 +4,7 @@
 
 // Auth store
 export { useAuthStore } from './authStore';
-export type { User } from './authStore';
+export type { User, RegistrationData } from './authStore';
 
 // Wallet store
 export { useWalletStore } from './walletStore';
@@ -21,3 +21,6 @@ export type {
 
 // UI store
 export { useUIStore } from './uiStore';
+
+// Auth store types (modular)
+export * from './auth/types';

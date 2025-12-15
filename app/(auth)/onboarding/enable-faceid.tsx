@@ -33,7 +33,7 @@ export default function EnableFaceIdScreen() {
         </View>
 
         <View className="mt-14">
-          <Passkey4Icon width={100} height={150} />
+          <Passkey4Icon width={200} height={250} fill={"#000"} />
           <View className="mt-8">
             <Text className="font-heading text-[32px] text-gray-900">{biometricLabel}</Text>
             <Text className="mt-4 font-body text-base leading-6 text-gray-600">

@@ -11,7 +11,6 @@ export interface HeaderProps {
   onLeftPress?: () => void;
   onRightPress?: () => void;
   showBackButton?: boolean;
-  backgroundColor?: string;
   className?: string;
 }
 
@@ -23,18 +22,11 @@ export const Header: React.FC<HeaderProps> = ({
   onLeftPress,
   onRightPress,
   showBackButton = false,
-  backgroundColor = 'bg-white',
   className,
 }) => {
   return (
-    <SafeAreaView className={backgroundColor}>
-      <View
-        className={`
-          flex-row items-center justify-between px-4 py-3
-          ${backgroundColor} ${className || ''}
-        `}
-      >
-        {/* Left Section */}
+    <SafeAreaView className="bg-background-main">
+      <View className={`flex-row items-center justify-between px-lg py-3 bg-background-main ${className || ''}`}>
         <View className="flex-row items-center flex-1">
           {(leftIcon || showBackButton) && (
             <TouchableOpacity
@@ -43,38 +35,24 @@ export const Header: React.FC<HeaderProps> = ({
               accessibilityRole="button"
               accessibilityLabel={showBackButton ? 'Go back' : 'Left action'}
             >
-              {leftIcon ||
-                (showBackButton && (
-                  <Icon
-                    library="ionicons"
-                    name="arrow-back"
-                    size={24}
-                    className="text-black"
-                  />
-                ))}
+              {leftIcon || (showBackButton && (
+                <Icon library="ionicons" name="arrow-back" size={24} className="text-text-primary" />
+              ))}
             </TouchableOpacity>
           )}
 
-          {/* Title and Subtitle */}
           <View className="flex-1">
-            <Text
-              className="text-black text-[24px] font-bold font-body-bold"
-              numberOfLines={1}
-            >
+            <Text className="text-text-primary text-headline-2 font-headline-2" numberOfLines={1}>
               {title}
             </Text>
             {subtitle && (
-              <Text
-                className="text-gray-400 text-sm font-secondary"
-                numberOfLines={1}
-              >
+              <Text className="text-text-secondary text-caption font-caption" numberOfLines={1}>
                 {subtitle}
               </Text>
             )}
           </View>
         </View>
 
-        {/* Right Section */}
         {rightIcon && (
           <TouchableOpacity
             onPress={onRightPress}

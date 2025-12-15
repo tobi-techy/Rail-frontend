@@ -58,7 +58,7 @@ export default function ForgotPassword() {
         bottomOffset={40}>
           <View className="flex-1 px-6 pb-6">
             <View className="mb-8 mt-4">
-              <Text className="font-body-bold text-[40px] text-gray-900" accessibilityRole="header">
+              <Text className="font-display text-[60px] text-gray-900" accessibilityRole="header">
                 Forgot password
               </Text>
               <Text className="mt-2 font-body-medium text-base text-gray-600">

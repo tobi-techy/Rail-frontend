@@ -4,27 +4,19 @@ import { View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import * as SplashScreen from 'expo-splash-screen';
 import { initSentry } from '@/lib/sentry';
 import { useFonts } from '@/hooks/useFonts';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
-import { SplashScreen as CustomSplashScreen } from '@/components/SplashScreen';
+import { SplashScreen } from '@/components/SplashScreen';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import queryClient from '@/api/queryClient';
 import '../global.css';
 
-// Initialize Sentry
 initSentry();
 
-// Prevent native splash from auto-hiding
-SplashScreen.preventAutoHideAsync();
-
-const App = () => {
+function AppNavigator() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}>
+    <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="login-passcode" />
       <Stack.Screen name="(auth)" />
@@ -34,56 +26,42 @@ const App = () => {
 }
 
 export default function Layout() {
-  const { fontsLoaded, error } = useFonts();
+  const { fontsLoaded } = useFonts();
   const [isAppReady, setIsAppReady] = useState(false);
-  const [showCustomSplash, setShowCustomSplash] = useState(true);
-
-  useEffect(() => {
-    async function prepare() {
-      if (fontsLoaded || error) {
-        // Hide native splash screen immediately
-        await SplashScreen.hideAsync();
-        // Then mark app as ready after delay
-        setTimeout(() => setIsAppReady(true), 1500);
-      }
-    }
-    prepare();
-  }, [fontsLoaded, error]);
+  const [showSplash, setShowSplash] = useState(true);
 
   useProtectedRoute();
 
+  useEffect(() => {
+    if (fontsLoaded) {
+      const timer = setTimeout(() => setIsAppReady(true), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [fontsLoaded]);
+
   const handleSplashComplete = useCallback(() => {
-    setShowCustomSplash(false);
+    setShowSplash(false);
   }, []);
 
-  if (showCustomSplash || !isAppReady) {
+  if (showSplash) {
     return (
-      <CustomSplashScreen
-        isReady={isAppReady}
-        onAnimationComplete={handleSplashComplete}
-      />
+      <View style={{ flex: 1, backgroundColor: '#000' }}>
+        <SplashScreen isReady={isAppReady} onAnimationComplete={handleSplashComplete} />
+      </View>
     );
   }
 
-  if (error) {
-    return (
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="login-passcode" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="basket/create" options={{ headerShown: false, presentation: 'modal' }} />
-      </Stack>
-    );
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: '#000' }} />;
   }
 
   return (
     <ErrorBoundary>
       <KeyboardProvider>
-        <View className="flex-1 bg-white">
+        <View style={{ flex: 1, backgroundColor: '#000' }}>
           <QueryClientProvider client={queryClient}>
             <SafeAreaProvider>
-              <App />
+              <AppNavigator />
             </SafeAreaProvider>
           </QueryClientProvider>
         </View>

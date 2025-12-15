@@ -1,133 +1,65 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./app/**/*.{js,ts,tsx}', './components/**/*.{js,ts,tsx}'],
-
-  get presets() {
-    return [require('nativewind/preset')];
-  },
+  presets: [require('nativewind/preset')],
   theme: {
     extend: {
       colors: {
-        // Primary colors
         primary: {
-          magenta: '#FB088F',
-          pink: '#F39ABE',
-          lavender: '#949FFF',
-          dark: '#1E1A3E',
-          'dark-blue': '#1E1F4B',
+          DEFAULT: '#1B84FF',
+          accent: '#1B84FF',
+          secondary: '#487984',
         },
-        // Accent colors
-        accent: {
-          'lime-green': '#D4FF00',
-          'soft-green': '#ADF48C',
-        },
-        // Background colors
         background: {
+          DEFAULT: '#FFFFFF',
           main: '#FFFFFF',
-          light: '#EAE8FF',
-          dark: '#1E1A3E',
+          surface: '#F5F5F5',
         },
-        // Surface colors
-        surface: {
-          card: '#F7F7F7',
-          light: '#EAE8FF',
-        },
-        // Text colors
+        surface: '#F5F5F5',
         text: {
-          primary: '#1E1A3E',
-          secondary: '#1E1F4B',
-          tertiary: '#949FFF',
-          'on-primary': '#FFFFFF',
-          'on-accent': '#1E1A3E',
+          primary: '#121212',
+          secondary: '#757575',
         },
-        // Semantic colors
-        semantic: {
-          success: '#ADF48C',
-          danger: '#FB088F',
-          warning: '#D4FF00',
-        },
-        // Border colors
-        border: {
-          primary: '#EAE8FF',
-          secondary: '#949FFF',
-          tertiary: '#F7F7F7',
-        },
-        overlay: 'rgba(30, 26, 62, 0.5)',
+        success: '#00C853',
+        destructive: '#F44336',
+        overlay: 'rgba(0, 0, 0, 0.7)',
       },
       fontFamily: {
-        // Display/Headings - PramukhRounded
-        display: ['PramukhRounded-Black'],
-        heading: ['PramukhRounded-Bold'],
-        subheading: ['PramukhRounded-Semibold'],
-        
-        // Body/UI text - Poppins
-        body: ['Poppins-Regular'],
-        'body-light': ['Poppins-Light'],
-        'body-medium': ['Poppins-Medium'],
-        'body-bold': ['Poppins-Bold'],
-        
-        // Semantic aliases
-        button: ['Poppins-Medium'],
-        caption: ['Poppins-Regular'],
-        label: ['Poppins-Medium'],
-        description: ['Poppins-Regular'],
+        // Headings - Pramukh Rounded (secondary)
+        display: ['PramukhRounded-Bold'],
+        headline: ['PramukhRounded-Bold'],
+        'headline-2': ['PramukhRounded-Semibold'],
+        // Body/UI - SF Pro Rounded (primary)
+        subtitle: ['SF-Pro-Rounded-Medium'],
+        body: ['SF-Pro-Rounded-Regular'],
+        caption: ['SF-Pro-Rounded-Regular'],
+        button: ['SF-Pro-Rounded-Semibold'],
+        numeric: ['SF-Pro-Rounded-Regular'],
       },
       fontSize: {
-        h1: ['36px', { lineHeight: '1.2' }],
-        h2: ['24px', { lineHeight: '1.2' }],
-        h3: ['18px', { lineHeight: '1.2' }],
-        body: ['16px', { lineHeight: '1.4' }],
-        label: ['12px', { lineHeight: '1.4' }],
-        caption: ['12px', { lineHeight: '1.4' }],
-      },
-      fontWeight: {
-        regular: '400',
-        medium: '500',
-        semibold: '600',
-        bold: '700',
-      },
-      lineHeight: {
-        tight: '1.2',
-        normal: '1.4',
-        relaxed: '1.6',
+        'display-lg': ['48px', { lineHeight: '1.1' }],
+        'headline-1': ['32px', { lineHeight: '1.2' }],
+        'headline-2': ['24px', { lineHeight: '1.3' }],
+        subtitle: ['18px', { lineHeight: '1.4' }],
+        body: ['16px', { lineHeight: '1.5' }],
+        caption: ['14px', { lineHeight: '1.5' }],
+        'button-lg': ['18px', { lineHeight: '1.1' }],
       },
       spacing: {
-        xs: '4px',  // 0.5 * 8px
-        sm: '8px',  // 1 * 8px
-        md: '16px', // 2 * 8px (elementSpacing)
-        lg: '24px', // 3 * 8px (containerPadding)
-        xl: '32px', // 4 * 8px
-        '2xl': '48px', // 6 * 8px
-        '3xl': '64px', // 8 * 8px
+        xs: '4px',
+        sm: '8px',
+        md: '16px',
+        lg: '24px',
+        xl: '32px',
+        xxl: '48px',
       },
       borderRadius: {
-        sm: '4px',
-        md: '8px',
-        lg: '12px',    // Button corner radius
-        xl: '16px',    // Quest card corner radius
-        '2xl': '20px', // Default corner radius
-        modal: '24px', // Modal corner radius
-        fab: '28px',   // FAB corner radius
-        full: '9999px',
-      },
-      container: {
-        padding: '24px', // containerPadding from design tokens
+        sm: '8px',
+        md: '16px',
+        lg: '24px',
       },
       boxShadow: {
-        sm: '0 1px 2px 0 rgba(0, 0, 0, 0.1)',
-        md: '0 2px 4px 0 rgba(0, 0, 0, 0.15)',
-        lg: '0 4px 8px 0 rgba(0, 0, 0, 0.2)',
-      },
-      transitionDuration: {
-        fast: '150ms',
-        normal: '250ms',
-        slow: '350ms',
-      },
-      screens: {
-        sm: '375px', // Small phones
-        md: '414px', // Large phones
-        lg: '768px', // Tablets
-        xl: '1024px', // Large tablets
+        card: '0 2px 8px rgba(0, 0, 0, 0.08)',
       },
     },
   },
