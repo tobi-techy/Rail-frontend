@@ -1,34 +1,48 @@
-# Rail MVP — Epics & Features
+# Rail Mobile App — Frontend MVP Epics
 
 ## Document Information
 
-- **Version**: 1.0
-- **Last Updated**: December 15, 2025
+- **Version**: 2.0
+- **Last Updated**: December 17, 2025
 - **Status**: Active
+- **Platform**: React Native (Expo SDK 54)
 
 ---
 
 ## Overview
 
-This document outlines the MVP epics for Rail — an automated wealth system where money begins working the moment it arrives. Each epic contains user stories and acceptance criteria required for launch.
+This document outlines the frontend MVP epics for Rail — an automated wealth system where money begins working the moment it arrives. Each epic maps to screens, components, and user interactions required for launch.
 
 **Core System Rule**: Every deposit is automatically split 70% Spend / 30% Invest.
 
+**Tech Stack**: Expo Router, Zustand, TanStack Query, NativeWind, Zod
+
 ---
 
-## Epic 1: User Onboarding & Authentication
+## Epic 1: Onboarding & Authentication
 
-**Goal**: Get users from download to funded account in under 2 minutes with zero friction.
+**Goal**: Get users from app launch to funded account in under 2 minutes with zero friction.
 
-### Features
+### Screens
 
-| ID  | Feature               | Priority | Description                                    |
-| --- | --------------------- | -------- | ---------------------------------------------- |
-| 1.1 | Apple Sign-In         | P0       | Primary authentication method                  |
-| 1.2 | Email/Phone Fallback  | P0       | Alternative auth for non-Apple users           |
-| 1.3 | KYC Integration       | P0       | Lightweight identity verification via partner  |
-| 1.4 | Auto Account Creation | P0       | Automatic ledger and account setup on signup   |
-| 1.5 | Passcode Setup        | P0       | Secondary authentication for sensitive actions |
+| Screen           | Route                             | Description                      |
+| ---------------- | --------------------------------- | -------------------------------- |
+| Welcome          | `app/(auth)/index.tsx`            | App intro with Apple Sign-In CTA |
+| Sign In          | `app/(auth)/signin.tsx`           | Email/phone fallback auth        |
+| Verify Email     | `app/(auth)/verify-email.tsx`     | OTP verification                 |
+| Create Passcode  | `app/(auth)/create-passcode.tsx`  | 6-digit passcode setup           |
+| Confirm Passcode | `app/(auth)/confirm-passcode.tsx` | Passcode confirmation            |
+| Complete Profile | `app/(auth)/complete-profile/`    | Name, DOB collection             |
+| KYC Flow         | `app/(auth)/onboarding/`          | Identity verification            |
+
+### Components Required
+
+| Component            | Location                | Purpose                      |
+| -------------------- | ----------------------- | ---------------------------- |
+| `SocialLoginButtons` | `components/atoms/`     | Apple/Google sign-in buttons |
+| `PasscodeInput`      | `components/molecules/` | 6-digit passcode entry       |
+| `OTPInput`           | `components/ui/`        | Email/phone verification     |
+| `PhoneInput`         | `components/ui/`        | International phone entry    |
 
 ### User Stories
 
@@ -36,135 +50,256 @@ This document outlines the MVP epics for Rail — an automated wealth system whe
 
 **US-1.2**: As a new user, I can complete identity verification in-app so that I can access all features.
 
-**US-1.3**: As a new user, my account and ledger are automatically created so that I can immediately load funds.
+**US-1.3**: As a new user, I see no finance or investing explanations during onboarding so that the experience feels simple.
 
 ### Acceptance Criteria
 
-- [ ] Onboarding completed in < 2 minutes
-- [ ] No finance or investing explanations shown
-- [ ] KYC status gates funding features
-- [ ] Account and ledger created automatically on signup
+- [ ] Apple Sign-In completes in < 3 taps
+- [ ] Passcode setup uses haptic feedback
+- [ ] KYC status gates navigation to main app
+- [ ] No financial jargon in onboarding copy
+- [ ] Biometric auth prompt after passcode setup
+- [ ] Error states show clear recovery actions
+
+### API Integration
+
+```typescript
+// api/hooks/useAuth.ts
+useAppleSignIn();
+useEmailSignIn();
+useVerifyOTP();
+
+// api/hooks/useOnboarding.ts
+useSubmitKYC();
+useKYCStatus();
+
+// api/hooks/usePasscode.ts
+useCreatePasscode();
+useVerifyPasscode();
+```
 
 ---
 
-## Epic 2: Funding & Deposits
+## Epic 2: Station (Home Screen)
 
-**Goal**: Enable users to load money and trigger the automatic 70/30 split within 60 seconds.
+**Goal**: Answer "Is my money working?" with a single glance.
 
-### Features
+### Screens
 
-| ID  | Feature                    | Priority | Description                                             |
-| --- | -------------------------- | -------- | ------------------------------------------------------- |
-| 2.1 | Virtual Accounts (USD/GBP) | P0       | Dedicated virtual accounts for bank transfers           |
-| 2.2 | Multi-Chain USDC Deposits  | P0       | USDC deposits from Ethereum, Polygon, BSC, Solana       |
-| 2.3 | Deposit Confirmation       | P0       | Instant or near-instant confirmation                    |
-| 2.4 | Automatic Split Engine     | P0       | 70/30 split on every deposit                            |
-| 2.5 | Deposit Webhooks           | P0       | Real-time deposit detection from Due Network and Circle |
+| Screen  | Route                  | Description      |
+| ------- | ---------------------- | ---------------- |
+| Station | `app/(tabs)/index.tsx` | Main home screen |
+
+### Components Required
+
+| Component          | Location                | Purpose                            |
+| ------------------ | ----------------------- | ---------------------------------- |
+| `BalanceCard`      | `components/molecules/` | Total balance display              |
+| `SpendInvestSplit` | `components/molecules/` | 70/30 visual split                 |
+| `SystemStatus`     | `components/atoms/`     | Allocating/Active/Paused indicator |
+| `QuickActions`     | `components/molecules/` | Load money, Send CTAs              |
+| `RecentActivity`   | `components/organisms/` | Last 3 transactions                |
 
 ### User Stories
 
-**US-2.1**: As a user, I can load money via bank transfer to my virtual account so that I can fund with fiat.
+**US-2.1**: As a user, I can see my total balance prominently so that I know my overall position.
 
-**US-2.2**: As a user, I can deposit USDC from multiple chains so that I can fund with crypto.
+**US-2.2**: As a user, I can see my Spend and Invest balances so that I understand the split.
 
-**US-2.3**: As a user, my deposit is automatically split 70/30 so that I don't have to make allocation decisions.
-
-**US-2.4**: As a user, I receive confirmation when my deposit is processed so that I know my money arrived.
+**US-2.3**: As a user, I can see the system status so that I know if my money is working.
 
 ### Acceptance Criteria
 
-- [ ] Deposit → split → system state update in < 60 seconds
-- [ ] Virtual accounts support USD and GBP currencies
-- [ ] USDC accepted from Ethereum, Polygon, BSC, and Solana
-- [ ] 70% credited to Spend Balance
-- [ ] 30% credited to Invest Balance
-- [ ] No deposit settings or allocation choices shown
-- [ ] Language uses "Load money" not "Deposit"
+- [ ] Total balance displayed in large, bold typography
+- [ ] Spend/Invest split shown as visual ratio (not pie chart)
+- [ ] System status: `Allocating` | `Active` | `Paused`
+- [ ] NO charts, asset breakdowns, or performance history
+- [ ] Pull-to-refresh updates balances
+- [ ] Balance updates via WebSocket or polling (< 5s delay)
+
+### State Management
+
+```typescript
+// stores/accountStore.ts
+interface AccountState {
+  totalBalance: number;
+  spendBalance: number;
+  investBalance: number;
+  systemStatus: 'allocating' | 'active' | 'paused';
+  isLoading: boolean;
+}
+```
+
+### API Integration
+
+```typescript
+// api/hooks/useAccount.ts
+useAccountSummary();
+useBalances();
+useSystemStatus();
+```
 
 ---
 
-## Epic 3: Spend Balance & Ledger
+## Epic 3: Funding & Deposits
+
+**Goal**: Enable users to load money and see the automatic 70/30 split within 60 seconds.
+
+### Screens
+
+| Screen          | Route                     | Description                     |
+| --------------- | ------------------------- | ------------------------------- |
+| Deposit Options | `app/deposit/index.tsx`   | Choose funding method           |
+| Select Network  | `app/deposit/network.tsx` | Crypto chain selection          |
+| Deposit Address | `app/deposit/address.tsx` | QR code + address display       |
+| Deposit Success | `app/deposit/success.tsx` | Confirmation with split preview |
+
+### Components Required
+
+| Component           | Location                | Purpose                           |
+| ------------------- | ----------------------- | --------------------------------- |
+| `DepositMethodCard` | `components/molecules/` | Bank/Crypto option cards          |
+| `NetworkSelector`   | `components/molecules/` | ETH/Polygon/BSC/Solana picker     |
+| `QRCodeDisplay`     | `components/atoms/`     | Scannable deposit address         |
+| `AddressCopyButton` | `components/atoms/`     | One-tap address copy              |
+| `SplitPreview`      | `components/molecules/` | Shows 70/30 before deposit        |
+| `DepositPending`    | `components/molecules/` | Loading state during confirmation |
+
+### User Stories
+
+**US-3.1**: As a user, I can load money via bank transfer to my virtual account so that I can fund with fiat.
+
+**US-3.2**: As a user, I can deposit USDC from multiple chains so that I can fund with crypto.
+
+**US-3.3**: As a user, I see a preview of the 70/30 split before depositing so that I understand how Rail works.
+
+**US-3.4**: As a user, I receive confirmation when my deposit is processed so that I know my money arrived.
+
+### Acceptance Criteria
+
+- [ ] Virtual accounts display USD and GBP options
+- [ ] USDC networks: Ethereum, Polygon, BSC, Solana
+- [ ] QR code scannable with standard wallet apps
+- [ ] Address copy shows success toast
+- [ ] Split preview: "70% → Spend, 30% → Invest"
+- [ ] Language uses "Load money" not "Deposit"
+- [ ] Push notification on deposit confirmation
+- [ ] Deposit history accessible from Station
+
+### API Integration
+
+```typescript
+// api/hooks/useDeposit.ts
+useVirtualAccounts()
+useDepositAddress(chain: string)
+useDepositHistory()
+
+// api/hooks/useWebhooks.ts
+useDepositNotifications() // WebSocket subscription
+```
+
+---
+
+## Epic 4: Spend Balance & Transactions
 
 **Goal**: Provide a real-time, accurate spend balance that feels like a checking account replacement.
 
-### Features
+### Screens
 
-| ID  | Feature             | Priority | Description                |
-| --- | ------------------- | -------- | -------------------------- |
-| 3.1 | Real-Time Balance   | P0       | Instant balance updates    |
-| 3.2 | Ledger Accuracy     | P0       | 99.9% accuracy requirement |
-| 3.3 | Transaction History | P1       | Basic list of transactions |
-| 3.4 | Balance Liquidity   | P0       | Fully liquid spend balance |
+| Screen             | Route                         | Description              |
+| ------------------ | ----------------------------- | ------------------------ |
+| Transactions       | `app/(tabs)/transactions.tsx` | Full transaction history |
+| Transaction Detail | `app/transaction/[id].tsx`    | Single transaction view  |
+
+### Components Required
+
+| Component           | Location                | Purpose                          |
+| ------------------- | ----------------------- | -------------------------------- |
+| `TransactionItem`   | `components/molecules/` | Single transaction row           |
+| `TransactionList`   | `components/molecules/` | Virtualized transaction list     |
+| `FilterChips`       | `components/molecules/` | All/Spend/Invest/Deposits filter |
+| `TransactionDetail` | `components/organisms/` | Full transaction info            |
+| `EmptyTransactions` | `components/atoms/`     | Empty state illustration         |
 
 ### User Stories
 
-**US-3.1**: As a user, I can see my current spend balance so that I know how much I can spend.
+**US-4.1**: As a user, I can see my current spend balance so that I know how much I can spend.
 
-**US-3.2**: As a user, my balance updates in real-time after transactions so that I always have accurate information.
+**US-4.2**: As a user, my balance updates in real-time after transactions so that I always have accurate information.
+
+**US-4.3**: As a user, I can view my transaction history so that I can track my spending.
 
 ### Acceptance Criteria
 
 - [ ] Balance updates within 1 second of transaction
-- [ ] Ledger accuracy > 99.9%
-- [ ] Spend balance is fully liquid
-- [ ] No budgeting tools, spend limits, or categories in MVP
+- [ ] Transaction list uses FlashList for performance
+- [ ] Filter by: All, Spend, Invest, Deposits
+- [ ] Pull-to-refresh loads new transactions
+- [ ] Infinite scroll pagination
+- [ ] No budgeting tools, spend limits, or categories
+
+### State Management
+
+```typescript
+// stores/transactionStore.ts
+interface TransactionState {
+  transactions: Transaction[];
+  filter: 'all' | 'spend' | 'invest' | 'deposits';
+  hasMore: boolean;
+  isLoading: boolean;
+}
+```
 
 ---
 
-## Epic 4: Debit Card
+## Epic 5: Virtual Debit Card
 
 **Goal**: Provide a virtual debit card linked to Spend Balance, usable immediately after funding.
 
-### Features
+### Screens
 
-| ID  | Feature                   | Priority | Description                     |
-| --- | ------------------------- | -------- | ------------------------------- |
-| 4.1 | Virtual Card Issuance     | P0       | Instant virtual card on funding |
-| 4.2 | Card-to-Balance Link      | P0       | Direct link to Spend Balance    |
-| 4.3 | Transaction Authorization | P0       | Real-time auth against balance  |
-| 4.4 | Physical Card             | P1       | Post-MVP physical card shipping |
+| Screen        | Route                   | Description                   |
+| ------------- | ----------------------- | ----------------------------- |
+| Card          | `app/(tabs)/card.tsx`   | Card display and management   |
+| Card Details  | `app/card/details.tsx`  | Full card number, CVV reveal  |
+| Card Settings | `app/card/settings.tsx` | Freeze, limits, notifications |
 
-### User Stories
+### Components Required
 
-**US-4.1**: As a user, I receive a virtual debit card so that I can start spending immediately.
-
-**US-4.2**: As a user, my card transactions deduct from my Spend Balance so that spending is seamless.
-
-### Acceptance Criteria
-
-- [ ] Virtual card usable immediately after first funding
-- [ ] Card linked directly to Spend Balance
-- [ ] Real-time authorization against available balance
-
----
-
-## Epic 5: Automatic Investing Engine
-
-**Goal**: Deploy 30% of deposits automatically without user interaction.
-
-### Features
-
-| ID  | Feature                  | Priority | Description                            |
-| --- | ------------------------ | -------- | -------------------------------------- |
-| 5.1 | Auto-Allocation          | P0       | Automatic capital deployment           |
-| 5.2 | Strategy Engine          | P0       | Rules-based allocation logic           |
-| 5.3 | Brokerage Integration    | P0       | Alpaca integration for trade execution |
-| 5.4 | Position Tracking        | P0       | Track user positions                   |
-| 5.5 | Global Fallback Strategy | P0       | Default strategy for all users         |
+| Component            | Location                | Purpose                        |
+| -------------------- | ----------------------- | ------------------------------ |
+| `VirtualCardDisplay` | `components/molecules/` | Card visual with masked number |
+| `CardReveal`         | `components/molecules/` | Secure card details reveal     |
+| `CardActions`        | `components/molecules/` | Freeze, Copy, Add to Wallet    |
+| `SpendableBalance`   | `components/organisms/` | Balance linked to card         |
+| `CardTransactions`   | `components/organisms/` | Card-specific transactions     |
 
 ### User Stories
 
-**US-5.1**: As a user, my invest balance is automatically deployed so that I don't have to make investment decisions.
+**US-5.1**: As a user, I receive a virtual debit card so that I can start spending immediately.
 
-**US-5.2**: As a user, I don't see individual trades or assets so that investing feels invisible.
+**US-5.2**: As a user, my card transactions deduct from my Spend Balance so that spending is seamless.
+
+**US-5.3**: As a user, I can add my card to Apple Wallet so that I can pay with my phone.
 
 ### Acceptance Criteria
 
-- [ ] 30% of deposits auto-allocated
-- [ ] No user interaction required
-- [ ] No asset visibility in MVP
-- [ ] No trade confirmations shown
-- [ ] Trades executed via Alpaca
+- [ ] Virtual card displayed after first funding
+- [ ] Card number masked by default (•••• •••• •••• 1234)
+- [ ] Reveal requires passcode/biometric
+- [ ] Freeze/unfreeze with single tap
+- [ ] Add to Apple Wallet integration
+- [ ] Card transactions show merchant name and logo
+
+### API Integration
+
+```typescript
+// api/hooks/useCard.ts
+useVirtualCard();
+useCardDetails(); // Requires auth
+useFreezeCard();
+useCardTransactions();
+```
 
 ---
 
@@ -172,13 +307,20 @@ This document outlines the MVP epics for Rail — an automated wealth system whe
 
 **Goal**: Enable optional round-ups that route spare change to the Invest Engine.
 
-### Features
+### Screens
 
-| ID  | Feature              | Priority | Description                            |
-| --- | -------------------- | -------- | -------------------------------------- |
-| 6.1 | Round-Up Calculation | P0       | Calculate round-up on each transaction |
-| 6.2 | Round-Up Toggle      | P0       | Simple ON/OFF setting                  |
-| 6.3 | Round-Up Routing     | P0       | Route to Invest Balance                |
+| Screen    | Route                        | Description      |
+| --------- | ---------------------------- | ---------------- |
+| Round-Ups | `app/settings/round-ups.tsx` | Toggle and stats |
+
+### Components Required
+
+| Component             | Location                | Purpose                      |
+| --------------------- | ----------------------- | ---------------------------- |
+| `RoundUpToggle`       | `components/molecules/` | ON/OFF switch with animation |
+| `RoundUpStats`        | `components/molecules/` | Total rounded up this month  |
+| `RoundUpExplainer`    | `components/atoms/`     | One-line explanation         |
+| `RoundUpAccumulation` | `components/organisms/` | Visual accumulation display  |
 
 ### User Stories
 
@@ -186,113 +328,269 @@ This document outlines the MVP epics for Rail — an automated wealth system whe
 
 **US-6.2**: As a user, I can toggle round-ups ON/OFF so that I have simple control.
 
+**US-6.3**: As a user, I can see how much I've rounded up so that I feel progress.
+
 ### Acceptance Criteria
 
 - [ ] Simple ON/OFF toggle only
-- [ ] No configuration granularity
-- [ ] Round-ups routed to Invest Engine
+- [ ] No configuration granularity (no custom amounts)
+- [ ] Shows total rounded up this month
+- [ ] Animation when round-up occurs
 - [ ] Round-up amount = next dollar - transaction amount
 
+### State Management
+
+```typescript
+// stores/settingsStore.ts
+interface SettingsState {
+  roundUpsEnabled: boolean;
+  roundUpTotal: number;
+  toggleRoundUps: () => void;
+}
+```
+
 ---
 
-## Epic 7: Home Screen (Station)
+## Epic 7: Invest Balance (Minimal)
 
-**Goal**: Answer "Is my money working?" with a single glance.
+**Goal**: Show invest balance without exposing individual assets or trades.
 
-### Features
+### Screens
 
-| ID  | Feature                 | Priority | Description                        |
-| --- | ----------------------- | -------- | ---------------------------------- |
-| 7.1 | Total Balance Display   | P0       | Combined balance view              |
-| 7.2 | Spend/Invest Split View | P0       | Show 70/30 allocation              |
-| 7.3 | System Status           | P0       | Allocating / Active / Paused state |
+| Screen | Route                   | Description             |
+| ------ | ----------------------- | ----------------------- |
+| Invest | `app/(tabs)/invest.tsx` | Invest balance overview |
+
+### Components Required
+
+| Component             | Location                | Purpose                           |
+| --------------------- | ----------------------- | --------------------------------- |
+| `InvestBalance`       | `components/molecules/` | Large balance display             |
+| `InvestStatus`        | `components/atoms/`     | "Your money is working"           |
+| `AllocationIndicator` | `components/atoms/`     | Simple progress during allocation |
 
 ### User Stories
 
-**US-7.1**: As a user, I can see my total balance so that I know my overall position.
+**US-7.1**: As a user, I can see my invest balance so that I know how much is growing.
 
-**US-7.2**: As a user, I can see my Spend and Invest balances so that I understand the split.
-
-**US-7.3**: As a user, I can see the system status so that I know if my money is working.
+**US-7.2**: As a user, I don't see individual trades or assets so that investing feels invisible.
 
 ### Acceptance Criteria
 
-- [ ] Total balance displayed prominently
-- [ ] Spend balance and Invest balance shown
-- [ ] System status visible: Allocating / Active / Paused
-- [ ] NO charts, asset breakdowns, or performance history
+- [ ] Shows invest balance only
+- [ ] NO asset breakdown
+- [ ] NO trade history
+- [ ] NO performance charts
+- [ ] Status message: "Your money is working"
+- [ ] During allocation: "Allocating..." with subtle animation
+
+### API Integration
+
+```typescript
+// api/hooks/useInvest.ts
+useInvestBalance();
+useInvestStatus();
+```
 
 ---
 
-## Epic 8: Conductors (Copy Trading) — Post-MVP
+## Epic 8: Profile & Settings
 
-**Goal**: Allow users to follow professional investors and automatically mirror their portfolios.
+**Goal**: Provide essential account management without overwhelming options.
 
-### Features
+### Screens
 
-| ID  | Feature               | Priority | Description                            |
-| --- | --------------------- | -------- | -------------------------------------- |
-| 8.1 | Conductor Application | P1       | Application flow for existing users    |
-| 8.2 | Application Review    | P1       | Admin review and approval workflow     |
-| 8.3 | Conductor Profile     | P1       | Public profile for approved conductors |
-| 8.4 | Track Creation        | P1       | Create and manage investment tracks    |
-| 8.5 | Track Assets          | P1       | Add/remove/reweight assets in tracks   |
-| 8.6 | Track Discovery       | P1       | Browse and search available tracks     |
-| 8.7 | Follow Track          | P1       | One-tap follow with allocation         |
-| 8.8 | Copy Engine           | P1       | Automatic trade mirroring              |
-| 8.9 | Unfollow Track        | P1       | Exit and liquidate positions           |
+| Screen        | Route                            | Description          |
+| ------------- | -------------------------------- | -------------------- |
+| Profile       | `app/(tabs)/profile.tsx`         | Account overview     |
+| Personal Info | `app/settings/personal.tsx`      | Name, email, phone   |
+| Security      | `app/settings/security.tsx`      | Passcode, biometrics |
+| Notifications | `app/settings/notifications.tsx` | Push preferences     |
+| Support       | `app/settings/support.tsx`       | Help and contact     |
+
+### Components Required
+
+| Component         | Location                | Purpose               |
+| ----------------- | ----------------------- | --------------------- |
+| `UserProfile`     | `components/organisms/` | Avatar, name, email   |
+| `SettingsItem`    | `components/molecules/` | Tappable settings row |
+| `SettingsSection` | `components/molecules/` | Grouped settings      |
+| `LogoutButton`    | `components/atoms/`     | Sign out action       |
 
 ### User Stories
 
-**US-8.1**: As an existing Rail user, I can apply to become a Conductor so that I can share my investment strategy.
+**US-8.1**: As a user, I can view and edit my profile so that my information is accurate.
 
-**US-8.2**: As an admin, I can review and approve/reject Conductor applications so that only qualified investors lead tracks.
+**US-8.2**: As a user, I can manage security settings so that my account is protected.
 
-**US-8.3**: As a Conductor, I can create Tracks with specific assets and weights so that followers can mirror my strategy.
-
-**US-8.4**: As a user, I can browse Conductors and their Tracks so that I can find strategies to follow.
-
-**US-8.5**: As a user, I can follow a Track with one tap so that my Active Rail mirrors the Conductor's positions.
-
-**US-8.6**: As a user, when a Conductor updates their Track, my positions update automatically so that I stay in sync.
-
-**US-8.7**: As a user, I can unfollow a Track anytime so that my positions liquidate back to Active Rail.
+**US-8.3**: As a user, I can sign out so that I can secure my device.
 
 ### Acceptance Criteria
 
-- [ ] Only existing Rail users can apply to be Conductors
-- [ ] Admin can review, approve, or reject applications
-- [ ] Approved Conductors can create and manage Tracks
-- [ ] Tracks have name, description, risk level, and asset weights
-- [ ] Users can discover and follow Tracks
-- [ ] Track changes propagate to followers within 5 minutes
-- [ ] Users can unfollow and liquidate anytime
+- [ ] Profile shows name, email, phone
+- [ ] Change passcode requires current passcode
+- [ ] Biometric toggle (Face ID / Touch ID)
+- [ ] Push notification preferences
+- [ ] Sign out clears local state and tokens
+- [ ] Delete account option (with confirmation)
 
 ---
 
-## Epic 9: Infrastructure & Non-Functional
+## Epic 9: Withdrawals & Transfers
 
-**Goal**: Ensure reliability, security, and performance meet MVP standards.
+**Goal**: Allow users to withdraw from Spend Balance to external accounts.
 
-### Features
+### Screens
 
-| ID  | Feature               | Priority | Description             |
-| --- | --------------------- | -------- | ----------------------- |
-| 9.1 | iOS Performance       | P0       | App launch < 2 seconds  |
-| 9.2 | Ledger Accuracy       | P0       | > 99.9% accuracy        |
-| 9.3 | Crash-Free Sessions   | P0       | > 99.5% crash-free      |
-| 9.4 | Secure Key Management | P0       | Partner-managed custody |
-| 9.5 | JWT Authentication    | P0       | Secure token-based auth |
-| 9.6 | Data Encryption       | P0       | AES-256-GCM at rest     |
-| 9.7 | Rate Limiting         | P0       | API abuse prevention    |
+| Screen   | Route                      | Description             |
+| -------- | -------------------------- | ----------------------- |
+| Withdraw | `app/withdraw/index.tsx`   | Withdrawal options      |
+| Amount   | `app/withdraw/amount.tsx`  | Enter withdrawal amount |
+| Confirm  | `app/withdraw/confirm.tsx` | Review and confirm      |
+| Success  | `app/withdraw/success.tsx` | Confirmation screen     |
+
+### Components Required
+
+| Component                 | Location                | Purpose                 |
+| ------------------------- | ----------------------- | ----------------------- |
+| `AmountInput`             | `components/molecules/` | Currency amount entry   |
+| `SendAmountKeypad`        | `components/withdraw/`  | Custom numeric keypad   |
+| `ConfirmTransactionModal` | `components/withdraw/`  | Final confirmation      |
+| `TransactionSuccessView`  | `components/withdraw/`  | Success animation       |
+| `WithdrawMethodCard`      | `components/molecules/` | Bank/Crypto destination |
+
+### User Stories
+
+**US-9.1**: As a user, I can withdraw to my bank account so that I can access my money.
+
+**US-9.2**: As a user, I can withdraw to a crypto wallet so that I have flexibility.
+
+**US-9.3**: As a user, I see clear confirmation before withdrawing so that I don't make mistakes.
 
 ### Acceptance Criteria
 
-- [ ] iOS launch time < 2 seconds
-- [ ] Ledger accuracy > 99.9%
-- [ ] Crash-free sessions > 99.5%
-- [ ] All sensitive data encrypted at rest
-- [ ] Rate limiting on all public endpoints
+- [ ] Withdraw from Spend Balance only
+- [ ] Bank transfer and crypto withdrawal options
+- [ ] Amount validation against available balance
+- [ ] Confirmation screen with all details
+- [ ] Passcode/biometric required to confirm
+- [ ] Success screen with transaction ID
+
+---
+
+## Epic 10: Passcode & Session Security
+
+**Goal**: Protect sensitive actions with passcode and manage session state.
+
+### Screens
+
+| Screen                | Route                           | Description               |
+| --------------------- | ------------------------------- | ------------------------- |
+| Login Passcode        | `app/login-passcode.tsx`        | Re-auth on app resume     |
+| Authorize Transaction | `app/authorize-transaction.tsx` | Confirm sensitive actions |
+
+### Components Required
+
+| Component         | Location                | Purpose                    |
+| ----------------- | ----------------------- | -------------------------- |
+| `PasscodeInput`   | `components/molecules/` | 6-digit entry with dots    |
+| `Keypad`          | `components/molecules/` | Numeric keypad             |
+| `BiometricPrompt` | `components/atoms/`     | Face ID / Touch ID trigger |
+
+### User Stories
+
+**US-10.1**: As a user, I must enter my passcode when reopening the app so that my account is secure.
+
+**US-10.2**: As a user, I can use Face ID instead of passcode so that access is faster.
+
+**US-10.3**: As a user, sensitive actions require re-authentication so that I'm protected.
+
+### Acceptance Criteria
+
+- [ ] Passcode required after 5 minutes of inactivity
+- [ ] Biometric auth as alternative to passcode
+- [ ] 3 failed attempts triggers cooldown
+- [ ] Sensitive actions: withdrawals, card reveal, settings changes
+- [ ] Session timeout configurable in settings
+
+### State Management
+
+```typescript
+// stores/authStore.ts
+interface AuthState {
+  isAuthenticated: boolean;
+  lastActiveAt: number;
+  requiresPasscode: boolean;
+  biometricsEnabled: boolean;
+}
+```
+
+---
+
+## Epic 11: Error Handling & Edge Cases
+
+**Goal**: Handle errors gracefully without breaking user trust.
+
+### Components Required
+
+| Component         | Location            | Purpose               |
+| ----------------- | ------------------- | --------------------- |
+| `ErrorBoundary`   | `components/`       | Catch React errors    |
+| `NetworkError`    | `components/atoms/` | Offline state         |
+| `RetryButton`     | `components/atoms/` | Retry failed actions  |
+| `EmptyState`      | `components/atoms/` | No data illustrations |
+| `LoadingSkeleton` | `components/atoms/` | Content placeholders  |
+
+### Scenarios
+
+| Scenario        | Handling                          |
+| --------------- | --------------------------------- |
+| Network offline | Show cached data + offline banner |
+| API error       | Toast with retry option           |
+| Session expired | Redirect to passcode screen       |
+| KYC pending     | Gate features with status message |
+| Deposit pending | Show pending state with ETA       |
+
+### Acceptance Criteria
+
+- [ ] Offline mode shows cached balances
+- [ ] API errors show user-friendly messages
+- [ ] Retry buttons on all failed requests
+- [ ] Loading skeletons match content layout
+- [ ] Error logging to Sentry
+
+---
+
+## Epic 12: Performance & Polish
+
+**Goal**: Ensure the app feels fast, smooth, and premium.
+
+### Requirements
+
+| Metric             | Target      |
+| ------------------ | ----------- |
+| App launch (cold)  | < 2 seconds |
+| Screen transitions | < 300ms     |
+| Balance refresh    | < 1 second  |
+| List scroll        | 60 FPS      |
+| Memory usage       | < 150MB     |
+
+### Optimizations
+
+- [ ] Preload critical screens
+- [ ] Memoize expensive components
+- [ ] Use FlashList for long lists
+- [ ] Optimize images with expo-image
+- [ ] Lazy load non-critical screens
+- [ ] Minimize re-renders with Zustand selectors
+
+### Accessibility
+
+- [ ] VoiceOver / TalkBack support
+- [ ] Dynamic type scaling
+- [ ] Minimum touch targets (44x44)
+- [ ] Color contrast ratios (WCAG AA)
+- [ ] Reduce motion option
 
 ---
 
@@ -304,21 +602,75 @@ This document outlines the MVP epics for Rail — an automated wealth system whe
 | P1       | Important for retention — ship shortly after MVP  |
 | P2       | Future expansion — explicitly out of scope        |
 
+### Epic Priorities
+
+| Epic                  | Priority |
+| --------------------- | -------- |
+| 1. Onboarding & Auth  | P0       |
+| 2. Station (Home)     | P0       |
+| 3. Funding & Deposits | P0       |
+| 4. Spend Balance      | P0       |
+| 5. Virtual Card       | P0       |
+| 6. Round-Ups          | P0       |
+| 7. Invest Balance     | P0       |
+| 8. Profile & Settings | P0       |
+| 9. Withdrawals        | P0       |
+| 10. Passcode Security | P0       |
+| 11. Error Handling    | P0       |
+| 12. Performance       | P0       |
+
+---
+
+## Navigation Structure
+
+```
+app/
+├── (auth)/                    # Unauthenticated routes
+│   ├── index.tsx              # Welcome screen
+│   ├── signin.tsx             # Email/phone sign in
+│   ├── verify-email.tsx       # OTP verification
+│   ├── create-passcode.tsx    # Passcode setup
+│   ├── confirm-passcode.tsx   # Passcode confirm
+│   ├── complete-profile/      # Profile completion
+│   └── onboarding/            # KYC flow
+│
+├── (tabs)/                    # Main tab navigation
+│   ├── index.tsx              # Station (Home)
+│   ├── card.tsx               # Virtual Card
+│   ├── invest.tsx             # Invest Balance
+│   └── profile.tsx            # Profile & Settings
+│
+├── deposit/                   # Funding flow
+│   ├── index.tsx              # Deposit options
+│   ├── network.tsx            # Chain selection
+│   └── address.tsx            # QR + address
+│
+├── withdraw/                  # Withdrawal flow
+│   ├── index.tsx              # Withdraw options
+│   └── success.tsx            # Confirmation
+│
+├── login-passcode.tsx         # Re-auth screen
+├── authorize-transaction.tsx  # Sensitive action auth
+└── _layout.tsx                # Root layout
+```
+
 ---
 
 ## Success Metrics
 
 ### Primary (MVP Validation)
 
+- % of users completing onboarding
 - % of users funding within first session
-- % of deposits auto-invested
-- % of users who keep automation enabled after 7 days
+- Time from signup to first funding
+- % of users with round-ups enabled
 
 ### Secondary
 
-- Daily spend activity
-- Repeat deposits
-- Time from signup to first funding
+- Daily active users
+- Repeat deposits per user
+- Card transaction frequency
+- App crash rate (target: < 0.5%)
 
 ---
 
@@ -326,7 +678,9 @@ This document outlines the MVP epics for Rail — an automated wealth system whe
 
 MVP is complete when:
 
-1. User can sign up, load money, spend, and auto-invest in one session
+1. User can sign up, load money, spend, and see auto-invest in one session
 2. 70/30 split happens without configuration
 3. Spending feels normal, investing feels invisible
-4. User does not feel responsible for decisions
+4. User does not feel responsible for investment decisions
+5. App launches in < 2 seconds
+6. Crash-free sessions > 99.5%

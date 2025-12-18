@@ -48,38 +48,34 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
 
   return (
     <TouchableOpacity
-      className="flex-row items-center py-3 border-b border-surface"
+      className="flex-row items-center border-b border-surface py-3"
       accessibilityLabel={`Transaction: ${transaction.title}, Amount: ${formattedAmount}`}
-      {...props}
-    >
+      {...props}>
       <View
-        className="w-11 h-11 rounded-full justify-center items-center mr-4"
-        style={{ backgroundColor: `${colors.semantic.success}1A` }}
-      >
+        className="mr-4 h-11 w-11 items-center justify-center rounded-full"
+        style={{ backgroundColor: `${colors.semantic.success}1A` }}>
         <Icon library="feather" name={iconName} size={22} color={iconColor} />
       </View>
 
       <View className="flex-1 justify-center">
         <Text
-          className="text-body text-text-primary"
+          className="font-subtitle text-[18px] text-text-primary"
           style={{ fontFamily: typography.fonts.subtitle }}
-          numberOfLines={1}
-        >
+          numberOfLines={1}>
           {transaction.title}
         </Text>
         <Text
-          className="text-caption text-text-secondary mt-[2px]"
-          style={{ fontFamily: typography.fonts.caption }}
-          numberOfLines={1}
-        >
+          className="mt-[2px] font-body text-[14px]"
+          style={{ fontFamily: typography.fonts.caption, color: colors.text.secondary }}
+          numberOfLines={1}>
           {`${transaction.category} • ${formatDate(transaction.createdAt)}`}
         </Text>
       </View>
 
       <Text
-        className="text-body text-text-primary ml-3"
-        style={{ fontFamily: typography.fonts.numeric }}
-      >
+        className="ml-3 font-subtitle text-[18px]"
+        style={{ fontFamily: typography.fonts.numeric, color: colors.text.primary }}
+        numberOfLines={1}>
         {formattedAmount}
       </Text>
     </TouchableOpacity>

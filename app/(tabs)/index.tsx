@@ -3,19 +3,20 @@ import React, { useLayoutEffect, useMemo, useState, useCallback } from 'react';
 import { router, useNavigation } from 'expo-router';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { BasketItemCard } from '@/components/molecules/BasketItemCard';
-import { ArrowDown, Bell, Grid3X3Icon, PlusIcon, User } from 'lucide-react-native';
+import { StashCard } from '@/components/molecules/StashCard';
+import { ArrowDown, Bell, DollarSign, Grid3X3Icon, PlusIcon, User } from 'lucide-react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
 import type { Transaction } from '@/components/molecules/TransactionItem';
 import { usePortfolioOverview } from '@/api/hooks';
 import { Button } from '../../components/ui';
-import { ActionSlideshow, SlideData } from '@/components/molecules/ActionSlideshow';
+import { ActionButton } from '@/components';
 
 const Dashboard = () => {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
 
   // Fetch portfolio overview with automatic refetching
-  const { data: portfolio, isLoading, isError, error, refetch } = usePortfolioOverview();
+  const { data: portfolio, refetch } = usePortfolioOverview();
 
   // Pull to refresh handler
   const onRefresh = useCallback(async () => {
@@ -49,8 +50,8 @@ const Dashboard = () => {
       ),
       headerRight: () => (
         <View className="flex-row items-center gap-x-[12px] pr-[14px]">
-          <Bell size={24} strokeWidth={2} color={'#000'} />
-          <User size={24} strokeWidth={2} color={'#000'} />
+          <Bell size={24} strokeWidth={2} fill={'#000'} />
+          <User size={24} strokeWidth={2} fill={'#000'} />
         </View>
       ),
       title: '',
@@ -106,52 +107,8 @@ const Dashboard = () => {
     []
   );
 
-  // Default slides with custom actions
-  const defaultSlides: SlideData[] = [
-    {
-      id: '1',
-      title: 'Verify Your Identity',
-      description: 'Complete KYC to unlock full trading features and higher limits',
-      icon: 'shield-person-6',
-      gradient: ['#667EEA', '#764BA2'],
-      ctaText: 'Verify Now',
-      onPress: () => {},
-    },
-    {
-      id: '2',
-      title: 'Get Your Dollar Card',
-      description: 'Physical or virtual card for seamless global spending',
-      icon: 'credit-card-8',
-      gradient: ['#F093FB', '#F5576C'],
-      ctaText: 'Get Card',
-      onPress: () => {},
-    },
-    {
-      id: '3',
-      title: 'Copy Top Investors',
-      description: 'Follow and replicate winning investment strategies',
-      icon: 'data-exploration-20',
-      gradient: ['#4FACFE', '#00F2FE'],
-      ctaText: 'Explore',
-      onPress: () => {},
-    },
-    {
-      id: '4',
-      title: 'Fund with Stablecoins',
-      description: 'Top up your account using USDC or USDT instantly',
-      icon: 'usdc-8',
-      gradient: ['#43E97B', '#38F9D7'],
-      ctaText: 'Fund Account',
-      onPress: () => {},
-    },
-  ];
-
-  // Only show error if no cached data exists and it's not a 404
-  const is404 = error?.error?.code === 'HTTP_404';
-  const showError = isError && !portfolio && !is404;
-
   // Use loading placeholder values when no data yet
-  const displayBalance = portfolio ? formatCurrency(portfolio.totalPortfolio) : '$---';
+  const displayBalance = portfolio ? formatCurrency(portfolio.totalPortfolio) : '$10,000.00';
   const displayPerformance = portfolio ? formatPercentage(portfolio.performanceLast30d) : '---%';
   const displayBuyingPower = portfolio ? formatCurrency(portfolio.buyingPower) : '$---';
 
@@ -161,22 +118,9 @@ const Dashboard = () => {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
       }>
-      <View className="px-[14px] py-4">
-        {/* Error Banner (only shows if no cached data) */}
-        {showError && (
-          <View className="mb-4 rounded-2xl bg-red-50 px-4 py-3">
-            <Text className="font-body-bold text-sm text-red-900">Unable to load portfolio</Text>
-            <Text className="mt-1 text-xs text-red-700">
-              {error?.error?.message || 'Please check your connection.'}
-            </Text>
-            <Text className="font-body-bold mt-2 text-xs text-red-600" onPress={() => refetch()}>
-              Tap to retry
-            </Text>
-          </View>
-        )}
-
+      <View className="px-[14px]">
         {/* Portfolio Balance Card */}
-        <View className="mb-6">
+        <View className="">
           <BalanceCard
             balance={displayBalance}
             percentChange={displayPerformance}
@@ -185,7 +129,7 @@ const Dashboard = () => {
             className="rounded-x"
           />
 
-          <View className="mt-4 flex-row gap-3">
+          <View className="flex-row gap-3">
             <Button
               title="Receive"
               onPress={() => router.navigate('/deposit')}
@@ -199,17 +143,41 @@ const Dashboard = () => {
               size="small"
               variant="white"
             />
+            <ActionButton icon="more-horizontal" label="" />
           </View>
         </View>
 
-        {/* Action Slideshow */}
-        <ActionSlideshow slides={defaultSlides} autoPlay={true} autoPlayInterval={5000} />
+        {/* Stash Cards */}
+        <View className="mb-4 flex-row gap-3">
+          <StashCard
+            title="Spending Stash"
+            amount="$7000"
+            amountCents=".00"
+            icon={
+              <View className="h-9 w-9 items-center justify-center rounded-[12px] bg-[#4A89F7]">
+                <DollarSign size={14} color="white" />
+              </View>
+            }
+            className="flex-1"
+          />
+          <StashCard
+            title="Investment Stash"
+            amount="$3000"
+            amountCents=".00"
+            icon={
+              <View className="h-9 w-9 items-center justify-center rounded-[12px] bg-[#FF8A65]">
+                <Grid3X3Icon size={14} color="white" fill="white" />
+              </View>
+            }
+            className="flex-1"
+          />
+        </View>
 
         {/* My Baskets Section */}
-        <View className="mb-6">
-          <Text className="font-body-bold mb-3 text-[18px]">My baskets</Text>
+        <>
+          <Text className="font-subtitle text-headline-2">My tracks</Text>
 
-          <View className="mb-4 flex-row">
+          <View className="flex-row">
             <BasketItemCard
               code="GME-08"
               status="Safe"
@@ -236,11 +204,11 @@ const Dashboard = () => {
               className="flex-1"
             />
           </View>
-        </View>
+        </>
 
         {/* Transaction History Section */}
-        <View className="mb-8">
-          <View className="px- rounded-3xl py-5">
+        <View className="">
+          <View className="rounded-3xl py-5">
             <TransactionList
               title="Transaction History"
               transactions={transactions}

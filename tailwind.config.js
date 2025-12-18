@@ -30,8 +30,8 @@ module.exports = {
         headline: ['PramukhRounded-Bold'],
         'headline-2': ['PramukhRounded-Semibold'],
         // Body/UI - SF Pro Rounded (primary)
-        subtitle: ['SF-Pro-Rounded-Medium'],
-        body: ['SF-Pro-Rounded-Regular'],
+        subtitle: ['SF-Pro-Rounded-Bold'],
+        body: ['SF-Pro-Rounded-Medium'],
         caption: ['SF-Pro-Rounded-Regular'],
         button: ['SF-Pro-Rounded-Semibold'],
         numeric: ['SF-Pro-Rounded-Regular'],

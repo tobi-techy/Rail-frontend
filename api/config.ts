@@ -27,7 +27,7 @@ export const ENDPOINTS = {
     ADDRESSES: '/v1/wallets/:chain/address',
   },
   PORTFOLIO: {
-    OVERVIEW: '/portfolio/overview',
+    OVERVIEW: '/v1/portfolio/overview',
   },
   USER: {
     PROFILE: '/user/profile',

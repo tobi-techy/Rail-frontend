@@ -5,6 +5,8 @@ import { splashVideo } from '@/assets/images';
 
 const { width, height } = Dimensions.get('window');
 
+const SPLASH_BG = '#FF5A00';
+
 interface SplashScreenProps {
   onAnimationComplete?: () => void;
   isReady?: boolean;
@@ -57,23 +59,35 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" translucent />
-      <VideoView
+      <StatusBar barStyle="light-content" backgroundColor={SPLASH_BG} translucent />
+      {/*<VideoView
         player={player}
         style={styles.video}
         contentFit="cover"
         nativeControls={false}
-      />
-      <Animated.View style={[styles.logoContainer, { opacity: logoOpacity, transform: [{ scale: logoScale }, { translateX: shakeAnim }] }]}>
-        <Image source={require('@/assets/app-icon/logo-transparent.png')} style={styles.logo} resizeMode="contain" />
+      />*/}
+      <Animated.View
+        style={[
+          styles.logoContainer,
+          { opacity: logoOpacity, transform: [{ scale: logoScale }, { translateX: shakeAnim }] },
+        ]}>
+        <Image
+          source={require('@/assets/app-icon/logo-transparent.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
       </Animated.View>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: SPLASH_BG },
   video: { width, height, position: 'absolute' },
-  logoContainer: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' },
+  logoContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   logo: { width: 120, height: 120 },
 });

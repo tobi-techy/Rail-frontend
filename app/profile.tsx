@@ -4,8 +4,8 @@ import React, { useCallback, useLayoutEffect, useState, useMemo } from 'react';
 import { Chart, BalanceCard } from '@/components';
 import { Avatar } from '@rneui/base';
 import { usePortfolioOverview } from '@/api';
-import { ArrowDown, PlusIcon, ShoppingBasket } from 'lucide-react-native';
-import { Button } from '../../components/ui';
+import { ArrowDown, PlusIcon } from 'lucide-react-native';
+import { Button } from '../components/ui';
 
 const Profile = () => {
   const navigation = useNavigation();
@@ -41,7 +41,7 @@ const Profile = () => {
   const showError = isError && !portfolio && !is404;
 
   // Use loading placeholder values when no data yet
-  const displayBalance = portfolio ? formatCurrency(portfolio.totalPortfolio) : '$---';
+  const displayBalance = portfolio ? formatCurrency(portfolio.totalPortfolio) : '$00.00';
   const displayPerformance = portfolio ? formatPercentage(portfolio.performanceLast30d) : '---%';
   const displayBuyingPower = portfolio ? formatCurrency(portfolio.buyingPower) : '$---';
 
@@ -78,19 +78,6 @@ const Profile = () => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
       }>
       <View className="px-[14px] ">
-        {/* Error Banner (only shows if no cached data) */}
-        {showError && (
-          <View className="mt-4 rounded-2xl bg-red-50 px-4 py-3">
-            <Text className="font-body-bold text-sm text-red-900">Unable to load portfolio</Text>
-            <Text className="mt-1 text-xs text-red-700">
-              {error?.error?.message || 'Please check your connection.'}
-            </Text>
-            <Text className="font-body-bold mt-2 text-xs text-red-600" onPress={() => refetch()}>
-              Tap to retry
-            </Text>
-          </View>
-        )}
-
         <BalanceCard
           balance={displayBalance}
           percentChange={displayPerformance}
@@ -101,18 +88,18 @@ const Profile = () => {
 
         <View className="mt-4 flex-row gap-3">
           <Button
-            title="Become a Conductor"
+            title="Apply"
             // onPress={() => router.navigate('/deposit')}
             leftIcon={<PlusIcon size={24} color="white" />}
             size="small"
           />
-          <Button
-            title="Manage Portfolio"
+          {/*<Button
+            title=""
             // onPress={() => router.navigate('/withdraw')}
             leftIcon={<ArrowDown size={24} color="black" />}
             size="small"
             variant="white"
-          />
+          />*/}
         </View>
       </View>
     </ScrollView>

@@ -15,10 +15,7 @@ module.exports = defineConfig([
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
 
-      // TypeScript
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/consistent-type-imports': 'warn',
+      // TypeScript rules removed - plugin not installed
 
       // General
       'no-console': ['warn', { allow: ['warn', 'error'] }],

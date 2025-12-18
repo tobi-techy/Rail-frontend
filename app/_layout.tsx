@@ -12,6 +12,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import queryClient from '@/api/queryClient';
 import '../global.css';
 
+const SPLASH_BG = '#FF5A00';
+
 initSentry();
 
 function AppNavigator() {
@@ -33,10 +35,8 @@ export default function Layout() {
   useProtectedRoute();
 
   useEffect(() => {
-    if (fontsLoaded) {
-      const timer = setTimeout(() => setIsAppReady(true), 4000);
-      return () => clearTimeout(timer);
-    }
+    // As soon as fonts are ready, mark the app as ready so the splash can fade out immediately.
+    if (fontsLoaded) setIsAppReady(true);
   }, [fontsLoaded]);
 
   const handleSplashComplete = useCallback(() => {
@@ -45,20 +45,21 @@ export default function Layout() {
 
   if (showSplash) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#000' }}>
+      <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
         <SplashScreen isReady={isAppReady} onAnimationComplete={handleSplashComplete} />
       </View>
     );
   }
 
   if (!fontsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: '#000' }} />;
+    // Match the splash background to prevent any brief "flash" during startup.
+    return <View style={{ flex: 1, backgroundColor: SPLASH_BG }} />;
   }
 
   return (
     <ErrorBoundary>
       <KeyboardProvider>
-        <View style={{ flex: 1, backgroundColor: '#000' }}>
+        <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
           <QueryClientProvider client={queryClient}>
             <SafeAreaProvider>
               <AppNavigator />

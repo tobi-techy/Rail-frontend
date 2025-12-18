@@ -21,6 +21,7 @@ export * from './QuestProgress';
 export * from './RoundUpToggle';
 export * from './SearchBar';
 export * from './SectionHeader';
+export * from './StashCard';
 export * from './TextLink';
 export * from './TransactionItem';
 export * from './TransactionList';

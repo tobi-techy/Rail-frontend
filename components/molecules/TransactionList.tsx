@@ -20,16 +20,13 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   ...props
 }) => {
   const renderItem = ({ item }: { item: Transaction }) => (
-    <TransactionItem
-      transaction={item}
-      onPress={() => onTransactionPress?.(item)}
-    />
+    <TransactionItem transaction={item} onPress={() => onTransactionPress?.(item)} />
   );
 
   const renderEmptyState = () => (
     <View className="items-center justify-center p-8">
       <Icon name="file-tray-outline" size={48} color={colors.text.tertiary} />
-      <Text className="font-body text-base text-gray-500 mt-4 text-center">
+      <Text className="mt-4 text-center font-body text-base text-gray-500">
         {emptyStateMessage}
       </Text>
     </View>
@@ -37,20 +34,14 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
   return (
     <View style={style} {...props}>
-    <View className="flex-row items-center justify-between">
-    {title && (
-        <Text className="font-body-bold text-[24px] text-gray-900 mb-4">
-          {title}
-        </Text>
-      )}
-      <Text className="font-body-medium text-[20px] text-gray-500">
-          see all
-        </Text>
-    </View>
+      <View className="flex-row items-center justify-between">
+        {title && <Text className="font-subtitle text-headline-2 text-gray-900">{title}</Text>}
+        <Text className="font-body text-headline-2 text-gray-500">see all</Text>
+      </View>
       <FlatList
         data={transactions}
         renderItem={renderItem}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         ListEmptyComponent={renderEmptyState}
         scrollEnabled={false}
         ItemSeparatorComponent={() => <View className="h-3" />}

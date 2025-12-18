@@ -43,7 +43,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             <View className="mt-2 items-start gap-x-2">
               <Text className="font-caption text-caption text-text-secondary">Total Portfolio</Text>
               <View className="flex-row items-center gap-x-2">
-                <Text className="mb-1 font-subtitle text-[40px] text-text-primary">
+                <Text className="mb-1 font-subtitle text-headline-1 text-text-primary">
                   {maskValue(balance)}
                 </Text>
                 <TouchableOpacity

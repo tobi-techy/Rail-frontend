@@ -38,29 +38,30 @@ export const Keypad: React.FC<KeypadProps> = ({
   return (
     <View className={className} {...rest}>
       {KEYPAD_LAYOUT.map((row, rowIndex) => (
-        <View key={`row-${rowIndex}`} className={`flex-row justify-between ${rowIndex === 0 ? '' : 'mt-3'}`}>
+        <View
+          key={`row-${rowIndex}`}
+          className={`flex-row justify-between ${rowIndex === 0 ? '' : 'mt-3'}`}>
           {row.map((key) => {
             const isBackspace = key === BACKSPACE_KEY;
             const isFingerprint = key === FINGERPRINT_KEY;
 
             if (isFingerprint && !showFingerprint) {
-              return <View key={key} className="h-[72px] flex-1 mx-1.5" />;
+              return <View key={key} className="mx-1.5 h-[72px] flex-1" />;
             }
 
             return (
               <TouchableOpacity
                 key={key}
-                className="h-[72px] flex-1 mx-1.5 items-center justify-center rounded-full active:bg-surface"
+                className="mx-1.5 h-[72px] flex-1 items-center justify-center rounded-full active:bg-surface"
                 activeOpacity={0.7}
                 onPress={() => handlePress(key)}
-                disabled={disabled}
-              >
+                disabled={disabled}>
                 {isBackspace ? (
                   <Trash size={24} color="#121212" />
                 ) : isFingerprint ? (
                   <Fingerprint size={24} color="#121212" />
                 ) : (
-                  <Text className="font-headline text-headline-2 text-text-primary">{key}</Text>
+                  <Text className="font-subtitle text-headline-2 text-text-primary">{key}</Text>
                 )}
               </TouchableOpacity>
             );

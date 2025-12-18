@@ -42,11 +42,11 @@ interface OnboardingSlide {
 const onboardingSlides: OnboardingSlide[] = [
   {
     key: '1',
-    titleTop: 'Finance built',
-    titleBottom: ['for the', 'internet generation.'],
+    titleTop: 'Drop it in.',
+    titleBottom: ['Watch it', 'work.'],
     icons: [CurrencyExchange, Finance],
     description:
-      "We're flipping the script—no suits, no gatekeeping, just DeFi speed and TradFi clout. Your money, your rules.",
+      'Your money moves the second it lands. No buttons, no stress, no "what do I do now?" Just momentum.',
     video: onBoard1,
     backgroundColor: '#000',
     textColor: 'text-[#fff]',
@@ -56,11 +56,11 @@ const onboardingSlides: OnboardingSlide[] = [
   },
   {
     key: '2',
-    titleTop: 'Top-Up',
-    titleBottom: ['In A', 'Blink'],
+    titleTop: 'Fund it',
+    titleBottom: ['however', 'you want.'],
     icons: [Wallet, Ethereum],
     description:
-      "Stablecoins on EVM & Solana hit your wallet faster than your ex's apology. Zero waiting, all flexing.",
+      'Bank transfer, card, or digital dollars—pick your lane. Either way, it hits instantly.',
     video: onBoard2,
     backgroundColor: '#000',
     textColor: 'text-[#fff]',
@@ -70,11 +70,11 @@ const onboardingSlides: OnboardingSlide[] = [
   },
   {
     key: '3',
-    titleTop: 'Invest',
-    titleBottom: ['Like A', 'Stan'],
+    titleTop: 'Grow',
+    titleBottom: ['without', 'the grind.'],
     icons: [PieChart, DataExploration],
     description:
-      "Pre-built baskets curated by the smartest nerds. Tech moonshots, eco glow-ups—pick your vibe, we'll handle the rest.",
+      'Follow the pros or let the system cook. You never have to pretend you know what a P/E ratio is.',
     video: onBoard3,
     backgroundColor: '#000',
     textColor: 'text-[#fff]',
@@ -84,11 +84,11 @@ const onboardingSlides: OnboardingSlide[] = [
   },
   {
     key: '4',
-    titleTop: 'Swipe',
-    titleBottom: ['Stack &', 'Repeat'],
+    titleTop: 'Spend now.',
+    titleBottom: ['Stack', 'forever.'],
     icons: [CreditCard, Savings],
     description:
-      'Cop a card that rounds up every latte and yeets the spare change straight into your portfolio. Cash-back? More like bag-back.',
+      'Every swipe rounds up and invests the change. Your coffee habit is secretly building your future.',
     video: onBoard4,
     backgroundColor: '#000',
     textColor: 'text-[#fff]',
@@ -226,20 +226,13 @@ export default function App() {
       />
       {renderIndicators()}
 
-      <View className="absolute bottom-6 w-full items-center gap-y-2 px-6">
-        <Button
-          title="Sign in with Apple"
-          leftIcon={<Apple size={24} color="#000" />}
-          size="large"
-          onPress={() => router.push('/(tabs)')}
-          variant="black"
-        />
+      <View className="absolute bottom-12 w-full items-center gap-y-2 px-6">
         <Button
           title="Create an account"
           leftIcon={<Apple size={24} color="#000" />}
           size="large"
           onPress={() => router.push('/(tabs)')}
-          variant="white"
+          variant="black"
         />
       </View>
     </View>
