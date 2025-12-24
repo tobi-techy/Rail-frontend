@@ -1,34 +1,55 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { RailCard } from '../../components/cards';
-import { Plus } from 'lucide-react-native';
+import { CardIntroScreen, CardMainScreen } from '../../components/card';
+
+const HAS_CARD_KEY = 'has_created_card';
 
 const CardScreen = () => {
-  return (
-    <SafeAreaView className="min-h-screen flex-1 bg-transparent">
-      <View className="mt-[120px] items-center px-4 ">
-        <RailCard
-          brand="VISA"
-          holderName="TOBI ADE"
-          last4="2049"
-          exp="09/29"
-          currency="USD"
-          accentColor="#FF6A00"
-          patternIntensity={0.55}
-          orientation="vertical"
-        />
-        <Text className="mt-[124px] font-subtitle text-display-lg">Rail Virtual Card</Text>
-      </View>
+  const [hasCard, setHasCard] = useState<boolean | null>(null);
 
-      <View className="absolute bottom-14 right-4">
-        <TouchableOpacity className="h-14 w-14 items-center justify-center rounded-full bg-black">
-          <Plus size={24} color={'#fff'} />
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  );
+  useEffect(() => {
+    checkCardStatus();
+  }, []);
+
+  const checkCardStatus = async () => {
+    try {
+      const hasCreatedCard = await AsyncStorage.getItem(HAS_CARD_KEY);
+      setHasCard(hasCreatedCard === 'true');
+    } catch (error) {
+      console.error('Error checking card status:', error);
+      setHasCard(false);
+    }
+  };
+
+  const handleCreateCard = async () => {
+    try {
+      await AsyncStorage.setItem(HAS_CARD_KEY, 'false');
+      setHasCard(true);
+    } catch (error) {
+      console.error('Error saving card status:', error);
+      setHasCard(true);
+    }
+  };
+
+  // Loading state
+  if (hasCard === null) {
+    return (
+      <SafeAreaView className="min-h-screen flex-1 items-center justify-center bg-white">
+        <View />
+      </SafeAreaView>
+    );
+  }
+
+  // Show intro screen if no card created yet
+  if (!hasCard) {
+    return <CardIntroScreen onCreateCard={handleCreateCard} />;
+  }
+
+  // Show main card screen
+  return <CardMainScreen onCreateCard={handleCreateCard} />;
 };
 
 export default CardScreen;

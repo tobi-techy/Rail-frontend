@@ -3,6 +3,9 @@ import { View, Animated, StatusBar, Dimensions, Image, StyleSheet } from 'react-
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { splashVideo } from '@/assets/images';
 
+import CurrencyExchangeIcon from '@/assets/Icons/currency-exchange-13.svg';
+import CurrencyPounds from '@/assets/Icons/currency-pound.svg';
+
 const { width, height } = Dimensions.get('window');
 
 const SPLASH_BG = '#FF5A00';
@@ -60,12 +63,21 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <StatusBar barStyle="light-content" backgroundColor={SPLASH_BG} translucent />
-      {/*<VideoView
-        player={player}
-        style={styles.video}
-        contentFit="cover"
-        nativeControls={false}
-      />*/}
+
+      {/* Decorative background corner icons */}
+      {/*<View
+        pointerEvents="none"
+        style={styles.decorations}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants">
+        <View style={styles.topLeftIcon}>
+          <CurrencyExchangeIcon width={260} height={260} opacity={0.4}   />
+        </View>
+        <View style={styles.bottomRightIcon}>
+          <CurrencyPounds width={290} height={290} opacity={0.4} />
+        </View>
+      </View>*/}
+
       <Animated.View
         style={[
           styles.logoContainer,
@@ -84,10 +96,27 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: SPLASH_BG },
   video: { width, height, position: 'absolute' },
+
+  decorations: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
+  },
+  topLeftIcon: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  bottomRightIcon: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+  },
+
   logoContainer: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1,
   },
   logo: { width: 120, height: 120 },
 });

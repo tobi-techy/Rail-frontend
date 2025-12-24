@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StatusBar,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -20,7 +15,7 @@ export default function SignIn() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const { mutate: login, isPending: isLoading } = useLogin();
 
   const updateField = (field: string, value: string) => {
@@ -63,13 +58,13 @@ export default function SignIn() {
         },
         onError: (error: any) => {
           console.error('Login error:', error);
-          
+
           // Handle specific error codes
           const errorCode = error?.error?.code;
           const errorMessage = error?.error?.message;
-          
+
           let displayMessage = 'Invalid email or password';
-          
+
           switch (errorCode) {
             case 'INVALID_CREDENTIALS':
               displayMessage = 'Invalid email or password. Please try again.';
@@ -109,70 +104,70 @@ export default function SignIn() {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
         bottomOffset={40}>
-          {/* Content */}
-          <View className="flex-1 px-6 pb-6">
-            {/* Title */}
-            <View className="mb-8 mt-4">
-              <Text className="font-display text-[60px] text-gray-900">Welcome Back</Text>
-              <Text className="mt-2 font-body-medium text-base text-gray-600">
-                Sign in to continue your investment journey
-              </Text>
-            </View>
-
-            {/* Form */}
-            <View className="gap-y-4">
-              <InputField
-                required
-                label="Email Address"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChangeText={(value: string) => updateField('email', value)}
-                error={errors.email}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                textContentType="emailAddress"
-              />
-
-              <InputField
-                required
-                label="Password"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChangeText={(value: string) => updateField('password', value)}
-                error={errors.password}
-                secureTextEntry={!showPassword}
-                textContentType="password"
-              />
-            </View>
-
-            {/* Forgot Password & Passcode Login */}
-            <View className="mt-4 flex-row justify-end">
-              
-              <TouchableOpacity
-                onPress={() => router.push('/(auth)/forgot-password')}
-                className="self-end">
-                <Text className="font-body text-[14px] font-bold text-blue-600">
-                  Forgot Password?
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Sign In Button */}
-            <View className="absolute bottom-0 left-0 right-0 mx-[24px]">
-              <Button
-                title="Sign in"
-                onPress={handleSignIn}
-                loading={isLoading}
-                className="rounded-full"
-              />
-
-              <TouchableOpacity onPress={() => router.push('/(auth)')} className="mt-4 self-center">
-                <Text className="text-center font-body-medium text-[14px] text-gray-900">
-                  New to Rail? Sign up
-                </Text>
-              </TouchableOpacity>
-            </View>
+        {/* Content */}
+        <View className="flex-1 px-6 pb-6">
+          {/* Title */}
+          <View className="mb-8 mt-4">
+            <Text className="font-display text-[60px] text-gray-900">Welcome Back</Text>
+            <Text className="mt-2 font-body text-body text-gray-600">
+              Sign in to continue your investment journey
+            </Text>
           </View>
+
+          {/* Form */}
+          <View className="gap-y-4">
+            <InputField
+              required
+              label="Email Address"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChangeText={(value: string) => updateField('email', value)}
+              error={errors.email}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              textContentType="emailAddress"
+            />
+
+            <InputField
+              required
+              label="Password"
+              placeholder="Enter your password"
+              value={formData.password}
+              onChangeText={(value: string) => updateField('password', value)}
+              error={errors.password}
+              secureTextEntry={!showPassword}
+              textContentType="password"
+            />
+          </View>
+
+          {/* Forgot Password & Passcode Login */}
+          <View className="mt-4 flex-row justify-end">
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/forgot-password')}
+              className="self-end">
+              <Text className="font-subtitle text-caption text-primary-tertiary">
+                Forgot Password?
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Sign In Button */}
+          <View className="absolute bottom-0 left-0 right-0 mx-[24px]">
+            <Button
+              title="Sign in"
+              onPress={handleSignIn}
+              loading={isLoading}
+              className="rounded-full"
+              variant="orange"
+            />
+
+            <TouchableOpacity onPress={() => router.push('/(auth)')} className="mt-4 self-center">
+              <Text className="text-center font-subtitle text-[14px] text-caption text-gray-900">
+                New to Rail? <Text className="text-primary-tertiary">Sign up</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </KeyboardAwareScrollView>
     </SafeAreaView>
   );

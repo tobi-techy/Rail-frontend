@@ -121,7 +121,7 @@ export default function SignUp() {
           {/* Title */}
           <View className="mb-8 mt-4">
             <Text className="font-display text-[60px] text-gray-900">Create Account</Text>
-            <Text className="mt-2 font-body-medium text-[14px] text-gray-600">
+            <Text className="mt-2 font-body text-body text-gray-600">
               Sign up to start your journey
             </Text>
           </View>
@@ -175,13 +175,13 @@ export default function SignUp() {
             />
           </View>
 
-          <View className="mt-[200px]">
+          <View className="mt-[100px]">
             {/* Terms */}
             <View className="mb-6">
-              <Text className="text-center font-label text-sm text-gray-500">
+              <Text className="text-center font-subtitle text-caption text-gray-500">
                 By creating an account, you agree to our{' '}
-                <Text className="text-gray-900 underline">Terms of Service</Text> and{' '}
-                <Text className="text-gray-900 underline">Privacy Policy</Text>
+                <Text className="text-primary-tertiary underline">Terms of Service</Text> and{' '}
+                <Text className="text-primary-tertiary underline">Privacy Policy</Text>
               </Text>
             </View>
 
@@ -192,10 +192,11 @@ export default function SignUp() {
                 onPress={handleSignUp}
                 loading={isLoading}
                 className="rounded-full font-body"
+                variant="orange"
               />
               <TouchableOpacity onPress={() => router.push('/(auth)/signin')}>
-                <Text className="text-center font-body-medium text-[14px] text-gray-900">
-                  Already a Rail user? Sign In
+                <Text className="text-center font-subtitle text-caption text-gray-900">
+                  Already a Rail user? <Text className="text-primary-tertiary">Sign In</Text>
                 </Text>
               </TouchableOpacity>
             </View>

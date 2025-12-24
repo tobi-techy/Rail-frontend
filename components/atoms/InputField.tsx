@@ -40,9 +40,12 @@ export const InputField: React.FC<InputFieldProps> = ({
 
   const getKeyboardType = () => {
     switch (type) {
-      case 'email': return 'email-address';
-      case 'phone': return 'phone-pad';
-      default: return 'default';
+      case 'email':
+        return 'email-address';
+      case 'phone':
+        return 'phone-pad';
+      default:
+        return 'default';
     }
   };
 
@@ -61,16 +64,19 @@ export const InputField: React.FC<InputFieldProps> = ({
 
   return (
     <View className="mb-4">
-      <Text className="font-subtitle text-caption text-text-primary mb-2">
+      <Text className="mb-2 font-subtitle text-body text-text-primary">
         {label}
         {required && <Text className="text-destructive"> *</Text>}
       </Text>
 
       <View
-        className={`flex-row items-center bg-surface rounded-sm h-12 px-4 border ${
-          isFocused ? 'border-primary-accent' : hasError ? 'border-destructive' : 'border-transparent'
-        }`}
-      >
+        className={`h-[60px] flex-row items-center rounded-sm border bg-surface px-4 ${
+          isFocused
+            ? 'border-primary-accent'
+            : hasError
+              ? 'border-destructive'
+              : 'border-transparent'
+        }`}>
         {icon && (
           <Ionicons
             name={icon}
@@ -106,9 +112,7 @@ export const InputField: React.FC<InputFieldProps> = ({
         )}
       </View>
 
-      {hasError && (
-        <Text className="font-caption text-caption text-destructive mt-1">{error}</Text>
-      )}
+      {hasError && <Text className="mt-1 font-caption text-caption text-destructive">{error}</Text>}
     </View>
   );
 };

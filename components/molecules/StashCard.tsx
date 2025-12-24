@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 
 interface StashCardProps {
   title: string;
@@ -7,6 +7,9 @@ interface StashCardProps {
   amountCents?: string;
   icon: React.ReactNode;
   className?: string;
+  onPress?: () => void;
+  disabled?: boolean;
+  testID?: string;
 }
 
 export const StashCard: React.FC<StashCardProps> = ({
@@ -15,9 +18,19 @@ export const StashCard: React.FC<StashCardProps> = ({
   amountCents,
   icon,
   className,
+  onPress,
+  disabled,
+  testID,
 }) => {
+  const Container: any = onPress ? Pressable : View;
+
   return (
-    <View className={`rounded-[24px] border border-gray-100 bg-white p-[24px] ${className || ''}`}>
+    <Container
+      className={`rounded-[24px] border border-gray-100 bg-white p-[24px] ${className || ''}`}
+      onPress={onPress}
+      disabled={disabled}
+      testID={testID}
+      accessibilityRole={onPress ? 'button' : undefined}>
       <View className="mb-[18px] self-start">{icon}</View>
 
       <Text className="mb-[6px] font-body text-[15px] text-gray-400">{title}</Text>
@@ -28,6 +41,6 @@ export const StashCard: React.FC<StashCardProps> = ({
           <Text className="font-subtitle text-[22px] text-gray-400">{amountCents}</Text>
         )}
       </View>
-    </View>
+    </Container>
   );
 };

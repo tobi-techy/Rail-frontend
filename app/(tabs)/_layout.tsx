@@ -17,7 +17,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <Home size={24} color={color} fill={focused ? color : 'gray'} />
+            <Home size={24} color={color} fill={focused ? '#FF5A00' : 'black'} />
           ),
         }}
       />
@@ -26,7 +26,7 @@ export default function TabLayout() {
         options={{
           title: 'Invest',
           tabBarIcon: ({ color, focused }) => (
-            <PieChart size={24} color={color} fill={focused ? color : 'gray'} />
+            <PieChart size={24} color={color} fill={focused ? color : 'black'} />
           ),
         }}
       />
@@ -35,7 +35,7 @@ export default function TabLayout() {
         options={{
           title: 'Card',
           tabBarIcon: ({ color, focused }) => (
-            <CreditCard size={24} color={color} fill={focused ? color : 'gray'} />
+            <CreditCard size={24} color={color} fill={focused ? color : 'black'} />
           ),
         }}
       />

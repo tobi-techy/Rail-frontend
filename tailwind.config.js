@@ -9,11 +9,13 @@ module.exports = {
           DEFAULT: '#1B84FF',
           accent: '#1B84FF',
           secondary: '#487984',
+          tertiary: '#FF5A00',
         },
         background: {
           DEFAULT: '#FFFFFF',
           main: '#FFFFFF',
           surface: '#F5F5F5',
+          tertiary: '#FF5A00',
         },
         surface: '#F5F5F5',
         text: {

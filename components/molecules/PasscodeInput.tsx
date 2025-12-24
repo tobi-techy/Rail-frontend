@@ -45,7 +45,10 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
   const [internalValue, setInternalValue] = useState(defaultValue);
   const [showPasscode, setShowPasscode] = useState(false);
 
-  const passcode = useMemo(() => (isControlled ? value ?? '' : internalValue), [isControlled, internalValue, value]);
+  const passcode = useMemo(
+    () => (isControlled ? (value ?? '') : internalValue),
+    [isControlled, internalValue, value]
+  );
 
   const setPasscode = useCallback(
     (next: string) => {
@@ -75,7 +78,9 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
       {title && (
         <View className="mt-12">
           <Text className="font-display text-display-lg text-text-primary">{title}</Text>
-          {subtitle && <Text className="mt-2 font-body text-body text-text-secondary">{subtitle}</Text>}
+          {subtitle && (
+            <Text className="mt-2 font-body text-body text-text-secondary">{subtitle}</Text>
+          )}
         </View>
       )}
 
@@ -85,10 +90,14 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
             {Array.from({ length }).map((_, index) => {
               const isFilled = index < passcode.length;
               return (
-                <View key={index} className="h-14 w-14 items-center justify-center rounded-full bg-surface">
+                <View
+                  key={index}
+                  className="h-14 w-14 items-center justify-center rounded-full bg-surface">
                   {isFilled &&
                     (showPasscode ? (
-                      <Text className="font-headline text-headline-2 text-text-primary">{passcode[index]}</Text>
+                      <Text className="font-headline text-headline-2 text-text-primary">
+                        {passcode[index]}
+                      </Text>
                     ) : (
                       <View className="h-3 w-3 rounded-full bg-text-primary" />
                     ))}
@@ -101,9 +110,13 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
             <TouchableOpacity
               onPress={() => setShowPasscode(!showPasscode)}
               className="h-12 w-12 items-center justify-center rounded-full bg-surface"
-              activeOpacity={0.7}
-            >
-              <Icon name={showPasscode ? 'eye-off' : 'eye'} size={22} color="#1B84FF" strokeWidth={2} />
+              activeOpacity={0.7}>
+              <Icon
+                name={showPasscode ? 'eye-off' : 'eye'}
+                size={22}
+                color="#FF5A00"
+                strokeWidth={2}
+              />
             </TouchableOpacity>
           )}
         </View>

@@ -1,18 +1,11 @@
 import React, { forwardRef, useRef, useCallback } from 'react';
-import {
-  Pressable,
-  PressableProps,
-  Text,
-  ActivityIndicator,
-  View,
-  Animated,
-} from 'react-native';
+import { Pressable, PressableProps, Text, ActivityIndicator, View, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
 
 interface ButtonProps extends Omit<PressableProps, 'style'> {
   title: string;
-  variant?: 'black' | 'white';
+  variant?: 'black' | 'white' | 'orange';
   size?: 'small' | 'large';
   loading?: boolean;
   leftIcon?: React.ReactNode;
@@ -25,10 +18,9 @@ interface ButtonProps extends Omit<PressableProps, 'style'> {
 
 const playClickSound = async () => {
   try {
-    const { sound } = await Audio.Sound.createAsync(
-      require('@/assets/sounds/click.mp3'),
-      { volume: 0.3 }
-    );
+    const { sound } = await Audio.Sound.createAsync(require('@/assets/sounds/click.mp3'), {
+      volume: 0.3,
+    });
     await sound.playAsync();
     sound.setOnPlaybackStatusUpdate((status) => {
       if (status.isLoaded && status.didJustFinish) sound.unloadAsync();
@@ -83,14 +75,21 @@ export const Button = forwardRef<View, ButtonProps>(
       [enableHaptics, enableSound, onPress]
     );
 
-    const variantStyles = variant === 'white' ? 'bg-white border border-gray-200' : 'bg-black';
-    const textStyles = variant === 'white' ? 'text-black' : 'text-white';
+    const variantStyles =
+      variant === 'white'
+        ? 'bg-white border border-gray-200'
+        : variant === 'orange'
+          ? 'bg-[#FF5A00]'
+          : 'bg-black';
+    const textStyles =
+      variant === 'white' ? 'text-black' : variant === 'orange' ? 'text-white' : 'text-white';
     const sizeStyles = size === 'small' ? 'px-4 py-3' : 'px-6 py-5';
     const textSize = size === 'small' ? 'text-sm' : 'text-lg';
     const widthStyles = size === 'small' ? 'w-[30%]' : 'w-full';
 
     return (
-      <Animated.View style={{ transform: [{ scale: scaleAnim }], width: size === 'small' ? '30%' : '100%' }}>
+      <Animated.View
+        style={{ transform: [{ scale: scaleAnim }], width: size === 'small' ? '30%' : '100%' }}>
         <Pressable
           ref={ref}
           disabled={disabled || loading}

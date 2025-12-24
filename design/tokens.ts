@@ -8,6 +8,7 @@ export const colors = {
   primary: {
     accent: '#1B84FF',
     secondary: '#487984',
+    tertiary: '#FF5A00',
   },
   background: {
     main: '#FFFFFF',

@@ -9,7 +9,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
   return (
     <View style={[styles.wrapper, { paddingBottom: insets.bottom + 10 }]} pointerEvents="box-none">
-      <BlurView intensity={5} style={styles.container}>
+      <BlurView intensity={150} style={styles.container}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
@@ -45,7 +45,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}>
               {options.tabBarIcon?.({
                 focused: isFocused,
-                color: isFocused ? '#000000' : '#9CA3AF', // Black active, Grey inactive
+                color: isFocused ? '#FF5A00' : '#000000', // Black active, Grey inactive
                 size: 28,
               })}
             </Pressable>

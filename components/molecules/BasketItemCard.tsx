@@ -29,7 +29,7 @@ export const BasketItemCard: React.FC<BasketItemCardProps> = ({
       className={`overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-sm ${className || ''}`}>
       {/* Header with code and badges */}
       <View className="flex-row items-center justify-between px-[14px] pb-[14px] pt-[14px]">
-        <Text className="font-subtitle text-[18px]  text-gray-800">{code}</Text>
+        <Text className="font-subtitle text-subtitle">{code}</Text>
         <View className="flex-row">
           {badges.map((badge, index) => (
             <View
@@ -43,7 +43,7 @@ export const BasketItemCard: React.FC<BasketItemCardProps> = ({
       </View>
 
       {/* Status indicator */}
-      <View className="px-[14px] pb-2">
+      {/*<View className="px-[14px] pb-2">
         <View
           className={`flex-row items-center ${status === 'Safe' ? 'bg-green-100' : 'bg-orange-100'} self-start rounded-full px-2 py-[2px]`}>
           <View
@@ -54,7 +54,7 @@ export const BasketItemCard: React.FC<BasketItemCardProps> = ({
             {status}
           </Text>
         </View>
-      </View>
+      </View>*/}
 
       {/* AUM and performance indicators */}
       <View className="flex-row justify-between px-[14px] pb-3">

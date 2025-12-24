@@ -1,8 +1,8 @@
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import React, { useLayoutEffect, useMemo, useState, useCallback } from 'react';
+import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 import { router, useNavigation } from 'expo-router';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
-import { BasketItemCard } from '@/components/molecules/BasketItemCard';
 import { StashCard } from '@/components/molecules/StashCard';
 import { ArrowDown, Bell, DollarSign, Grid3X3Icon, PlusIcon, User } from 'lucide-react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
@@ -45,15 +45,16 @@ const Dashboard = () => {
       headerShown: true,
       headerLeft: () => (
         <View className="flex-row items-center gap-x-3 pl-[14px]">
-          <Grid3X3Icon size={28} strokeWidth={0.8} fill={'#000'} color={'#fff'} />
+          {/*<Grid3X3Icon size={28} strokeWidth={0.8} fill={'#000'} color={'#fff'} />*/}
+          <Text className="font-subtitle text-[18px]">{'Wallet'}</Text>
         </View>
       ),
-      headerRight: () => (
-        <View className="flex-row items-center gap-x-[12px] pr-[14px]">
-          <Bell size={24} strokeWidth={2} fill={'#000'} />
-          <User size={24} strokeWidth={2} fill={'#000'} />
-        </View>
-      ),
+      // headerRight: () => (
+      //   <TouchableOpacity className='bg-primary-tertiary px-[18px] py-[4px] mr-2 flex-row items-center rounded-full'>
+      //     {/*<PlusIcon size={28} strokeWidth={0.8} fill={'#000'} color={'#fff'} />*/}
+      //     <Text className='text-body font-body text-[#fff]'>14 points</Text>
+      //   </TouchableOpacity>
+      // ),
       title: '',
       headerStyle: {
         backgroundColor: 'transparent',
@@ -61,66 +62,22 @@ const Dashboard = () => {
     });
   }, [navigation]);
 
-  const transactions = useMemo<Transaction[]>(
-    () => [
-      {
-        id: 'txn-1',
-        title: 'Spotify Subscription',
-        category: 'Subscriptions',
-        amount: 9.99,
-        currency: 'USD',
-        type: 'DEBIT',
-        status: 'COMPLETED',
-        createdAt: new Date('2024-06-12T09:24:00Z'),
-      },
-      {
-        id: 'txn-2',
-        title: 'Salary Payment',
-        category: 'Income',
-        amount: 2450,
-        currency: 'USD',
-        type: 'CREDIT',
-        status: 'COMPLETED',
-        createdAt: new Date('2024-06-10T06:00:00Z'),
-      },
-      {
-        id: 'txn-3',
-        title: 'USDC • BTC Swap',
-        category: 'Crypto',
-        amount: 520,
-        currency: 'USD',
-        type: 'SWAP',
-        status: 'PENDING',
-        createdAt: new Date('2024-06-08T14:10:00Z'),
-      },
-      {
-        id: 'txn-4',
-        title: 'Starbucks Brooklyn',
-        category: 'Food & Drinks',
-        amount: 6.75,
-        currency: 'USD',
-        type: 'DEBIT',
-        status: 'COMPLETED',
-        createdAt: new Date('2024-06-03T11:32:00Z'),
-      },
-    ],
-    []
-  );
+  const transactions = useMemo<Transaction[]>(() => [], []);
 
   // Use loading placeholder values when no data yet
-  const displayBalance = portfolio ? formatCurrency(portfolio.totalPortfolio) : '$10,000.00';
+  const displayBalance = portfolio ? formatCurrency(portfolio.totalPortfolio) : '$00.00';
   const displayPerformance = portfolio ? formatPercentage(portfolio.performanceLast30d) : '---%';
   const displayBuyingPower = portfolio ? formatCurrency(portfolio.buyingPower) : '$---';
 
   return (
     <ScrollView
-      className="flex-1"
+      className="min-h-screen flex-1"
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
       }>
       <View className="px-[14px]">
         {/* Portfolio Balance Card */}
-        <View className="">
+        <>
           <BalanceCard
             balance={displayBalance}
             percentChange={displayPerformance}
@@ -132,26 +89,27 @@ const Dashboard = () => {
           <View className="flex-row gap-3">
             <Button
               title="Receive"
-              onPress={() => router.navigate('/deposit')}
+              // onPress={() => router.navigate('/deposit')}
               leftIcon={<PlusIcon size={24} color="white" />}
               size="small"
+              variant="black"
             />
             <Button
               title="Send"
-              onPress={() => router.navigate('/withdraw')}
+              // onPress={() => router.navigate('/withdraw')}
               leftIcon={<ArrowDown size={24} color="black" />}
               size="small"
               variant="white"
             />
             <ActionButton icon="more-horizontal" label="" />
           </View>
-        </View>
+        </>
 
         {/* Stash Cards */}
-        <View className="mb-4 flex-row gap-3">
+        <View className="mb- flex-row gap-3">
           <StashCard
             title="Spending Stash"
-            amount="$7000"
+            amount="$00"
             amountCents=".00"
             icon={
               <View className="h-9 w-9 items-center justify-center rounded-[12px] bg-[#4A89F7]">
@@ -162,7 +120,7 @@ const Dashboard = () => {
           />
           <StashCard
             title="Investment Stash"
-            amount="$3000"
+            amount="$00"
             amountCents=".00"
             icon={
               <View className="h-9 w-9 items-center justify-center rounded-[12px] bg-[#FF8A65]">
@@ -174,7 +132,7 @@ const Dashboard = () => {
         </View>
 
         {/* My Baskets Section */}
-        <>
+        {/*<>
           <Text className="font-subtitle text-headline-2">My tracks</Text>
 
           <View className="flex-row">
@@ -204,18 +162,30 @@ const Dashboard = () => {
               className="flex-1"
             />
           </View>
-        </>
+        </>*/}
 
         {/* Transaction History Section */}
-        <View className="">
+        <>
           <View className="rounded-3xl py-5">
-            <TransactionList
-              title="Transaction History"
-              transactions={transactions}
-              emptyStateMessage="No transactions to show yet."
-            />
+            {transactions.length === 0 ? (
+              <View className="items-center justify-center rounded-3xl bg-white px-5 py-8">
+                <TransactionsEmptyIllustration width={220} height={140} />
+                <Text className="mt-4 text-center font-subtitle text-headline-2 text-gray-900">
+                  No transactions yet
+                </Text>
+                <Text className="mt-2 text-center font-body text-base text-gray-500">
+                  Your activity will show up here once you receive or send funds.
+                </Text>
+              </View>
+            ) : (
+              <TransactionList
+                title="Transaction History"
+                transactions={transactions}
+                emptyStateMessage="No transactions to show yet."
+              />
+            )}
           </View>
-        </View>
+        </>
       </View>
     </ScrollView>
   );
