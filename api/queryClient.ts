@@ -4,106 +4,66 @@
  */
 
 import { QueryClient } from '@tanstack/react-query';
-import type { ApiError } from './types';
+import type { TransformedApiError } from './types';
 import { safeError } from '../utils/logSanitizer';
-
-/**
- * Default query options
- */
-const defaultQueryOptions = {
-  queries: {
-    // Time before a query is considered stale (5 minutes)
-    staleTime: 5 * 60 * 1000,
-    
-    // Time before inactive queries are garbage collected (10 minutes)
-    gcTime: 10 * 60 * 1000,
-    
-    // Retry failed requests
-    retry: (failureCount: number, error: any) => {
-      // Don't retry on 4xx errors (client errors)
-      if (error?.error?.code?.startsWith('4')) {
-        return false;
-      }
-      // Retry up to 2 times for other errors
-      return failureCount < 2;
-    },
-    
-    // Retry delay with exponential backoff
-    retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    
-    // Don't refetch on window focus by default (can be overridden per query)
-    refetchOnWindowFocus: false,
-    
-    // Refetch on reconnect
-    refetchOnReconnect: true,
-    
-    // Refetch on mount if data is stale
-    refetchOnMount: true,
-  },
-  
-  mutations: {
-    // Retry mutations once
-    retry: 1,
-    
-    // Error handling for mutations
-    onError: (error: Error) => {
-      // Global error handling for mutations
-      if (__DEV__) {
-        safeError('[Mutation Error]', error);
-      }
-      
-      // You can add global error notifications here
-      // e.g., Toast.show({ type: 'error', message: error.message });
-    },
-  },
-};
 
 /**
  * Create and export query client
  */
 export const queryClient = new QueryClient({
-  defaultOptions: defaultQueryOptions,
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
+      retry: (failureCount, error: unknown) => {
+        const apiError = error as TransformedApiError | undefined;
+        // Don't retry on 4xx errors
+        if (apiError?.status && apiError.status >= 400 && apiError.status < 500) return false;
+        return failureCount < 3;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      refetchOnMount: true,
+    },
+    mutations: {
+      retry: false,
+      onError: (error) => {
+        if (__DEV__) safeError('[Mutation Error]', error);
+      },
+    },
+  },
 });
 
 /**
  * Query key factory for consistent key generation
  */
 export const queryKeys = {
-  // Auth
   auth: {
     all: ['auth'] as const,
     me: () => [...queryKeys.auth.all, 'me'] as const,
     passcode: () => [...queryKeys.auth.all, 'passcode'] as const,
   },
-  
-  // Portfolio
   portfolio: {
     all: ['portfolio'] as const,
     overview: () => [...queryKeys.portfolio.all, 'overview'] as const,
   },
-  
-  // Wallet
   wallet: {
     all: ['wallet'] as const,
     balance: () => [...queryKeys.wallet.all, 'balance'] as const,
-    transactions: (filters?: any) => 
+    transactions: (filters?: unknown) =>
       [...queryKeys.wallet.all, 'transactions', filters] as const,
-    transaction: (id: string) => 
-      [...queryKeys.wallet.all, 'transaction', id] as const,
-    prices: (tokenIds: string[]) => 
-      [...queryKeys.wallet.all, 'prices', tokenIds] as const,
+    transaction: (id: string) => [...queryKeys.wallet.all, 'transaction', id] as const,
+    prices: (tokenIds: string[]) => [...queryKeys.wallet.all, 'prices', tokenIds] as const,
     networks: () => [...queryKeys.wallet.all, 'networks'] as const,
-    addresses: (chain?: string) => 
-      [...queryKeys.wallet.all, 'addresses', chain] as const,
+    addresses: (chain?: string) => [...queryKeys.wallet.all, 'addresses', chain] as const,
   },
-  
-  // User
   user: {
     all: ['user'] as const,
     profile: () => [...queryKeys.user.all, 'profile'] as const,
     settings: () => [...queryKeys.user.all, 'settings'] as const,
     kycStatus: () => [...queryKeys.user.all, 'kyc-status'] as const,
-    notifications: (filters?: any) => 
+    notifications: (filters?: unknown) =>
       [...queryKeys.user.all, 'notifications', filters] as const,
     devices: () => [...queryKeys.user.all, 'devices'] as const,
   },

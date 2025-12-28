@@ -1,5 +1,11 @@
+/**
+ * Offline Queue
+ * Queues failed mutations when offline and retries on reconnect
+ */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NetInfo } from '@react-native-community/netinfo';
+import NetInfo from '@react-native-community/netinfo';
+import apiClient from './client';
 
 interface QueuedRequest {
   id: string;
@@ -16,6 +22,7 @@ const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 class OfflineQueue {
   private queue: QueuedRequest[] = [];
   private isProcessing = false;
+  private unsubscribe: (() => void) | null = null;
 
   async init() {
     try {
@@ -24,40 +31,52 @@ class OfflineQueue {
         this.queue = JSON.parse(stored).filter(
           (req: QueuedRequest) => Date.now() - req.timestamp < MAX_AGE_MS
         );
+        await this.persist();
       }
     } catch {
       this.queue = [];
     }
+
+    // Listen for network changes
+    this.unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected) this.processQueue();
+    });
   }
 
   async add(request: Omit<QueuedRequest, 'id' | 'timestamp'>) {
     if (this.queue.length >= MAX_QUEUE_SIZE) {
-      this.queue.shift(); // Remove oldest
+      this.queue.shift();
     }
 
-    const queuedRequest: QueuedRequest = {
+    this.queue.push({
       ...request,
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       timestamp: Date.now(),
-    };
+    });
 
-    this.queue.push(queuedRequest);
     await this.persist();
   }
 
-  async process(executor: (req: QueuedRequest) => Promise<void>) {
+  async processQueue() {
     if (this.isProcessing || this.queue.length === 0) return;
+
+    const state = await NetInfo.fetch();
+    if (!state.isConnected) return;
 
     this.isProcessing = true;
 
     while (this.queue.length > 0) {
       const request = this.queue[0];
       try {
-        await executor(request);
+        await apiClient.request({
+          url: request.url,
+          method: request.method,
+          data: request.data,
+        });
         this.queue.shift();
         await this.persist();
       } catch {
-        break; // Stop processing on failure
+        break;
       }
     }
 
@@ -74,6 +93,10 @@ class OfflineQueue {
 
   get length() {
     return this.queue.length;
+  }
+
+  destroy() {
+    this.unsubscribe?.();
   }
 }
 
@@ -95,11 +118,27 @@ export async function withRetry<T>(
     } catch (error) {
       lastError = error as Error;
       if (attempt < maxRetries) {
-        const delay = baseDelay * Math.pow(2, attempt);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, baseDelay * 2 ** attempt));
       }
     }
   }
 
   throw lastError!;
+}
+
+/**
+ * Queue mutation if offline
+ */
+export async function queueIfOffline(
+  request: Omit<QueuedRequest, 'id' | 'timestamp'>,
+  executor: () => Promise<unknown>
+): Promise<unknown> {
+  const state = await NetInfo.fetch();
+
+  if (!state.isConnected) {
+    await offlineQueue.add(request);
+    return { queued: true };
+  }
+
+  return executor();
 }

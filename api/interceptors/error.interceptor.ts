@@ -1,26 +1,85 @@
-import { AxiosError } from 'axios';
-import { ApiError, AuthError } from '@/lib/errors';
-import { ERROR_MESSAGES } from '@/lib/constants/messages';
+/**
+ * Error Interceptor
+ * Transforms API errors to consistent format with logging
+ */
 
-export function handleApiError(error: AxiosError): never {
+import type { AxiosError } from 'axios';
+import { safeError } from '../../utils/logSanitizer';
+
+export interface ApiErrorResponse {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+  status: number;
+  requestId?: string;
+}
+
+export function errorInterceptor(error: AxiosError<any>): Promise<never> {
+  const requestId = error.config?.headers?.['X-Request-ID'] as string | undefined;
+  const apiError = error.response?.data;
+
+  // Log error for debugging
+  if (__DEV__) {
+    safeError('[API Error]', {
+      url: error.config?.url,
+      status: error.response?.status,
+      code: apiError?.code,
+      message: apiError?.message,
+      requestId,
+    });
+  }
+
+  // Network error (no response)
   if (!error.response) {
-    throw new ApiError(ERROR_MESSAGES.NETWORK.NO_CONNECTION, 0, 'NETWORK_ERROR');
+    return Promise.reject({
+      code: 'NETWORK_ERROR',
+      message: 'Network error. Please check your connection.',
+      status: 0,
+      requestId,
+    } as ApiErrorResponse);
   }
 
-  const { status, data } = error.response;
-  const message = (data as any)?.error?.message || (data as any)?.message || ERROR_MESSAGES.NETWORK.SERVER_ERROR;
+  const status = error.response.status;
 
-  if (status === 401) {
-    throw new AuthError(message);
+  // Backend error with code and message
+  if (apiError?.code && apiError?.message) {
+    return Promise.reject({
+      code: apiError.code,
+      message: apiError.message,
+      details: apiError.details,
+      status,
+      requestId: apiError.requestId || requestId,
+    } as ApiErrorResponse);
   }
 
-  if (status === 404) {
-    throw new ApiError(message, 404, 'NOT_FOUND');
+  // Legacy error format
+  if (apiError?.error) {
+    return Promise.reject({
+      code: apiError.error.code || `HTTP_${status}`,
+      message: apiError.error.message || getDefaultMessage(status),
+      details: apiError.error.details,
+      status,
+      requestId,
+    } as ApiErrorResponse);
   }
 
-  if (status >= 500) {
-    throw new ApiError(ERROR_MESSAGES.NETWORK.SERVER_ERROR, status, 'SERVER_ERROR');
-  }
+  // Fallback error
+  return Promise.reject({
+    code: `HTTP_${status}`,
+    message: apiError?.message || getDefaultMessage(status),
+    status,
+    requestId,
+  } as ApiErrorResponse);
+}
 
-  throw new ApiError(message, status);
+function getDefaultMessage(status: number): string {
+  const messages: Record<number, string> = {
+    400: 'Invalid request. Please check your input.',
+    401: 'Authentication required. Please log in.',
+    403: 'Access denied. You do not have permission.',
+    404: 'Resource not found.',
+    429: 'Too many requests. Please try again later.',
+    500: 'Server error. Please try again later.',
+  };
+  return messages[status] || `Request failed with status ${status}`;
 }
