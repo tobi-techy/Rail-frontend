@@ -46,15 +46,9 @@ const Dashboard = () => {
       headerLeft: () => (
         <View className="flex-row items-center gap-x-3 pl-[14px]">
           {/*<Grid3X3Icon size={28} strokeWidth={0.8} fill={'#000'} color={'#fff'} />*/}
-          <Text className="font-subtitle text-[18px]">{'Wallet'}</Text>
+          <Text className="font-subtitle text-headline-1">{'Station'}</Text>
         </View>
       ),
-      // headerRight: () => (
-      //   <TouchableOpacity className='bg-primary-tertiary px-[18px] py-[4px] mr-2 flex-row items-center rounded-full'>
-      //     {/*<PlusIcon size={28} strokeWidth={0.8} fill={'#000'} color={'#fff'} />*/}
-      //     <Text className='text-body font-body text-[#fff]'>14 points</Text>
-      //   </TouchableOpacity>
-      // ),
       title: '',
       headerStyle: {
         backgroundColor: 'transparent',
@@ -117,6 +111,7 @@ const Dashboard = () => {
               </View>
             }
             className="flex-1"
+            onPress={() =>  router.navigate("/spending-stash")}
           />
           <StashCard
             title="Investment Stash"
@@ -128,6 +123,7 @@ const Dashboard = () => {
               </View>
             }
             className="flex-1"
+            onPress={() => router.navigate("/investment-stash")}
           />
         </View>
 

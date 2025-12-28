@@ -1,7 +1,6 @@
 import React, { forwardRef, useRef, useCallback } from 'react';
 import { Pressable, PressableProps, Text, ActivityIndicator, View, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Audio } from 'expo-av';
 
 interface ButtonProps extends Omit<PressableProps, 'style'> {
   title: string;
@@ -12,21 +11,8 @@ interface ButtonProps extends Omit<PressableProps, 'style'> {
   rightIcon?: React.ReactNode;
   disabled?: boolean;
   className?: string;
-  enableSound?: boolean;
   enableHaptics?: boolean;
 }
-
-const playClickSound = async () => {
-  try {
-    const { sound } = await Audio.Sound.createAsync(require('@/assets/sounds/click.mp3'), {
-      volume: 0.3,
-    });
-    await sound.playAsync();
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded && status.didJustFinish) sound.unloadAsync();
-    });
-  } catch {}
-};
 
 export const Button = forwardRef<View, ButtonProps>(
   (
@@ -39,7 +25,6 @@ export const Button = forwardRef<View, ButtonProps>(
       rightIcon,
       disabled,
       className = '',
-      enableSound = true,
       enableHaptics = true,
       onPress,
       ...props
@@ -49,13 +34,14 @@ export const Button = forwardRef<View, ButtonProps>(
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = useCallback(() => {
+      if (enableHaptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       Animated.spring(scaleAnim, {
         toValue: 0.96,
         useNativeDriver: true,
         speed: 50,
         bounciness: 4,
       }).start();
-    }, [scaleAnim]);
+    }, [scaleAnim, enableHaptics]);
 
     const handlePressOut = useCallback(() => {
       Animated.spring(scaleAnim, {
@@ -68,11 +54,10 @@ export const Button = forwardRef<View, ButtonProps>(
 
     const handlePress = useCallback(
       (e: any) => {
-        if (enableHaptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        if (enableSound) playClickSound();
+        if (enableHaptics) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         onPress?.(e);
       },
-      [enableHaptics, enableSound, onPress]
+      [enableHaptics, onPress]
     );
 
     const variantStyles =

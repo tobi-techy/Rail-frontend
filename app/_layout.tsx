@@ -15,7 +15,7 @@ import '../global.css';
 const SPLASH_BG = '#FF5A00';
 
 // Hard limit: force-hide the splash after this long, no matter what.
-const SPLASH_HARD_TIMEOUT_MS = 1 * 60 * 1000;
+const SPLASH_HARD_TIMEOUT_MS = 0.5 * 60 * 1000;
 
 // Soft minimum: don't *start* finishing the splash animation before this long.
 // Keep it the same as the hard timeout unless you want a longer/shorter animation window.

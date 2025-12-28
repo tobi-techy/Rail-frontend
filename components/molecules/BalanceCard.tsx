@@ -43,7 +43,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             <View className="mt-2 items-start gap-x-2">
               <Text className="font-caption text-caption text-text-secondary">Total Portfolio</Text>
               <View className="flex-row items-center gap-x-2">
-                <Text className="mb-1 font-subtitle text-headline-1 text-text-primary">
+                <Text className="mb-1 font-subtitle text-[40px] text-text-primary">
                   {maskValue(balance)}
                 </Text>
                 <TouchableOpacity
@@ -64,13 +64,13 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 <Text
                   className={`font-body text-body ${isNegative ? 'text-destructive' : 'text-success'}`}>
                   {maskValue(percentChange)}{' '}
-                  <Text className="font-subtitle text-[16px] text-text-primary">{timeframe}</Text>
+                  <Text className="font-subtitle text-caption text-text-secondary">{timeframe}</Text>
                 </Text>
               </View>
 
               <View className="flex-row items-center gap-x-1">
-                <Text className="font-body text-body text-text-secondary">Buying Power:</Text>
-                <Text className="font-subtitle text-body text-text-primary">
+                <Text className="font-body text-caption text-text-secondary">Buying Power:</Text>
+                <Text className="font-subtitle text-caption text-text-secondary">
                   {maskValue(buyingPower)}
                 </Text>
               </View>

@@ -9,7 +9,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
   return (
     <View style={[styles.wrapper, { paddingBottom: insets.bottom + 10 }]} pointerEvents="box-none">
-      <BlurView intensity={150} style={styles.container}>
+      <View  style={styles.container}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
@@ -51,7 +51,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             </Pressable>
           );
         })}
-      </BlurView>
+      </View>
     </View>
   );
 }
@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 40,
     overflow: 'hidden',
+    backgroundColor: "#000"
   },
   item: {
     alignItems: 'center',

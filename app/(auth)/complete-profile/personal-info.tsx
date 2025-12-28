@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { View, Text, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,10 +31,8 @@ export default function PersonalInfo() {
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <View className="flex-1 px-6 pt-4">
         <View className="mb-8 mt-4">
-          <Text className="font-display text-[60px] text-gray-900">
-            Personal Info
-          </Text>
-          <Text className="mt-2 font-body-medium text-[14px] text-gray-600">
+          <Text className="font-display text-[60px] text-gray-900">Personal Info</Text>
+          <Text className="font-body-medium mt-2 text-[14px] text-gray-600">
             Let's start with your name
           </Text>
         </View>
@@ -48,7 +45,7 @@ export default function PersonalInfo() {
             value={firstName}
             onChangeText={(text) => {
               setFirstName(text);
-              if (errors.firstName) setErrors(prev => ({ ...prev, firstName: undefined }));
+              if (errors.firstName) setErrors((prev) => ({ ...prev, firstName: undefined }));
             }}
             error={errors.firstName}
           />
@@ -59,18 +56,14 @@ export default function PersonalInfo() {
             value={lastName}
             onChangeText={(text) => {
               setLastName(text);
-              if (errors.lastName) setErrors(prev => ({ ...prev, lastName: undefined }));
+              if (errors.lastName) setErrors((prev) => ({ ...prev, lastName: undefined }));
             }}
             error={errors.lastName}
           />
         </View>
 
         <View className="mt-auto pb-4">
-          <Button
-            title="Next"
-            onPress={handleNext}
-            className="rounded-full font-body"
-          />
+          <Button title="Next" onPress={handleNext} className="rounded-full font-body" />
         </View>
       </View>
     </SafeAreaView>

@@ -18,8 +18,12 @@ function generateUniqueId(): string {
   try {
     return Crypto.randomUUID();
   } catch {
-    // Fallback for environments where expo-crypto is not available
-    return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    // UUIDv4 polyfill for environments where expo-crypto is not available
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = ((Date.now() + Math.random() * 16) % 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
   }
 }
 
@@ -126,14 +130,19 @@ class OfflineQueue {
           continue;
         }
 
-        // Increment retry count and move to the back of the queue
-        request.retryCount = currentRetryCount + 1;
-        this.queue.shift();
-        this.queue.push(request);
+        // Persist updated retry count BEFORE mutating in-memory queue
+        const updatedRequest = { ...request, retryCount: currentRetryCount + 1 };
+        const updatedQueue = [...this.queue.slice(1), updatedRequest];
         try {
-          await this.persist();
-        } catch {
-          // Persist failed - break to prevent data inconsistency
+          await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(updatedQueue));
+          // Only update in-memory state after successful persist
+          this.queue = updatedQueue;
+        } catch (persistError) {
+          errorLogger.logError(persistError, {
+            component: 'OfflineQueue',
+            action: 'persist-after-requeue',
+            metadata: { requestId: request.id, url: request.url, retryCount: updatedRequest.retryCount },
+          });
           break;
         }
 
