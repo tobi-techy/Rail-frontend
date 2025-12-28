@@ -211,6 +211,8 @@ function getDefaultMessage(status: number): string {
   return messages[status] || `Request failed with status ${status}`;
 }
 
+// This type assertion relies on the response interceptor to unwrap the data.
+// See line 83. If that interceptor is removed, this will break.
 const apiClient = axiosInstance as unknown as ApiClient;
 
 /**

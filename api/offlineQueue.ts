@@ -14,11 +14,13 @@ interface QueuedRequest {
   method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   data?: unknown;
   timestamp: number;
+  retryCount?: number;
 }
 
 const QUEUE_KEY = 'offline_request_queue';
 const MAX_QUEUE_SIZE = 50;
 const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_RETRIES = 3;
 
 class OfflineQueue {
   private queue: QueuedRequest[] = [];
@@ -78,16 +80,42 @@ class OfflineQueue {
       } catch (error) {
         const apiError = error as TransformedApiError | undefined;
         const status = apiError?.status ?? 0;
+        const currentRetryCount = request.retryCount ?? 0;
 
         // 4xx client errors - discard request (won't succeed on retry)
         if (status >= 400 && status < 500) {
+          this.queue.shift();
+          try {
+            await this.persist();
+          } catch {
+            // Persist failed - break to prevent data inconsistency
+            break;
+          }
+          continue;
+        }
+
+        // 5xx or network errors - apply retry logic
+        if (currentRetryCount >= MAX_RETRIES) {
+          // Max retries exceeded - discard the request
           this.queue.shift();
           await this.persist();
           continue;
         }
 
-        // 5xx or network errors - stop processing, retry later
-        break;
+        // Increment retry count and move to the back of the queue
+        request.retryCount = currentRetryCount + 1;
+        this.queue.shift();
+        this.queue.push(request);
+        await this.persist();
+
+        // For network errors (status 0/undefined), stop processing for now
+        // but the item is already moved to the back so queue is not blocked
+        if (status === 0 || status === undefined) {
+          break;
+        }
+
+        // For 5xx errors, continue to process other requests
+        continue;
       }
     }
 
