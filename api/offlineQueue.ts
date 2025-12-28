@@ -5,8 +5,23 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import * as Crypto from 'expo-crypto';
 import type { TransformedApiError } from './types';
 import apiClient from './client';
+import { errorLogger } from '../utils/errorLogger';
+
+/**
+ * Generate a unique ID using expo-crypto with a fallback for environments
+ * where it may not be available.
+ */
+function generateUniqueId(): string {
+  try {
+    return Crypto.randomUUID();
+  } catch {
+    // Fallback for environments where expo-crypto is not available
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  }
+}
 
 interface QueuedRequest {
   id: string;
@@ -52,7 +67,7 @@ class OfflineQueue {
 
     this.queue.push({
       ...request,
-      id: crypto.randomUUID(),
+      id: generateUniqueId(),
       timestamp: Date.now(),
     });
 
@@ -98,7 +113,16 @@ class OfflineQueue {
         if (currentRetryCount >= MAX_RETRIES) {
           // Max retries exceeded - discard the request
           this.queue.shift();
-          await this.persist();
+          try {
+            await this.persist();
+          } catch (persistError) {
+            errorLogger.logError(persistError, {
+              component: 'OfflineQueue',
+              action: 'persist-after-max-retries',
+              metadata: { requestId: request.id, url: request.url },
+            });
+            // Continue processing despite persist failure to avoid blocking the queue
+          }
           continue;
         }
 
@@ -106,7 +130,12 @@ class OfflineQueue {
         request.retryCount = currentRetryCount + 1;
         this.queue.shift();
         this.queue.push(request);
-        await this.persist();
+        try {
+          await this.persist();
+        } catch {
+          // Persist failed - break to prevent data inconsistency
+          break;
+        }
 
         // For network errors (status 0/undefined), stop processing for now
         // but the item is already moved to the back so queue is not blocked
