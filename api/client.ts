@@ -3,12 +3,7 @@
  * Base Axios instance with interceptors, authentication, and error handling
  */
 
-import axios, {
-  AxiosInstance,
-  AxiosError,
-  InternalAxiosRequestConfig,
-  AxiosRequestConfig,
-} from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig, AxiosRequestConfig } from 'axios';
 import type { ApiError, ApiResponse, TransformedApiError } from './types';
 import { safeLog, safeError } from '../utils/logSanitizer';
 import { API_CONFIG } from './config';
@@ -17,43 +12,50 @@ import { generateRequestId } from '../utils/requestId';
 /**
  * Custom Axios instance type that returns unwrapped data
  */
-interface ApiClient extends Omit<AxiosInstance, 'get' | 'post' | 'put' | 'patch' | 'delete'> {
+interface ApiClient {
   get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
   post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
   put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
   patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
   delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
+  request<T = unknown>(config: AxiosRequestConfig): Promise<T>;
+  interceptors: typeof axios.interceptors;
 }
 
 const AUTH_ENDPOINTS = [
-  '/auth/login',
-  '/auth/register',
-  '/auth/verify-code',
-  '/auth/refresh',
-  '/security/passcode/verify',
+  '/v1/auth/login',
+  '/v1/auth/register',
+  '/v1/auth/verify-code',
+  '/v1/auth/refresh',
+  '/v1/security/passcode/verify',
 ];
 
 function isAuthEndpoint(url?: string): boolean {
   if (!url) return false;
-  return AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint));
+  // Extract path from URL and check for exact match
+  const path = url.startsWith('http') ? new URL(url).pathname : url;
+  return AUTH_ENDPOINTS.some((endpoint) => path === endpoint || path.endsWith(endpoint));
 }
+
+// Token refresh state to prevent race conditions
+let refreshPromise: Promise<void> | null = null;
 
 /**
  * Create base axios instance
  */
-const apiClient = axios.create({
+const axiosInstance = axios.create({
   baseURL: API_CONFIG.baseURL,
   timeout: API_CONFIG.timeout,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-}) as ApiClient;
+});
 
 /**
  * Request interceptor - adds auth token and request ID
  */
-apiClient.interceptors.request.use(
+axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const { useAuthStore } = require('../stores/authStore');
     const { accessToken, isAuthenticated, updateLastActivity } = useAuthStore.getState();
@@ -78,7 +80,7 @@ apiClient.interceptors.request.use(
 /**
  * Response interceptor - handles token refresh and error transformation
  */
-apiClient.interceptors.response.use(
+axiosInstance.interceptors.response.use(
   (response) => response.data,
   async (error: AxiosError<ApiError>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
@@ -96,7 +98,7 @@ apiClient.interceptors.response.use(
         originalRequest._retryCount = retryCount + 1;
         const delay = parseInt(retryAfter, 10) * 1000 || 5000;
         await new Promise((resolve) => setTimeout(resolve, delay));
-        return axios.request(originalRequest);
+        return axiosInstance.request(originalRequest);
       }
     }
 
@@ -109,19 +111,30 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       const { useAuthStore } = require('../stores/authStore');
-      const { refreshSession, isAuthenticated, refreshToken, reset } = useAuthStore.getState();
+      const { isAuthenticated, refreshToken, reset } = useAuthStore.getState();
 
       if (isAuthenticated && refreshToken) {
         try {
-          await refreshSession();
+          // Prevent race condition - reuse existing refresh promise
+          if (!refreshPromise) {
+            refreshPromise = useAuthStore
+              .getState()
+              .refreshSession()
+              .finally(() => {
+                refreshPromise = null;
+              });
+          }
+          await refreshPromise;
+
           const newAccessToken = useAuthStore.getState().accessToken;
           if (originalRequest.headers && newAccessToken) {
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-            return axios.request(originalRequest);
+            return axiosInstance.request(originalRequest);
           }
-        } catch {
+        } catch (refreshError) {
           safeLog('[API Client] Token refresh failed, clearing session');
           reset();
+          return Promise.reject(refreshError);
         }
       }
     }
@@ -180,6 +193,7 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
   return {
     code: `HTTP_${status}`,
     message: data?.message || getDefaultMessage(status),
+    details: data?.details,
     status,
     requestId,
   };
@@ -196,6 +210,8 @@ function getDefaultMessage(status: number): string {
   };
   return messages[status] || `Request failed with status ${status}`;
 }
+
+const apiClient = axiosInstance as unknown as ApiClient;
 
 /**
  * Helper function to handle API responses with proper typing

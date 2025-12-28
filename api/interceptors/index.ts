@@ -1,2 +1,2 @@
-export * from './error.interceptor';
-export * from './auth.interceptor';
+// Interceptors are consolidated in api/client.ts
+// This file is kept for backwards compatibility but exports nothing

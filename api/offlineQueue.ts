@@ -5,6 +5,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import type { TransformedApiError } from './types';
 import apiClient from './client';
 
 interface QueuedRequest {
@@ -37,7 +38,6 @@ class OfflineQueue {
       this.queue = [];
     }
 
-    // Listen for network changes
     this.unsubscribe = NetInfo.addEventListener((state) => {
       if (state.isConnected) this.processQueue();
     });
@@ -50,7 +50,7 @@ class OfflineQueue {
 
     this.queue.push({
       ...request,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      id: crypto.randomUUID(),
       timestamp: Date.now(),
     });
 
@@ -75,7 +75,18 @@ class OfflineQueue {
         });
         this.queue.shift();
         await this.persist();
-      } catch {
+      } catch (error) {
+        const apiError = error as TransformedApiError | undefined;
+        const status = apiError?.status ?? 0;
+
+        // 4xx client errors - discard request (won't succeed on retry)
+        if (status >= 400 && status < 500) {
+          this.queue.shift();
+          await this.persist();
+          continue;
+        }
+
+        // 5xx or network errors - stop processing, retry later
         break;
       }
     }

@@ -7,6 +7,15 @@ import { QueryClient } from '@tanstack/react-query';
 import type { TransformedApiError } from './types';
 import { safeError } from '../utils/logSanitizer';
 
+function isTransformedApiError(error: unknown): error is TransformedApiError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    typeof (error as TransformedApiError).status === 'number'
+  );
+}
+
 /**
  * Create and export query client
  */
@@ -16,9 +25,10 @@ export const queryClient = new QueryClient({
       staleTime: 1000 * 60 * 5, // 5 minutes
       gcTime: 1000 * 60 * 30, // 30 minutes
       retry: (failureCount, error: unknown) => {
-        const apiError = error as TransformedApiError | undefined;
-        // Don't retry on 4xx errors
-        if (apiError?.status && apiError.status >= 400 && apiError.status < 500) return false;
+        // Only skip retry for confirmed 4xx API errors
+        if (isTransformedApiError(error) && error.status >= 400 && error.status < 500) {
+          return false;
+        }
         return failureCount < 3;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
