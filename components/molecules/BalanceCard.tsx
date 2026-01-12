@@ -35,11 +35,6 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
       <View className="pb-4 pt-6">
         <View className="flex-row items-start justify-between">
           <View>
-            <TouchableOpacity className="flex-row items-center gap-x-2">
-              <Text className="font-subtitle text-caption text-text-primary">Account 1</Text>
-              <ChevronDown size={16} color="#121212" strokeWidth={2} />
-            </TouchableOpacity>
-
             <View className="mt-2 items-start gap-x-2">
               <Text className="font-caption text-caption text-text-secondary">Total Portfolio</Text>
               <View className="flex-row items-center gap-x-2">
@@ -64,7 +59,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 <Text
                   className={`font-body text-body ${isNegative ? 'text-destructive' : 'text-success'}`}>
                   {maskValue(percentChange)}{' '}
-                  <Text className="font-subtitle text-caption text-text-secondary">{timeframe}</Text>
+                  <Text className="font-subtitle text-caption text-text-secondary">
+                    {timeframe}
+                  </Text>
                 </Text>
               </View>
 

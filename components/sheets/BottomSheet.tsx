@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
-import { View, Pressable, Dimensions } from 'react-native';
+import { Pressable, Dimensions, Modal } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,11 +7,11 @@ import Animated, {
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 
-const SPRING_CONFIG = { damping: 25, stiffness: 300 };
+const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
 
 interface BottomSheetProps {
   visible: boolean;
@@ -71,28 +71,30 @@ export function BottomSheet({
   if (!visible) return null;
 
   return (
-    <View className="absolute inset-0">
-      <Animated.View className="absolute inset-0 bg-black/40" style={overlayStyle}>
-        <Pressable className="flex-1" onPress={dismissible ? animateClose : undefined} />
-      </Animated.View>
-
-      <GestureDetector gesture={pan}>
-        <Animated.View
-          className="absolute bottom-0 left-0 right-0 rounded-t-lg bg-white px-6 pt-6"
-          style={[sheetStyle, { paddingBottom: insets.bottom + 24 }]}>
-          {showCloseButton && (
-            <Pressable
-              className="absolute right-5 top-5 z-10 p-1"
-              onPress={animateClose}
-              hitSlop={12}
-              accessibilityLabel="Close"
-              accessibilityRole="button">
-              <X size={24} color="#757575" />
-            </Pressable>
-          )}
-          {children}
+    <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Animated.View className="absolute inset-0 bg-black/40" style={overlayStyle}>
+          <Pressable className="flex-1" onPress={dismissible ? animateClose : undefined} />
         </Animated.View>
-      </GestureDetector>
-    </View>
+
+        <GestureDetector gesture={pan}>
+          <Animated.View
+            className="absolute bottom-6 left-3 right-3 rounded-[34px] bg-white px-6 pt-6"
+            style={[sheetStyle, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+            {showCloseButton && (
+              <Pressable
+                className="absolute right-5 top-5 z-10 p-1"
+                onPress={animateClose}
+                hitSlop={12}
+                accessibilityLabel="Close"
+                accessibilityRole="button">
+                <X size={24} color="#757575" />
+              </Pressable>
+            )}
+            {children}
+          </Animated.View>
+        </GestureDetector>
+      </GestureHandlerRootView>
+    </Modal>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Stack } from 'expo-router';
-import { View } from 'react-native';
+import { StatusBar, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -179,6 +179,7 @@ export default function Layout() {
 
   return (
     <ErrorBoundary>
+      <StatusBar barStyle={'dark-content'} />
       <KeyboardProvider>
         <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
           <QueryClientProvider client={queryClient}>

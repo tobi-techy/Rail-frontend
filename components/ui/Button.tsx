@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 
 interface ButtonProps extends Omit<PressableProps, 'style'> {
   title: string;
-  variant?: 'black' | 'white' | 'orange';
+  variant?: 'black' | 'white' | 'orange' | 'destructive' | 'ghost';
   size?: 'small' | 'large';
   loading?: boolean;
   leftIcon?: React.ReactNode;
@@ -12,6 +12,7 @@ interface ButtonProps extends Omit<PressableProps, 'style'> {
   disabled?: boolean;
   className?: string;
   enableHaptics?: boolean;
+  flex?: boolean;
 }
 
 export const Button = forwardRef<View, ButtonProps>(
@@ -26,6 +27,7 @@ export const Button = forwardRef<View, ButtonProps>(
       disabled,
       className = '',
       enableHaptics = true,
+      flex = false,
       onPress,
       ...props
     },
@@ -60,21 +62,32 @@ export const Button = forwardRef<View, ButtonProps>(
       [enableHaptics, onPress]
     );
 
-    const variantStyles =
-      variant === 'white'
-        ? 'bg-white border border-gray-200'
-        : variant === 'orange'
-          ? 'bg-[#FF5A00]'
-          : 'bg-black';
-    const textStyles =
-      variant === 'white' ? 'text-black' : variant === 'orange' ? 'text-white' : 'text-white';
+    const variantStyles = {
+      black: 'bg-black',
+      white: 'bg-white border border-gray-200',
+      orange: 'bg-[#FF5A00]',
+      destructive: 'bg-[#F44336]',
+      ghost: 'bg-transparent',
+    }[variant];
+
+    const textStyles = {
+      black: 'text-white',
+      white: 'text-black',
+      orange: 'text-white',
+      destructive: 'text-white',
+      ghost: 'text-text-secondary',
+    }[variant];
+
     const sizeStyles = size === 'small' ? 'px-4 py-3' : 'px-6 py-5';
     const textSize = size === 'small' ? 'text-sm' : 'text-lg';
-    const widthStyles = size === 'small' ? 'w-[30%]' : 'w-full';
 
     return (
       <Animated.View
-        style={{ transform: [{ scale: scaleAnim }], width: size === 'small' ? '30%' : '100%' }}>
+        style={{
+          transform: [{ scale: scaleAnim }],
+          flex: flex ? 1 : undefined,
+          width: !flex ? (size === 'small' ? '30%' : '100%') : undefined,
+        }}>
         <Pressable
           ref={ref}
           disabled={disabled || loading}
