@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Trash2, LogOut, PieChart, Wallet } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from 'expo-router';
 import { useLayoutEffect, useState } from 'react';
@@ -163,8 +164,15 @@ export default function Settings() {
 
       {/* Base/Active Split Sheet */}
       <BottomSheet visible={activeSheet === 'allocation'} onClose={closeSheet}>
-        <Text className="mb-2 font-subtitle text-xl">Base/Active Split</Text>
-        <Text className="mb-6 font-body text-sm text-text-secondary">
+        <Text className="mb-6 font-subtitle text-xl">Base/Active Split</Text>
+
+        <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-8">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-purple-100">
+            <PieChart size={32} color="#8B5CF6" />
+          </View>
+        </View>
+
+        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
           Set how your deposits are split between Base (savings) and Active (investments).
         </Text>
         <SegmentedSlider
@@ -211,9 +219,16 @@ export default function Settings() {
 
       {/* Spending Limits Sheet */}
       <BottomSheet visible={activeSheet === 'limits'} onClose={closeSheet}>
-        <Text className="mb-2 font-subtitle text-xl">Spending Limits</Text>
-        <Text className="mb-6 font-body text-sm text-text-secondary">
-          Set your daily spending limit.
+        <Text className="mb-6 font-subtitle text-xl">Spending Limits</Text>
+
+        <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-8">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-orange-100">
+            <Wallet size={32} color="#FF5A00" />
+          </View>
+        </View>
+
+        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+          Set your daily spending limit to help manage your expenses and stay on budget.
         </Text>
         <SegmentedSlider
           value={spendingLimit}
@@ -254,25 +269,49 @@ export default function Settings() {
 
       {/* Logout Sheet */}
       <BottomSheet visible={activeSheet === 'logout'} onClose={closeSheet}>
-        <Text className="mb-2 font-subtitle text-xl">Log Out</Text>
-        <Text className="mb-6 font-body text-sm text-text-secondary">
-          Are you sure you want to log out of your account?
+        <Text className="mb-6 font-subtitle text-xl">Log Out</Text>
+
+        <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-8">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+            <LogOut size={32} color="#F59E0B" />
+          </View>
+        </View>
+
+        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+          Are you sure you want to log out? You&apos;ll need to sign in again to access your
+          account.
         </Text>
         <View className="flex-row gap-3">
-          <Button title="Log Out" variant="black" onPress={handleLogout} flex />
           <Button title="Cancel" variant="ghost" onPress={closeSheet} flex />
+          <Button title="Log Out" variant="black" onPress={handleLogout} flex />
         </View>
       </BottomSheet>
 
       {/* Delete Account Sheet */}
       <BottomSheet visible={activeSheet === 'delete'} onClose={closeSheet}>
-        <Text className="mb-2 font-subtitle text-xl text-[#F44336]">Delete Account</Text>
-        <Text className="mb-6 font-body text-sm text-text-secondary">
-          This action is permanent and cannot be undone. All your data will be deleted.
+        <Text className="mb-6 font-subtitle text-xl text-text-primary">Delete Account</Text>
+
+        {/* Wallet Card Illustration */}
+        <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-10">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-red-100">
+            <Trash2 size={34} color="#EF4444" />
+          </View>
+        </View>
+
+        <Text className="mb-4 font-body text-base leading-6 text-neutral-500">
+          Deleting your account will permanently remove it from the device. If you continue, you
+          will not be able to recover, access or perform any other action with this account in Rail.
+          Any assets left in this account will be lost.
         </Text>
+
+        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+          By continuing, you confirm that you have sent out all assets before deleting the account
+          and any assets left in the account after deletion will be inaccessible.
+        </Text>
+
         <View className="flex-row gap-3">
-          <Button title="Delete Account" variant="destructive" onPress={handleDeleteAccount} flex />
           <Button title="Cancel" variant="ghost" onPress={closeSheet} flex />
+          <Button title="Continue" variant="orange" onPress={handleDeleteAccount} flex />
         </View>
       </BottomSheet>
     </View>

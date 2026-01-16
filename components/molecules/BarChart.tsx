@@ -9,6 +9,8 @@ import Animated, {
   useDerivedValue,
   Easing,
   SharedValue,
+  FadeIn,
+  FadeOut,
 } from 'react-native-reanimated';
 
 interface BarChartProps {
@@ -18,6 +20,7 @@ interface BarChartProps {
   onPeriodChange?: (period: string) => void;
   height?: number;
   barColor?: string;
+  subtitle?: string;
   className?: string;
 }
 
@@ -40,14 +43,14 @@ function AnimatedBar({
   index: number;
   animationProgress: SharedValue<number>;
 }) {
-  const delayFactor = index * 0.015;
+  const delayFactor = index * 0.012;
 
   const height = useDerivedValue(() => {
     const progress = Math.max(
       0,
       Math.min(1, (animationProgress.value - delayFactor) / (1 - delayFactor))
     );
-    return Math.max(progress * targetHeight, 4);
+    return Math.max(progress * targetHeight, 2);
   });
 
   const y = useDerivedValue(() => maxHeight - height.value);
@@ -62,17 +65,18 @@ export function BarChart({
   periods = DEFAULT_PERIODS,
   activePeriod = '6M',
   onPeriodChange,
-  height = 120,
-  barColor = '#D4D4D4',
+  height = 80,
+  barColor = '#6366F1',
+  subtitle,
   className,
 }: BarChartProps) {
   const { width: screenWidth } = useWindowDimensions();
   const [selectedPeriod, setSelectedPeriod] = useState(activePeriod);
   const animationProgress = useSharedValue(0);
 
-  const chartWidth = screenWidth - 48;
-  const gap = 3;
-  const barWidth = Math.max(3, (chartWidth - gap * (data.length - 1)) / data.length);
+  const chartWidth = screenWidth;
+  const barWidth = 4;
+  const gap = (chartWidth - barWidth * data.length) / (data.length - 1);
 
   const maxValue = Math.max(...data, 1);
   const normalizedData = data.map((v) => (v / maxValue) * height);
@@ -80,7 +84,7 @@ export function BarChart({
   useEffect(() => {
     animationProgress.value = 0;
     animationProgress.value = withTiming(1, {
-      duration: 800,
+      duration: 600,
       easing: Easing.out(Easing.cubic),
     });
   }, [selectedPeriod]);
@@ -95,24 +99,36 @@ export function BarChart({
 
   return (
     <View className={className}>
-      <Canvas style={{ width: chartWidth, height }}>
-        <Group>
-          {normalizedData.map((barHeight, i) => (
-            <AnimatedBar
-              key={`${selectedPeriod}-${i}`}
-              x={i * (barWidth + gap)}
-              targetHeight={Math.max(barHeight, 4)}
-              maxHeight={height}
-              barWidth={barWidth}
-              color={barColor}
-              index={i}
-              animationProgress={animationProgress}
-            />
-          ))}
-        </Group>
-      </Canvas>
+      {subtitle && (
+        <Animated.Text
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(200)}
+          key={selectedPeriod}
+          className="mb-3 text-center font-body text-xs text-neutral-400">
+          {subtitle}
+        </Animated.Text>
+      )}
 
-      <View className="mt-4 flex-row items-center justify-center gap-1">
+      <View style={{ width: screenWidth, left: -16 }}>
+        <Canvas style={{ width: chartWidth, height }}>
+          <Group>
+            {normalizedData.map((barHeight, i) => (
+              <AnimatedBar
+                key={`${selectedPeriod}-${i}`}
+                x={i * (barWidth + gap)}
+                targetHeight={Math.max(barHeight, 2)}
+                maxHeight={height}
+                barWidth={barWidth}
+                color={barColor}
+                index={i}
+                animationProgress={animationProgress}
+              />
+            ))}
+          </Group>
+        </Canvas>
+      </View>
+
+      <View className="mt-5 flex-row items-center justify-center">
         {periods.map((period) => (
           <PeriodButton
             key={period}
@@ -145,15 +161,15 @@ function PeriodButton({
     <Pressable
       onPress={() => onPress(period)}
       onPressIn={() => {
-        scale.value = withSpring(0.9, { damping: 15 });
+        scale.value = withSpring(0.92, { damping: 15 });
       }}
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 15 });
       }}>
       <Animated.View
-        className={`rounded-full px-4 py-2 ${isActive ? 'bg-black/5' : ''}`}
+        className={`mx-1 rounded-full px-4 py-2 ${isActive ? 'bg-neutral-100' : ''}`}
         style={animatedStyle}>
-        <Text className={`text-sm font-medium ${isActive ? 'text-black' : 'text-neutral-400'}`}>
+        <Text className={`text-sm font-medium ${isActive ? 'text-black' : 'text-neutral-300'}`}>
           {period}
         </Text>
       </Animated.View>

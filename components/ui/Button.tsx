@@ -65,7 +65,7 @@ export const Button = forwardRef<View, ButtonProps>(
     const variantStyles = {
       black: 'bg-black',
       white: 'bg-white border border-gray-200',
-      orange: 'bg-[#FF5A00]',
+      orange: 'bg-[#FF2E01]',
       destructive: 'bg-[#F44336]',
       ghost: 'bg-transparent',
     }[variant];
@@ -79,14 +79,14 @@ export const Button = forwardRef<View, ButtonProps>(
     }[variant];
 
     const sizeStyles = size === 'small' ? 'px-4 py-3' : 'px-6 py-5';
-    const textSize = size === 'small' ? 'text-sm' : 'text-lg';
+    const textSize = size === 'small' ? 'text-caption' : 'text-lg';
 
     return (
       <Animated.View
         style={{
           transform: [{ scale: scaleAnim }],
           flex: flex ? 1 : undefined,
-          width: !flex ? (size === 'small' ? '30%' : '100%') : undefined,
+          alignSelf: flex ? undefined : size === 'small' ? 'flex-start' : 'stretch',
         }}>
         <Pressable
           ref={ref}
@@ -103,7 +103,7 @@ export const Button = forwardRef<View, ButtonProps>(
           ) : (
             <View className="flex-row items-center">
               {leftIcon && <View className="mr-2">{leftIcon}</View>}
-              <Text className={`font-button ${textSize} ${textStyles}`}>{title}</Text>
+              <Text className={`font-button  ${textSize} ${textStyles}`}>{title}</Text>
               {rightIcon && <View className="ml-2">{rightIcon}</View>}
             </View>
           )}

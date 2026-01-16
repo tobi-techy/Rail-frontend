@@ -1,8 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, ViewProps, TouchableOpacity } from 'react-native';
-import { ChevronDown, Eye, EyeOff } from 'lucide-react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { useUIStore } from '@/stores';
 import { sanitizeNumber } from '@/utils/sanitizeInput';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSequence,
+  Easing,
+} from 'react-native-reanimated';
 
 export interface BalanceCardProps extends ViewProps {
   balance?: string;
@@ -10,6 +17,45 @@ export interface BalanceCardProps extends ViewProps {
   timeframe?: string;
   buyingPower?: string;
   className?: string;
+}
+
+function AnimatedBalance({ value, isVisible }: { value: string; isVisible: boolean }) {
+  const opacity = useSharedValue(1);
+  const translateY = useSharedValue(0);
+
+  useEffect(() => {
+    opacity.value = withSequence(
+      withTiming(0, { duration: 150, easing: Easing.out(Easing.ease) }),
+      withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) })
+    );
+    translateY.value = withSequence(
+      withTiming(-8, { duration: 150, easing: Easing.out(Easing.ease) }),
+      withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) })
+    );
+  }, [value]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const maskValue = (val: string) => {
+    const sanitized = sanitizeNumber(String(val));
+    if (isVisible) return sanitized;
+    return sanitized.replace(/[\d,\.]+/g, (match) => '−'.repeat(Math.min(match.length, 6)));
+  };
+
+  const masked = maskValue(value);
+  const [whole, decimal] = masked.split('.');
+
+  return (
+    <Animated.View style={[{ flexDirection: 'row' }, animatedStyle]}>
+      <Text className="font-subtitle text-[50px] text-text-primary">{whole}</Text>
+      {decimal !== undefined && (
+        <Text className="font-subtitle text-[50px] text-neutral-300">.{decimal}</Text>
+      )}
+    </Animated.View>
+  );
 }
 
 export const BalanceCard: React.FC<BalanceCardProps> = ({
@@ -38,9 +84,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             <View className="mt-2 items-start gap-x-2">
               <Text className="font-caption text-caption text-text-secondary">Total Portfolio</Text>
               <View className="flex-row items-center gap-x-2">
-                <Text className="mb-1 font-subtitle text-[40px] text-text-primary">
-                  {maskValue(balance)}
-                </Text>
+                <View className="mb-1">
+                  <AnimatedBalance value={balance} isVisible={isBalanceVisible} />
+                </View>
                 <TouchableOpacity
                   onPress={toggleBalanceVisibility}
                   accessibilityLabel={isBalanceVisible ? 'Hide balance' : 'Show balance'}

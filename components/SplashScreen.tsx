@@ -8,7 +8,7 @@ import CurrencyPounds from '@/assets/Icons/currency-pound.svg';
 
 const { width, height } = Dimensions.get('window');
 
-const SPLASH_BG = '#FF5A00';
+const SPLASH_BG = '#FF2E01';
 
 interface SplashScreenProps {
   onAnimationComplete?: () => void;
@@ -118,5 +118,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  logo: { width: 120, height: 120 },
+  logo: { width: 150, height: 150 },
 });

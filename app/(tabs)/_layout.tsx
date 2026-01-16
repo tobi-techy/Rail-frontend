@@ -17,7 +17,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <Home size={24} color={color} fill={focused ? color : '#000'} />
+            <Home size={24} color={color} fill={focused ? color : '#999'} />
           ),
         }}
       />
@@ -26,7 +26,7 @@ export default function TabLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ color, focused }) => (
-            <Clock1 size={24} color={color} fill={focused ? color : '#000'} />
+            <Clock1 size={24} color={color} fill={focused ? color : '#999'} />
           ),
         }}
       />
@@ -35,7 +35,7 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color, focused }) => (
-            <Settings size={24} color={color} fill={focused ? color : '#000'} />
+            <Settings size={24} color={color} fill={focused ? color : '#999'} />
           ),
         }}
       />

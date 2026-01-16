@@ -212,7 +212,6 @@ export default function App() {
       <View className="absolute bottom-12 w-full items-center gap-y-2 px-6">
         <Button
           title="Create an account"
-          leftIcon={<Apple size={24} color="#000" />}
           size="large"
           onPress={() => router.push('/(tabs)')}
           variant="black"

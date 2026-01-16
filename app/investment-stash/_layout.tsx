@@ -1,27 +1,17 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
-import { CreditCard, Home, PieChart } from 'lucide-react-native';
+import { Stack } from 'expo-router';
 
-import { TabBar } from '@/components/TabBar';
-
-export default function InvestmentStash() {
+export default function InvestmentStashLayout() {
   return (
-    <Tabs
-      tabBar={(props) => <TabBar {...props} />}
+    <Stack
       screenOptions={{
-        headerShown: false,
-        sceneStyle: { backgroundColor: '#fff' },
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <Home size={24} color={color} fill={focused ? '#FF5A00' : '#fff'} />
-          ),
-        }}
-      />
-
-    </Tabs>
+        headerShown: true,
+        headerTitle: '',
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: '#fff' },
+        contentStyle: { backgroundColor: '#fff' },
+        animation: 'fade',
+        gestureEnabled: true,
+      }}
+    />
   );
 }
