@@ -1,5 +1,27 @@
+/**
+ * Offline Queue
+ * Queues failed mutations when offline and retries on reconnect
+ */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NetInfo } from '@react-native-community/netinfo';
+import NetInfo from '@react-native-community/netinfo';
+import * as Crypto from 'expo-crypto';
+import type { TransformedApiError } from './types';
+import apiClient from './client';
+import { errorLogger } from '../utils/errorLogger';
+
+/**
+ * Generate a unique ID using expo-crypto with a fallback for environments
+ * where it may not be available.
+ */
+function generateUniqueId(): string {
+  try {
+    return Crypto.randomUUID();
+  } catch {
+    // Fallback for environments where expo-crypto is not available
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  }
+}
 
 interface QueuedRequest {
   id: string;
@@ -7,15 +29,18 @@ interface QueuedRequest {
   method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   data?: unknown;
   timestamp: number;
+  retryCount?: number;
 }
 
 const QUEUE_KEY = 'offline_request_queue';
 const MAX_QUEUE_SIZE = 50;
 const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_RETRIES = 3;
 
 class OfflineQueue {
   private queue: QueuedRequest[] = [];
   private isProcessing = false;
+  private unsubscribe: (() => void) | null = null;
 
   async init() {
     try {
@@ -24,40 +49,102 @@ class OfflineQueue {
         this.queue = JSON.parse(stored).filter(
           (req: QueuedRequest) => Date.now() - req.timestamp < MAX_AGE_MS
         );
+        await this.persist();
       }
     } catch {
       this.queue = [];
     }
+
+    this.unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected) this.processQueue();
+    });
   }
 
   async add(request: Omit<QueuedRequest, 'id' | 'timestamp'>) {
     if (this.queue.length >= MAX_QUEUE_SIZE) {
-      this.queue.shift(); // Remove oldest
+      this.queue.shift();
     }
 
-    const queuedRequest: QueuedRequest = {
+    this.queue.push({
       ...request,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      id: generateUniqueId(),
       timestamp: Date.now(),
-    };
+    });
 
-    this.queue.push(queuedRequest);
     await this.persist();
   }
 
-  async process(executor: (req: QueuedRequest) => Promise<void>) {
+  async processQueue() {
     if (this.isProcessing || this.queue.length === 0) return;
+
+    const state = await NetInfo.fetch();
+    if (!state.isConnected) return;
 
     this.isProcessing = true;
 
     while (this.queue.length > 0) {
       const request = this.queue[0];
       try {
-        await executor(request);
+        await apiClient.request({
+          url: request.url,
+          method: request.method,
+          data: request.data,
+        });
         this.queue.shift();
         await this.persist();
-      } catch {
-        break; // Stop processing on failure
+      } catch (error) {
+        const apiError = error as TransformedApiError | undefined;
+        const status = apiError?.status ?? 0;
+        const currentRetryCount = request.retryCount ?? 0;
+
+        // 4xx client errors - discard request (won't succeed on retry)
+        if (status >= 400 && status < 500) {
+          this.queue.shift();
+          try {
+            await this.persist();
+          } catch {
+            // Persist failed - break to prevent data inconsistency
+            break;
+          }
+          continue;
+        }
+
+        // 5xx or network errors - apply retry logic
+        if (currentRetryCount >= MAX_RETRIES) {
+          // Max retries exceeded - discard the request
+          this.queue.shift();
+          try {
+            await this.persist();
+          } catch (persistError) {
+            errorLogger.logError(persistError, {
+              component: 'OfflineQueue',
+              action: 'persist-after-max-retries',
+              metadata: { requestId: request.id, url: request.url },
+            });
+            // Continue processing despite persist failure to avoid blocking the queue
+          }
+          continue;
+        }
+
+        // Increment retry count and move to the back of the queue
+        request.retryCount = currentRetryCount + 1;
+        this.queue.shift();
+        this.queue.push(request);
+        try {
+          await this.persist();
+        } catch {
+          // Persist failed - break to prevent data inconsistency
+          break;
+        }
+
+        // For network errors (status 0/undefined), stop processing for now
+        // but the item is already moved to the back so queue is not blocked
+        if (status === 0 || status === undefined) {
+          break;
+        }
+
+        // For 5xx errors, continue to process other requests
+        continue;
       }
     }
 
@@ -74,6 +161,10 @@ class OfflineQueue {
 
   get length() {
     return this.queue.length;
+  }
+
+  destroy() {
+    this.unsubscribe?.();
   }
 }
 
@@ -95,11 +186,27 @@ export async function withRetry<T>(
     } catch (error) {
       lastError = error as Error;
       if (attempt < maxRetries) {
-        const delay = baseDelay * Math.pow(2, attempt);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, baseDelay * 2 ** attempt));
       }
     }
   }
 
   throw lastError!;
+}
+
+/**
+ * Queue mutation if offline
+ */
+export async function queueIfOffline(
+  request: Omit<QueuedRequest, 'id' | 'timestamp'>,
+  executor: () => Promise<unknown>
+): Promise<unknown> {
+  const state = await NetInfo.fetch();
+
+  if (!state.isConnected) {
+    await offlineQueue.add(request);
+    return { queued: true };
+  }
+
+  return executor();
 }
