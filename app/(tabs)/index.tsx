@@ -1,19 +1,29 @@
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import React, { useLayoutEffect, useMemo, useState, useCallback } from 'react';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 import { router, useNavigation } from 'expo-router';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { StashCard } from '@/components/molecules/StashCard';
-import { ArrowDown, Bell, DollarSign, Grid3X3Icon, PlusIcon, User } from 'lucide-react-native';
+import {
+  ArrowDown,
+  Building2,
+  DollarSign,
+  Grid3X3Icon,
+  PlusIcon,
+  Wallet,
+} from 'lucide-react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
 import type { Transaction } from '@/components/molecules/TransactionItem';
 import { usePortfolioOverview } from '@/api/hooks';
 import { Button } from '../../components/ui';
-import { ActionButton } from '@/components';
+import { ActionSheet } from '@/components/sheets';
+import UsdcIcon from '@/assets/svg/usdc.svg';
 
 const Dashboard = () => {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
+  const [showReceiveSheet, setShowReceiveSheet] = useState(false);
+  const [showSendSheet, setShowSendSheet] = useState(false);
 
   // Fetch portfolio overview with automatic refetching
   const { data: portfolio, refetch } = usePortfolioOverview();
@@ -46,15 +56,9 @@ const Dashboard = () => {
       headerLeft: () => (
         <View className="flex-row items-center gap-x-3 pl-[14px]">
           {/*<Grid3X3Icon size={28} strokeWidth={0.8} fill={'#000'} color={'#fff'} />*/}
-          <Text className="font-subtitle text-[18px]">{'Wallet'}</Text>
+          <Text className="font-subtitle text-headline-1">{'Station'}</Text>
         </View>
       ),
-      // headerRight: () => (
-      //   <TouchableOpacity className='bg-primary-tertiary px-[18px] py-[4px] mr-2 flex-row items-center rounded-full'>
-      //     {/*<PlusIcon size={28} strokeWidth={0.8} fill={'#000'} color={'#fff'} />*/}
-      //     <Text className='text-body font-body text-[#fff]'>14 points</Text>
-      //   </TouchableOpacity>
-      // ),
       title: '',
       headerStyle: {
         backgroundColor: 'transparent',
@@ -86,22 +90,21 @@ const Dashboard = () => {
             className="rounded-x"
           />
 
-          <View className="flex-row gap-3">
+          <View className="mb-2 flex-row gap-3">
             <Button
               title="Receive"
-              // onPress={() => router.navigate('/deposit')}
+              onPress={() => setShowReceiveSheet(true)}
               leftIcon={<PlusIcon size={24} color="white" />}
               size="small"
               variant="black"
             />
             <Button
               title="Send"
-              // onPress={() => router.navigate('/withdraw')}
+              onPress={() => setShowSendSheet(true)}
               leftIcon={<ArrowDown size={24} color="black" />}
               size="small"
               variant="white"
             />
-            <ActionButton icon="more-horizontal" label="" />
           </View>
         </>
 
@@ -117,6 +120,7 @@ const Dashboard = () => {
               </View>
             }
             className="flex-1"
+            onPress={() => router.navigate('/spending-stash')}
           />
           <StashCard
             title="Investment Stash"
@@ -128,41 +132,9 @@ const Dashboard = () => {
               </View>
             }
             className="flex-1"
+            onPress={() => router.navigate('/investment-stash')}
           />
         </View>
-
-        {/* My Baskets Section */}
-        {/*<>
-          <Text className="font-subtitle text-headline-2">My tracks</Text>
-
-          <View className="flex-row">
-            <BasketItemCard
-              code="GME-08"
-              status="Safe"
-              aum="288.56"
-              performance="11.5%"
-              performanceType="positive"
-              badges={[
-                { color: '#FF6B6B', icon: 'trending-up' },
-                { color: '#4CAF50', icon: 'shield-checkmark' },
-              ]}
-              className="mr-3 flex-1"
-            />
-
-            <BasketItemCard
-              code="FRVR"
-              status="Safe"
-              aum="512.03"
-              performance="8.2%"
-              performanceType="positive"
-              badges={[
-                { color: '#4CAF50', icon: 'shield-checkmark' },
-                { color: '#2196F3', icon: 'time' },
-              ]}
-              className="flex-1"
-            />
-          </View>
-        </>*/}
 
         {/* Transaction History Section */}
         <>
@@ -187,6 +159,78 @@ const Dashboard = () => {
           </View>
         </>
       </View>
+
+      {/* Receive Sheet */}
+      <ActionSheet
+        visible={showReceiveSheet}
+        onClose={() => setShowReceiveSheet(false)}
+        illustration={
+          <View className="relative">
+            <UsdcIcon width={46} height={46} />
+            <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-[#FF6B35]">
+              <ArrowDown size={14} color="white" />
+            </View>
+          </View>
+        }
+        title="Add Funds"
+        subtitle={'Choose one of the options\nbelow to add funds'}
+        actions={[
+          {
+            id: 'fiat',
+            label: 'Fiat',
+            sublabel: 'Receive assets via US bank account',
+            icon: Building2,
+            iconColor: '#6366F1',
+            iconBgColor: '#EEF2FF',
+            onPress: () => router.push('/deposit/fiat'),
+          },
+          {
+            id: 'crypto',
+            label: 'Crypto',
+            sublabel: 'Receive assets via wallet address',
+            icon: Wallet,
+            iconColor: '#F97316',
+            iconBgColor: '#FFF7ED',
+            onPress: () => router.push('/deposit/crypto'),
+          },
+        ]}
+      />
+
+      {/* Send Sheet */}
+      <ActionSheet
+        visible={showSendSheet}
+        onClose={() => setShowSendSheet(false)}
+        illustration={
+          <View className="relative">
+            <UsdcIcon width={46} height={46} />
+            <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-[#FF6B35]">
+              <ArrowDown size={14} color="white" />
+            </View>
+          </View>
+        }
+        title="Send Funds"
+        subtitle={'Choose one of the options\nbelow to send funds'}
+        actions={[
+          {
+            id: 'fiat',
+            label: 'Fiat',
+            sublabel: 'Send to US bank account',
+            icon: Building2,
+            iconColor: '#6366F1',
+            iconBgColor: '#EEF2FF',
+            onPress: () => router.push('/withdraw/fiat'),
+          },
+          {
+            id: 'crypto',
+            label: 'Crypto',
+            sublabel: 'Send to wallet address',
+            icon: Wallet,
+            iconColor: '#F97316',
+            iconBgColor: '#FFF7ED',
+            onPress: () => router.push('/withdraw/crypto'),
+          },
+        ]}
+      />
     </ScrollView>
   );
 };

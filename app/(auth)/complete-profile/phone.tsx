@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { View, Text, StatusBar, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,24 +15,24 @@ export default function Phone() {
 
   const handleComplete = async () => {
     // Optional phone validation if needed, or if it's optional allow empty?
-    // User request said "optional phone" in original conversation context, 
+    // User request said "optional phone" in original conversation context,
     // but typically "complete profile" implies finalizing.
     // Let's assume it's optional as per original code `label="Phone (Optional)"`.
-    
+
     setIsLoading(true);
     updateRegistrationData({ phone });
 
     // Simulate API call and Finalize
     setTimeout(() => {
-        setIsLoading(false);
-        // Commit data to user profile
-        updateUser({
-            fullName: `${registrationData.firstName} ${registrationData.lastName}`,
-            // In a real app we'd map the rest of the data to the user object or make an API call
-        });
-        
-        // Navigate to Create Passcode
-        router.push('/(auth)/create-passcode');
+      setIsLoading(false);
+      // Commit data to user profile
+      updateUser({
+        fullName: `${registrationData.firstName} ${registrationData.lastName}`,
+        // In a real app we'd map the rest of the data to the user object or make an API call
+      });
+
+      // Navigate to Create Passcode
+      router.push('/(auth)/create-passcode');
     }, 1000);
   };
 
@@ -42,13 +41,11 @@ export default function Phone() {
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <View className="flex-1 px-6 pt-4">
         <Pressable onPress={() => router.back()} className="mb-4">
-            <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color="black" />
         </Pressable>
         <View className="mb-8">
-          <Text className="font-display text-[60px] text-gray-900">
-            Phone Number
-          </Text>
-          <Text className="mt-2 font-body-medium text-[14px] text-gray-600">
+          <Text className="font-display text-[60px] text-gray-900">Phone Number</Text>
+          <Text className="font-body-medium mt-2 text-[14px] text-gray-600">
             Add a phone number (Optional)
           </Text>
         </View>

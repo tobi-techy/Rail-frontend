@@ -192,7 +192,7 @@ export default function SignUp() {
                 onPress={handleSignUp}
                 loading={isLoading}
                 className="rounded-full font-body"
-                variant="orange"
+                variant="black"
               />
               <TouchableOpacity onPress={() => router.push('/(auth)/signin')}>
                 <Text className="text-center font-subtitle text-caption text-gray-900">

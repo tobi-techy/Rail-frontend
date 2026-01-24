@@ -16,6 +16,7 @@ interface ActionItem {
 interface ActionSheetProps {
   visible: boolean;
   onClose: () => void;
+  illustration?: React.ReactNode;
   icon?: LucideIcon;
   iconColor?: string;
   title: string;
@@ -26,6 +27,7 @@ interface ActionSheetProps {
 export function ActionSheet({
   visible,
   onClose,
+  illustration,
   icon: HeaderIcon,
   iconColor = '#FF5A00',
   title,
@@ -36,17 +38,18 @@ export function ActionSheet({
     <BottomSheet visible={visible} onClose={onClose}>
       {/* Header */}
       <View className="mb-6 items-center pr-8">
-        {HeaderIcon && <HeaderIcon size={32} color={iconColor} className="mb-2" />}
+        {illustration && <View className="mb-3">{illustration}</View>}
+        {!illustration && HeaderIcon && <HeaderIcon size={32} color={iconColor} className="mb-2" />}
         <Text className="text-center font-subtitle text-xl text-text-primary">{title}</Text>
         {subtitle && (
-          <Text className="mt-1 text-center font-caption text-[15px] leading-5 text-text-secondary">
+          <Text className="mt-1 text-center font-caption text-[15px] leading-5 text-gray-400">
             {subtitle}
           </Text>
         )}
       </View>
 
       {/* Actions */}
-      <View className="mt-2">
+      <>
         {actions.map((action) => {
           const Icon = action.icon;
           return (
@@ -64,7 +67,7 @@ export function ActionSheet({
                 <Icon size={22} color={action.iconColor ?? '#1B84FF'} />
               </View>
               <View className="flex-1">
-                <Text className="font-body text-base text-text-primary">{action.label}</Text>
+                <Text className="font-subtitle text-lg text-text-primary">{action.label}</Text>
                 {action.sublabel && (
                   <Text className="mt-0.5 font-caption text-sm text-text-secondary">
                     {action.sublabel}
@@ -75,7 +78,7 @@ export function ActionSheet({
             </TouchableOpacity>
           );
         })}
-      </View>
+      </>
     </BottomSheet>
   );
 }

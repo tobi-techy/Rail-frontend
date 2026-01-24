@@ -1,32 +1,19 @@
 import React, { forwardRef, useRef, useCallback } from 'react';
 import { Pressable, PressableProps, Text, ActivityIndicator, View, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Audio } from 'expo-av';
 
 interface ButtonProps extends Omit<PressableProps, 'style'> {
   title: string;
-  variant?: 'black' | 'white' | 'orange';
+  variant?: 'black' | 'white' | 'orange' | 'destructive' | 'ghost';
   size?: 'small' | 'large';
   loading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   disabled?: boolean;
   className?: string;
-  enableSound?: boolean;
   enableHaptics?: boolean;
+  flex?: boolean;
 }
-
-const playClickSound = async () => {
-  try {
-    const { sound } = await Audio.Sound.createAsync(require('@/assets/sounds/click.mp3'), {
-      volume: 0.3,
-    });
-    await sound.playAsync();
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded && status.didJustFinish) sound.unloadAsync();
-    });
-  } catch {}
-};
 
 export const Button = forwardRef<View, ButtonProps>(
   (
@@ -39,8 +26,8 @@ export const Button = forwardRef<View, ButtonProps>(
       rightIcon,
       disabled,
       className = '',
-      enableSound = true,
       enableHaptics = true,
+      flex = false,
       onPress,
       ...props
     },
@@ -49,13 +36,14 @@ export const Button = forwardRef<View, ButtonProps>(
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = useCallback(() => {
+      if (enableHaptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       Animated.spring(scaleAnim, {
         toValue: 0.96,
         useNativeDriver: true,
         speed: 50,
         bounciness: 4,
       }).start();
-    }, [scaleAnim]);
+    }, [scaleAnim, enableHaptics]);
 
     const handlePressOut = useCallback(() => {
       Animated.spring(scaleAnim, {
@@ -68,28 +56,37 @@ export const Button = forwardRef<View, ButtonProps>(
 
     const handlePress = useCallback(
       (e: any) => {
-        if (enableHaptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        if (enableSound) playClickSound();
         onPress?.(e);
       },
-      [enableHaptics, enableSound, onPress]
+      [onPress]
     );
 
-    const variantStyles =
-      variant === 'white'
-        ? 'bg-white border border-gray-200'
-        : variant === 'orange'
-          ? 'bg-[#FF5A00]'
-          : 'bg-black';
-    const textStyles =
-      variant === 'white' ? 'text-black' : variant === 'orange' ? 'text-white' : 'text-white';
+    const variantStyles = {
+      black: 'bg-black',
+      white: 'bg-white border border-gray-200',
+      orange: 'bg-[#FF2E01]',
+      destructive: 'bg-[#F44336]',
+      ghost: 'bg-transparent',
+    }[variant];
+
+    const textStyles = {
+      black: 'text-white',
+      white: 'text-black',
+      orange: 'text-white',
+      destructive: 'text-white',
+      ghost: 'text-text-secondary',
+    }[variant];
+
     const sizeStyles = size === 'small' ? 'px-4 py-3' : 'px-6 py-5';
-    const textSize = size === 'small' ? 'text-sm' : 'text-lg';
-    const widthStyles = size === 'small' ? 'w-[30%]' : 'w-full';
+    const textSize = size === 'small' ? 'text-caption' : 'text-lg';
 
     return (
       <Animated.View
-        style={{ transform: [{ scale: scaleAnim }], width: size === 'small' ? '30%' : '100%' }}>
+        style={{
+          transform: [{ scale: scaleAnim }],
+          flex: flex ? 1 : undefined,
+          alignSelf: flex ? undefined : size === 'small' ? 'flex-start' : 'stretch',
+        }}>
         <Pressable
           ref={ref}
           disabled={disabled || loading}
@@ -105,7 +102,7 @@ export const Button = forwardRef<View, ButtonProps>(
           ) : (
             <View className="flex-row items-center">
               {leftIcon && <View className="mr-2">{leftIcon}</View>}
-              <Text className={`font-button ${textSize} ${textStyles}`}>{title}</Text>
+              <Text className={`font-button  ${textSize} ${textStyles}`}>{title}</Text>
               {rightIcon && <View className="ml-2">{rightIcon}</View>}
             </View>
           )}

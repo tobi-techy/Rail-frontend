@@ -39,13 +39,12 @@ export const FormField: React.FC<FormFieldProps> = ({
 
       {/* Helper Text - only show if no error */}
       {helperText && !hasError && (
-        <Text 
-          className="text-[#A0A0A0] text-xs mt-1 -mb-4"
+        <Text
+          className="-mb-4 mt-1 text-xs text-[#A0A0A0]"
           style={{
-            fontFamily: typography.fonts.secondary,
+            // fontFamily: typography.fonts.secondary,
             fontSize: typography.styles.caption.size,
-          }}
-        >
+          }}>
           {helperText}
         </Text>
       )}

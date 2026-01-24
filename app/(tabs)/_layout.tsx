@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { CreditCard, Home, PieChart } from 'lucide-react-native';
+import { Clock1, Home, Settings } from 'lucide-react-native';
 
 import { TabBar } from '@/components/TabBar';
 
@@ -17,25 +17,25 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <Home size={24} color={color} fill={focused ? '#FF5A00' : 'black'} />
+            <Home size={24} color={color} fill={focused ? color : '#999'} />
           ),
         }}
       />
       <Tabs.Screen
-        name="invest"
+        name="history"
         options={{
-          title: 'Invest',
+          title: 'History',
           tabBarIcon: ({ color, focused }) => (
-            <PieChart size={24} color={color} fill={focused ? color : 'black'} />
+            <Clock1 size={24} color={color} fill={focused ? color : '#999'} />
           ),
         }}
       />
       <Tabs.Screen
-        name="card"
+        name="settings"
         options={{
-          title: 'Card',
+          title: 'Settings',
           tabBarIcon: ({ color, focused }) => (
-            <CreditCard size={24} color={color} fill={focused ? color : 'black'} />
+            <Settings size={24} color={color} fill={focused ? color : '#999'} />
           ),
         }}
       />

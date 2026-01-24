@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from './atoms/Icon';
 import { safeError } from '../utils/logSanitizer';
 import { Sentry } from '../lib/sentry';
-import { Button } from '@/components/atoms';
+import { Button } from '@/components/ui/Button';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     safeError('[ErrorBoundary] Caught error:', { message: error.message, name: error.name });
     safeError('[ErrorBoundary] Error info:', errorInfo);
-    
+
     // Send to Sentry in production
     if (!__DEV__) {
       Sentry.captureException(error, {
@@ -61,18 +61,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <SafeAreaView style={styles.container}>
           <View style={styles.content}>
             <View style={styles.iconContainer}>
-              <Icon
-                name="alert-circle"
-                size={64}
-                color="#EF4444"
-                strokeWidth={2}
-              />
+              <Icon name="alert-circle" size={64} color="#EF4444" strokeWidth={2} />
             </View>
 
             <Text style={styles.title}>Something went wrong</Text>
-            
+
             <Text style={styles.message}>
-              We're sorry for the inconvenience. The app encountered an unexpected error.
+              We&apos;re sorry for the inconvenience. The app encountered an unexpected error.
             </Text>
 
             {__DEV__ && (
@@ -82,7 +77,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               </View>
             )}
 
-           <Button title="Try again" onPress={this.resetError} className="w-full absolute bottom-0" />
+            <Button
+              title="Try again"
+              onPress={this.resetError}
+              className="absolute bottom-0 w-full"
+            />
           </View>
         </SafeAreaView>
       );
@@ -102,6 +101,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
+    position: 'relative',
   },
   iconContainer: {
     marginBottom: 24,

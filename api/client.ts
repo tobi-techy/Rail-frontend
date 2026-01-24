@@ -32,9 +32,12 @@ const AUTH_ENDPOINTS = [
 
 function isAuthEndpoint(url?: string): boolean {
   if (!url) return false;
-  // Extract path from URL and check for exact match
-  const path = url.startsWith('http') ? new URL(url).pathname : url;
-  return AUTH_ENDPOINTS.some((endpoint) => path === endpoint || path.endsWith(endpoint));
+  // Extract path from URL and normalize
+  let path = url.startsWith('http') ? new URL(url).pathname : url;
+  path = path.startsWith('/') ? path : '/' + path;
+  return AUTH_ENDPOINTS.some(
+    (endpoint) => path === endpoint || path === '/' + endpoint || path.endsWith('/' + endpoint)
+  );
 }
 
 // Token refresh state to prevent race conditions

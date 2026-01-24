@@ -51,7 +51,7 @@ export default function Address() {
           </Pressable>
           <View className="mb-8">
             <Text className="font-display text-[60px] text-gray-900">Address</Text>
-            <Text className="mt-2 font-body-medium text-[14px] text-gray-600">
+            <Text className="font-body-medium mt-2 text-[14px] text-gray-600">
               Where do you live?
             </Text>
           </View>

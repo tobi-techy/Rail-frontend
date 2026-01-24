@@ -15,7 +15,7 @@ const CardIntroScreen = ({ onCreateCard }: CardIntroScreenProps) => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerLeft: () => <Text className="pl-[14px] font-headline text-headline-1">Card</Text>,
+      headerLeft: () => <Text className="pl-[14px] font-subtitle text-headline-1">Card</Text>,
       headerShown: true,
       headerStyle: {
         backgroundColor: '#fff',

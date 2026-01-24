@@ -158,7 +158,7 @@ export default function SignIn() {
               onPress={handleSignIn}
               loading={isLoading}
               className="rounded-full"
-              variant="orange"
+              variant="white"
             />
 
             <TouchableOpacity onPress={() => router.push('/(auth)')} className="mt-4 self-center">

@@ -3,55 +3,112 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+type TabBarProps = BottomTabBarProps & {
+  rightIcon?: React.ReactNode;
+  onRightIconPress?: () => void;
+  rightIconAccessibilityLabel?: string;
+};
+
+function TabBarItem({
+  route,
+  descriptor,
+  isFocused,
+  navigation,
+}: {
+  route: any;
+  descriptor: any;
+  isFocused: boolean;
+  navigation: any;
+}) {
+  const scale = useSharedValue(1);
+  const { options } = descriptor;
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const onPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: route.key,
+      canPreventDefault: true,
+    });
+    if (!isFocused && !event.defaultPrevented) {
+      navigation.navigate(route.name, route.params);
+    }
+  };
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={isFocused ? { selected: true } : {}}
+      accessibilityLabel={options.tabBarAccessibilityLabel}
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.85, { damping: 15 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 15 });
+      }}
+      style={styles.item}>
+      <Animated.View style={animatedStyle}>
+        {options.tabBarIcon?.({
+          focused: isFocused,
+          color: isFocused ? '#FF2E01' : '#ccc',
+          size: 28,
+        })}
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+export function TabBar({
+  state,
+  descriptors,
+  navigation,
+  rightIcon,
+  onRightIconPress,
+  rightIconAccessibilityLabel,
+}: TabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.wrapper, { paddingBottom: insets.bottom + 10 }]} pointerEvents="box-none">
-      <BlurView intensity={150} style={styles.container}>
-        {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
-          const isFocused = state.index === index;
+    <View style={[styles.wrapper, { paddingBottom: insets.bottom + 1 }]} pointerEvents="box-none">
+      <View style={styles.row}>
+        <View style={styles.container}>
+          <BlurView intensity={40} tint="light" style={styles.blur}>
+            {state.routes.map((route, index) => (
+              <TabBarItem
+                key={route.key}
+                route={route}
+                descriptor={descriptors[route.key]}
+                isFocused={state.index === index}
+                navigation={navigation}
+              />
+            ))}
+          </BlurView>
+        </View>
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name, route.params);
-            }
-          };
-
-          const onLongPress = () => {
-            navigation.emit({
-              type: 'tabLongPress',
-              target: route.key,
-            });
-          };
-
-          return (
-            <Pressable
-              key={route.key}
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={options.tabBarAccessibilityLabel}
-              testID={options.tabBarButtonTestID}
-              onPress={onPress}
-              onLongPress={onLongPress}
-              style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}>
-              {options.tabBarIcon?.({
-                focused: isFocused,
-                color: isFocused ? '#FF5A00' : '#000000', // Black active, Grey inactive
-                size: 28,
-              })}
-            </Pressable>
-          );
-        })}
-      </BlurView>
+        {rightIcon && (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onRightIconPress?.();
+            }}
+            style={styles.rightButton}
+            accessibilityRole="button"
+            accessibilityLabel={rightIconAccessibilityLabel}
+            accessibilityState={{ disabled: !onRightIconPress }}>
+            <BlurView intensity={80} tint="light" style={styles.rightButtonBlur}>
+              {rightIcon}
+            </BlurView>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
@@ -60,24 +117,40 @@ const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
     bottom: 0,
-    left: 20,
+    left: 0,
     right: 0,
-    alignItems: 'flex-start',
+    alignItems: 'center',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   container: {
+    borderRadius: 40,
+    overflow: 'hidden',
+  },
+  blur: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 32,
     paddingHorizontal: 24,
     paddingVertical: 16,
-    borderRadius: 40,
-    overflow: 'hidden',
   },
   item: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  itemPressed: {
-    opacity: 0.6,
+  rightButton: {
+    borderRadius: 28,
+    overflow: 'hidden',
+  },
+  rightButtonBlur: {
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 28,
+    overflow: 'hidden',
   },
 });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Stack } from 'expo-router';
-import { View } from 'react-native';
+import { StatusBar, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -15,7 +15,7 @@ import '../global.css';
 const SPLASH_BG = '#FF5A00';
 
 // Hard limit: force-hide the splash after this long, no matter what.
-const SPLASH_HARD_TIMEOUT_MS = 1 * 60 * 1000;
+const SPLASH_HARD_TIMEOUT_MS = 0.5 * 60 * 1000;
 
 // Soft minimum: don't *start* finishing the splash animation before this long.
 // Keep it the same as the hard timeout unless you want a longer/shorter animation window.
@@ -179,6 +179,7 @@ export default function Layout() {
 
   return (
     <ErrorBoundary>
+      <StatusBar barStyle={'dark-content'} />
       <KeyboardProvider>
         <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
           <QueryClientProvider client={queryClient}>

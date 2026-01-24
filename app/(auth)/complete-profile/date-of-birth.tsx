@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { View, Text, StatusBar, Platform, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -56,48 +55,42 @@ export default function DateOfBirth() {
       <View className="flex-1 px-6 pt-4">
         {/* Header with Back Button */}
         <View className="mb-8 mt-4">
-            <Pressable onPress={() => router.back()} className="mb-4">
-                <Ionicons name="arrow-back" size={24} color="black" />
-            </Pressable>
-          <Text className="font-display text-[60px] text-gray-900">
-            Date of Birth
-          </Text>
-          <Text className="mt-2 font-body-medium text-[14px] text-gray-600">
+          <Pressable onPress={() => router.back()} className="mb-4">
+            <Ionicons name="arrow-back" size={24} color="black" />
+          </Pressable>
+          <Text className="font-display text-[60px] text-gray-900">Date of Birth</Text>
+          <Text className="font-body-medium mt-2 text-[14px] text-gray-600">
             We need to verify your age
           </Text>
         </View>
 
         <View className="gap-y-4">
-            {/* Custom Input Trigger for Date Picker */}
-            <Pressable onPress={() => setShowPicker(true)}>
-                <View pointerEvents="none">
-                    <InputField
-                        label="Date of Birth"
-                        placeholder="YYYY-MM-DD"
-                        value={dob ? dob.toISOString().split('T')[0] : ''}
-                        editable={false}
-                        error={error}
-                    />
-                </View>
-            </Pressable>
-            
-            {showPicker && (
-                <DateTimePicker
-                    value={dob || new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={onChange}
-                    maximumDate={new Date()}
-                />
-            )}
+          {/* Custom Input Trigger for Date Picker */}
+          <Pressable onPress={() => setShowPicker(true)}>
+            <View pointerEvents="none">
+              <InputField
+                label="Date of Birth"
+                placeholder="YYYY-MM-DD"
+                value={dob ? dob.toISOString().split('T')[0] : ''}
+                editable={false}
+                error={error}
+              />
+            </View>
+          </Pressable>
+
+          {showPicker && (
+            <DateTimePicker
+              value={dob || new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={onChange}
+              maximumDate={new Date()}
+            />
+          )}
         </View>
 
         <View className="mt-auto pb-4">
-          <Button
-            title="Next"
-            onPress={handleNext}
-            className="rounded-full font-body"
-          />
+          <Button title="Next" onPress={handleNext} className="rounded-full font-body" />
         </View>
       </View>
     </SafeAreaView>

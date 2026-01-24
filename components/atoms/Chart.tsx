@@ -1,142 +1,82 @@
-import React from 'react';
-import { View, Text, ViewProps } from 'react-native';
-import {
-  LineChart,
-  BarChart,
-  PieChart,
-  CurveType,
-} from 'react-native-gifted-charts';
-import { colors, typography, spacing } from '../../design/tokens';
+import { View } from 'react-native';
+import { Canvas, Path, Skia, LinearGradient, vec } from '@shopify/react-native-skia';
+import { useMemo } from 'react';
 
-export interface ChartDataPoint {
-  value: number;
-  label?: string;
-  color?: string;
-}
-
-export interface ChartProps extends ViewProps {
-  data: ChartDataPoint[];
-  type?: 'line' | 'bar' | 'pie';
+interface ChartProps {
+  data: { value: number }[];
   height?: number;
-  showLabels?: boolean;
-  showValues?: boolean;
-  title?: string;
-  className?: string;
-  testID?: string;
+  width: number;
   color?: string;
-  areaColor?: string; // Add this for area color
-  startFillColor?: string; // Add this for gradient start
-  endFillColor?: string; // Add this for gradient end
-  animationDuration?: number;
-  width?: number;
+  startFillColor?: string;
+  endFillColor?: string;
+  type?: 'line' | 'area';
 }
 
-export const Chart: React.FC<ChartProps> = ({
+export function Chart({
   data,
-  type = 'line',
-  height = 120,
-  showLabels = false,
-  showValues = false,
-  title,
-  className,
-  testID,
-  style,
-  color = colors.accent.limeGreen,
-  animationDuration = 800,
-  width = 120,
-  areaColor = colors.accent.limeGreen,
-  startFillColor = colors.accent.limeGreen,
-  endFillColor = colors.accent.limeGreen,
-  ...props
-}) => {
-  const giftedData = data.map(point => ({
-    value: point.value,
-    label: '', // hide labels
-    frontColor: point.color || color,
-  }));
+  height = 100,
+  width,
+  color = '#84CC16',
+  startFillColor = '#84CC16',
+  endFillColor = '#FFFFFF',
+  type = 'area',
+}: ChartProps) {
+  const { linePath, areaPath } = useMemo(() => {
+    if (!data.length || width <= 0) return { linePath: null, areaPath: null };
 
-  const renderChart = () => {
-    switch (type) {
-      case 'bar':
-        return (
-          <BarChart
-            data={giftedData}
-            barWidth={20}
-            frontColor={color}
-            spacing={20}
-            isAnimated
-            animationDuration={animationDuration}
-            height={height}
-            yAxisThickness={0}
-            xAxisThickness={0}
-            hideRules
-            xAxisLabelTextStyle={{ display: 'none' }}
-            yAxisTextStyle={{ display: 'none' }}
-          />
-        );
+    const values = data.map((d) => d.value);
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    const range = maxVal - minVal || 1;
 
-      case 'pie':
-        return (
-          <PieChart
-            data={giftedData}
-            showText={false}
-            radius={height / 2}
-            innerRadius={height / 4}
-            isAnimated
-            animationDuration={animationDuration}
-          />
-        );
+    const padding = 2;
+    const chartHeight = height - padding * 2;
+    const stepX = data.length > 1 ? width / (data.length - 1) : 0;
 
-      case 'line':
-      default:
-        return (
-          <LineChart
-            // curved
-            startFillColor={startFillColor || color} // Use new props
-            endFillColor={endFillColor || areaColor || '#FFFFFF'}
-            // curveType={CurveType.QUADRATIC}
-            data={giftedData}
-            thickness={3}
-            color={color}
-            hideDataPoints={!showValues}
-            yAxisThickness={0}
-            xAxisThickness={0}
-            isAnimated
-            animationDuration={animationDuration}
-            hideRules
-            hideYAxisText
-            height={height}
-            width={width} // Pass width to LineChart
-            adjustToWidth={!width}
-            // areaChart
-            initialSpacing={0}
-            endSpacing={0}
-          />
-        );
+    const points = values.map((val, i) => ({
+      x: i * stepX,
+      y: padding + chartHeight - ((val - minVal) / range) * chartHeight,
+    }));
+
+    if (points.length === 0) return { linePath: null, areaPath: null };
+
+    const line = Skia.Path.Make();
+    line.moveTo(points[0].x, points[0].y);
+
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1];
+      const curr = points[i];
+      const cpX = (prev.x + curr.x) / 2;
+      line.cubicTo(cpX, prev.y, cpX, curr.y, curr.x, curr.y);
     }
-  };
+
+    const area = line.copy();
+    area.lineTo(width, height);
+    area.lineTo(0, height);
+    area.close();
+
+    return { linePath: line, areaPath: area };
+  }, [data, width, height]);
+
+  if (!linePath || !areaPath) return <View style={{ width, height }} />;
 
   return (
-    <View
-      style={[{ height, width: width || '100%' }, style]}
-      className={className}
-      testID={testID}
-      {...props}
-    >
-      {title && (
-        <Text
-          style={{
-            fontFamily: typography.fonts.primary,
-            fontSize: typography.styles.h3.size,
-            fontWeight: typography.styles.h3.weight,
-            color: colors.text.primary,
-            marginBottom: spacing.md,
-          }}
-        >
-          {title}
-        </Text>
-      )}
-      {renderChart()}
-    </View>
+    <Canvas style={{ width, height }}>
+      <Path path={areaPath}>
+        <LinearGradient
+          start={vec(0, 0)}
+          end={vec(0, height)}
+          colors={[startFillColor + '40', endFillColor + '00']}
+        />
+      </Path>
+      <Path
+        path={linePath}
+        style="stroke"
+        strokeWidth={2}
+        color={color}
+        strokeCap="round"
+        strokeJoin="round"
+      />
+    </Canvas>
   );
-};
+}

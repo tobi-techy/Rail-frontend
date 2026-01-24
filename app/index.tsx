@@ -13,14 +13,6 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { onBoard1, onBoard2, onBoard3, onBoard4 } from '../assets/images';
 import { Button } from '@/components/ui';
-import CurrencyExchange from '@/assets/Icons/currency-exchange-13.svg';
-import Finance from '@/assets/Icons/finance-26.svg';
-import Wallet from '@/assets/Icons/wallet-3.svg';
-import Ethereum from '@/assets/Icons/ethereum-33.svg';
-import PieChart from '@/assets/Icons/pie-chart-15.svg';
-import DataExploration from '@/assets/Icons/data-exploration-20.svg';
-import CreditCard from '@/assets/Icons/credit-card-8.svg';
-import Savings from '@/assets/Icons/savings-1.svg';
 import { Apple } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -29,7 +21,6 @@ interface OnboardingSlide {
   key: string;
   titleTop: string;
   titleBottom: [string, string];
-  icons: React.FC<{ width: number; height: number; fill?: string }>[];
   description: string;
   video: any;
   backgroundColor: string;
@@ -44,7 +35,6 @@ const onboardingSlides: OnboardingSlide[] = [
     key: '1',
     titleTop: 'Drop it in.',
     titleBottom: ['Watch it', 'work.'],
-    icons: [CurrencyExchange, Finance],
     description:
       'Your money moves the second it lands. No buttons, no stress, no "what do I do now?" Just momentum.',
     video: onBoard1,
@@ -58,7 +48,6 @@ const onboardingSlides: OnboardingSlide[] = [
     key: '2',
     titleTop: 'Fund it',
     titleBottom: ['however', 'you want.'],
-    icons: [Wallet, Ethereum],
     description:
       'Bank transfer, card, or digital dollars—pick your lane. Either way, it hits instantly.',
     video: onBoard2,
@@ -72,7 +61,6 @@ const onboardingSlides: OnboardingSlide[] = [
     key: '3',
     titleTop: 'Grow',
     titleBottom: ['without', 'the grind.'],
-    icons: [PieChart, DataExploration],
     description:
       'Follow the pros or let the system cook. You never have to pretend you know what a P/E ratio is.',
     video: onBoard3,
@@ -86,7 +74,6 @@ const onboardingSlides: OnboardingSlide[] = [
     key: '4',
     titleTop: 'Spend now.',
     titleBottom: ['Stack', 'forever.'],
-    icons: [CreditCard, Savings],
     description:
       'Every swipe rounds up and invests the change. Your coffee habit is secretly building your future.',
     video: onBoard4,
@@ -107,8 +94,6 @@ function VideoSlide({ item }: { item: OnboardingSlide }) {
     player.play();
   });
 
-  const [Icon1, Icon2] = item.icons;
-
   return (
     <View
       className="h-full w-full flex-1 items-center overflow-hidden"
@@ -118,13 +103,11 @@ function VideoSlide({ item }: { item: OnboardingSlide }) {
           <Text className={`font-display text-[50px] font-black uppercase ${item.textColor}`}>
             {item.titleTop}{' '}
           </Text>
-          <Icon1 width={40} height={40} fill="#fff" />
         </View>
         <View className="flex-row flex-wrap items-center">
           <Text className={`font-display text-[50px] font-black uppercase ${item.textColor}`}>
             {item.titleBottom[0]}{' '}
           </Text>
-          <Icon2 width={40} height={40} fill="#fff" />
           <Text className={`font-display text-[50px] font-black uppercase ${item.textColor}`}>
             {' '}
             {item.titleBottom[1]}
@@ -229,7 +212,6 @@ export default function App() {
       <View className="absolute bottom-12 w-full items-center gap-y-2 px-6">
         <Button
           title="Create an account"
-          leftIcon={<Apple size={24} color="#000" />}
           size="large"
           onPress={() => router.push('/(tabs)')}
           variant="black"

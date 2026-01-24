@@ -1,6 +1,17 @@
-import React from 'react';
 import { Stack } from 'expo-router';
 
-export default function SpendingStash() {
-  return <Stack />;
+export default function SpendingStashLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: true,
+        headerTitle: '',
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: '#fff' },
+        contentStyle: { backgroundColor: '#fff' },
+        animation: 'fade',
+        gestureEnabled: true,
+      }}
+    />
+  );
 }
