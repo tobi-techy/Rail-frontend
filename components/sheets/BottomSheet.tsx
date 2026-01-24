@@ -9,7 +9,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
 import { X } from 'lucide-react-native';
 
 const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
@@ -65,23 +64,21 @@ export function BottomSheet({
     transform: [{ translateY: translateY.value }],
   }));
 
-  const overlayStyle = useAnimatedStyle(() => ({
-    opacity: overlayOpacity.value,
-  }));
-
   if (!visible) return null;
 
   return (
-    <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={dismissible ? animateClose : undefined}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]}>
-          <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill}>
-            <Pressable
-              className="flex-1 bg-black/30"
-              onPress={dismissible ? animateClose : undefined}
-            />
-          </BlurView>
-        </Animated.View>
+        <Pressable
+          className="flex-1 bg-black/30"
+          style={StyleSheet.absoluteFill}
+          onPress={dismissible ? animateClose : undefined}
+        />
 
         <GestureDetector gesture={pan}>
           <Animated.View

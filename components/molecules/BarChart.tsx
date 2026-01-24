@@ -76,10 +76,10 @@ export function BarChart({
 
   const chartWidth = screenWidth;
   const barWidth = 4;
-  const gap = (chartWidth - barWidth * data.length) / (data.length - 1);
+  const gap = data.length > 1 ? (chartWidth - barWidth * data.length) / (data.length - 1) : 0;
 
   const maxValue = Math.max(...data, 1);
-  const normalizedData = data.map((v) => (v / maxValue) * height);
+  const normalizedData = data.length === 0 ? [] : data.map((v) => (v / maxValue) * height);
 
   useEffect(() => {
     animationProgress.value = 0;
@@ -87,7 +87,7 @@ export function BarChart({
       duration: 600,
       easing: Easing.out(Easing.cubic),
     });
-  }, [selectedPeriod]);
+  }, [selectedPeriod, animationProgress]);
 
   const handlePeriodChange = useCallback(
     (period: string) => {

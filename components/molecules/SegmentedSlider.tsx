@@ -39,7 +39,8 @@ export function SegmentedSlider({
   const sliderWidth = useSharedValue(0);
   const lastSegment = useRef(-1);
 
-  const normalizedValue = ((value - min) / (max - min)) * 100;
+  const normalizedValue =
+    max === min ? 0 : Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
   const activeSegments = Math.round((normalizedValue / 100) * segments);
 
   const triggerHaptic = useCallback(() => {
@@ -49,9 +50,10 @@ export function SegmentedSlider({
   const handleValueChange = useCallback(
     (newValue: number) => {
       const clampedValue = Math.min(max, Math.max(min, newValue));
-      const steppedValue = Math.round(clampedValue / step) * step;
+      const steppedValue = step === 0 ? clampedValue : Math.round(clampedValue / step) * step;
 
-      const newSegment = Math.round(((steppedValue - min) / (max - min)) * segments);
+      const newSegment =
+        max === min ? 0 : Math.round(((steppedValue - min) / (max - min)) * segments);
       if (newSegment !== lastSegment.current) {
         lastSegment.current = newSegment;
         triggerHaptic();
@@ -64,14 +66,16 @@ export function SegmentedSlider({
 
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
-      const percentage = Math.max(0, Math.min(1, e.x / sliderWidth.value));
+      const percentage =
+        sliderWidth.value === 0 ? 0 : Math.max(0, Math.min(1, e.x / sliderWidth.value));
       const newValue = min + percentage * (max - min);
       runOnJS(handleValueChange)(newValue);
     })
     .hitSlop({ vertical: 20 });
 
   const tapGesture = Gesture.Tap().onEnd((e) => {
-    const percentage = Math.max(0, Math.min(1, e.x / sliderWidth.value));
+    const percentage =
+      sliderWidth.value === 0 ? 0 : Math.max(0, Math.min(1, e.x / sliderWidth.value));
     const newValue = min + percentage * (max - min);
     runOnJS(handleValueChange)(newValue);
   });
@@ -123,10 +127,8 @@ function SegmentBar({
   const scale = useSharedValue(1);
 
   useEffect(() => {
-    if (isActive) {
-      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
-    }
-  }, [isActive]);
+    scale.value = withSpring(isActive ? 1.1 : 1, { damping: 15, stiffness: 300 });
+  }, [isActive, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     backgroundColor: isActive ? activeColor : inactiveColor,

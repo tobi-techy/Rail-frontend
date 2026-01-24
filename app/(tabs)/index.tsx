@@ -182,7 +182,7 @@ const Dashboard = () => {
             icon: Building2,
             iconColor: '#6366F1',
             iconBgColor: '#EEF2FF',
-            // onPress: () => router.push('/deposit/fiat'),
+            onPress: () => router.push('/deposit/fiat'),
           },
           {
             id: 'crypto',
@@ -191,7 +191,7 @@ const Dashboard = () => {
             icon: Wallet,
             iconColor: '#F97316',
             iconBgColor: '#FFF7ED',
-            // onPress: () => router.push('/deposit/crypto'),
+            onPress: () => router.push('/deposit/crypto'),
           },
         ]}
       />

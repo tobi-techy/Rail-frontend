@@ -1,12 +1,12 @@
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
-import React, { useLayoutEffect, useMemo, useState, useCallback } from 'react';
+import React, { useLayoutEffect, useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigation } from 'expo-router';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { ArrowDown, DollarSignIcon, PersonStanding } from 'lucide-react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
 import type { Transaction } from '@/components/molecules/TransactionItem';
 import { Button } from '../../components/ui';
-import InvestmentsEmptyIllustration from '@/assets/Illustrations/investments-empty.svg';
+import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 import { FloatingBackButton } from '@/components/FloatingBackButton';
 import { AnimatedScreen } from '@/components/AnimatedScreen';
 
@@ -14,10 +14,17 @@ export default function SpendingStashScreen() {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [activePeriod, setActivePeriod] = useState('6M');
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+    };
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
+    refreshTimeoutRef.current = setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
   useLayoutEffect(() => {
@@ -72,17 +79,17 @@ export default function SpendingStashScreen() {
             <View className="py-5">
               {transactions.length === 0 ? (
                 <View className="items-center justify-center rounded-3xl bg-white px-5 py-8">
-                  <InvestmentsEmptyIllustration width={220} height={140} />
+                  <TransactionsEmptyIllustration width={220} height={140} />
                   <Text className="mt-4 text-center font-subtitle text-headline-2 text-gray-900">
-                    No investments yet
+                    No spending yet
                   </Text>
                   <Text className="mt-2 text-center font-body text-base text-gray-500">
-                    Start investing to see your portfolio activity here.
+                    Make your first purchase to see spending activity here.
                   </Text>
                 </View>
               ) : (
                 <TransactionList
-                  title="Investment Activity"
+                  title="Spending Activity"
                   transactions={transactions}
                   emptyStateMessage="No activity to show yet."
                 />

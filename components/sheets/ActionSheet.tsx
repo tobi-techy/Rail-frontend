@@ -64,7 +64,7 @@ export function ActionSheet({
               <View
                 className="mr-4 h-11 w-11 items-center justify-center rounded-sm"
                 style={{ backgroundColor: action.iconBgColor ?? '#F5F5F5' }}>
-                <Icon size={22} fill={action.iconColor ?? '#1B84FF'} />
+                <Icon size={22} color={action.iconColor ?? '#1B84FF'} />
               </View>
               <View className="flex-1">
                 <Text className="font-subtitle text-lg text-text-primary">{action.label}</Text>

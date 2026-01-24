@@ -56,10 +56,9 @@ export const Button = forwardRef<View, ButtonProps>(
 
     const handlePress = useCallback(
       (e: any) => {
-        if (enableHaptics) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         onPress?.(e);
       },
-      [enableHaptics, onPress]
+      [onPress]
     );
 
     const variantStyles = {

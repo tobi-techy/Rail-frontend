@@ -9,6 +9,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 type TabBarProps = BottomTabBarProps & {
   rightIcon?: React.ReactNode;
   onRightIconPress?: () => void;
+  rightIconAccessibilityLabel?: string;
 };
 
 function TabBarItem({
@@ -71,6 +72,7 @@ export function TabBar({
   navigation,
   rightIcon,
   onRightIconPress,
+  rightIconAccessibilityLabel,
 }: TabBarProps) {
   const insets = useSafeAreaInsets();
 
@@ -97,7 +99,10 @@ export function TabBar({
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onRightIconPress?.();
             }}
-            style={styles.rightButton}>
+            style={styles.rightButton}
+            accessibilityRole="button"
+            accessibilityLabel={rightIconAccessibilityLabel}
+            accessibilityState={{ disabled: !onRightIconPress }}>
             <BlurView intensity={80} tint="light" style={styles.rightButtonBlur}>
               {rightIcon}
             </BlurView>

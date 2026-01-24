@@ -31,12 +31,14 @@ export function Chart({
 
     const padding = 2;
     const chartHeight = height - padding * 2;
-    const stepX = width / (data.length - 1 || 1);
+    const stepX = data.length > 1 ? width / (data.length - 1) : 0;
 
     const points = values.map((val, i) => ({
       x: i * stepX,
       y: padding + chartHeight - ((val - minVal) / range) * chartHeight,
     }));
+
+    if (points.length === 0) return { linePath: null, areaPath: null };
 
     const line = Skia.Path.Make();
     line.moveTo(points[0].x, points[0].y);

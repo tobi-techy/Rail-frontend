@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
-import React, { useLayoutEffect, useMemo, useState, useCallback } from 'react';
+import React, { useLayoutEffect, useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigation } from 'expo-router';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { BarChart } from '@/components/molecules/BarChart';
@@ -36,10 +36,19 @@ export default function InvestmentStashScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activePeriod, setActivePeriod] = useState('6M');
   const [chartData, setChartData] = useState(() => generateChartData('6M'));
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
+    refreshTimeoutRef.current = setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
   const handlePeriodChange = useCallback((period: string) => {
@@ -63,6 +72,7 @@ export default function InvestmentStashScreen() {
 
   const transactions = useMemo<Transaction[]>(() => [], []);
 
+  // TODO: Replace with actual data fetching from API (RAIL-XXX)
   const displayBalance = '$00.00';
   const displayPerformance = '+00.00%';
   const displayBuyingPower = '$00.00';
@@ -90,12 +100,14 @@ export default function InvestmentStashScreen() {
                 leftIcon={<PersonStanding size={20} color="white" />}
                 size="small"
                 variant="black"
+                disabled
               />
               <Button
                 title="Withdraw"
                 leftIcon={<ArrowDown size={20} color="black" />}
                 size="small"
                 variant="white"
+                disabled
               />
             </View>
           </View>

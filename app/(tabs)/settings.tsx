@@ -1,15 +1,16 @@
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Trash2, LogOut, PieChart, Wallet } from 'lucide-react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Trash2, LogOut, PieChart } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from 'expo-router';
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useState, useEffect, type ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BottomSheet, SettingsSheet } from '@/components/sheets';
 import { SegmentedSlider } from '@/components/molecules';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui';
 
-type SettingItem = { icon: React.ReactNode; label: string; onPress?: () => void; danger?: boolean };
+type SettingItem = { icon: ReactNode; label: string; onPress?: () => void; danger?: boolean };
 
 type SheetType =
   | 'allocation'
@@ -56,6 +57,52 @@ export default function Settings() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const logout = useAuthStore((s) => s.logout);
 
+  useEffect(() => {
+    AsyncStorage.multiGet([
+      'baseAllocation',
+      'autoInvestEnabled',
+      'roundupsEnabled',
+      'spendingLimit',
+      'biometricsEnabled',
+      'notificationsEnabled',
+    ]).then((values) => {
+      values.forEach(([key, value]) => {
+        if (value !== null) {
+          if (key === 'baseAllocation') setBaseAllocation(Number(value));
+          else if (key === 'autoInvestEnabled') setAutoInvestEnabled(value === 'true');
+          else if (key === 'roundupsEnabled') setRoundupsEnabled(value === 'true');
+          else if (key === 'spendingLimit') setSpendingLimit(Number(value));
+          else if (key === 'biometricsEnabled') setBiometricsEnabled(value === 'true');
+          else if (key === 'notificationsEnabled') setNotificationsEnabled(value === 'true');
+        }
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    AsyncStorage.setItem('baseAllocation', String(baseAllocation));
+  }, [baseAllocation]);
+
+  useEffect(() => {
+    AsyncStorage.setItem('autoInvestEnabled', String(autoInvestEnabled));
+  }, [autoInvestEnabled]);
+
+  useEffect(() => {
+    AsyncStorage.setItem('roundupsEnabled', String(roundupsEnabled));
+  }, [roundupsEnabled]);
+
+  useEffect(() => {
+    AsyncStorage.setItem('spendingLimit', String(spendingLimit));
+  }, [spendingLimit]);
+
+  useEffect(() => {
+    AsyncStorage.setItem('biometricsEnabled', String(biometricsEnabled));
+  }, [biometricsEnabled]);
+
+  useEffect(() => {
+    AsyncStorage.setItem('notificationsEnabled', String(notificationsEnabled));
+  }, [notificationsEnabled]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
@@ -85,6 +132,16 @@ export default function Settings() {
     <View className="flex-1 bg-background-main">
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
         <Section title="Spend">
+          <SettingButton
+            icon={<PieChart size={24} color="#121212" />}
+            label="Base/Active Split"
+            onPress={() => setActiveSheet('allocation')}
+          />
+          <SettingButton
+            icon={<Ionicons name="trending-up-outline" size={24} color="#121212" />}
+            label="Auto Invest"
+            onPress={() => setActiveSheet('autoInvest')}
+          />
           <SettingButton
             icon={<Ionicons name="arrow-up-circle-outline" size={24} color="#121212" />}
             label="Round-ups"
