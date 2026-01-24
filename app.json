@@ -2,7 +2,7 @@
   "expo": {
     "name": "Rail Money",
     "slug": "rail",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "scheme": "rail",
     "platforms": ["ios", "android"],
     "web": {
