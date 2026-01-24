@@ -51,12 +51,13 @@ export default function InvestmentStashScreen() {
     navigation.setOptions({
       headerLeft: () => (
         <View className="flex-row items-center gap-x-3">
-          <View className="h-9 w-9 items-center justify-center rounded-[12px] bg-[#FF8A65]">
-            <Grid3x3Icon size={14} color="white" fill="white" />
+          <View className="h-6 w-6 items-center justify-center rounded-[12px] bg-[#FF8A65]">
+            <Grid3x3Icon size={12} color="white" fill="white" />
           </View>
-          <Text className="font-subtitle text-headline-1">Investment</Text>
+          <Text className="font-subtitle text-subtitle">Investment</Text>
         </View>
       ),
+      headerStyle: { backgroundColor: '#fff' },
     });
   }, [navigation]);
 

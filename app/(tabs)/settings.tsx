@@ -84,19 +84,6 @@ export default function Settings() {
   return (
     <View className="flex-1 bg-background-main">
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
-        <Section title="Rail Allocation">
-          <SettingButton
-            icon={<Ionicons name="pie-chart-outline" size={24} color="#121212" />}
-            label={'Base/Active Split'}
-            onPress={() => setActiveSheet('allocation')}
-          />
-          <SettingButton
-            icon={<Ionicons name="flash-outline" size={24} color="#121212" />}
-            label={'Auto Invest'}
-            onPress={() => setActiveSheet('autoInvest')}
-          />
-        </Section>
-
         <Section title="Spend">
           <SettingButton
             icon={<Ionicons name="arrow-up-circle-outline" size={24} color="#121212" />}
@@ -165,13 +152,6 @@ export default function Settings() {
       {/* Base/Active Split Sheet */}
       <BottomSheet visible={activeSheet === 'allocation'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Base/Active Split</Text>
-
-        <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-8">
-          <View className="h-16 w-16 items-center justify-center rounded-full bg-purple-100">
-            <PieChart size={32} color="#8B5CF6" />
-          </View>
-        </View>
-
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
           Set how your deposits are split between Base (savings) and Active (investments).
         </Text>
@@ -220,13 +200,6 @@ export default function Settings() {
       {/* Spending Limits Sheet */}
       <BottomSheet visible={activeSheet === 'limits'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Spending Limits</Text>
-
-        <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-8">
-          <View className="h-16 w-16 items-center justify-center rounded-full bg-orange-100">
-            <Wallet size={32} color="#FF5A00" />
-          </View>
-        </View>
-
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
           Set your daily spending limit to help manage your expenses and stay on budget.
         </Text>
