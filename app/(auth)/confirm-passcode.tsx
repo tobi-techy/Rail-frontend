@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { AuthGradient } from '@/components';
+import { ROUTES } from '@/constants/routes';
 
 export default function ConfirmPasscodeScreen() {
   const { passcode: originalPasscode } = useLocalSearchParams<{ passcode: string }>();
@@ -16,7 +17,7 @@ export default function ConfirmPasscodeScreen() {
       setConfirmPasscode('');
       return;
     }
-    router.replace('/(tabs)');
+    router.replace(ROUTES.TABS as any);
   };
 
   return (

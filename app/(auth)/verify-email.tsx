@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { OTPInput, Button } from '../../components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
+import { ROUTES } from '@/constants/routes';
 
 export default function VerifyEmail() {
   const [otp, setOtp] = useState('');
@@ -21,11 +22,11 @@ export default function VerifyEmail() {
 
   const handleOTPComplete = (code: string) => {
     setOtp(code);
-    router.push('/(auth)/complete-profile/personal-info');
+    router.push(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
   };
 
   const handleVerify = () => {
-    router.push('/(auth)/complete-profile/personal-info');
+    router.push(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
   };
 
   const handleResend = () => {

@@ -5,6 +5,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
+import { ROUTES } from '@/constants/routes';
 
 export default function SignIn() {
   const insets = useSafeAreaInsets();
@@ -14,7 +15,7 @@ export default function SignIn() {
   const passwordRef = useRef<TextInput>(null);
 
   const handleSignIn = () => {
-    router.replace('/(tabs)');
+    router.replace(ROUTES.TABS as any);
   };
 
   return (
@@ -68,7 +69,7 @@ export default function SignIn() {
 
             <StaggeredChild index={3}>
               <TouchableOpacity
-                onPress={() => router.push('/(auth)/forgot-password')}
+                onPress={() => router.push(ROUTES.AUTH.FORGOT_PASSWORD as any)}
                 className="self-end">
                 <Text className="font-subtitle text-[13px] text-white/60">Forgot Password?</Text>
               </TouchableOpacity>
@@ -78,7 +79,7 @@ export default function SignIn() {
           <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
               <Button title="Sign In" onPress={handleSignIn} variant="black" />
-              <TouchableOpacity onPress={() => router.push('/(auth)')} className="mt-4">
+              <TouchableOpacity onPress={() => router.push(ROUTES.AUTH.INDEX as any)} className="mt-4">
                 <Text className="text-center font-body text-[14px] text-white/70">
                   New to Rail? <Text className="font-subtitle text-white underline">Sign Up</Text>
                 </Text>

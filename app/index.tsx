@@ -230,7 +230,7 @@ export default function App() {
           <Button
             title="Sign Up with Apple"
             size="large"
-            onPress={() => router.push('/complete-profile/profile-milestone')}
+            onPress={() => router.push('/(auth)/complete-profile/investment-goal')}
             variant="black"
           />
           <Button

@@ -6,11 +6,11 @@ import { Button } from '@/components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
 import { HeaderAction } from './components';
 import Public from '@/assets/Icons/public.svg';
+import { ROUTES } from '@/constants/routes';
 
 export default function EnableNotificationsScreen() {
-  const finish = () => {
-    router.push('/(auth)/welcome-complete');
-  };
+  const finish = () => router.push(ROUTES.AUTH.WELCOME_COMPLETE as any);
+  const skip = () => router.replace(ROUTES.TABS as any);
 
   return (
     <AuthGradient>
@@ -18,12 +18,7 @@ export default function EnableNotificationsScreen() {
         <StatusBar barStyle="light-content" />
         <View className="flex-1 px-6 pb-8">
           <View className="mt-2 flex-row items-center justify-between">
-            <HeaderAction
-              icon="x"
-              accessibilityLabel="Close onboarding"
-              onPress={() => router.replace('/(tabs)')}
-              variant="dark"
-            />
+            <HeaderAction icon="x" accessibilityLabel="Close onboarding" onPress={skip} variant="dark" />
           </View>
 
           <StaggeredChild index={0}>

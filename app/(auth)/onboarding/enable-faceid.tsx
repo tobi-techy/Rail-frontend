@@ -6,9 +6,12 @@ import { Button } from '@/components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
 import { HeaderAction } from './components';
 import Passkey4Icon from '@/assets/Icons/passkey-4.svg';
+import { ROUTES } from '@/constants/routes';
 
 export default function EnableFaceIdScreen() {
-  const next = () => router.push('/(auth)/onboarding/enable-notifications');
+  const next = () => router.push(ROUTES.AUTH.ONBOARDING.ENABLE_NOTIFICATIONS as any);
+  const skip = () => router.replace(ROUTES.TABS as any);
+
   const biometricLabel = useMemo(() => {
     if (Platform.OS === 'android') return 'Enable biometrics';
     return 'Enable Face ID';
@@ -20,12 +23,7 @@ export default function EnableFaceIdScreen() {
         <StatusBar barStyle="light-content" />
         <View className="flex-1 px-6 pb-8">
           <View className="mt-2 flex-row items-center justify-between">
-            <HeaderAction
-              icon="x"
-              accessibilityLabel="Close onboarding"
-              onPress={() => router.replace('/(tabs)')}
-              variant="dark"
-            />
+            <HeaderAction icon="x" accessibilityLabel="Close onboarding" onPress={skip} variant="dark" />
           </View>
 
           <StaggeredChild index={0}>

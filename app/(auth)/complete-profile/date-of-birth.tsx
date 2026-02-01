@@ -5,13 +5,10 @@ import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Button } from '../../../components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
+import { ROUTES } from '@/constants/routes';
 
 export default function DateOfBirth() {
   const [dob, setDob] = useState<Date>(new Date());
-
-  const handleNext = () => {
-    router.push('/(auth)/complete-profile/address');
-  };
 
   return (
     <AuthGradient>
@@ -42,7 +39,11 @@ export default function DateOfBirth() {
 
           <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button title="Next" onPress={handleNext} variant="black" />
+              <Button
+                title="Next"
+                onPress={() => router.push(ROUTES.AUTH.COMPLETE_PROFILE.ADDRESS as any)}
+                variant="black"
+              />
             </View>
           </StaggeredChild>
         </View>

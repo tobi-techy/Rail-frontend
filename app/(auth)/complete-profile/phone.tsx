@@ -4,13 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { PhoneNumberInput, AuthGradient, StaggeredChild } from '@/components';
+import { ROUTES } from '@/constants/routes';
 
 export default function Phone() {
   const [phone, setPhone] = useState('');
-
-  const handleNext = () => {
-    router.push('/(auth)/complete-profile/profile-milestone');
-  };
 
   return (
     <AuthGradient>
@@ -32,7 +29,11 @@ export default function Phone() {
 
           <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button title="Next" onPress={handleNext} variant="black" />
+              <Button
+                title="Next"
+                onPress={() => router.push(ROUTES.AUTH.COMPLETE_PROFILE.PROFILE_MILESTONE as any)}
+                variant="black"
+              />
             </View>
           </StaggeredChild>
         </View>

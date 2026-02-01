@@ -4,16 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { InputField, AuthGradient, StaggeredChild } from '@/components';
+import { ROUTES } from '@/constants/routes';
 
 export default function CreatePassword() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-
-  const handleNext = () => {
-    router.push('/(auth)/complete-profile/investment-goal');
-  };
 
   return (
     <AuthGradient>
@@ -59,7 +56,11 @@ export default function CreatePassword() {
 
           <StaggeredChild index={3} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button title="Next" onPress={handleNext} variant="black" />
+              <Button
+                title="Next"
+                onPress={() => router.push(ROUTES.AUTH.COMPLETE_PROFILE.INVESTMENT_GOAL as any)}
+                variant="black"
+              />
             </View>
           </StaggeredChild>
         </View>

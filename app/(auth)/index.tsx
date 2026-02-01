@@ -5,13 +5,14 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
+import { ROUTES } from '@/constants/routes';
 
 export default function SignUp() {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
 
   const handleSignUp = () => {
-    router.push('/(auth)/verify-email');
+    router.push(ROUTES.AUTH.VERIFY_EMAIL as any);
   };
 
   return (
@@ -55,7 +56,7 @@ export default function SignUp() {
                 By signing up, you agree to our Terms &amp; Privacy Policy
               </Text>
               <Button title="Continue" onPress={handleSignUp} variant="black" />
-              <TouchableOpacity onPress={() => router.push('/(auth)/signin')} className="mt-4">
+              <TouchableOpacity onPress={() => router.push(ROUTES.AUTH.SIGNIN as any)} className="mt-4">
                 <Text className="text-center font-body text-[14px] text-white/70">
                   Already have an account?{' '}
                   <Text className="font-subtitle text-white underline">Sign In</Text>

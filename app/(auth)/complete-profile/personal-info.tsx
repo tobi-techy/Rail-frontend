@@ -4,14 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { InputField, AuthGradient, StaggeredChild } from '@/components';
+import { ROUTES } from '@/constants/routes';
 
 export default function PersonalInfo() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-
-  const handleNext = () => {
-    router.push('/(auth)/complete-profile/date-of-birth');
-  };
 
   return (
     <AuthGradient>
@@ -50,7 +47,11 @@ export default function PersonalInfo() {
 
           <StaggeredChild index={3} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button title="Next" onPress={handleNext} variant="black" />
+              <Button
+                title="Next"
+                onPress={() => router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as any)}
+                variant="black"
+              />
             </View>
           </StaggeredChild>
         </View>

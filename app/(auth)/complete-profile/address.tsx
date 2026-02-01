@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { InputField, CountryPicker, AuthGradient, StaggeredChild } from '@/components';
+import { ROUTES } from '@/constants/routes';
 
 export default function Address() {
   const [formData, setFormData] = useState({
@@ -16,10 +17,6 @@ export default function Address() {
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleNext = () => {
-    router.push('/(auth)/complete-profile/phone');
   };
 
   return (
@@ -104,7 +101,11 @@ export default function Address() {
 
             <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
               <View className="pb-4 pt-8">
-                <Button title="Next" onPress={handleNext} variant="black" />
+                <Button
+                  title="Next"
+                  onPress={() => router.push(ROUTES.AUTH.COMPLETE_PROFILE.PHONE as any)}
+                  variant="black"
+                />
               </View>
             </StaggeredChild>
           </View>

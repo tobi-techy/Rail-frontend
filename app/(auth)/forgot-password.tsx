@@ -5,13 +5,10 @@ import { router } from 'expo-router';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Button } from '../../components/ui';
 import { InputField, AuthGradient, StaggeredChild } from '@/components';
+import { ROUTES } from '@/constants/routes';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
-
-  const handleSubmit = () => {
-    router.back();
-  };
 
   return (
     <AuthGradient>
@@ -46,11 +43,11 @@ export default function ForgotPassword() {
 
             <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>
               <View className="pt-8">
-                <Button title="Send reset link" onPress={handleSubmit} variant="black" />
+                <Button title="Send reset link" onPress={() => router.back()} variant="black" />
                 <View className="mt-8 flex-row items-center justify-center">
                   <Text className="font-body-medium text-[14px] text-white/70">Remember it?</Text>
                   <TouchableOpacity
-                    onPress={() => router.replace('/(auth)/signin')}
+                    onPress={() => router.replace(ROUTES.AUTH.SIGNIN as any)}
                     className="ml-2">
                     <Text className="font-body-medium text-[14px] text-white underline">
                       Back to sign in

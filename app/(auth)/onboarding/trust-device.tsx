@@ -6,9 +6,11 @@ import { Button } from '@/components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
 import { HeaderAction } from './components';
 import { Feather } from '@expo/vector-icons';
+import { ROUTES } from '@/constants/routes';
 
 export default function TrustDeviceScreen() {
-  const goToNext = () => router.push('/(auth)/onboarding/enable-faceid');
+  const goToNext = () => router.push(ROUTES.AUTH.ONBOARDING.ENABLE_FACEID as any);
+  const skip = () => router.replace(ROUTES.TABS as any);
 
   return (
     <AuthGradient>
@@ -16,18 +18,8 @@ export default function TrustDeviceScreen() {
         <StatusBar barStyle="light-content" />
         <View className="flex-1 px-6 pb-8">
           <View className="mt-2 flex-row items-center justify-between">
-            <HeaderAction
-              icon="x"
-              accessibilityLabel="Close onboarding"
-              onPress={() => router.replace('/(tabs)')}
-              variant="dark"
-            />
-            <HeaderAction
-              icon="help-circle"
-              accessibilityLabel="Learn more about trusted devices"
-              onPress={() => {}}
-              variant="dark"
-            />
+            <HeaderAction icon="x" accessibilityLabel="Close onboarding" onPress={skip} variant="dark" />
+            <HeaderAction icon="help-circle" accessibilityLabel="Learn more" onPress={() => {}} variant="dark" />
           </View>
 
           <StaggeredChild index={0}>
@@ -46,9 +38,7 @@ export default function TrustDeviceScreen() {
                 <View className="h-10 w-10 items-center justify-center rounded-full bg-white/20">
                   <Feather name="shield" size={20} color="#fff" />
                 </View>
-                <Text className="font-body-semibold text-base text-white">
-                  Extra secure by design
-                </Text>
+                <Text className="font-body-semibold text-base text-white">Extra secure by design</Text>
               </View>
               <Text className="font-body text-sm leading-6 text-white/70">
                 We encrypt device details and only trust it after successful identity confirmation.
