@@ -5,34 +5,12 @@ import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Button } from '../../../components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
-import { useAuthStore } from '@/stores';
 
 export default function DateOfBirth() {
-  const { registrationData, updateRegistrationData } = useAuthStore();
-  const [dob, setDob] = useState<Date>(
-    registrationData.dob ? new Date(registrationData.dob) : new Date()
-  );
-  const [error, setError] = useState('');
+  const [dob, setDob] = useState<Date>(new Date());
 
   const handleNext = () => {
-    const today = new Date();
-    let age = today.getFullYear() - dob.getFullYear();
-    const m = today.getMonth() - dob.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-    if (age < 18) {
-      setError('You must be at least 18 years old');
-      return;
-    }
-
-    updateRegistrationData({ dob: dob.toISOString().split('T')[0] });
     router.push('/(auth)/complete-profile/address');
-  };
-
-  const onChange = (_: any, selectedDate?: Date) => {
-    if (selectedDate) {
-      setDob(selectedDate);
-      setError('');
-    }
   };
 
   return (
@@ -50,18 +28,15 @@ export default function DateOfBirth() {
           </StaggeredChild>
 
           <StaggeredChild index={1}>
-            <View className="gap-y-4 mt-28">
-              <View className="rounded-xl bg-black overflow-hidden">
-                <DateTimePicker
-                  value={dob || new Date()}
-                  mode="date"
-                  display="spinner"
-                  onChange={onChange}
-                  maximumDate={new Date()}
-                  themeVariant="dark"
-                />
-              </View>
-              {error && <Text className="text-white text-sm">{error}</Text>}
+            <View className="mt-28 overflow-hidden rounded-xl bg-black">
+              <DateTimePicker
+                value={dob}
+                mode="date"
+                display="spinner"
+                onChange={(_, date) => date && setDob(date)}
+                maximumDate={new Date()}
+                themeVariant="dark"
+              />
             </View>
           </StaggeredChild>
 

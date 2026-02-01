@@ -4,25 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { PhoneNumberInput, AuthGradient, StaggeredChild } from '@/components';
-import { useAuthStore } from '@/stores';
 
 export default function Phone() {
-  const { registrationData, updateRegistrationData, updateUser } = useAuthStore();
-  const [phone, setPhone] = useState(registrationData.phone);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [phone, setPhone] = useState('');
 
-  const handleComplete = async () => {
-    setIsLoading(true);
-    updateRegistrationData({ phone });
-
-    setTimeout(() => {
-      setIsLoading(false);
-      updateUser({
-        fullName: `${registrationData.firstName} ${registrationData.lastName}`,
-      });
-      router.push('/(auth)/create-passcode');
-    }, 1000);
+  const handleNext = () => {
+    router.push('/(auth)/complete-profile/profile-milestone');
   };
 
   return (
@@ -40,23 +27,12 @@ export default function Phone() {
           </StaggeredChild>
 
           <StaggeredChild index={1}>
-            <PhoneNumberInput
-              label="Phone Number"
-              value={phone}
-              onChangeText={setPhone}
-              error={error}
-              variant="dark"
-            />
+            <PhoneNumberInput label="Phone Number" value={phone} onChangeText={setPhone} variant="dark" />
           </StaggeredChild>
 
           <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button
-                title="Complete Setup"
-                onPress={handleComplete}
-                loading={isLoading}
-                variant="black"
-              />
+              <Button title="Next" onPress={handleNext} variant="black" />
             </View>
           </StaggeredChild>
         </View>

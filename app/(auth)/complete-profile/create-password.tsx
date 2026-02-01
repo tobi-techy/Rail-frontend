@@ -5,12 +5,14 @@ import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { InputField, AuthGradient, StaggeredChild } from '@/components';
 
-export default function PersonalInfo() {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+export default function CreatePassword() {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleNext = () => {
-    router.push('/(auth)/complete-profile/date-of-birth');
+    router.push('/(auth)/complete-profile/investment-goal');
   };
 
   return (
@@ -20,30 +22,37 @@ export default function PersonalInfo() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-display text-[60px] text-white">Personal Info</Text>
+              <Text className="font-display text-[60px] text-white">Create Password</Text>
               <Text className="font-body-medium mt-2 text-[14px] text-white/70">
-                Let&apos;s start with your name
+                Secure your account
               </Text>
             </View>
           </StaggeredChild>
 
-          <View className="gap-y-4">
+          <View className="gap-y-2">
             <StaggeredChild index={1}>
               <InputField
-                label="First Name"
-                placeholder="First Name"
-                value={firstName}
-                onChangeText={setFirstName}
+                label="Password"
+                placeholder="Min 8 characters"
+                value={password}
+                onChangeText={setPassword}
+                type="password"
                 variant="dark"
+                isPasswordVisible={showPassword}
+                onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
               />
             </StaggeredChild>
+
             <StaggeredChild index={2}>
               <InputField
-                label="Last Name"
-                placeholder="Last Name"
-                value={lastName}
-                onChangeText={setLastName}
+                label="Confirm Password"
+                placeholder="Re-enter password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                type="password"
                 variant="dark"
+                isPasswordVisible={showConfirm}
+                onTogglePasswordVisibility={() => setShowConfirm(!showConfirm)}
               />
             </StaggeredChild>
           </View>

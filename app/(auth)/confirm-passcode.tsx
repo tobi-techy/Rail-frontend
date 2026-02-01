@@ -1,9 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
-import { useCreatePasscode } from '@/api/hooks';
 import { AuthGradient } from '@/components';
 
 export default function ConfirmPasscodeScreen() {
@@ -11,35 +10,14 @@ export default function ConfirmPasscodeScreen() {
   const [confirmPasscode, setConfirmPasscode] = useState('');
   const [error, setError] = useState('');
 
-  const { mutate: createPasscode, isPending: isLoading } = useCreatePasscode();
-
-  const handlePasscodeComplete = useCallback(
-    (code: string) => {
-      if (isLoading) return;
-      setError('');
-
-      if (code !== originalPasscode) {
-        setError('PINs do not match');
-        setConfirmPasscode('');
-        return;
-      }
-
-      createPasscode(
-        { passcode: code, confirmPasscode: originalPasscode },
-        {
-          onSuccess: () => {
-            router.replace('/(tabs)');
-          },
-          onError: (err: any) => {
-            const errorMessage = err?.error?.message || 'Failed to create PIN. Please try again.';
-            setError(errorMessage);
-            setConfirmPasscode('');
-          },
-        }
-      );
-    },
-    [originalPasscode, createPasscode, isLoading]
-  );
+  const handlePasscodeComplete = (code: string) => {
+    if (code !== originalPasscode) {
+      setError('PINs do not match');
+      setConfirmPasscode('');
+      return;
+    }
+    router.replace('/(tabs)');
+  };
 
   return (
     <AuthGradient>

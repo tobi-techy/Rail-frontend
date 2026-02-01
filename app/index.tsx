@@ -4,7 +4,14 @@ import { View, Text, FlatList, Dimensions, StatusBar, ViewToken } from 'react-na
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { onBoard1, onBoard2, onBoard3, onBoard4 } from '../assets/images';
 import { Button } from '@/components/ui';
-import { SharedValue, useSharedValue, useAnimatedStyle, withTiming, interpolate, Extrapolation } from 'react-native-reanimated';
+import {
+  SharedValue,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 import Animated from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
@@ -223,7 +230,7 @@ export default function App() {
           <Button
             title="Sign Up with Apple"
             size="large"
-            onPress={() => router.push('/(auth)/signin')}
+            onPress={() => router.push('/complete-profile/profile-milestone')}
             variant="black"
           />
           <Button

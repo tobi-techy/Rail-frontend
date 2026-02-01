@@ -22,6 +22,11 @@ export interface RegistrationData {
   postalCode: string;
   country: string;
   phone: string;
+  password: string;
+  investmentGoal: string;
+  investmentExperience: string;
+  yearlyIncome: string;
+  employmentStatus: string;
 }
 
 interface AuthState {
@@ -132,6 +137,11 @@ const initialState: AuthState = {
     postalCode: '',
     country: '',
     phone: '',
+    password: '',
+    investmentGoal: '',
+    investmentExperience: '',
+    yearlyIncome: '',
+    employmentStatus: '',
   },
 };
 
