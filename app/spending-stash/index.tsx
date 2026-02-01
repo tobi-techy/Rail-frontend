@@ -14,7 +14,7 @@ export default function SpendingStashScreen() {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [activePeriod, setActivePeriod] = useState('6M');
-  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
@@ -91,7 +91,6 @@ export default function SpendingStashScreen() {
                 <TransactionList
                   title="Spending Activity"
                   transactions={transactions}
-                  emptyStateMessage="No activity to show yet."
                 />
               )}
             </View>

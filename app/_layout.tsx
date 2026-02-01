@@ -7,6 +7,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { initSentry } from '@/lib/sentry';
 import { useFonts } from '@/hooks/useFonts';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
+import { enforceDeviceSecurity } from '@/utils/deviceSecurity';
 import { SplashScreen } from '@/components/SplashScreen';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import queryClient from '@/api/queryClient';
@@ -14,20 +15,12 @@ import '../global.css';
 
 const SPLASH_BG = '#FF5A00';
 
-// Hard limit: force-hide the splash after this long, no matter what.
-const SPLASH_HARD_TIMEOUT_MS = 0.5 * 60 * 1000;
-
-// Soft minimum: don't *start* finishing the splash animation before this long.
-// Keep it the same as the hard timeout unless you want a longer/shorter animation window.
-const MIN_SPLASH_DURATION_MS = SPLASH_HARD_TIMEOUT_MS;
+// Simplified splash timing - much shorter and safer
+const SPLASH_MIN_DURATION_MS = 2000; // 2 seconds minimum
+const SPLASH_MAX_DURATION_MS = 8000; // 8 seconds maximum (iOS watchdog safe)
 
 // Toggle console logs for debugging splash behavior.
-const SPLASH_DEBUG = false;
-
-// Persist splash timing across Layout unmount/remounts (expo-router can remount on reload/navigation)
-let splashStartedAtMs: number | null = null;
-let splashHardDeadlineMs: number | null = null;
-let splashMinDeadlineMs: number | null = null;
+const SPLASH_DEBUG = __DEV__;
 
 initSentry();
 
@@ -45,135 +38,82 @@ function AppNavigator() {
 }
 
 export default function Layout() {
-  const { fontsLoaded } = useFonts();
-  const [isAppReady, setIsAppReady] = useState(false);
-  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
+  const { fontsLoaded, error: fontError } = useFonts();
   const [showSplash, setShowSplash] = useState(true);
+  const [splashStartTime] = useState(() => Date.now());
+  const [securityChecked, setSecurityChecked] = useState(false);
 
   useProtectedRoute();
 
+  // Device security check on app start
   useEffect(() => {
-    const now = Date.now();
-
-    // Initialize module-scoped timing once so remounts don't "reset" the timer.
-    if (splashStartedAtMs === null) {
-      splashStartedAtMs = now;
-      splashHardDeadlineMs = splashStartedAtMs + SPLASH_HARD_TIMEOUT_MS;
-      splashMinDeadlineMs = splashStartedAtMs + MIN_SPLASH_DURATION_MS;
-    }
-
-    if (SPLASH_DEBUG) {
-      console.log('[splash] mounted');
-      console.log('[splash] timing:', {
-        startedAtMs: splashStartedAtMs,
-        minDeadlineMs: splashMinDeadlineMs,
-        hardDeadlineMs: splashHardDeadlineMs,
-        now,
-        msUntilMin: Math.max(0, (splashMinDeadlineMs ?? now) - now),
-        msUntilHard: Math.max(0, (splashHardDeadlineMs ?? now) - now),
-      });
-    }
-
-    const msUntilMin = Math.max(0, (splashMinDeadlineMs ?? now) - now);
-
-    // Soft minimum: keep splash up for at least MIN_SPLASH_DURATION_MS (relative to first mount).
-    const minTimer = setTimeout(() => {
-      if (SPLASH_DEBUG) console.log('[splash] min duration elapsed');
-      setMinSplashElapsed(true);
-    }, msUntilMin);
-
-    // Hard deadline enforcement: poll the absolute deadline so we don't rely on a single long timer.
-    // (Some environments can be flaky with long setTimeouts.)
-    let lastHeartbeatAt = now;
-
-    const pollTimer = setInterval(() => {
-      // If the splash is already hidden, stop polling to avoid repeated logs/work.
-      if (!showSplash) {
-        clearInterval(pollTimer);
-        return;
-      }
-
-      const t = Date.now();
-      const hardDeadline = splashHardDeadlineMs ?? t;
-      const remainingMs = hardDeadline - t;
-
-      // Heartbeat every 10 seconds while splash is shown (useful for debugging).
-      if (SPLASH_DEBUG && t - lastHeartbeatAt >= 10_000) {
-        lastHeartbeatAt = t;
-        console.log('[splash] heartbeat:', {
-          remainingMs: Math.max(0, remainingMs),
-          showSplash,
-          isAppReady,
-          fontsLoaded,
-          minSplashElapsed,
-        });
-      }
-
-      if (t >= hardDeadline) {
-        const elapsedMs = t - (splashStartedAtMs ?? t);
-        if (SPLASH_DEBUG)
-          console.log(`[splash] HARD DEADLINE reached after ${elapsedMs}ms -> hiding splash`);
-        setShowSplash(false);
-        clearInterval(pollTimer);
-      }
-    }, 1000);
-
-    // If min deadline is already in the past (e.g., remount), apply immediately.
-    if (msUntilMin === 0) setMinSplashElapsed(true);
-
-    return () => {
-      if (SPLASH_DEBUG) console.log('[splash] unmounted');
-      clearTimeout(minTimer);
-      clearInterval(pollTimer);
-    };
-    // Intentionally mount-only: deadlines are module-scoped and we don't want to re-arm on rerenders.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    enforceDeviceSecurity({ allowContinue: true }).finally(() => {
+      setSecurityChecked(true);
+    });
   }, []);
 
   useEffect(() => {
-    if (SPLASH_DEBUG) console.log('[splash] fontsLoaded changed:', fontsLoaded);
-  }, [fontsLoaded]);
-
-  useEffect(() => {
-    // Only allow the splash animation to start finishing once fonts are ready AND
-    // the minimum splash duration has elapsed.
-    if (fontsLoaded && minSplashElapsed) {
-      if (SPLASH_DEBUG)
-        console.log('[splash] isAppReady -> true (fontsLoaded && minSplashElapsed)');
-      setIsAppReady(true);
+    if (SPLASH_DEBUG) {
+      console.log('[splash] fontsLoaded:', fontsLoaded, 'fontError:', fontError);
     }
-  }, [fontsLoaded, minSplashElapsed]);
+  }, [fontsLoaded, fontError]);
 
+  // Simplified splash logic - just one timer with proper cleanup
   useEffect(() => {
-    // Safety net: if the animation callback never fires for any reason,
-    // force-hide the splash shortly after it's allowed to complete.
-    if (!showSplash) return;
-    if (!isAppReady) return;
+    const minSplashTimeout = setTimeout(() => {
+      if (SPLASH_DEBUG) console.log('[splash] Minimum duration elapsed');
+    }, SPLASH_MIN_DURATION_MS);
 
-    if (SPLASH_DEBUG) console.log('[splash] isAppReady true, starting force-hide fallback timer');
-    const forceHideTimer = setTimeout(() => {
-      if (SPLASH_DEBUG) console.log('[splash] force-hide fallback fired -> hiding splash');
+    // Maximum timeout to prevent iOS watchdog kills
+    const maxSplashTimeout = setTimeout(() => {
+      if (SPLASH_DEBUG) console.log('[splash] Maximum duration reached, forcing hide');
       setShowSplash(false);
-    }, 1500);
+    }, SPLASH_MAX_DURATION_MS);
 
-    return () => clearTimeout(forceHideTimer);
-  }, [isAppReady, showSplash]);
+    return () => {
+      clearTimeout(minSplashTimeout);
+      clearTimeout(maxSplashTimeout);
+    };
+  }, []);
+
+  // Hide splash when fonts are loaded (or failed) and minimum time has passed
+  useEffect(() => {
+    const elapsed = Date.now() - splashStartTime;
+    const minTimeElapsed = elapsed >= SPLASH_MIN_DURATION_MS;
+    const fontsReady = fontsLoaded || fontError; // Continue even if fonts fail
+
+    if (fontsReady && minTimeElapsed) {
+      if (SPLASH_DEBUG) {
+        console.log('[splash] Ready to hide:', { fontsLoaded, fontError, elapsed });
+      }
+      setShowSplash(false);
+    }
+  }, [fontsLoaded, fontError, splashStartTime]);
 
   const handleSplashComplete = useCallback(() => {
     if (SPLASH_DEBUG) console.log('[splash] onAnimationComplete -> hiding splash');
     setShowSplash(false);
   }, []);
 
-  if (showSplash) {
+  // Determine if splash should be shown
+  const fontsReady = fontsLoaded || fontError;
+  const elapsed = Date.now() - splashStartTime;
+  const shouldShowSplash = showSplash && (!fontsReady || elapsed < SPLASH_MIN_DURATION_MS);
+
+  if (shouldShowSplash) {
+    const isSplashReady = fontsReady && elapsed >= SPLASH_MIN_DURATION_MS;
     return (
       <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
-        <SplashScreen isReady={isAppReady} onAnimationComplete={handleSplashComplete} />
+        <SplashScreen
+          isReady={isSplashReady ? true : false}
+          onAnimationComplete={handleSplashComplete}
+        />
       </View>
     );
   }
 
-  if (!fontsLoaded) {
-    // Match the splash background to prevent any brief "flash" during startup.
+  // Show loading background while fonts are loading (but after splash is done)
+  if (!fontsReady) {
     return <View style={{ flex: 1, backgroundColor: SPLASH_BG }} />;
   }
 

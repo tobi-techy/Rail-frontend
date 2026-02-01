@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StatusBar, ScrollView, Pressable } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StatusBar, ScrollView, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
-import { InputField, CountryPicker } from '@/components';
+import { InputField, CountryPicker, AuthGradient, StaggeredChild } from '@/components';
 import { useAuthStore } from '@/stores';
-import { Ionicons } from '@/components/atoms/SafeIonicons';
 
 export default function Address() {
   const { registrationData, updateRegistrationData } = useAuthStore();
@@ -18,11 +17,13 @@ export default function Address() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const cityRef = useRef<TextInput>(null);
+  const stateRef = useRef<TextInput>(null);
+  const postalRef = useRef<TextInput>(null);
+
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: '' }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
   const handleNext = () => {
@@ -42,86 +43,116 @@ export default function Address() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
-        <View className="px-6 pt-4">
-          <Pressable onPress={() => router.back()} className="mb-4">
-            <Ionicons name="arrow-back" size={24} color="black" />
-          </Pressable>
-          <View className="mb-8">
-            <Text className="font-display text-[60px] text-gray-900">Address</Text>
-            <Text className="font-body-medium mt-2 text-[14px] text-gray-600">
-              Where do you live?
-            </Text>
-          </View>
+    <AuthGradient>
+      <SafeAreaView className="flex-1" edges={['top']}>
+        <StatusBar barStyle="light-content" />
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="flex-grow"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="flex-1 px-6 pt-4">
+            <StaggeredChild index={0}>
+              <View className="mb-8 mt-4">
+                <Text className="font-display text-[60px] text-white">Address</Text>
+                <Text className="font-body-medium mt-2 text-[14px] text-white/70">
+                  Where do you live?
+                </Text>
+              </View>
+            </StaggeredChild>
 
-          <View className="gap-y-4">
-            <InputField
-              required
-              label="Street Address"
-              placeholder="123 Main St"
-              value={formData.street}
-              onChangeText={(value) => updateField('street', value)}
-              error={errors.street}
-            />
-
-            <View className="flex-row gap-x-4">
-              <View className="flex-1">
+            <View className="gap-y-2">
+              <StaggeredChild index={1}>
                 <InputField
                   required
-                  label="City"
-                  placeholder="City"
-                  value={formData.city}
-                  onChangeText={(value) => updateField('city', value)}
-                  error={errors.city}
+                  label="Street Address"
+                  placeholder="123 Main St"
+                  value={formData.street}
+                  onChangeText={(value) => updateField('street', value)}
+                  error={errors.street}
+                  variant="dark"
+                  returnKeyType="next"
+                  onSubmitEditing={() => cityRef.current?.focus()}
+                  blurOnSubmit={false}
+                  autoCapitalize="words"
                 />
-              </View>
-              <View className="flex-1">
-                <InputField
-                  label="State"
-                  placeholder="State"
-                  value={formData.state}
-                  onChangeText={(value) => updateField('state', value)}
-                  error={errors.state}
-                />
-              </View>
+              </StaggeredChild>
+
+              <StaggeredChild index={2}>
+                <View className="flex-row gap-x-3">
+                  <View className="flex-1">
+                    <InputField
+                      ref={cityRef}
+                      required
+                      label="City"
+                      placeholder="City"
+                      value={formData.city}
+                      onChangeText={(value) => updateField('city', value)}
+                      error={errors.city}
+                      variant="dark"
+                      returnKeyType="next"
+                      onSubmitEditing={() => stateRef.current?.focus()}
+                      blurOnSubmit={false}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                  <View className="w-28">
+                    <InputField
+                      ref={stateRef}
+                      label="State"
+                      placeholder="State"
+                      value={formData.state}
+                      onChangeText={(value) => updateField('state', value)}
+                      error={errors.state}
+                      variant="dark"
+                      returnKeyType="next"
+                      onSubmitEditing={() => postalRef.current?.focus()}
+                      blurOnSubmit={false}
+                      autoCapitalize="characters"
+                    />
+                  </View>
+                </View>
+              </StaggeredChild>
+
+              <StaggeredChild index={3}>
+                <View className="flex-row gap-x-3">
+                  <View className="w-32">
+                    <InputField
+                      ref={postalRef}
+                      required
+                      label="Postal Code"
+                      placeholder="Zip"
+                      value={formData.postalCode}
+                      onChangeText={(value) => updateField('postalCode', value)}
+                      error={errors.postalCode}
+                      keyboardType="number-pad"
+                      variant="dark"
+                      returnKeyType="done"
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <CountryPicker
+                      required
+                      label="Country"
+                      value={formData.country}
+                      onSelect={(country) => updateField('country', country.name)}
+                      error={errors.country}
+                      variant="dark"
+                    />
+                  </View>
+                </View>
+              </StaggeredChild>
             </View>
 
-            <View className="flex-row gap-x-4">
-              <View className="flex-1">
-                <InputField
-                  required
-                  label="Postal Code"
-                  placeholder="Zip Code"
-                  value={formData.postalCode}
-                  onChangeText={(value) => updateField('postalCode', value)}
-                  error={errors.postalCode}
-                  keyboardType="number-pad"
-                />
+            <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
+              <View className="pb-4 pt-8">
+                <Button title="Next" onPress={handleNext} variant="black" />
               </View>
-            </View>
-
-            <CountryPicker
-              required
-              label="Country"
-              value={formData.country} // Assuming CountryPicker takes name or code. Let's assume it takes name based on previous review, but we stored code in old component? Wait, previous code used 2 letter code. The CountryPicker component uses full Name as value prop according to 'selectedCountry.name === value'.
-              // We should probably adapt to what CountryPicker expects.
-              // Let's store the Name for UI but mapped to code if needed.
-              // Actually RegistrationData has country string. Let's store Name for now to match UI or refactor CountryPicker.
-              // Given the `CountryPicker` implementation: `const selectedCountry = COUNTRIES.find(country => country.name === value);`
-              // It expects `value` to be the Name (e.g. "United States").
-              // So we will store the name in our state for this flow.
-              onSelect={(country) => updateField('country', country.name)}
-              error={errors.country}
-            />
+            </StaggeredChild>
           </View>
-
-          <View className="mt-8">
-            <Button title="Next" onPress={handleNext} className="rounded-full font-body" />
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </AuthGradient>
   );
 }

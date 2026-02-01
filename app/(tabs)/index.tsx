@@ -4,20 +4,21 @@ import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-e
 import { router, useNavigation } from 'expo-router';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { StashCard } from '@/components/molecules/StashCard';
-import {
-  ArrowDown,
-  Building2,
-  DollarSign,
-  Grid3X3Icon,
-  PlusIcon,
-  Wallet,
-} from 'lucide-react-native';
+import { ArrowDown, DollarSign, Grid3X3Icon, PlusIcon, Wallet } from 'lucide-react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
 import type { Transaction } from '@/components/molecules/TransactionItem';
 import { usePortfolioOverview } from '@/api/hooks';
 import { Button } from '../../components/ui';
 import { ActionSheet } from '@/components/sheets';
 import UsdcIcon from '@/assets/svg/usdc.svg';
+import {
+  SendIcon,
+  ReceiveIcon,
+  BankIcon,
+  CashIcon,
+  CoinIcon,
+  InvestmentIcon,
+} from '@/assets/svg/filled';
 
 const Dashboard = () => {
   const navigation = useNavigation();
@@ -114,11 +115,7 @@ const Dashboard = () => {
             title="Spending Stash"
             amount="$00"
             amountCents=".00"
-            icon={
-              <View className="h-9 w-9 items-center justify-center rounded-[12px] bg-[#4A89F7]">
-                <DollarSign size={14} color="white" />
-              </View>
-            }
+            icon={<CashIcon width={40} height={40} color="white" />}
             className="flex-1"
             onPress={() => router.navigate('/spending-stash')}
           />
@@ -126,11 +123,7 @@ const Dashboard = () => {
             title="Investment Stash"
             amount="$00"
             amountCents=".00"
-            icon={
-              <View className="h-9 w-9 items-center justify-center rounded-[12px] bg-[#FF8A65]">
-                <Grid3X3Icon size={14} color="white" fill="white" />
-              </View>
-            }
+            icon={<InvestmentIcon width={40} height={40} color="white" />}
             className="flex-1"
             onPress={() => router.navigate('/investment-stash')}
           />
@@ -150,11 +143,7 @@ const Dashboard = () => {
                 </Text>
               </View>
             ) : (
-              <TransactionList
-                title="Transaction History"
-                transactions={transactions}
-                emptyStateMessage="No transactions to show yet."
-              />
+              <TransactionList title="Transaction History" transactions={transactions} />
             )}
           </View>
         </>
@@ -166,10 +155,7 @@ const Dashboard = () => {
         onClose={() => setShowReceiveSheet(false)}
         illustration={
           <View className="relative">
-            <UsdcIcon width={46} height={46} />
-            <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-[#FF6B35]">
-              <ArrowDown size={14} color="white" />
-            </View>
+            <ReceiveIcon width={46} height={46} />
           </View>
         }
         title="Add Funds"
@@ -179,19 +165,18 @@ const Dashboard = () => {
             id: 'fiat',
             label: 'Fiat',
             sublabel: 'Receive assets via US bank account',
-            icon: Building2,
-            iconColor: '#6366F1',
-            iconBgColor: '#EEF2FF',
-            onPress: () => router.push('/deposit/fiat'),
+            icon: <BankIcon width={32} height={32} color="#6366F1" />,
+            iconBgColor: '',
+            onPress: () => router.push('/deposit/fiat' as any),
           },
           {
             id: 'crypto',
             label: 'Crypto',
             sublabel: 'Receive assets via wallet address',
-            icon: Wallet,
+            icon: <CoinIcon width={32} height={32} color="#6366F1" />,
             iconColor: '#F97316',
-            iconBgColor: '#FFF7ED',
-            onPress: () => router.push('/deposit/crypto'),
+            iconBgColor: '',
+            onPress: () => router.push('/deposit/crypto' as any),
           },
         ]}
       />
@@ -202,10 +187,7 @@ const Dashboard = () => {
         onClose={() => setShowSendSheet(false)}
         illustration={
           <View className="relative">
-            <UsdcIcon width={46} height={46} />
-            <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-[#FF6B35]">
-              <ArrowDown size={14} color="white" />
-            </View>
+            <SendIcon width={46} height={46} color="white" />
           </View>
         }
         title="Send Funds"
@@ -215,19 +197,18 @@ const Dashboard = () => {
             id: 'fiat',
             label: 'Fiat',
             sublabel: 'Send to US bank account',
-            icon: Building2,
-            iconColor: '#6366F1',
-            iconBgColor: '#EEF2FF',
-            onPress: () => router.push('/withdraw/fiat'),
+            icon: <BankIcon width={28} height={28} color="#6366F1" />,
+            iconBgColor: '',
+            onPress: () => router.push('/withdraw/fiat' as any),
           },
           {
             id: 'crypto',
             label: 'Crypto',
             sublabel: 'Send to wallet address',
-            icon: Wallet,
+            icon: <CoinIcon width={32} height={32} color="#6366F1" />,
             iconColor: '#F97316',
-            iconBgColor: '#FFF7ED',
-            onPress: () => router.push('/withdraw/crypto'),
+            iconBgColor: '',
+            onPress: () => router.push('/withdraw/crypto' as any),
           },
         ]}
       />

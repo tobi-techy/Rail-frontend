@@ -50,7 +50,3 @@ coverageThreshold = 80
 ".otf" = "file"
 ".woff" = "file"
 ".woff2" = "file"
-
-# Telemetry
-[telemetry]
-disabled = false

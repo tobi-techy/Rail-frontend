@@ -14,7 +14,6 @@ export * from './deposit';
 export * from './price';
 export * from './network';
 export * from './kyc';
-export * from './notification';
 export * from './settings';
 export * from './twofa';
 export * from './device';

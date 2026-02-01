@@ -21,6 +21,7 @@ export interface PasscodeInputProps extends ViewProps {
   onFingerprint?: () => void;
   className?: string;
   autoSubmit?: boolean;
+  variant?: 'light' | 'dark';
 }
 
 export const PasscodeInput: React.FC<PasscodeInputProps> = ({
@@ -39,11 +40,13 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
   onFingerprint,
   className = '',
   autoSubmit = false,
+  variant = 'light',
   ...rest
 }) => {
   const isControlled = value !== undefined;
   const [internalValue, setInternalValue] = useState(defaultValue);
   const [showPasscode, setShowPasscode] = useState(false);
+  const isDark = variant === 'dark';
 
   const passcode = useMemo(
     () => (isControlled ? (value ?? '') : internalValue),
@@ -77,9 +80,9 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
     <View className={`flex-1 px-6 ${className}`} {...rest}>
       {title && (
         <View className="mt-12">
-          <Text className="font-display text-display-lg text-text-primary">{title}</Text>
+          <Text className={`font-display text-display-lg ${isDark ? 'text-white' : 'text-text-primary'}`}>{title}</Text>
           {subtitle && (
-            <Text className="mt-2 font-body text-body text-text-secondary">{subtitle}</Text>
+            <Text className={`mt-2 font-body text-body ${isDark ? 'text-white/70' : 'text-text-secondary'}`}>{subtitle}</Text>
           )}
         </View>
       )}
@@ -92,14 +95,14 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
               return (
                 <View
                   key={index}
-                  className="h-14 w-14 items-center justify-center rounded-full bg-surface">
+                  className={`h-14 w-14 items-center justify-center rounded-full ${isDark ? 'bg-white/20' : 'bg-surface'}`}>
                   {isFilled &&
                     (showPasscode ? (
-                      <Text className="font-headline text-headline-2 text-text-primary">
+                      <Text className={`font-headline text-headline-2 ${isDark ? 'text-white' : 'text-text-primary'}`}>
                         {passcode[index]}
                       </Text>
                     ) : (
-                      <View className="h-3 w-3 rounded-full bg-text-primary" />
+                      <View className={`h-3 w-3 rounded-full ${isDark ? 'bg-white' : 'bg-text-primary'}`} />
                     ))}
                 </View>
               );
@@ -109,12 +112,12 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
           {showToggle && (
             <TouchableOpacity
               onPress={() => setShowPasscode(!showPasscode)}
-              className="h-12 w-12 items-center justify-center rounded-full bg-surface"
+              className={`h-12 w-12 items-center justify-center rounded-full ${isDark ? 'bg-white/20' : 'bg-surface'}`}
               activeOpacity={0.7}>
               <Icon
                 name={showPasscode ? 'eye-off' : 'eye'}
                 size={22}
-                color="#FF5A00"
+                color={isDark ? '#fff' : '#FF5A00'}
                 strokeWidth={2}
               />
             </TouchableOpacity>
@@ -138,7 +141,7 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
 
       <View className="flex-1" />
 
-      <Keypad onKeyPress={handleKeyPress} showFingerprint={showFingerprint} className="mb-6" />
+      <Keypad onKeyPress={handleKeyPress} showFingerprint={showFingerprint} variant={variant} className="mb-6" />
     </View>
   );
 };

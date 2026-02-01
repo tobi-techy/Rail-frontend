@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Trash2, LogOut, PieChart } from 'lucide-react-native';
+import { LogOut } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from 'expo-router';
 import { useLayoutEffect, useState, useEffect, type ReactNode } from 'react';
@@ -9,6 +9,21 @@ import { BottomSheet, SettingsSheet } from '@/components/sheets';
 import { SegmentedSlider } from '@/components/molecules';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui';
+import {
+  AllocationIcon,
+  AutoInvestIcon,
+  RoundupIcon,
+  SwapIcon,
+  BiometricsIcon,
+  SecurityIcon,
+  NotificationIcon,
+  TrashIcon,
+  RefferalIcon,
+  LegalIcon,
+  SupportIcon,
+  LogOutIcon,
+  TwoFactorAuthIcon,
+} from '@/assets/svg/filled';
 
 type SettingItem = { icon: ReactNode; label: string; onPress?: () => void; danger?: boolean };
 
@@ -133,22 +148,22 @@ export default function Settings() {
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
         <Section title="Spend">
           <SettingButton
-            icon={<PieChart size={24} color="#121212" />}
+            icon={<AllocationIcon width={34} height={34} color="#121212" />}
             label="Base/Active Split"
             onPress={() => setActiveSheet('allocation')}
           />
           <SettingButton
-            icon={<Ionicons name="trending-up-outline" size={24} color="#121212" />}
+            icon={<AutoInvestIcon width={34} height={34} />}
             label="Auto Invest"
             onPress={() => setActiveSheet('autoInvest')}
           />
           <SettingButton
-            icon={<Ionicons name="arrow-up-circle-outline" size={24} color="#121212" />}
+            icon={<RoundupIcon width={34} height={34} />}
             label="Round-ups"
             onPress={() => setActiveSheet('roundups')}
           />
           <SettingButton
-            icon={<Ionicons name="swap-horizontal-outline" size={24} color="#121212" />}
+            icon={<SwapIcon width={34} height={34} color="#121212" />}
             label="Limits"
             onPress={() => setActiveSheet('limits')}
           />
@@ -156,49 +171,49 @@ export default function Settings() {
 
         <Section title="Security">
           <SettingButton
-            icon={<Ionicons name="finger-print-outline" size={24} color="#121212" />}
+            icon={<BiometricsIcon width={34} height={34} color="#121212" />}
             label="Biometrics"
             onPress={() => setActiveSheet('biometrics')}
           />
           <SettingButton
-            icon={<Ionicons name="lock-closed-outline" size={24} color="#121212" />}
+            icon={<SecurityIcon width={34} height={34} color="#121212" />}
             label="PIN"
           />
           <SettingButton
-            icon={<Ionicons name="shield-checkmark-outline" size={24} color="#121212" />}
+            icon={<TwoFactorAuthIcon width={34} height={34} color="#121212" />}
             label={'2-Factor Auth'}
           />
         </Section>
 
         <Section title="More">
           <SettingButton
-            icon={<Ionicons name="notifications-outline" size={24} color="#121212" />}
+            icon={<NotificationIcon width={34} height={34} color="#121212" />}
             label="Notifications"
             onPress={() => setActiveSheet('notifications')}
           />
           <SettingButton
-            icon={<Ionicons name="gift-outline" size={24} color="#121212" />}
+            icon={<RefferalIcon width={34} height={34} color="#121212" />}
             label="Referrals"
           />
           <SettingButton
-            icon={<Ionicons name="document-text-outline" size={24} color="#121212" />}
+            icon={<LegalIcon width={34} height={34} color="#121212" />}
             label="Legal"
           />
           <SettingButton
-            icon={<Ionicons name="help-circle-outline" size={24} color="#121212" />}
+            icon={<SupportIcon width={34} height={34} color="#121212" />}
             label="Support"
           />
         </Section>
 
         <Section title="Account">
           <SettingButton
-            icon={<Ionicons name="log-out-outline" size={24} color="#F44336" />}
+            icon={<LogOutIcon width={34} height={34} color="#F44336" />}
             label="Logout"
             danger
             onPress={() => setActiveSheet('logout')}
           />
           <SettingButton
-            icon={<Ionicons name="trash-outline" size={24} color="#F44336" />}
+            icon={<TrashIcon width={34} height={34} color="#F44336" />}
             label={'Delete Account'}
             danger
             onPress={() => setActiveSheet('delete')}
@@ -324,7 +339,7 @@ export default function Settings() {
         {/* Wallet Card Illustration */}
         <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-10">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-red-100">
-            <Trash2 size={34} color="#EF4444" />
+            <TrashIcon width={34} height={34} color="#EF4444" />
           </View>
         </View>
 

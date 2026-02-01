@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, ViewProps, TouchableOpacity } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useUIStore } from '@/stores';
@@ -6,9 +6,10 @@ import { sanitizeNumber } from '@/utils/sanitizeInput';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  withSpring,
   withTiming,
-  withSequence,
   Easing,
+  interpolate,
 } from 'react-native-reanimated';
 
 export interface BalanceCardProps extends ViewProps {
@@ -19,42 +20,61 @@ export interface BalanceCardProps extends ViewProps {
   className?: string;
 }
 
-function AnimatedBalance({ value, isVisible }: { value: string; isVisible: boolean }) {
-  const opacity = useSharedValue(1);
-  const translateY = useSharedValue(0);
+const CHAR_HEIGHT = 58;
+
+function AnimatedChar({ char, index }: { char: string; index: number }) {
+  const translateY = useSharedValue(CHAR_HEIGHT);
+  const opacity = useSharedValue(0);
 
   useEffect(() => {
-    opacity.value = withSequence(
-      withTiming(0, { duration: 150, easing: Easing.out(Easing.ease) }),
-      withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) })
-    );
-    translateY.value = withSequence(
-      withTiming(-8, { duration: 150, easing: Easing.out(Easing.ease) }),
-      withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) })
-    );
-  }, [value]);
+    const delay = index * 30;
+    translateY.value = CHAR_HEIGHT;
+    opacity.value = 0;
+
+    const timeout = setTimeout(() => {
+      translateY.value = withSpring(0, {
+        damping: 20,
+        stiffness: 300,
+        mass: 0.8,
+      });
+      opacity.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.ease) });
+    }, delay);
+
+    return () => clearTimeout(timeout);
+  }, [char]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
     transform: [{ translateY: translateY.value }],
+    opacity: interpolate(opacity.value, [0, 1], [0, 1]),
   }));
 
-  const maskValue = (val: string) => {
-    const sanitized = sanitizeNumber(String(val));
-    if (isVisible) return sanitized;
-    return sanitized.replace(/[\d,\.]+/g, (match) => '−'.repeat(Math.min(match.length, 6)));
-  };
-
-  const masked = maskValue(value);
-  const [whole, decimal] = masked.split('.');
+  const isDecimal = char === '.' || /\d/.test(char) === false;
 
   return (
-    <Animated.View style={[{ flexDirection: 'row' }, animatedStyle]}>
-      <Text className="font-subtitle text-[50px] text-text-primary">{whole}</Text>
-      {decimal !== undefined && (
-        <Text className="font-subtitle text-[50px] text-neutral-300">.{decimal}</Text>
-      )}
-    </Animated.View>
+    <View style={{ height: CHAR_HEIGHT, overflow: 'hidden' }}>
+      <Animated.Text
+        style={animatedStyle}
+        className={`font-subtitle text-[50px] ${isDecimal && char !== '$' ? 'text-neutral-300' : 'text-text-primary'}`}>
+        {char}
+      </Animated.Text>
+    </View>
+  );
+}
+
+function AnimatedBalance({ value, isVisible }: { value: string; isVisible: boolean }) {
+  const prevValue = useRef(value);
+  const displayValue = isVisible ? value : '$••••';
+
+  useEffect(() => {
+    prevValue.current = value;
+  }, [value]);
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+      {displayValue.split('').map((char, i) => (
+        <AnimatedChar key={`${i}-${char}-${value}`} char={char} index={i} />
+      ))}
+    </View>
   );
 }
 
@@ -69,9 +89,8 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   const { isBalanceVisible, toggleBalanceVisibility } = useUIStore();
 
   const maskValue = (value: string) => {
-    const sanitized = sanitizeNumber(String(value));
-    if (isBalanceVisible) return sanitized;
-    return sanitized.replace(/[\d,\.]+/g, (match) => '−'.repeat(Math.min(match.length, 6)));
+    if (isBalanceVisible) return sanitizeNumber(String(value));
+    return '••••';
   };
 
   const isNegative = percentChange.startsWith('-');

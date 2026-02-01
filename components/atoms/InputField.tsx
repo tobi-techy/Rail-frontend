@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import {
   View,
   Text,
@@ -19,9 +19,10 @@ interface InputFieldProps extends Omit<TextInputProps, 'onFocus' | 'onBlur'> {
   onTogglePasswordVisibility?: () => void;
   onFocus?: (e: NativeSyntheticEvent<any>) => void;
   onBlur?: (e: NativeSyntheticEvent<any>) => void;
+  variant?: 'light' | 'dark';
 }
 
-export const InputField: React.FC<InputFieldProps> = ({
+export const InputField = forwardRef<TextInput, InputFieldProps>(({
   label,
   error,
   required = false,
@@ -34,9 +35,11 @@ export const InputField: React.FC<InputFieldProps> = ({
   onTogglePasswordVisibility,
   onFocus,
   onBlur,
+  variant = 'light',
   ...props
-}) => {
+}, ref) => {
   const [isFocused, setIsFocused] = React.useState(false);
+  const isDark = variant === 'dark';
 
   const getKeyboardType = () => {
     switch (type) {
@@ -63,41 +66,44 @@ export const InputField: React.FC<InputFieldProps> = ({
   };
 
   return (
-    <View className="mb-4">
-      <Text className="mb-2 font-subtitle text-body text-text-primary">
+    <View className={isDark ? 'mb-2' : 'mb-4'}>
+      <Text className={`mb-1 font-subtitle text-body ${isDark ? 'text-white/60' : 'text-text-primary'}`}>
         {label}
-        {required && <Text className="text-destructive"> *</Text>}
+        {required && <Text className={isDark ? 'text-white/60' : 'text-destructive'}> *</Text>}
       </Text>
 
       <View
-        className={`h-[60px] flex-row items-center rounded-sm border bg-surface px-4 ${
+        className={`flex-row items-center ${
+          isDark ? 'bg-transparent border-b py-3' : 'h-[52px] rounded-sm border bg-surface px-4'
+        } ${
           isFocused
-            ? 'border-primary-accent'
+            ? isDark ? 'border-white' : 'border-primary-accent'
             : hasError
               ? 'border-destructive'
-              : 'border-transparent'
+              : isDark ? 'border-white/30' : 'border-transparent'
         }`}>
         {icon && (
           <Ionicons
             name={icon}
             size={20}
-            color={hasError ? '#F44336' : isFocused ? '#1B84FF' : '#757575'}
+            color={hasError ? '#F44336' : isFocused ? '#1B84FF' : isDark ? '#fff' : '#757575'}
             style={{ marginRight: 12 }}
           />
         )}
 
         <TextInput
+          ref={ref}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#757575"
+          placeholderTextColor={isDark ? 'rgba(255,255,255,0.5)' : '#757575'}
           keyboardType={getKeyboardType()}
           autoCapitalize={type === 'email' ? 'none' : 'sentences'}
           autoCorrect={false}
           secureTextEntry={isPassword && !isPasswordVisible}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          className="flex-1 font-body text-body text-text-primary"
+          className={`flex-1 font-body text-body ${isDark ? 'text-white' : 'text-text-primary'}`}
           {...props}
         />
 
@@ -106,13 +112,13 @@ export const InputField: React.FC<InputFieldProps> = ({
             <Ionicons
               name={isPasswordVisible ? 'eye-off' : 'eye'}
               size={20}
-              color={hasError ? '#F44336' : '#757575'}
+              color={hasError ? '#F44336' : isDark ? '#fff' : '#757575'}
             />
           </TouchableOpacity>
         )}
       </View>
 
-      {hasError && <Text className="mt-1 font-caption text-caption text-destructive">{error}</Text>}
+      {hasError && <Text className={`mt-1 font-caption text-caption ${isDark ? 'text-white' : 'text-destructive'}`}>{error}</Text>}
     </View>
   );
-};
+});

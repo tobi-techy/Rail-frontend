@@ -10,6 +10,19 @@ import { API_CONFIG } from './config';
 import { generateRequestId } from '../utils/requestId';
 
 /**
+ * SSL Certificate Pinning Configuration
+ * In production, requests will only succeed if the server's certificate matches
+ * 
+ * To get your certificate hash:
+ * openssl s_client -connect api.yourdomain.com:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
+ */
+const SSL_PINNING_CONFIG = {
+  // Add your production API domain and certificate hashes
+  // Example: 'api.rail.com': ['sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=']
+  // You should have at least 2 pins (primary + backup) for certificate rotation
+} as Record<string, string[]>;
+
+/**
  * Custom Axios instance type that returns unwrapped data
  */
 interface ApiClient {

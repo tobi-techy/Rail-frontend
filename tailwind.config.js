@@ -6,32 +6,30 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#1B84FF',
-          accent: '#1B84FF',
-          secondary: '#487984',
-          tertiary: '#FF5A00',
+          DEFAULT: '#FF2E01',
+          accent: '#FF2E01',
+          dark: '#E02900',
+          secondary: '#00C853',
+          tertiary: '#FF2E01',
         },
         background: {
           DEFAULT: '#FFFFFF',
           main: '#FFFFFF',
           surface: '#F5F5F5',
-          tertiary: '#FF5A00',
         },
         surface: '#F5F5F5',
         text: {
-          primary: '#121212',
+          primary: '#000000',
           secondary: '#757575',
         },
         success: '#00C853',
-        destructive: '#F44336',
+        destructive: '#FF2E01',
         overlay: 'rgba(0, 0, 0, 0.7)',
       },
       fontFamily: {
-        // Headings - Pramukh Rounded (secondary)
         display: ['PramukhRounded-Bold'],
         headline: ['PramukhRounded-Bold'],
         'headline-2': ['PramukhRounded-Semibold'],
-        // Body/UI - SF Pro Rounded (primary)
         subtitle: ['SF-Pro-Rounded-Bold'],
         body: ['SF-Pro-Rounded-Medium'],
         caption: ['SF-Pro-Rounded-Regular'],

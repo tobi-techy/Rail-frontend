@@ -1,15 +1,10 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StatusBar,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Button } from '../../components/ui';
-import { InputField } from '@/components';
+import { InputField, AuthGradient } from '@/components';
 
 const EMAIL_REGEX = /\S+@\S+\.\S+/;
 
@@ -24,12 +19,10 @@ export default function ForgotPassword() {
       setError('Email is required');
       return false;
     }
-
     if (!EMAIL_REGEX.test(email)) {
       setError('Please enter a valid email');
       return false;
     }
-
     setError('');
     return true;
   };
@@ -40,7 +33,6 @@ export default function ForgotPassword() {
     setIsLoading(true);
     setIsSuccess(false);
 
-    // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
       setIsSuccess(true);
@@ -48,20 +40,21 @@ export default function ForgotPassword() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+    <AuthGradient>
+      <SafeAreaView className="flex-1">
+        <StatusBar barStyle="light-content" />
 
-      <KeyboardAwareScrollView
-        className="flex-1"
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        bottomOffset={40}>
+        <KeyboardAwareScrollView
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={40}>
           <View className="flex-1 px-6 pb-6">
             <View className="mb-8 mt-4">
-              <Text className="font-display text-[60px] text-gray-900" accessibilityRole="header">
+              <Text className="font-display text-[60px] text-white" accessibilityRole="header">
                 Forgot password
               </Text>
-              <Text className="mt-2 font-body-medium text-base text-gray-600">
+              <Text className="font-body-medium mt-2 text-base text-white/70">
                 Enter the email associated with your account and we will send you instructions to
                 reset your password.
               </Text>
@@ -75,46 +68,47 @@ export default function ForgotPassword() {
                 value={email}
                 onChangeText={(value: string) => {
                   setEmail(value);
-                  if (error) {
-                    setError('');
-                  }
+                  if (error) setError('');
                 }}
                 onBlur={validateEmail}
                 error={error}
                 type="email"
                 autoCapitalize="none"
                 textContentType="emailAddress"
+                variant="dark"
               />
             </View>
 
-            <View className="mt-6">
+            <View className="absolute bottom-0 left-4 right-4">
               <Button
                 title="Send reset link"
                 onPress={handleSubmit}
                 loading={isLoading}
                 disabled={!email.trim() || isLoading}
-                className="rounded-full"
-                accessibilityLabel="Send password reset instructions"
+                variant="black"
               />
 
               {isSuccess && (
-                <View className="mt-4 rounded-2xl bg-gray-100 p-4">
-                  <Text className="font-body-medium text-[14px] text-gray-700">
+                <View className="mt-4 rounded-2xl bg-white/10 p-4">
+                  <Text className="font-body-medium text-[14px] text-white/80">
                     Check your inbox for password reset instructions. If you do not see the email,
                     check your spam folder or try again in a few minutes.
                   </Text>
                 </View>
               )}
-            </View>
 
-            <View className="mt-8 flex-row items-center justify-center">
-              <Text className="font-body-medium text-[14px] text-gray-600">Remember it?</Text>
-              <TouchableOpacity onPress={() => router.replace('/(auth)/signin')} className="ml-2">
-                <Text className="font-body-medium text-[14px] text-primary">Back to sign in</Text>
-              </TouchableOpacity>
+              <View className="mt-8 flex-row items-center justify-center">
+                <Text className="font-body-medium text-[14px] text-white/70">Remember it?</Text>
+                <TouchableOpacity onPress={() => router.replace('/(auth)/signin')} className="ml-2">
+                  <Text className="font-body-medium text-[14px] text-white underline">
+                    Back to sign in
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+        </KeyboardAwareScrollView>
+      </SafeAreaView>
+    </AuthGradient>
   );
 }

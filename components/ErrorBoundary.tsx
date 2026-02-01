@@ -17,6 +17,9 @@ interface ErrorBoundaryState {
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  private retryCount = 0;
+  private maxRetries = 3;
+
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -36,15 +39,38 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     safeError('[ErrorBoundary] Caught error:', { message: error.message, name: error.name });
     safeError('[ErrorBoundary] Error info:', errorInfo);
 
-    // Send to Sentry in production
+    // Send to Sentry in production (with retry logic)
     if (!__DEV__) {
-      Sentry.captureException(error, {
-        contexts: { react: { componentStack: errorInfo.componentStack } },
-      });
+      try {
+        Sentry.captureException(error, {
+          contexts: {
+            react: { componentStack: errorInfo.componentStack },
+            app: {
+              retryCount: this.retryCount,
+              userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+              timestamp: new Date().toISOString(),
+            },
+          },
+          tags: {
+            component: 'ErrorBoundary',
+            severity: 'error',
+          },
+        });
+      } catch (sentryError) {
+        console.error('[ErrorBoundary] Failed to send to Sentry:', sentryError);
+      }
     }
   }
 
   resetError = (): void => {
+    this.retryCount++;
+
+    // Prevent infinite retry loops
+    if (this.retryCount >= this.maxRetries) {
+      console.warn('[ErrorBoundary] Max retries reached, preventing further resets');
+      return;
+    }
+
     this.setState({
       hasError: false,
       error: null,
@@ -69,6 +95,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <Text style={styles.message}>
               We&apos;re sorry for the inconvenience. The app encountered an unexpected error.
             </Text>
+
+            {this.retryCount >= this.maxRetries - 1 && (
+              <Text style={styles.retryWarning}>
+                Multiple errors detected. Please restart the app if this continues.
+              </Text>
+            )}
 
             {__DEV__ && (
               <View style={styles.errorDetails}>
@@ -150,5 +182,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  retryWarning: {
+    fontSize: 14,
+    color: '#F59E0B',
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 20,
   },
 });

@@ -3,12 +3,8 @@ import { useCallback, useMemo, useRef, useEffect } from 'react';
 /**
  * Debounce a callback function
  */
-export function useDebounce<T extends (...args: unknown[]) => void>(
-  callback: T,
-  delay: number
-): T {
-  const timeoutRef = useRef<NodeJS.Timeout>();
-
+export function useDebounce<T extends (...args: unknown[]) => void>(callback: T, delay: number): T {
+  const timeoutRef = useRef<number | undefined>(undefined);
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -27,10 +23,7 @@ export function useDebounce<T extends (...args: unknown[]) => void>(
 /**
  * Throttle a callback function
  */
-export function useThrottle<T extends (...args: unknown[]) => void>(
-  callback: T,
-  limit: number
-): T {
+export function useThrottle<T extends (...args: unknown[]) => void>(callback: T, limit: number): T {
   const lastRan = useRef(Date.now());
 
   return useCallback(
@@ -48,7 +41,7 @@ export function useThrottle<T extends (...args: unknown[]) => void>(
  * Track previous value
  */
 export function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T>();
+  const ref = useRef<T | undefined>(undefined);
   useEffect(() => {
     ref.current = value;
   }, [value]);
@@ -59,7 +52,7 @@ export function usePrevious<T>(value: T): T | undefined {
  * Memoize expensive computations with deep comparison
  */
 export function useDeepMemo<T>(factory: () => T, deps: unknown[]): T {
-  const ref = useRef<{ deps: unknown[]; value: T }>();
+  const ref = useRef<{ deps: unknown[]; value: T } | undefined>(undefined);
 
   if (!ref.current || !shallowEqual(ref.current.deps, deps)) {
     ref.current = { deps, value: factory() };

@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "Rail Design System",
-  "version": "2.1.0",
-  "description": "Bold, dark, minimal fintech design inspired by Fuse Wallet and UglyCash. Money in motion, zero friction.",
+  "version": "3.0.0",
+  "description": "Bold, clean, minimal fintech design. Money in motion, zero friction.",
 
   "designPrinciples": {
     "bold": "High contrast, confident typography, unapologetic design choices",
-    "dark": "Dark-first UI that feels premium and crypto-native",
+    "clean": "Black and white foundation with vibrant accent colors",
     "minimal": "Strip everything unnecessary. If it doesn't serve the user, remove it",
     "momentum": "Money should feel like it's always moving"
   },
@@ -14,41 +14,39 @@
   "colors": {
     "brand": {
       "primary": {
-        "value": "#00E5A0",
-        "description": "Rail Green - vibrant mint for CTAs, success, active states"
+        "value": "#FF2E01",
+        "description": "Rail Red - primary brand color, CTAs, active states"
       },
       "primaryDark": {
-        "value": "#00C88A",
-        "description": "Darker mint for pressed states"
+        "value": "#E02900",
+        "description": "Darker red for pressed states"
       },
       "secondary": {
-        "value": "#FF6B35",
-        "description": "Rail Orange - Investment Stash, growth, energy"
+        "value": "#00C853",
+        "description": "Rail Green - success, positive states, growth"
       },
-      "accent": {
-        "value": "#6366F1",
-        "description": "Indigo - special features, Conductors"
+      "black": {
+        "value": "#000000",
+        "description": "Pure black - backgrounds, text"
+      },
+      "white": {
+        "value": "#FFFFFF",
+        "description": "Pure white - backgrounds, text"
       }
     },
 
-    "stash": {
-      "spending": {
-        "primary": "#00E5A0",
-        "gradient": ["#00E5A0", "#00C88A"],
-        "description": "Spending Stash - stability, liquidity"
-      },
-      "investment": {
-        "primary": "#FF6B35",
-        "gradient": ["#FF6B35", "#FF8F65"],
-        "description": "Investment Stash - growth, momentum"
+    "gradient": {
+      "auth": {
+        "colors": ["#FF2E01", "#FF6B4A", "#FFB8A8", "#FFFFFF"],
+        "description": "Auth screens gradient - red to white"
       }
     },
 
     "semantic": {
-      "success": "#00E5A0",
+      "success": "#00C853",
       "warning": "#FBBF24",
-      "error": "#EF4444",
-      "info": "#3B82F6"
+      "error": "#FF2E01",
+      "info": "#71717A"
     },
 
     "dark": {
@@ -83,7 +81,7 @@
         "input": "#F4F4F5"
       },
       "text": {
-        "primary": "#09090B",
+        "primary": "#000000",
         "secondary": "#71717A",
         "tertiary": "#A1A1AA",
         "muted": "#D4D4D8"
@@ -95,7 +93,7 @@
       }
     },
 
-    "default": "dark"
+    "default": "light"
   },
 
   "typography": {
@@ -230,30 +228,23 @@
     "sm": {
       "shadowColor": "#000",
       "shadowOffset": { "width": 0, "height": 1 },
-      "shadowOpacity": 0.3,
+      "shadowOpacity": 0.1,
       "shadowRadius": 2,
       "elevation": 2
     },
     "md": {
       "shadowColor": "#000",
       "shadowOffset": { "width": 0, "height": 4 },
-      "shadowOpacity": 0.4,
+      "shadowOpacity": 0.15,
       "shadowRadius": 8,
       "elevation": 4
     },
     "lg": {
       "shadowColor": "#000",
       "shadowOffset": { "width": 0, "height": 8 },
-      "shadowOpacity": 0.5,
+      "shadowOpacity": 0.2,
       "shadowRadius": 16,
       "elevation": 8
-    },
-    "glow": {
-      "shadowColor": "#00E5A0",
-      "shadowOffset": { "width": 0, "height": 0 },
-      "shadowOpacity": 0.4,
-      "shadowRadius": 20,
-      "elevation": 0
     }
   },
 
@@ -278,128 +269,84 @@
   "components": {
     "button": {
       "primary": {
-        "background": "#00E5A0",
-        "text": "#000000",
+        "background": "#FF2E01",
+        "text": "#FFFFFF",
         "height": 52,
-        "borderRadius": 12,
+        "borderRadius": 9999,
         "fontWeight": 600
       },
       "secondary": {
-        "background": "#1A1A1A",
+        "background": "#000000",
         "text": "#FFFFFF",
-        "border": "#27272A",
         "height": 52,
-        "borderRadius": 12
+        "borderRadius": 9999
       },
       "ghost": {
         "background": "transparent",
-        "text": "#FFFFFF",
+        "text": "#000000",
         "height": 44,
-        "borderRadius": 12
+        "borderRadius": 9999
       },
       "outline": {
         "background": "transparent",
-        "text": "#00E5A0",
-        "border": "#00E5A0",
+        "text": "#FF2E01",
+        "border": "#FF2E01",
         "height": 52,
-        "borderRadius": 12
+        "borderRadius": 9999
       }
     },
 
     "input": {
-      "background": "#141414",
-      "text": "#FFFFFF",
+      "background": "#F4F4F5",
+      "text": "#000000",
       "placeholder": "#71717A",
-      "border": "#27272A",
-      "borderFocused": "#00E5A0",
+      "border": "#E4E4E7",
+      "borderFocused": "#FF2E01",
       "height": 52,
       "borderRadius": 12,
       "paddingX": 16
     },
 
     "card": {
-      "background": "#1A1A1A",
-      "border": "#27272A",
+      "background": "#FFFFFF",
+      "border": "#E4E4E7",
       "borderRadius": 16,
       "padding": 16
     },
 
-    "stashCard": {
-      "spending": {
-        "background": "#1A1A1A",
-        "accent": "#00E5A0",
-        "iconBg": "#00E5A0",
-        "iconColor": "#000000"
-      },
-      "investment": {
-        "background": "#1A1A1A",
-        "accent": "#FF6B35",
-        "iconBg": "#FF6B35",
-        "iconColor": "#FFFFFF"
-      }
-    },
-
-    "balanceDisplay": {
-      "background": "transparent",
-      "amountColor": "#FFFFFF",
-      "labelColor": "#71717A",
-      "positiveColor": "#00E5A0",
-      "negativeColor": "#EF4444"
-    },
-
     "bottomSheet": {
-      "background": "#0A0A0A",
-      "handle": "#3F3F46",
+      "background": "#FFFFFF",
+      "handle": "#D4D4D8",
       "borderRadius": 24
     },
 
     "tabBar": {
-      "background": "#000000",
-      "border": "#1A1A1A",
-      "activeColor": "#00E5A0",
+      "background": "#FFFFFF",
+      "border": "#E4E4E7",
+      "activeColor": "#FF2E01",
       "inactiveColor": "#71717A",
       "height": 84
     },
 
     "header": {
       "background": "transparent",
-      "titleColor": "#FFFFFF",
+      "titleColor": "#000000",
       "height": 56
     },
 
     "transaction": {
       "background": "transparent",
-      "pressedBg": "#1A1A1A",
-      "iconSize": 40,
-      "iconRadius": 12,
+      "pressedBg": "#F4F4F5",
+      "iconSize": 48,
+      "iconRadius": 24,
       "height": 72
     },
 
-    "chip": {
-      "background": "#1A1A1A",
-      "text": "#FFFFFF",
-      "selectedBg": "#00E5A0",
-      "selectedText": "#000000",
-      "height": 32,
-      "borderRadius": 8
-    },
-
     "badge": {
-      "success": { "bg": "#00E5A01A", "text": "#00E5A0" },
+      "success": { "bg": "#00C8531A", "text": "#00C853" },
       "warning": { "bg": "#FBBF241A", "text": "#FBBF24" },
-      "error": { "bg": "#EF44441A", "text": "#EF4444" },
-      "neutral": { "bg": "#27272A", "text": "#A1A1AA" }
-    },
-
-    "avatar": {
-      "sizes": { "sm": 32, "md": 40, "lg": 48, "xl": 64 },
-      "background": "#27272A",
-      "borderRadius": 9999
-    },
-
-    "skeleton": {
-      "background": "#1A1A1A",
-      "shimmer": "#27272A"
+      "error": { "bg": "#FF2E011A", "text": "#FF2E01" },
+      "neutral": { "bg": "#E4E4E7", "text": "#71717A" }
     }
   },
 
@@ -407,46 +354,14 @@
     "sizes": { "sm": 16, "md": 20, "lg": 24, "xl": 32 },
     "strokeWidth": 2,
     "color": {
-      "default": "#FFFFFF",
+      "default": "#000000",
       "muted": "#71717A",
-      "accent": "#00E5A0"
-    }
-  },
-
-  "screens": {
-    "station": {
-      "background": "#000000",
-      "sections": ["header", "balance", "quickActions", "stashes", "activity"]
-    },
-    "spendingStash": {
-      "accent": "#00E5A0",
-      "sections": ["balance", "card", "transactions"]
-    },
-    "investmentStash": {
-      "accent": "#FF6B35",
-      "sections": ["balance", "performance", "conductors", "holdings"]
-    }
-  },
-
-  "patterns": {
-    "railSplit": {
-      "base": 0.7,
-      "active": 0.3
-    },
-    "emptyState": {
-      "iconSize": 80,
-      "iconColor": "#3F3F46",
-      "titleColor": "#FFFFFF",
-      "descColor": "#71717A"
-    },
-    "pullToRefresh": {
-      "color": "#00E5A0",
-      "background": "#000000"
+      "accent": "#FF2E01"
     }
   },
 
   "accessibility": {
     "minTouchTarget": 44,
-    "focusRing": "#00E5A0"
+    "focusRing": "#FF2E01"
   }
 }

@@ -15,6 +15,7 @@ interface CountryPickerProps {
   onSelect: (country: Country) => void;
   error?: string;
   required?: boolean;
+  variant?: 'light' | 'dark';
 }
 
 // Common countries list with flags
@@ -91,10 +92,12 @@ export function CountryPicker({
   value, 
   onSelect, 
   error,
-  required = false 
+  required = false,
+  variant = 'light'
 }: CountryPickerProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const isDark = variant === 'dark';
 
   const selectedCountry = COUNTRIES.find(country => country.name === value);
   
@@ -121,53 +124,41 @@ export function CountryPicker({
   );
 
   return (
-    <View className="space-y-2">
-      {/* Label */}
+    <View className={isDark ? 'space-y-1' : 'space-y-2'}>
       {label && (
         <View className="flex-row items-center">
-          <Text className="text-sm font-heading-medium text-text-primary">
+          <Text className={`text-sm font-heading-medium ${isDark ? 'text-white/60' : 'text-text-primary'}`}>
             {label}
           </Text>
-          {required && (
-            <Text className="text-sm text-red-500 ml-1">*</Text>
-          )}
+          {required && <Text className={`text-sm ml-1 ${isDark ? 'text-white/60' : 'text-red-500'}`}>*</Text>}
         </View>
       )}
 
-      {/* Picker Button */}
       <Pressable
         onPress={() => setIsModalVisible(true)}
-        className={`
-          flex-row items-center justify-between px-4 py-4 
-          border rounded-xl bg-white
-          ${error ? 'border-red-500' : 'border-gray-300'}
-          ${selectedCountry ? '' : ''}
-        `}
+        className={`flex-row items-center justify-between py-3 ${
+          isDark ? 'bg-transparent border-b border-white/30' : 'px-4 bg-white border border-gray-300 rounded-xl'
+        } ${error ? 'border-red-500' : ''}`}
       >
         <View className="flex-row items-center flex-1">
           {selectedCountry ? (
             <>
               <Text className="text-2xl mr-3">{selectedCountry.flag}</Text>
-              <Text className="text-base text-text-primary font-heading-regular">
+              <Text className={`text-base font-heading-regular ${isDark ? 'text-white' : 'text-text-primary'}`}>
                 {selectedCountry.name}
               </Text>
             </>
           ) : (
-            <Text className="text-base text-text-tertiary font-heading-regular">
+            <Text className={`text-base font-heading-regular ${isDark ? 'text-white/50' : 'text-text-tertiary'}`}>
               {placeholder}
             </Text>
           )}
         </View>
-        <Ionicons 
-          name="chevron-down" 
-          size={20} 
-          color="#A0A0A0" 
-        />
+        <Ionicons name="chevron-down" size={20} color={isDark ? '#fff' : '#A0A0A0'} />
       </Pressable>
 
-      {/* Error Message */}
       {error && (
-        <Text className="text-sm text-red-500 font-heading-regular">
+        <Text className={`text-sm font-heading-regular ${isDark ? 'text-white' : 'text-red-500'}`}>
           {error}
         </Text>
       )}

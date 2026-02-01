@@ -1,174 +1,119 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StatusBar, TextInput } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { Input, Button } from '../../components/ui';
-import { InputField } from '@/components';
+import { router } from 'expo-router';
+import { Button } from '@/components/ui';
+import { AuthGradient, InputField } from '@/components';
 import { useLogin } from '@/api/hooks';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function SignIn() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const insets = useSafeAreaInsets();
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const passwordRef = useRef<TextInput>(null);
 
   const { mutate: login, isPending: isLoading } = useLogin();
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: '' }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    }
-
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email';
+    if (!formData.password) newErrors.password = 'Password is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSignIn = () => {
     if (!validateForm()) return;
-
     login(
+      { email: formData.email, password: formData.password },
       {
-        email: formData.email,
-        password: formData.password,
-      },
-      {
-        onSuccess: (response) => {
-          // Route directly to home screen after successful sign-in
-          router.replace('/(tabs)');
-        },
-        onError: (error: any) => {
-          console.error('Login error:', error);
-
-          // Handle specific error codes
-          const errorCode = error?.error?.code;
-          const errorMessage = error?.error?.message;
-
-          let displayMessage = 'Invalid email or password';
-
-          switch (errorCode) {
-            case 'INVALID_CREDENTIALS':
-              displayMessage = 'Invalid email or password. Please try again.';
-              break;
-            case 'ACCOUNT_INACTIVE':
-              displayMessage = 'Your account is inactive. Please contact support.';
-              break;
-            case 'UNAUTHORIZED':
-              // Check if email needs verification
-              if (errorMessage?.toLowerCase().includes('verif')) {
-                useAuthStore.setState({ pendingVerificationEmail: formData.email });
-                router.push('/(auth)/verify-email');
-                return;
-              }
-              displayMessage = errorMessage || displayMessage;
-              break;
-            case 'VALIDATION_ERROR':
-              displayMessage = 'Please check your email and password.';
-              break;
-            default:
-              displayMessage = errorMessage || displayMessage;
+        onSuccess: () => router.replace('/(tabs)'),
+        onError: (err: any) => {
+          const msg = err?.error?.message || 'Invalid email or password';
+          if (msg.toLowerCase().includes('verif')) {
+            useAuthStore.setState({ pendingVerificationEmail: formData.email });
+            router.push('/(auth)/verify-email');
+            return;
           }
-          setErrors({
-            password: displayMessage,
-          });
+          setErrors({ password: msg });
         },
       }
     );
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
-
+    <AuthGradient>
+      <StatusBar barStyle="light-content" />
       <KeyboardAwareScrollView
-        className="flex-1"
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        bottomOffset={40}>
-        {/* Content */}
-        <View className="flex-1 px-6 pb-6">
-          {/* Title */}
-          <View className="mb-8 mt-4">
-            <Text className="font-display text-[60px] text-gray-900">Welcome Back</Text>
-            <Text className="mt-2 font-body text-body text-gray-600">
-              Sign in to continue your investment journey
-            </Text>
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top + 16,
+          paddingBottom: insets.bottom + 20,
+        }}
+        keyboardShouldPersistTaps="handled">
+        <View className="flex-1 px-6">
+          <View className="mb-10">
+            <Text className="font-display text-[60px] leading-[1.1] text-white">Welcome Back</Text>
+            <Text className="mt-2 font-body text-body text-white/70">Sign in to continue</Text>
           </View>
 
-          {/* Form */}
-          <View className="gap-y-4">
+          <View className="gap-y-2">
             <InputField
-              required
-              label="Email Address"
+              label="Email"
               placeholder="Enter your email"
               value={formData.email}
-              onChangeText={(value: string) => updateField('email', value)}
+              onChangeText={(v) => updateField('email', v)}
               error={errors.email}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              textContentType="emailAddress"
+              type="email"
+              variant="dark"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              blurOnSubmit={false}
+              editable={!isLoading}
             />
 
             <InputField
-              required
+              ref={passwordRef}
               label="Password"
               placeholder="Enter your password"
               value={formData.password}
-              onChangeText={(value: string) => updateField('password', value)}
+              onChangeText={(v) => updateField('password', v)}
               error={errors.password}
-              secureTextEntry={!showPassword}
-              textContentType="password"
+              type="password"
+              variant="dark"
+              isPasswordVisible={showPassword}
+              onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
+              returnKeyType="done"
+              onSubmitEditing={handleSignIn}
+              editable={!isLoading}
             />
-          </View>
 
-          {/* Forgot Password & Passcode Login */}
-          <View className="mt-4 flex-row justify-end">
             <TouchableOpacity
               onPress={() => router.push('/(auth)/forgot-password')}
               className="self-end">
-              <Text className="font-subtitle text-caption text-primary-tertiary">
-                Forgot Password?
-              </Text>
+              <Text className="font-subtitle text-[13px] text-white/60">Forgot Password?</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Sign In Button */}
-          <View className="absolute bottom-0 left-0 right-0 mx-[24px]">
-            <Button
-              title="Sign in"
-              onPress={handleSignIn}
-              loading={isLoading}
-              className="rounded-full"
-              variant="white"
-            />
-
-            <TouchableOpacity onPress={() => router.push('/(auth)')} className="mt-4 self-center">
-              <Text className="text-center font-subtitle text-[14px] text-caption text-gray-900">
-                New to Rail? <Text className="text-primary-tertiary">Sign up</Text>
+          <View className="mt-auto pt-8">
+            <Button title="Sign In" onPress={handleSignIn} loading={isLoading} variant="black" />
+            <TouchableOpacity onPress={() => router.push('/(auth)')} className="mt-4">
+              <Text className="text-center font-body text-[14px] text-white/70">
+                New to Rail? <Text className="font-subtitle text-white underline">Sign Up</Text>
               </Text>
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardAwareScrollView>
-    </SafeAreaView>
+    </AuthGradient>
   );
 }

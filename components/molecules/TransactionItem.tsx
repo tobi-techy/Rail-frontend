@@ -1,83 +1,141 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
-import { colors, typography } from '@/design/tokens';
+import { SvgProps } from 'react-native-svg';
 import { Icon } from '../atoms';
 
-export type TransactionType = 'DEBIT' | 'CREDIT' | 'SWAP';
-export type TransactionStatus = 'COMPLETED' | 'PENDING' | 'FAILED';
+export type TransactionType = 'send' | 'receive' | 'swap' | 'deposit' | 'withdraw';
+export type TransactionStatus = 'completed' | 'pending' | 'failed';
+export type SvgComponent = React.ComponentType<SvgProps>;
 
 export interface Transaction {
   id: string;
+  type: TransactionType;
   title: string;
-  category: string;
+  subtitle: string;
   amount: number;
   currency?: string;
-  type: TransactionType;
   status: TransactionStatus;
   createdAt: Date;
+  txHash?: string;
+  toAddress?: string;
+  fee?: string;
+  icon?: {
+    type: 'token' | 'icon' | 'swap';
+    Token?: SvgComponent;
+    bgColor?: string;
+    iconName?: string;
+    SwapFrom?: SvgComponent;
+    SwapTo?: SvgComponent;
+    swapFromBg?: string;
+    swapToBg?: string;
+  };
 }
 
 export interface TransactionItemProps extends TouchableOpacityProps {
   transaction: Transaction;
 }
 
-const getTransactionDetails = (type: TransactionType) => {
-  const details = {
-    DEBIT: { iconName: 'arrow-up-right', iconColor: colors.semantic.destructive, sign: '-' },
-    CREDIT: { iconName: 'arrow-down-left', iconColor: colors.semantic.success, sign: '+' },
-    SWAP: { iconName: 'repeat', iconColor: colors.primary.secondary, sign: '' },
+const formatAmount = (amount: number, type: TransactionType, currency = 'NGN') => {
+  const isCredit = type === 'receive' || type === 'deposit';
+  const sign = isCredit ? '+' : '-';
+  const num = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(amount));
+  return { text: `${sign}${num} ${currency}`, isCredit };
+};
+
+const TokenIcon = ({ Token, bgColor }: { Token?: SvgComponent; bgColor?: string }) => (
+  <View className="h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: bgColor || '#1B84FF' }}>
+    {Token ? <Token width={28} height={28} /> : <Icon library="feather" name="dollar-sign" size={24} color="#FFFFFF" />}
+  </View>
+);
+
+const ActionIcon = ({ name }: { name: string }) => (
+  <View className="h-12 w-12 items-center justify-center rounded-full border border-surface bg-background-main">
+    <Icon library="feather" name={name} size={22} color="#757575" />
+  </View>
+);
+
+const SwapIcon = ({
+  SwapFrom,
+  SwapTo,
+  fromBg,
+  toBg,
+}: {
+  SwapFrom?: SvgComponent;
+  SwapTo?: SvgComponent;
+  fromBg?: string;
+  toBg?: string;
+}) => (
+  <View className="h-12 w-12">
+    <View
+      className="absolute left-0 top-0 h-8 w-8 items-center justify-center rounded-full"
+      style={{ backgroundColor: fromBg || '#000' }}>
+      {SwapFrom && <SwapFrom width={18} height={18} />}
+    </View>
+    <View
+      className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full border-2 border-background-main"
+      style={{ backgroundColor: toBg || '#1B84FF' }}>
+      {SwapTo && <SwapTo width={18} height={18} />}
+    </View>
+  </View>
+);
+
+const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
+  const { icon, type } = transaction;
+
+  if (icon?.type === 'swap') {
+    return <SwapIcon SwapFrom={icon.SwapFrom} SwapTo={icon.SwapTo} fromBg={icon.swapFromBg} toBg={icon.swapToBg} />;
+  }
+
+  if (icon?.type === 'token') {
+    return <TokenIcon Token={icon.Token} bgColor={icon.bgColor} />;
+  }
+
+  if (icon?.type === 'icon' && icon.iconName) {
+    return <ActionIcon name={icon.iconName} />;
+  }
+
+  const defaultIcons: Record<TransactionType, string> = {
+    send: 'arrow-up-right',
+    receive: 'arrow-down-left',
+    swap: 'repeat',
+    deposit: 'plus',
+    withdraw: 'minus',
   };
-  return details[type] || { iconName: 'help-circle', iconColor: colors.text.secondary, sign: '' };
-};
-
-const formatCurrency = (amount: number, currency = 'NGN', sign: string) => {
-  const formatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-  });
-  return `${sign}${formatter.format(Math.abs(amount))}`;
-};
-
-const formatDate = (date: Date) =>
-  date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, ...props }) => {
-  const { iconName, iconColor, sign } = getTransactionDetails(transaction.type);
-  const formattedAmount = formatCurrency(transaction.amount, transaction.currency, sign);
 
   return (
-    <TouchableOpacity
-      className="flex-row items-center border-b border-surface py-3"
-      accessibilityLabel={`Transaction: ${transaction.title}, Amount: ${formattedAmount}`}
-      {...props}>
-      <View
-        className="mr-4 h-11 w-11 items-center justify-center rounded-full"
-        style={{ backgroundColor: `${colors.semantic.success}1A` }}>
-        <Icon library="feather" name={iconName} size={22} color={iconColor} />
+    <View className="h-12 w-12 items-center justify-center rounded-full bg-surface">
+      <Icon library="feather" name={defaultIcons[type]} size={24} color="#121212" />
+    </View>
+  );
+};
+
+export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, ...props }) => {
+  const { text: amountText, isCredit } = formatAmount(transaction.amount, transaction.type, transaction.currency);
+  const isPending = transaction.status === 'pending';
+
+  return (
+    <TouchableOpacity className="flex-row items-center py-3" activeOpacity={0.7} {...props}>
+      <View className="mr-sm">
+        <TransactionIcon transaction={transaction} />
       </View>
 
-      <View className="flex-1 justify-center">
-        <Text
-          className="font-subtitle text-[18px] text-text-primary"
-          style={{ fontFamily: typography.fonts.subtitle }}
-          numberOfLines={1}>
+      <View className="flex-1">
+        <Text className="font-subtitle text-subtitle text-text-primary" numberOfLines={1}>
           {transaction.title}
         </Text>
-        <Text
-          className="mt-[2px] font-body text-[14px]"
-          style={{ fontFamily: typography.fonts.caption, color: colors.text.secondary }}
-          numberOfLines={1}>
-          {`${transaction.category} • ${formatDate(transaction.createdAt)}`}
+        <Text className="mt-[2px] font-caption text-caption text-text-secondary" numberOfLines={1}>
+          {transaction.subtitle}
         </Text>
       </View>
 
-      <Text
-        className="ml-3 font-subtitle text-[18px]"
-        style={{ fontFamily: typography.fonts.numeric, color: colors.text.primary }}
-        numberOfLines={1}>
-        {formattedAmount}
-      </Text>
+      <View className="items-end">
+        <Text
+          className={`font-subtitle text-subtitle ${isPending ? 'text-text-secondary' : isCredit ? 'text-success' : 'text-text-primary'}`}
+          numberOfLines={1}>
+          {amountText}
+        </Text>
+        {isPending && <Text className="mt-[2px] font-caption text-[12px] text-primary">Pending</Text>}
+      </View>
     </TouchableOpacity>
   );
 };

@@ -206,7 +206,7 @@ export const useWalletStore = create<WalletState & WalletActions>()(
           const txResponse = await walletService.getTransactions({ limit: 50 });
           
           // Transform API transactions to store format
-          const transactions: Transaction[] = txResponse.data.map((tx: any) => ({
+          const transactions: Transaction[] = txResponse.items.map((tx: any) => ({
             id: tx.id,
             type: tx.type as Transaction['type'],
             token: {
