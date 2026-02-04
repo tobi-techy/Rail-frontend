@@ -5,24 +5,25 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { initSentry } from '@/lib/sentry';
+import { initGlobalErrorHandlers } from '@/lib/logger';
 import { useFonts } from '@/hooks/useFonts';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { enforceDeviceSecurity } from '@/utils/deviceSecurity';
 import { SplashScreen } from '@/components/SplashScreen';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import queryClient from '@/api/queryClient';
+import SessionManager from '@/utils/sessionManager';
 import '../global.css';
 
 const SPLASH_BG = '#FF5A00';
 
-// Simplified splash timing - much shorter and safer
-const SPLASH_MIN_DURATION_MS = 2000; // 2 seconds minimum
-const SPLASH_MAX_DURATION_MS = 8000; // 8 seconds maximum (iOS watchdog safe)
+const SPLASH_MIN_DURATION_MS = 2000;
+const SPLASH_MAX_DURATION_MS = 8000;
 
-// Toggle console logs for debugging splash behavior.
 const SPLASH_DEBUG = __DEV__;
 
 initSentry();
+initGlobalErrorHandlers();
 
 function AppNavigator() {
   return (
@@ -42,10 +43,10 @@ export default function Layout() {
   const [showSplash, setShowSplash] = useState(true);
   const [splashStartTime] = useState(() => Date.now());
   const [securityChecked, setSecurityChecked] = useState(false);
+  const [storeHydrated, setStoreHydrated] = useState(false);
 
   useProtectedRoute();
 
-  // Device security check on app start
   useEffect(() => {
     enforceDeviceSecurity({ allowContinue: true }).finally(() => {
       setSecurityChecked(true);
@@ -58,13 +59,11 @@ export default function Layout() {
     }
   }, [fontsLoaded, fontError]);
 
-  // Simplified splash logic - just one timer with proper cleanup
   useEffect(() => {
     const minSplashTimeout = setTimeout(() => {
       if (SPLASH_DEBUG) console.log('[splash] Minimum duration elapsed');
     }, SPLASH_MIN_DURATION_MS);
 
-    // Maximum timeout to prevent iOS watchdog kills
     const maxSplashTimeout = setTimeout(() => {
       if (SPLASH_DEBUG) console.log('[splash] Maximum duration reached, forcing hide');
       setShowSplash(false);
@@ -76,11 +75,10 @@ export default function Layout() {
     };
   }, []);
 
-  // Hide splash when fonts are loaded (or failed) and minimum time has passed
   useEffect(() => {
     const elapsed = Date.now() - splashStartTime;
     const minTimeElapsed = elapsed >= SPLASH_MIN_DURATION_MS;
-    const fontsReady = fontsLoaded || fontError; // Continue even if fonts fail
+    const fontsReady = fontsLoaded || fontError;
 
     if (fontsReady && minTimeElapsed) {
       if (SPLASH_DEBUG) {
@@ -90,12 +88,30 @@ export default function Layout() {
     }
   }, [fontsLoaded, fontError, splashStartTime]);
 
+  useEffect(() => {
+    const fontsReady = fontsLoaded || fontError;
+    if (!fontsReady || !securityChecked || showSplash) return;
+
+    const initializeSession = async () => {
+      try {
+        SessionManager.initialize();
+        setStoreHydrated(true);
+      } catch (error) {
+        if (__DEV__) {
+          console.error('[Layout] SessionManager initialization failed:', error);
+        }
+        setStoreHydrated(true);
+      }
+    };
+
+    initializeSession();
+  }, [fontsLoaded, fontError, securityChecked, showSplash]);
+
   const handleSplashComplete = useCallback(() => {
     if (SPLASH_DEBUG) console.log('[splash] onAnimationComplete -> hiding splash');
     setShowSplash(false);
   }, []);
 
-  // Determine if splash should be shown
   const fontsReady = fontsLoaded || fontError;
   const elapsed = Date.now() - splashStartTime;
   const shouldShowSplash = showSplash && (!fontsReady || elapsed < SPLASH_MIN_DURATION_MS);
@@ -112,7 +128,6 @@ export default function Layout() {
     );
   }
 
-  // Show loading background while fonts are loading (but after splash is done)
   if (!fontsReady) {
     return <View style={{ flex: 1, backgroundColor: SPLASH_BG }} />;
   }

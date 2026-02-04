@@ -16,7 +16,7 @@ export default function EmploymentStatus() {
       title="Employment"
       subtitle="What's your current status?"
       options={EMPLOYMENT_OPTIONS}
-      nextRoute={ROUTES.AUTH.ONBOARDING.TRUST_DEVICE}
+      nextRoute={ROUTES.AUTH.CREATE_PASSCODE}
       buttonTitle="Complete Profile"
     />
   );

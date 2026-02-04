@@ -17,7 +17,7 @@ export default function ConfirmPasscodeScreen() {
       setConfirmPasscode('');
       return;
     }
-    router.replace(ROUTES.TABS as any);
+    router.push(ROUTES.AUTH.ONBOARDING.TRUST_DEVICE as any);
   };
 
   return (

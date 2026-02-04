@@ -4,13 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { AuthGradient } from '@/components';
+import { ROUTES } from '@/constants/routes';
 
 export default function CreatePasscodeScreen() {
   const [passcode, setPasscode] = useState('');
 
   const handlePasscodeComplete = (code: string) => {
     router.push({
-      pathname: '/(auth)/confirm-passcode',
+      pathname: ROUTES.AUTH.CONFIRM_PASSCODE as any,
       params: { passcode: code },
     });
   };

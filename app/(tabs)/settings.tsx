@@ -16,7 +16,6 @@ import {
   SwapIcon,
   BiometricsIcon,
   SecurityIcon,
-  NotificationIcon,
   TrashIcon,
   RefferalIcon,
   LegalIcon,
@@ -33,7 +32,6 @@ type SheetType =
   | 'roundups'
   | 'limits'
   | 'biometrics'
-  | 'notifications'
   | 'logout'
   | 'delete'
   | null;
@@ -69,7 +67,6 @@ export default function Settings() {
   const [roundupsEnabled, setRoundupsEnabled] = useState(true);
   const [spendingLimit, setSpendingLimit] = useState(500);
   const [biometricsEnabled, setBiometricsEnabled] = useState(true);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const logout = useAuthStore((s) => s.logout);
 
   useEffect(() => {
@@ -79,7 +76,6 @@ export default function Settings() {
       'roundupsEnabled',
       'spendingLimit',
       'biometricsEnabled',
-      'notificationsEnabled',
     ]).then((values) => {
       values.forEach(([key, value]) => {
         if (value !== null) {
@@ -88,35 +84,23 @@ export default function Settings() {
           else if (key === 'roundupsEnabled') setRoundupsEnabled(value === 'true');
           else if (key === 'spendingLimit') setSpendingLimit(Number(value));
           else if (key === 'biometricsEnabled') setBiometricsEnabled(value === 'true');
-          else if (key === 'notificationsEnabled') setNotificationsEnabled(value === 'true');
         }
       });
     });
   }, []);
 
   useEffect(() => {
-    AsyncStorage.setItem('baseAllocation', String(baseAllocation));
-  }, [baseAllocation]);
-
-  useEffect(() => {
-    AsyncStorage.setItem('autoInvestEnabled', String(autoInvestEnabled));
-  }, [autoInvestEnabled]);
-
-  useEffect(() => {
-    AsyncStorage.setItem('roundupsEnabled', String(roundupsEnabled));
-  }, [roundupsEnabled]);
-
-  useEffect(() => {
-    AsyncStorage.setItem('spendingLimit', String(spendingLimit));
-  }, [spendingLimit]);
-
-  useEffect(() => {
-    AsyncStorage.setItem('biometricsEnabled', String(biometricsEnabled));
-  }, [biometricsEnabled]);
-
-  useEffect(() => {
-    AsyncStorage.setItem('notificationsEnabled', String(notificationsEnabled));
-  }, [notificationsEnabled]);
+    const timeout = setTimeout(() => {
+      AsyncStorage.multiSet([
+        ['baseAllocation', String(baseAllocation)],
+        ['autoInvestEnabled', String(autoInvestEnabled)],
+        ['roundupsEnabled', String(roundupsEnabled)],
+        ['spendingLimit', String(spendingLimit)],
+        ['biometricsEnabled', String(biometricsEnabled)],
+      ]);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [baseAllocation, autoInvestEnabled, roundupsEnabled, spendingLimit, biometricsEnabled]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -186,11 +170,6 @@ export default function Settings() {
         </Section>
 
         <Section title="More">
-          <SettingButton
-            icon={<NotificationIcon width={34} height={34} color="#121212" />}
-            label="Notifications"
-            onPress={() => setActiveSheet('notifications')}
-          />
           <SettingButton
             icon={<RefferalIcon width={34} height={34} color="#121212" />}
             label="Referrals"
@@ -299,17 +278,6 @@ export default function Settings() {
         toggleLabel="Enable Biometrics"
         toggleValue={biometricsEnabled}
         onToggleChange={setBiometricsEnabled}
-      />
-
-      {/* Notifications Sheet */}
-      <SettingsSheet
-        visible={activeSheet === 'notifications'}
-        onClose={closeSheet}
-        title="Notifications"
-        subtitle="Receive alerts for transactions, deposits, and account activity."
-        toggleLabel="Push Notifications"
-        toggleValue={notificationsEnabled}
-        onToggleChange={setNotificationsEnabled}
       />
 
       {/* Logout Sheet */}

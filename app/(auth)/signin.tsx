@@ -1,21 +1,51 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, TextInput, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
-import { ROUTES } from '@/constants/routes';
+import { ROUTES, type AuthRoute } from '@/constants/routes';
+
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const isValidPassword = (password: string): boolean => {
+  return password.length >= 8;
+};
 
 export default function SignIn() {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const passwordRef = useRef<TextInput>(null);
 
-  const handleSignIn = () => {
-    router.replace(ROUTES.TABS as any);
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    if (!isValidPassword(password)) {
+      Alert.alert('Error', 'Password must be at least 8 characters');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      router.replace(ROUTES.TABS as any);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -31,7 +61,9 @@ export default function SignIn() {
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
-              <Text className="font-display text-[60px] leading-[1.1] text-white">Welcome Back</Text>
+              <Text className="font-display text-[60px] leading-[1.1] text-white">
+                Welcome Back
+              </Text>
               <Text className="mt-2 font-body text-body text-white/70">Sign in to continue</Text>
             </View>
           </StaggeredChild>
@@ -69,8 +101,10 @@ export default function SignIn() {
 
             <StaggeredChild index={3}>
               <TouchableOpacity
-                onPress={() => router.push(ROUTES.AUTH.FORGOT_PASSWORD as any)}
-                className="self-end">
+                onPress={() => router.push(ROUTES.AUTH.FORGOT_PASSWORD)}
+                className="self-end"
+                accessibilityLabel="Forgot Password"
+                accessibilityHint="Navigate to reset your password">
                 <Text className="font-subtitle text-[13px] text-white/60">Forgot Password?</Text>
               </TouchableOpacity>
             </StaggeredChild>
@@ -78,8 +112,12 @@ export default function SignIn() {
 
           <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
-              <Button title="Sign In" onPress={handleSignIn} variant="black" />
-              <TouchableOpacity onPress={() => router.push(ROUTES.AUTH.INDEX as any)} className="mt-4">
+              <Button title="Sign In" onPress={handleSignIn} variant="black" loading={isLoading} />
+              <TouchableOpacity
+                onPress={() => router.push(ROUTES.AUTH.INDEX)}
+                className="mt-4"
+                accessibilityLabel="Sign up"
+                accessibilityHint="Navigate to registration">
                 <Text className="text-center font-body text-[14px] text-white/70">
                   New to Rail? <Text className="font-subtitle text-white underline">Sign Up</Text>
                 </Text>

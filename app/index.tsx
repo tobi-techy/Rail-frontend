@@ -4,7 +4,7 @@ import { View, Text, FlatList, Dimensions, StatusBar, ViewToken } from 'react-na
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { onBoard1, onBoard2, onBoard3, onBoard4 } from '../assets/images';
 import { Button } from '@/components/ui';
-import {
+import Animated, {
   SharedValue,
   useSharedValue,
   useAnimatedStyle,
@@ -12,7 +12,7 @@ import {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
-import Animated from 'react-native-reanimated';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const { width, height } = Dimensions.get('window');
 
@@ -201,46 +201,48 @@ export default function App() {
   );
 
   return (
-    <View className="flex-1 bg-black">
-      <StatusBar barStyle="light-content" />
+    <ErrorBoundary>
+      <View className="flex-1 bg-black">
+        <StatusBar barStyle="light-content" />
 
-      <FlatList
-        ref={flatListRef}
-        data={onboardingSlides}
-        renderItem={renderItem}
-        horizontal
-        pagingEnabled
-        bounces={false}
-        scrollEventThrottle={32}
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.key}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        getItemLayout={getItemLayout}
-        initialNumToRender={1}
-        maxToRenderPerBatch={1}
-        windowSize={3}
-        removeClippedSubviews
-      />
+        <FlatList
+          ref={flatListRef}
+          data={onboardingSlides}
+          renderItem={renderItem}
+          horizontal
+          pagingEnabled
+          bounces={false}
+          scrollEventThrottle={32}
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => item.key}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          getItemLayout={getItemLayout}
+          initialNumToRender={1}
+          maxToRenderPerBatch={1}
+          windowSize={3}
+          removeClippedSubviews
+        />
 
-      <ProgressIndicator currentIndex={currentIndex} progress={progress} />
+        <ProgressIndicator currentIndex={currentIndex} progress={progress} />
 
-      <View className="absolute bottom-12 w-full gap-y-2 px-6">
-        <View className="flex-row gap-x-3">
-          <Button
-            title="Sign Up with Apple"
-            size="large"
-            onPress={() => router.push('/(auth)/complete-profile/investment-goal')}
-            variant="black"
-          />
-          <Button
-            title="Continue with Mail"
-            size="large"
-            onPress={() => router.push('/(auth)/signin')}
-            variant="orange"
-          />
+        <View className="absolute bottom-12 w-full gap-y-2 px-6">
+          <View className="flex-row gap-x-3">
+            <Button
+              title="Sign Up with Apple"
+              size="large"
+              onPress={() => router.push('/(auth)')}
+              variant="black"
+            />
+            <Button
+              title="Continue with Mail"
+              size="large"
+              onPress={() => router.push('/(auth)/signin')}
+              variant="orange"
+            />
+          </View>
         </View>
       </View>
-    </View>
+    </ErrorBoundary>
   );
 }

@@ -39,7 +39,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     safeError('[ErrorBoundary] Caught error:', { message: error.message, name: error.name });
     safeError('[ErrorBoundary] Error info:', errorInfo);
 
-    // Send to Sentry in production (with retry logic)
     if (!__DEV__) {
       try {
         Sentry.captureException(error, {
@@ -47,7 +46,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             react: { componentStack: errorInfo.componentStack },
             app: {
               retryCount: this.retryCount,
-              userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
               timestamp: new Date().toISOString(),
             },
           },
@@ -57,7 +55,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           },
         });
       } catch (sentryError) {
-        console.error('[ErrorBoundary] Failed to send to Sentry:', sentryError);
+        if (__DEV__) {
+          console.error('[ErrorBoundary] Failed to send to Sentry:', sentryError);
+        }
       }
     }
   }
@@ -65,9 +65,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   resetError = (): void => {
     this.retryCount++;
 
-    // Prevent infinite retry loops
     if (this.retryCount >= this.maxRetries) {
-      console.warn('[ErrorBoundary] Max retries reached, preventing further resets');
+      if (__DEV__) {
+        console.warn('[ErrorBoundary] Max retries reached, preventing further resets');
+      }
       return;
     }
 

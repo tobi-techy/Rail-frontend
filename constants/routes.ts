@@ -29,3 +29,19 @@ export const ROUTES = {
 } as const;
 
 export type AuthRoute = (typeof ROUTES.AUTH)[keyof typeof ROUTES.AUTH];
+
+export type RootRoute = typeof ROUTES.TABS | AuthRoute;
+
+export function isAuthRoute(route: string): boolean {
+  const authRoutes = Object.values(ROUTES.AUTH).flatMap((value) => {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      return Object.values(value).flat();
+    }
+    return value;
+  });
+  return authRoutes.some((r) => {
+    if (typeof r === 'string') return r === route;
+    if (typeof r === 'object') return Object.values(r).some((v) => v === route);
+    return false;
+  });
+}

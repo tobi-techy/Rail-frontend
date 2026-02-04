@@ -63,7 +63,6 @@ export const useFonts = (): FontLoadingResult => {
 
       await Promise.race([fontLoadPromise, timeoutPromise]);
 
-      // Verify that fonts actually loaded
       const allFontsLoaded = FontValidation.areAllCustomFontsLoaded();
       if (!allFontsLoaded && __DEV__) {
         console.warn('[useFonts] Some fonts may not have loaded properly');
@@ -73,14 +72,13 @@ export const useFonts = (): FontLoadingResult => {
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Unknown error occurred while loading fonts';
-      console.error('[useFonts] Font loading error:', errorMessage);
+      if (__DEV__) {
+        console.error('[useFonts] Font loading error:', errorMessage);
+      }
       setError(errorMessage);
       setState('error');
 
-      // In production, try to continue with system fonts after a delay
       if (!__DEV__) {
-        console.warn('[useFonts] Continuing with system fonts in production');
-        // Don't set error state in production, just log and continue
         setTimeout(() => setState('loaded'), 1000);
       }
     }

@@ -19,24 +19,50 @@ export interface SecurityCheckResult {
  * Perform comprehensive device security check
  */
 export async function checkDeviceSecurity(): Promise<SecurityCheckResult> {
-  const isJailbroken = JailMonkey.isJailBroken();
-  const isDebuggedMode = JailMonkey.isDebuggedMode();
-  const hookDetected = JailMonkey.hookDetected();
-  
-  // Android-specific checks
-  const isRooted = Platform.OS === 'android' ? JailMonkey.isJailBroken() : false;
-  const isOnExternalStorage = Platform.OS === 'android' ? JailMonkey.isOnExternalStorage() : false;
+  // Skip on iOS to avoid TurboModule crash
+  if (Platform.OS === 'ios') {
+    return {
+      isSecure: true,
+      isJailbroken: false,
+      isRooted: false,
+      isDebuggedMode: false,
+      isOnExternalStorage: false,
+      hookDetected: false,
+    };
+  }
 
-  const isSecure = !isJailbroken && !isRooted && !isDebuggedMode && !hookDetected;
+  try {
+    const isJailbroken = JailMonkey.isJailBroken();
+    const isDebuggedMode = JailMonkey.isDebuggedMode();
+    const hookDetected = JailMonkey.hookDetected();
 
-  return {
-    isSecure,
-    isJailbroken,
-    isRooted,
-    isDebuggedMode,
-    isOnExternalStorage,
-    hookDetected,
-  };
+    const isRooted = Platform.OS === 'android' ? JailMonkey.isJailBroken() : false;
+    const isOnExternalStorage =
+      Platform.OS === 'android' ? JailMonkey.isOnExternalStorage() : false;
+
+    const isSecure = !isJailbroken && !isRooted && !isDebuggedMode && !hookDetected;
+
+    return {
+      isSecure,
+      isJailbroken,
+      isRooted,
+      isDebuggedMode,
+      isOnExternalStorage,
+      hookDetected,
+    };
+  } catch (error) {
+    if (__DEV__) {
+      console.error('[deviceSecurity] Security check failed:', error);
+    }
+    return {
+      isSecure: true,
+      isJailbroken: false,
+      isRooted: false,
+      isDebuggedMode: false,
+      isOnExternalStorage: false,
+      hookDetected: false,
+    };
+  }
 }
 
 /**
@@ -64,9 +90,7 @@ export async function enforceDeviceSecurity(options?: {
     const message = `This device appears to be ${issues.join(', ')}. For your security, some features may be restricted.`;
 
     if (options?.allowContinue) {
-      Alert.alert('Security Warning', message, [
-        { text: 'I Understand', style: 'default' },
-      ]);
+      Alert.alert('Security Warning', message, [{ text: 'I Understand', style: 'default' }]);
     } else {
       Alert.alert('Security Warning', message, [
         { text: 'OK', style: 'default', onPress: options?.onCompromised },
@@ -83,6 +107,10 @@ export async function enforceDeviceSecurity(options?: {
  * Quick check if device is compromised (no UI)
  */
 export function isDeviceCompromised(): boolean {
-  if (__DEV__) return false;
-  return JailMonkey.isJailBroken() || JailMonkey.hookDetected();
+  if (__DEV__ || Platform.OS === 'ios') return false;
+  try {
+    return JailMonkey.isJailBroken() || JailMonkey.hookDetected();
+  } catch {
+    return false;
+  }
 }

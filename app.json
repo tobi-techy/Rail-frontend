@@ -4,10 +4,7 @@
     "slug": "rail",
     "version": "1.0.5",
     "scheme": "rail",
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "web": {
       "bundler": "metro",
       "output": "static",
@@ -23,7 +20,7 @@
         "@sentry/react-native/expo",
         {
           "organization": "rail-money",
-          "project": "rail-mobile"
+          "project": "react-native"
         }
       ],
       "expo-web-browser",
@@ -36,9 +33,7 @@
     "orientation": "portrait",
     "icon": "./assets/app-icon/app-icon.png",
     "userInterfaceStyle": "light",
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "splash": {
       "backgroundColor": "#FF5A00"
     },
@@ -49,15 +44,12 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSFaceIDUsageDescription": "Use Face ID to authenticate and secure your account",
         "NSCameraUsageDescription": "Camera access is required for QR code scanning",
-        "UIRequiredDeviceCapabilities": [
-          "armv7"
-        ],
-        "UISupportedInterfaceOrientations": [
-          "UIInterfaceOrientationPortrait"
-        ],
+        "UIRequiredDeviceCapabilities": ["armv7"],
+        "UISupportedInterfaceOrientations": ["UIInterfaceOrientationPortrait"],
         "UIStatusBarStyle": "UIStatusBarStyleDefault"
       },
-      "icon": "./assets/app-icon/app-icon.png"
+      "icon": "./assets/app-icon/app-icon.png",
+      "appleTeamId": "A239A6TG6R"
     },
     "android": {
       "adaptiveIcon": {
@@ -65,10 +57,7 @@
         "backgroundColor": "#FF5A00"
       },
       "package": "com.railmoney.rail",
-      "permissions": [
-        "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
-      ]
+      "permissions": ["android.permission.USE_BIOMETRIC", "android.permission.USE_FINGERPRINT"]
     },
     "extra": {
       "router": {},
