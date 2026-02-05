@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -43,7 +43,6 @@ export default function Layout() {
   const [showSplash, setShowSplash] = useState(true);
   const [splashStartTime] = useState(() => Date.now());
   const [securityChecked, setSecurityChecked] = useState(false);
-  const [storeHydrated, setStoreHydrated] = useState(false);
 
   useProtectedRoute();
 
@@ -53,77 +52,49 @@ export default function Layout() {
     });
   }, []);
 
+  // Unified splash logic: wait for fonts, security, and min duration
   useEffect(() => {
-    if (SPLASH_DEBUG) {
-      console.log('[splash] fontsLoaded:', fontsLoaded, 'fontError:', fontError);
+    const fontsReady = fontsLoaded || fontError;
+    if (!fontsReady || !securityChecked) return;
+
+    const elapsed = Date.now() - splashStartTime;
+    const remaining = SPLASH_MIN_DURATION_MS - elapsed;
+
+    if (remaining <= 0) {
+      if (SPLASH_DEBUG) console.log('[splash] Ready, hiding immediately');
+      setShowSplash(false);
+    } else {
+      if (SPLASH_DEBUG) console.log('[splash] Ready, waiting', remaining, 'ms');
+      const timer = setTimeout(() => setShowSplash(false), remaining);
+      return () => clearTimeout(timer);
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, securityChecked, splashStartTime]);
 
+  // Max timeout fallback
   useEffect(() => {
-    const minSplashTimeout = setTimeout(() => {
-      if (SPLASH_DEBUG) console.log('[splash] Minimum duration elapsed');
-    }, SPLASH_MIN_DURATION_MS);
-
-    const maxSplashTimeout = setTimeout(() => {
-      if (SPLASH_DEBUG) console.log('[splash] Maximum duration reached, forcing hide');
+    const timer = setTimeout(() => {
+      if (SPLASH_DEBUG) console.log('[splash] Max duration reached, forcing hide');
       setShowSplash(false);
     }, SPLASH_MAX_DURATION_MS);
-
-    return () => {
-      clearTimeout(minSplashTimeout);
-      clearTimeout(maxSplashTimeout);
-    };
+    return () => clearTimeout(timer);
   }, []);
 
+  // Initialize session after splash
   useEffect(() => {
-    const elapsed = Date.now() - splashStartTime;
-    const minTimeElapsed = elapsed >= SPLASH_MIN_DURATION_MS;
-    const fontsReady = fontsLoaded || fontError;
-
-    if (fontsReady && minTimeElapsed) {
-      if (SPLASH_DEBUG) {
-        console.log('[splash] Ready to hide:', { fontsLoaded, fontError, elapsed });
-      }
-      setShowSplash(false);
+    if (showSplash) return;
+    try {
+      SessionManager.initialize();
+    } catch (error) {
+      if (__DEV__) console.error('[Layout] SessionManager init failed:', error);
     }
-  }, [fontsLoaded, fontError, splashStartTime]);
-
-  useEffect(() => {
-    const fontsReady = fontsLoaded || fontError;
-    if (!fontsReady || !securityChecked || showSplash) return;
-
-    const initializeSession = async () => {
-      try {
-        SessionManager.initialize();
-        setStoreHydrated(true);
-      } catch (error) {
-        if (__DEV__) {
-          console.error('[Layout] SessionManager initialization failed:', error);
-        }
-        setStoreHydrated(true);
-      }
-    };
-
-    initializeSession();
-  }, [fontsLoaded, fontError, securityChecked, showSplash]);
-
-  const handleSplashComplete = useCallback(() => {
-    if (SPLASH_DEBUG) console.log('[splash] onAnimationComplete -> hiding splash');
-    setShowSplash(false);
-  }, []);
+  }, [showSplash]);
 
   const fontsReady = fontsLoaded || fontError;
-  const elapsed = Date.now() - splashStartTime;
-  const shouldShowSplash = showSplash && (!fontsReady || elapsed < SPLASH_MIN_DURATION_MS);
 
-  if (shouldShowSplash) {
-    const isSplashReady = fontsReady && elapsed >= SPLASH_MIN_DURATION_MS;
+  if (showSplash) {
     return (
       <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
-        <SplashScreen
-          isReady={isSplashReady ? true : false}
-          onAnimationComplete={handleSplashComplete}
-        />
+        <SplashScreen isReady={!!(fontsReady && securityChecked)} onAnimationComplete={() => {}} />
       </View>
     );
   }
