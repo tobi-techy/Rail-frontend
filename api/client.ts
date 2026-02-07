@@ -59,7 +59,10 @@ interface ApiClient {
 const AUTH_ENDPOINTS = [
   '/v1/auth/login',
   '/v1/auth/register',
-  '/v1/auth/verify-code',
+  '/v1/auth/verify',
+  '/v1/auth/resend-code',
+  '/v1/auth/forgot-password',
+  '/v1/auth/reset-password',
   '/v1/auth/refresh',
   '/v1/security/passcode/verify',
 ];

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ViewProps } from 'react-native';
 import { Fingerprint, Trash } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
+import { useKeypadFeedback } from '@/hooks/useKeypadFeedback';
 
 const BACKSPACE_KEY = 'backspace';
 const FINGERPRINT_KEY = 'fingerprint';
@@ -33,10 +33,11 @@ export const Keypad: React.FC<KeypadProps> = ({
 }) => {
   const isDark = variant === 'dark';
   const iconColor = isDark ? '#fff' : '#121212';
+  const triggerFeedback = useKeypadFeedback();
 
   const handlePress = (key: KeypadKey) => {
     if (disabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerFeedback();
     onKeyPress(key);
   };
 
@@ -66,7 +67,10 @@ export const Keypad: React.FC<KeypadProps> = ({
                 ) : isFingerprint ? (
                   <Fingerprint size={24} color={iconColor} />
                 ) : (
-                  <Text className={`font-subtitle text-headline-2 ${isDark ? 'text-white' : 'text-text-primary'}`}>{key}</Text>
+                  <Text
+                    className={`font-subtitle text-headline-2 ${isDark ? 'text-white' : 'text-text-primary'}`}>
+                    {key}
+                  </Text>
                 )}
               </TouchableOpacity>
             );

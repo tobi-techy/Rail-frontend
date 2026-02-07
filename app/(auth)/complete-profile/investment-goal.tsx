@@ -1,6 +1,7 @@
 import React from 'react';
 import { SelectionScreen } from '@/components';
 import { ROUTES } from '@/constants/routes';
+import { useAuthStore } from '@/stores/authStore';
 
 const GOALS = [
   { id: 'grow-wealth', label: 'Grow my wealth', desc: 'Long-term investing' },
@@ -11,12 +12,19 @@ const GOALS = [
 ];
 
 export default function InvestmentGoal() {
+  const registrationData = useAuthStore((state) => state.registrationData);
+  const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
+
   return (
     <SelectionScreen
       title="Investment Goal"
       subtitle="What's your primary goal?"
       options={GOALS}
       nextRoute={ROUTES.AUTH.COMPLETE_PROFILE.INVESTMENT_EXPERIENCE}
+      initialSelected={registrationData.investmentGoal}
+      onNext={(selectedId) => {
+        updateRegistrationData({ investmentGoal: selectedId });
+      }}
     />
   );
 }

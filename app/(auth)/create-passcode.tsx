@@ -19,7 +19,7 @@ export default function CreatePasscodeScreen() {
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1">
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" />
         <PasscodeInput
           title="Create your PIN"
           subtitle="Choose a 4-digit PIN to secure your account"
@@ -28,7 +28,6 @@ export default function CreatePasscodeScreen() {
           onValueChange={setPasscode}
           onComplete={handlePasscodeComplete}
           autoSubmit
-          variant="dark"
         />
       </SafeAreaView>
     </AuthGradient>

@@ -5,35 +5,39 @@ import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { PhoneNumberInput, AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function Phone() {
-  const [phone, setPhone] = useState('');
+  const registrationData = useAuthStore((state) => state.registrationData);
+  const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
+  const [phone, setPhone] = useState(registrationData.phone || '');
+
+  const handleNext = () => {
+    updateRegistrationData({ phone: phone.trim() });
+    router.push(ROUTES.AUTH.COMPLETE_PROFILE.PROFILE_MILESTONE as any);
+  };
 
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1" edges={['top']}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" />
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-display text-[60px] text-white">Phone Number</Text>
-              <Text className="font-body-medium mt-2 text-[14px] text-white/70">
+              <Text className="font-display text-[60px] text-black">Phone Number</Text>
+              <Text className="font-body-medium mt-2 text-[14px] text-black/60">
                 Add a phone number (Optional)
               </Text>
             </View>
           </StaggeredChild>
 
           <StaggeredChild index={1}>
-            <PhoneNumberInput label="Phone Number" value={phone} onChangeText={setPhone} variant="dark" />
+            <PhoneNumberInput label="Phone Number" value={phone} onChangeText={setPhone} />
           </StaggeredChild>
 
           <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button
-                title="Next"
-                onPress={() => router.push(ROUTES.AUTH.COMPLETE_PROFILE.PROFILE_MILESTONE as any)}
-                variant="black"
-              />
+              <Button title="Next" onPress={handleNext} />
             </View>
           </StaggeredChild>
         </View>

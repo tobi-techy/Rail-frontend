@@ -269,7 +269,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             accessToken: response.accessToken,
             refreshToken: response.refreshToken,
             onboardingStatus: response.user.onboardingStatus || null,
-            hasPasscode: response.user.hasPasscode || false,
+            // Passcode status is fetched from /v1/security/passcode, not user payload.
+            hasPasscode: false,
             lastActivityAt: now.toISOString(),
             tokenIssuedAt: now.toISOString(),
             tokenExpiresAt: response.expiresAt || expiresAt.toISOString(),
@@ -332,21 +333,18 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
       register: async (email: string, password: string, name: string) => {
         // Validate inputs
-        if (!email || !password) {
-          const error = new Error('Email and password are required');
+        if (!email) {
+          const error = new Error('Email is required');
           set({ error: error.message, isLoading: false });
           throw error;
         }
 
-        if (password.length < 8) {
-          const error = new Error('Password must be at least 8 characters');
-          set({ error: error.message, isLoading: false });
-          throw error;
-        }
+        void password;
+        void name;
 
         set({ isLoading: true, error: null });
         try {
-          const response = await authService.register({ email, password });
+          const response = await authService.register({ email });
 
           if (!response.identifier && !email) {
             throw new Error('Invalid response from registration service');
@@ -381,10 +379,14 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         set({ isLoading: true });
         try {
           const response = await authService.refreshToken({ refreshToken });
+          const nextTokenExpiry = response.expiresAt
+            ? new Date(response.expiresAt).toISOString()
+            : get().tokenExpiresAt;
 
           set({
             accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
+            tokenExpiresAt: nextTokenExpiry,
+            error: null,
             isLoading: false,
           });
         } catch (error) {

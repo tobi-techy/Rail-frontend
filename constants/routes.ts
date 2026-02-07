@@ -4,6 +4,7 @@ export const ROUTES = {
     SIGNIN: '/(auth)/signin',
     VERIFY_EMAIL: '/(auth)/verify-email',
     FORGOT_PASSWORD: '/(auth)/forgot-password',
+    RESET_PASSWORD: '/(auth)/reset-password',
     CREATE_PASSCODE: '/(auth)/create-passcode',
     CONFIRM_PASSCODE: '/(auth)/confirm-passcode',
     WELCOME_COMPLETE: '/(auth)/welcome-complete',

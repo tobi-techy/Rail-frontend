@@ -15,7 +15,6 @@ import type {
   VerifyCodeResponse,
   ResendCodeRequest,
   ResendCodeResponse,
-  VerifyEmailRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
 } from '../types';
@@ -25,9 +24,8 @@ const AUTH_ENDPOINTS = {
   REGISTER: '/v1/auth/register',
   LOGOUT: '/v1/auth/logout',
   REFRESH: '/v1/auth/refresh',
-  VERIFY_CODE: '/v1/auth/verify-code',
+  VERIFY: '/v1/auth/verify',
   RESEND_CODE: '/v1/auth/resend-code',
-  VERIFY_EMAIL: '/v1/auth/verify-email',
   FORGOT_PASSWORD: '/v1/auth/forgot-password',
   RESET_PASSWORD: '/v1/auth/reset-password',
 };
@@ -67,19 +65,12 @@ export const authService = {
   },
 
   /**
-   * Verify email with token (from email link)
-   */
-  async verifyEmail(data: VerifyEmailRequest): Promise<void> {
-    return apiClient.post(AUTH_ENDPOINTS.VERIFY_EMAIL, data);
-  },
-
-  /**
    * Verify email or phone with 6-digit code
    * Returns user info and JWT tokens upon successful verification
    * @returns User info with access and refresh tokens
    */
   async verifyCode(data: VerifyCodeRequest): Promise<VerifyCodeResponse> {
-    return apiClient.post<VerifyCodeResponse>(AUTH_ENDPOINTS.VERIFY_CODE, data);
+    return apiClient.post<VerifyCodeResponse>(AUTH_ENDPOINTS.VERIFY, data);
   },
 
   /**
@@ -109,7 +100,7 @@ export const authService = {
    * Get current authenticated user
    */
   async getCurrentUser(): Promise<any> {
-    return apiClient.get('/v1/auth/me');
+    return apiClient.get('/v1/users/me?include=onboarding');
   },
 };
 

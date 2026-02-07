@@ -14,7 +14,6 @@ import type {
   ResendCodeRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
-  User,
 } from '../types';
 
 /**
@@ -67,24 +66,28 @@ export function useRegister() {
  */
 export function useVerifyCode() {
   const TOKEN_EXPIRY_DAYS = 7;
-  const DEFAULT_ONBOARDING_STATUS = 'wallets_pending';
+  const DEFAULT_ONBOARDING_STATUS = 'started';
 
   return useMutation({
     mutationFn: (data: VerifyCodeRequest) => authService.verifyCode(data),
     onSuccess: (response) => {
+      if (!response.user || !response.accessToken || !response.refreshToken) {
+        useAuthStore.setState({ pendingVerificationEmail: null });
+        return;
+      }
+
       const now = new Date();
       const defaultExpiryTime = new Date(now.getTime() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-      const tokenExpiresAt = response.expiresAt 
-        ? new Date(response.expiresAt)
-        : defaultExpiryTime;
-      
+      const tokenExpiresAt = response.expiresAt ? new Date(response.expiresAt) : defaultExpiryTime;
+
       useAuthStore.setState({
         user: response.user,
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
         isAuthenticated: true,
         pendingVerificationEmail: null,
-        onboardingStatus: response.user.onboardingStatus || DEFAULT_ONBOARDING_STATUS,
+        onboardingStatus:
+          response.onboarding_status || response.user.onboardingStatus || DEFAULT_ONBOARDING_STATUS,
         lastActivityAt: now.toISOString(),
         tokenIssuedAt: now.toISOString(),
         tokenExpiresAt: tokenExpiresAt.toISOString(),
@@ -137,27 +140,6 @@ export function useResetPassword() {
     mutationFn: (data: ResetPasswordRequest) => authService.resetPassword(data),
   });
 }
-
-
-
-/**
- * Verify email mutation
- */
-export function useVerifyEmail() {
-  return useMutation({
-    mutationFn: (token: string) => authService.verifyEmail({ token }),
-    onSuccess: () => {
-      // Update user's email verified status
-      const currentUser = useAuthStore.getState().user;
-      if (currentUser) {
-        useAuthStore.setState({
-          user: { ...currentUser, emailVerified: true },
-        });
-      }
-    },
-  });
-}
-
 
 /**
  * Get current user query

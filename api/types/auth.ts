@@ -1,7 +1,10 @@
+import type { OnboardingStatusResponse } from './onboarding';
+
 // ============= Authentication Types =============
 
 export interface LoginRequest {
-  email: string;
+  email?: string; // Optional: required if phone not provided
+  phone?: string; // Optional: required if email not provided
   password: string;
 }
 
@@ -13,9 +16,8 @@ export interface LoginResponse {
 }
 
 export interface RegisterRequest {
-  email?: string;  // Optional: required if phone not provided
-  phone?: string;  // Optional: required if email not provided
-  password: string;
+  email?: string; // Optional: required if phone not provided
+  phone?: string; // Optional: required if email not provided
 }
 
 export interface RegisterResponse {
@@ -24,21 +26,26 @@ export interface RegisterResponse {
 }
 
 export interface VerifyCodeRequest {
-  email?: string;  // Optional: required if phone not provided
-  phone?: string;  // Optional: required if phone not provided
+  email?: string; // Optional: required if phone not provided
+  phone?: string; // Optional: required if phone not provided
   code: string;
 }
 
 export interface VerifyCodeResponse {
-  user: User;
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: string;
+  user?: User;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: string;
+  onboarding_status?: string;
+  next_step?: string;
+  onboarding?: OnboardingStatusResponse;
+  message?: string;
+  verified?: boolean;
 }
 
 export interface ResendCodeRequest {
-  email?: string;  // Optional: required if phone not provided
-  phone?: string;  // Optional: required if email not provided
+  email?: string; // Optional: required if phone not provided
+  phone?: string; // Optional: required if email not provided
 }
 
 export interface ResendCodeResponse {
@@ -63,13 +70,14 @@ export interface User {
   emailVerified: boolean;
   phoneVerified: boolean;
   kycStatus: 'pending' | 'processing' | 'approved' | 'rejected' | 'expired';
-  onboardingStatus: 'started' | 'wallets_pending' | 'kyc_pending' | 'kyc_approved' | 'kyc_rejected' | 'completed';
-  hasPasscode?: boolean;
+  onboardingStatus:
+    | 'started'
+    | 'wallets_pending'
+    | 'kyc_pending'
+    | 'kyc_approved'
+    | 'kyc_rejected'
+    | 'completed';
   createdAt: string;
-}
-
-export interface VerifyEmailRequest {
-  token: string;
 }
 
 export interface ForgotPasswordRequest {
@@ -78,7 +86,7 @@ export interface ForgotPasswordRequest {
 
 export interface ResetPasswordRequest {
   token: string;
-  newPassword: string;
+  password: string;
 }
 
 export interface ChangePasswordRequest {

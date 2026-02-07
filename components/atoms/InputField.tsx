@@ -19,7 +19,7 @@ interface InputFieldProps extends Omit<TextInputProps, 'onFocus' | 'onBlur'> {
   onTogglePasswordVisibility?: () => void;
   onFocus?: (e: NativeSyntheticEvent<any>) => void;
   onBlur?: (e: NativeSyntheticEvent<any>) => void;
-  variant?: 'light' | 'dark';
+  variant?: 'light' | 'dark' | 'blended';
 }
 
 export const InputField = forwardRef<TextInput, InputFieldProps>(
@@ -37,13 +37,14 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
       onTogglePasswordVisibility,
       onFocus,
       onBlur,
-      variant = 'light',
+      variant = 'blended',
       ...props
     },
     ref
   ) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const isDark = variant === 'dark';
+    const isBlended = variant === 'blended';
 
     const getKeyboardType = () => {
       switch (type) {
@@ -69,6 +70,16 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
       onBlur?.(e);
     };
 
+    const getContainerStyle = () => {
+      if (isDark) {
+        return `border-b bg-transparent py-3 ${isFocused ? 'border-white' : hasError ? 'border-destructive' : 'border-white/30'}`;
+      }
+      if (isBlended) {
+        return `h-[56px] rounded-2xl bg-neutral-100 px-4 ${isFocused ? 'bg-neutral-200' : ''} ${hasError ? 'bg-red-50' : ''}`;
+      }
+      return `h-[52px] rounded-sm border bg-surface px-4 ${isFocused ? 'border-primary-accent' : hasError ? 'border-destructive' : 'border-transparent'}`;
+    };
+
     return (
       <View className={isDark ? 'mb-2' : 'mb-4'}>
         <View className="mb-1 flex-row">
@@ -85,20 +96,7 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
           )}
         </View>
 
-        <View
-          className={`flex-row items-center ${
-            isDark ? 'border-b bg-transparent py-3' : 'h-[52px] rounded-sm border bg-surface px-4'
-          } ${
-            isFocused
-              ? isDark
-                ? 'border-white'
-                : 'border-primary-accent'
-              : hasError
-                ? 'border-destructive'
-                : isDark
-                  ? 'border-white/30'
-                  : 'border-transparent'
-          }`}>
+        <View className={`flex-row items-center ${getContainerStyle()}`}>
           {icon && (
             <Ionicons
               name={icon}
@@ -113,7 +111,7 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
             value={value}
             onChangeText={onChangeText}
             placeholder={placeholder}
-            placeholderTextColor={isDark ? 'rgba(255,255,255,0.5)' : '#757575'}
+            placeholderTextColor={isDark ? 'rgba(255,255,255,0.5)' : '#9CA3AF'}
             keyboardType={getKeyboardType()}
             autoCapitalize={type === 'email' ? 'none' : 'sentences'}
             autoCorrect={false}

@@ -7,7 +7,12 @@ import { AuthGradient, StaggeredChild, Confetti } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { MOTION } from '@/theme/motion';
 import DataExploration from '@/assets/Icons/data-exploration-20.svg';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withDelay } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withDelay,
+} from 'react-native-reanimated';
 
 export default function ProfileMilestone() {
   const iconScale = useSharedValue(0);
@@ -26,24 +31,25 @@ export default function ProfileMilestone() {
     <AuthGradient>
       <Confetti />
       <SafeAreaView className="flex-1" edges={['top']}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" />
         <View className="flex-1 px-6 pt-4">
           <View className="flex-1 items-center justify-center">
             <StaggeredChild index={0}>
               <Animated.View style={iconStyle} className="mb-8">
-                <DataExploration width={180} height={180} fill="#fff" />
+                <DataExploration width={180} height={180} fill="#000" />
               </Animated.View>
             </StaggeredChild>
 
             <StaggeredChild index={1}>
-              <Text className="text-center font-display text-[44px] leading-tight text-white">
+              <Text className="text-center font-display text-[44px] leading-tight text-black">
                 Great progress!
               </Text>
             </StaggeredChild>
 
             <StaggeredChild index={2}>
-              <Text className="mt-4 px-4 text-center font-body text-[16px] leading-relaxed text-white/70">
-                You&apos;re doing amazing! Just a few more{'\n'}questions to build your personalized{'\n'}investing profile.
+              <Text className="mt-4 px-4 text-center font-body text-[16px] leading-relaxed text-black/60">
+                You&apos;re doing amazing! Just a few more{'\n'}questions to build your personalized
+                {'\n'}investing profile.
               </Text>
             </StaggeredChild>
           </View>
@@ -53,7 +59,6 @@ export default function ProfileMilestone() {
               <Button
                 title="Continue"
                 onPress={() => router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_PASSWORD as any)}
-                variant="black"
               />
             </View>
           </StaggeredChild>

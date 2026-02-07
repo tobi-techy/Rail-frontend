@@ -10,6 +10,7 @@ interface AuthScreenProps {
   children: ReactNode;
   buttonTitle?: string;
   buttonDisabled?: boolean;
+  buttonLoading?: boolean;
   onButtonPress?: () => void;
   scrollable?: boolean;
   showButton?: boolean;
@@ -21,6 +22,7 @@ export const AuthScreen = ({
   children,
   buttonTitle = 'Next',
   buttonDisabled = false,
+  buttonLoading = false,
   onButtonPress,
   scrollable = false,
   showButton = true,
@@ -29,9 +31,9 @@ export const AuthScreen = ({
     <View className="flex-1 px-6 pt-4">
       <StaggeredChild index={0}>
         <View className="mb-8 mt-4">
-          <Text className="font-display text-[60px] leading-[1.05] text-white">{title}</Text>
+          <Text className="font-display text-[60px] leading-[1.05] text-black">{title}</Text>
           {subtitle && (
-            <Text className="font-body-medium mt-2 text-[14px] text-white/70">{subtitle}</Text>
+            <Text className="font-body-medium mt-2 text-[14px] text-black/60">{subtitle}</Text>
           )}
         </View>
       </StaggeredChild>
@@ -44,8 +46,8 @@ export const AuthScreen = ({
             <Button
               title={buttonTitle}
               onPress={onButtonPress}
-              variant="black"
               disabled={buttonDisabled}
+              loading={buttonLoading}
             />
           </View>
         </StaggeredChild>
@@ -56,7 +58,7 @@ export const AuthScreen = ({
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1" edges={['top']}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" />
         {scrollable ? (
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

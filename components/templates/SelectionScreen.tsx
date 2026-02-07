@@ -17,6 +17,10 @@ interface SelectionScreenProps {
   options: SelectionOption[];
   nextRoute: string;
   buttonTitle?: string;
+  initialSelected?: string;
+  onNext?: (selectedId: string) => void;
+  buttonLoading?: boolean;
+  buttonDisabled?: boolean;
 }
 
 export const SelectionScreen = ({
@@ -25,10 +29,21 @@ export const SelectionScreen = ({
   options,
   nextRoute,
   buttonTitle = 'Next',
+  initialSelected = '',
+  onNext,
+  buttonLoading = false,
+  buttonDisabled = false,
 }: SelectionScreenProps) => {
-  const [selected, setSelected] = useState('');
+  const [selected, setSelected] = useState(initialSelected);
 
   const handleNext = () => {
+    if (!selected) return;
+
+    if (onNext) {
+      onNext(selected);
+      return;
+    }
+
     router.push(nextRoute as any);
   };
 
@@ -37,22 +52,24 @@ export const SelectionScreen = ({
       title={title}
       subtitle={subtitle}
       buttonTitle={buttonTitle}
-      onButtonPress={handleNext}>
+      onButtonPress={handleNext}
+      buttonLoading={buttonLoading}
+      buttonDisabled={!selected || buttonDisabled}>
       <View className="gap-y-3">
         {options.map((option, index) => (
           <StaggeredChild key={option.id} index={index + 1} delay={40}>
             <Pressable
               onPress={() => setSelected(option.id)}
-              className="flex-row items-center justify-between border-b border-white/20 py-4">
+              className="flex-row items-center justify-between border-b border-black/10 py-4">
               <View className="flex-1 pr-4">
-                <Text className="font-subtitle text-[16px] text-white">{option.label}</Text>
+                <Text className="font-subtitle text-[16px] text-black">{option.label}</Text>
                 {option.desc && (
-                  <Text className="font-body text-[13px] text-white/50">{option.desc}</Text>
+                  <Text className="font-body text-[13px] text-black/50">{option.desc}</Text>
                 )}
               </View>
               {selected === option.id && (
-                <View className="h-6 w-6 items-center justify-center rounded-full bg-white">
-                  <Check size={14} color="#000" strokeWidth={3} />
+                <View className="h-6 w-6 items-center justify-center rounded-full bg-black">
+                  <Check size={14} color="#fff" strokeWidth={3} />
                 </View>
               )}
             </Pressable>

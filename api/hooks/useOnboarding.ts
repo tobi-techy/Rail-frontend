@@ -3,42 +3,23 @@
  * React Query hooks for onboarding operations
  */
 
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { onboardingService } from '../services';
-import { queryKeys } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
-import type {
-  OnboardingStartRequest,
-  KYCVerificationRequest,
-} from '../types';
+import type { OnboardingCompleteRequest, KYCVerificationRequest } from '../types';
 
 /**
- * Start onboarding mutation
+ * Complete onboarding mutation
  */
-export function useOnboardingStart() {
+export function useOnboardingComplete() {
   return useMutation({
-    mutationFn: (data: OnboardingStartRequest) => onboardingService.start(data),
+    mutationFn: (data: OnboardingCompleteRequest) => onboardingService.complete(data),
     onSuccess: (response) => {
       useAuthStore.setState({
-        onboardingStatus: response.onboardingStatus,
-        currentOnboardingStep: response.nextStep,
+        onboardingStatus: response.onboarding?.onboardingStatus ?? null,
+        currentOnboardingStep: response.onboarding?.currentStep ?? null,
       });
     },
-  });
-}
-
-/**
- * Get onboarding status query
- */
-export function useOnboardingStatus() {
-  const user = useAuthStore((state) => state.user);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-
-  return useQuery({
-    queryKey: queryKeys.user.all,
-    queryFn: () => onboardingService.getStatus(user?.id),
-    enabled: isAuthenticated && !!user?.id,
-    staleTime: 30 * 1000, // 30 seconds
   });
 }
 

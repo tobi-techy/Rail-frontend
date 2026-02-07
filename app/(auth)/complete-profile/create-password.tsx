@@ -1,26 +1,44 @@
 import React, { useState } from 'react';
-import { View, Text, StatusBar } from 'react-native';
+import { View, Text, StatusBar, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { InputField, AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function CreatePassword() {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const registrationData = useAuthStore((state) => state.registrationData);
+  const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
+  const [password, setPassword] = useState(registrationData.password || '');
+  const [confirmPassword, setConfirmPassword] = useState(registrationData.password || '');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleNext = () => {
+    if (password.length < 12) {
+      Alert.alert('Weak Password', 'Password must be at least 12 characters');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Password Mismatch', 'Passwords do not match');
+      return;
+    }
+
+    updateRegistrationData({ password });
+    router.push(ROUTES.AUTH.COMPLETE_PROFILE.INVESTMENT_GOAL as any);
+  };
 
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1" edges={['top']}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" />
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-display text-[60px] text-white">Create Password</Text>
-              <Text className="font-body-medium mt-2 text-[14px] text-white/70">
+              <Text className="font-display text-[60px] text-black">Create Password</Text>
+              <Text className="font-body-medium mt-2 text-[14px] text-black/60">
                 Secure your account
               </Text>
             </View>
@@ -30,11 +48,10 @@ export default function CreatePassword() {
             <StaggeredChild index={1}>
               <InputField
                 label="Password"
-                placeholder="Min 8 characters"
+                placeholder="Min 12 characters"
                 value={password}
                 onChangeText={setPassword}
                 type="password"
-                variant="dark"
                 isPasswordVisible={showPassword}
                 onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
               />
@@ -47,7 +64,6 @@ export default function CreatePassword() {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 type="password"
-                variant="dark"
                 isPasswordVisible={showConfirm}
                 onTogglePasswordVisibility={() => setShowConfirm(!showConfirm)}
               />
@@ -56,11 +72,7 @@ export default function CreatePassword() {
 
           <StaggeredChild index={3} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button
-                title="Next"
-                onPress={() => router.push(ROUTES.AUTH.COMPLETE_PROFILE.INVESTMENT_GOAL as any)}
-                variant="black"
-              />
+              <Button title="Next" onPress={handleNext} />
             </View>
           </StaggeredChild>
         </View>

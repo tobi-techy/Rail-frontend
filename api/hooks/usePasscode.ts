@@ -35,15 +35,10 @@ export function usePasscodeStatus() {
 export function useCreatePasscode() {
   return useMutation({
     mutationFn: (data: CreatePasscodeRequest) => passcodeService.createPasscode(data),
-    onSuccess: (response) => {
-      // Update user state to reflect passcode creation
-      const currentUser = useAuthStore.getState().user;
-      if (currentUser) {
-        useAuthStore.setState({
-          user: { ...currentUser, hasPasscode: true },
-          hasPasscode: true,
-        });
-      }
+    onSuccess: () => {
+      useAuthStore.setState({
+        hasPasscode: true,
+      });
     },
   });
 }
@@ -60,40 +55,40 @@ export function useVerifyPasscode() {
     onSuccess: (response) => {
       if (response.verified) {
         const now = new Date();
-        
+
         // Store all tokens in a single setState call to ensure atomicity
         const updates: any = {
           isAuthenticated: true,
           lastActivityAt: now.toISOString(),
           tokenIssuedAt: now.toISOString(),
         };
-        
+
         // Add authentication tokens (for login flow)
         if (response.accessToken && response.refreshToken) {
           console.log('[useVerifyPasscode] Storing access and refresh tokens');
           updates.accessToken = response.accessToken;
           updates.refreshToken = response.refreshToken;
-          
+
           // Set token expiry (7 days or from response)
-          const tokenExpiresAt = response.expiresAt 
+          const tokenExpiresAt = response.expiresAt
             ? new Date(response.expiresAt)
             : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
           updates.tokenExpiresAt = tokenExpiresAt.toISOString();
         }
-        
+
         // Add passcode session tokens (for withdrawal/sensitive operations)
         if (response.passcodeSessionToken && response.passcodeSessionExpiresAt) {
           console.log('[useVerifyPasscode] Storing passcode session tokens');
           updates.passcodeSessionToken = response.passcodeSessionToken;
           updates.passcodeSessionExpiresAt = response.passcodeSessionExpiresAt;
         }
-        
+
         console.log('[useVerifyPasscode] Applying updates to auth store:', {
           hasAccessToken: !!updates.accessToken,
           hasRefreshToken: !!updates.refreshToken,
           hasPasscodeSessionToken: !!updates.passcodeSessionToken,
         });
-        
+
         // Apply all updates atomically
         useAuthStore.setState(updates);
       }

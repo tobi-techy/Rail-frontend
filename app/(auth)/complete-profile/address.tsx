@@ -1,28 +1,54 @@
 import React, { useState } from 'react';
-import { View, Text, StatusBar, ScrollView } from 'react-native';
+import { View, Text, StatusBar, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { InputField, CountryPicker, AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function Address() {
+  const registrationData = useAuthStore((state) => state.registrationData);
+  const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
   const [formData, setFormData] = useState({
-    street: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: '',
+    street: registrationData.street || '',
+    city: registrationData.city || '',
+    state: registrationData.state || '',
+    postalCode: registrationData.postalCode || '',
+    countryName: registrationData.country || '',
+    countryCode: registrationData.country || '',
   });
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleNext = () => {
+    if (
+      !formData.street ||
+      !formData.city ||
+      !formData.state ||
+      !formData.postalCode ||
+      !formData.countryCode
+    ) {
+      Alert.alert('Missing Information', 'Please complete all address fields before continuing');
+      return;
+    }
+
+    updateRegistrationData({
+      street: formData.street.trim(),
+      city: formData.city.trim(),
+      state: formData.state.trim(),
+      postalCode: formData.postalCode.trim(),
+      country: formData.countryCode,
+    });
+    router.push(ROUTES.AUTH.COMPLETE_PROFILE.PHONE as any);
+  };
+
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1" edges={['top']}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" />
         <ScrollView
           className="flex-1"
           contentContainerClassName="flex-grow"
@@ -31,8 +57,8 @@ export default function Address() {
           <View className="flex-1 px-6 pt-4">
             <StaggeredChild index={0}>
               <View className="mb-8 mt-4">
-                <Text className="font-display text-[60px] text-white">Address</Text>
-                <Text className="font-body-medium mt-2 text-[14px] text-white/70">
+                <Text className="font-display text-[60px] text-black">Address</Text>
+                <Text className="font-body-medium mt-2 text-[14px] text-black/60">
                   Where do you live?
                 </Text>
               </View>
@@ -45,7 +71,6 @@ export default function Address() {
                   placeholder="123 Main St"
                   value={formData.street}
                   onChangeText={(value) => updateField('street', value)}
-                  variant="dark"
                   autoCapitalize="words"
                 />
               </StaggeredChild>
@@ -58,7 +83,6 @@ export default function Address() {
                       placeholder="City"
                       value={formData.city}
                       onChangeText={(value) => updateField('city', value)}
-                      variant="dark"
                       autoCapitalize="words"
                     />
                   </View>
@@ -68,7 +92,6 @@ export default function Address() {
                       placeholder="State"
                       value={formData.state}
                       onChangeText={(value) => updateField('state', value)}
-                      variant="dark"
                       autoCapitalize="characters"
                     />
                   </View>
@@ -84,15 +107,19 @@ export default function Address() {
                       value={formData.postalCode}
                       onChangeText={(value) => updateField('postalCode', value)}
                       keyboardType="number-pad"
-                      variant="dark"
                     />
                   </View>
                   <View className="flex-1">
                     <CountryPicker
                       label="Country"
-                      value={formData.country}
-                      onSelect={(country) => updateField('country', country.name)}
-                      variant="dark"
+                      value={formData.countryName}
+                      onSelect={(country) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          countryName: country.name,
+                          countryCode: country.code,
+                        }))
+                      }
                     />
                   </View>
                 </View>
@@ -101,11 +128,7 @@ export default function Address() {
 
             <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
               <View className="pb-4 pt-8">
-                <Button
-                  title="Next"
-                  onPress={() => router.push(ROUTES.AUTH.COMPLETE_PROFILE.PHONE as any)}
-                  variant="black"
-                />
+                <Button title="Next" onPress={handleNext} />
               </View>
             </StaggeredChild>
           </View>

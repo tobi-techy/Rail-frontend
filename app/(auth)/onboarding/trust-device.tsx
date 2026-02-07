@@ -15,17 +15,17 @@ export default function TrustDeviceScreen() {
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1">
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" />
         <View className="flex-1 px-6 pb-8">
           <View className="mt-2 flex-row items-center justify-between">
-            <HeaderAction icon="x" accessibilityLabel="Close onboarding" onPress={skip} variant="dark" />
-            <HeaderAction icon="help-circle" accessibilityLabel="Learn more" onPress={() => {}} variant="dark" />
+            <HeaderAction icon="x" accessibilityLabel="Close onboarding" onPress={skip} />
+            <HeaderAction icon="help-circle" accessibilityLabel="Learn more" onPress={() => {}} />
           </View>
 
           <StaggeredChild index={0}>
             <View className="mt-16">
-              <Text className="font-heading text-[34px] text-white">Trust this device?</Text>
-              <Text className="mt-4 font-body text-base leading-6 text-white/70">
+              <Text className="font-heading text-[34px] text-black">Trust this device?</Text>
+              <Text className="mt-4 font-body text-base leading-6 text-black/60">
                 We won&apos;t ask to verify your identity again if this device is trusted. Choose
                 &apos;Always trust&apos; only on personal devices you control.
               </Text>
@@ -33,14 +33,16 @@ export default function TrustDeviceScreen() {
           </StaggeredChild>
 
           <StaggeredChild index={1}>
-            <View className="mt-12 rounded-3xl border border-white/10 bg-white/10 p-5">
+            <View className="mt-12 rounded-3xl border border-black/10 bg-black/5 p-5">
               <View className="mb-4 flex-row items-center gap-x-3">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-white/20">
-                  <Feather name="shield" size={20} color="#fff" />
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-black/10">
+                  <Feather name="shield" size={20} color="#000" />
                 </View>
-                <Text className="font-body-semibold text-base text-white">Extra secure by design</Text>
+                <Text className="font-body-semibold text-base text-black">
+                  Extra secure by design
+                </Text>
               </View>
-              <Text className="font-body text-sm leading-6 text-white/70">
+              <Text className="font-body text-sm leading-6 text-black/60">
                 We encrypt device details and only trust it after successful identity confirmation.
                 You can manage trusted devices anytime in your security settings.
               </Text>
@@ -51,9 +53,9 @@ export default function TrustDeviceScreen() {
 
           <StaggeredChild index={2} delay={80}>
             <View className="gap-y-4">
-              <Button title="Always trust" onPress={goToNext} variant="black" />
+              <Button title="Always trust" onPress={goToNext} />
               <TouchableOpacity onPress={goToNext} accessibilityRole="button">
-                <Text className="text-center font-body text-base text-white/80">Trust once</Text>
+                <Text className="text-center font-body text-base text-black/60">Trust once</Text>
               </TouchableOpacity>
             </View>
           </StaggeredChild>

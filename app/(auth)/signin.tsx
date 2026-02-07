@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
 import { ROUTES, type AuthRoute } from '@/constants/routes';
+import { useLogin } from '@/api/hooks/useAuth';
 
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -21,10 +22,10 @@ export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const passwordRef = useRef<TextInput>(null);
+  const { mutate: login, isPending } = useLogin();
 
-  const handleSignIn = async () => {
+  const handleSignIn = () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please enter both email and password');
       return;
@@ -40,17 +41,30 @@ export default function SignIn() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      router.replace(ROUTES.TABS as any);
-    } finally {
-      setIsLoading(false);
-    }
+    login(
+      { email: email.trim().toLowerCase(), password },
+      {
+        onSuccess: (response) => {
+          const onboardingStatus = response.user?.onboardingStatus;
+
+          if (onboardingStatus === 'completed') {
+            router.replace(ROUTES.TABS as any);
+            return;
+          }
+
+          router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
+        },
+        onError: (error: any) => {
+          const message = error?.message || 'Invalid credentials';
+          Alert.alert('Sign In Failed', message);
+        },
+      }
+    );
   };
 
   return (
     <AuthGradient>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <KeyboardAwareScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -61,10 +75,10 @@ export default function SignIn() {
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
-              <Text className="font-display text-[60px] leading-[1.1] text-white">
+              <Text className="font-display text-[60px] leading-[1.1] text-black">
                 Welcome Back
               </Text>
-              <Text className="mt-2 font-body text-body text-white/70">Sign in to continue</Text>
+              <Text className="mt-2 font-body text-body text-black/60">Sign in to continue</Text>
             </View>
           </StaggeredChild>
 
@@ -76,7 +90,6 @@ export default function SignIn() {
                 value={email}
                 onChangeText={setEmail}
                 type="email"
-                variant="dark"
                 returnKeyType="next"
                 onSubmitEditing={() => passwordRef.current?.focus()}
                 blurOnSubmit={false}
@@ -91,7 +104,6 @@ export default function SignIn() {
                 value={password}
                 onChangeText={setPassword}
                 type="password"
-                variant="dark"
                 isPasswordVisible={showPassword}
                 onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
                 returnKeyType="done"
@@ -105,21 +117,21 @@ export default function SignIn() {
                 className="self-end"
                 accessibilityLabel="Forgot Password"
                 accessibilityHint="Navigate to reset your password">
-                <Text className="font-subtitle text-[13px] text-white/60">Forgot Password?</Text>
+                <Text className="font-subtitle text-[13px] text-black/50">Forgot Password?</Text>
               </TouchableOpacity>
             </StaggeredChild>
           </View>
 
           <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
-              <Button title="Sign In" onPress={handleSignIn} variant="black" loading={isLoading} />
+              <Button title="Sign In" onPress={handleSignIn} loading={isPending} />
               <TouchableOpacity
                 onPress={() => router.push(ROUTES.AUTH.INDEX)}
                 className="mt-4"
                 accessibilityLabel="Sign up"
                 accessibilityHint="Navigate to registration">
-                <Text className="text-center font-body text-[14px] text-white/70">
-                  New to Rail? <Text className="font-subtitle text-white underline">Sign Up</Text>
+                <Text className="text-center font-body text-[14px] text-black/60">
+                  New to Rail? <Text className="font-subtitle text-black underline">Sign Up</Text>
                 </Text>
               </TouchableOpacity>
             </View>

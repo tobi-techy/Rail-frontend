@@ -1,6 +1,6 @@
 import React, { forwardRef, useRef, useCallback } from 'react';
 import { Pressable, PressableProps, Text, ActivityIndicator, View, Animated } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 interface ButtonProps extends Omit<PressableProps, 'style'> {
   title: string;
@@ -12,6 +12,7 @@ interface ButtonProps extends Omit<PressableProps, 'style'> {
   disabled?: boolean;
   className?: string;
   enableHaptics?: boolean;
+  enableSound?: boolean;
   flex?: boolean;
 }
 
@@ -27,6 +28,7 @@ export const Button = forwardRef<View, ButtonProps>(
       disabled,
       className = '',
       enableHaptics = true,
+      enableSound = true,
       flex = false,
       onPress,
       ...props
@@ -34,16 +36,17 @@ export const Button = forwardRef<View, ButtonProps>(
     ref
   ) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
+    const triggerFeedback = useButtonFeedback(enableSound, enableHaptics);
 
     const handlePressIn = useCallback(() => {
-      if (enableHaptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      triggerFeedback();
       Animated.spring(scaleAnim, {
-        toValue: 0.96,
+        toValue: 0.97,
         useNativeDriver: true,
         speed: 50,
         bounciness: 4,
       }).start();
-    }, [scaleAnim, enableHaptics]);
+    }, [scaleAnim, triggerFeedback]);
 
     const handlePressOut = useCallback(() => {
       Animated.spring(scaleAnim, {

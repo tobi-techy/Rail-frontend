@@ -1,6 +1,5 @@
 import React from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, StyleSheet, ViewStyle } from 'react-native';
 
 interface AuthGradientProps {
   style?: ViewStyle;
@@ -8,18 +7,12 @@ interface AuthGradientProps {
 }
 
 export function AuthGradient({ style, children }: AuthGradientProps) {
-  return (
-    <LinearGradient
-      colors={['#000000', '#000000', '#000000', '#FF2E01']}
-      locations={[0, 0.3, 0.75, 1]}
-      style={[styles.gradient, style]}>
-      {children}
-    </LinearGradient>
-  );
+  return <View style={[styles.container, style]}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
-  gradient: {
+  container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
 });
