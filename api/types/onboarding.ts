@@ -18,12 +18,7 @@ export interface OnboardingCompleteRequest {
   country: string;
   address: OnboardingAddress;
   phone?: string;
-  ssn?: string;
   signedAgreementId?: string;
-  employmentStatus?: string;
-  yearlyIncome?: number;
-  userExperience?: string;
-  investmentGoals?: string[];
   email?: string;
 }
 

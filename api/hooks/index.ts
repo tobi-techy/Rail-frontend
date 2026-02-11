@@ -12,6 +12,9 @@ export * from './usePasscode';
 // Onboarding hooks
 export * from './useOnboarding';
 
+// KYC hooks
+export * from './useKYC';
+
 // Portfolio hooks
 export * from './usePortfolio';
 

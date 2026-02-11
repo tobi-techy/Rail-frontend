@@ -5,7 +5,7 @@
 
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosRequestConfig } from 'axios';
 import type { ApiError, ApiResponse, TransformedApiError } from './types';
-import { safeLog, safeError } from '../utils/logSanitizer';
+import { safeLog, safeError, safeWarn } from '../utils/logSanitizer';
 import { API_CONFIG } from './config';
 import { generateRequestId } from '../utils/requestId';
 import { useAuthStore } from '../stores/authStore';
@@ -31,7 +31,7 @@ import { useAuthStore } from '../stores/authStore';
 
 const SSL_PINNING_ENABLED = __DEV__
   ? false
-  : Boolean(process.env.EXPO_PUBLIC_SSL_PINNING_ENABLED) === true;
+  : process.env.EXPO_PUBLIC_SSL_PINNING_ENABLED !== 'false'; // Enabled by default in production
 
 const SSL_PINNING_CONFIG: Record<string, string[]> =
   SSL_PINNING_ENABLED && process.env.EXPO_PUBLIC_API_URL
@@ -64,6 +64,7 @@ const AUTH_ENDPOINTS = [
   '/v1/auth/forgot-password',
   '/v1/auth/reset-password',
   '/v1/auth/refresh',
+  '/v1/auth/social/login',
   '/v1/security/passcode/verify',
 ];
 
@@ -110,7 +111,7 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error: AxiosError) => {
-    safeError('[API Request Error]', error);
+    safeWarn('[API Request Error]', error);
     return Promise.reject(error);
   }
 );
@@ -177,7 +178,7 @@ axiosInstance.interceptors.response.use(
     }
 
     if (__DEV__) {
-      safeError('[API Error]', {
+      safeWarn('[API Error]', {
         url: error.config?.url,
         method: error.config?.method,
         status: error.response?.status,
@@ -204,13 +205,15 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
   }
 
   const { status, data } = error.response;
+  const details =
+    data?.details ?? data?.errors ?? data?.validationErrors ?? data?.fields ?? undefined;
 
   // Backend error with code and message
   if (data?.code && data?.message) {
     return {
       code: data.code,
       message: data.message,
-      details: data.details,
+      details,
       status,
       requestId: data.requestId || requestId,
     };
@@ -221,7 +224,7 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
     return {
       code: data.error.code || `HTTP_${status}`,
       message: data.error.message || getDefaultMessage(status),
-      details: data.error.details,
+      details: data.error.details ?? details,
       status,
       requestId,
     };
@@ -230,7 +233,7 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
   return {
     code: `HTTP_${status}`,
     message: data?.message || getDefaultMessage(status),
-    details: data?.details,
+    details,
     status,
     requestId,
   };

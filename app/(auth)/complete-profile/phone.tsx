@@ -14,7 +14,7 @@ export default function Phone() {
 
   const handleNext = () => {
     updateRegistrationData({ phone: phone.trim() });
-    router.push(ROUTES.AUTH.COMPLETE_PROFILE.PROFILE_MILESTONE as any);
+    router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_PASSWORD as any);
   };
 
   return (
@@ -24,8 +24,8 @@ export default function Phone() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-display text-[60px] text-black">Phone Number</Text>
-              <Text className="font-body-medium mt-2 text-[14px] text-black/60">
+              <Text className="font-subtitle text-[50px] text-black">Phone Number</Text>
+              <Text className="font-body mt-2 text-[14px] text-black/60">
                 Add a phone number (Optional)
               </Text>
             </View>

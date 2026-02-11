@@ -13,6 +13,9 @@ import Animated, {
   Extrapolation,
 } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useAppleSignIn } from '@/api/hooks/useAuth';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { ROUTES } from '@/constants/routes';
 
 const { width, height } = Dimensions.get('window');
 
@@ -86,11 +89,11 @@ const VideoSlide = memo(function VideoSlide({
 
   return (
     <View className="flex-1 items-center overflow-hidden bg-black" style={{ width }}>
-      <View className="w-full flex-1 px-4 pt-24">
-        <Text className="font-display text-[50px] font-black uppercase text-white">
+      <View className="w-full flex-1 px-4 pt-16">
+        <Text className="font-display text-[60px] font-black uppercase text-white">
           {item.titleTop}
         </Text>
-        <Text className="font-display text-[50px] font-black uppercase text-white">
+        <Text className="font-display text-[60px] font-black uppercase text-white">
           {item.titleBottom[0]} {item.titleBottom[1]}
         </Text>
         <Text className="mt-4 font-body text-[14px] leading-5 text-white/80">
@@ -157,6 +160,8 @@ export default function App() {
   const flatListRef = useRef<FlatList<OnboardingSlide>>(null);
   const progress = useSharedValue(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { mutate: appleSignIn, isPending: isAppleLoading } = useAppleSignIn();
+  const { showError } = useFeedbackPopup();
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
@@ -224,14 +229,27 @@ export default function App() {
           removeClippedSubviews
         />
 
-        <ProgressIndicator currentIndex={currentIndex} progress={progress} />
+        {/*<ProgressIndicator currentIndex={currentIndex} progress={progress} />*/}
 
         <View className="absolute bottom-12 w-full gap-y-2 px-6">
           <View className="flex-row gap-x-3">
             <Button
               title="Sign Up with Apple"
               size="large"
-              onPress={() => router.push('/(auth)')}
+              onPress={() => {
+                appleSignIn(undefined, {
+                  onSuccess: (resp) => {
+                    if (resp.user?.onboardingStatus === 'completed') {
+                      router.replace(ROUTES.TABS as any);
+                      return;
+                    }
+                    router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
+                  },
+                  onError: () => {
+                    showError('Apple Sign-In Failed', 'Please try again or use email sign in.');
+                  },
+                });
+              }}
               variant="black"
             />
             <Button

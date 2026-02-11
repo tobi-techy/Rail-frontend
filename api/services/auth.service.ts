@@ -17,6 +17,8 @@ import type {
   ResendCodeResponse,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  SocialLoginRequest,
+  SocialLoginResponse,
 } from '../types';
 
 const AUTH_ENDPOINTS = {
@@ -28,6 +30,7 @@ const AUTH_ENDPOINTS = {
   RESEND_CODE: '/v1/auth/resend-code',
   FORGOT_PASSWORD: '/v1/auth/forgot-password',
   RESET_PASSWORD: '/v1/auth/reset-password',
+  SOCIAL_LOGIN: '/v1/auth/social/login',
 };
 
 export const authService = {
@@ -61,7 +64,29 @@ export const authService = {
    * @returns New access token, refresh token, and expiration
    */
   async refreshToken(data: RefreshTokenRequest): Promise<RefreshTokenResponse> {
-    return apiClient.post<RefreshTokenResponse>(AUTH_ENDPOINTS.REFRESH, data);
+    const rawResponse = await apiClient.post<any>(AUTH_ENDPOINTS.REFRESH, data);
+    const payload =
+      rawResponse &&
+      typeof rawResponse === 'object' &&
+      'data' in rawResponse &&
+      rawResponse.data &&
+      typeof rawResponse.data === 'object'
+        ? rawResponse.data
+        : rawResponse;
+
+    const accessToken = payload?.accessToken ?? payload?.access_token;
+    const refreshToken = payload?.refreshToken ?? payload?.refresh_token ?? data.refreshToken;
+    const expiresAt = payload?.expiresAt ?? payload?.expires_at;
+
+    if (!accessToken) {
+      throw new Error('Refresh token response missing access token');
+    }
+
+    return {
+      accessToken,
+      refreshToken,
+      expiresAt: expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    };
   },
 
   /**
@@ -100,7 +125,15 @@ export const authService = {
    * Get current authenticated user
    */
   async getCurrentUser(): Promise<any> {
-    return apiClient.get('/v1/users/me?include=onboarding');
+    return apiClient.get('/v1/users/me?include=onboarding,kyc');
+  },
+
+  /**
+   * Social login (Apple, etc.)
+   * @returns User info with access and refresh tokens
+   */
+  async socialLogin(data: SocialLoginRequest): Promise<SocialLoginResponse> {
+    return apiClient.post<SocialLoginResponse>(AUTH_ENDPOINTS.SOCIAL_LOGIN, data);
   },
 };
 

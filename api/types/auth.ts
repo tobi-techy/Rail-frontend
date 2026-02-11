@@ -98,3 +98,22 @@ export interface DeleteAccountRequest {
   password?: string;
   reason?: string;
 }
+
+// ============= Social Authentication Types =============
+
+export type SocialProvider = 'apple';
+
+export interface SocialLoginRequest {
+  provider: SocialProvider;
+  idToken: string;
+  givenName?: string;
+  familyName?: string;
+}
+
+export interface SocialLoginResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: string;
+  isNewUser: boolean;
+}

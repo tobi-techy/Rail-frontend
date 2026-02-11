@@ -1,33 +1,95 @@
 import React, { useState } from 'react';
-import { View, Text, StatusBar, Alert } from 'react-native';
+import { View, Text, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { InputField, AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { useOnboardingComplete } from '@/api/hooks/useOnboarding';
+import type { OnboardingCompleteRequest } from '@/api/types';
+
+const E164_REGEX = /^\+[1-9]\d{7,14}$/;
+
+const normalizePhone = (rawPhone: string | undefined, country: string | undefined): string | undefined => {
+  if (!rawPhone?.trim()) return undefined;
+  const compact = rawPhone.replace(/[^\d+]/g, '');
+  if (compact.startsWith('+')) {
+    const normalized = `+${compact.slice(1).replace(/\D/g, '')}`;
+    return E164_REGEX.test(normalized) ? normalized : undefined;
+  }
+  const digits = rawPhone.replace(/\D/g, '');
+  if ((country === 'US' || country === 'CA') && digits.length === 10) {
+    return `+1${digits}`;
+  }
+  return undefined;
+};
 
 export default function CreatePassword() {
   const registrationData = useAuthStore((state) => state.registrationData);
   const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
+  const clearRegistrationData = useAuthStore((state) => state.clearRegistrationData);
+  const setOnboardingStatus = useAuthStore((state) => state.setOnboardingStatus);
   const [password, setPassword] = useState(registrationData.password || '');
   const [confirmPassword, setConfirmPassword] = useState(registrationData.password || '');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const { showWarning, showError } = useFeedbackPopup();
+  const { mutate: completeOnboarding, isPending } = useOnboardingComplete();
 
-  const handleNext = () => {
+  const handleSubmit = () => {
     if (password.length < 12) {
-      Alert.alert('Weak Password', 'Password must be at least 12 characters');
+      setPasswordError('Password must be at least 12 characters');
+      showWarning('Weak Password', 'Password must be at least 12 characters.');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Password Mismatch', 'Passwords do not match');
+      setConfirmPasswordError('Passwords do not match');
+      showWarning('Password Mismatch', 'Passwords do not match.');
       return;
     }
 
+    setPasswordError('');
+    setConfirmPasswordError('');
     updateRegistrationData({ password });
-    router.push(ROUTES.AUTH.COMPLETE_PROFILE.INVESTMENT_GOAL as any);
+
+    const payload: OnboardingCompleteRequest = {
+      password,
+      firstName: registrationData.firstName,
+      lastName: registrationData.lastName,
+      dateOfBirth: registrationData.dob,
+      country: registrationData.country,
+      address: {
+        street: registrationData.street,
+        city: registrationData.city,
+        state: registrationData.state,
+        postalCode: registrationData.postalCode,
+        country: registrationData.country,
+      },
+      phone: normalizePhone(registrationData.phone, registrationData.country),
+    };
+
+    if (!payload.firstName || !payload.lastName || !payload.dateOfBirth || !payload.country ||
+        !payload.address.street || !payload.address.city || !payload.address.state || !payload.address.postalCode) {
+      showWarning('Incomplete Profile', 'Please complete all required profile fields.');
+      router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
+      return;
+    }
+
+    completeOnboarding(payload, {
+      onSuccess: (response) => {
+        setOnboardingStatus(response.onboarding?.onboardingStatus || 'kyc_pending');
+        clearRegistrationData();
+        router.replace(ROUTES.AUTH.CREATE_PASSCODE as any);
+      },
+      onError: (error: any) => {
+        showError('Profile Submission Failed', error?.message || 'Please try again.');
+      },
+    });
   };
 
   return (
@@ -37,8 +99,8 @@ export default function CreatePassword() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-display text-[60px] text-black">Create Password</Text>
-              <Text className="font-body-medium mt-2 text-[14px] text-black/60">
+              <Text className="font-subtitle text-[50px] text-black">Create Password</Text>
+              <Text className="font-body mt-2 text-[14px] text-black/60">
                 Secure your account
               </Text>
             </View>
@@ -50,8 +112,12 @@ export default function CreatePassword() {
                 label="Password"
                 placeholder="Min 12 characters"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(value) => {
+                  setPassword(value);
+                  if (passwordError) setPasswordError('');
+                }}
                 type="password"
+                error={passwordError}
                 isPasswordVisible={showPassword}
                 onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
               />
@@ -62,8 +128,12 @@ export default function CreatePassword() {
                 label="Confirm Password"
                 placeholder="Re-enter password"
                 value={confirmPassword}
-                onChangeText={setConfirmPassword}
+                onChangeText={(value) => {
+                  setConfirmPassword(value);
+                  if (confirmPasswordError) setConfirmPasswordError('');
+                }}
                 type="password"
+                error={confirmPasswordError}
                 isPasswordVisible={showConfirm}
                 onTogglePasswordVisibility={() => setShowConfirm(!showConfirm)}
               />
@@ -72,7 +142,11 @@ export default function CreatePassword() {
 
           <StaggeredChild index={3} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button title="Next" onPress={handleNext} />
+              <Button 
+                title="Complete Profile" 
+                onPress={handleSubmit} 
+                loading={isPending}
+              />
             </View>
           </StaggeredChild>
         </View>

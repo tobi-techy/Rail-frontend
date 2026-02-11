@@ -59,6 +59,7 @@ export function useVerifyPasscode() {
         // Store all tokens in a single setState call to ensure atomicity
         const updates: any = {
           isAuthenticated: true,
+          hasPasscode: true,
           lastActivityAt: now.toISOString(),
           tokenIssuedAt: now.toISOString(),
         };

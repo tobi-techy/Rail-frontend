@@ -18,7 +18,7 @@ interface SelectionScreenProps {
   nextRoute: string;
   buttonTitle?: string;
   initialSelected?: string;
-  onNext?: (selectedId: string) => void;
+  onNext?: (selectedId: string) => boolean | void;
   buttonLoading?: boolean;
   buttonDisabled?: boolean;
 }
@@ -40,8 +40,8 @@ export const SelectionScreen = ({
     if (!selected) return;
 
     if (onNext) {
-      onNext(selected);
-      return;
+      const shouldContinue = onNext(selected);
+      if (shouldContinue === false) return;
     }
 
     router.push(nextRoute as any);

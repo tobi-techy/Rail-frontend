@@ -20,7 +20,7 @@ export default function AuthLayout() {
         <Stack.Screen name="confirm-passcode" />
         <Stack.Screen name="forgot-password" />
         <Stack.Screen name="reset-password" />
-        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="kyc" />
         <Stack.Screen name="complete-profile" />
       </Stack>
     </ErrorBoundary>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -7,6 +7,7 @@ import { Button } from '../../components/ui';
 import { InputField, AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useForgotPassword } from '@/api/hooks/useAuth';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -15,30 +16,36 @@ const isValidEmail = (email: string): boolean => {
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [isEmailSent, setIsEmailSent] = useState(false);
   const { mutate: forgotPassword, isPending } = useForgotPassword();
+  const { showError, showWarning, showInfo } = useFeedbackPopup();
 
   const handleSendReset = () => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!normalizedEmail) {
-      Alert.alert('Error', 'Please enter your email address');
+      setEmailError('Email is required');
+      showWarning('Missing Email', 'Please enter your email address.');
       return;
     }
 
     if (!isValidEmail(normalizedEmail)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      setEmailError('Please enter a valid email address');
+      showWarning('Invalid Email', 'Please enter a valid email address.');
       return;
     }
 
+    setEmailError('');
     forgotPassword(
       { email: normalizedEmail },
       {
         onSuccess: () => {
           setIsEmailSent(true);
+          showInfo('Reset Link Sent', 'If the account exists, reset instructions were sent.');
         },
         onError: (error: any) => {
-          Alert.alert('Request Failed', error?.message || 'Unable to send reset instructions');
+          showError('Request Failed', error?.message || 'Unable to send reset instructions');
         },
       }
     );
@@ -57,15 +64,15 @@ export default function ForgotPassword() {
             <StaggeredChild index={0}>
               {isEmailSent ? (
                 <View className="mb-8 mt-4">
-                  <Text className="font-display text-[60px] text-black">Check your email</Text>
-                  <Text className="font-body-medium mt-2 text-base text-black/60">
+                  <Text className="font-subtitle text-[60px] text-black">Check your email</Text>
+                  <Text className="font-body mt-2 text-base text-black/60">
                     If an account exists for this email, password reset instructions have been sent.
                   </Text>
                 </View>
               ) : (
                 <View className="mb-8 mt-4">
-                  <Text className="font-display text-[60px] text-black">Forgot password</Text>
-                  <Text className="font-body-medium mt-2 text-base text-black/60">
+                  <Text className="font-subtitle text-[50px] text-black">Forgot password</Text>
+                  <Text className="font-body mt-2 text-base text-black/60">
                     Enter the email associated with your account and we will send you instructions
                     to reset your password.
                   </Text>
@@ -79,8 +86,12 @@ export default function ForgotPassword() {
                   label="Email Address"
                   placeholder="Enter your email"
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    if (emailError) setEmailError('');
+                  }}
                   type="email"
+                  error={emailError}
                 />
               )}
             </StaggeredChild>
@@ -96,11 +107,11 @@ export default function ForgotPassword() {
                   <Button title="Send reset link" onPress={handleSendReset} loading={isPending} />
                 )}
                 <View className="mt-8 flex-row items-center justify-center">
-                  <Text className="font-body-medium text-[14px] text-black/60">Remember it?</Text>
+                  <Text className="font-body text-[14px] text-black/60">Remember it?</Text>
                   <TouchableOpacity
                     onPress={() => router.replace(ROUTES.AUTH.SIGNIN as any)}
                     className="ml-2">
-                    <Text className="font-body-medium text-[14px] text-black underline">
+                    <Text className="font-body text-[14px] text-black underline">
                       Back to sign in
                     </Text>
                   </TouchableOpacity>

@@ -47,10 +47,13 @@ export class SessionManager {
 
     try {
       const response = await authService.refreshToken({ refreshToken });
+      const tokenExpiresAt = response.expiresAt
+        ? new Date(response.expiresAt).toISOString()
+        : useAuthStore.getState().tokenExpiresAt;
 
       useAuthStore.setState({
         accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
+        tokenExpiresAt,
       });
 
       if (response.expiresAt) {
@@ -83,11 +86,21 @@ export class SessionManager {
 
     if (refreshTime > 0) {
       this.refreshTimer = setTimeout(() => {
-        this.refreshToken();
+        this.refreshToken().catch((error) => {
+          if (__DEV__) {
+            console.error('[SessionManager] Token refresh in setTimeout failed:', error);
+          }
+          this.handleSessionExpired();
+        });
       }, refreshTime);
     } else {
       // Token is already expired or expires very soon
-      this.refreshToken();
+      this.refreshToken().catch((error) => {
+        if (__DEV__) {
+          console.error('[SessionManager] Immediate token refresh failed:', error);
+        }
+        this.handleSessionExpired();
+      });
     }
   }
 
@@ -217,7 +230,12 @@ export class SessionManager {
         }
 
         // Attempt to refresh token to ensure it's still valid
-        this.refreshToken();
+        this.refreshToken().catch((error) => {
+          if (__DEV__) {
+            console.error('[SessionManager] Health check token refresh failed:', error);
+          }
+          // Error is already handled in refreshToken method
+        });
       }
 
       // Schedule next check if still initialized

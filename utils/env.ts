@@ -1,4 +1,6 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 
 /**
  * Environment configuration with runtime validation
@@ -16,12 +18,51 @@ interface Env {
   EXPO_PUBLIC_ENV?: 'development' | 'staging' | 'production';
 }
 
+function getExpoHost(): string | null {
+  const constants = Constants as any;
+  const hostUri =
+    constants?.expoConfig?.hostUri ||
+    constants?.manifest2?.extra?.expoClient?.hostUri ||
+    constants?.manifest?.debuggerHost;
+
+  if (!hostUri || typeof hostUri !== 'string') {
+    return null;
+  }
+
+  const host = hostUri.split(':')[0];
+  if (!host || host === 'localhost' || host === '127.0.0.1') {
+    return null;
+  }
+
+  return host;
+}
+
+function resolveApiUrl(rawApiUrl: string): string {
+  try {
+    const parsed = new URL(rawApiUrl);
+    const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+
+    if (__DEV__ && Device.isDevice && isLocalhost) {
+      const expoHost = getExpoHost();
+      if (expoHost) {
+        parsed.hostname = expoHost;
+        return parsed.toString().replace(/\/$/, '');
+      }
+    }
+
+    return rawApiUrl;
+  } catch {
+    return rawApiUrl;
+  }
+}
+
 function validateEnv(): Env {
   const localhost = Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080';
 
   // In production builds from Xcode, env vars may not be available
   // Use fallback values for production
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://api.userail.money/api';
+  const rawApiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://api.userail.money/api';
+  const apiUrl = resolveApiUrl(rawApiUrl);
 
   if (!apiUrl && !__DEV__) {
     console.warn('EXPO_PUBLIC_API_URL not set, using fallback');

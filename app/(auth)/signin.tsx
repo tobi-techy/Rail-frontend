@@ -1,12 +1,13 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
-import { ROUTES, type AuthRoute } from '@/constants/routes';
-import { useLogin } from '@/api/hooks/useAuth';
+import { ROUTES } from '@/constants/routes';
+import { useLogin, useAppleSignIn } from '@/api/hooks/useAuth';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -21,28 +22,44 @@ export default function SignIn() {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const passwordRef = useRef<TextInput>(null);
   const { mutate: login, isPending } = useLogin();
+  const { mutate: appleSignIn, isPending: isAppleLoading } = useAppleSignIn();
+  const { showError, showWarning } = useFeedbackPopup();
 
   const handleSignIn = () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+      if (!email) setEmailError('Email is required');
+      if (!password) setPasswordError('Password is required');
+      showWarning('Missing Fields', 'Please enter both email and password.');
       return;
     }
 
     if (!isValidEmail(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      setEmailError('Please enter a valid email address');
+      showWarning('Invalid Email', 'Please enter a valid email address.');
       return;
     }
 
     if (!isValidPassword(password)) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
+      setPasswordError('Password must be at least 8 characters');
+      showWarning('Weak Password', 'Password must be at least 8 characters.');
       return;
     }
 
+    setEmailError('');
+    setPasswordError('');
+
+    // Clear password from state immediately for security
+    // Store in temp variable to pass to login function
+    const passwordToUse = password;
+    setPassword('');
+
     login(
-      { email: email.trim().toLowerCase(), password },
+      { email: email.trim().toLowerCase(), password: passwordToUse },
       {
         onSuccess: (response) => {
           const onboardingStatus = response.user?.onboardingStatus;
@@ -52,11 +69,18 @@ export default function SignIn() {
             return;
           }
 
+          if (onboardingStatus === 'kyc_pending' || onboardingStatus === 'kyc_rejected') {
+            router.replace(ROUTES.AUTH.KYC as any);
+            return;
+          }
+
           router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
         },
         onError: (error: any) => {
           const message = error?.message || 'Invalid credentials';
-          Alert.alert('Sign In Failed', message);
+          setPasswordError(message);
+          showError('Sign In Failed', message);
+          // Password already cleared from state above
         },
       }
     );
@@ -75,7 +99,7 @@ export default function SignIn() {
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
-              <Text className="font-display text-[60px] leading-[1.1] text-black">
+              <Text className="font-subtitle text-[50px] leading-[1.1] text-black">
                 Welcome Back
               </Text>
               <Text className="mt-2 font-body text-body text-black/60">Sign in to continue</Text>
@@ -88,8 +112,12 @@ export default function SignIn() {
                 label="Email"
                 placeholder="Enter your email"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  if (emailError) setEmailError('');
+                }}
                 type="email"
+                error={emailError}
                 returnKeyType="next"
                 onSubmitEditing={() => passwordRef.current?.focus()}
                 blurOnSubmit={false}
@@ -102,8 +130,12 @@ export default function SignIn() {
                 label="Password"
                 placeholder="Enter your password"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(value) => {
+                  setPassword(value);
+                  if (passwordError) setPasswordError('');
+                }}
                 type="password"
+                error={passwordError}
                 isPasswordVisible={showPassword}
                 onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
                 returnKeyType="done"

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -9,14 +9,40 @@ import { useAuthStore } from '@/stores/authStore';
 import { useVerifyPasscode } from '@/api/hooks';
 import { SessionManager } from '@/utils/sessionManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 
 export default function LoginPasscodeScreen() {
   const user = useAuthStore((state) => state.user);
   const userName = user?.fullName || user?.email?.split('@')[0] || 'User';
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
+  const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
+  const [lockoutSecondsRemaining, setLockoutSecondsRemaining] = useState(0);
 
   const { mutate: verifyPasscode, isPending: isLoading } = useVerifyPasscode();
+  const { showError, showInfo, showWarning } = useFeedbackPopup();
+
+  useEffect(() => {
+    if (!lockoutUntil) {
+      setLockoutSecondsRemaining(0);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const remainingSeconds = Math.max(
+        0,
+        Math.ceil((lockoutUntil.getTime() - Date.now()) / 1000)
+      );
+      setLockoutSecondsRemaining(remainingSeconds);
+      if (remainingSeconds === 0) {
+        setLockoutUntil(null);
+      }
+    };
+
+    updateCountdown();
+    const intervalId = setInterval(updateCountdown, 1000);
+    return () => clearInterval(intervalId);
+  }, [lockoutUntil]);
 
   const handleBiometricAuth = useCallback(async () => {
     try {
@@ -35,16 +61,31 @@ export default function LoginPasscodeScreen() {
       });
 
       if (result.success) {
-        handlePasscodeSubmit('biometric');
+        const { passcodeSessionToken, passcodeSessionExpiresAt } = useAuthStore.getState();
+        const hasValidSession =
+          Boolean(passcodeSessionToken) &&
+          Boolean(passcodeSessionExpiresAt) &&
+          new Date(passcodeSessionExpiresAt as string).getTime() > Date.now();
+
+        if (hasValidSession) {
+          router.replace('/(tabs)');
+          return;
+        }
+
+        showInfo('Session Expired', 'Please enter your PIN to continue.');
       }
     } catch (error) {
       setError('Biometric authentication failed');
     }
-  }, []);
+  }, [showInfo]);
 
   const handlePasscodeSubmit = useCallback(
     (code: string) => {
       if (isLoading) return;
+      if (lockoutSecondsRemaining > 0) {
+        setError(`PIN is locked. Try again in ${lockoutSecondsRemaining}s.`);
+        return;
+      }
       setError('');
 
       verifyPasscode(
@@ -61,19 +102,45 @@ export default function LoginPasscodeScreen() {
               SessionManager.schedulePasscodeSessionExpiry(response.passcodeSessionExpiresAt);
             }
 
+            setLockoutUntil(null);
             await new Promise((resolve) => setTimeout(resolve, 100));
             router.replace('/(tabs)');
           },
           onError: (err: any) => {
+            if (err?.status === 401) {
+              useAuthStore.getState().reset();
+              showWarning('Session Expired', 'Please sign in again.');
+              router.replace('/(auth)/signin');
+              return;
+            }
+
+            if (err?.status === 403) {
+              const lockoutRaw =
+                err?.details?.lockedUntil ??
+                err?.details?.locked_until ??
+                err?.error?.details?.lockedUntil ??
+                err?.error?.details?.locked_until;
+              const parsedLockout = lockoutRaw ? new Date(lockoutRaw) : null;
+              if (parsedLockout && !Number.isNaN(parsedLockout.getTime())) {
+                setLockoutUntil(parsedLockout);
+              }
+              setError(
+                err?.message || 'Too many incorrect PIN attempts. Sign in with email to continue.'
+              );
+              setPasscode('');
+              return;
+            }
+
             const errorMessage =
               err?.error?.message || err?.message || 'Incorrect PIN. Please try again.';
             setError(errorMessage);
+            showError('PIN Verification Failed', errorMessage);
             setPasscode('');
           },
         }
       );
     },
-    [verifyPasscode, isLoading]
+    [verifyPasscode, isLoading, lockoutSecondsRemaining, showError, showWarning]
   );
 
   const handleSwitchAccount = () => {
@@ -105,7 +172,7 @@ export default function LoginPasscodeScreen() {
               className="bg-background-tertiary flex-row items-center gap-x-2 rounded-full px-4 py-2.5"
               activeOpacity={0.7}>
               <Icon name="message-circle" size={18} color="#fff" strokeWidth={2} />
-              <Text className="font-body-medium text-[14px] text-white">Need help?</Text>
+              <Text className="font-body text-[14px] text-white">Need help?</Text>
             </TouchableOpacity>
           </View>
 
@@ -127,7 +194,11 @@ export default function LoginPasscodeScreen() {
               if (error) setError('');
             }}
             onComplete={handlePasscodeSubmit}
-            errorText={error}
+            errorText={
+              lockoutSecondsRemaining > 0
+                ? `PIN is locked. Try again in ${lockoutSecondsRemaining}s or sign in with email.`
+                : error
+            }
             showToggle
             showFingerprint
             onFingerprint={handleBiometricAuth}
@@ -138,16 +209,16 @@ export default function LoginPasscodeScreen() {
           {/* Footer */}
           <View className="mb-4 items-center gap-y-3 px-6">
             <View className="flex-row items-center gap-x-1">
-              <Text className="font-body-medium text-[14px] text-[#6B7280]">Not {userName}? </Text>
+              <Text className="font-body text-[14px] text-[#6B7280]">Not {userName}? </Text>
               <TouchableOpacity onPress={handleSwitchAccount} activeOpacity={0.7}>
-                <Text className="font-body-semibold text-[14px] text-[#FF5A00]">
+                <Text className="font-button text-[14px] text-[#FF5A00]">
                   Switch Account
                 </Text>
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity onPress={handleSignInWithEmail} activeOpacity={0.7}>
-              <Text className="font-body-medium text-[14px] text-[#6B7280]">
+              <Text className="font-body text-[14px] text-[#6B7280]">
                 Sign in with email
               </Text>
             </TouchableOpacity>

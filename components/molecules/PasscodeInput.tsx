@@ -80,7 +80,7 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
     <View className={`flex-1 px-6 ${className}`} {...rest}>
       {title && (
         <View className="mt-12">
-          <Text className={`font-display text-display-lg ${isDark ? 'text-white' : 'text-text-primary'}`}>{title}</Text>
+          <Text className={`font-subtitle text-display-lg ${isDark ? 'text-white' : 'text-text-primary'}`}>{title}</Text>
           {subtitle && (
             <Text className={`mt-2 font-body text-body ${isDark ? 'text-white/70' : 'text-text-secondary'}`}>{subtitle}</Text>
           )}

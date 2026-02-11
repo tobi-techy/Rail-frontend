@@ -11,6 +11,7 @@ import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { enforceDeviceSecurity } from '@/utils/deviceSecurity';
 import { SplashScreen } from '@/components/SplashScreen';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { FeedbackPopupHost } from '@/components/ui';
 import queryClient from '@/api/queryClient';
 import SessionManager from '@/utils/sessionManager';
 import '../global.css';
@@ -30,8 +31,20 @@ function AppNavigator() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="login-passcode" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
+      <Stack.Screen
+        name="(auth)"
+        options={{
+          // Wrap auth screens in their own error boundary
+          // This prevents auth errors from affecting other parts of the app
+        }}
+      />
+      <Stack.Screen
+        name="(tabs)"
+        options={{
+          // Wrap main app tabs in their own error boundary
+          // This prevents tab screen errors from affecting the entire app
+        }}
+      />
       <Stack.Screen name="spending-stash" />
       <Stack.Screen name="investment-stash" />
     </Stack>
@@ -111,6 +124,7 @@ export default function Layout() {
           <QueryClientProvider client={queryClient}>
             <SafeAreaProvider>
               <AppNavigator />
+              <FeedbackPopupHost />
             </SafeAreaProvider>
           </QueryClientProvider>
         </View>

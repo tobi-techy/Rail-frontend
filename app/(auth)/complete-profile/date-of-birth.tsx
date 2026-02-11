@@ -28,8 +28,8 @@ export default function DateOfBirth() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-display text-[60px] text-black">Date of Birth</Text>
-              <Text className="font-body-medium mt-2 text-[14px] text-black/60">
+              <Text className="font-subtitle text-[50px] text-black">Date of Birth</Text>
+              <Text className="font-body mt-2 text-[14px] text-black/60">
                 We need to verify your age
               </Text>
             </View>

@@ -12,7 +12,6 @@ interface ButtonProps extends Omit<PressableProps, 'style'> {
   disabled?: boolean;
   className?: string;
   enableHaptics?: boolean;
-  enableSound?: boolean;
   flex?: boolean;
 }
 
@@ -28,7 +27,6 @@ export const Button = forwardRef<View, ButtonProps>(
       disabled,
       className = '',
       enableHaptics = true,
-      enableSound = true,
       flex = false,
       onPress,
       ...props
@@ -36,7 +34,7 @@ export const Button = forwardRef<View, ButtonProps>(
     ref
   ) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
-    const triggerFeedback = useButtonFeedback(enableSound, enableHaptics);
+    const triggerFeedback = useButtonFeedback(enableHaptics);
 
     const handlePressIn = useCallback(() => {
       triggerFeedback();

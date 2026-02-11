@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useRegister } from '@/api/hooks/useAuth';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -16,29 +17,35 @@ const isValidEmail = (email: string): boolean => {
 export default function SignUp() {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const { mutate: register, isPending } = useRegister();
+  const { showError, showWarning, showSuccess } = useFeedbackPopup();
 
   const handleSignUp = () => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!normalizedEmail) {
-      Alert.alert('Error', 'Please enter your email address');
+      setEmailError('Email is required');
+      showWarning('Missing Email', 'Please enter your email address.');
       return;
     }
 
     if (!isValidEmail(normalizedEmail)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      setEmailError('Please enter a valid email address');
+      showWarning('Invalid Email', 'Please enter a valid email address.');
       return;
     }
 
+    setEmailError('');
     register(
       { email: normalizedEmail },
       {
         onSuccess: () => {
+          showSuccess('Verification Sent', 'Check your email for a 6-digit verification code.');
           router.push(ROUTES.AUTH.VERIFY_EMAIL as any);
         },
         onError: (error: any) => {
-          Alert.alert('Sign Up Failed', error?.message || 'Registration failed. Please try again.');
+          showError('Sign Up Failed', error?.message || 'Registration failed. Please try again.');
         },
       }
     );
@@ -57,7 +64,7 @@ export default function SignUp() {
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
-              <Text className="font-subtitle text-[40px] leading-[1.1] text-black">
+              <Text className="font-subtitle text-[50px] leading-[1.1] text-black">
                 Enter your email
               </Text>
               <Text className="mt-2 font-body text-body text-black/60">
@@ -71,8 +78,12 @@ export default function SignUp() {
               label="Email"
               placeholder="Enter your email"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(value) => {
+                setEmail(value);
+                if (emailError) setEmailError('');
+              }}
               type="email"
+              error={emailError}
               returnKeyType="done"
               onSubmitEditing={handleSignUp}
             />

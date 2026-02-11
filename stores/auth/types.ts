@@ -15,6 +15,7 @@ export interface RegistrationData {
   postalCode: string;
   country: string;
   phone: string;
+  password: string;
 }
 
 export interface AuthState {

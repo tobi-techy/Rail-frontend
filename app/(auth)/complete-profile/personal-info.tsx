@@ -1,27 +1,35 @@
 import React, { useState } from 'react';
-import { View, Text, StatusBar, Alert } from 'react-native';
+import { View, Text, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { InputField, AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 
 export default function PersonalInfo() {
   const registrationData = useAuthStore((state) => state.registrationData);
   const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
   const [firstName, setFirstName] = useState(registrationData.firstName || '');
   const [lastName, setLastName] = useState(registrationData.lastName || '');
+  const [firstNameError, setFirstNameError] = useState('');
+  const [lastNameError, setLastNameError] = useState('');
+  const { showWarning } = useFeedbackPopup();
 
   const handleNext = () => {
     const normalizedFirstName = firstName.trim();
     const normalizedLastName = lastName.trim();
 
     if (!normalizedFirstName || !normalizedLastName) {
-      Alert.alert('Missing Information', 'Please enter your first and last name');
+      if (!normalizedFirstName) setFirstNameError('First name is required');
+      if (!normalizedLastName) setLastNameError('Last name is required');
+      showWarning('Missing Information', 'Please enter your first and last name.');
       return;
     }
 
+    setFirstNameError('');
+    setLastNameError('');
     updateRegistrationData({
       firstName: normalizedFirstName,
       lastName: normalizedLastName,
@@ -36,8 +44,8 @@ export default function PersonalInfo() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-display text-[60px] text-black">Personal Info</Text>
-              <Text className="font-body-medium mt-2 text-[14px] text-black/60">
+              <Text className="font-subtitle text-[50px] text-black">Personal Info</Text>
+              <Text className="font-body mt-2 text-[14px] text-black/60">
                 Let&apos;s start with your name
               </Text>
             </View>
@@ -49,7 +57,11 @@ export default function PersonalInfo() {
                 label="First Name"
                 placeholder="First Name"
                 value={firstName}
-                onChangeText={setFirstName}
+                onChangeText={(value) => {
+                  setFirstName(value);
+                  if (firstNameError) setFirstNameError('');
+                }}
+                error={firstNameError}
               />
             </StaggeredChild>
             <StaggeredChild index={2}>
@@ -57,7 +69,11 @@ export default function PersonalInfo() {
                 label="Last Name"
                 placeholder="Last Name"
                 value={lastName}
-                onChangeText={setLastName}
+                onChangeText={(value) => {
+                  setLastName(value);
+                  if (lastNameError) setLastNameError('');
+                }}
+                error={lastNameError}
               />
             </StaggeredChild>
           </View>

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StatusBar, ScrollView, Alert } from 'react-native';
+import { View, Text, StatusBar, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { InputField, CountryPicker, AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 
 export default function Address() {
   const registrationData = useAuthStore((state) => state.registrationData);
@@ -18,23 +19,42 @@ export default function Address() {
     countryName: registrationData.country || '',
     countryCode: registrationData.country || '',
   });
+  const [errors, setErrors] = useState({
+    street: '',
+    city: '',
+    state: '',
+    postalCode: '',
+  });
+  const { showWarning } = useFeedbackPopup();
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field in errors) {
+      setErrors((prev) => ({ ...prev, [field]: '' }));
+    }
   };
 
   const handleNext = () => {
+    const nextErrors = {
+      street: formData.street.trim() ? '' : 'Street address is required',
+      city: formData.city.trim() ? '' : 'City is required',
+      state: formData.state.trim() ? '' : 'State is required',
+      postalCode: formData.postalCode.trim() ? '' : 'Postal code is required',
+    };
+
     if (
-      !formData.street ||
-      !formData.city ||
-      !formData.state ||
-      !formData.postalCode ||
+      nextErrors.street ||
+      nextErrors.city ||
+      nextErrors.state ||
+      nextErrors.postalCode ||
       !formData.countryCode
     ) {
-      Alert.alert('Missing Information', 'Please complete all address fields before continuing');
+      setErrors(nextErrors);
+      showWarning('Missing Information', 'Please complete all address fields before continuing.');
       return;
     }
 
+    setErrors({ street: '', city: '', state: '', postalCode: '' });
     updateRegistrationData({
       street: formData.street.trim(),
       city: formData.city.trim(),
@@ -57,8 +77,8 @@ export default function Address() {
           <View className="flex-1 px-6 pt-4">
             <StaggeredChild index={0}>
               <View className="mb-8 mt-4">
-                <Text className="font-display text-[60px] text-black">Address</Text>
-                <Text className="font-body-medium mt-2 text-[14px] text-black/60">
+                <Text className="font-subtitle text-[50px] text-black">Address</Text>
+                <Text className="font-body mt-2 text-[14px] text-black/60">
                   Where do you live?
                 </Text>
               </View>
@@ -71,6 +91,7 @@ export default function Address() {
                   placeholder="123 Main St"
                   value={formData.street}
                   onChangeText={(value) => updateField('street', value)}
+                  error={errors.street}
                   autoCapitalize="words"
                 />
               </StaggeredChild>
@@ -83,6 +104,7 @@ export default function Address() {
                       placeholder="City"
                       value={formData.city}
                       onChangeText={(value) => updateField('city', value)}
+                      error={errors.city}
                       autoCapitalize="words"
                     />
                   </View>
@@ -92,6 +114,7 @@ export default function Address() {
                       placeholder="State"
                       value={formData.state}
                       onChangeText={(value) => updateField('state', value)}
+                      error={errors.state}
                       autoCapitalize="characters"
                     />
                   </View>
@@ -106,6 +129,7 @@ export default function Address() {
                       placeholder="Zip"
                       value={formData.postalCode}
                       onChangeText={(value) => updateField('postalCode', value)}
+                      error={errors.postalCode}
                       keyboardType="number-pad"
                     />
                   </View>

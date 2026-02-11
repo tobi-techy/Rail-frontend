@@ -43,10 +43,6 @@ export interface RegistrationData {
   country: string;
   phone: string;
   password: string;
-  investmentGoal: string;
-  investmentExperience: string;
-  yearlyIncome: string;
-  employmentStatus: string;
 }
 
 interface AuthState {
@@ -158,10 +154,6 @@ const initialState: AuthState = {
     country: '',
     phone: '',
     password: '',
-    investmentGoal: '',
-    investmentExperience: '',
-    yearlyIncome: '',
-    employmentStatus: '',
   },
 };
 
@@ -385,6 +377,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
           set({
             accessToken: response.accessToken,
+            refreshToken: response.refreshToken || refreshToken,
+            isAuthenticated: true,
             tokenExpiresAt: nextTokenExpiry,
             error: null,
             isLoading: false,

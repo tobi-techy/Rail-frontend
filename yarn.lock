@@ -4789,6 +4789,11 @@ expo@*, expo@>=49.0.0, expo@>=52.0.0, expo@~54.0.33:
     react-refresh "^0.14.2"
     whatwg-url-without-unicode "8.0.0-3"
 
+expo-apple-authentication@^8.0.8:
+  version "8.0.8"
+  resolved "https://registry.npmjs.org/expo-apple-authentication/-/expo-apple-authentication-8.0.8.tgz"
+  integrity sha512-TwCHWXYR1kS0zaeV7QZKLWYluxsvqL31LFJubzK30njZqeWoWO89HZ8nZVaeXbFV1LrArKsze4BmMb+94wS0AQ==
+
 expo-asset@~12.0.12:
   version "12.0.12"
   resolved "https://registry.npmjs.org/expo-asset/-/expo-asset-12.0.12.tgz"
@@ -7285,8 +7290,8 @@ nativewind@^4.0.1:
   resolved "https://registry.npmjs.org/nativewind/-/nativewind-4.2.1.tgz"
   integrity sha512-10uUB2Dlli3MH3NDL5nMHqJHz1A3e/E6mzjTj6cl7hHECClJ7HpE6v+xZL+GXdbwQSnWE+UWMIMsNz7yOQkAJQ==
   dependencies:
-    debug "^4.3.7"
     comment-json "^4.2.5"
+    debug "^4.3.7"
     react-native-css-interop "0.2.1"
 
 natural-compare@^1.4.0:

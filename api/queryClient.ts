@@ -5,7 +5,7 @@
 
 import { QueryClient } from '@tanstack/react-query';
 import type { TransformedApiError } from './types';
-import { safeError } from '../utils/logSanitizer';
+import { safeWarn } from '../utils/logSanitizer';
 
 function isTransformedApiError(error: unknown): error is TransformedApiError {
   return (
@@ -39,7 +39,7 @@ export const queryClient = new QueryClient({
     mutations: {
       retry: false,
       onError: (error) => {
-        if (__DEV__) safeError('[Mutation Error]', error);
+        if (__DEV__) safeWarn('[Mutation Error]', error);
       },
     },
   },
@@ -72,6 +72,7 @@ export const queryKeys = {
     all: ['user'] as const,
     profile: () => [...queryKeys.user.all, 'profile'] as const,
     settings: () => [...queryKeys.user.all, 'settings'] as const,
+    kycBridgeLink: () => [...queryKeys.user.all, 'kyc-bridge-link'] as const,
     kycStatus: () => [...queryKeys.user.all, 'kyc-status'] as const,
     devices: () => [...queryKeys.user.all, 'devices'] as const,
   },

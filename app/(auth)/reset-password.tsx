@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StatusBar, Alert } from 'react-native';
+import { View, Text, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui';
 import { InputField, AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useResetPassword } from '@/api/hooks/useAuth';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 
 export default function ResetPassword() {
   const params = useLocalSearchParams<{ token?: string | string[] }>();
@@ -17,39 +18,47 @@ export default function ResetPassword() {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { mutate: resetPassword, isPending } = useResetPassword();
+  const { showError, showSuccess, showWarning } = useFeedbackPopup();
 
   const handleResetPassword = () => {
     if (!token) {
-      Alert.alert('Invalid Link', 'Reset token is missing. Please request a new reset link.');
+      showError('Invalid Link', 'Reset token is missing. Please request a new reset link.');
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert('Weak Password', 'Password must be at least 8 characters');
+      setPasswordError('Password must be at least 8 characters');
+      showWarning('Weak Password', 'Password must be at least 8 characters.');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Password Mismatch', 'Passwords do not match');
+      setConfirmPasswordError('Passwords do not match');
+      showWarning('Password Mismatch', 'Passwords do not match.');
       return;
     }
 
+    setPasswordError('');
+    setConfirmPasswordError('');
     resetPassword(
       { token, password },
       {
         onSuccess: () => {
-          Alert.alert('Password Updated', 'Your password has been reset successfully.', [
-            {
-              text: 'Sign In',
+          showSuccess('Password Updated', 'Your password has been reset successfully.', {
+            duration: 0,
+            action: {
+              label: 'Sign In',
               onPress: () => router.replace(ROUTES.AUTH.SIGNIN as any),
             },
-          ]);
+          });
         },
         onError: (error: any) => {
-          Alert.alert(
+          showError(
             'Reset Failed',
             error?.message || 'This reset link is invalid or has expired. Request a new one.'
           );
@@ -70,8 +79,8 @@ export default function ResetPassword() {
           <View className="flex-1 px-6 pb-6">
             <StaggeredChild index={0}>
               <View className="mb-8 mt-4">
-                <Text className="font-display text-[60px] text-black">Reset password</Text>
-                <Text className="font-body-medium mt-2 text-base text-black/60">
+                <Text className="font-subtitle text-[60px] text-black">Reset password</Text>
+                <Text className="font-body mt-2 text-base text-black/60">
                   Enter a new password to secure your account.
                 </Text>
               </View>
@@ -93,8 +102,12 @@ export default function ResetPassword() {
                     label="New Password"
                     placeholder="At least 8 characters"
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(value) => {
+                      setPassword(value);
+                      if (passwordError) setPasswordError('');
+                    }}
                     type="password"
+                    error={passwordError}
                     isPasswordVisible={showPassword}
                     onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
                   />
@@ -104,8 +117,12 @@ export default function ResetPassword() {
                     label="Confirm Password"
                     placeholder="Re-enter password"
                     value={confirmPassword}
-                    onChangeText={setConfirmPassword}
+                    onChangeText={(value) => {
+                      setConfirmPassword(value);
+                      if (confirmPasswordError) setConfirmPasswordError('');
+                    }}
                     type="password"
+                    error={confirmPasswordError}
                     isPasswordVisible={showConfirmPassword}
                     onTogglePasswordVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
                   />

@@ -63,6 +63,19 @@ export function safeLog(message: string, data?: any): void {
   }
 }
 
+export function safeWarn(message: string, data?: any): void {
+  const sanitizedMessage = sanitizeForLog(message);
+
+  if (data !== undefined) {
+    const sanitizedData = data instanceof Error
+      ? { message: sanitizeForLog(data.message), name: data.name }
+      : sanitizeObject(data);
+    console.warn(sanitizedMessage, sanitizedData);
+  } else {
+    console.warn(sanitizedMessage);
+  }
+}
+
 export function safeError(message: string, error?: any): void {
   const sanitizedMessage = sanitizeForLog(message);
   

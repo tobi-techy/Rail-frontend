@@ -31,7 +31,7 @@ export default function ConfirmPasscodeScreen() {
     setIsLoading(true);
     try {
       await setPasscode(code);
-      router.push(ROUTES.AUTH.ONBOARDING.TRUST_DEVICE as any);
+      router.replace(ROUTES.TABS as any);
     } catch (submitError: any) {
       setError(submitError?.message || 'Failed to create PIN');
       setConfirmPasscode('');
