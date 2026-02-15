@@ -1,6 +1,19 @@
 import * as SecureStore from 'expo-secure-store';
 import { logger } from '@/lib/logger';
 
+/**
+ * Secure Storage Wrapper
+ * SECURITY: Uses expo-secure-store which provides:
+ * - Android: EncryptedSharedPreferences (hardware-backed when available)
+ * - iOS: Keychain (hardware-backed via Secure Enclave on compatible devices)
+ *
+ * IMPORTANT: Biometric authentication (Face ID, Touch ID, fingerprint) is NOT stored here.
+ * Instead, only biometric CREDENTIALS/TOKENS are stored, and device biometric is used
+ * as a gateway to access those tokens. The actual biometric matching is handled by the OS.
+ *
+ * Data stored here should be SENSITIVE and NOT recoverable from device backups.
+ */
+
 export const secureStorage = {
   async setItem(key: string, value: string) {
     try {

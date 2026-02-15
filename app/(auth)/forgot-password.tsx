@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -54,7 +54,11 @@ export default function ForgotPassword() {
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1">
-        <StatusBar barStyle="dark-content" />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={Platform.OS === 'android'}
+        />
         <KeyboardAwareScrollView
           className="flex-1"
           contentContainerStyle={{ flexGrow: 1 }}
@@ -65,14 +69,14 @@ export default function ForgotPassword() {
               {isEmailSent ? (
                 <View className="mb-8 mt-4">
                   <Text className="font-subtitle text-[60px] text-black">Check your email</Text>
-                  <Text className="font-body mt-2 text-base text-black/60">
+                  <Text className="mt-2 font-body text-base text-black/60">
                     If an account exists for this email, password reset instructions have been sent.
                   </Text>
                 </View>
               ) : (
                 <View className="mb-8 mt-4">
                   <Text className="font-subtitle text-[50px] text-black">Forgot password</Text>
-                  <Text className="font-body mt-2 text-base text-black/60">
+                  <Text className="mt-2 font-body text-base text-black/60">
                     Enter the email associated with your account and we will send you instructions
                     to reset your password.
                   </Text>

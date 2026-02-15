@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as Font from 'expo-font';
+import { logger } from '../lib/logger';
 import { FONT_FILES, FontHelpers } from '../constants/fonts';
 
 /**
@@ -64,17 +65,23 @@ export const useFonts = (): FontLoadingResult => {
       await Promise.race([fontLoadPromise, timeoutPromise]);
 
       const allFontsLoaded = FontValidation.areAllCustomFontsLoaded();
-      if (!allFontsLoaded && __DEV__) {
-        console.warn('[useFonts] Some fonts may not have loaded properly');
+      if (!allFontsLoaded) {
+        logger.warn('[useFonts] Some fonts may not have loaded properly', {
+          component: 'useFonts',
+          action: 'fonts-incomplete',
+        });
       }
 
       setState('loaded');
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Unknown error occurred while loading fonts';
-      if (__DEV__) {
-        console.error('[useFonts] Font loading error:', errorMessage);
-      }
+
+      logger.error(
+        '[useFonts] Font loading error',
+        err instanceof Error ? err : new Error(errorMessage)
+      );
+
       setError(errorMessage);
       setState('error');
 

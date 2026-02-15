@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, TextInput, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
@@ -77,9 +77,23 @@ export default function SignIn() {
           router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
         },
         onError: (error: any) => {
-          const message = error?.message || 'Invalid credentials';
-          setPasswordError(message);
-          showError('Sign In Failed', message);
+          // Categorize error for better user messaging
+          let userMessage = 'Sign in failed. Please try again.';
+
+          if (error?.code === 'NETWORK_ERROR') {
+            userMessage = 'Connection error. Check your internet and try again.';
+          } else if (error?.status === 429) {
+            userMessage = 'Too many attempts. Please wait a moment.';
+          } else if (error?.status >= 500) {
+            userMessage = 'Server error. Please try again later.';
+          } else if (error?.status === 401 || error?.status === 403) {
+            userMessage = 'Invalid email or password.';
+          } else if (error?.message) {
+            userMessage = error.message;
+          }
+
+          setPasswordError(userMessage);
+          showError('Sign In Failed', userMessage);
           // Password already cleared from state above
         },
       }
@@ -88,7 +102,11 @@ export default function SignIn() {
 
   return (
     <AuthGradient>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={Platform.OS === 'android'}
+      />
       <KeyboardAwareScrollView
         contentContainerStyle={{
           flexGrow: 1,

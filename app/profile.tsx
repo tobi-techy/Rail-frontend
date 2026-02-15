@@ -32,6 +32,9 @@ const Profile = () => {
 
   // Format percentage with sign
   const formatPercentage = (value: number) => {
+    if (typeof value !== 'number' || isNaN(value)) {
+      return '0.00%';
+    }
     const sign = value >= 0 ? '+' : '';
     return `${sign}${value.toFixed(2)}%`;
   };

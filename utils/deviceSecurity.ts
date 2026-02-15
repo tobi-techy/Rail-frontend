@@ -1,10 +1,14 @@
 /**
  * Device Security Utilities
  * Detects compromised devices (jailbroken/rooted) and enforces security policies
+ *
+ * In production, app will block launch on compromised devices
+ * In development, warnings are logged but app continues
  */
 
 import JailMonkey from 'jail-monkey';
 import { Alert, Platform } from 'react-native';
+import { logger } from '../lib/logger';
 
 export interface SecurityCheckResult {
   isSecure: boolean;
@@ -51,9 +55,10 @@ export async function checkDeviceSecurity(): Promise<SecurityCheckResult> {
       hookDetected,
     };
   } catch (error) {
-    if (__DEV__) {
-      console.error('[deviceSecurity] Security check failed:', error);
-    }
+    logger.error(
+      '[deviceSecurity] Security check failed',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return {
       isSecure: true,
       isJailbroken: false,
@@ -66,18 +71,16 @@ export async function checkDeviceSecurity(): Promise<SecurityCheckResult> {
 }
 
 /**
- * Check device security and show warning if compromised
- * Returns true if device is secure, false if compromised
+ * Enforce device security checks
+ * In production: BLOCKS app on compromised device
+ * In development: Logs warning but allows continuation
+ *
+ * CRITICAL: Must be called during app initialization
  */
 export async function enforceDeviceSecurity(options?: {
   allowContinue?: boolean;
   onCompromised?: () => void;
 }): Promise<boolean> {
-  // Skip in development
-  if (__DEV__) {
-    return true;
-  }
-
   const result = await checkDeviceSecurity();
 
   if (!result.isSecure) {
@@ -87,17 +90,48 @@ export async function enforceDeviceSecurity(options?: {
     if (result.isDebuggedMode) issues.push('debugger attached');
     if (result.hookDetected) issues.push('tampering detected');
 
-    const message = `This device appears to be ${issues.join(', ')}. For your security, some features may be restricted.`;
+    logger.error('[DeviceSecurity] Device security check failed', {
+      component: 'DeviceSecurity',
+      action: 'security-check-failed',
+      issues,
+      isProduction: !__DEV__,
+      ...result,
+    });
 
-    if (options?.allowContinue) {
-      Alert.alert('Security Warning', message, [{ text: 'I Understand', style: 'default' }]);
+    const message = `This device appears to be ${issues.join(', ')}. For your security, the app cannot continue.`;
+
+    if (__DEV__) {
+      // In development, allow user to continue with warning
+      logger.warn('[DeviceSecurity] Allowing dev build to continue on compromised device', {
+        component: 'DeviceSecurity',
+        action: 'dev-override',
+        issues,
+      });
+
+      Alert.alert(
+        '⚠️ Development: Security Warning',
+        `${message}\n\nThis device is not secure, but the app is in development mode.`,
+        [{ text: 'Continue Anyway', style: 'default' }]
+      );
+      return true;
     } else {
-      Alert.alert('Security Warning', message, [
-        { text: 'OK', style: 'default', onPress: options?.onCompromised },
+      // In production, BLOCK the app
+      Alert.alert('🔒 Security Alert', message, [
+        {
+          text: 'Close App',
+          style: 'destructive',
+          onPress: () => {
+            // Exit the app
+            if (options?.onCompromised) {
+              options.onCompromised();
+            }
+          },
+        },
       ]);
-    }
 
-    return false;
+      // Prevent app from launching
+      return false;
+    }
   }
 
   return true;

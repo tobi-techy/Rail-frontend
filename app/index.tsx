@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { View, Text, FlatList, Dimensions, StatusBar, ViewToken } from 'react-native';
+import { View, Text, FlatList, StatusBar, ViewToken, useWindowDimensions } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { onBoard1, onBoard2, onBoard3, onBoard4 } from '../assets/images';
 import { Button } from '@/components/ui';
@@ -16,8 +16,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAppleSignIn } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { ROUTES } from '@/constants/routes';
-
-const { width, height } = Dimensions.get('window');
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface OnboardingSlide {
   key: string;
@@ -30,48 +29,50 @@ interface OnboardingSlide {
 const onboardingSlides: OnboardingSlide[] = [
   {
     key: '1',
-    titleTop: 'Drop it in.',
-    titleBottom: ['Watch it', 'work.'],
+    titleTop: 'Start small.',
+    titleBottom: ['Grow', 'big.'],
     description:
-      'Your money moves the second it lands. No buttons, no stress, no "what do I do now?" Just momentum.',
+      'Put your money to work with just a few taps. No experience needed, no complicated setup.',
     video: onBoard1,
   },
   {
     key: '2',
-    titleTop: 'Fund it',
-    titleBottom: ['however', 'you want.'],
-    description:
-      'Bank transfer, card, or digital dollars—pick your lane. Either way, it hits instantly.',
+    titleTop: 'Add money',
+    titleBottom: ['in', 'seconds.'],
+    description: 'Fund your account instantly. Simple, secure, and ready when you are.',
     video: onBoard2,
   },
   {
     key: '3',
-    titleTop: 'Grow',
-    titleBottom: ['without', 'the grind.'],
+    titleTop: 'Investing',
+    titleBottom: ['made', 'easy.'],
     description:
-      'Follow the pros or let the system cook. You never have to pretend you know what a P/E ratio is.',
+      'We handle the hard part. Your money is automatically invested in a diversified portfolio built for growth.',
     video: onBoard3,
   },
   {
     key: '4',
-    titleTop: 'Spend now.',
-    titleBottom: ['Stack', 'forever.'],
+    titleTop: 'Spend.',
+    titleBottom: ['Save.', 'Repeat.'],
     description:
-      'Every swipe rounds up and invests the change. Your coffee habit is secretly building your future.',
+      'Round up your everyday purchases and invest the spare change. Small steps, big results over time.',
     video: onBoard4,
   },
 ];
 
 const SLIDE_INTERVAL = 6000;
-const VIDEO_STYLE = { width, height: height * 0.7 };
 
 // Memoized video slide - only re-renders when isActive changes
 const VideoSlide = memo(function VideoSlide({
   item,
   isActive,
+  width,
+  height,
 }: {
   item: OnboardingSlide;
   isActive: boolean;
+  width: number;
+  height: number;
 }) {
   const player = useVideoPlayer(item.video, (p) => {
     p.loop = true;
@@ -91,18 +92,14 @@ const VideoSlide = memo(function VideoSlide({
     <View className="flex-1 items-center overflow-hidden bg-black" style={{ width }}>
       <View className="w-full flex-1 px-4 pt-16">
         <Text className="font-display text-[60px] font-black uppercase text-white">
-          {item.titleTop}
+          {item.titleTop} {item.titleBottom[0]} {item.titleBottom[1]}
         </Text>
-        <Text className="font-display text-[60px] font-black uppercase text-white">
-          {item.titleBottom[0]} {item.titleBottom[1]}
-        </Text>
-        <Text className="mt-4 font-body text-[14px] leading-5 text-white/80">
-          {item.description}
-        </Text>
+
+        <Text className="font-body text-[14px] leading-5 text-white/80">{item.description}</Text>
       </View>
       <VideoView
         player={player}
-        style={[VIDEO_STYLE, { position: 'absolute', bottom: 0 }]}
+        style={{ width, height: height * 0.8, position: 'absolute', bottom: 0 }}
         contentFit="cover"
         nativeControls={false}
       />
@@ -156,6 +153,8 @@ const IndicatorBar = memo(function IndicatorBar({
 });
 
 export default function App() {
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<OnboardingSlide>>(null);
   const progress = useSharedValue(0);
@@ -195,14 +194,14 @@ export default function App() {
       offset: width * index,
       index,
     }),
-    []
+    [width]
   );
 
   const renderItem = useCallback(
     ({ item, index }: { item: OnboardingSlide; index: number }) => (
-      <VideoSlide item={item} isActive={index === currentIndex} />
+      <VideoSlide item={item} isActive={index === currentIndex} width={width} height={height} />
     ),
-    [currentIndex]
+    [currentIndex, width, height]
   );
 
   return (
@@ -231,11 +230,14 @@ export default function App() {
 
         {/*<ProgressIndicator currentIndex={currentIndex} progress={progress} />*/}
 
-        <View className="absolute bottom-12 w-full gap-y-2 px-6">
+        <View
+          className="absolute left-0 right-0 px-5"
+          style={{ bottom: Math.max(insets.bottom, 16) + 12 }}>
           <View className="flex-row gap-x-3">
             <Button
               title="Sign Up with Apple"
               size="large"
+              flex
               onPress={() => {
                 appleSignIn(undefined, {
                   onSuccess: (resp) => {
@@ -255,7 +257,8 @@ export default function App() {
             <Button
               title="Continue with Mail"
               size="large"
-              onPress={() => router.push('/(auth)/signin')}
+              flex
+              onPress={() => router.push('/(tabs)')}
               variant="orange"
             />
           </View>

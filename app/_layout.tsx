@@ -1,30 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import * as SplashScreen from 'expo-splash-screen';
 import { initSentry } from '@/lib/sentry';
-import { initGlobalErrorHandlers } from '@/lib/logger';
+import { initGlobalErrorHandlers, logger } from '@/lib/logger';
+import { validateEnvironmentVariables } from '@/utils/envValidator';
 import { useFonts } from '@/hooks/useFonts';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { enforceDeviceSecurity } from '@/utils/deviceSecurity';
-import { SplashScreen } from '@/components/SplashScreen';
+import { SplashScreen as CustomSplash } from '@/components/SplashScreen';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { FeedbackPopupHost } from '@/components/ui';
 import queryClient from '@/api/queryClient';
 import SessionManager from '@/utils/sessionManager';
 import '../global.css';
 
-const SPLASH_BG = '#FF5A00';
+// Keep native splash visible until we're ready
+SplashScreen.preventAutoHideAsync();
 
-const SPLASH_MIN_DURATION_MS = 2000;
+const SPLASH_BG = '#FF2E01';
+
+const SPLASH_MIN_DURATION_MS = 5000;
 const SPLASH_MAX_DURATION_MS = 8000;
 
 const SPLASH_DEBUG = __DEV__;
 
 initSentry();
 initGlobalErrorHandlers();
+
+// Validate critical environment variables at startup
+const envValidation = validateEnvironmentVariables();
+if (!envValidation.isValid && !__DEV__) {
+  // In production, critical config errors should prevent app launch
+  logger.error('[Layout] Critical environment configuration missing', {
+    component: 'Layout',
+    action: 'env-validation-failed',
+    errors: envValidation.errors,
+  });
+}
 
 function AppNavigator() {
   return (
@@ -33,17 +49,21 @@ function AppNavigator() {
       <Stack.Screen name="login-passcode" />
       <Stack.Screen
         name="(auth)"
-        options={{
-          // Wrap auth screens in their own error boundary
-          // This prevents auth errors from affecting other parts of the app
-        }}
+        options={
+          {
+            // Wrap auth screens in their own error boundary
+            // This prevents auth errors from affecting other parts of the app
+          }
+        }
       />
       <Stack.Screen
         name="(tabs)"
-        options={{
-          // Wrap main app tabs in their own error boundary
-          // This prevents tab screen errors from affecting the entire app
-        }}
+        options={
+          {
+            // Wrap main app tabs in their own error boundary
+            // This prevents tab screen errors from affecting the entire app
+          }
+        }
       />
       <Stack.Screen name="spending-stash" />
       <Stack.Screen name="investment-stash" />
@@ -54,8 +74,8 @@ function AppNavigator() {
 export default function Layout() {
   const { fontsLoaded, error: fontError } = useFonts();
   const [showSplash, setShowSplash] = useState(true);
-  const [splashStartTime] = useState(() => Date.now());
   const [securityChecked, setSecurityChecked] = useState(false);
+  const [customSplashStartTime, setCustomSplashStartTime] = useState<number | null>(null);
 
   useProtectedRoute();
 
@@ -65,28 +85,47 @@ export default function Layout() {
     });
   }, []);
 
-  // Unified splash logic: wait for fonts, security, and min duration
+  // Hide native splash once custom splash is mounted, start timer
+  const onCustomSplashReady = useCallback(async () => {
+    if (customSplashStartTime === null) {
+      await SplashScreen.hideAsync();
+      setCustomSplashStartTime(Date.now());
+    }
+  }, [customSplashStartTime]);
+
+  // Unified splash logic: wait for fonts, security, and min duration from when custom splash showed
   useEffect(() => {
     const fontsReady = fontsLoaded || fontError;
-    if (!fontsReady || !securityChecked) return;
+    if (!fontsReady || !securityChecked || customSplashStartTime === null) return;
 
-    const elapsed = Date.now() - splashStartTime;
+    const elapsed = Date.now() - customSplashStartTime;
     const remaining = SPLASH_MIN_DURATION_MS - elapsed;
 
     if (remaining <= 0) {
-      if (SPLASH_DEBUG) console.log('[splash] Ready, hiding immediately');
+      logger.debug('[splash] Ready, hiding immediately', {
+        component: 'Layout',
+        action: 'splash-hide-immediate',
+      });
       setShowSplash(false);
     } else {
-      if (SPLASH_DEBUG) console.log('[splash] Ready, waiting', remaining, 'ms');
+      logger.debug('[splash] Ready, waiting', {
+        component: 'Layout',
+        action: 'splash-waiting',
+        remainingMs: remaining,
+      });
       const timer = setTimeout(() => setShowSplash(false), remaining);
       return () => clearTimeout(timer);
     }
-  }, [fontsLoaded, fontError, securityChecked, splashStartTime]);
+  }, [fontsLoaded, fontError, securityChecked, customSplashStartTime]);
 
   // Max timeout fallback
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (SPLASH_DEBUG) console.log('[splash] Max duration reached, forcing hide');
+      logger.warn('[splash] Max duration reached, forcing hide', {
+        component: 'Layout',
+        action: 'splash-max-timeout',
+        maxDurationMs: SPLASH_MAX_DURATION_MS,
+      });
       setShowSplash(false);
     }, SPLASH_MAX_DURATION_MS);
     return () => clearTimeout(timer);
@@ -98,7 +137,10 @@ export default function Layout() {
     try {
       SessionManager.initialize();
     } catch (error) {
-      if (__DEV__) console.error('[Layout] SessionManager init failed:', error);
+      logger.error(
+        '[Layout] SessionManager init failed',
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }, [showSplash]);
 
@@ -107,7 +149,7 @@ export default function Layout() {
   if (showSplash) {
     return (
       <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
-        <SplashScreen isReady={!!(fontsReady && securityChecked)} onAnimationComplete={() => {}} />
+        <CustomSplash onMounted={onCustomSplashReady} />
       </View>
     );
   }

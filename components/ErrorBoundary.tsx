@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from './atoms/Icon';
+import { logger } from '../lib/logger';
 import { safeError } from '../utils/logSanitizer';
 import { Sentry } from '../lib/sentry';
 import { Button } from '@/components/ui/Button';
@@ -36,8 +37,22 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    safeError('[ErrorBoundary] Caught error:', { message: error.message, name: error.name });
+    // Log error details with context
+    const errorMessage = error?.message || String(error);
+    const errorStack = error?.stack || 'No stack trace';
+
+    safeError('[ErrorBoundary] Caught error:', {
+      message: errorMessage,
+      name: error?.name,
+      stack: errorStack.substring(0, 200),
+    });
     safeError('[ErrorBoundary] Error info:', errorInfo);
+
+    // Log to console with full details for debugging
+    if (__DEV__) {
+      console.error('[ErrorBoundary] Full error:', error);
+      console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
+    }
 
     if (!__DEV__) {
       try {
@@ -55,9 +70,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           },
         });
       } catch (sentryError) {
-        if (__DEV__) {
-          console.error('[ErrorBoundary] Failed to send to Sentry:', sentryError);
-        }
+        logger.error(
+          '[ErrorBoundary] Failed to send to Sentry',
+          sentryError instanceof Error ? sentryError : new Error(String(sentryError))
+        );
       }
     }
   }
@@ -66,9 +82,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.retryCount++;
 
     if (this.retryCount >= this.maxRetries) {
-      if (__DEV__) {
-        console.warn('[ErrorBoundary] Max retries reached, preventing further resets');
-      }
+      logger.warn('[ErrorBoundary] Max retries reached, preventing further resets', {
+        component: 'ErrorBoundary',
+        action: 'max-retries-reached',
+        retryCount: this.retryCount,
+      });
       return;
     }
 
@@ -106,7 +124,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             {__DEV__ && (
               <View style={styles.errorDetails}>
                 <Text style={styles.errorTitle}>Error Details:</Text>
-                <Text style={styles.errorText}>{this.state.error.message}</Text>
+                <Text style={styles.errorText} numberOfLines={5}>
+                  {this.state.error.message?.substring(0, 200) || 'Unknown error'}
+                </Text>
               </View>
             )}
 

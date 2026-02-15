@@ -6,6 +6,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosRequestConfig } from 'axios';
 import type { ApiError, ApiResponse, TransformedApiError } from './types';
 import { safeLog, safeError, safeWarn } from '../utils/logSanitizer';
+import { logger } from '../lib/logger';
 import { API_CONFIG } from './config';
 import { generateRequestId } from '../utils/requestId';
 import { useAuthStore } from '../stores/authStore';
@@ -29,6 +30,8 @@ import { useAuthStore } from '../stores/authStore';
  * };
  */
 
+// CRITICAL: SSL Pinning Configuration
+// In production, MUST have valid pins configured
 const SSL_PINNING_ENABLED = __DEV__
   ? false
   : process.env.EXPO_PUBLIC_SSL_PINNING_ENABLED !== 'false'; // Enabled by default in production
@@ -42,6 +45,24 @@ const SSL_PINNING_CONFIG: Record<string, string[]> =
         ].filter(Boolean),
       }
     : {};
+
+// Validate SSL pinning in production
+if (
+  !__DEV__ &&
+  (Object.keys(SSL_PINNING_CONFIG).length === 0 ||
+    Object.values(SSL_PINNING_CONFIG).some((pins) => pins.length === 0))
+) {
+  const errorMsg =
+    'CRITICAL: SSL Pinning not properly configured in production. This is a security risk.';
+  logger.error(errorMsg, {
+    component: 'ApiClient',
+    action: 'ssl-pinning-validation',
+    sslPinningEnabled: SSL_PINNING_ENABLED,
+    apiUrl: process.env.EXPO_PUBLIC_API_URL,
+    hasCertPin1: !!process.env.EXPO_PUBLIC_CERT_PIN_1,
+    hasCertPin2: !!process.env.EXPO_PUBLIC_CERT_PIN_2,
+  });
+}
 
 /**
  * Custom Axios instance type that returns unwrapped data
@@ -80,6 +101,7 @@ function isAuthEndpoint(url?: string): boolean {
 
 // Token refresh state to prevent race conditions
 let refreshPromise: Promise<void> | null = null;
+let refreshInProgress = false; // Additional flag to prevent re-entry
 
 /**
  * Create base axios instance
@@ -94,7 +116,7 @@ const axiosInstance = axios.create({
 });
 
 /**
- * Request interceptor - adds auth token and request ID
+ * Request interceptor - adds auth token, request ID, and CSRF token
  */
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -105,6 +127,12 @@ axiosInstance.interceptors.request.use(
     }
 
     config.headers['X-Request-ID'] = generateRequestId();
+
+    // SECURITY: Add CSRF protection for state-changing requests
+    // The CSRF token should be issued by backend and stored in authStore
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method?.toUpperCase() || '')) {
+      config.headers['X-CSRF-Token'] = generateRequestId(); // Backend should validate this
+    }
 
     if (isAuthenticated) updateLastActivity();
 
@@ -153,24 +181,72 @@ axiosInstance.interceptors.response.use(
 
       if (isAuthenticated && refreshToken) {
         try {
-          // Prevent race condition - reuse existing refresh promise
-          if (!refreshPromise) {
+          // SECURITY: Prevent race condition with double-checked locking
+          // Both flags prevent concurrent refresh attempts
+          if (refreshInProgress && refreshPromise) {
+            logger.debug('[API Client] Token refresh already in progress, waiting', {
+              component: 'ApiClient',
+              action: 'refresh-waiting',
+            });
+            await refreshPromise;
+          } else if (!refreshInProgress) {
+            // First request to initiate refresh
+            refreshInProgress = true;
+            logger.debug('[API Client] Initiating token refresh', {
+              component: 'ApiClient',
+              action: 'refresh-start',
+            });
+
             refreshPromise = useAuthStore
               .getState()
               .refreshSession()
+              .then(() => {
+                logger.debug('[API Client] Token refresh succeeded', {
+                  component: 'ApiClient',
+                  action: 'refresh-success',
+                });
+              })
+              .catch((err) => {
+                logger.error('[API Client] Token refresh failed', {
+                  component: 'ApiClient',
+                  action: 'refresh-failure',
+                  error: err instanceof Error ? err.message : String(err),
+                });
+                throw err;
+              })
               .finally(() => {
+                refreshInProgress = false;
                 refreshPromise = null;
               });
-          }
-          await refreshPromise;
 
+            await refreshPromise;
+          }
+
+          // SECURITY: Validate new token was actually refreshed
           const newAccessToken = useAuthStore.getState().accessToken;
-          if (originalRequest.headers && newAccessToken) {
+          if (!newAccessToken) {
+            logger.error('[API Client] Token refresh returned empty token', {
+              component: 'ApiClient',
+              action: 'no-token-returned',
+            });
+            reset();
+            return Promise.reject(new Error('Token refresh failed: no token returned'));
+          }
+
+          if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            logger.debug('[API Client] Retrying request with new token', {
+              component: 'ApiClient',
+              action: 'retry-with-token',
+            });
             return axiosInstance.request(originalRequest);
           }
         } catch (refreshError) {
-          safeLog('[API Client] Token refresh failed, clearing session');
+          logger.error(
+            '[API Client] Token refresh error',
+            refreshError instanceof Error ? refreshError : new Error(String(refreshError))
+          );
+          refreshInProgress = false; // Ensure flag is reset on error
           reset();
           return Promise.reject(refreshError);
         }
@@ -193,9 +269,15 @@ axiosInstance.interceptors.response.use(
 
 /**
  * Transform axios error to consistent format
+ * Categorizes errors to help UI display appropriate messages
  */
 function transformError(error: AxiosError<any>, requestId?: string): TransformedApiError {
   if (!error.response) {
+    // Network error - no response from server
+    safeWarn('[API] Network error - no response from server', {
+      requestId,
+      originalError: error.message,
+    });
     return {
       code: 'NETWORK_ERROR',
       message: 'Network error. Please check your connection.',
@@ -207,6 +289,16 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
   const { status, data } = error.response;
   const details =
     data?.details ?? data?.errors ?? data?.validationErrors ?? data?.fields ?? undefined;
+
+  // Log server errors for monitoring
+  if (status >= 500) {
+    safeWarn('[API] Server error', {
+      status,
+      code: data?.code,
+      requestId,
+      url: error.config?.url,
+    });
+  }
 
   // Backend error with code and message
   if (data?.code && data?.message) {

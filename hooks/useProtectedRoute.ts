@@ -3,6 +3,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import { router, useSegments, usePathname } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { authService, passcodeService } from '@/api/services';
+import { logger } from '@/lib/logger';
 import type { AuthState } from '@/types/routing.types';
 import {
   buildRouteConfig,
@@ -30,6 +31,7 @@ export function useProtectedRoute() {
     hasPasscode: useAuthStore((state) => state.hasPasscode),
     onboardingStatus: useAuthStore((state) => state.onboardingStatus),
     pendingVerificationEmail: useAuthStore((state) => state.pendingVerificationEmail),
+    lastActivityAt: useAuthStore((state) => state.lastActivityAt),
   };
 
   const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
@@ -53,9 +55,11 @@ export function useProtectedRoute() {
         });
       }
     } catch (error) {
-      if (__DEV__) {
-        console.warn('[Auth] Failed to refresh user profile state:', error);
-      }
+      logger.warn('[Auth] Failed to refresh user profile state', {
+        component: 'useProtectedRoute',
+        action: 'refresh-user-profile',
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     try {
@@ -64,9 +68,11 @@ export function useProtectedRoute() {
         hasPasscode: Boolean(passcodeStatus.enabled),
       });
     } catch (error) {
-      if (__DEV__) {
-        console.warn('[Auth] Failed to refresh passcode status:', error);
-      }
+      logger.warn('[Auth] Failed to refresh passcode status', {
+        component: 'useProtectedRoute',
+        action: 'refresh-passcode-status',
+        error: error instanceof Error ? error.message : String(error),
+      });
       useAuthStore.setState({ hasPasscode: false });
     }
   }, []);
@@ -77,9 +83,10 @@ export function useProtectedRoute() {
     // Removed artificial delays - let the app initialize naturally
 
     const initializeApp = async () => {
-      if (__DEV__) {
-        console.log('[Auth] App initializing - checking routing...');
-      }
+      logger.debug('[Auth] App initializing - checking routing...', {
+        component: 'useProtectedRoute',
+        action: 'initialize-app',
+      });
 
       try {
         const welcomed = await checkWelcomeStatus();
@@ -88,12 +95,12 @@ export function useProtectedRoute() {
         const freshState = useAuthStore.getState();
         const hasValidAuthData = freshState.isAuthenticated && freshState.accessToken;
 
-        if (__DEV__) {
-          console.log('[Auth] State after hydration:', {
-            hasUser: !!freshState.user,
-            isAuthenticated: freshState.isAuthenticated,
-          });
-        }
+        logger.debug('[Auth] State after hydration', {
+          component: 'useProtectedRoute',
+          action: 'hydration-complete',
+          hasUser: !!freshState.user,
+          isAuthenticated: freshState.isAuthenticated,
+        });
 
         if (hasValidAuthData) {
           const shouldValidate = __DEV__ ? freshState.lastActivityAt : true;
@@ -101,26 +108,32 @@ export function useProtectedRoute() {
             try {
               const isValid = await validateAccessToken();
               if (!isValid) {
-                if (__DEV__) {
-                  console.log('[Auth] Token invalid on app load');
-                }
+                logger.info('[Auth] Token invalid on app load', {
+                  component: 'useProtectedRoute',
+                  action: 'token-validation-failed',
+                });
                 SessionManager.handleSessionExpired();
                 return;
               }
             } catch (validationError) {
-              if (__DEV__) {
-                console.warn('[Auth] Token validation failed, continuing:', validationError);
-              }
+              logger.warn('[Auth] Token validation failed, continuing', {
+                component: 'useProtectedRoute',
+                action: 'token-validation-error',
+                error:
+                  validationError instanceof Error
+                    ? validationError.message
+                    : String(validationError),
+              });
             }
           }
 
           await refreshBackendAuthState();
         }
-
       } catch (error) {
-        if (__DEV__) {
-          console.error('[Auth] Error initializing app:', error);
-        }
+        logger.error(
+          '[Auth] Error initializing app',
+          error instanceof Error ? error : new Error(String(error))
+        );
       } finally {
         setIsReady(true);
       }
@@ -135,9 +148,10 @@ export function useProtectedRoute() {
       'change',
       async (nextAppState: AppStateStatus) => {
         if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
-          if (__DEV__) {
-            console.log('[Auth] App going to background - clearing passcode session for security');
-          }
+          logger.debug('[Auth] App going to background - clearing passcode session for security', {
+            component: 'useProtectedRoute',
+            action: 'app-background',
+          });
 
           const { isAuthenticated, clearPasscodeSession } = useAuthStore.getState();
           if (isAuthenticated) {
@@ -146,27 +160,28 @@ export function useProtectedRoute() {
         }
 
         if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-          if (__DEV__) {
-            console.log('[Auth] App came to foreground - re-validating routing');
-          }
+          logger.debug('[Auth] App came to foreground - re-validating routing', {
+            component: 'useProtectedRoute',
+            action: 'app-foreground',
+          });
 
           const freshState = useAuthStore.getState();
 
           if (freshState.isAuthenticated && SessionManager.isPasscodeSessionExpired()) {
-            if (__DEV__) {
-              console.log(
-                '[Auth] Passcode session expired - need to re-authenticate with passcode'
-              );
-            }
+            logger.info('[Auth] Passcode session expired - need to re-authenticate with passcode', {
+              component: 'useProtectedRoute',
+              action: 'passcode-session-expired',
+            });
             SessionManager.handlePasscodeSessionExpired();
             return;
           }
 
           if (freshState.isAuthenticated) {
             if (freshState.checkTokenExpiry()) {
-              if (__DEV__) {
-                console.log('[Auth] 7-day token expired after app resume');
-              }
+              logger.info('[Auth] 7-day token expired after app resume', {
+                component: 'useProtectedRoute',
+                action: 'token-expired-on-resume',
+              });
               SessionManager.handleSessionExpired();
               return;
             }
@@ -187,9 +202,10 @@ export function useProtectedRoute() {
 
   useEffect(() => {
     if (!isReady) {
-      if (__DEV__) {
-        console.log('[Auth] Routing check skipped - app not ready');
-      }
+      logger.debug('[Auth] Routing check skipped - app not ready', {
+        component: 'useProtectedRoute',
+        action: 'routing-check-skipped',
+      });
       return;
     }
 
@@ -202,6 +218,7 @@ export function useProtectedRoute() {
       onboardingStatus: freshAuthState.onboardingStatus,
       hasPasscode: freshAuthState.hasPasscode,
       pendingVerificationEmail: freshAuthState.pendingVerificationEmail,
+      lastActivityAt: freshAuthState.lastActivityAt,
     };
 
     const hasValidPasscodeSession = currentAuthState.isAuthenticated
@@ -216,34 +233,38 @@ export function useProtectedRoute() {
       hasValidPasscodeSession
     );
 
-    if (__DEV__) {
-      console.log('[Auth] Routing check:', {
-        currentPath: pathname,
-        targetRoute,
-        isAuthenticated: currentAuthState.isAuthenticated,
-        hasUser: !!currentAuthState.user,
-        hasPasscode: currentAuthState.hasPasscode,
-        hasValidPasscodeSession,
-      });
-    }
+    logger.debug('[Auth] Routing check', {
+      component: 'useProtectedRoute',
+      action: 'routing-check',
+      currentPath: pathname,
+      targetRoute,
+      isAuthenticated: currentAuthState.isAuthenticated,
+      hasUser: !!currentAuthState.user,
+      hasPasscode: currentAuthState.hasPasscode,
+      hasValidPasscodeSession,
+    });
 
     if (targetRoute) {
       const normalizedTargetRoute = normalizeRoutePath(targetRoute);
       if (normalizedTargetRoute === pathname) {
-        if (__DEV__) {
-          console.log('[Auth] Target route already active');
-        }
+        logger.debug('[Auth] Target route already active', {
+          component: 'useProtectedRoute',
+          action: 'route-already-active',
+        });
         return;
       }
 
-      if (__DEV__) {
-        console.log(`[Auth] Navigating to: ${targetRoute}`);
-      }
+      logger.debug(`[Auth] Navigating to: ${targetRoute}`, {
+        component: 'useProtectedRoute',
+        action: 'navigate',
+        targetRoute,
+      });
       router.replace(targetRoute as any);
     } else {
-      if (__DEV__) {
-        console.log('[Auth] No navigation needed - user is in correct place');
-      }
+      logger.debug('[Auth] No navigation needed - user is in correct place', {
+        component: 'useProtectedRoute',
+        action: 'no-navigation-needed',
+      });
     }
   }, [
     authState.user,

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StatusBar } from 'react-native';
+import { View, Text, StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -111,7 +111,11 @@ export default function KYCVerificationScreen() {
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1 px-6 pb-8">
-        <StatusBar barStyle="dark-content" />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={Platform.OS === 'android'}
+        />
 
         <StaggeredChild index={0}>
           <View className="mt-16">

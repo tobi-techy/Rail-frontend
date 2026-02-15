@@ -29,6 +29,9 @@ export const ENDPOINTS = {
   PORTFOLIO: {
     OVERVIEW: '/v1/portfolio/overview',
   },
+  ACCOUNT: {
+    STATION: '/v1/account/station',
+  },
   USER: {
     PROFILE: '/user/profile',
     UPDATE: '/user/update',

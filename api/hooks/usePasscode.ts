@@ -7,6 +7,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { passcodeService } from '../services';
 import { queryKeys } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
+import { logger } from '../../lib/logger';
 import type {
   CreatePasscodeRequest,
   UpdatePasscodeRequest,
@@ -44,14 +45,51 @@ export function useCreatePasscode() {
 }
 
 /**
+ * Retry logic with exponential backoff for network errors
+ */
+const retryWithBackoff = async <T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  initialDelayMs: number = 500
+): Promise<T> => {
+  let lastError: any;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      // Only retry on network errors, not auth errors
+      const isNetworkError =
+        !(error as any)?.response ||
+        (error as any)?.message?.includes('Network') ||
+        (error as any)?.message?.includes('timeout');
+
+      if (!isNetworkError || attempt === maxRetries) {
+        throw error;
+      }
+
+      // Exponential backoff: 500ms, 1s, 2s
+      const delayMs = initialDelayMs * Math.pow(2, attempt);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  throw lastError;
+};
+
+/**
  * Verify passcode mutation
  * Used for both authentication (login) and authorization (withdrawals)
  * - For login: Returns and stores accessToken + refreshToken
  * - For withdrawals: Returns optional sessionToken for sensitive operations
+ * - Network errors are automatically retried with exponential backoff
  */
 export function useVerifyPasscode() {
   return useMutation({
-    mutationFn: (data: VerifyPasscodeRequest) => passcodeService.verifyPasscode(data),
+    mutationFn: (data: VerifyPasscodeRequest) =>
+      retryWithBackoff(() => passcodeService.verifyPasscode(data)),
     onSuccess: (response) => {
       if (response.verified) {
         const now = new Date();
@@ -66,7 +104,10 @@ export function useVerifyPasscode() {
 
         // Add authentication tokens (for login flow)
         if (response.accessToken && response.refreshToken) {
-          console.log('[useVerifyPasscode] Storing access and refresh tokens');
+          logger.debug('[useVerifyPasscode] Storing access and refresh tokens', {
+            component: 'useVerifyPasscode',
+            action: 'store-tokens',
+          });
           updates.accessToken = response.accessToken;
           updates.refreshToken = response.refreshToken;
 
@@ -79,12 +120,17 @@ export function useVerifyPasscode() {
 
         // Add passcode session tokens (for withdrawal/sensitive operations)
         if (response.passcodeSessionToken && response.passcodeSessionExpiresAt) {
-          console.log('[useVerifyPasscode] Storing passcode session tokens');
+          logger.debug('[useVerifyPasscode] Storing passcode session tokens', {
+            component: 'useVerifyPasscode',
+            action: 'store-passcode-tokens',
+          });
           updates.passcodeSessionToken = response.passcodeSessionToken;
           updates.passcodeSessionExpiresAt = response.passcodeSessionExpiresAt;
         }
 
-        console.log('[useVerifyPasscode] Applying updates to auth store:', {
+        logger.debug('[useVerifyPasscode] Applying updates to auth store', {
+          component: 'useVerifyPasscode',
+          action: 'apply-updates',
           hasAccessToken: !!updates.accessToken,
           hasRefreshToken: !!updates.refreshToken,
           hasPasscodeSessionToken: !!updates.passcodeSessionToken,

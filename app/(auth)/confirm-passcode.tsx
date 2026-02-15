@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
@@ -43,7 +43,11 @@ export default function ConfirmPasscodeScreen() {
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1">
-        <StatusBar barStyle="dark-content" />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={Platform.OS === 'android'}
+        />
         <PasscodeInput
           title="Confirm your PIN"
           subtitle={isLoading ? 'Saving your PIN...' : 'Re-enter your PIN to confirm'}

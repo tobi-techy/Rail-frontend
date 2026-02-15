@@ -32,9 +32,7 @@ export const AuthScreen = ({
       <StaggeredChild index={0}>
         <View className="mb-8 mt-4">
           <Text className="font-subtitle text-[50px] leading-[1.05] text-black">{title}</Text>
-          {subtitle && (
-            <Text className="font-body mt-2 text-[14px] text-black/60">{subtitle}</Text>
-          )}
+          {subtitle && <Text className="mt-2 font-body text-[14px] text-black/60">{subtitle}</Text>}
         </View>
       </StaggeredChild>
 
@@ -58,16 +56,22 @@ export const AuthScreen = ({
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1" edges={['top']}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={Platform.OS === 'android'}
+        />
         {scrollable ? (
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'android' ? 20 : 0}
             className="flex-1">
             <ScrollView
               className="flex-1"
               contentContainerClassName="flex-grow"
               keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}>
+              showsVerticalScrollIndicator={false}
+              bounces={Platform.OS === 'ios'}>
               {content}
             </ScrollView>
           </KeyboardAvoidingView>

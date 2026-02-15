@@ -52,28 +52,28 @@ export const layout = {
   isAndroid: Platform.OS === 'android',
   isTallDisplay,
   isSmallDevice,
-  
+
   // Spacing
   screenPadding: scale(24),
   inputGap: verticalScale(16),
   sectionGap: verticalScale(isTallDisplay ? 32 : 24),
-  
+
   // Title sizing - smaller on tall displays to leave room for content
   titleSize: isTallDisplay ? scale(42) : scale(50),
   subtitleSize: scale(14),
-  
+
   // Button area
   buttonBottomPadding: verticalScale(isTallDisplay ? 24 : 16),
-  
+
   // Keyboard behavior
-  keyboardBehavior: Platform.OS === 'ios' ? 'padding' : 'height' as const,
+  keyboardBehavior: Platform.OS === 'ios' ? 'padding' : ('height' as const),
   keyboardVerticalOffset: Platform.OS === 'ios' ? 0 : 20,
 } as const;
 
 /**
  * Get responsive value based on device type
  */
-export const responsive = <T,>(options: { default: T; tall?: T; small?: T; android?: T }): T => {
+export const responsive = <T>(options: { default: T; tall?: T; small?: T; android?: T }): T => {
   if (Platform.OS === 'android' && options.android !== undefined) return options.android;
   if (isTallDisplay && options.tall !== undefined) return options.tall;
   if (isSmallDevice && options.small !== undefined) return options.small;

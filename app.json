@@ -36,7 +36,7 @@
     "userInterfaceStyle": "light",
     "assetBundlePatterns": ["**/*"],
     "splash": {
-      "backgroundColor": "#FF5A00"
+      "backgroundColor": "#FF2E01"
     },
     "ios": {
       "supportsTablet": true,

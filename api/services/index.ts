@@ -10,6 +10,7 @@ export { userService } from './user.service';
 export { passcodeService } from './passcode.service';
 export { onboardingService } from './onboarding.service';
 export { kycService } from './kyc.service';
+export { stationService } from './station.service';
 
 // Re-export for convenience
 export { default as auth } from './auth.service';
@@ -19,3 +20,4 @@ export { default as user } from './user.service';
 export { default as passcode } from './passcode.service';
 export { default as onboarding } from './onboarding.service';
 export { default as kyc } from './kyc.service';
+export { default as station } from './station.service';

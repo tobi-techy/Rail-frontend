@@ -14,7 +14,7 @@ describe('env utility', () => {
     process.env.EXPO_PUBLIC_API_URL = undefined;
     // In dev mode, should fallback to localhost
     const { env } = require('../../utils/env');
-    expect(env.EXPO_PUBLIC_API_URL).toBe('http://localhost:3000');
+    expect(env.EXPO_PUBLIC_API_URL).toBe('http://localhost:8080');
   });
 
   it('should use provided API URL when set', () => {
@@ -30,5 +30,15 @@ describe('env utility', () => {
     const { env, isDev } = require('../../utils/env');
     expect(env.EXPO_PUBLIC_ENV).toBe('development');
     expect(isDev).toBe(true);
+  });
+
+  it('should use staging fallback API URL when EXPO_PUBLIC_ENV=staging', () => {
+    process.env.EXPO_PUBLIC_ENV = 'staging';
+    process.env.EXPO_PUBLIC_API_URL = undefined;
+    jest.resetModules();
+    const { env } = require('../../utils/env');
+    expect(env.EXPO_PUBLIC_API_URL).toBe(
+      'https://rail-backend-service-production.up.railway.app/api'
+    );
   });
 });

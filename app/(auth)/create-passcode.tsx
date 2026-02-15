@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StatusBar } from 'react-native';
+import { Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
@@ -19,7 +19,11 @@ export default function CreatePasscodeScreen() {
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1">
-        <StatusBar barStyle="dark-content" />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={Platform.OS === 'android'}
+        />
         <PasscodeInput
           title="Create your PIN"
           subtitle="Choose a 4-digit PIN to secure your account"

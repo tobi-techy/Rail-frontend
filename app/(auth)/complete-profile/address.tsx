@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StatusBar, ScrollView } from 'react-native';
+import { View, Text, StatusBar, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
@@ -68,7 +68,11 @@ export default function Address() {
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1" edges={['top']}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={Platform.OS === 'android'}
+        />
         <ScrollView
           className="flex-1"
           contentContainerClassName="flex-grow"
@@ -78,9 +82,7 @@ export default function Address() {
             <StaggeredChild index={0}>
               <View className="mb-8 mt-4">
                 <Text className="font-subtitle text-[50px] text-black">Address</Text>
-                <Text className="font-body mt-2 text-[14px] text-black/60">
-                  Where do you live?
-                </Text>
+                <Text className="mt-2 font-body text-[14px] text-black/60">Where do you live?</Text>
               </View>
             </StaggeredChild>
 

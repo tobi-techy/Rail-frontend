@@ -1,9 +1,12 @@
 /**
  * Authentication API Service
  * Handles all authentication-related API calls
+ * SECURITY: Includes rate limiting and validation
  */
 
 import apiClient from '../client';
+import { loginRateLimiter, passwordResetRateLimiter } from '../../utils/rateLimiter';
+import { validateEmail, validatePassword } from '../../utils/inputValidator';
 import type {
   LoginRequest,
   LoginResponse,
@@ -36,9 +39,29 @@ const AUTH_ENDPOINTS = {
 export const authService = {
   /**
    * Login user with email and password
+   * SECURITY: Rate limited to prevent brute force attacks
    * @returns User info with access and refresh tokens
    */
   async login(data: LoginRequest): Promise<LoginResponse> {
+    // SECURITY: Rate limiting
+    if (!loginRateLimiter.isAllowed('login', 5, 300000)) {
+      // 5 attempts per 5 minutes
+      const resetTime = loginRateLimiter.getResetTime('login');
+      throw new Error(
+        `Too many login attempts. Try again in ${Math.ceil(resetTime / 1000)} seconds`
+      );
+    }
+
+    // SECURITY: Validate email input
+    const emailValidation = validateEmail(data.email || '');
+    if (!emailValidation.isValid) {
+      const errorMessage =
+        emailValidation.errors && emailValidation.errors.length > 0
+          ? emailValidation.errors[0]
+          : 'Invalid email format';
+      throw new Error(errorMessage);
+    }
+
     return apiClient.post<LoginResponse>(AUTH_ENDPOINTS.LOGIN, data);
   },
 
@@ -109,15 +132,37 @@ export const authService = {
 
   /**
    * Send forgot password email
+   * SECURITY: Rate limited and validated
    */
   async forgotPassword(data: ForgotPasswordRequest): Promise<void> {
+    // SECURITY: Rate limiting - 3 requests per hour
+    if (!passwordResetRateLimiter.isAllowed('forgot-password', 3, 3600000)) {
+      const resetTime = passwordResetRateLimiter.getResetTime('forgot-password');
+      throw new Error(
+        `Too many password reset requests. Try again in ${Math.ceil(resetTime / 60000)} minutes`
+      );
+    }
+
+    // SECURITY: Validate email input
+    const emailValidation = validateEmail(data.email);
+    if (!emailValidation.isValid) {
+      throw new Error(emailValidation.errors[0] || 'Invalid email format');
+    }
+
     return apiClient.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, data);
   },
 
   /**
    * Reset password with token
+   * SECURITY: Validates password strength
    */
   async resetPassword(data: ResetPasswordRequest): Promise<void> {
+    // SECURITY: Validate password strength
+    const passwordValidation = validatePassword(data.password);
+    if (!passwordValidation.isValid) {
+      throw new Error(passwordValidation.errors[0] || 'Password does not meet requirements');
+    }
+
     return apiClient.post(AUTH_ENDPOINTS.RESET_PASSWORD, data);
   },
 

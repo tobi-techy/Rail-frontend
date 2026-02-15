@@ -132,7 +132,11 @@ export default function VerifyEmail() {
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1" edges={['top', 'bottom']}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={Platform.OS === 'android'}
+        />
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -151,7 +155,7 @@ export default function VerifyEmail() {
                     <Text className="font-body text-[18px] text-black/60">
                       The code has been sent to
                     </Text>
-                    <Text className="font-subtitle mt-1 text-[28px] text-black">
+                    <Text className="mt-1 font-subtitle text-[28px] text-black">
                       {pendingEmail || 'your email'}
                     </Text>
                   </View>
@@ -189,13 +193,16 @@ export default function VerifyEmail() {
                 <StaggeredChild index={4} delay={80}>
                   <View className="items-center">
                     {canResend ? (
-                      <TouchableOpacity onPress={handleResend} className="py-2" disabled={isResending}>
+                      <TouchableOpacity
+                        onPress={handleResend}
+                        className="py-2"
+                        disabled={isResending}>
                         <Text className="font-body text-base text-black">
                           {isResending ? 'Resending...' : "Didn't receive the code? Resend"}
                         </Text>
                       </TouchableOpacity>
                     ) : (
-                      <Text className="font-caption py-2 text-base text-black/40">
+                      <Text className="py-2 font-caption text-base text-black/40">
                         Resend code in {resendTimer}s
                       </Text>
                     )}

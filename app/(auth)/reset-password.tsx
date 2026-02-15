@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StatusBar } from 'react-native';
+import { View, Text, StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -70,7 +70,11 @@ export default function ResetPassword() {
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1">
-        <StatusBar barStyle="dark-content" />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={Platform.OS === 'android'}
+        />
         <KeyboardAwareScrollView
           className="flex-1"
           contentContainerStyle={{ flexGrow: 1 }}
@@ -80,7 +84,7 @@ export default function ResetPassword() {
             <StaggeredChild index={0}>
               <View className="mb-8 mt-4">
                 <Text className="font-subtitle text-[60px] text-black">Reset password</Text>
-                <Text className="font-body mt-2 text-base text-black/60">
+                <Text className="mt-2 font-body text-base text-black/60">
                   Enter a new password to secure your account.
                 </Text>
               </View>

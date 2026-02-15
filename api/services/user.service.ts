@@ -85,10 +85,7 @@ export const userService = {
   async submitKYC(data: KYCVerificationRequest): Promise<KYCVerificationResponse> {
     // If images are base64, use regular post
     // If images are files, use uploadFile helper
-    return apiClient.post<KYCVerificationResponse>(
-      USER_ENDPOINTS.KYC_SUBMIT,
-      data
-    );
+    return apiClient.post<KYCVerificationResponse>(USER_ENDPOINTS.KYC_SUBMIT, data);
   },
 
   /**
@@ -123,11 +120,15 @@ export const userService = {
 
   /**
    * Remove a device
+   * SECURITY: Validate and sanitize deviceId before interpolation
    */
   async removeDevice(data: RemoveDeviceRequest): Promise<void> {
-    return apiClient.delete(
-      USER_ENDPOINTS.REMOVE_DEVICE.replace(':id', data.deviceId)
-    );
+    // SECURITY: Validate deviceId format to prevent path traversal
+    if (!data.deviceId || !/^[a-zA-Z0-9_-]+$/.test(data.deviceId)) {
+      throw new Error('Invalid device ID format');
+    }
+
+    return apiClient.delete(USER_ENDPOINTS.REMOVE_DEVICE.replace(':id', data.deviceId));
   },
 };
 

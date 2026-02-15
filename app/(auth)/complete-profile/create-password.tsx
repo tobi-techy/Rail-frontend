@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StatusBar } from 'react-native';
+import { View, Text, StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
@@ -12,7 +12,10 @@ import type { OnboardingCompleteRequest } from '@/api/types';
 
 const E164_REGEX = /^\+[1-9]\d{7,14}$/;
 
-const normalizePhone = (rawPhone: string | undefined, country: string | undefined): string | undefined => {
+const normalizePhone = (
+  rawPhone: string | undefined,
+  country: string | undefined
+): string | undefined => {
   if (!rawPhone?.trim()) return undefined;
   const compact = rawPhone.replace(/[^\d+]/g, '');
   if (compact.startsWith('+')) {
@@ -73,8 +76,16 @@ export default function CreatePassword() {
       phone: normalizePhone(registrationData.phone, registrationData.country),
     };
 
-    if (!payload.firstName || !payload.lastName || !payload.dateOfBirth || !payload.country ||
-        !payload.address.street || !payload.address.city || !payload.address.state || !payload.address.postalCode) {
+    if (
+      !payload.firstName ||
+      !payload.lastName ||
+      !payload.dateOfBirth ||
+      !payload.country ||
+      !payload.address.street ||
+      !payload.address.city ||
+      !payload.address.state ||
+      !payload.address.postalCode
+    ) {
       showWarning('Incomplete Profile', 'Please complete all required profile fields.');
       router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
       return;
@@ -95,14 +106,16 @@ export default function CreatePassword() {
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1" edges={['top']}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={Platform.OS === 'android'}
+        />
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
               <Text className="font-subtitle text-[50px] text-black">Create Password</Text>
-              <Text className="font-body mt-2 text-[14px] text-black/60">
-                Secure your account
-              </Text>
+              <Text className="mt-2 font-body text-[14px] text-black/60">Secure your account</Text>
             </View>
           </StaggeredChild>
 
@@ -142,11 +155,7 @@ export default function CreatePassword() {
 
           <StaggeredChild index={3} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button 
-                title="Complete Profile" 
-                onPress={handleSubmit} 
-                loading={isPending}
-              />
+              <Button title="Complete Profile" onPress={handleSubmit} loading={isPending} />
             </View>
           </StaggeredChild>
         </View>

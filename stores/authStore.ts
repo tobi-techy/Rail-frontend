@@ -4,7 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService, passcodeService } from '../api/services';
 import type { User as ApiUser } from '../api/types';
 import { secureStorage } from '../utils/secureStorage';
-import { safeError } from '../utils/logSanitizer';
+import { safeError, sanitizeForLog } from '../utils/logSanitizer';
+import { logger } from '../lib/logger';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 500;
@@ -57,6 +58,7 @@ interface AuthState {
 
   // Onboarding State
   hasCompletedOnboarding: boolean;
+  hasAcknowledgedDisclaimer: boolean;
   onboardingStatus: string | null;
   currentOnboardingStep: string | null;
   registrationData: RegistrationData;
@@ -109,6 +111,7 @@ interface AuthActions {
   setPendingEmail: (email: string | null) => void;
   setOnboardingStatus: (status: string, step?: string) => void;
   setHasCompletedOnboarding: (completed: boolean) => void;
+  setHasAcknowledgedDisclaimer: (acknowledged: boolean) => void;
   setHasPasscode: (hasPasscode: boolean) => void;
 
   // Registration Flow
@@ -132,6 +135,7 @@ const initialState: AuthState = {
   tokenIssuedAt: null,
   tokenExpiresAt: null,
   hasCompletedOnboarding: false,
+  hasAcknowledgedDisclaimer: false,
   onboardingStatus: null,
   currentOnboardingStep: null,
   pendingVerificationEmail: null,
@@ -286,10 +290,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             set({ loginAttempts: newAttempts });
           }
 
-          const errorMessage =
+          // SECURITY: Sanitize error message before storing in state
+          const rawErrorMessage =
             error?.error?.message ||
             error?.message ||
             'Login failed. Please check your credentials.';
+          const errorMessage = sanitizeForLog(rawErrorMessage);
+
           set({
             error: errorMessage,
             isLoading: false,
@@ -351,8 +358,10 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           });
         } catch (error: any) {
           safeError('[AuthStore] Registration failed:', error);
-          const errorMessage =
+          // SECURITY: Sanitize error message before storing in state
+          const rawErrorMessage =
             error?.error?.message || error?.message || 'Registration failed. Please try again.';
+          const errorMessage = sanitizeForLog(rawErrorMessage);
           set({
             error: errorMessage,
             isLoading: false,
@@ -459,11 +468,47 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         // If no passcode session token, it's expired/missing
         if (!passcodeSessionToken || !passcodeSessionExpiresAt) return true;
 
-        // Check if passcode session has expired (10 mins)
-        const expiryTime = new Date(passcodeSessionExpiresAt).getTime();
-        const now = new Date().getTime();
+        // SECURITY: Validate passcode session timestamp format and value
+        try {
+          const expiryTime = new Date(passcodeSessionExpiresAt).getTime();
+          const now = new Date().getTime();
 
-        return now >= expiryTime;
+          // SECURITY: Check for invalid timestamp (NaN indicates parsing failure)
+          if (isNaN(expiryTime)) {
+            logger.warn('[AuthStore] Invalid passcode session expiry timestamp', {
+              component: 'AuthStore',
+              action: 'invalid-expiry',
+              expiresAt: passcodeSessionExpiresAt,
+            });
+            return true; // Treat as expired for security
+          }
+
+          // SECURITY: Check for suspicious clock skew (future date beyond 15 minutes)
+          const MAX_CLOCK_SKEW = 15 * 60 * 1000; // 15 minute allowance for clock drift
+          if (expiryTime > now + MAX_CLOCK_SKEW) {
+            logger.warn('[AuthStore] Passcode session expiry timestamp beyond max clock skew', {
+              component: 'AuthStore',
+              action: 'clock-skew-detected',
+              expiryTime,
+              now,
+              skewMs: expiryTime - now,
+              maxAllowed: MAX_CLOCK_SKEW,
+            });
+            // Cap to 10 minutes from now (actual session duration)
+            return now >= expiryTime - (15 * 60 * 1000 - 10 * 60 * 1000);
+          }
+
+          // Normal expiry check
+          return now >= expiryTime;
+        } catch (error) {
+          logger.error('[AuthStore] Error checking passcode session expiry', {
+            component: 'AuthStore',
+            action: 'check-expiry-error',
+            error: error instanceof Error ? error.message : String(error),
+          });
+          // Treat as expired if we can't validate
+          return true;
+        }
       },
 
       setPasscodeSession: (token: string, expiresAt: string) => {
@@ -505,6 +550,10 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
       setHasCompletedOnboarding: (completed: boolean) => {
         set({ hasCompletedOnboarding: completed });
+      },
+
+      setHasAcknowledgedDisclaimer: (acknowledged: boolean) => {
+        set({ hasAcknowledgedDisclaimer: acknowledged });
       },
 
       setHasPasscode: (hasPasscode: boolean) => {

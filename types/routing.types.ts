@@ -5,6 +5,7 @@
 export interface RouteConfig {
   inAuthGroup: boolean;
   inTabsGroup: boolean;
+  inAppGroup: boolean;
   isOnWelcomeScreen: boolean;
   isOnLoginPasscode: boolean;
   isOnVerifyEmail: boolean;
@@ -22,4 +23,5 @@ export interface AuthState {
   hasPasscode: boolean;
   onboardingStatus: string | null;
   pendingVerificationEmail: string | null;
+  lastActivityAt?: string | null;
 }
