@@ -4,13 +4,19 @@ import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-e
 import { router, useNavigation } from 'expo-router';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { StashCard } from '@/components/molecules/StashCard';
-import { ArrowDown, PlusIcon } from 'lucide-react-native';
+import { ArrowDown, PlusIcon, LayoutGrid } from 'lucide-react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
 import type { Transaction } from '@/components/molecules/TransactionItem';
-import { useStation } from '@/api/hooks';
+import { useStation, useKYCStatus, useBridgeKYCLink } from '@/api/hooks';
 import type { ActivityItem } from '@/api/types';
 import { Button } from '../../components/ui';
-import { ActionSheet, InvestmentDisclaimerSheet, CryptoReceiveSheet } from '@/components/sheets';
+import {
+  ActionSheet,
+  InvestmentDisclaimerSheet,
+  CryptoReceiveSheet,
+  KYCVerificationSheet,
+  MoreFundingOptionsSheet,
+} from '@/components/sheets';
 import { useAuthStore } from '@/stores/authStore';
 import { BankIcon, CashIcon, CoinIcon, InvestmentIcon } from '@/assets/svg/filled';
 import { invalidateQueries } from '@/api/queryClient';
@@ -35,6 +41,11 @@ const splitDollars = (value: string) => {
   return { dollars: `$${d}`, cents: `.${c}` };
 };
 
+const parseMoney = (value: string | undefined) => {
+  const n = parseFloat(value ?? '');
+  return Number.isFinite(n) ? n : 0;
+};
+
 const VALID_ACTIVITY_TYPES = new Set(['send', 'receive', 'swap', 'deposit', 'withdraw']);
 
 const mapActivity = (items: ActivityItem[]): Transaction[] =>
@@ -56,6 +67,8 @@ const Dashboard = () => {
   const [showReceiveSheet, setShowReceiveSheet] = useState(false);
   const [showSendSheet, setShowSendSheet] = useState(false);
   const [showCryptoReceive, setShowCryptoReceive] = useState(false);
+  const [showKYCSheet, setShowKYCSheet] = useState(false);
+  const [moreOptionsMode, setMoreOptionsMode] = useState<'deposit' | 'send' | null>(null);
 
   // Disclaimer
   const hasAcknowledgedDisclaimer = useAuthStore((s) => s.hasAcknowledgedDisclaimer);
@@ -76,6 +89,31 @@ const Dashboard = () => {
 
   // Station data
   const { data: station, refetch } = useStation();
+
+  // KYC — prefetch so fiat button responds instantly
+  const { data: kycStatus } = useKYCStatus();
+  const { data: kycLink } = useBridgeKYCLink(
+    !!kycStatus && kycStatus.overall_status !== 'approved'
+  );
+
+  const handleFiatPress = useCallback(() => {
+    setShowReceiveSheet(false);
+    if (kycStatus?.overall_status === 'approved') {
+      router.push('/virtual-account' as any);
+    } else {
+      setShowKYCSheet(true);
+    }
+  }, [kycStatus]);
+
+  const startWithdrawalFlow = useCallback((method: 'fiat' | 'crypto') => {
+    setShowSendSheet(false);
+    setShowReceiveSheet(false);
+
+    // Let bottom sheet dismissal settle before route transition.
+    requestAnimationFrame(() => {
+      router.push(`/withdraw/${method}` as any);
+    });
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -103,7 +141,11 @@ const Dashboard = () => {
   const balance = fmt(station?.total_balance, '$00.00');
   const monthChange = fmtPct(station?.balance_trends?.spend?.month_change);
   const spend = splitDollars(station?.spend_balance ?? '0');
-  const invest = splitDollars(station?.invest_balance ?? '0');
+  const investTotal = parseMoney(station?.invest_balance);
+  const brokerCash = parseMoney(station?.broker_cash);
+  const stashOnly = Math.max(0, investTotal - brokerCash);
+  const stash = splitDollars(stashOnly.toFixed(2));
+  const invest = splitDollars(investTotal.toFixed(2));
   const transactions = station?.recent_activity ? mapActivity(station.recent_activity) : [];
 
   return (
@@ -138,8 +180,9 @@ const Dashboard = () => {
           />
         </View>
 
-        {/* Stash Cards */}
-        <View className="mb- flex-row gap-3">
+        {/* Stash Cards — disabled until feature is complete */}
+        {/*
+        <View className="mt-5 flex-row gap-3">
           <StashCard
             title="Spending Stash"
             amount={spend.dollars}
@@ -150,13 +193,14 @@ const Dashboard = () => {
           />
           <StashCard
             title="Investment Stash"
-            amount={invest.dollars}
-            amountCents={invest.cents}
+            amount={stash.dollars}
+            amountCents={stash.cents}
             icon={<InvestmentIcon width={40} height={40} color="white" />}
             className="flex-1"
             onPress={() => router.push('/investment-stash')}
           />
         </View>
+        */}
 
         {/* Transactions */}
         <View className="rounded-3xl py-5">
@@ -189,7 +233,7 @@ const Dashboard = () => {
             sublabel: 'Receive assets via US bank account',
             icon: <BankIcon width={32} height={32} color="#6366F1" />,
             iconBgColor: '',
-            onPress: () => router.push('/deposit/fiat' as any),
+            onPress: handleFiatPress,
           },
           {
             id: 'crypto',
@@ -204,10 +248,12 @@ const Dashboard = () => {
             id: 'more',
             label: 'More Options',
             sublabel: 'Pick from several other options to fund account',
-            icon: <CoinIcon width={32} height={32} color="#6366F1" />,
-            iconColor: '#F97316',
+            icon: <LayoutGrid width={28} height={28} color="#6366F1" />,
             iconBgColor: '',
-            onPress: () => router.push('/withdraw/crypto' as any),
+            onPress: () => {
+              setShowReceiveSheet(false);
+              setMoreOptionsMode('deposit');
+            },
           },
         ]}
       />
@@ -225,7 +271,7 @@ const Dashboard = () => {
             sublabel: 'Send to US bank account',
             icon: <BankIcon width={28} height={28} color="#6366F1" />,
             iconBgColor: '',
-            onPress: () => router.push('/withdraw/fiat' as any),
+            onPress: () => startWithdrawalFlow('fiat'),
           },
           {
             id: 'crypto',
@@ -234,22 +280,37 @@ const Dashboard = () => {
             icon: <CoinIcon width={32} height={32} color="#6366F1" />,
             iconColor: '#F97316',
             iconBgColor: '',
-            onPress: () => router.push('/withdraw/crypto' as any),
+            onPress: () => startWithdrawalFlow('crypto'),
           },
           {
             id: 'more',
             label: 'More Options',
             sublabel: 'Pick from several other options to send funds out',
-            icon: <CoinIcon width={32} height={32} color="#6366F1" />,
-            iconColor: '#F97316',
+            icon: <LayoutGrid width={28} height={28} color="#6366F1" />,
             iconBgColor: '',
-            onPress: () => router.push('/withdraw/crypto' as any),
+            onPress: () => {
+              setShowSendSheet(false);
+              setMoreOptionsMode('send');
+            },
           },
         ]}
       />
 
+      {/* KYC Verification Sheet */}
+      <KYCVerificationSheet
+        visible={showKYCSheet}
+        onClose={() => setShowKYCSheet(false)}
+        kycStatus={kycStatus}
+        kycLink={kycLink?.kycLink}
+      />
+
       <InvestmentDisclaimerSheet visible={showDisclaimer} onAccept={handleAcceptDisclaimer} />
       <CryptoReceiveSheet visible={showCryptoReceive} onClose={() => setShowCryptoReceive(false)} />
+      <MoreFundingOptionsSheet
+        visible={moreOptionsMode !== null}
+        onClose={() => setMoreOptionsMode(null)}
+        mode={moreOptionsMode ?? 'deposit'}
+      />
     </ScrollView>
   );
 };

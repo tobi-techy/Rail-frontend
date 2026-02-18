@@ -1,16 +1,9 @@
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 
 /**
  * Environment configuration with runtime validation
  */
-
-const requiredEnvVars = ['EXPO_PUBLIC_API_URL'] as const;
-// const optionalEnvVars = ['EXPO_PUBLIC_SENTRY_DSN', 'EXPO_PUBLIC_ENV'] as const;
-
-// type RequiredEnv = (typeof requiredEnvVars)[number];
-// type OptionalEnv = (typeof optionalEnvVars)[number];
 
 interface Env {
   EXPO_PUBLIC_API_URL: string;
@@ -18,45 +11,33 @@ interface Env {
   EXPO_PUBLIC_ENV?: 'development' | 'staging' | 'production';
 }
 
+const PHYSICAL_DEVICE_API_URL = 'https://rail-backend-service-production.up.railway.app/api';
+const SIMULATOR_API_URL =
+  Platform.OS === 'android' ? 'http://10.0.2.2:8080/api' : 'http://localhost:8080/api';
+
 const DEFAULT_API_URLS: Record<NonNullable<Env['EXPO_PUBLIC_ENV']>, string> = {
-  development: Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080',
+  development: SIMULATOR_API_URL,
   staging: 'https://rail-backend-service-production.up.railway.app/api',
   production: 'https://api.userail.money/api',
 };
 
-function getExpoHost(): string | null {
-  const constants = Constants as any;
-  const hostUri =
-    constants?.expoConfig?.hostUri ||
-    constants?.manifest2?.extra?.expoClient?.hostUri ||
-    constants?.manifest?.debuggerHost;
-
-  if (!hostUri || typeof hostUri !== 'string') {
-    return null;
-  }
-
-  const host = hostUri.split(':')[0];
-  if (!host || host === 'localhost' || host === '127.0.0.1') {
-    return null;
-  }
-
-  return host;
-}
-
 function resolveApiUrl(rawApiUrl: string): string {
+  if (__DEV__) {
+    return Device.isDevice ? PHYSICAL_DEVICE_API_URL : SIMULATOR_API_URL;
+  }
+
   try {
     const parsed = new URL(rawApiUrl);
-    const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+    const isLocalhost =
+      parsed.hostname === 'localhost' ||
+      parsed.hostname === '127.0.0.1' ||
+      parsed.hostname === '::1';
 
-    if (__DEV__ && Device.isDevice && isLocalhost) {
-      const expoHost = getExpoHost();
-      if (expoHost) {
-        parsed.hostname = expoHost;
-        return parsed.toString().replace(/\/$/, '');
-      }
+    if (Device.isDevice && isLocalhost) {
+      return PHYSICAL_DEVICE_API_URL;
     }
 
-    return rawApiUrl;
+    return parsed.toString().replace(/\/$/, '');
   } catch {
     return rawApiUrl;
   }

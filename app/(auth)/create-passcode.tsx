@@ -5,15 +5,14 @@ import { router } from 'expo-router';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { AuthGradient } from '@/components';
 import { ROUTES } from '@/constants/routes';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function CreatePasscodeScreen() {
   const [passcode, setPasscode] = useState('');
 
   const handlePasscodeComplete = (code: string) => {
-    router.push({
-      pathname: ROUTES.AUTH.CONFIRM_PASSCODE as any,
-      params: { passcode: code },
-    });
+    useAuthStore.setState({ _pendingPasscode: code });
+    router.push(ROUTES.AUTH.CONFIRM_PASSCODE as any);
   };
 
   return (

@@ -33,26 +33,34 @@ export const Input = forwardRef<TextInput, InputProps>(
         <View className="relative">
           <TextInput
             ref={ref}
-            className={`w-full rounded-sm bg-surface h-12 px-4 font-body text-body text-text-primary ${
+            className={`h-12 w-full rounded-sm bg-surface px-4 font-body text-body text-text-primary ${
               leftIcon ? 'pl-12' : ''
-            } ${rightIcon ? 'pr-12' : ''} ${className}`}
+            } ${rightIcon ? 'pr-12' : ''} ${className} ${props.editable === false ? 'opacity-50' : ''}`}
             placeholderTextColor="#757575"
+            accessibilityLabel={label || props.placeholder || 'Input field'}
+            accessibilityState={{ disabled: props.editable === false }}
             {...props}
           />
           {leftIcon && (
-            <View className="absolute left-4 top-4">
+            <View className="absolute left-4 top-4" pointerEvents="none">
               <Ionicons name={leftIcon} size={20} color="#757575" />
             </View>
           )}
           {rightIcon && (
-            <TouchableOpacity className="absolute right-4 top-4" onPress={onRightIconPress}>
+            <TouchableOpacity
+              className="absolute right-4 top-4 -mr-2 -mt-2 min-h-[44px] min-w-[44px] items-center justify-center"
+              onPress={onRightIconPress}
+              accessibilityRole="button"
+              accessibilityLabel={
+                rightIcon === 'eye' || rightIcon === 'eye-off'
+                  ? 'Toggle password visibility'
+                  : 'Icon action'
+              }>
               <Ionicons name={rightIcon} size={20} color="#757575" />
             </TouchableOpacity>
           )}
         </View>
-        {error && (
-          <Text className="mt-1 font-caption text-caption text-destructive">{error}</Text>
-        )}
+        {error && <Text className="mt-1 font-caption text-caption text-destructive">{error}</Text>}
       </View>
     );
   }

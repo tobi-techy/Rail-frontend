@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Modal as RNModal, TouchableOpacity, Text, ViewStyle } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, borderRadius } from '../../design/tokens';
 
 export interface ModalProps {
@@ -32,8 +33,7 @@ export const Modal: React.FC<ModalProps> = ({
           padding: 20,
         }}
         activeOpacity={1}
-        onPress={closeOnBackdrop ? onClose : undefined}
-      >
+        onPress={closeOnBackdrop ? onClose : undefined}>
         <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
           <View
             className={className}
@@ -46,16 +46,22 @@ export const Modal: React.FC<ModalProps> = ({
                 maxHeight: '80%',
               },
               style,
-            ]}
-          >
+            ]}>
             {showCloseButton && (
               <TouchableOpacity
-                style={{ alignSelf: 'flex-end', padding: 8, marginBottom: 8 }}
+                style={{
+                  alignSelf: 'flex-end',
+                  padding: 8,
+                  marginBottom: 8,
+                  minHeight: 44,
+                  minWidth: 44,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
                 onPress={onClose}
                 accessibilityLabel="Close modal"
-                accessibilityRole="button"
-              >
-                <Text style={{ fontSize: 18, color: colors.text.secondary, fontWeight: 'bold' }}>×</Text>
+                accessibilityRole="button">
+                <Ionicons name="close" size={24} color={colors.text.secondary} />
               </TouchableOpacity>
             )}
             {children}

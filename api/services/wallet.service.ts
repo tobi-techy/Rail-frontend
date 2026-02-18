@@ -25,15 +25,11 @@ import type {
 } from '../types';
 
 const WALLET_ENDPOINTS = {
-  BALANCE: '/wallet/balance',
-  TRANSACTIONS: '/wallet/transactions',
-  TRANSACTION_DETAIL: '/wallet/transactions/:id',
-  TRANSFER: '/wallet/transfer',
-  VALIDATE_ADDRESS: '/wallet/validate-address',
-  ESTIMATE_FEE: '/wallet/estimate-fee',
-  DEPOSIT_ADDRESS: '/wallet/deposit-address',
-  PRICES: '/wallet/prices',
-  NETWORKS: '/wallet/networks',
+  BALANCE: '/v1/balances',
+  TRANSACTIONS: '/v1/withdrawals',
+  TRANSACTION_DETAIL: '/v1/withdrawals/:id',
+  TRANSFER: '/v1/withdrawals/crypto',
+  DEPOSIT_ADDRESS: '/v1/funding/deposit/address',
   ADDRESSES: '/v1/wallets/:chain/address', // Full path: /api/v1/wallets/:chain/address
 };
 
@@ -42,83 +38,183 @@ export const walletService = {
    * Get wallet balance and tokens
    */
   async getBalance(): Promise<WalletBalance> {
-    return apiClient.get<WalletBalance>(WALLET_ENDPOINTS.BALANCE);
+    const response = await apiClient.get<any>(WALLET_ENDPOINTS.BALANCE);
+    const total = String(response?.total_usdc ?? response?.totalUSDC ?? '0');
+    const spending = String(response?.spending_balance ?? response?.spendingBalance ?? total);
+
+    return {
+      totalBalanceUSD: total,
+      updatedAt: response?.last_updated || response?.lastUpdated || new Date().toISOString(),
+      tokens: [
+        {
+          id: 'usdc',
+          symbol: 'USDC',
+          name: 'USD Coin',
+          balance: spending,
+          decimals: 6,
+          usdValue: spending,
+          priceChange24h: 0,
+          network: 'Solana',
+        },
+      ],
+    };
   },
 
   /**
    * Get transaction history
    */
   async getTransactions(params?: GetTransactionsRequest): Promise<GetTransactionsResponse> {
-    return apiClient.get<GetTransactionsResponse>(
-      WALLET_ENDPOINTS.TRANSACTIONS,
-      { params }
-    );
+    const limit = params?.limit ?? 20;
+    const offset = Number(params?.cursor || 0);
+    const response = await apiClient.get<any>(WALLET_ENDPOINTS.TRANSACTIONS, {
+      params: { limit, offset },
+    });
+
+    const rows = Array.isArray(response) ? response : response?.items || [];
+    const items = rows.map((tx: any) => ({
+      id: tx?.id || tx?.withdrawal_id || '',
+      type: 'withdraw',
+      tokenId: 'USDC',
+      amount: String(tx?.amount ?? '0'),
+      usdAmount: String(tx?.amount ?? '0'),
+      from: '',
+      to: tx?.destination_address || '',
+      timestamp: tx?.created_at || tx?.updated_at || new Date().toISOString(),
+      status: tx?.status || 'pending',
+      txHash: tx?.tx_hash || undefined,
+      network: tx?.destination_chain || 'SOL-DEVNET',
+      fee: undefined,
+      confirmations: undefined,
+    }));
+
+    return {
+      items,
+      total: response?.total ?? items.length,
+      nextCursor: items.length >= limit ? String(offset + limit) : undefined,
+    };
   },
 
   /**
    * Get single transaction details
    */
   async getTransactionDetail(txId: string): Promise<any> {
-    return apiClient.get(
-      WALLET_ENDPOINTS.TRANSACTION_DETAIL.replace(':id', txId)
-    );
+    const tx = await apiClient.get<any>(WALLET_ENDPOINTS.TRANSACTION_DETAIL.replace(':id', txId));
+    return {
+      id: tx?.id || tx?.withdrawal_id || txId,
+      type: 'withdraw',
+      tokenId: 'USDC',
+      amount: String(tx?.amount ?? '0'),
+      usdAmount: String(tx?.amount ?? '0'),
+      from: '',
+      to: tx?.destination_address || '',
+      timestamp: tx?.created_at || tx?.updated_at || new Date().toISOString(),
+      status: tx?.status || 'pending',
+      txHash: tx?.tx_hash || undefined,
+      network: tx?.destination_chain || 'SOL-DEVNET',
+      fee: undefined,
+      confirmations: undefined,
+    };
   },
 
   /**
    * Create transfer/withdrawal
    */
   async createTransfer(data: CreateTransferRequest): Promise<CreateTransferResponse> {
-    return apiClient.post<CreateTransferResponse>(
-      WALLET_ENDPOINTS.TRANSFER,
-      data
-    );
+    const response = await apiClient.post<any>(WALLET_ENDPOINTS.TRANSFER, {
+      amount: parseFloat(data.amount),
+      destination_address: data.toAddress,
+    });
+
+    return {
+      estimatedFee: '0',
+      estimatedTime: '1-2 minutes',
+      transaction: {
+        id: response?.withdrawal_id || '',
+        type: 'withdraw',
+        tokenId: data.tokenId,
+        amount: data.amount,
+        usdAmount: data.amount,
+        from: '',
+        to: data.toAddress,
+        timestamp: new Date().toISOString(),
+        status: response?.status || 'pending',
+        txHash: response?.withdrawal_id || undefined,
+        network: 'SOL',
+      },
+    };
   },
 
   /**
    * Validate wallet address
    */
   async validateAddress(data: ValidateAddressRequest): Promise<ValidateAddressResponse> {
-    return apiClient.post<ValidateAddressResponse>(
-      WALLET_ENDPOINTS.VALIDATE_ADDRESS,
-      data
-    );
+    const isValid = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test((data.address || '').trim());
+    return {
+      valid: isValid,
+      addressType: 'wallet',
+      resolvedAddress: isValid ? data.address.trim() : undefined,
+    };
   },
 
   /**
    * Estimate transaction fee
    */
   async estimateFee(data: EstimateFeeRequest): Promise<EstimateFeeResponse> {
-    return apiClient.post<EstimateFeeResponse>(
-      WALLET_ENDPOINTS.ESTIMATE_FEE,
-      data
-    );
+    return {
+      fee: '0',
+      feeUSD: '0',
+      estimatedTime: '1-2 minutes',
+    };
   },
 
   /**
    * Get deposit address for a token
    */
   async getDepositAddress(data: GetDepositAddressRequest): Promise<GetDepositAddressResponse> {
-    return apiClient.post<GetDepositAddressResponse>(
-      WALLET_ENDPOINTS.DEPOSIT_ADDRESS,
-      data
-    );
+    const chain = data.network?.toUpperCase().includes('SOL') ? 'SOL-DEVNET' : 'SOL-DEVNET';
+    const response = await apiClient.post<any>(WALLET_ENDPOINTS.DEPOSIT_ADDRESS, { chain });
+    return {
+      address: response?.address || '',
+      network: response?.chain || chain,
+      qrCode: response?.qrCode || '',
+      memo: undefined,
+      minimumDeposit: undefined,
+    };
   },
 
   /**
    * Get token prices
    */
   async getPrices(data: GetPricesRequest): Promise<GetPricesResponse> {
-    return apiClient.post<GetPricesResponse>(
-      WALLET_ENDPOINTS.PRICES,
-      data
-    );
+    return {
+      prices: data.tokenIds.map((tokenId) => ({
+        tokenId,
+        symbol: tokenId,
+        price: '1',
+        priceChange24h: 0,
+        updatedAt: new Date().toISOString(),
+      })),
+    };
   },
 
   /**
    * Get available networks
    */
   async getNetworks(): Promise<GetNetworksResponse> {
-    return apiClient.get<GetNetworksResponse>(WALLET_ENDPOINTS.NETWORKS);
+    return {
+      networks: [
+        {
+          id: 'solana-devnet',
+          name: 'Solana Devnet',
+          symbol: 'SOL',
+          chainId: 0,
+          rpcUrl: '',
+          explorerUrl: 'https://solscan.io',
+          isTestnet: true,
+          nativeCurrency: { name: 'Solana', symbol: 'SOL', decimals: 9 },
+        },
+      ],
+    };
   },
 
   /**

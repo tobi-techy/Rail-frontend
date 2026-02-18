@@ -2,13 +2,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Pressable } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
-import QRCode from 'react-native-qrcode-skia';
+import QRCodeStyled from 'react-native-qrcode-styled';
 import { Copy, Check, RefreshCw } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
 import { Button } from '../ui';
 import { useWalletAddresses } from '@/api/hooks/useWallet';
 import { SOLANA_TESTNET_CHAIN } from '@/utils/chains';
-import SolanaIcon from '@/assets/svg/solana.svg';
 
 interface CryptoReceiveSheetProps {
   visible: boolean;
@@ -113,15 +112,16 @@ export function CryptoReceiveSheet({ visible, onClose }: CryptoReceiveSheetProps
 
       <View className="items-center">
         {/* QR Code */}
-        <View className="mb-5 rounded-2xl bg-white p-4">
-          <QRCode
-            value={address}
-            size={220}
+        <View className="mb-5 rounded-2xl bg-white p-5">
+          <QRCodeStyled
+            data={address}
+            style={{ backgroundColor: 'white' }}
+            padding={16}
+            size={280}
+            pieceBorderRadius={4}
+            isPiecesGlued
             color="#000"
-            pathStyle="fill"
             errorCorrectionLevel="H"
-            logo={<SolanaIcon width={28} height={28} />}
-            logoAreaSize={48}
           />
         </View>
 

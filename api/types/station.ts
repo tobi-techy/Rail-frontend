@@ -25,12 +25,13 @@ export interface StationResponse {
   total_balance: string;
   spend_balance: string;
   invest_balance: string;
+  broker_cash: string;
   currency: string;
   currency_locale: string;
   pending_amount: string;
   pending_transactions_count: number;
   system_status: SystemStatus;
-  account_nickname?: string;
+  account_nickname?: string | null;
   balance_trends?: BalanceTrends;
   recent_activity: ActivityItem[];
   unread_alert_count: number;

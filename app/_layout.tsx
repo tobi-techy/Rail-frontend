@@ -23,8 +23,8 @@ SplashScreen.preventAutoHideAsync();
 
 const SPLASH_BG = '#FF2E01';
 
-const SPLASH_MIN_DURATION_MS = 5000;
-const SPLASH_MAX_DURATION_MS = 8000;
+const SPLASH_MIN_DURATION_MS = 2500;
+const SPLASH_MAX_DURATION_MS = 4000;
 
 const SPLASH_DEBUG = __DEV__;
 
@@ -44,9 +44,10 @@ if (!envValidation.isValid && !__DEV__) {
 
 function AppNavigator() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack initialRouteName="index" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="login-passcode" />
+      <Stack.Screen name="intro" />
       <Stack.Screen
         name="(auth)"
         options={
@@ -65,8 +66,21 @@ function AppNavigator() {
           }
         }
       />
-      <Stack.Screen name="spending-stash" />
-      <Stack.Screen name="investment-stash" />
+      {/* Stash screens - disabled until feature is complete */}
+      {/* <Stack.Screen name="spending-stash" options={{ headerShown: false }} /> */}
+      {/* <Stack.Screen name="investment-stash" options={{ headerShown: false }} /> */}
+      <Stack.Screen
+        name="withdraw"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_bottom',
+          animationTypeForReplace: 'push',
+        }}
+      />
+      <Stack.Screen
+        name="virtual-account"
+        options={{ headerShown: false, presentation: 'modal' }}
+      />
     </Stack>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../design/tokens';
 
 export interface SearchBarProps {
@@ -40,10 +41,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <View
-      className={`flex-row items-center bg-surface rounded-sm px-4 py-3 ${disabled ? 'opacity-50' : ''} ${className || ''}`}
-    >
+      className={`flex-row items-center rounded-sm bg-surface px-4 py-3 ${disabled ? 'opacity-50' : ''} ${className || ''}`}>
       <View className="mr-3">
-        <Text className="text-text-secondary text-body">🔍</Text>
+        <Text className="text-body text-text-secondary">🔍</Text>
       </View>
 
       <TextInput
@@ -61,8 +61,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       />
 
       {value.length > 0 && (
-        <TouchableOpacity onPress={handleClear} className="ml-3 p-1" accessibilityLabel="Clear search">
-          <Text className="text-text-secondary text-body">✕</Text>
+        <TouchableOpacity
+          onPress={handleClear}
+          className="ml-2 min-h-[44px] min-w-[44px] items-center justify-center p-2"
+          accessibilityRole="button"
+          accessibilityLabel="Clear search">
+          <Ionicons name="close" size={18} color={colors.text.secondary} />
         </TouchableOpacity>
       )}
     </View>

@@ -1,6 +1,7 @@
 export const ROUTES = {
+  INTRO: '/intro',
   AUTH: {
-    INDEX: '/(auth)',
+    SIGNUP: '/(auth)/signup',
     SIGNIN: '/(auth)/signin',
     VERIFY_EMAIL: '/(auth)/verify-email',
     FORGOT_PASSWORD: '/(auth)/forgot-password',
@@ -17,6 +18,8 @@ export const ROUTES = {
     },
   },
   TABS: '/(tabs)',
+  SPENDING_STASH: '/spending-stash',
+  INVESTMENT_STASH: '/investment-stash',
 } as const;
 
 export type AuthRoute = (typeof ROUTES.AUTH)[keyof typeof ROUTES.AUTH];

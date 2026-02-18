@@ -9,3 +9,5 @@ export { default as NgnIcon } from './ngn.svg';
 export { default as UsdIcon } from './usd.svg';
 export { default as GbpIcon } from './gbp.svg';
 export { default as EurIcon } from './eur.svg';
+export { default as PhantomIcon } from './phantom.svg';
+export { default as SolflareIcon } from './solflare.svg';

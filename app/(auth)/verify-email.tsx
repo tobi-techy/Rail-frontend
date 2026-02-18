@@ -34,7 +34,7 @@ export default function VerifyEmail() {
 
   useEffect(() => {
     if (!pendingEmail && !isAuthenticated && !isVerifying && !isTransitioning) {
-      router.replace(ROUTES.AUTH.INDEX as any);
+      router.replace(ROUTES.AUTH.SIGNUP as any);
       return;
     }
   }, [pendingEmail, isAuthenticated, isVerifying, isTransitioning]);
@@ -61,7 +61,7 @@ export default function VerifyEmail() {
     Keyboard.dismiss();
 
     if (!pendingEmail) {
-      router.replace(ROUTES.AUTH.INDEX as any);
+      router.replace(ROUTES.AUTH.SIGNUP as any);
       return;
     }
 

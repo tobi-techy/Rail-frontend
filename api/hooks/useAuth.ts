@@ -31,8 +31,19 @@ const syncPasscodeStatus = async () => {
     const status = await passcodeService.getStatus();
     useAuthStore.setState({ hasPasscode: Boolean(status.enabled) });
   } catch {
-    useAuthStore.setState({ hasPasscode: false });
+    // Keep the last known state on transient failures to avoid relaxing auth gates.
   }
+};
+
+/**
+ * After a successful email/password login, grant a passcode session so the user
+ * isn't immediately redirected to /login-passcode by useProtectedRoute.
+ * The user already proved identity via credentials — requiring passcode again is redundant.
+ */
+const grantPostLoginPasscodeSession = () => {
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 10 * 60 * 1000); // 10 minutes
+  useAuthStore.getState().setPasscodeSession('login-granted', expiresAt.toISOString());
 };
 
 /**
@@ -56,6 +67,9 @@ export function useLogin() {
         tokenIssuedAt: nowIso,
         tokenExpiresAt: getTokenExpiryIso(response.expiresAt),
       });
+
+      // Grant passcode session BEFORE syncing status so routing doesn't bounce to /login-passcode
+      grantPostLoginPasscodeSession();
 
       await syncPasscodeStatus();
 
@@ -220,6 +234,8 @@ export function useAppleSignIn() {
         tokenIssuedAt: nowIso,
         tokenExpiresAt: response.expiresAt,
       });
+
+      grantPostLoginPasscodeSession();
 
       await syncPasscodeStatus();
 

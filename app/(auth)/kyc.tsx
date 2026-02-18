@@ -106,7 +106,7 @@ export default function KYCVerificationScreen() {
         ? 'KYC was rejected.'
         : 'Verification pending.';
 
-  const rejectionReason = kycStatus?.rejectionReason || undefined;
+  const rejectionReason = kycStatus?.rejection_reason || undefined;
 
   return (
     <AuthGradient>

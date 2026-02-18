@@ -73,14 +73,13 @@ export function useProtectedRoute() {
         action: 'refresh-passcode-status',
         error: error instanceof Error ? error.message : String(error),
       });
-      useAuthStore.setState({ hasPasscode: false });
     }
   }, []);
 
   // Initialize app: validate token and check welcome status
   // Runs on every mount (app reload) and re-validates routing
   useEffect(() => {
-    // Removed artificial delays - let the app initialize naturally
+    let isMounted = true;
 
     const initializeApp = async () => {
       logger.debug('[Auth] App initializing - checking routing...', {
@@ -90,16 +89,24 @@ export function useProtectedRoute() {
 
       try {
         const welcomed = await checkWelcomeStatus();
-        setHasSeenWelcome(welcomed);
+        if (isMounted) setHasSeenWelcome(welcomed);
 
         const freshState = useAuthStore.getState();
         const hasValidAuthData = freshState.isAuthenticated && freshState.accessToken;
 
-        logger.debug('[Auth] State after hydration', {
+        // CRITICAL: Add detailed logging for debugging old user routing issues
+        logger.debug('[Auth] State after hydration (DETAILED)', {
           component: 'useProtectedRoute',
           action: 'hydration-complete',
           hasUser: !!freshState.user,
+          userId: freshState.user?.id,
           isAuthenticated: freshState.isAuthenticated,
+          hasPasscode: freshState.hasPasscode,
+          hasAccessToken: !!freshState.accessToken,
+          hasRefreshToken: !!freshState.refreshToken,
+          onboardingStatus: freshState.onboardingStatus,
+          hasValidAuthData,
+          welcomed,
         });
 
         if (hasValidAuthData) {
@@ -128,6 +135,15 @@ export function useProtectedRoute() {
           }
 
           await refreshBackendAuthState();
+        } else if (freshState.user) {
+          // CRITICAL: User has stored credentials but no valid auth tokens
+          // This is the case for old users after app backgrounding
+          logger.info('[Auth] User has stored credentials but tokens invalid/missing', {
+            component: 'useProtectedRoute',
+            action: 'stored-credentials-detected',
+            userId: freshState.user.id,
+            hasPasscode: freshState.hasPasscode,
+          });
         }
       } catch (error) {
         logger.error(
@@ -135,46 +151,40 @@ export function useProtectedRoute() {
           error instanceof Error ? error : new Error(String(error))
         );
       } finally {
-        setIsReady(true);
+        if (isMounted) setIsReady(true);
       }
     };
 
-    initializeApp();
+    if (useAuthStore.persist.hasHydrated()) {
+      void initializeApp();
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
+      void initializeApp();
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [refreshBackendAuthState]); // Run once on mount (which happens on every app reload)
 
   // Listen for app state changes (foreground/background)
+  // Passcode session is NOT expired on background — only on cold start (app kill + reopen)
   useEffect(() => {
     const subscription = AppState.addEventListener(
       'change',
       async (nextAppState: AppStateStatus) => {
-        if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
-          logger.debug('[Auth] App going to background - clearing passcode session for security', {
-            component: 'useProtectedRoute',
-            action: 'app-background',
-          });
-
-          const { isAuthenticated, clearPasscodeSession } = useAuthStore.getState();
-          if (isAuthenticated) {
-            clearPasscodeSession();
-          }
-        }
-
         if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-          logger.debug('[Auth] App came to foreground - re-validating routing', {
+          const freshState = useAuthStore.getState();
+
+          logger.debug('[Auth] App came to foreground', {
             component: 'useProtectedRoute',
             action: 'app-foreground',
           });
-
-          const freshState = useAuthStore.getState();
-
-          if (freshState.isAuthenticated && SessionManager.isPasscodeSessionExpired()) {
-            logger.info('[Auth] Passcode session expired - need to re-authenticate with passcode', {
-              component: 'useProtectedRoute',
-              action: 'passcode-session-expired',
-            });
-            SessionManager.handlePasscodeSessionExpired();
-            return;
-          }
 
           if (freshState.isAuthenticated) {
             if (freshState.checkTokenExpiry()) {

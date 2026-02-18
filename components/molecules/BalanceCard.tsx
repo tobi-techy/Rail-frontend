@@ -22,7 +22,7 @@ export interface BalanceCardProps extends ViewProps {
 
 const CHAR_HEIGHT = 58;
 
-function AnimatedChar({ char, index }: { char: string; index: number }) {
+function AnimatedChar({ char, index, small }: { char: string; index: number; small?: boolean }) {
   const translateY = useSharedValue(CHAR_HEIGHT);
   const opacity = useSharedValue(0);
 
@@ -48,13 +48,11 @@ function AnimatedChar({ char, index }: { char: string; index: number }) {
     opacity: interpolate(opacity.value, [0, 1], [0, 1]),
   }));
 
-  const isDecimal = char === '.' || /\d/.test(char) === false;
-
   return (
-    <View style={{ height: CHAR_HEIGHT, overflow: 'hidden' }}>
+    <View style={{ height: CHAR_HEIGHT, overflow: 'hidden', justifyContent: 'flex-end' }}>
       <Animated.Text
         style={animatedStyle}
-        className={`font-subtitle text-[50px] ${isDecimal && char !== '$' ? 'text-neutral-300' : 'text-text-primary'}`}>
+        className={`font-subtitle text-text-primary ${small ? 'text-[32px]' : 'text-[60px]'}`}>
         {char}
       </Animated.Text>
     </View>
@@ -69,10 +67,17 @@ function AnimatedBalance({ value, isVisible }: { value: string; isVisible: boole
     prevValue.current = value;
   }, [value]);
 
+  const dotIndex = displayValue.indexOf('.');
+
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center' }}>
       {displayValue.split('').map((char, i) => (
-        <AnimatedChar key={`${i}-${char}-${value}`} char={char} index={i} />
+        <AnimatedChar
+          key={`${i}-${char}-${value}`}
+          char={char}
+          index={i}
+          small={dotIndex !== -1 && i >= dotIndex}
+        />
       ))}
     </View>
   );

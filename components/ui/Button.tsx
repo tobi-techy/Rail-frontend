@@ -94,6 +94,9 @@ export const Button = forwardRef<View, ButtonProps>(
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           onPress={handlePress}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: disabled || loading, busy: loading }}
+          accessibilityLabel={loading ? `${title}, loading` : title}
           className={`flex-row items-center justify-center rounded-full ${variantStyles} ${sizeStyles} ${
             disabled ? 'opacity-50' : ''
           } ${className}`}

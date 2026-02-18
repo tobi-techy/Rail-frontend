@@ -80,6 +80,11 @@ export const queryKeys = {
     kycStatus: () => [...queryKeys.user.all, 'kyc-status'] as const,
     devices: () => [...queryKeys.user.all, 'devices'] as const,
   },
+  funding: {
+    all: ['funding'] as const,
+    transactions: (params?: unknown) => [...queryKeys.funding.all, 'transactions', params] as const,
+    virtualAccount: () => [...queryKeys.funding.all, 'virtual-account'] as const,
+  },
 };
 
 /**
@@ -90,6 +95,7 @@ export const invalidateQueries = {
   portfolio: () => queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.all }),
   station: () => queryClient.invalidateQueries({ queryKey: queryKeys.station.all }),
   wallet: () => queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all }),
+  funding: () => queryClient.invalidateQueries({ queryKey: queryKeys.funding.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
   all: () => queryClient.invalidateQueries(),
 };

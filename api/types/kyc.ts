@@ -6,6 +6,39 @@ export interface BridgeKYCLinkResponse {
   status: 'pending' | 'approved' | 'rejected' | string;
 }
 
+export interface KYCProviderStatus {
+  status: string;
+  submitted_at?: string | null;
+  approved_at?: string | null;
+  rejection_reasons?: string[];
+}
+
+export interface KYCCapabilities {
+  can_deposit_crypto: boolean;
+  can_deposit_fiat: boolean;
+  can_use_card: boolean;
+  can_invest: boolean;
+}
+
+export interface KYCStatusResponse {
+  user_id?: string;
+  status: string;
+  verified: boolean;
+  has_submitted: boolean;
+  requires_kyc: boolean;
+  required_for?: string[];
+  last_submitted_at?: string | null;
+  approved_at?: string | null;
+  rejection_reason?: string | null;
+  provider_reference?: string | null;
+  next_steps?: string[];
+  overall_status: 'pending' | 'approved' | 'rejected' | 'not_started';
+  bridge: KYCProviderStatus;
+  alpaca: KYCProviderStatus;
+  capabilities: KYCCapabilities;
+}
+
+// Legacy types used by onboarding/user services
 export interface KYCVerificationRequest {
   documentType: 'passport' | 'drivers_license' | 'national_id';
   documents: {
@@ -34,21 +67,4 @@ export interface KYCVerificationResponse {
   status: string;
   user_id: string;
   next_steps: string[];
-}
-
-export interface KYCStatusResponse {
-  userId?: string;
-  status: 'pending' | 'approved' | 'rejected' | 'verified' | string;
-  verified?: boolean;
-  hasSubmitted?: boolean;
-  requiresKyc?: boolean;
-  requiredFor?: string[];
-  lastSubmittedAt?: string | null;
-  approvedAt?: string | null;
-  rejectionReason?: string | null;
-  providerReference?: string | null;
-  nextSteps?: string[];
-  verificationId?: string;
-  submittedAt?: string;
-  verifiedAt?: string;
 }

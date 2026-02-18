@@ -93,7 +93,7 @@ export const SendAmountKeypad: React.FC<SendAmountKeypadProps> = ({
         </View>
         <View className="items-end">
           <Text className="font-body-bold text-[18px] text-[#0B1120]">
-            ${selectedToken?.usdValue !== null ? selectedToken.usdValue.toFixed(1) : '0.0'}
+            ${selectedToken ? selectedToken.usdValue.toFixed(1) : '0.0'}
           </Text>
           <Text
             className={`font-body-bold text-[14px] ${

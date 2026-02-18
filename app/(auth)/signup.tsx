@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, Platform, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
@@ -96,7 +96,18 @@ export default function SignUp() {
           <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
               <Text className="mb-5 text-center font-caption text-[12px] text-black/50">
-                By signing up, you agree to our Terms &amp; Privacy Policy
+                By signing up, you agree to our{' '}
+                <Text
+                  className="underline"
+                  onPress={() => Linking.openURL('https://userail.money/terms')}>
+                  Terms
+                </Text>
+                {' & '}
+                <Text
+                  className="underline"
+                  onPress={() => Linking.openURL('https://userail.money/privacy')}>
+                  Privacy Policy
+                </Text>
               </Text>
               <Button title="Continue" onPress={handleSignUp} loading={isPending} />
               <TouchableOpacity

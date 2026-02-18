@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LogOut } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -66,8 +66,13 @@ export default function Settings() {
   const [autoInvestEnabled, setAutoInvestEnabled] = useState(false);
   const [roundupsEnabled, setRoundupsEnabled] = useState(true);
   const [spendingLimit, setSpendingLimit] = useState(500);
-  const [biometricsEnabled, setBiometricsEnabled] = useState(true);
+  const [biometricsEnabled, setBiometricsEnabled] = useState(
+    useAuthStore.getState().isBiometricEnabled
+  );
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const logout = useAuthStore((s) => s.logout);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
 
   useEffect(() => {
     AsyncStorage.multiGet([
@@ -75,7 +80,6 @@ export default function Settings() {
       'autoInvestEnabled',
       'roundupsEnabled',
       'spendingLimit',
-      'biometricsEnabled',
     ]).then((values) => {
       values.forEach(([key, value]) => {
         if (value !== null) {
@@ -83,7 +87,6 @@ export default function Settings() {
           else if (key === 'autoInvestEnabled') setAutoInvestEnabled(value === 'true');
           else if (key === 'roundupsEnabled') setRoundupsEnabled(value === 'true');
           else if (key === 'spendingLimit') setSpendingLimit(Number(value));
-          else if (key === 'biometricsEnabled') setBiometricsEnabled(value === 'true');
         }
       });
     });
@@ -98,6 +101,10 @@ export default function Settings() {
         ['spendingLimit', String(spendingLimit)],
         ['biometricsEnabled', String(biometricsEnabled)],
       ]);
+      // Sync biometrics to auth store so login-passcode respects it
+      const store = useAuthStore.getState();
+      if (biometricsEnabled && !store.isBiometricEnabled) store.enableBiometric();
+      if (!biometricsEnabled && store.isBiometricEnabled) store.disableBiometric();
     }, 300);
     return () => clearTimeout(timeout);
   }, [baseAllocation, autoInvestEnabled, roundupsEnabled, spendingLimit, biometricsEnabled]);
@@ -117,14 +124,35 @@ export default function Settings() {
 
   const closeSheet = () => setActiveSheet(null);
 
-  const handleLogout = () => {
-    closeSheet();
-    logout();
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      closeSheet();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to log out. Please try again.');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
-  const handleDeleteAccount = () => {
-    closeSheet();
-    Alert.alert('Account Deleted', 'Your account deletion request has been submitted.');
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const result = await deleteAccount('User requested account deletion');
+      closeSheet();
+
+      const fundsMessage =
+        parseFloat(result.funds_swept) > 0
+          ? `\n\n$${result.funds_swept} was transferred to our treasury wallet.`
+          : '';
+
+      Alert.alert('Account Deleted', `Your account has been permanently deleted.${fundsMessage}`);
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Failed to delete account. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -295,8 +323,21 @@ export default function Settings() {
           account.
         </Text>
         <View className="flex-row gap-3">
-          <Button title="Cancel" variant="ghost" onPress={closeSheet} flex />
-          <Button title="Log Out" variant="black" onPress={handleLogout} flex />
+          <Button
+            title="Cancel"
+            variant="ghost"
+            onPress={closeSheet}
+            disabled={isLoggingOut}
+            flex
+          />
+          <Button
+            title={isLoggingOut ? '' : 'Log Out'}
+            variant="black"
+            onPress={handleLogout}
+            disabled={isLoggingOut}
+            flex>
+            {isLoggingOut && <ActivityIndicator color="#fff" />}
+          </Button>
         </View>
       </BottomSheet>
 
@@ -314,17 +355,23 @@ export default function Settings() {
         <Text className="mb-4 font-body text-base leading-6 text-neutral-500">
           Deleting your account will permanently remove it from the device. If you continue, you
           will not be able to recover, access or perform any other action with this account in Rail.
-          Any assets left in this account will be lost.
         </Text>
 
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
-          By continuing, you confirm that you have sent out all assets before deleting the account
-          and any assets left in the account after deletion will be inaccessible.
+          Any remaining funds in your account will be transferred to our company treasury before
+          deletion.
         </Text>
 
         <View className="flex-row gap-3">
-          <Button title="Cancel" variant="ghost" onPress={closeSheet} flex />
-          <Button title="Continue" variant="orange" onPress={handleDeleteAccount} flex />
+          <Button title="Cancel" variant="ghost" onPress={closeSheet} disabled={isDeleting} flex />
+          <Button
+            title={isDeleting ? '' : 'Delete Account'}
+            variant="orange"
+            onPress={handleDeleteAccount}
+            disabled={isDeleting}
+            flex>
+            {isDeleting && <ActivityIndicator color="#fff" />}
+          </Button>
         </View>
       </BottomSheet>
     </View>

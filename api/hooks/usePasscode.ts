@@ -60,11 +60,19 @@ const retryWithBackoff = async <T>(
     } catch (error) {
       lastError = error;
 
-      // Only retry on network errors, not auth errors
+      const err = error as any;
+      const code = String(err?.code || '').toUpperCase();
+      const message = String(err?.message || '').toLowerCase();
+
+      // Only retry transport-level failures (no HTTP response/status)
       const isNetworkError =
-        !(error as any)?.response ||
-        (error as any)?.message?.includes('Network') ||
-        (error as any)?.message?.includes('timeout');
+        err?.status === 0 ||
+        code === 'NETWORK_ERROR' ||
+        code === 'NETWORK_TIMEOUT' ||
+        code.startsWith('ECONN') ||
+        code.startsWith('ETIMEDOUT') ||
+        message.includes('network error') ||
+        message.includes('timeout');
 
       if (!isNetworkError || attempt === maxRetries) {
         throw error;
@@ -88,8 +96,53 @@ const retryWithBackoff = async <T>(
  */
 export function useVerifyPasscode() {
   return useMutation({
-    mutationFn: (data: VerifyPasscodeRequest) =>
-      retryWithBackoff(() => passcodeService.verifyPasscode(data)),
+    mutationFn: async (data: VerifyPasscodeRequest) => {
+      const authState = useAuthStore.getState();
+
+      // For returning users without a valid JWT, use identifier-based passcode login.
+      if (!authState.isAuthenticated || !authState.accessToken) {
+        // First attempt refresh-based recovery when a refresh token exists.
+        if (authState.refreshToken) {
+          try {
+            await authState.refreshSession();
+            return retryWithBackoff(() => passcodeService.verifyPasscode(data));
+          } catch {
+            // Fall through to identifier-based passcode login.
+          }
+        }
+
+        const email = authState.user?.email;
+        const phone = (authState.user as any)?.phone || authState.user?.phoneNumber;
+        const refreshToken = authState.refreshToken;
+
+        if (!refreshToken) {
+          throw {
+            code: 'MISSING_REFRESH_TOKEN',
+            message: 'Session expired. Please sign in again.',
+            status: 401,
+          };
+        }
+
+        if (!email && !phone) {
+          throw {
+            code: 'MISSING_IDENTIFIER',
+            message: 'Unable to verify PIN: missing account identifier.',
+            status: 400,
+          };
+        }
+
+        return retryWithBackoff(() =>
+          passcodeService.passcodeLogin({
+            passcode: data.passcode,
+            refresh_token: refreshToken,
+            email: email || undefined,
+            phone: phone || undefined,
+          })
+        );
+      }
+
+      return retryWithBackoff(() => passcodeService.verifyPasscode(data));
+    },
     onSuccess: (response) => {
       if (response.verified) {
         const now = new Date();
@@ -161,8 +214,8 @@ export function useDeletePasscode() {
   return useMutation({
     mutationFn: (data: DeletePasscodeRequest) => passcodeService.deletePasscode(data),
     onSuccess: () => {
-      // Clear passcode session from store
       useAuthStore.setState({
+        hasPasscode: false,
         passcodeSessionToken: undefined,
         passcodeSessionExpiresAt: undefined,
       });

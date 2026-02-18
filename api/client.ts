@@ -86,17 +86,45 @@ const AUTH_ENDPOINTS = [
   '/v1/auth/reset-password',
   '/v1/auth/refresh',
   '/v1/auth/social/login',
+  '/v1/auth/passcode-login',
   '/v1/security/passcode/verify',
 ];
 
+function normalizeRequestPath(url?: string): string {
+  if (!url) return '';
+
+  try {
+    const parsed = url.startsWith('http') ? new URL(url) : new URL(url, API_CONFIG.baseURL);
+    return parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`;
+  } catch {
+    const pathOnly = url.split('?')[0];
+    return pathOnly.startsWith('/') ? pathOnly : `/${pathOnly}`;
+  }
+}
+
 function isAuthEndpoint(url?: string): boolean {
-  if (!url) return false;
-  // Extract path from URL and normalize
-  let path = url.startsWith('http') ? new URL(url).pathname : url;
-  path = path.startsWith('/') ? path : '/' + path;
+  const path = normalizeRequestPath(url);
+  if (!path) return false;
+
   return AUTH_ENDPOINTS.some(
     (endpoint) => path === endpoint || path === '/' + endpoint || path.endsWith('/' + endpoint)
   );
+}
+
+function isPasscodeProtectedEndpoint(method?: string, url?: string): boolean {
+  const path = normalizeRequestPath(url);
+  if (!path || !method) return false;
+
+  const normalizedMethod = method.toUpperCase();
+  if (normalizedMethod === 'POST' && path === '/v1/security/ip-whitelist') return true;
+  if (normalizedMethod === 'POST' && path === '/v1/security/withdrawals/confirm') return true;
+  if (normalizedMethod === 'POST' && /^\/v1\/security\/devices\/[^/]+\/trust$/.test(path))
+    return true;
+  if (normalizedMethod === 'DELETE' && /^\/v1\/security\/devices\/[^/]+$/.test(path)) return true;
+  if (normalizedMethod === 'DELETE' && /^\/v1\/security\/ip-whitelist\/[^/]+$/.test(path))
+    return true;
+
+  return false;
 }
 
 // Token refresh state to prevent race conditions
@@ -120,7 +148,14 @@ const axiosInstance = axios.create({
  */
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const { accessToken, isAuthenticated, updateLastActivity } = useAuthStore.getState();
+    const {
+      accessToken,
+      isAuthenticated,
+      updateLastActivity,
+      passcodeSessionToken,
+      checkPasscodeSessionExpiry,
+      clearPasscodeSession,
+    } = useAuthStore.getState();
 
     if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
@@ -128,10 +163,15 @@ axiosInstance.interceptors.request.use(
 
     config.headers['X-Request-ID'] = generateRequestId();
 
-    // SECURITY: Add CSRF protection for state-changing requests
-    // The CSRF token should be issued by backend and stored in authStore
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method?.toUpperCase() || '')) {
-      config.headers['X-CSRF-Token'] = generateRequestId(); // Backend should validate this
+    if (config.headers && isPasscodeProtectedEndpoint(config.method, config.url)) {
+      const hasPasscodeHeader = !!config.headers['X-Passcode-Session'];
+      const isPasscodeSessionExpired = checkPasscodeSessionExpiry();
+
+      if (!hasPasscodeHeader && passcodeSessionToken && !isPasscodeSessionExpired) {
+        config.headers['X-Passcode-Session'] = passcodeSessionToken;
+      } else if (!hasPasscodeHeader && passcodeSessionToken && isPasscodeSessionExpired) {
+        clearPasscodeSession();
+      }
     }
 
     if (isAuthenticated) updateLastActivity();
@@ -177,7 +217,7 @@ axiosInstance.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const { isAuthenticated, refreshToken, reset } = useAuthStore.getState();
+      const { isAuthenticated, refreshToken, clearSession } = useAuthStore.getState();
 
       if (isAuthenticated && refreshToken) {
         try {
@@ -229,7 +269,7 @@ axiosInstance.interceptors.response.use(
               component: 'ApiClient',
               action: 'no-token-returned',
             });
-            reset();
+            clearSession();
             return Promise.reject(new Error('Token refresh failed: no token returned'));
           }
 
@@ -247,7 +287,7 @@ axiosInstance.interceptors.response.use(
             refreshError instanceof Error ? refreshError : new Error(String(refreshError))
           );
           refreshInProgress = false; // Ensure flag is reset on error
-          reset();
+          clearSession();
           return Promise.reject(refreshError);
         }
       }
@@ -274,10 +314,51 @@ axiosInstance.interceptors.response.use(
 function transformError(error: AxiosError<any>, requestId?: string): TransformedApiError {
   if (!error.response) {
     // Network error - no response from server
+    const isAuth = isAuthEndpoint(error.config?.url);
+    const errorCode = (error as any).code;
+
+    // Enhanced diagnostics for network errors
     safeWarn('[API] Network error - no response from server', {
       requestId,
       originalError: error.message,
+      code: errorCode,
+      errno: (error as any).errno,
+      url: error.config?.url,
+      method: error.config?.method,
+      isAuthEndpoint: isAuth,
+      timeout: error.config?.timeout,
     });
+
+    // Specific error messages based on error code
+    if (errorCode === 'ECONNABORTED' || errorCode === 'ETIMEDOUT') {
+      return {
+        code: 'NETWORK_TIMEOUT',
+        message: 'Request timeout. Please check your connection and try again.',
+        status: 0,
+        requestId,
+      };
+    }
+
+    if (errorCode === 'ECONNREFUSED' || errorCode === 'ENOTFOUND') {
+      return {
+        code: 'NETWORK_ERROR',
+        message:
+          'Unable to connect to server. Please check your internet connection and API configuration.',
+        status: 0,
+        requestId,
+      };
+    }
+
+    if (errorCode === 'ERR_TLS_CERT_ALTNAME' || errorCode === 'CERT_HAS_EXPIRED') {
+      return {
+        code: 'SSL_ERROR',
+        message: 'SSL certificate error. Please try again or contact support.',
+        status: 0,
+        requestId,
+      };
+    }
+
+    // Default network error
     return {
       code: 'NETWORK_ERROR',
       message: 'Network error. Please check your connection.',

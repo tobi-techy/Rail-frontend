@@ -27,7 +27,7 @@ This document outlines the frontend MVP epics for Rail — an automated wealth s
 
 | Screen           | Route                             | Description                      |
 | ---------------- | --------------------------------- | -------------------------------- |
-| Welcome          | `app/(auth)/index.tsx`            | App intro with Apple Sign-In CTA |
+| Welcome          | `app/intro.tsx`                   | App intro with Apple Sign-In CTA |
 | Sign In          | `app/(auth)/signin.tsx`           | Email/phone fallback auth        |
 | Verify Email     | `app/(auth)/verify-email.tsx`     | OTP verification                 |
 | Create Passcode  | `app/(auth)/create-passcode.tsx`  | 6-digit passcode setup           |

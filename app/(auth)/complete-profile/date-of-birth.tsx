@@ -7,16 +7,36 @@ import { Button } from '../../../components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+
+const MIN_AGE = 18;
+
+function getAge(dob: Date): number {
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+// Max date = 18 years ago today (user must be at least 18)
+const maxDate = new Date();
+maxDate.setFullYear(maxDate.getFullYear() - MIN_AGE);
 
 export default function DateOfBirth() {
   const registrationData = useAuthStore((state) => state.registrationData);
   const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
-  const initialDob = registrationData.dob ? new Date(registrationData.dob) : new Date();
-  const [dob, setDob] = useState<Date>(
-    Number.isNaN(initialDob.getTime()) ? new Date() : initialDob
-  );
+  const { showWarning } = useFeedbackPopup();
+  const initialDob = registrationData.dob ? new Date(registrationData.dob) : maxDate;
+  const [dob, setDob] = useState<Date>(Number.isNaN(initialDob.getTime()) ? maxDate : initialDob);
 
   const handleNext = () => {
+    if (getAge(dob) < MIN_AGE) {
+      showWarning('Age Requirement', `You must be at least ${MIN_AGE} years old to use Rail.`);
+      return;
+    }
     updateRegistrationData({ dob: dob.toISOString() });
     router.push(ROUTES.AUTH.COMPLETE_PROFILE.ADDRESS as any);
   };
@@ -34,7 +54,7 @@ export default function DateOfBirth() {
             <View className="mb-8 mt-4">
               <Text className="font-subtitle text-[50px] text-black">Date of Birth</Text>
               <Text className="mt-2 font-body text-[14px] text-black/60">
-                We need to verify your age
+                You must be at least {MIN_AGE} to use Rail
               </Text>
             </View>
           </StaggeredChild>
@@ -46,7 +66,7 @@ export default function DateOfBirth() {
                 mode="date"
                 display="spinner"
                 onChange={(_, date) => date && setDob(date)}
-                maximumDate={new Date()}
+                maximumDate={maxDate}
                 themeVariant="light"
               />
             </View>

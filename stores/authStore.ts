@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService, passcodeService } from '../api/services';
 import type { User as ApiUser } from '../api/types';
@@ -30,6 +30,8 @@ const withRetry = async <T>(
 // Extend the API User type with additional local fields
 export interface User extends Omit<ApiUser, 'phone'> {
   fullName?: string;
+  firstName?: string;
+  lastName?: string;
   phoneNumber?: string;
 }
 
@@ -76,6 +78,9 @@ interface AuthState {
   loginAttempts: number;
   lockoutUntil: string | null;
 
+  // Temp (not persisted)
+  _pendingPasscode: string | null;
+
   // Loading & Error
   isLoading: boolean;
   error: string | null;
@@ -85,7 +90,8 @@ interface AuthActions {
   // Authentication
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  deleteAccount: (reason?: string) => Promise<{ funds_swept: string; sweep_tx_hash?: string }>;
+  register: (email: string) => Promise<void>;
 
   // Session management
   refreshSession: () => Promise<void>;
@@ -124,6 +130,8 @@ interface AuthActions {
 
   // Reset
   reset: () => void;
+  /** Clear tokens/session but keep user identity so app routes to login-passcode */
+  clearSession: () => void;
 }
 
 const initialState: AuthState = {
@@ -145,6 +153,7 @@ const initialState: AuthState = {
   passcodeSessionExpiresAt: undefined,
   loginAttempts: 0,
   lockoutUntil: null,
+  _pendingPasscode: null,
   isLoading: false,
   error: null,
   registrationData: {
@@ -330,16 +339,37 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
       },
 
-      register: async (email: string, password: string, name: string) => {
+      deleteAccount: async (reason?: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await authService.deleteAccount(reason);
+
+          // Clear all auth state after successful deletion
+          set({
+            ...initialState,
+            hasPasscode: false,
+            hasCompletedOnboarding: false,
+          });
+
+          return {
+            funds_swept: response.funds_swept,
+            sweep_tx_hash: response.sweep_tx_hash,
+          };
+        } catch (error: any) {
+          safeError('[AuthStore] Delete account failed:', error);
+          const errorMessage = error?.message || 'Failed to delete account';
+          set({ error: errorMessage, isLoading: false });
+          throw error;
+        }
+      },
+
+      register: async (email: string) => {
         // Validate inputs
         if (!email) {
           const error = new Error('Email is required');
           set({ error: error.message, isLoading: false });
           throw error;
         }
-
-        void password;
-        void name;
 
         set({ isLoading: true, error: null });
         try {
@@ -435,7 +465,6 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       // Clear session if 7-day token has expired
       clearExpiredSession: () => {
         set({
-          user: null,
           isAuthenticated: false,
           accessToken: null,
           refreshToken: null,
@@ -444,8 +473,6 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           tokenExpiresAt: null,
           passcodeSessionToken: undefined,
           passcodeSessionExpiresAt: undefined,
-          onboardingStatus: null,
-          currentOnboardingStep: null,
         });
       },
 
@@ -636,6 +663,20 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       reset: () => {
         set(initialState);
       },
+
+      clearSession: () => {
+        set({
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          tokenIssuedAt: null,
+          tokenExpiresAt: null,
+          lastActivityAt: null,
+          passcodeSessionToken: undefined,
+          passcodeSessionExpiresAt: undefined,
+          error: null,
+        });
+      },
     }),
     {
       name: 'auth-storage',
@@ -659,8 +700,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         // Email Verification
         pendingVerificationEmail: state.pendingVerificationEmail,
 
-        // Registration Data (persist during flow)
-        registrationData: state.registrationData,
+        // Registration Data (persist during flow, exclude password)
+        registrationData: {
+          ...state.registrationData,
+          password: '',
+        },
 
         // Passcode/Biometric
         isBiometricEnabled: state.isBiometricEnabled,
@@ -670,6 +714,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         // Security
         loginAttempts: state.loginAttempts,
         lockoutUntil: state.lockoutUntil,
+
+        // Disclaimer
+        hasAcknowledgedDisclaimer: state.hasAcknowledgedDisclaimer,
 
         // Include loading and error to satisfy type
         isLoading: state.isLoading,

@@ -28,12 +28,12 @@ const USER_ENDPOINTS = {
   DELETE_ACCOUNT: '/v1/users/me',
   ENABLE_2FA: '/v1/users/me/enable-2fa',
   DISABLE_2FA: '/v1/users/me/disable-2fa',
-  SETTINGS: '/user/settings',
-  UPDATE_SETTINGS: '/user/settings',
-  KYC_SUBMIT: '/user/kyc/submit',
-  KYC_STATUS: '/user/kyc/status',
-  DEVICES: '/user/devices',
-  REMOVE_DEVICE: '/user/devices/:id',
+  SETTINGS: '/v1/users/me',
+  UPDATE_SETTINGS: '/v1/users/me',
+  KYC_SUBMIT: '/v1/kyc/bridge/link',
+  KYC_STATUS: '/v1/kyc/status',
+  DEVICES: '/v1/security/devices',
+  REMOVE_DEVICE: '/v1/security/devices/:id',
 };
 
 export const userService = {
@@ -83,9 +83,16 @@ export const userService = {
    * Submit KYC verification
    */
   async submitKYC(data: KYCVerificationRequest): Promise<KYCVerificationResponse> {
-    // If images are base64, use regular post
-    // If images are files, use uploadFile helper
-    return apiClient.post<KYCVerificationResponse>(USER_ENDPOINTS.KYC_SUBMIT, data);
+    // Current backend flow uses Bridge-hosted KYC link generation.
+    const linkResponse = await apiClient.get<any>(USER_ENDPOINTS.KYC_SUBMIT);
+    const kycLink = linkResponse?.kycLink || linkResponse?.kyc_link || linkResponse?.url;
+
+    return {
+      message: 'KYC session created',
+      status: linkResponse?.status || 'pending',
+      user_id: '',
+      next_steps: kycLink ? [String(kycLink)] : ['complete_kyc'],
+    };
   },
 
   /**

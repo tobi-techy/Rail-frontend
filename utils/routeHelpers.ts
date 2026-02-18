@@ -53,6 +53,7 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
   inAuthGroup:
     segments[0] === '(auth)' ||
     pathname.startsWith('/(auth)') ||
+    pathname === normalizeRoutePath(ROUTES.AUTH.SIGNUP) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.SIGNIN) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.VERIFY_EMAIL) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.FORGOT_PASSWORD) ||
@@ -64,11 +65,17 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
   inTabsGroup: segments[0] === '(tabs)',
   inAppGroup:
     segments[0] === '(tabs)' ||
+    segments[0] === 'spending-stash' ||
+    segments[0] === 'investment-stash' ||
+    segments[0] === 'withdraw' ||
+    segments[0] === 'virtual-account' ||
     pathname.startsWith('/spending-stash') ||
     pathname.startsWith('/investment-stash') ||
+    pathname.startsWith('/withdraw') ||
+    pathname.startsWith('/virtual-account') ||
     pathname.startsWith('/profile') ||
     pathname.startsWith('/authorize-transaction'),
-  isOnWelcomeScreen: pathname === '/',
+  isOnWelcomeScreen: pathname === '/' || pathname === normalizeRoutePath(ROUTES.INTRO),
   isOnLoginPasscode: pathname === '/login-passcode',
   isOnVerifyEmail: pathname === normalizeRoutePath(ROUTES.AUTH.VERIFY_EMAIL),
   isOnKycScreen: pathname === normalizeRoutePath(ROUTES.AUTH.KYC),
@@ -91,8 +98,7 @@ export const isInCriticalAuthFlow = (config: RouteConfig): boolean => {
 
 /**
  * Handles routing for authenticated users
- * Requires passcode session validation for app access after backgrounding/inactivity
- * BUT: Only enforces passcode session requirement after app backgrounding, not on fresh login
+ * Requires passcode session validation for app access whenever passcode is enabled
  */
 const handleAuthenticatedUser = (
   authState: AuthState,
@@ -118,37 +124,22 @@ const handleAuthenticatedUser = (
     return ROUTES.AUTH.KYC;
   }
 
-  // If on passcode screen but passcode not enabled OR session is valid -> go to dashboard
+  // If on passcode screen and session is valid -> go to dashboard
   if (config.isOnLoginPasscode) {
-    if (!hasPasscode || hasValidPasscodeSession) {
+    if (hasValidPasscodeSession) {
       return ROUTES.TABS;
     }
     return null;
   }
 
-  // SECURITY FIX: Only require passcode session if:
-  // 1. Passcode is enabled AND
-  // 2. Session is invalid AND
-  // 3. User is NOT coming from fresh email/password login (detected by absence of recent activity)
-  // This prevents blocking users who just logged in via email/password
-  if (hasPasscode && !hasValidPasscodeSession && !config.isOnLoginPasscode) {
-    // Check if this is a fresh login (lastActivityAt was just set)
-    // Fresh logins from email/password should have isAuthenticated=true with valid access token
-    // Allow access to dashboard for fresh logins; only enforce passcode on re-entry after backgrounding
-    const timeSinceLastActivity = authState.lastActivityAt
-      ? Date.now() - new Date(authState.lastActivityAt).getTime()
-      : null;
-
-    // If last activity is within last 30 seconds, this is a fresh login - allow dashboard access
-    const isFreshLogin = timeSinceLastActivity !== null && timeSinceLastActivity < 30 * 1000;
-
-    if (!isFreshLogin) {
-      logger.info('[RouteHelpers] Passcode session expired, redirecting to login-passcode', {
-        component: 'routeHelpers',
-        action: 'passcode-expired-redirect',
-      });
-      return '/login-passcode';
-    }
+  // SECURITY: Completed users must present a valid passcode session before app access.
+  const shouldRequirePasscode = hasPasscode || userOnboardingStatus === 'completed';
+  if (shouldRequirePasscode && !hasValidPasscodeSession && !config.isOnLoginPasscode) {
+    logger.info('[RouteHelpers] Passcode session missing/expired, redirecting to login-passcode', {
+      component: 'routeHelpers',
+      action: 'passcode-expired-redirect',
+    });
+    return '/login-passcode';
   }
 
   if (isInCriticalAuthFlow(config)) return null;
@@ -189,7 +180,7 @@ const handleStoredCredentials = (
   // CRITICAL FIX: User has passcode and stored credentials but not authenticated
   // This happens when app backgrounded and passcode session expired
   // OLD USERS: After closing the app, they must enter passcode to re-auth, not signin
-  if (user && hasPasscode) {
+  if (user && (hasPasscode || user.onboardingStatus === 'completed')) {
     logger.info(
       '[RouteHelpers] User has stored credentials with passcode, routing to passcode login',
       {
@@ -235,10 +226,10 @@ const handleGuestUser = (hasSeenWelcome: boolean, config: RouteConfig): string |
   // Guests should always be able to access auth screens (signin/signup/verify/password reset).
   if (config.inAuthGroup) return null;
 
-  if (!hasSeenWelcome && !config.isOnWelcomeScreen) return '/';
+  if (!hasSeenWelcome && !config.isOnWelcomeScreen) return ROUTES.INTRO;
 
   if (config.inTabsGroup || (!config.inAuthGroup && !config.isOnWelcomeScreen)) {
-    return '/';
+    return ROUTES.INTRO;
   }
 
   return null;

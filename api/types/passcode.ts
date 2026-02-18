@@ -34,6 +34,13 @@ export interface VerifyPasscodeRequest {
   passcode: string;
 }
 
+export interface PasscodeLoginRequest {
+  passcode: string;
+  refresh_token: string;
+  email?: string;
+  phone?: string;
+}
+
 export interface VerifyPasscodeResponse {
   verified: boolean;
   accessToken: string;

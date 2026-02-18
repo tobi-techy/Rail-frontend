@@ -2,6 +2,8 @@ import type { User as ApiUser } from '../../api/types';
 
 export interface User extends Omit<ApiUser, 'phone'> {
   fullName?: string;
+  firstName?: string;
+  lastName?: string;
   phoneNumber?: string;
 }
 
@@ -44,7 +46,7 @@ export interface AuthState {
 export interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string) => Promise<void>;
   refreshSession: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
   updateLastActivity: () => void;

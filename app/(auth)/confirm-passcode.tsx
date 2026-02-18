@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { AuthGradient } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function ConfirmPasscodeScreen() {
-  const { passcode: originalPasscode } = useLocalSearchParams<{ passcode: string }>();
-  const setPasscode = useAuthStore((state) => state.setPasscode);
+  const originalPasscode = useAuthStore((s) => s._pendingPasscode);
+  const setPasscode = useAuthStore((s) => s.setPasscode);
   const [confirmPasscode, setConfirmPasscode] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,6 +31,7 @@ export default function ConfirmPasscodeScreen() {
     setIsLoading(true);
     try {
       await setPasscode(code);
+      useAuthStore.setState({ _pendingPasscode: null });
       router.replace(ROUTES.TABS as any);
     } catch (submitError: any) {
       setError(submitError?.message || 'Failed to create PIN');

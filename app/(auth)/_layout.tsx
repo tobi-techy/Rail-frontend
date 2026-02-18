@@ -13,7 +13,7 @@ export default function AuthLayout() {
           gestureEnabled: true,
           gestureDirection: 'horizontal',
         }}>
-        <Stack.Screen name="index" />
+        <Stack.Screen name="signup" />
         <Stack.Screen name="signin" />
         <Stack.Screen name="verify-email" />
         <Stack.Screen name="create-passcode" />

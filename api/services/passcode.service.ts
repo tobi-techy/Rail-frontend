@@ -11,6 +11,7 @@ import type {
   UpdatePasscodeRequest,
   UpdatePasscodeResponse,
   VerifyPasscodeRequest,
+  PasscodeLoginRequest,
   VerifyPasscodeResponse,
   DeletePasscodeRequest,
   DeletePasscodeResponse,
@@ -19,6 +20,7 @@ import type {
 const PASSCODE_ENDPOINTS = {
   BASE: '/v1/security/passcode',
   VERIFY: '/v1/security/passcode/verify',
+  LOGIN: '/v1/auth/passcode-login',
 };
 
 export const passcodeService = {
@@ -57,6 +59,14 @@ export const passcodeService = {
    */
   async verifyPasscode(data: VerifyPasscodeRequest): Promise<VerifyPasscodeResponse> {
     return apiClient.post<VerifyPasscodeResponse>(PASSCODE_ENDPOINTS.VERIFY, data);
+  },
+
+  /**
+   * Verify passcode for users without a valid bearer token (re-login flow).
+   * Requires refresh_token plus a stable identifier (email or phone) from persisted user state.
+   */
+  async passcodeLogin(data: PasscodeLoginRequest): Promise<VerifyPasscodeResponse> {
+    return apiClient.post<VerifyPasscodeResponse>(PASSCODE_ENDPOINTS.LOGIN, data);
   },
 
   /**

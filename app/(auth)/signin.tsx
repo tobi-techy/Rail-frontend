@@ -175,8 +175,31 @@ export default function SignIn() {
           <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
               <Button title="Sign In" onPress={handleSignIn} loading={isPending} />
+
+              <Button
+                title="Sign In with Apple"
+                variant="black"
+                onPress={() => {
+                  appleSignIn(undefined, {
+                    onSuccess: (resp) => {
+                      const onboardingStatus = resp.user?.onboardingStatus;
+                      if (onboardingStatus === 'completed') {
+                        router.replace(ROUTES.TABS as any);
+                        return;
+                      }
+                      router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
+                    },
+                    onError: () => {
+                      showError('Apple Sign-In Failed', 'Please try again or use email.');
+                    },
+                  });
+                }}
+                loading={isAppleLoading}
+                className="mt-3"
+              />
+
               <TouchableOpacity
-                onPress={() => router.push(ROUTES.AUTH.INDEX)}
+                onPress={() => router.push(ROUTES.AUTH.SIGNUP as any)}
                 className="mt-4"
                 accessibilityLabel="Sign up"
                 accessibilityHint="Navigate to registration">

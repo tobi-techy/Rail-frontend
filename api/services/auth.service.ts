@@ -34,6 +34,45 @@ const AUTH_ENDPOINTS = {
   FORGOT_PASSWORD: '/v1/auth/forgot-password',
   RESET_PASSWORD: '/v1/auth/reset-password',
   SOCIAL_LOGIN: '/v1/auth/social/login',
+  DELETE_ACCOUNT: '/v1/users/me',
+};
+
+const isRetriableNetworkError = (error: any): boolean => {
+  const code = String(error?.code || '').toUpperCase();
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    error?.status === 0 ||
+    code === 'NETWORK_ERROR' ||
+    code === 'NETWORK_TIMEOUT' ||
+    code.startsWith('ECONN') ||
+    code.startsWith('ETIMEDOUT') ||
+    message.includes('network error') ||
+    message.includes('timeout')
+  );
+};
+
+const withNetworkRetry = async <T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 2,
+  initialDelayMs: number = 600
+): Promise<T> => {
+  let lastError: any;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (!isRetriableNetworkError(error) || attempt === maxRetries) {
+        throw error;
+      }
+
+      const delayMs = initialDelayMs * Math.pow(2, attempt);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  throw lastError;
 };
 
 export const authService = {
@@ -71,7 +110,7 @@ export const authService = {
    * @returns Message and identifier (email or phone)
    */
   async register(data: RegisterRequest): Promise<RegisterResponse> {
-    return apiClient.post<RegisterResponse>(AUTH_ENDPOINTS.REGISTER, data);
+    return withNetworkRetry(() => apiClient.post<RegisterResponse>(AUTH_ENDPOINTS.REGISTER, data));
   },
 
   /**
@@ -118,7 +157,7 @@ export const authService = {
    * @returns User info with access and refresh tokens
    */
   async verifyCode(data: VerifyCodeRequest): Promise<VerifyCodeResponse> {
-    return apiClient.post<VerifyCodeResponse>(AUTH_ENDPOINTS.VERIFY, data);
+    return withNetworkRetry(() => apiClient.post<VerifyCodeResponse>(AUTH_ENDPOINTS.VERIFY, data));
   },
 
   /**
@@ -127,7 +166,9 @@ export const authService = {
    * @returns Message and identifier
    */
   async resendCode(data: ResendCodeRequest): Promise<ResendCodeResponse> {
-    return apiClient.post<ResendCodeResponse>(AUTH_ENDPOINTS.RESEND_CODE, data);
+    return withNetworkRetry(() =>
+      apiClient.post<ResendCodeResponse>(AUTH_ENDPOINTS.RESEND_CODE, data)
+    );
   },
 
   /**
@@ -179,6 +220,17 @@ export const authService = {
    */
   async socialLogin(data: SocialLoginRequest): Promise<SocialLoginResponse> {
     return apiClient.post<SocialLoginResponse>(AUTH_ENDPOINTS.SOCIAL_LOGIN, data);
+  },
+
+  /**
+   * Delete user account permanently
+   * Sweeps any remaining funds to company treasury before deletion
+   * @returns Deletion result with funds swept info
+   */
+  async deleteAccount(
+    reason?: string
+  ): Promise<{ message: string; funds_swept: string; sweep_tx_hash?: string }> {
+    return apiClient.delete(AUTH_ENDPOINTS.DELETE_ACCOUNT, { data: { reason } });
   },
 };
 

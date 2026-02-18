@@ -14,14 +14,13 @@ export function useBridgeKYCLink(enabled: boolean = true) {
   });
 }
 
-export function useKYCStatus(enabled: boolean) {
+export function useKYCStatus(enabled = true) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return useQuery({
     queryKey: queryKeys.user.kycStatus(),
     queryFn: () => kycService.getKYCStatus(),
     enabled: isAuthenticated && enabled,
-    refetchInterval: enabled ? 5000 : false,
-    staleTime: 5 * 1000,
+    staleTime: 30 * 1000,
   });
 }
