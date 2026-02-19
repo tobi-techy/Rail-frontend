@@ -28,8 +28,12 @@ export const SendAmountKeypad: React.FC<SendAmountKeypadProps> = ({
 }) => {
   const displayAmount = amount || '0';
   const numAmount = parseFloat(amount) || 0;
+  const tokenUsdRate =
+    selectedToken && typeof selectedToken.usdValue === 'number' && Number.isFinite(selectedToken.usdValue)
+      ? selectedToken.usdValue
+      : null;
   const usdValue =
-    selectedToken && selectedToken.usdValue !== null ? (numAmount * 1).toFixed(2) : '0.00';
+    tokenUsdRate !== null ? (numAmount * tokenUsdRate).toFixed(2) : '0.00';
   const triggerFeedback = useKeypadFeedback();
 
   const keypadButtons = [
@@ -93,7 +97,7 @@ export const SendAmountKeypad: React.FC<SendAmountKeypadProps> = ({
         </View>
         <View className="items-end">
           <Text className="font-body-bold text-[18px] text-[#0B1120]">
-            ${selectedToken ? selectedToken.usdValue.toFixed(1) : '0.0'}
+            ${tokenUsdRate !== null ? tokenUsdRate.toFixed(1) : '0.0'}
           </Text>
           <Text
             className={`font-body-bold text-[14px] ${

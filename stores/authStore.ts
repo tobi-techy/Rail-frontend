@@ -9,6 +9,8 @@ import { logger } from '../lib/logger';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 500;
+const SECURE_VALUE_PLACEHOLDER = '__secure__';
+const SENSITIVE_KEYS = ['accessToken', 'refreshToken', 'passcodeSessionToken'] as const;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -54,6 +56,7 @@ interface AuthState {
   isAuthenticated: boolean;
   accessToken: string | null;
   refreshToken: string | null;
+  csrfToken: string | null;
   lastActivityAt: string | null; // Track last user activity for session timeout
   tokenIssuedAt: string | null; // Track when token was issued (for 7-day expiry)
   tokenExpiresAt: string | null; // Track when token expires (7 days from issuance)
@@ -139,6 +142,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   accessToken: null,
   refreshToken: null,
+  csrfToken: null,
   lastActivityAt: null,
   tokenIssuedAt: null,
   tokenExpiresAt: null,
@@ -175,24 +179,22 @@ const createSecureStorage = () => ({
   getItem: async (name: string) => {
     try {
       const data = await withRetry(() => AsyncStorage.getItem(name));
-      if (data) {
-        const parsed = JSON.parse(data);
-        if (parsed.accessToken) {
-          parsed.accessToken = await withRetry(() => secureStorage.getItem(`${name}_accessToken`));
-        }
-        if (parsed.refreshToken) {
-          parsed.refreshToken = await withRetry(() =>
-            secureStorage.getItem(`${name}_refreshToken`)
-          );
-        }
-        if (parsed.passcodeSessionToken) {
-          parsed.passcodeSessionToken = await withRetry(() =>
-            secureStorage.getItem(`${name}_passcodeSessionToken`)
-          );
-        }
-        return parsed;
-      }
-      return null;
+      if (!data) return null;
+
+      const parsed = JSON.parse(data);
+      if (!parsed || typeof parsed !== 'object') return null;
+
+      const [secureAccessToken, secureRefreshToken, securePasscodeSessionToken] = await Promise.all([
+        withRetry(() => secureStorage.getItem(`${name}_accessToken`)),
+        withRetry(() => secureStorage.getItem(`${name}_refreshToken`)),
+        withRetry(() => secureStorage.getItem(`${name}_passcodeSessionToken`)),
+      ]);
+
+      parsed.accessToken = secureAccessToken ?? null;
+      parsed.refreshToken = secureRefreshToken ?? null;
+      parsed.passcodeSessionToken = securePasscodeSessionToken ?? undefined;
+
+      return parsed;
     } catch (error) {
       safeError('[SecureStorage] getItem error:', error);
       return null;
@@ -200,21 +202,27 @@ const createSecureStorage = () => ({
   },
   setItem: async (name: string, value: any) => {
     try {
-      const sensitiveKeys = ['accessToken', 'refreshToken', 'passcodeSessionToken'];
-      const sensitiveData: Record<string, string> = {};
+      const toStore = { ...value };
 
-      for (const key of sensitiveKeys) {
-        if (value[key]) {
-          sensitiveData[key] = value[key];
-          delete value[key];
+      for (const key of SENSITIVE_KEYS) {
+        const secureKey = `${name}_${key}`;
+        const keyValue = toStore[key];
+
+        if (typeof keyValue === 'string' && keyValue.length > 0) {
+          await withRetry(() => secureStorage.setItem(secureKey, keyValue));
+          toStore[key] = SECURE_VALUE_PLACEHOLDER;
+          continue;
+        }
+
+        await secureStorage.deleteItem(secureKey);
+        if (key === 'passcodeSessionToken') {
+          delete toStore[key];
+        } else {
+          toStore[key] = null;
         }
       }
 
-      await withRetry(() => AsyncStorage.setItem(name, JSON.stringify(value)));
-
-      for (const [key, val] of Object.entries(sensitiveData)) {
-        await withRetry(() => secureStorage.setItem(`${name}_${key}`, val));
-      }
+      await withRetry(() => AsyncStorage.setItem(name, JSON.stringify(toStore)));
     } catch (error) {
       safeError('[SecureStorage] setItem error:', error);
       throw error;
@@ -273,6 +281,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             isAuthenticated: true,
             accessToken: response.accessToken,
             refreshToken: response.refreshToken,
+            csrfToken: response.csrfToken || null,
             onboardingStatus: response.user.onboardingStatus || null,
             // Passcode status is fetched from /v1/security/passcode, not user payload.
             hasPasscode: false,
@@ -316,25 +325,64 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
       logout: async () => {
         set({ isLoading: true });
+        let logoutFailed = false;
+        
         try {
           // Call API to invalidate tokens on server
-          await authService.logout().catch(() => {
-            // Ignore errors - still clear local state
-          });
-
-          // Clear all auth state on logout
-          set({
-            ...initialState,
-            hasPasscode: false,
-            hasCompletedOnboarding: false,
-          });
+          await authService.logout();
         } catch (error) {
-          // Even if logout fails, clear local state
-          set({
-            ...initialState,
-            hasPasscode: false,
-            hasCompletedOnboarding: false,
-            error: error instanceof Error ? error.message : 'Logout failed',
+          // Log error but don't throw - allow local cleanup to proceed
+          logoutFailed = true;
+          logger.error('[AuthStore] Backend logout failed', {
+            component: 'AuthStore',
+            action: 'logout-api-error',
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+
+        try {
+          // CRITICAL: Clean up SessionManager timers
+          // This prevents background timers from firing after logout
+          const { cleanup } = await import('../utils/sessionManager').then(m => ({ cleanup: m.default.cleanup }));
+          cleanup();
+        } catch (cleanupError) {
+          logger.warn('[AuthStore] SessionManager cleanup failed', {
+            component: 'AuthStore',
+            action: 'session-manager-cleanup-error',
+            error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+          });
+        }
+
+        try {
+          // Clean up CSRF token on logout
+          const { default: csrfTokenService } = await import('../utils/csrfToken');
+          await csrfTokenService.clear();
+        } catch (csrfError) {
+          logger.warn('[AuthStore] CSRF token cleanup failed', {
+            component: 'AuthStore',
+            action: 'csrf-cleanup-error',
+            error: csrfError instanceof Error ? csrfError.message : String(csrfError),
+          });
+        }
+
+        // Clear all auth state on logout
+        set({
+          ...initialState,
+          hasPasscode: false,
+          hasCompletedOnboarding: false,
+        });
+        set({ isLoading: false });
+
+        // If backend logout failed, log for monitoring
+        if (logoutFailed) {
+          logger.warn('[AuthStore] Logout completed with local state cleared, but backend call failed', {
+            component: 'AuthStore',
+            action: 'logout-partial-success',
+          });
+        } else {
+          logger.info('[AuthStore] Logout completed successfully', {
+            component: 'AuthStore',
+            action: 'logout-success',
           });
         }
       },
@@ -417,6 +465,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           set({
             accessToken: response.accessToken,
             refreshToken: response.refreshToken || refreshToken,
+            csrfToken: response.csrfToken || get().csrfToken,
             isAuthenticated: true,
             tokenExpiresAt: nextTokenExpiry,
             error: null,
@@ -468,6 +517,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           isAuthenticated: false,
           accessToken: null,
           refreshToken: null,
+          csrfToken: null,
           lastActivityAt: null,
           tokenIssuedAt: null,
           tokenExpiresAt: null,
@@ -487,7 +537,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
 
       checkPasscodeSessionExpiry: () => {
-        const { passcodeSessionToken, passcodeSessionExpiresAt, isAuthenticated } = get();
+        const { passcodeSessionToken, passcodeSessionExpiresAt, isAuthenticated, lastActivityAt } = get();
 
         // If not authenticated, no passcode session to check
         if (!isAuthenticated) return false;
@@ -495,7 +545,25 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         // If no passcode session token, it's expired/missing
         if (!passcodeSessionToken || !passcodeSessionExpiresAt) return true;
 
-        // SECURITY: Validate passcode session timestamp format and value
+        // Check if 10 minutes have passed since last activity
+        if (lastActivityAt) {
+          const lastActivity = new Date(lastActivityAt).getTime();
+          const now = Date.now();
+          const PASSCODE_SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes of inactivity
+          
+          if (now - lastActivity >= PASSCODE_SESSION_TIMEOUT) {
+            logger.debug('[AuthStore] Passcode session expired due to inactivity', {
+              component: 'AuthStore',
+              action: 'inactivity-timeout',
+              lastActivityAt,
+              now,
+              elapsedMs: now - lastActivity,
+            });
+            return true;
+          }
+        }
+
+        // Fallback: check timestamp if no lastActivityAt
         try {
           const expiryTime = new Date(passcodeSessionExpiresAt).getTime();
           const now = new Date().getTime();
@@ -668,6 +736,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         set({
           accessToken: null,
           refreshToken: null,
+          csrfToken: null,
           isAuthenticated: false,
           tokenIssuedAt: null,
           tokenExpiresAt: null,
@@ -686,6 +755,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         user: state.user,
         accessToken: state.accessToken, // Will be stored securely
         refreshToken: state.refreshToken, // Will be stored securely
+        csrfToken: state.csrfToken,
         lastActivityAt: state.lastActivityAt,
         tokenIssuedAt: state.tokenIssuedAt,
         tokenExpiresAt: state.tokenExpiresAt,

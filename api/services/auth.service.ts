@@ -22,6 +22,10 @@ import type {
   ResetPasswordRequest,
   SocialLoginRequest,
   SocialLoginResponse,
+  WebAuthnLoginBeginRequest,
+  WebAuthnLoginBeginResponse,
+  WebAuthnLoginFinishRequest,
+  WebAuthnLoginFinishResponse,
 } from '../types';
 
 const AUTH_ENDPOINTS = {
@@ -34,6 +38,8 @@ const AUTH_ENDPOINTS = {
   FORGOT_PASSWORD: '/v1/auth/forgot-password',
   RESET_PASSWORD: '/v1/auth/reset-password',
   SOCIAL_LOGIN: '/v1/auth/social/login',
+  WEBAUTHN_LOGIN_BEGIN: '/v1/auth/webauthn/login/begin',
+  WEBAUTHN_LOGIN_FINISH: '/v1/auth/webauthn/login/finish',
   DELETE_ACCOUNT: '/v1/users/me',
 };
 
@@ -91,14 +97,16 @@ export const authService = {
       );
     }
 
-    // SECURITY: Validate email input
-    const emailValidation = validateEmail(data.email || '');
-    if (!emailValidation.isValid) {
-      const errorMessage =
-        emailValidation.errors && emailValidation.errors.length > 0
-          ? emailValidation.errors[0]
-          : 'Invalid email format';
-      throw new Error(errorMessage);
+    // SECURITY: Validate email input only when provided (phone-only logins are allowed)
+    if (data.email && data.email.trim() !== '') {
+      const emailValidation = validateEmail(data.email);
+      if (!emailValidation.isValid) {
+        const errorMessage =
+          emailValidation.errors && emailValidation.errors.length > 0
+            ? emailValidation.errors[0]
+            : 'Invalid email format';
+        throw new Error(errorMessage);
+      }
     }
 
     return apiClient.post<LoginResponse>(AUTH_ENDPOINTS.LOGIN, data);
@@ -139,6 +147,7 @@ export const authService = {
     const accessToken = payload?.accessToken ?? payload?.access_token;
     const refreshToken = payload?.refreshToken ?? payload?.refresh_token ?? data.refreshToken;
     const expiresAt = payload?.expiresAt ?? payload?.expires_at;
+    const csrfToken = payload?.csrfToken ?? payload?.csrf_token;
 
     if (!accessToken) {
       throw new Error('Refresh token response missing access token');
@@ -148,6 +157,7 @@ export const authService = {
       accessToken,
       refreshToken,
       expiresAt: expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      csrfToken,
     };
   },
 
@@ -220,6 +230,27 @@ export const authService = {
    */
   async socialLogin(data: SocialLoginRequest): Promise<SocialLoginResponse> {
     return apiClient.post<SocialLoginResponse>(AUTH_ENDPOINTS.SOCIAL_LOGIN, data);
+  },
+
+  /**
+   * Begin passkey login ceremony.
+   * Returns WebAuthn options and a temporary sessionId required for finish.
+   */
+  async beginPasskeyLogin(data: WebAuthnLoginBeginRequest): Promise<WebAuthnLoginBeginResponse> {
+    return withNetworkRetry(() =>
+      apiClient.post<WebAuthnLoginBeginResponse>(AUTH_ENDPOINTS.WEBAUTHN_LOGIN_BEGIN, data)
+    );
+  },
+
+  /**
+   * Finish passkey login ceremony and exchange assertion for auth tokens.
+   */
+  async finishPasskeyLogin(
+    data: WebAuthnLoginFinishRequest
+  ): Promise<WebAuthnLoginFinishResponse> {
+    return withNetworkRetry(() =>
+      apiClient.post<WebAuthnLoginFinishResponse>(AUTH_ENDPOINTS.WEBAUTHN_LOGIN_FINISH, data)
+    );
   },
 
   /**

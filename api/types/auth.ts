@@ -13,6 +13,7 @@ export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
+  csrfToken?: string;
 }
 
 export interface RegisterRequest {
@@ -61,12 +62,16 @@ export interface RefreshTokenResponse {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
+  csrfToken?: string;
 }
 
 export interface User {
   id: string;
   email: string;
   phone?: string | null;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
   emailVerified: boolean;
   phoneVerified: boolean;
   kycStatus: 'pending' | 'processing' | 'approved' | 'rejected' | 'expired';
@@ -115,5 +120,30 @@ export interface SocialLoginResponse {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
+  csrfToken?: string;
   isNewUser: boolean;
+}
+
+// ============= Passkey Authentication Types =============
+
+export interface WebAuthnLoginBeginRequest {
+  email: string;
+}
+
+export interface WebAuthnLoginBeginResponse {
+  options: Record<string, any>;
+  sessionId: string;
+}
+
+export interface WebAuthnLoginFinishRequest {
+  sessionId: string;
+  response: Record<string, any>;
+}
+
+export interface WebAuthnLoginFinishResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: string;
+  csrfToken?: string;
 }

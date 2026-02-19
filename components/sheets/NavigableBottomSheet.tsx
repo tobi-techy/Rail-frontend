@@ -1,10 +1,9 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useMemo, useState } from 'react';
 import { Pressable, Dimensions, Modal, StyleSheet, View, Text } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -30,7 +29,22 @@ interface NavigableBottomSheetProps {
   initialScreenId?: string;
   showCloseButton?: boolean;
   dismissible?: boolean;
+  navigation?: NavigableBottomSheetNavigation;
 }
+
+export interface NavigableBottomSheetNavigation {
+  screenStack: string[];
+  setScreenStack: React.Dispatch<React.SetStateAction<string[]>>;
+  navigateTo: (screenId: string) => void;
+  goBack: () => void;
+  reset: (initialScreenId?: string) => void;
+}
+
+const getInitialStack = (initialScreenId?: string, screens: BottomSheetScreen[] = []): string[] => {
+  if (initialScreenId) return [initialScreenId];
+  if (screens.length > 0) return [screens[0].id];
+  return [];
+};
 
 export function NavigableBottomSheet({
   visible,
@@ -39,13 +53,32 @@ export function NavigableBottomSheet({
   initialScreenId,
   showCloseButton = true,
   dismissible = true,
+  navigation,
 }: NavigableBottomSheetProps) {
   const { height: screenHeight } = Dimensions.get('window');
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(screenHeight);
-  const [screenStack, setScreenStack] = useState<string[]>(() =>
-    initialScreenId ? [initialScreenId] : screens.length > 0 ? [screens[0].id] : []
-  );
+  const initialStack = useMemo(() => getInitialStack(initialScreenId, screens), [initialScreenId, screens]);
+  const defaultScreenId = initialStack[0];
+  const localNavigation = useNavigableBottomSheet(defaultScreenId);
+  const { screenStack, setScreenStack, goBack, reset } = navigation ?? localNavigation;
+
+  useEffect(() => {
+    if (!defaultScreenId) {
+      if (screenStack.length > 0) setScreenStack([]);
+      return;
+    }
+
+    if (screenStack.length === 0) {
+      setScreenStack([defaultScreenId]);
+      return;
+    }
+
+    const currentId = screenStack[screenStack.length - 1];
+    if (!screens.some((screen) => screen.id === currentId)) {
+      setScreenStack([defaultScreenId]);
+    }
+  }, [defaultScreenId, screenStack, screens, setScreenStack]);
 
   const currentScreenId = screenStack[screenStack.length - 1];
   const currentScreen = screens.find((s) => s.id === currentScreenId);
@@ -54,27 +87,18 @@ export function NavigableBottomSheet({
   const animateClose = useCallback(() => {
     translateY.value = withSpring(screenHeight, SPRING_CONFIG, () => {
       runOnJS(onClose)();
-      runOnJS(setScreenStack)([initialScreenId || (screens.length > 0 ? screens[0].id : '')]);
+      runOnJS(reset)(defaultScreenId);
     });
-  }, [onClose, screenHeight, translateY, initialScreenId, screens]);
+  }, [defaultScreenId, onClose, reset, screenHeight, translateY]);
 
   const goToPreviousScreen = useCallback(() => {
     if (canGoBack) {
       const previousScreenId = screenStack[screenStack.length - 2];
       const previousScreen = screens.find((s) => s.id === previousScreenId);
       previousScreen?.onBackPress?.();
-      setScreenStack((prev) => prev.slice(0, -1));
+      goBack();
     }
-  }, [canGoBack, screenStack, screens]);
-
-  const navigateToScreen = useCallback(
-    (screenId: string) => {
-      if (screens.find((s) => s.id === screenId)) {
-        setScreenStack((prev) => [...prev, screenId]);
-      }
-    },
-    [screens]
-  );
+  }, [canGoBack, goBack, screenStack, screens]);
 
   useEffect(() => {
     if (visible) {
@@ -169,8 +193,12 @@ export function NavigableBottomSheet({
   );
 }
 
-export function useNavigableBottomSheet() {
-  const [screenStack, setScreenStack] = useState<string[]>([]);
+export function useNavigableBottomSheet(
+  initialScreenId?: string
+): NavigableBottomSheetNavigation {
+  const [screenStack, setScreenStack] = useState<string[]>(() =>
+    initialScreenId ? [initialScreenId] : []
+  );
 
   const navigateTo = useCallback((screenId: string) => {
     setScreenStack((prev) => [...prev, screenId]);
@@ -180,12 +208,17 @@ export function useNavigableBottomSheet() {
     setScreenStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
   }, []);
 
-  const reset = useCallback(() => {
-    setScreenStack([]);
-  }, []);
+  const reset = useCallback(
+    (nextInitialScreenId?: string) => {
+      const seedScreenId = nextInitialScreenId ?? initialScreenId;
+      setScreenStack(seedScreenId ? [seedScreenId] : []);
+    },
+    [initialScreenId]
+  );
 
   return {
     screenStack,
+    setScreenStack,
     navigateTo,
     goBack,
     reset,

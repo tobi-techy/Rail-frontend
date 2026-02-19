@@ -62,6 +62,7 @@ if (
     hasCertPin1: !!process.env.EXPO_PUBLIC_CERT_PIN_1,
     hasCertPin2: !!process.env.EXPO_PUBLIC_CERT_PIN_2,
   });
+  throw new Error(errorMsg);
 }
 
 /**
@@ -86,6 +87,8 @@ const AUTH_ENDPOINTS = [
   '/v1/auth/reset-password',
   '/v1/auth/refresh',
   '/v1/auth/social/login',
+  '/v1/auth/webauthn/login/begin',
+  '/v1/auth/webauthn/login/finish',
   '/v1/auth/passcode-login',
   '/v1/security/passcode/verify',
 ];
@@ -129,7 +132,48 @@ function isPasscodeProtectedEndpoint(method?: string, url?: string): boolean {
 
 // Token refresh state to prevent race conditions
 let refreshPromise: Promise<void> | null = null;
-let refreshInProgress = false; // Additional flag to prevent re-entry
+
+/**
+ * SECURITY: Atomic refresh promise getter/creator
+ * Ensures only one refresh happens even with concurrent 401s
+ * Uses a closure to prevent race conditions in the check-then-set pattern
+ */
+function getOrCreateRefreshPromise(): Promise<void> {
+  if (!refreshPromise) {
+    logger.debug('[API Client] Creating new refresh promise', {
+      component: 'ApiClient',
+      action: 'refresh-promise-created',
+    });
+
+    refreshPromise = useAuthStore
+      .getState()
+      .refreshSession()
+      .then(() => {
+        logger.debug('[API Client] Token refresh succeeded', {
+          component: 'ApiClient',
+          action: 'refresh-success',
+        });
+      })
+      .catch((err) => {
+        logger.error('[API Client] Token refresh failed', {
+          component: 'ApiClient',
+          action: 'refresh-failure',
+          error: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
+      })
+      .finally(() => {
+        refreshPromise = null; // Clear for next refresh attempt
+      });
+  } else {
+    logger.debug('[API Client] Reusing existing refresh promise', {
+      component: 'ApiClient',
+      action: 'refresh-promise-reused',
+    });
+  }
+
+  return refreshPromise;
+}
 
 /**
  * Create base axios instance
@@ -147,7 +191,7 @@ const axiosInstance = axios.create({
  * Request interceptor - adds auth token, request ID, and CSRF token
  */
 axiosInstance.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
     const {
       accessToken,
       isAuthenticated,
@@ -155,6 +199,7 @@ axiosInstance.interceptors.request.use(
       passcodeSessionToken,
       checkPasscodeSessionExpiry,
       clearPasscodeSession,
+      csrfToken,
     } = useAuthStore.getState();
 
     if (accessToken && config.headers) {
@@ -162,6 +207,31 @@ axiosInstance.interceptors.request.use(
     }
 
     config.headers['X-Request-ID'] = generateRequestId();
+
+    // Add CSRF token for state-changing requests
+    // SECURITY: Only for authenticated, non-auth endpoints
+    const needsCSRF = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(
+      (config.method || 'GET').toUpperCase()
+    );
+
+    if (needsCSRF && isAuthenticated && !isAuthEndpoint(config.url)) {
+      if (csrfToken && config.headers) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+        logger.debug('[API Client] CSRF token added to request', {
+          component: 'ApiClient',
+          action: 'csrf-token-added',
+          method: config.method,
+          path: normalizeRequestPath(config.url),
+        });
+      } else {
+        logger.warn('[API Client] Missing CSRF token for state-changing request', {
+          component: 'ApiClient',
+          action: 'csrf-token-missing',
+          method: config.method,
+          path: normalizeRequestPath(config.url),
+        });
+      }
+    }
 
     if (config.headers && isPasscodeProtectedEndpoint(config.method, config.url)) {
       const hasPasscodeHeader = !!config.headers['X-Passcode-Session'];
@@ -217,50 +287,32 @@ axiosInstance.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const { isAuthenticated, refreshToken, clearSession } = useAuthStore.getState();
+      const { isAuthenticated, refreshToken, clearSession, clearPasscodeSession } = useAuthStore.getState();
+
+      // SECURITY: If this is a passcode-protected endpoint returning 401,
+      // the passcode session is invalid and should be cleared
+      if (isPasscodeProtectedEndpoint(originalRequest.method, originalRequest.url)) {
+        logger.warn('[API Client] 401 on passcode-protected endpoint - clearing passcode session', {
+          component: 'ApiClient',
+          action: 'passcode-session-invalid-401',
+          method: originalRequest.method,
+          url: originalRequest.url,
+        });
+        clearPasscodeSession();
+        // Return error - user needs to re-verify passcode
+        return Promise.reject(
+          transformError(
+            error,
+            requestId
+          )
+        );
+      }
 
       if (isAuthenticated && refreshToken) {
         try {
-          // SECURITY: Prevent race condition with double-checked locking
-          // Both flags prevent concurrent refresh attempts
-          if (refreshInProgress && refreshPromise) {
-            logger.debug('[API Client] Token refresh already in progress, waiting', {
-              component: 'ApiClient',
-              action: 'refresh-waiting',
-            });
-            await refreshPromise;
-          } else if (!refreshInProgress) {
-            // First request to initiate refresh
-            refreshInProgress = true;
-            logger.debug('[API Client] Initiating token refresh', {
-              component: 'ApiClient',
-              action: 'refresh-start',
-            });
-
-            refreshPromise = useAuthStore
-              .getState()
-              .refreshSession()
-              .then(() => {
-                logger.debug('[API Client] Token refresh succeeded', {
-                  component: 'ApiClient',
-                  action: 'refresh-success',
-                });
-              })
-              .catch((err) => {
-                logger.error('[API Client] Token refresh failed', {
-                  component: 'ApiClient',
-                  action: 'refresh-failure',
-                  error: err instanceof Error ? err.message : String(err),
-                });
-                throw err;
-              })
-              .finally(() => {
-                refreshInProgress = false;
-                refreshPromise = null;
-              });
-
-            await refreshPromise;
-          }
+          // SECURITY: Atomic refresh using single promise
+          // All concurrent 401s will wait for the same refresh
+          await getOrCreateRefreshPromise();
 
           // SECURITY: Validate new token was actually refreshed
           const newAccessToken = useAuthStore.getState().accessToken;
@@ -269,6 +321,7 @@ axiosInstance.interceptors.response.use(
               component: 'ApiClient',
               action: 'no-token-returned',
             });
+            // Only clear session if refresh token was actually invalid (not a network error)
             clearSession();
             return Promise.reject(new Error('Token refresh failed: no token returned'));
           }
@@ -282,12 +335,32 @@ axiosInstance.interceptors.response.use(
             return axiosInstance.request(originalRequest);
           }
         } catch (refreshError) {
-          logger.error(
-            '[API Client] Token refresh error',
-            refreshError instanceof Error ? refreshError : new Error(String(refreshError))
-          );
-          refreshInProgress = false; // Ensure flag is reset on error
-          clearSession();
+          logger.error('[API Client] Token refresh error', {
+            component: 'ApiClient',
+            action: 'refresh-error',
+            error: refreshError instanceof Error ? refreshError.message : String(refreshError),
+          });
+
+          // Only clear session if refresh token is invalid (401 from refresh endpoint)
+          // Network errors should NOT clear session - user may still have valid tokens
+          const isRefreshEndpoint = isAuthEndpoint(originalRequest.url);
+          const isInvalidTokenError = error.response?.status === 401 && isRefreshEndpoint;
+
+          if (isInvalidTokenError) {
+            logger.debug('[API Client] Clearing session due to invalid refresh token', {
+              component: 'ApiClient',
+              action: 'clear-session-invalid-token',
+            });
+            clearSession();
+          } else {
+            logger.debug('[API Client] Not clearing session - network error or non-refresh 401', {
+              component: 'ApiClient',
+              action: 'skip-clear-session',
+              isRefreshEndpoint,
+              status: error.response?.status,
+            });
+          }
+
           return Promise.reject(refreshError);
         }
       }
@@ -389,6 +462,17 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
       details,
       status,
       requestId: data.requestId || requestId,
+    };
+  }
+
+  // Legacy error format: { error: "message" } or { error: { code, message } }
+  if (typeof data?.error === 'string') {
+    return {
+      code: `HTTP_${status}`,
+      message: data.error,
+      details,
+      status,
+      requestId,
     };
   }
 

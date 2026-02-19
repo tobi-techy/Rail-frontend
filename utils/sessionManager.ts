@@ -57,6 +57,7 @@ export class SessionManager {
 
       useAuthStore.setState({
         accessToken: response.accessToken,
+        refreshToken: response.refreshToken || refreshToken,
         tokenExpiresAt,
       });
 
@@ -159,7 +160,8 @@ export class SessionManager {
   }
 
   /**
-   * Check if passcode session is expired
+   * Check if passcode session is expired based on last activity
+   * Passcode session expires after 10 minutes of INACTIVITY (not wall-clock time)
    */
   static isPasscodeSessionExpired(): boolean {
     const { checkPasscodeSessionExpiry } = useAuthStore.getState();
@@ -168,7 +170,7 @@ export class SessionManager {
 
   /**
    * Schedule passcode session expiration check
-   * Passcode session lasts 10 minutes
+   * Passcode session lasts 10 minutes of INACTIVITY
    * SECURITY: Validates expiry timestamp to prevent bypass attacks
    */
   static schedulePasscodeSessionExpiry(expiresAt: string): void {
@@ -241,6 +243,46 @@ export class SessionManager {
       action: 'schedule-passcode-expiry',
       expiresAt,
       scheduledTimeoutMs: scheduledTimeout,
+    });
+  }
+
+  /**
+   * Reset passcode session timer on activity (app foreground)
+   * Call this when app comes to foreground to extend session
+   */
+  static resetPasscodeSessionTimer(): void {
+    const state = useAuthStore.getState();
+    if (!state.passcodeSessionExpiresAt) {
+      return;
+    }
+
+    const now = Date.now();
+    const expiresAt = new Date(state.passcodeSessionExpiresAt).getTime();
+    const timeUntilExpiry = Math.max(0, expiresAt - now);
+
+    // Only reset if session is still valid (has at least 1 minute remaining)
+    if (timeUntilExpiry < 60 * 1000) {
+      logger.debug('[SessionManager] Passcode session expired, not resetting timer', {
+        component: 'SessionManager',
+        action: 'skip-reset-expired',
+        timeUntilExpiry,
+      });
+      return;
+    }
+
+    // Extend session by 10 minutes from now (activity-based timeout)
+    const newExpiresAt = new Date(now + 10 * 60 * 1000).toISOString();
+    useAuthStore.setState({
+      passcodeSessionExpiresAt: newExpiresAt,
+    });
+
+    this.schedulePasscodeSessionExpiry(newExpiresAt);
+
+    logger.debug('[SessionManager] Passcode session timer reset on activity', {
+      component: 'SessionManager',
+      action: 'reset-timer',
+      previousExpiry: state.passcodeSessionExpiresAt,
+      newExpiry: newExpiresAt,
     });
   }
 
