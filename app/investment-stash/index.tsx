@@ -90,7 +90,6 @@ export default function InvestmentStashScreen() {
             <BalanceCard
               balance={displayBalance}
               percentChange={displayPerformance}
-              buyingPower={displayBuyingPower}
               timeframe={activePeriod}
             />
 

@@ -173,7 +173,7 @@ export function useProtectedRoute() {
   }, [refreshBackendAuthState]); // Run once on mount (which happens on every app reload)
 
   // Listen for app state changes (foreground/background)
-  // Passcode session is NOT expired on background — only on cold start (app kill + reopen)
+  // Reset passcode session timer on foreground (activity-based timeout)
   useEffect(() => {
     const subscription = AppState.addEventListener(
       'change',
@@ -194,6 +194,11 @@ export function useProtectedRoute() {
               });
               SessionManager.handleSessionExpired();
               return;
+            }
+
+            // Reset passcode session timer on activity (extends session)
+            if (freshState.passcodeSessionExpiresAt) {
+              SessionManager.resetPasscodeSessionTimer();
             }
 
             freshState.updateLastActivity();

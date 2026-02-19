@@ -48,8 +48,8 @@ export default function PersonalInfo() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-subtitle text-[50px] text-black">Personal Info</Text>
-              <Text className="mt-2 font-body text-[14px] text-black/60">
+              <Text className="font-headline text-auth-title text-black">Personal Info</Text>
+              <Text className="mt-2 font-body text-caption text-black/60">
                 Let&apos;s start with your name
               </Text>
             </View>

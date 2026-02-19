@@ -84,7 +84,6 @@ const Profile = () => {
         <BalanceCard
           balance={displayBalance}
           percentChange={displayPerformance}
-          buyingPower={displayBuyingPower}
           timeframe="Last 30d"
           className="rounded-x"
         />

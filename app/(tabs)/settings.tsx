@@ -128,9 +128,26 @@ export default function Settings() {
     setIsLoggingOut(true);
     try {
       await logout();
+      // Show success feedback
+      Alert.alert('Success', 'You have been logged out successfully.');
       closeSheet();
     } catch (error) {
-      Alert.alert('Error', 'Failed to log out. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to log out';
+      logger.error('[Settings] Logout error', {
+        component: 'Settings',
+        action: 'logout-error',
+        error: errorMessage,
+      });
+      Alert.alert(
+        'Logout Issue',
+        'We had trouble logging you out from the server. Your local session has been cleared for security. You may need to log back in.',
+        [
+          {
+            text: 'OK',
+            onPress: () => closeSheet(),
+          },
+        ]
+      );
     } finally {
       setIsLoggingOut(false);
     }

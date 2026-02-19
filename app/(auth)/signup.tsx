@@ -68,7 +68,7 @@ export default function SignUp() {
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
-              <Text className="font-subtitle text-[50px] leading-[1.1] text-black">
+              <Text className="font-headline text-auth-title leading-[1.1] text-black">
                 Enter your email
               </Text>
               <Text className="mt-2 font-body text-body text-black/60">
@@ -95,7 +95,7 @@ export default function SignUp() {
 
           <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
-              <Text className="mb-5 text-center font-caption text-[12px] text-black/50">
+              <Text className="mb-5 text-center font-caption text-small text-black/50">
                 By signing up, you agree to our{' '}
                 <Text
                   className="underline"
@@ -113,7 +113,7 @@ export default function SignUp() {
               <TouchableOpacity
                 onPress={() => router.push(ROUTES.AUTH.SIGNIN as any)}
                 className="mt-4">
-                <Text className="text-center font-body text-[14px] text-black/60">
+                <Text className="text-center font-body text-caption text-black/60">
                   Already have an account?{' '}
                   <Text className="font-subtitle text-black underline">Sign In</Text>
                 </Text>

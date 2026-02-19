@@ -38,7 +38,7 @@ export const Keypad: React.FC<KeypadProps> = ({
   ...rest
 }) => {
   const isDark = variant === 'dark';
-  const iconColor = isDark ? '#fff' : '#121212';
+  const iconColor = isDark ? '#fff' : '#000';
   const triggerFeedback = useKeypadFeedback();
 
   const handlePress = (key: KeypadKey) => {
@@ -70,7 +70,7 @@ export const Keypad: React.FC<KeypadProps> = ({
           {row.map((key, keyIndex) => {
             if (!key) {
               return (
-                <View key={`empty-${rowIndex}-${keyIndex}`} className="mx-1.5 h-[72px] flex-1" />
+                <View key={`empty-${rowIndex}-${keyIndex}`} className="mx-1.5 h-keypad flex-1" />
               );
             }
 
@@ -81,7 +81,7 @@ export const Keypad: React.FC<KeypadProps> = ({
             return (
               <TouchableOpacity
                 key={key}
-                className={`mx-1.5 h-[72px] flex-1 items-center justify-center rounded-full ${isDark ? 'active:bg-white/10' : 'active:bg-surface'}`}
+                className={`mx-1.5 h-keypad flex-1 items-center justify-center rounded-full ${isDark ? 'active:bg-white/10' : 'active:bg-surface'}`}
                 activeOpacity={0.7}
                 onPress={() => handlePress(key)}
                 disabled={disabled}
@@ -110,7 +110,7 @@ export const Keypad: React.FC<KeypadProps> = ({
                   </Text>
                 ) : (
                   <Text
-                    className={`font-subtitle text-[30px] ${isDark ? 'text-white' : 'text-text-primary'}`}>
+                    className={`font-subtitle text-keypad ${isDark ? 'text-white' : 'text-text-primary'}`}>
                     {key}
                   </Text>
                 )}

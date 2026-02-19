@@ -1,15 +1,16 @@
 import React from 'react';
-import { View, Text, Linking } from 'react-native';
+import { View, Text } from 'react-native';
+import { router } from 'expo-router';
 import { BottomSheet } from './BottomSheet';
 import { Button } from '@/components/ui';
 import { Shield, AlertTriangle, Clock } from 'lucide-react-native';
+import { ROUTES } from '@/constants/routes';
 import type { KYCStatusResponse } from '@/api/types';
 
 interface KYCVerificationSheetProps {
   visible: boolean;
   onClose: () => void;
   kycStatus: KYCStatusResponse | undefined;
-  kycLink?: string;
 }
 
 const STATUS_CONFIG = {
@@ -30,6 +31,14 @@ const STATUS_CONFIG = {
     description: 'Your identity verification is being reviewed. This usually takes a few minutes.',
     buttonTitle: 'Check Status',
   },
+  approved: {
+    Icon: Shield,
+    iconBg: '#ECFDF3',
+    iconColor: '#22C55E',
+    title: 'Verification Complete',
+    description: 'Your identity is verified. You can continue with fiat features.',
+    buttonTitle: 'Continue',
+  },
   rejected: {
     Icon: AlertTriangle,
     iconBg: '#FEF2F2',
@@ -41,23 +50,31 @@ const STATUS_CONFIG = {
   },
 } as const;
 
-export function KYCVerificationSheet({
-  visible,
-  onClose,
-  kycStatus,
-  kycLink,
-}: KYCVerificationSheetProps) {
-  const overallStatus = kycStatus?.overall_status ?? 'not_started';
-  const config =
-    STATUS_CONFIG[overallStatus as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.not_started;
+export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerificationSheetProps) {
+  const status = kycStatus?.status ?? 'not_started';
+  const configKey =
+    status === 'approved'
+      ? 'approved'
+      : status === 'rejected' || status === 'expired'
+        ? 'rejected'
+        : status === 'pending' || status === 'processing'
+          ? 'pending'
+          : 'not_started';
+
+  const config = STATUS_CONFIG[configKey];
   const { Icon, iconBg, iconColor, title, description, buttonTitle } = config;
-  const isPending = overallStatus === 'pending';
 
   const handleVerify = () => {
-    if (kycLink) {
-      Linking.openURL(kycLink);
-    }
     onClose();
+    // Let sheet dismiss animation settle before navigating
+    requestAnimationFrame(() => {
+      if (configKey === 'approved') {
+        router.push('/virtual-account' as any);
+        return;
+      }
+
+      router.push(ROUTES.AUTH.KYC as any);
+    });
   };
 
   return (
@@ -81,13 +98,7 @@ export function KYCVerificationSheet({
         )}
 
         <View className="w-full gap-y-3">
-          <Button
-            title={buttonTitle}
-            variant="black"
-            size="large"
-            onPress={handleVerify}
-            disabled={isPending && !kycLink}
-          />
+          <Button title={buttonTitle} variant="black" size="large" onPress={handleVerify} />
         </View>
       </View>
     </BottomSheet>

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import { SvgProps } from 'react-native-svg';
 import { Icon } from '../atoms';
+import { UsdcIcon, UsdtIcon } from '@/assets/svg';
 
 export type TransactionType = 'send' | 'receive' | 'swap' | 'deposit' | 'withdraw';
 export type TransactionStatus = 'completed' | 'pending' | 'failed';
@@ -38,13 +39,39 @@ export interface TransactionItemProps extends TouchableOpacityProps {
 const formatAmount = (amount: number, type: TransactionType, currency = 'NGN') => {
   const isCredit = type === 'receive' || type === 'deposit';
   const sign = isCredit ? '+' : '-';
-  const num = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(amount));
+  const num = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Math.abs(amount));
   return { text: `${sign}${num} ${currency}`, isCredit };
 };
 
+const getDepositTokenIcon = (
+  currency?: string
+): { Token: SvgComponent; bgColor: string } | null => {
+  const normalized = currency?.trim().toUpperCase();
+  if (!normalized) return null;
+
+  if (normalized === 'USDC') {
+    return { Token: UsdcIcon, bgColor: 'transparent' };
+  }
+
+  if (normalized === 'USDT') {
+    return { Token: UsdtIcon, bgColor: 'transparent' };
+  }
+
+  return null;
+};
+
 const TokenIcon = ({ Token, bgColor }: { Token?: SvgComponent; bgColor?: string }) => (
-  <View className="h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: bgColor || '#1B84FF' }}>
-    {Token ? <Token width={28} height={28} /> : <Icon library="feather" name="dollar-sign" size={24} color="#FFFFFF" />}
+  <View
+    className="h-12 w-12 items-center justify-center rounded-full"
+    style={{ backgroundColor: bgColor || '#1B84FF' }}>
+    {Token ? (
+      <Token width={28} height={28} />
+    ) : (
+      <Icon library="feather" name="dollar-sign" size={24} color="#FFFFFF" />
+    )}
   </View>
 );
 
@@ -83,7 +110,14 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
   const { icon, type } = transaction;
 
   if (icon?.type === 'swap') {
-    return <SwapIcon SwapFrom={icon.SwapFrom} SwapTo={icon.SwapTo} fromBg={icon.swapFromBg} toBg={icon.swapToBg} />;
+    return (
+      <SwapIcon
+        SwapFrom={icon.SwapFrom}
+        SwapTo={icon.SwapTo}
+        fromBg={icon.swapFromBg}
+        toBg={icon.swapToBg}
+      />
+    );
   }
 
   if (icon?.type === 'token') {
@@ -92,6 +126,13 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
 
   if (icon?.type === 'icon' && icon.iconName) {
     return <ActionIcon name={icon.iconName} />;
+  }
+
+  if (type === 'deposit') {
+    const depositTokenIcon = getDepositTokenIcon(transaction.currency);
+    if (depositTokenIcon) {
+      return <TokenIcon Token={depositTokenIcon.Token} bgColor={depositTokenIcon.bgColor} />;
+    }
   }
 
   const defaultIcons: Record<TransactionType, string> = {
@@ -110,7 +151,11 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
 };
 
 export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, ...props }) => {
-  const { text: amountText, isCredit } = formatAmount(transaction.amount, transaction.type, transaction.currency);
+  const { text: amountText, isCredit } = formatAmount(
+    transaction.amount,
+    transaction.type,
+    transaction.currency
+  );
   const isPending = transaction.status === 'pending';
 
   return (
@@ -134,7 +179,9 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
           numberOfLines={1}>
           {amountText}
         </Text>
-        {isPending && <Text className="mt-[2px] font-caption text-[12px] text-primary">Pending</Text>}
+        {isPending && (
+          <Text className="mt-[2px] font-caption text-[12px] text-primary">Pending</Text>
+        )}
       </View>
     </TouchableOpacity>
   );

@@ -68,14 +68,14 @@ export default function ForgotPassword() {
             <StaggeredChild index={0}>
               {isEmailSent ? (
                 <View className="mb-8 mt-4">
-                  <Text className="font-subtitle text-[60px] text-black">Check your email</Text>
+                  <Text className="font-headline text-auth-title text-black">Check your email</Text>
                   <Text className="mt-2 font-body text-base text-black/60">
                     If an account exists for this email, password reset instructions have been sent.
                   </Text>
                 </View>
               ) : (
                 <View className="mb-8 mt-4">
-                  <Text className="font-subtitle text-[50px] text-black">Forgot password</Text>
+                  <Text className="font-headline text-auth-title text-black">Forgot password</Text>
                   <Text className="mt-2 font-body text-base text-black/60">
                     Enter the email associated with your account and we will send you instructions
                     to reset your password.
@@ -111,11 +111,11 @@ export default function ForgotPassword() {
                   <Button title="Send reset link" onPress={handleSendReset} loading={isPending} />
                 )}
                 <View className="mt-8 flex-row items-center justify-center">
-                  <Text className="font-body text-[14px] text-black/60">Remember it?</Text>
+                  <Text className="font-body text-caption text-black/60">Remember it?</Text>
                   <TouchableOpacity
                     onPress={() => router.replace(ROUTES.AUTH.SIGNIN as any)}
                     className="ml-2">
-                    <Text className="font-body text-[14px] text-black underline">
+                    <Text className="font-body text-caption text-black underline">
                       Back to sign in
                     </Text>
                   </TouchableOpacity>

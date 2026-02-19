@@ -16,6 +16,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAppleSignIn } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { ROUTES } from '@/constants/routes';
+import { getPostAuthRoute } from '@/utils/onboardingFlow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface OnboardingSlide {
@@ -68,11 +69,13 @@ const VideoSlide = memo(function VideoSlide({
   isActive,
   width,
   height,
+  topInset,
 }: {
   item: OnboardingSlide;
   isActive: boolean;
   width: number;
   height: number;
+  topInset: number;
 }) {
   const player = useVideoPlayer(item.video, (p) => {
     p.loop = true;
@@ -89,20 +92,22 @@ const VideoSlide = memo(function VideoSlide({
   }, [isActive, player]);
 
   return (
-    <View className="flex-1 items-center overflow-hidden bg-black" style={{ width }}>
-      <View className="w-full flex-1 px-4 pt-16">
-        <Text className="font-display text-[60px] font-black uppercase text-white">
-          {item.titleTop} {item.titleBottom[0]} {item.titleBottom[1]}
-        </Text>
-
-        <Text className="font-body text-[14px] leading-5 text-white/80">{item.description}</Text>
-      </View>
+    <View className="flex-1 overflow-hidden bg-black" style={{ width }}>
+      {/* Video behind everything */}
       <VideoView
         player={player}
-        style={{ width, height: height * 0.8, position: 'absolute', bottom: 0 }}
+        style={{ width, height: height * 0.75, position: 'absolute', bottom: 0 }}
         contentFit="cover"
         nativeControls={false}
       />
+
+      {/* Text content — pinned to top with safe area */}
+      <View className="z-10 w-full px-5" style={{ paddingTop: topInset + 16 }}>
+        <Text className="font-headline text-display-lg uppercase text-white">
+          {item.titleTop} {item.titleBottom[0]} {item.titleBottom[1]}
+        </Text>
+        <Text className="mt-2 font-body text-body leading-6 text-white/70">{item.description}</Text>
+      </View>
     </View>
   );
 });
@@ -159,7 +164,7 @@ export default function App() {
   const flatListRef = useRef<FlatList<OnboardingSlide>>(null);
   const progress = useSharedValue(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { mutate: appleSignIn, isPending: isAppleLoading } = useAppleSignIn();
+  const { mutate: appleSignIn } = useAppleSignIn();
   const { showError } = useFeedbackPopup();
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
@@ -186,7 +191,7 @@ export default function App() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [currentIndex]);
+  }, [currentIndex, progress]);
 
   const getItemLayout = useCallback(
     (_: any, index: number) => ({
@@ -199,9 +204,15 @@ export default function App() {
 
   const renderItem = useCallback(
     ({ item, index }: { item: OnboardingSlide; index: number }) => (
-      <VideoSlide item={item} isActive={index === currentIndex} width={width} height={height} />
+      <VideoSlide
+        item={item}
+        isActive={index === currentIndex}
+        width={width}
+        height={height}
+        topInset={insets.top}
+      />
     ),
-    [currentIndex, width, height]
+    [currentIndex, width, height, insets.top]
   );
 
   return (
@@ -241,18 +252,15 @@ export default function App() {
               onPress={() => {
                 appleSignIn(undefined, {
                   onSuccess: (resp) => {
-                    if (resp.user?.onboardingStatus === 'completed') {
-                      router.replace(ROUTES.TABS as any);
-                      return;
-                    }
-                    router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
+                    const targetRoute = getPostAuthRoute(resp.user?.onboardingStatus);
+                    router.replace(targetRoute as any);
                   },
                   onError: () => {
                     showError('Apple Sign-In Failed', 'Please try again or use email sign in.');
                   },
                 });
               }}
-              variant="black"
+              variant="white"
             />
             <Button
               title="Continue with Mail"

@@ -78,6 +78,7 @@ export const queryKeys = {
     settings: () => [...queryKeys.user.all, 'settings'] as const,
     kycBridgeLink: () => [...queryKeys.user.all, 'kyc-bridge-link'] as const,
     kycStatus: () => [...queryKeys.user.all, 'kyc-status'] as const,
+    kycSession: () => [...queryKeys.user.all, 'kyc-session'] as const,
     devices: () => [...queryKeys.user.all, 'devices'] as const,
   },
   funding: {

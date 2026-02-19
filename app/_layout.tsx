@@ -19,7 +19,9 @@ import SessionManager from '@/utils/sessionManager';
 import '../global.css';
 
 // Keep native splash visible until we're ready
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Ignore if already prevented/hidden during fast refresh or re-mounts.
+});
 
 const SPLASH_BG = '#FF2E01';
 

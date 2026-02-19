@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StatusBar, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { X } from 'lucide-react-native';
+import { ArrowLeft, ShieldAlert, X } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -14,12 +14,11 @@ import Animated, {
   FadeIn,
   SlideInUp,
 } from 'react-native-reanimated';
-import { useStation } from '@/api/hooks';
+import { useKYCStatus, useStation } from '@/api/hooks';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Keypad } from '@/components/molecules/Keypad';
 import { BottomSheet } from '@/components/sheets';
 import { Button, Input } from '@/components/ui';
-import { BankIcon, CoinIcon } from '@/assets/svg/filled';
 import { useInitiateWithdrawal } from '@/api/hooks/useFunding';
 
 const BRAND_RED = '#FF2E01';
@@ -127,7 +126,7 @@ function AnimatedAmount({ amount }: { amount: string }) {
   // Dynamic font size based on character count (including $ sign)
   const displayText = `$${amount}`;
   const len = displayText.length;
-  const fontSize = len <= 4 ? 95 : len <= 7 ? 86 : len <= 10 ? 64 : len <= 14 ? 46 : 38;
+  const fontSize = len <= 4 ? 95 : len <= 7 ? 79 : len <= 10 ? 58 : len <= 14 ? 40 : 42;
 
   return (
     <Animated.View style={animatedStyle} className="w-full">
@@ -153,6 +152,10 @@ export default function WithdrawAmountScreen() {
 
   const selectedMethod: WithdrawMethod =
     params.method === 'fiat' || params.method === 'crypto' ? params.method : 'crypto';
+  const { data: kycStatus, isLoading: isKycStatusLoading } = useKYCStatus(
+    selectedMethod === 'fiat'
+  );
+  const isFiatApproved = kycStatus?.status === 'approved';
 
   const [rawAmount, setRawAmount] = useState('0');
   const [didTryContinue, setDidTryContinue] = useState(false);
@@ -240,15 +243,6 @@ export default function WithdrawAmountScreen() {
 
   const canContinue = Boolean(numericAmount > 0 && !amountError);
   const canSaveDestination = Boolean(!destinationError);
-
-  const onMethodPress = useCallback(
-    (method: WithdrawMethod) => {
-      if (method !== selectedMethod) {
-        router.replace(`/withdraw/${method}` as any);
-      }
-    },
-    [selectedMethod]
-  );
 
   const onAmountKeyPress = useCallback((key: string) => {
     if (didSaveDestination && selectedMethod === 'crypto') return;
@@ -363,6 +357,50 @@ export default function WithdrawAmountScreen() {
     transform: [{ scale: pillsScale.value }],
     opacity: pillsOpacity.value,
   }));
+
+  if (selectedMethod === 'fiat' && isKycStatusLoading) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#000" />
+      </SafeAreaView>
+    );
+  }
+
+  if (selectedMethod === 'fiat' && !isFiatApproved) {
+    return (
+      <ErrorBoundary>
+        <SafeAreaView className="flex-1 bg-white">
+          <StatusBar barStyle="dark-content" backgroundColor="white" />
+          <View className="flex-row items-center px-5 pb-4 pt-2">
+            <TouchableOpacity onPress={() => router.back()} hitSlop={12} className="mr-4 p-1">
+              <ArrowLeft size={24} color="#111" />
+            </TouchableOpacity>
+            <Text className="font-subtitle text-lg text-gray-900">Withdraw</Text>
+          </View>
+          <View className="flex-1 items-center justify-center px-6">
+            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
+              <ShieldAlert size={32} color="#F59E0B" />
+            </View>
+            <Text className="mb-2 font-subtitle text-xl text-gray-900">Verification Required</Text>
+            <Text className="mb-8 text-center font-body text-sm text-gray-500">
+              Complete identity verification to withdraw fiat to a bank account.
+            </Text>
+            <View className="w-full gap-y-3">
+              <Button
+                title="Start Verification"
+                onPress={() => router.push('/(auth)/kyc' as any)}
+              />
+              <Button
+                title="Use Crypto Instead"
+                variant="white"
+                onPress={() => router.replace('/withdraw/crypto' as any)}
+              />
+            </View>
+          </View>
+        </SafeAreaView>
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary>

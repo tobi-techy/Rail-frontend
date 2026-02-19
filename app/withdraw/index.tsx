@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { BankIcon, CoinIcon } from '@/assets/svg/filled';
+import { useKycGate } from '@/hooks/useKycGate';
 
 function WithdrawOptionCard({
   title,
@@ -34,6 +35,8 @@ function WithdrawOptionCard({
 }
 
 export default function WithdrawMethodSelectorScreen() {
+  const { requireKyc } = useKycGate();
+
   return (
     <ErrorBoundary>
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -62,7 +65,7 @@ export default function WithdrawMethodSelectorScreen() {
             <WithdrawOptionCard
               title="Fiat"
               subtitle="Withdraw to US bank account via routing details"
-              onPress={() => router.push('/withdraw/fiat' as any)}
+              onPress={() => requireKyc(() => router.push('/withdraw/fiat' as any))}
               icon={<BankIcon width={24} height={24} />}
               accessibilityLabel="Select fiat withdrawal"
             />

@@ -33,6 +33,7 @@ export default function CreatePassword() {
   const registrationData = useAuthStore((state) => state.registrationData);
   const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
   const clearRegistrationData = useAuthStore((state) => state.clearRegistrationData);
+  const updateUser = useAuthStore((state) => state.updateUser);
   const setOnboardingStatus = useAuthStore((state) => state.setOnboardingStatus);
   const [password, setPassword] = useState(registrationData.password || '');
   const [confirmPassword, setConfirmPassword] = useState(registrationData.password || '');
@@ -93,6 +94,17 @@ export default function CreatePassword() {
 
     completeOnboarding(payload, {
       onSuccess: (response) => {
+        const firstName = payload.firstName.trim();
+        const lastName = payload.lastName.trim();
+        const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+
+        updateUser({
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          fullName: fullName || undefined,
+          phoneNumber: payload.phone || undefined,
+        });
+
         setOnboardingStatus(response.onboarding?.onboardingStatus || 'kyc_pending');
         clearRegistrationData();
         router.replace(ROUTES.AUTH.CREATE_PASSCODE as any);

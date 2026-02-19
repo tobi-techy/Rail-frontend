@@ -17,6 +17,15 @@
       "expo-local-authentication",
       "expo-font",
       [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FF2E01",
+          "image": "./assets/app-icon/logo-transparent.png",
+          "imageWidth": 150,
+          "resizeMode": "contain"
+        }
+      ],
+      [
         "@sentry/react-native/expo",
         {
           "organization": "rail-money",
@@ -36,6 +45,8 @@
     "userInterfaceStyle": "light",
     "assetBundlePatterns": ["**/*"],
     "splash": {
+      "image": "./assets/app-icon/logo-transparent.png",
+      "resizeMode": "contain",
       "backgroundColor": "#FF2E01"
     },
     "ios": {

@@ -155,7 +155,7 @@ export function useVerifyPasscode() {
           tokenIssuedAt: now.toISOString(),
         };
 
-        // Add authentication tokens (for login flow)
+        // Add authentication tokens (for login flow) - tokens are optional
         if (response.accessToken && response.refreshToken) {
           logger.debug('[useVerifyPasscode] Storing access and refresh tokens', {
             component: 'useVerifyPasscode',
@@ -171,7 +171,7 @@ export function useVerifyPasscode() {
           updates.tokenExpiresAt = tokenExpiresAt.toISOString();
         }
 
-        // Add passcode session tokens (for withdrawal/sensitive operations)
+        // Add passcode session tokens (for withdrawal/sensitive operations) - tokens are optional
         if (response.passcodeSessionToken && response.passcodeSessionExpiresAt) {
           logger.debug('[useVerifyPasscode] Storing passcode session tokens', {
             component: 'useVerifyPasscode',

@@ -2,15 +2,16 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import * as LocalAuthentication from 'expo-local-authentication';
+import { Passkey } from 'react-native-passkey';
 import { Icon } from '@/components/atoms/Icon';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { useAuthStore } from '@/stores/authStore';
 import { useVerifyPasscode } from '@/api/hooks';
-import { userService } from '@/api/services';
+import { authService, userService } from '@/api/services';
 import { SessionManager } from '@/utils/sessionManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { APP_VERSION } from '@/utils/appVersion';
 
 type ProfileNamePayload = {
   firstName?: string;
@@ -37,12 +38,67 @@ const extractProfileName = (profile: ProfileNamePayload) => {
   };
 };
 
+type WebAuthnOptionsPayload = {
+  publicKey?: Record<string, any>;
+  [key: string]: any;
+};
+
+const normalizePasskeyGetRequest = (options: WebAuthnOptionsPayload) => {
+  const publicKey = (options?.publicKey ?? options) as Record<string, any>;
+
+  if (!publicKey?.challenge || !publicKey?.rpId) {
+    throw new Error('Invalid passkey options from server');
+  }
+
+  return {
+    challenge: publicKey.challenge,
+    rpId: publicKey.rpId,
+    timeout: publicKey.timeout,
+    allowCredentials: publicKey.allowCredentials,
+    userVerification: publicKey.userVerification,
+    extensions: publicKey.extensions,
+  };
+};
+
+const isPasskeyCancelledError = (error: any) => {
+  const code = String(error?.code || error?.error || '').toLowerCase();
+  const message = String(error?.message || '').toLowerCase();
+
+  return (
+    code.includes('usercancel') ||
+    code.includes('cancel') ||
+    code.includes('abort') ||
+    message.includes('cancelled') ||
+    message.includes('canceled')
+  );
+};
+
+const getPasskeyFallbackMessage = (error: any) => {
+  const code = String(error?.code || error?.error || '').toUpperCase();
+  const message = String(error?.message || '').toLowerCase();
+
+  if (code === 'NOCREDENTIALS' || message.includes('no credentials')) {
+    return 'No passkey found for this account on this device. Enter your PIN.';
+  }
+
+  if (code === 'INVALID_SESSION') {
+    return 'Passkey session expired. Please try again or enter your PIN.';
+  }
+
+  if (code === 'NETWORK_ERROR' || code === 'NETWORK_TIMEOUT' || error?.status === 0) {
+    return 'Network issue during passkey sign-in. Enter your PIN.';
+  }
+
+  return 'Passkey sign-in failed. Enter your PIN to continue.';
+};
+
 export default function LoginPasscodeScreen() {
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const updateUser = useAuthStore((state) => state.updateUser);
   const isBiometricEnabled = useAuthStore((state) => state.isBiometricEnabled);
   const profileFetchAttemptedRef = useRef(false);
+  const passkeyAutoAttemptedRef = useRef(false);
   const combinedStoredFullName = [safeName(user?.firstName), safeName(user?.lastName)]
     .filter(Boolean)
     .join(' ')
@@ -51,21 +107,19 @@ export default function LoginPasscodeScreen() {
     combinedStoredFullName || safeName(user?.fullName) || safeName(user?.firstName) || 'User';
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [passkeyAvailable, setPasskeyAvailable] = useState(false);
+  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
   const [lockoutSecondsRemaining, setLockoutSecondsRemaining] = useState(0);
 
   const { mutate: verifyPasscode, isPending: isLoading } = useVerifyPasscode();
   const { showError, showWarning } = useFeedbackPopup();
 
-  // Check biometric availability on mount
+  // Check passkey availability and account prerequisites.
   useEffect(() => {
-    (async () => {
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-      setBiometricAvailable(hasHardware && isEnrolled);
-    })();
-  }, []);
+    const hasEmail = Boolean(safeName(user?.email));
+    setPasskeyAvailable(Passkey.isSupported() && hasEmail);
+  }, [user?.email]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -114,50 +168,100 @@ export default function LoginPasscodeScreen() {
     return () => clearInterval(id);
   }, [lockoutUntil]);
 
-  const handleBiometricAuth = useCallback(async () => {
-    if (!biometricAvailable) return;
+  const handlePasskeyAuth = useCallback(async () => {
+    if (isPasskeyLoading || isLoading) return;
+
+    const email = safeName(user?.email);
+    if (!Passkey.isSupported() || !email) {
+      setError('Passkey is unavailable. Enter your PIN to continue.');
+      return;
+    }
+
+    setError('');
+    setIsPasskeyLoading(true);
 
     try {
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate to access your account',
-        fallbackLabel: 'Use PIN',
-        cancelLabel: 'Cancel',
-        disableDeviceFallback: false,
+      const beginResponse = await authService.beginPasskeyLogin({ email });
+      const passkeyRequest = normalizePasskeyGetRequest(beginResponse.options);
+      const assertion = await Passkey.get(passkeyRequest);
+
+      const finishResponse = await authService.finishPasskeyLogin({
+        sessionId: beginResponse.sessionId,
+        response: {
+          ...assertion,
+          type: assertion.type || 'public-key',
+        },
       });
 
-      if (!result.success) return;
+      const nowIso = new Date().toISOString();
+      const tokenExpiresAt = finishResponse.expiresAt
+        ? new Date(finishResponse.expiresAt).toISOString()
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      const passcodeSessionExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-      // Biometric confirmed device owner identity.
-      // Check if we still have valid auth tokens to create a session.
-      const state = useAuthStore.getState();
+      useAuthStore.setState({
+        user: finishResponse.user,
+        accessToken: finishResponse.accessToken,
+        refreshToken: finishResponse.refreshToken,
+        isAuthenticated: true,
+        pendingVerificationEmail: null,
+        onboardingStatus: finishResponse.user.onboardingStatus || null,
+        lastActivityAt: nowIso,
+        tokenIssuedAt: nowIso,
+        tokenExpiresAt,
+        passcodeSessionToken: 'passkey-login',
+        passcodeSessionExpiresAt,
+      });
 
-      if (state.isAuthenticated && state.accessToken) {
-        // User has valid tokens — grant passcode session and proceed
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-        state.setPasscodeSession('biometric-validated', expiresAt);
-        SessionManager.schedulePasscodeSessionExpiry(expiresAt);
-        router.replace('/(tabs)');
+      SessionManager.schedulePasscodeSessionExpiry(passcodeSessionExpiresAt);
+      if (!useAuthStore.getState().isBiometricEnabled) {
+        useAuthStore.getState().enableBiometric();
+      }
+
+      setLockoutUntil(null);
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      if (isPasskeyCancelledError(err)) {
+        setError('Passkey cancelled. Enter your PIN to continue.');
         return;
       }
 
-      // No valid tokens — biometric alone can't re-authenticate.
-      // Fall through to PIN entry which calls passcode-login endpoint.
-      setError('Session expired. Please enter your PIN.');
-    } catch {
-      setError('Biometric authentication failed');
-    }
-  }, [biometricAvailable]);
+      const fallbackMessage = getPasskeyFallbackMessage(err);
+      setError(fallbackMessage);
 
-  // Auto-trigger biometric on mount if enabled and available
-  useEffect(() => {
-    if (isBiometricEnabled && biometricAvailable) {
-      handleBiometricAuth();
+      const code = String(err?.code || err?.error || '').toUpperCase();
+      if (
+        code === 'WEBAUTHN_UNAVAILABLE' ||
+        code === 'WEBAUTHN_SESSION_UNAVAILABLE' ||
+        code === 'BADCONFIGURATION'
+      ) {
+        showWarning('Passkey Unavailable', fallbackMessage);
+      } else if (code !== 'NOCREDENTIALS') {
+        showError('Passkey Sign-in Failed', fallbackMessage);
+      }
+    } finally {
+      setIsPasskeyLoading(false);
     }
-  }, [isBiometricEnabled, biometricAvailable, handleBiometricAuth]);
+  }, [isPasskeyLoading, isLoading, showError, showWarning, user?.email]);
+
+  // Auto-trigger passkey on mount when user opted in and passkey is supported.
+  useEffect(() => {
+    if (!isBiometricEnabled || !passkeyAvailable) return;
+    if (passkeyAutoAttemptedRef.current) return;
+
+    passkeyAutoAttemptedRef.current = true;
+    handlePasskeyAuth();
+  }, [isBiometricEnabled, passkeyAvailable, handlePasskeyAuth]);
+
+  useEffect(() => {
+    if (passkeyAvailable) {
+      passkeyAutoAttemptedRef.current = false;
+    }
+  }, [passkeyAvailable, user?.id]);
 
   const handlePasscodeSubmit = useCallback(
     (code: string) => {
-      if (isLoading) return;
+      if (isLoading || isPasskeyLoading) return;
       if (lockoutSecondsRemaining > 0) {
         setError(`PIN is locked. Try again in ${lockoutSecondsRemaining}s.`);
         return;
@@ -178,8 +282,8 @@ export default function LoginPasscodeScreen() {
               SessionManager.schedulePasscodeSessionExpiry(response.passcodeSessionExpiresAt);
             }
 
-            // If biometric hardware is available but not enabled, prompt user to enable
-            if (biometricAvailable && !isBiometricEnabled) {
+            // If passkey support is available but not enabled, opt user in after successful PIN auth.
+            if (passkeyAvailable && !isBiometricEnabled) {
               const { enableBiometric } = useAuthStore.getState();
               enableBiometric();
             }
@@ -231,8 +335,9 @@ export default function LoginPasscodeScreen() {
     [
       verifyPasscode,
       isLoading,
+      isPasskeyLoading,
       lockoutSecondsRemaining,
-      biometricAvailable,
+      passkeyAvailable,
       isBiometricEnabled,
       showError,
       showWarning,
@@ -252,8 +357,8 @@ export default function LoginPasscodeScreen() {
     router.push('/(auth)/forgot-password');
   };
 
-  // Only show biometric button if hardware is available
-  const showBiometric = biometricAvailable;
+  // Show passkey button only if passkeys are supported and we have an email identifier.
+  const showBiometric = passkeyAvailable;
 
   return (
     <ErrorBoundary>
@@ -268,21 +373,21 @@ export default function LoginPasscodeScreen() {
               className="flex-row items-center gap-x-2 rounded-full bg-gray-100 px-4 py-2.5"
               activeOpacity={0.7}>
               <Icon name="message-circle" size={18} color="#374151" strokeWidth={2} />
-              <Text className="font-body text-[14px] text-gray-700">Need help?</Text>
+              <Text className="font-body text-caption text-gray-700">Need help?</Text>
             </TouchableOpacity>
           </View>
 
           {/* Welcome Text */}
           <View className="mt-8 px-6">
-            <Text className="font-subtitle text-[24px] leading-[38px] text-[#070914]">
+            <Text className="font-subtitle text-headline-2 leading-[38px] text-text-primary">
               Welcome Back,
             </Text>
-            <Text className="font-subtitle text-headline-1 text-[#070914]">{userName}</Text>
+            <Text className="font-subtitle text-headline-1 text-text-primary">{userName}</Text>
           </View>
 
           {/* PasscodeInput */}
           <PasscodeInput
-            subtitle="Enter your account PIN to log in"
+            subtitle="Use passkey or enter your account PIN"
             length={4}
             value={passcode}
             onValueChange={(value) => {
@@ -297,7 +402,7 @@ export default function LoginPasscodeScreen() {
             }
             showToggle
             showFingerprint={showBiometric}
-            onFingerprint={handleBiometricAuth}
+            onFingerprint={handlePasskeyAuth}
             autoSubmit
             variant="light"
             className="flex-1"
@@ -306,17 +411,17 @@ export default function LoginPasscodeScreen() {
           {/* Footer */}
           <View className="mb-4 items-center gap-y-3 px-6">
             <View className="flex-row items-center gap-x-1">
-              <Text className="font-body text-[14px] text-[#6B7280]">Not {userName}? </Text>
+              <Text className="font-body text-caption text-text-secondary">Not {userName}? </Text>
               <TouchableOpacity onPress={handleSwitchAccount} activeOpacity={0.7}>
-                <Text className="font-button text-[14px] text-[#FF5A00]">Switch Account</Text>
+                <Text className="font-button text-caption text-primary">Switch Account</Text>
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity onPress={handleSignInWithEmail} activeOpacity={0.7}>
-              <Text className="font-body text-[14px] text-[#6B7280]">Sign in with email</Text>
+              <Text className="font-body text-caption text-text-secondary">Sign in with email</Text>
             </TouchableOpacity>
 
-            <Text className="font-body text-[12px] text-[#9CA3AF]">v2.1.6</Text>
+            <Text className="font-body text-small text-text-tertiary">v{APP_VERSION}</Text>
           </View>
         </View>
       </SafeAreaView>

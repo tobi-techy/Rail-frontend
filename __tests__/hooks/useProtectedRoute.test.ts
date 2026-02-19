@@ -110,5 +110,38 @@ describe('routeHelpers', () => {
       );
       expect(route).toBe('/login-passcode');
     });
+
+    it('prefers latest onboardingStatus over stale user.onboardingStatus', () => {
+      const route = determineRoute(
+        {
+          ...baseAuthState,
+          user: { id: 'u1', onboardingStatus: 'started' },
+          onboardingStatus: 'kyc_pending',
+          isAuthenticated: true,
+          accessToken: 'token',
+        },
+        baseConfig,
+        true,
+        true
+      );
+      expect(route).toBe(ROUTES.AUTH.KYC);
+    });
+
+    it('uses latest onboardingStatus for stored credentials fallback', () => {
+      const route = determineRoute(
+        {
+          ...baseAuthState,
+          user: { id: 'u1', onboardingStatus: 'started' },
+          onboardingStatus: 'completed',
+          isAuthenticated: false,
+          hasPasscode: false,
+          refreshToken: 'refresh-token',
+        },
+        baseConfig,
+        true,
+        false
+      );
+      expect(route).toBe('/login-passcode');
+    });
   });
 });

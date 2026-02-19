@@ -52,8 +52,8 @@ export default function DateOfBirth() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-subtitle text-[50px] text-black">Date of Birth</Text>
-              <Text className="mt-2 font-body text-[14px] text-black/60">
+              <Text className="font-headline text-auth-title text-black">Date of Birth</Text>
+              <Text className="mt-2 font-body text-caption text-black/60">
                 You must be at least {MIN_AGE} to use Rail
               </Text>
             </View>

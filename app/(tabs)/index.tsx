@@ -7,7 +7,7 @@ import { StashCard } from '@/components/molecules/StashCard';
 import { ArrowDown, PlusIcon, LayoutGrid } from 'lucide-react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
 import type { Transaction } from '@/components/molecules/TransactionItem';
-import { useStation, useKYCStatus, useBridgeKYCLink } from '@/api/hooks';
+import { useStation, useKYCStatus } from '@/api/hooks';
 import type { ActivityItem } from '@/api/types';
 import { Button } from '../../components/ui';
 import {
@@ -92,28 +92,35 @@ const Dashboard = () => {
 
   // KYC — prefetch so fiat button responds instantly
   const { data: kycStatus } = useKYCStatus();
-  const { data: kycLink } = useBridgeKYCLink(
-    !!kycStatus && kycStatus.overall_status !== 'approved'
-  );
 
   const handleFiatPress = useCallback(() => {
     setShowReceiveSheet(false);
-    if (kycStatus?.overall_status === 'approved') {
+    if (kycStatus?.status === 'approved') {
       router.push('/virtual-account' as any);
     } else {
       setShowKYCSheet(true);
     }
   }, [kycStatus]);
 
-  const startWithdrawalFlow = useCallback((method: 'fiat' | 'crypto') => {
-    setShowSendSheet(false);
-    setShowReceiveSheet(false);
+  const startWithdrawalFlow = useCallback(
+    (method: 'fiat' | 'crypto') => {
+      if (method === 'fiat' && kycStatus?.status !== 'approved') {
+        setShowSendSheet(false);
+        setShowReceiveSheet(false);
+        setShowKYCSheet(true);
+        return;
+      }
 
-    // Let bottom sheet dismissal settle before route transition.
-    requestAnimationFrame(() => {
-      router.push(`/withdraw/${method}` as any);
-    });
-  }, []);
+      setShowSendSheet(false);
+      setShowReceiveSheet(false);
+
+      // Let bottom sheet dismissal settle before route transition.
+      requestAnimationFrame(() => {
+        router.push(`/withdraw/${method}` as any);
+      });
+    },
+    [kycStatus?.status]
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -128,7 +135,7 @@ const Dashboard = () => {
     navigation.setOptions({
       headerShown: true,
       headerLeft: () => (
-        <View className="flex-row items-center gap-x-3 pl-[14px]">
+        <View className="flex-row items-center gap-x-3 pl-md">
           <Text className="font-subtitle text-headline-1">Station</Text>
         </View>
       ),
@@ -154,7 +161,7 @@ const Dashboard = () => {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
       }>
-      <View className="px-[14px]">
+      <View className="px-md">
         {/* Balance */}
         <BalanceCard
           balance={balance}
@@ -181,7 +188,7 @@ const Dashboard = () => {
         </View>
 
         {/* Stash Cards — disabled until feature is complete */}
-        {/*
+
         <View className="mt-5 flex-row gap-3">
           <StashCard
             title="Spending Stash"
@@ -200,7 +207,6 @@ const Dashboard = () => {
             onPress={() => router.push('/investment-stash')}
           />
         </View>
-        */}
 
         {/* Transactions */}
         <View className="rounded-3xl py-5">
@@ -301,7 +307,6 @@ const Dashboard = () => {
         visible={showKYCSheet}
         onClose={() => setShowKYCSheet(false)}
         kycStatus={kycStatus}
-        kycLink={kycLink?.kycLink}
       />
 
       <InvestmentDisclaimerSheet visible={showDisclaimer} onAccept={handleAcceptDisclaimer} />

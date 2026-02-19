@@ -31,7 +31,7 @@ export const AuthScreen = ({
     <View className="flex-1 px-6 pt-4">
       <StaggeredChild index={0}>
         <View className="mb-8 mt-4">
-          <Text className="font-subtitle text-[50px] leading-[1.05] text-black">{title}</Text>
+          <Text className="font-headline text-auth-title leading-[1.05] text-black">{title}</Text>
           {subtitle && <Text className="mt-2 font-body text-[14px] text-black/60">{subtitle}</Text>}
         </View>
       </StaggeredChild>

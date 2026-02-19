@@ -83,7 +83,7 @@ export default function ResetPassword() {
           <View className="flex-1 px-6 pb-6">
             <StaggeredChild index={0}>
               <View className="mb-8 mt-4">
-                <Text className="font-subtitle text-[60px] text-black">Reset password</Text>
+                <Text className="font-headline text-auth-title text-black">Reset password</Text>
                 <Text className="mt-2 font-body text-base text-black/60">
                   Enter a new password to secure your account.
                 </Text>
@@ -93,7 +93,7 @@ export default function ResetPassword() {
             {!token ? (
               <StaggeredChild index={1}>
                 <View className="rounded-2xl bg-black/5 p-4">
-                  <Text className="font-body text-[15px] text-black/70">
+                  <Text className="font-body text-caption text-black/70">
                     This reset link is invalid or missing a token. Please request a new password
                     reset email.
                   </Text>

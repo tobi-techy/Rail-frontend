@@ -18,6 +18,7 @@ import { ROUTES } from '@/constants/routes';
 import { useVerifyCode, useResendCode } from '@/api/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { getPostAuthRoute } from '@/utils/onboardingFlow';
 
 export default function VerifyEmail() {
   const [otp, setOtp] = useState('');
@@ -79,18 +80,7 @@ export default function VerifyEmail() {
 
           if (response.accessToken) {
             const onboardingStatus = response.onboarding_status || response.user?.onboardingStatus;
-
-            if (onboardingStatus === 'completed') {
-              router.replace(ROUTES.TABS as any);
-              return;
-            }
-
-            if (onboardingStatus === 'kyc_pending' || onboardingStatus === 'kyc_rejected') {
-              router.replace(ROUTES.AUTH.KYC as any);
-              return;
-            }
-
-            router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
+            router.replace(getPostAuthRoute(onboardingStatus) as any);
             return;
           }
 

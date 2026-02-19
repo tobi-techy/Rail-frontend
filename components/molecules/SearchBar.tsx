@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography } from '../../design/tokens';
 
 export interface SearchBarProps {
   placeholder?: string;
@@ -51,12 +50,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         onChangeText={handleChangeText}
         onSubmitEditing={() => onSearch?.(value)}
         placeholder={placeholder}
-        placeholderTextColor={colors.text.secondary}
+        placeholderTextColor="#757575"
         editable={!disabled}
         autoFocus={autoFocus}
         returnKeyType="search"
-        className="flex-1 text-body text-text-primary"
-        style={{ fontFamily: typography.fonts.body }}
+        className="flex-1 font-body text-body text-text-primary"
         accessibilityLabel="Search input"
       />
 
@@ -66,7 +64,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           className="ml-2 min-h-[44px] min-w-[44px] items-center justify-center p-2"
           accessibilityRole="button"
           accessibilityLabel="Clear search">
-          <Ionicons name="close" size={18} color={colors.text.secondary} />
+          <Ionicons name="close" size={18} color="#757575" />
         </TouchableOpacity>
       )}
     </View>

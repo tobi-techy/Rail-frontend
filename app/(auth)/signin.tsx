@@ -6,8 +6,9 @@ import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
-import { useLogin, useAppleSignIn } from '@/api/hooks/useAuth';
+import { useLogin } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { getPostAuthRoute } from '@/utils/onboardingFlow';
 
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,7 +28,6 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const passwordRef = useRef<TextInput>(null);
   const { mutate: login, isPending } = useLogin();
-  const { mutate: appleSignIn, isPending: isAppleLoading } = useAppleSignIn();
   const { showError, showWarning } = useFeedbackPopup();
 
   const handleSignIn = () => {
@@ -62,19 +62,8 @@ export default function SignIn() {
       { email: email.trim().toLowerCase(), password: passwordToUse },
       {
         onSuccess: (response) => {
-          const onboardingStatus = response.user?.onboardingStatus;
-
-          if (onboardingStatus === 'completed') {
-            router.replace(ROUTES.TABS as any);
-            return;
-          }
-
-          if (onboardingStatus === 'kyc_pending' || onboardingStatus === 'kyc_rejected') {
-            router.replace(ROUTES.AUTH.KYC as any);
-            return;
-          }
-
-          router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
+          const targetRoute = getPostAuthRoute(response.user?.onboardingStatus);
+          router.replace(targetRoute as any);
         },
         onError: (error: any) => {
           // Categorize error for better user messaging
@@ -117,7 +106,7 @@ export default function SignIn() {
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
-              <Text className="font-subtitle text-[50px] leading-[1.1] text-black">
+              <Text className="font-headline text-auth-title leading-[1.1] text-black">
                 Welcome Back
               </Text>
               <Text className="mt-2 font-body text-body text-black/60">Sign in to continue</Text>
@@ -138,7 +127,7 @@ export default function SignIn() {
                 error={emailError}
                 returnKeyType="next"
                 onSubmitEditing={() => passwordRef.current?.focus()}
-                blurOnSubmit={false}
+                // blurOnSubmit={false}
               />
             </StaggeredChild>
 
@@ -167,7 +156,7 @@ export default function SignIn() {
                 className="self-end"
                 accessibilityLabel="Forgot Password"
                 accessibilityHint="Navigate to reset your password">
-                <Text className="font-subtitle text-[13px] text-black/50">Forgot Password?</Text>
+                <Text className="font-subtitle text-small text-black/50">Forgot Password?</Text>
               </TouchableOpacity>
             </StaggeredChild>
           </View>
@@ -175,35 +164,12 @@ export default function SignIn() {
           <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
               <Button title="Sign In" onPress={handleSignIn} loading={isPending} />
-
-              <Button
-                title="Sign In with Apple"
-                variant="black"
-                onPress={() => {
-                  appleSignIn(undefined, {
-                    onSuccess: (resp) => {
-                      const onboardingStatus = resp.user?.onboardingStatus;
-                      if (onboardingStatus === 'completed') {
-                        router.replace(ROUTES.TABS as any);
-                        return;
-                      }
-                      router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
-                    },
-                    onError: () => {
-                      showError('Apple Sign-In Failed', 'Please try again or use email.');
-                    },
-                  });
-                }}
-                loading={isAppleLoading}
-                className="mt-3"
-              />
-
               <TouchableOpacity
                 onPress={() => router.push(ROUTES.AUTH.SIGNUP as any)}
                 className="mt-4"
                 accessibilityLabel="Sign up"
                 accessibilityHint="Navigate to registration">
-                <Text className="text-center font-body text-[14px] text-black/60">
+                <Text className="text-center font-body text-caption text-black/60">
                   New to Rail? <Text className="font-subtitle text-black underline">Sign Up</Text>
                 </Text>
               </TouchableOpacity>

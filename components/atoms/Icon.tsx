@@ -2,7 +2,6 @@ import React from 'react';
 import { View, ViewProps, Text } from 'react-native';
 import * as Lucide from 'lucide-react-native';
 import { Ionicons, Feather, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-import { colors } from '../../design/tokens';
 
 export type IconLibrary = 'lucide' | 'ionicons' | 'feather' | 'material' | 'fontawesome';
 
@@ -18,17 +17,21 @@ export interface IconProps extends Omit<ViewProps, 'children'> {
 }
 
 const FallbackIcon = ({ size = 24, color = '#000', style, ...props }: any) => {
-  return React.createElement(Text, {
-    style: [
-      {
-        fontSize: size,
-        color,
-        fontFamily: 'System',
-      },
-      style,
-    ],
-    ...props,
-  }, '●');
+  return React.createElement(
+    Text,
+    {
+      style: [
+        {
+          fontSize: size,
+          color,
+          fontFamily: 'System',
+        },
+        style,
+      ],
+      ...props,
+    },
+    '●'
+  );
 };
 
 function kebabToPascal(input: string) {
@@ -49,7 +52,7 @@ export const Icon: React.FC<IconProps> = ({
   name,
   library = 'lucide',
   size = 24,
-  color = colors.text.primary,
+  color = '#000000',
   className,
   testID,
   style,
@@ -68,19 +71,13 @@ export const Icon: React.FC<IconProps> = ({
   const VectorIcon = library !== 'lucide' ? vectorLibraries[library] : null;
 
   return (
-    <View 
+    <View
       style={[{ alignItems: 'center', justifyContent: 'center' }, style]}
       className={className}
       testID={testID}
-      {...props}
-    >
+      {...props}>
       {library === 'lucide' ? (
-        <LucideIcon 
-          size={size}
-          color={color}
-          strokeWidth={strokeWidth}
-          fill={fill}
-        />
+        <LucideIcon size={size} color={color} strokeWidth={strokeWidth} fill={fill} />
       ) : VectorIcon ? (
         <VectorIcon name={name as any} size={size} color={color} />
       ) : (

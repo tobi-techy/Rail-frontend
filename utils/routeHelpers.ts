@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { userService } from '@/api/services';
 import { logger } from '@/lib/logger';
 import { ROUTES } from '@/constants/routes';
+import { isKycSubmissionRequired, isProfileCompletionRequired } from '@/utils/onboardingFlow';
 import type { RouteConfig, AuthState } from '@/types/routing.types';
 
 export const normalizeRoutePath = (route: string): string =>
@@ -106,11 +107,11 @@ const handleAuthenticatedUser = (
   hasValidPasscodeSession: boolean
 ): string | null => {
   const { user, onboardingStatus, hasPasscode } = authState;
-  const userOnboardingStatus = user?.onboardingStatus || onboardingStatus;
-  const needsKYC =
-    userOnboardingStatus === 'kyc_pending' || userOnboardingStatus === 'kyc_rejected';
-  const needsProfile =
-    userOnboardingStatus === 'started' || userOnboardingStatus === 'wallets_pending';
+  // Prefer top-level onboardingStatus because it is updated during onboarding flows
+  // (e.g. after complete-profile) before the nested user object is refreshed.
+  const userOnboardingStatus = onboardingStatus || user?.onboardingStatus;
+  const needsKYC = isKycSubmissionRequired(userOnboardingStatus);
+  const needsProfile = isProfileCompletionRequired(userOnboardingStatus);
 
   if (needsProfile) {
     if (config.isOnCompleteProfile || config.isOnCreatePasscode || config.isOnConfirmPasscode) {
@@ -144,6 +145,9 @@ const handleAuthenticatedUser = (
 
   if (isInCriticalAuthFlow(config)) return null;
 
+  // Allow completed users to access KYC screen (for feature gating flows)
+  if (config.isOnKycScreen) return null;
+
   if (userOnboardingStatus === 'completed' && config.inAppGroup) return null;
 
   if (!config.inAppGroup) return ROUTES.TABS;
@@ -161,7 +165,8 @@ const handleStoredCredentials = (
   config: RouteConfig,
   hasSessionExpired: boolean
 ): string | null => {
-  const { user, hasPasscode } = authState;
+  const { user, hasPasscode, onboardingStatus } = authState;
+  const resolvedOnboardingStatus = onboardingStatus || user?.onboardingStatus;
 
   // If full 7-day session has expired (no tokens, user data cleared by SessionManager)
   // Route to signin for full re-authentication
@@ -180,7 +185,7 @@ const handleStoredCredentials = (
   // CRITICAL FIX: User has passcode and stored credentials but not authenticated
   // This happens when app backgrounded and passcode session expired
   // OLD USERS: After closing the app, they must enter passcode to re-auth, not signin
-  if (user && (hasPasscode || user.onboardingStatus === 'completed')) {
+  if (user && (hasPasscode || resolvedOnboardingStatus === 'completed')) {
     logger.info(
       '[RouteHelpers] User has stored credentials with passcode, routing to passcode login',
       {

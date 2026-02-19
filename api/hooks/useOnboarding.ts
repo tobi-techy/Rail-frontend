@@ -14,11 +14,25 @@ import type { OnboardingCompleteRequest, KYCVerificationRequest } from '../types
 export function useOnboardingComplete() {
   return useMutation({
     mutationFn: (data: OnboardingCompleteRequest) => onboardingService.complete(data),
-    onSuccess: (response) => {
-      useAuthStore.setState({
+    onSuccess: (response, variables) => {
+      const firstName = variables.firstName?.trim();
+      const lastName = variables.lastName?.trim();
+      const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+
+      useAuthStore.setState((state) => ({
+        user: state.user
+          ? {
+              ...state.user,
+              firstName: firstName || state.user.firstName,
+              lastName: lastName || state.user.lastName,
+              fullName: fullName || state.user.fullName,
+              phoneNumber: variables.phone || state.user.phoneNumber,
+            }
+          : state.user,
+        hasCompletedOnboarding: true,
         onboardingStatus: response.onboarding?.onboardingStatus ?? null,
         currentOnboardingStep: response.onboarding?.currentStep ?? null,
-      });
+      }));
     },
   });
 }
@@ -32,7 +46,7 @@ export function useOnboardingSubmitKYC() {
     onSuccess: () => {
       // Update onboarding status
       useAuthStore.setState({
-        onboardingStatus: 'kyc_processing',
+        onboardingStatus: 'kyc_pending',
       });
     },
   });

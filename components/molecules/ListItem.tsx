@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
-import { typography } from '../../design/tokens';
 
 export interface ListItemProps extends TouchableOpacityProps {
   title: string;
@@ -41,17 +40,11 @@ export const ListItem: React.FC<ListItemProps> = ({
         {leftIcon && <View className="mr-3">{leftIcon}</View>}
 
         <View className="flex-1">
-          <Text
-            className="text-body text-text-primary"
-            style={{ fontFamily: typography.fonts.body }}
-            numberOfLines={1}>
+          <Text className="font-body text-body text-text-primary" numberOfLines={1}>
             {title}
           </Text>
           {subtitle && (
-            <Text
-              className="mt-1 text-caption text-text-secondary"
-              style={{ fontFamily: typography.fonts.caption }}
-              numberOfLines={2}>
+            <Text className="mt-1 font-caption text-caption text-text-secondary" numberOfLines={2}>
               {subtitle}
             </Text>
           )}
@@ -60,9 +53,7 @@ export const ListItem: React.FC<ListItemProps> = ({
         {(rightText || rightIcon) && (
           <View className="ml-3 flex-row items-center">
             {rightText && (
-              <Text
-                className="mr-2 text-caption text-text-secondary"
-                style={{ fontFamily: typography.fonts.caption }}>
+              <Text className="mr-2 font-caption text-caption text-text-secondary">
                 {rightText}
               </Text>
             )}
