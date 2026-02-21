@@ -82,11 +82,15 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   const { isBalanceVisible, toggleBalanceVisibility } = useUIStore();
   const isNegative = percentChange.startsWith('-');
 
+  // Check if balance is loading/empty (0.00 with no history)
+  const isZero = balance === '$0.00' || parseFloat(balance) === 0;
+  const isLoading = isZero && percentChange === '0.00%';
+
   return (
     <View className={`overflow-hidden ${className || ''}`} {...props}>
       <View className="items-start pb-4 pt-6">
         <View className="flex-row items-center gap-x-2">
-          <AnimatedBalance value={balance} isVisible={isBalanceVisible} />
+          <AnimatedBalance value={isLoading ? '$---' : balance} isVisible={isBalanceVisible} />
           <TouchableOpacity
             onPress={toggleBalanceVisibility}
             accessibilityLabel={isBalanceVisible ? 'Hide balance' : 'Show balance'}
@@ -100,8 +104,10 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
         </View>
 
         <Text
-          className={`mt-1 font-body text-caption ${isNegative ? 'text-destructive' : 'text-success'}`}>
-          {isBalanceVisible ? sanitizeNumber(String(percentChange)) : '••••'}{' '}
+          className={`mt-1 font-body text-caption ${
+            isNegative ? 'text-destructive' : 'text-success'
+          }`}>
+          {isBalanceVisible ? (isLoading ? '---' : sanitizeNumber(String(percentChange))) : '••••'}{' '}
           <Text className="text-text-secondary">{timeframe}</Text>
         </Text>
       </View>

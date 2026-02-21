@@ -9,12 +9,14 @@ import { queryKeys } from '../queryClient';
 
 /**
  * Get portfolio overview with balance, buying power, and performance
- * 
- * Optimizations:
- * - 30s stale time for balance-critical data
- * - 1min automatic refetch to keep data fresh
- * - Prevents unnecessary refetches on window focus
- * 
+ *
+ * Optimizations for fast UX:
+ * - 15s stale time (aggressive refresh for balance-critical data)
+ * - 50s automatic refetch (more frequent than before)
+ * - Refetch on window focus (update when user opens app)
+ * - Refetch on reconnect (update when connection restored)
+ * - Shows cached data immediately (no zero/loading flash)
+ *
  * Note: If endpoint returns 404, it means the backend hasn't implemented
  * the portfolio endpoint yet. The UI will show placeholder values.
  */
@@ -22,9 +24,10 @@ export function usePortfolioOverview() {
   return useQuery({
     queryKey: queryKeys.portfolio.overview(),
     queryFn: () => portfolioService.getPortfolioOverview(),
-    staleTime: 30 * 1000, // 30 seconds - balance data shouldn't be too stale
-    refetchInterval: 60 * 1000, // Refetch every minute for fresh data
-    refetchOnWindowFocus: false, // Prevent unnecessary refetches
+    staleTime: 15 * 1000, // 15 seconds - fast refresh for balance visibility
+    refetchInterval: 50 * 1000, // Refetch every 50 seconds (more frequent)
+    refetchOnWindowFocus: true, // Update when user brings app to foreground
+    refetchOnReconnect: true, // Update when network connection restored
     retry: (failureCount, error: any) => {
       const errorCode = error?.error?.code;
       // Don't retry on auth errors (401) or not found (404)

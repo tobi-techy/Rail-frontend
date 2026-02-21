@@ -19,13 +19,20 @@ import type {
 
 /**
  * Get wallet balance
+ * Optimized for fast loading with aggressive caching:
+ * - Uses cached data immediately if available
+ * - Refetches in background after 15 seconds (faster than 30s to show updates quicker)
+ * - Refetches every 45 seconds (balance is critical, monitor frequently)
+ * - Prefers cached data on mount (avoids zero flash)
  */
 export function useWalletBalance() {
   return useQuery({
     queryKey: queryKeys.wallet.balance(),
     queryFn: () => walletService.getBalance(),
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
+    staleTime: 15 * 1000, // 15 seconds - balance becomes stale faster
+    refetchInterval: 45 * 1000, // Refetch every 45 seconds (more frequent for balance)
+    refetchOnWindowFocus: true, // Refetch when app comes to foreground
+    refetchOnReconnect: true, // Refetch when connection restored
   });
 }
 
@@ -119,12 +126,12 @@ export function useNetworks() {
 
 /**
  * Get wallet addresses, optionally filtered by chain
- * 
+ *
  * Optimizations:
  * - 5min stale time (addresses rarely change)
  * - Cached per chain filter for efficient lookups
  * - Prevents refetch on window focus
- * 
+ *
  * Note: Returns error if:
  * - 401: User not authenticated or token expired
  * - 404: Endpoint not implemented
