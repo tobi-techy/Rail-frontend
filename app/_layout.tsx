@@ -16,6 +16,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { FeedbackPopupHost } from '@/components/ui';
 import queryClient from '@/api/queryClient';
 import SessionManager from '@/utils/sessionManager';
+import { PostHogProvider, PostHogSurveyProvider } from 'posthog-react-native';
 import '../global.css';
 
 // Keep native splash visible until we're ready
@@ -27,8 +28,6 @@ const SPLASH_BG = '#FF2E01';
 
 const SPLASH_MIN_DURATION_MS = 2500;
 const SPLASH_MAX_DURATION_MS = 4000;
-
-const SPLASH_DEBUG = __DEV__;
 
 initSentry();
 initGlobalErrorHandlers();
@@ -46,27 +45,47 @@ if (!envValidation.isValid && !__DEV__) {
 
 function AppNavigator() {
   return (
-    <Stack initialRouteName="index" screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="login-passcode" />
-      <Stack.Screen name="intro" />
+    <Stack
+      initialRouteName="index"
+      screenOptions={{
+        headerShown: false,
+        sceneStyle: { backgroundColor: '#FFFFFF' },
+        contentStyle: { backgroundColor: '#FFFFFF' },
+      }}>
+      <Stack.Screen
+        name="index"
+        options={{
+          sceneStyle: { backgroundColor: '#FF2E01' },
+          contentStyle: { backgroundColor: '#FF2E01' },
+        }}
+      />
+      <Stack.Screen
+        name="login-passcode"
+        options={{
+          sceneStyle: { backgroundColor: '#FFFFFF' },
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      />
+      <Stack.Screen
+        name="intro"
+        options={{
+          sceneStyle: { backgroundColor: '#000000' },
+          contentStyle: { backgroundColor: '#000000' },
+        }}
+      />
       <Stack.Screen
         name="(auth)"
-        options={
-          {
-            // Wrap auth screens in their own error boundary
-            // This prevents auth errors from affecting other parts of the app
-          }
-        }
+        options={{
+          sceneStyle: { backgroundColor: '#FFFFFF' },
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
       />
       <Stack.Screen
         name="(tabs)"
-        options={
-          {
-            // Wrap main app tabs in their own error boundary
-            // This prevents tab screen errors from affecting the entire app
-          }
-        }
+        options={{
+          sceneStyle: { backgroundColor: '#FFFFFF' },
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
       />
       {/* Stash screens - disabled until feature is complete */}
       {/* <Stack.Screen name="spending-stash" options={{ headerShown: false }} /> */}
@@ -77,11 +96,18 @@ function AppNavigator() {
           headerShown: false,
           animation: 'slide_from_bottom',
           animationTypeForReplace: 'push',
+          sceneStyle: { backgroundColor: '#FFFFFF' },
+          contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />
       <Stack.Screen
         name="virtual-account"
-        options={{ headerShown: false, presentation: 'modal' }}
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+          sceneStyle: { backgroundColor: '#FFFFFF' },
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
       />
     </Stack>
   );
@@ -175,18 +201,26 @@ export default function Layout() {
   }
 
   return (
-    <ErrorBoundary>
-      <StatusBar barStyle={'dark-content'} />
-      <KeyboardProvider>
-        <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
-          <QueryClientProvider client={queryClient}>
-            <SafeAreaProvider>
-              <AppNavigator />
-              <FeedbackPopupHost />
-            </SafeAreaProvider>
-          </QueryClientProvider>
-        </View>
-      </KeyboardProvider>
-    </ErrorBoundary>
+    <PostHogProvider
+      apiKey="phc_bG9OhXAMZfICZ0hFeCcHJSx5FGzpBhN4nDHbZAIYhbR"
+      options={{
+        host: 'https://us.i.posthog.com',
+      }}>
+      <PostHogSurveyProvider>
+        <ErrorBoundary>
+          <StatusBar barStyle={'dark-content'} />
+          <KeyboardProvider>
+            <QueryClientProvider client={queryClient}>
+              <SafeAreaProvider style={{ flex: 1, backgroundColor: SPLASH_BG }}>
+                <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
+                  <AppNavigator />
+                  <FeedbackPopupHost />
+                </View>
+              </SafeAreaProvider>
+            </QueryClientProvider>
+          </KeyboardProvider>
+        </ErrorBoundary>
+      </PostHogSurveyProvider>
+    </PostHogProvider>
   );
 }

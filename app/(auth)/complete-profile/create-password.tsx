@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StatusBar, Platform } from 'react-native';
+import { View, Text, StatusBar, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
@@ -29,6 +29,8 @@ const normalizePhone = (
   return undefined;
 };
 
+const isPasskeySignupMethod = (value?: string) => value === 'passkey';
+
 export default function CreatePassword() {
   const registrationData = useAuthStore((state) => state.registrationData);
   const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
@@ -43,26 +45,14 @@ export default function CreatePassword() {
   const [showConfirm, setShowConfirm] = useState(false);
   const { showWarning, showError } = useFeedbackPopup();
   const { mutate: completeOnboarding, isPending } = useOnboardingComplete();
+  const isPasskeySignup = isPasskeySignupMethod(registrationData.authMethod);
 
-  const handleSubmit = () => {
-    if (password.length < 12) {
-      setPasswordError('Password must be at least 12 characters');
-      showWarning('Weak Password', 'Password must be at least 12 characters.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match');
-      showWarning('Password Mismatch', 'Passwords do not match.');
-      return;
-    }
-
+  const submitProfile = (passwordValue?: string) => {
     setPasswordError('');
     setConfirmPasswordError('');
-    updateRegistrationData({ password });
+    updateRegistrationData({ password: passwordValue || '' });
 
     const payload: OnboardingCompleteRequest = {
-      password,
       firstName: registrationData.firstName,
       lastName: registrationData.lastName,
       dateOfBirth: registrationData.dob,
@@ -76,6 +66,7 @@ export default function CreatePassword() {
       },
       phone: normalizePhone(registrationData.phone, registrationData.country),
     };
+    if (passwordValue) payload.password = passwordValue;
 
     if (
       !payload.firstName ||
@@ -115,6 +106,38 @@ export default function CreatePassword() {
     });
   };
 
+  const handleSubmit = () => {
+    const normalizedPassword = password.trim();
+    const normalizedConfirm = confirmPassword.trim();
+    const hasPasswordInput = normalizedPassword.length > 0 || normalizedConfirm.length > 0;
+
+    if (!isPasskeySignup || hasPasswordInput) {
+      if (normalizedPassword.length < 12) {
+        setPasswordError('Password must be at least 12 characters');
+        showWarning('Weak Password', 'Password must be at least 12 characters.');
+        return;
+      }
+
+      if (normalizedPassword !== normalizedConfirm) {
+        setConfirmPasswordError('Passwords do not match');
+        showWarning('Password Mismatch', 'Passwords do not match.');
+        return;
+      }
+
+      submitProfile(normalizedPassword);
+      return;
+    }
+
+    submitProfile();
+  };
+
+  const handleSkipPassword = () => {
+    if (!isPasskeySignup || isPending) return;
+    setPassword('');
+    setConfirmPassword('');
+    submitProfile();
+  };
+
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1" edges={['top']}>
@@ -126,15 +149,21 @@ export default function CreatePassword() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-subtitle text-[50px] text-black">Create Password</Text>
-              <Text className="mt-2 font-body text-[14px] text-black/60">Secure your account</Text>
+              <Text className="font-subtitle text-[50px] text-black">
+                {isPasskeySignup ? 'Create Password (Optional)' : 'Create Password'}
+              </Text>
+              <Text className="mt-2 font-body text-[14px] text-black/60">
+                {isPasskeySignup
+                  ? 'You can skip this and continue with your passkey'
+                  : 'Secure your account'}
+              </Text>
             </View>
           </StaggeredChild>
 
           <View className="gap-y-2">
             <StaggeredChild index={1}>
               <InputField
-                label="Password"
+                label={isPasskeySignup ? 'Password (Optional)' : 'Password'}
                 placeholder="Min 12 characters"
                 value={password}
                 onChangeText={(value) => {
@@ -167,7 +196,21 @@ export default function CreatePassword() {
 
           <StaggeredChild index={3} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button title="Complete Profile" onPress={handleSubmit} loading={isPending} />
+              <Button
+                title={isPasskeySignup ? 'Create Account' : 'Complete Profile'}
+                onPress={handleSubmit}
+                loading={isPending}
+              />
+              {isPasskeySignup ? (
+                <TouchableOpacity
+                  onPress={handleSkipPassword}
+                  disabled={isPending}
+                  className="mt-4 py-1">
+                  <Text className="text-center font-body text-[14px] text-black/60 underline">
+                    Skip password for now
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           </StaggeredChild>
         </View>

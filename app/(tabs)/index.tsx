@@ -1,23 +1,25 @@
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
-import React, { useLayoutEffect, useState, useCallback, useEffect } from 'react';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo } from 'react';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 import { router, useNavigation } from 'expo-router';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { StashCard } from '@/components/molecules/StashCard';
-import { ArrowDown, PlusIcon, LayoutGrid } from 'lucide-react-native';
+import { ArrowDown, PlusIcon, LayoutGrid, ChevronRight } from 'lucide-react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
 import type { Transaction } from '@/components/molecules/TransactionItem';
 import { useStation, useKYCStatus } from '@/api/hooks';
 import type { ActivityItem } from '@/api/types';
 import { Button } from '../../components/ui';
 import {
-  ActionSheet,
   InvestmentDisclaimerSheet,
   CryptoReceiveSheet,
   KYCVerificationSheet,
-  MoreFundingOptionsSheet,
+  NavigableBottomSheet,
+  useNavigableBottomSheet,
+  type BottomSheetScreen,
 } from '@/components/sheets';
 import { useAuthStore } from '@/stores/authStore';
+import { PhantomIcon, SolflareIcon, SolanaIcon } from '@/assets/svg';
 import { BankIcon, CashIcon, CoinIcon, InvestmentIcon } from '@/assets/svg/filled';
 import { invalidateQueries } from '@/api/queryClient';
 
@@ -48,16 +50,57 @@ const parseMoney = (value: string | undefined) => {
 
 const VALID_ACTIVITY_TYPES = new Set(['send', 'receive', 'swap', 'deposit', 'withdraw']);
 
-const mapActivity = (items: ActivityItem[]): Transaction[] =>
+const mapActivity = (items: ActivityItem[], currency?: string): Transaction[] =>
   items.map((a) => ({
     id: a.id,
     type: VALID_ACTIVITY_TYPES.has(a.type) ? (a.type as Transaction['type']) : 'deposit',
     title: a.description,
     subtitle: a.type,
     amount: parseFloat(a.amount) || 0,
+    currency: currency?.toUpperCase(),
     status: 'completed' as const,
     createdAt: new Date(a.created_at),
   }));
+
+interface FundingActionItem {
+  id: string;
+  label: string;
+  sublabel?: string;
+  icon: React.ReactNode;
+  onPress: () => void;
+}
+
+function FundingOptionsList({ actions }: { actions: FundingActionItem[] }) {
+  return (
+    <ScrollView
+      scrollEnabled={actions.length > 6}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 4 }}>
+      {actions.map((action) => (
+        <TouchableOpacity
+          key={action.id}
+          className="flex-row items-center justify-between rounded-2xl px-0 py-3.5 active:bg-gray-50"
+          onPress={action.onPress}
+          activeOpacity={0.6}>
+          <View className="flex-1 flex-row items-center">
+            <View className="mr-4 h-11 w-11 items-center justify-center rounded-full bg-gray-100">
+              {action.icon}
+            </View>
+            <View className="flex-1">
+              <Text className="font-subtitle text-base text-text-primary">{action.label}</Text>
+              {action.sublabel && (
+                <Text className="mt-0.5 font-caption text-[12px] text-text-secondary">
+                  {action.sublabel}
+                </Text>
+              )}
+            </View>
+          </View>
+          <ChevronRight size={20} color="#9CA3AF" />
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+}
 
 // ── Component ────────────────────────────────────────────
 
@@ -68,7 +111,10 @@ const Dashboard = () => {
   const [showSendSheet, setShowSendSheet] = useState(false);
   const [showCryptoReceive, setShowCryptoReceive] = useState(false);
   const [showKYCSheet, setShowKYCSheet] = useState(false);
-  const [moreOptionsMode, setMoreOptionsMode] = useState<'deposit' | 'send' | null>(null);
+  const receiveSheetNavigation = useNavigableBottomSheet('receive-main');
+  const sendSheetNavigation = useNavigableBottomSheet('send-main');
+  const { navigateTo: navigateReceiveTo, reset: resetReceiveSheet } = receiveSheetNavigation;
+  const { navigateTo: navigateSendTo, reset: resetSendSheet } = sendSheetNavigation;
 
   // Disclaimer
   const hasAcknowledgedDisclaimer = useAuthStore((s) => s.hasAcknowledgedDisclaimer);
@@ -122,6 +168,31 @@ const Dashboard = () => {
     [kycStatus?.status]
   );
 
+  const handleReceiveCryptoPress = useCallback(() => {
+    setShowReceiveSheet(false);
+    setShowCryptoReceive(true);
+  }, []);
+
+  const handleCloseReceiveSheet = useCallback(() => {
+    setShowReceiveSheet(false);
+  }, []);
+
+  const handleCloseSendSheet = useCallback(() => {
+    setShowSendSheet(false);
+  }, []);
+
+  useEffect(() => {
+    if (!showReceiveSheet) {
+      resetReceiveSheet('receive-main');
+    }
+  }, [showReceiveSheet, resetReceiveSheet]);
+
+  useEffect(() => {
+    if (!showSendSheet) {
+      resetSendSheet('send-main');
+    }
+  }, [showSendSheet, resetSendSheet]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -152,8 +223,165 @@ const Dashboard = () => {
   const brokerCash = parseMoney(station?.broker_cash);
   const stashOnly = Math.max(0, investTotal - brokerCash);
   const stash = splitDollars(stashOnly.toFixed(2));
-  const invest = splitDollars(investTotal.toFixed(2));
-  const transactions = station?.recent_activity ? mapActivity(station.recent_activity) : [];
+  const transactions = station?.recent_activity
+    ? mapActivity(station.recent_activity, station.currency)
+    : [];
+
+  const receiveMainActions = useMemo<FundingActionItem[]>(
+    () => [
+      {
+        id: 'fiat',
+        label: 'Fiat',
+        sublabel: 'Receive assets via US bank account',
+        icon: <BankIcon width={32} height={32} color="#6366F1" />,
+        onPress: handleFiatPress,
+      },
+      {
+        id: 'crypto',
+        label: 'Crypto',
+        sublabel: 'Receive assets via wallet address',
+        icon: <CoinIcon width={32} height={32} color="#6366F1" />,
+        onPress: handleReceiveCryptoPress,
+      },
+      {
+        id: 'more',
+        label: 'More Options',
+        sublabel: 'Pick from several other options to fund account',
+        icon: <LayoutGrid width={28} height={28} color="#6366F1" />,
+        onPress: () => navigateReceiveTo('receive-more'),
+      },
+    ],
+    [handleFiatPress, handleReceiveCryptoPress, navigateReceiveTo]
+  );
+
+  const receiveMoreActions = useMemo<FundingActionItem[]>(
+    () => [
+      {
+        id: 'phantom',
+        label: 'Phantom',
+        sublabel: 'Connect Phantom wallet',
+        icon: <PhantomIcon width={28} height={28} />,
+        onPress: handleCloseReceiveSheet,
+      },
+      {
+        id: 'solflare',
+        label: 'Solflare',
+        sublabel: 'Connect Solflare wallet',
+        icon: <SolflareIcon width={28} height={28} />,
+        onPress: handleCloseReceiveSheet,
+      },
+      {
+        id: 'solana-pay',
+        label: 'Solana Pay',
+        sublabel: 'Pay with Solana Pay',
+        icon: <SolanaIcon width={28} height={28} />,
+        onPress: handleCloseReceiveSheet,
+      },
+      {
+        id: 'wire',
+        label: 'Wire Transfer',
+        sublabel: 'Receive via wire transfer',
+        icon: <BankIcon width={28} height={28} color="#6366F1" />,
+        onPress: handleCloseReceiveSheet,
+      },
+    ],
+    [handleCloseReceiveSheet]
+  );
+
+  const sendMainActions = useMemo<FundingActionItem[]>(
+    () => [
+      {
+        id: 'fiat',
+        label: 'Fiat',
+        sublabel: 'Send to US bank account',
+        icon: <BankIcon width={28} height={28} color="#6366F1" />,
+        onPress: () => startWithdrawalFlow('fiat'),
+      },
+      {
+        id: 'crypto',
+        label: 'To Wallet',
+        sublabel: 'Send to wallet address',
+        icon: <CoinIcon width={32} height={32} color="#6366F1" />,
+        onPress: () => startWithdrawalFlow('crypto'),
+      },
+      {
+        id: 'more',
+        label: 'More Options',
+        sublabel: 'Pick from several other options to send funds out',
+        icon: <LayoutGrid width={28} height={28} color="#6366F1" />,
+        onPress: () => navigateSendTo('send-more'),
+      },
+    ],
+    [navigateSendTo, startWithdrawalFlow]
+  );
+
+  const sendMoreActions = useMemo<FundingActionItem[]>(
+    () => [
+      {
+        id: 'phantom',
+        label: 'Phantom',
+        sublabel: 'Send using Phantom wallet',
+        icon: <PhantomIcon width={28} height={28} />,
+        onPress: handleCloseSendSheet,
+      },
+      {
+        id: 'solflare',
+        label: 'Solflare',
+        sublabel: 'Send using Solflare wallet',
+        icon: <SolflareIcon width={28} height={28} />,
+        onPress: handleCloseSendSheet,
+      },
+      {
+        id: 'solana-pay',
+        label: 'Solana Pay',
+        sublabel: 'Send with Solana Pay',
+        icon: <SolanaIcon width={28} height={28} />,
+        onPress: handleCloseSendSheet,
+      },
+      {
+        id: 'wire',
+        label: 'Wire Transfer',
+        sublabel: 'Send through wire transfer',
+        icon: <BankIcon width={28} height={28} color="#6366F1" />,
+        onPress: handleCloseSendSheet,
+      },
+    ],
+    [handleCloseSendSheet]
+  );
+
+  const receiveScreens = useMemo<BottomSheetScreen[]>(
+    () => [
+      {
+        id: 'receive-main',
+        title: 'Add Funds',
+        subtitle: 'Choose one of the options\nbelow to add funds',
+        component: <FundingOptionsList actions={receiveMainActions} />,
+      },
+      {
+        id: 'receive-more',
+        title: 'More deposit options',
+        component: <FundingOptionsList actions={receiveMoreActions} />,
+      },
+    ],
+    [receiveMainActions, receiveMoreActions]
+  );
+
+  const sendScreens = useMemo<BottomSheetScreen[]>(
+    () => [
+      {
+        id: 'send-main',
+        title: 'Send Funds',
+        subtitle: 'Choose one of the options\nbelow to send funds',
+        component: <FundingOptionsList actions={sendMainActions} />,
+      },
+      {
+        id: 'send-more',
+        title: 'More send options',
+        component: <FundingOptionsList actions={sendMoreActions} />,
+      },
+    ],
+    [sendMainActions, sendMoreActions]
+  );
 
   return (
     <ScrollView
@@ -227,79 +455,19 @@ const Dashboard = () => {
       </View>
 
       {/* Receive Sheet */}
-      <ActionSheet
+      <NavigableBottomSheet
         visible={showReceiveSheet}
-        onClose={() => setShowReceiveSheet(false)}
-        title="Add Funds"
-        subtitle={'Choose one of the options\nbelow to add funds'}
-        actions={[
-          {
-            id: 'fiat',
-            label: 'Fiat',
-            sublabel: 'Receive assets via US bank account',
-            icon: <BankIcon width={32} height={32} color="#6366F1" />,
-            iconBgColor: '',
-            onPress: handleFiatPress,
-          },
-          {
-            id: 'crypto',
-            label: 'Crypto',
-            sublabel: 'Receive assets via wallet address',
-            icon: <CoinIcon width={32} height={32} color="#6366F1" />,
-            iconColor: '#F97316',
-            iconBgColor: '',
-            onPress: () => setShowCryptoReceive(true),
-          },
-          {
-            id: 'more',
-            label: 'More Options',
-            sublabel: 'Pick from several other options to fund account',
-            icon: <LayoutGrid width={28} height={28} color="#6366F1" />,
-            iconBgColor: '',
-            onPress: () => {
-              setShowReceiveSheet(false);
-              setMoreOptionsMode('deposit');
-            },
-          },
-        ]}
+        onClose={handleCloseReceiveSheet}
+        screens={receiveScreens}
+        navigation={receiveSheetNavigation}
       />
 
       {/* Send Sheet */}
-      <ActionSheet
+      <NavigableBottomSheet
         visible={showSendSheet}
-        onClose={() => setShowSendSheet(false)}
-        title="Send Funds"
-        subtitle={'Choose one of the options\nbelow to send funds'}
-        actions={[
-          {
-            id: 'fiat',
-            label: 'Fiat',
-            sublabel: 'Send to US bank account',
-            icon: <BankIcon width={28} height={28} color="#6366F1" />,
-            iconBgColor: '',
-            onPress: () => startWithdrawalFlow('fiat'),
-          },
-          {
-            id: 'crypto',
-            label: 'To Wallet',
-            sublabel: 'Send to wallet address',
-            icon: <CoinIcon width={32} height={32} color="#6366F1" />,
-            iconColor: '#F97316',
-            iconBgColor: '',
-            onPress: () => startWithdrawalFlow('crypto'),
-          },
-          {
-            id: 'more',
-            label: 'More Options',
-            sublabel: 'Pick from several other options to send funds out',
-            icon: <LayoutGrid width={28} height={28} color="#6366F1" />,
-            iconBgColor: '',
-            onPress: () => {
-              setShowSendSheet(false);
-              setMoreOptionsMode('send');
-            },
-          },
-        ]}
+        onClose={handleCloseSendSheet}
+        screens={sendScreens}
+        navigation={sendSheetNavigation}
       />
 
       {/* KYC Verification Sheet */}
@@ -311,11 +479,6 @@ const Dashboard = () => {
 
       <InvestmentDisclaimerSheet visible={showDisclaimer} onAccept={handleAcceptDisclaimer} />
       <CryptoReceiveSheet visible={showCryptoReceive} onClose={() => setShowCryptoReceive(false)} />
-      <MoreFundingOptionsSheet
-        visible={moreOptionsMode !== null}
-        onClose={() => setMoreOptionsMode(null)}
-        mode={moreOptionsMode ?? 'deposit'}
-      />
     </ScrollView>
   );
 };

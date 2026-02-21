@@ -34,7 +34,8 @@
       ],
       "expo-web-browser",
       "expo-video",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -51,11 +52,14 @@
     },
     "ios": {
       "supportsTablet": true,
+      "buildNumber": "2",
       "bundleIdentifier": "com.railmoney.rail",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSFaceIDUsageDescription": "Use Face ID to authenticate and secure your account",
         "NSCameraUsageDescription": "Camera access is required for QR code scanning",
+        "NSPhotoLibraryUsageDescription": "Access your photo library to upload profile pictures and payment verification documents",
+        "NSLocationWhenInUseUsageDescription": "Your location helps us provide location-based services and improve your experience",
         "UIRequiredDeviceCapabilities": ["armv7"],
         "UISupportedInterfaceOrientations": ["UIInterfaceOrientationPortrait"],
         "UIStatusBarStyle": "UIStatusBarStyleDefault"

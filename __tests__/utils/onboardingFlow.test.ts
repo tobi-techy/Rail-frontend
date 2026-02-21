@@ -12,9 +12,9 @@ describe('onboardingFlow helpers', () => {
     expect(getPostAuthRoute('wallets_pending')).toBe(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO);
   });
 
-  it('routes kyc-required statuses to KYC', () => {
-    expect(getPostAuthRoute('kyc_pending')).toBe(ROUTES.AUTH.KYC);
-    expect(getPostAuthRoute('kyc_rejected')).toBe(ROUTES.AUTH.KYC);
+  it('routes rejected KYC to tabs (KYC now opens in-app)', () => {
+    expect(getPostAuthRoute('kyc_pending')).toBe(ROUTES.TABS);
+    expect(getPostAuthRoute('kyc_rejected')).toBe(ROUTES.TABS);
   });
 
   it('routes app-ready statuses to tabs', () => {
@@ -23,13 +23,14 @@ describe('onboardingFlow helpers', () => {
   });
 
   it('normalizes status casing and unknowns', () => {
-    expect(getPostAuthRoute(' KYC_PENDING ')).toBe(ROUTES.AUTH.KYC);
+    expect(getPostAuthRoute(' KYC_PENDING ')).toBe(ROUTES.TABS);
     expect(getPostAuthRoute('unknown-status')).toBe(ROUTES.TABS);
     expect(getPostAuthRoute(undefined)).toBe(ROUTES.TABS);
   });
 
   it('exposes consistency predicates', () => {
     expect(isProfileCompletionRequired('started')).toBe(true);
+    expect(isKycSubmissionRequired('kyc_pending')).toBe(false);
     expect(isKycSubmissionRequired('kyc_rejected')).toBe(true);
     expect(isOnboardingAppReady('kyc_approved')).toBe(true);
   });

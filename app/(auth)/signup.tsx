@@ -2,24 +2,39 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, Platform, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useRegister } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { useAuthStore } from '@/stores/authStore';
 
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
 
+const normalizeRegistrationMethod = (value?: string): 'password' | 'passkey' => {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === 'passkey' || normalized === 'biometric' ? 'passkey' : 'password';
+};
+
 export default function SignUp() {
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ method?: string; authMethod?: string }>();
+  const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const { mutate: register, isPending } = useRegister();
   const { showError, showWarning, showSuccess } = useFeedbackPopup();
+  const registrationMethod = normalizeRegistrationMethod(
+    typeof params.authMethod === 'string'
+      ? params.authMethod
+      : typeof params.method === 'string'
+        ? params.method
+        : undefined
+  );
 
   const handleSignUp = () => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -37,6 +52,8 @@ export default function SignUp() {
     }
 
     setEmailError('');
+    updateRegistrationData({ authMethod: registrationMethod });
+
     register(
       { email: normalizedEmail },
       {
@@ -68,7 +85,7 @@ export default function SignUp() {
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
-              <Text className="font-headline text-auth-title leading-[1.1] text-black">
+              <Text className="font-headline-2 text-auth-title leading-[1.1] text-black">
                 Enter your email
               </Text>
               <Text className="mt-2 font-body text-body text-black/60">

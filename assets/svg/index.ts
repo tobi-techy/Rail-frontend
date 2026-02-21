@@ -11,3 +11,13 @@ export { default as GbpIcon } from './gbp.svg';
 export { default as EurIcon } from './eur.svg';
 export { default as PhantomIcon } from './phantom.svg';
 export { default as SolflareIcon } from './solflare.svg';
+export { default as AvalancheIcon } from './avalanche.svg';
+
+// Currency symbol icons
+export { default as DollarCurrencyIcon } from './Currency=Dollar.svg';
+export { default as EuroCurrencyIcon } from './Currency=Euro.svg';
+export { default as NairaCurrencyIcon } from './Currency=Naira.svg';
+export { default as PoundCurrencyIcon } from './Currency=Pound.svg';
+
+// Company logos
+export * from './company';

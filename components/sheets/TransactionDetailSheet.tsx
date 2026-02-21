@@ -3,7 +3,12 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { BottomSheet } from './BottomSheet';
 import { Icon } from '../atoms';
-import { Transaction, TransactionType, SvgComponent } from '../molecules/TransactionItem';
+import {
+  Transaction,
+  TransactionType,
+  SvgComponent,
+  resolveTransactionAssetIcon,
+} from '../molecules/TransactionItem';
 
 interface TransactionDetailSheetProps {
   visible: boolean;
@@ -25,12 +30,32 @@ const formatDate = (date: Date) =>
   date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
 const formatAmount = (amount: number) =>
-  new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(amount));
+  new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+    Math.abs(amount)
+  );
 
 const truncateAddress = (address: string) =>
   address.length > 12 ? `${address.slice(0, 4)}...${address.slice(-4)}` : address;
 
-const DetailRow = ({ label, value, copyable, isGreen }: { label: string; value: string; copyable?: boolean; isGreen?: boolean }) => {
+const statusLabel = (status: Transaction['status']) => {
+  if (status === 'completed') return 'Completed';
+  if (status === 'failed') return 'Failed';
+  return 'Processing';
+};
+
+const DetailRow = ({
+  label,
+  value,
+  copyable,
+  isGreen,
+  isDanger,
+}: {
+  label: string;
+  value: string;
+  copyable?: boolean;
+  isGreen?: boolean;
+  isDanger?: boolean;
+}) => {
   const handleCopy = async () => {
     await Clipboard.setStringAsync(value);
   };
@@ -39,7 +64,8 @@ const DetailRow = ({ label, value, copyable, isGreen }: { label: string; value: 
     <View className="flex-row items-center justify-between py-3">
       <Text className="font-caption text-body text-text-secondary">{label}</Text>
       <View className="flex-row items-center">
-        <Text className={`font-subtitle text-body ${isGreen ? 'text-success' : 'text-text-primary'}`}>
+        <Text
+          className={`font-subtitle text-body ${isGreen ? 'text-success' : isDanger ? 'text-destructive' : 'text-text-primary'}`}>
           {copyable ? truncateAddress(value) : value}
         </Text>
         {copyable && (
@@ -52,9 +78,27 @@ const DetailRow = ({ label, value, copyable, isGreen }: { label: string; value: 
   );
 };
 
-const LargeTokenIcon = ({ Token, bgColor }: { Token?: SvgComponent; bgColor?: string }) => (
-  <View className="h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: bgColor || '#1B84FF' }}>
-    {Token ? <Token width={36} height={36} /> : <Icon library="feather" name="dollar-sign" size={32} color="#FFFFFF" />}
+const LargeTokenIcon = ({
+  Token,
+  bgColor,
+  withBorder,
+}: {
+  Token?: SvgComponent;
+  bgColor?: string;
+  withBorder?: boolean;
+}) => (
+  <View
+    className="h-16 w-16 items-center justify-center rounded-full"
+    style={{
+      backgroundColor: bgColor || '#1B84FF',
+      borderWidth: withBorder ? 1 : 0,
+      borderColor: '#E6E8EC',
+    }}>
+    {Token ? (
+      <Token width={36} height={36} />
+    ) : (
+      <Icon library="feather" name="dollar-sign" size={32} color="#FFFFFF" />
+    )}
   </View>
 );
 
@@ -64,25 +108,50 @@ const LargeActionIcon = ({ name }: { name: string }) => (
   </View>
 );
 
-const LargeSwapIcon = ({ SwapFrom, SwapTo, fromBg, toBg }: { SwapFrom?: SvgComponent; SwapTo?: SvgComponent; fromBg?: string; toBg?: string }) => (
+const LargeSwapIcon = ({
+  SwapFrom,
+  SwapTo,
+  fromBg,
+  toBg,
+}: {
+  SwapFrom?: SvgComponent;
+  SwapTo?: SvgComponent;
+  fromBg?: string;
+  toBg?: string;
+}) => (
   <View className="h-16 w-16">
-    <View className="absolute left-0 top-0 h-11 w-11 items-center justify-center rounded-full" style={{ backgroundColor: fromBg || '#000' }}>
+    <View
+      className="absolute left-0 top-0 h-11 w-11 items-center justify-center rounded-full"
+      style={{ backgroundColor: fromBg || '#000' }}>
       {SwapFrom && <SwapFrom width={24} height={24} />}
     </View>
-    <View className="absolute bottom-0 right-0 h-11 w-11 items-center justify-center rounded-full border-2 border-white" style={{ backgroundColor: toBg || '#1B84FF' }}>
+    <View
+      className="absolute bottom-0 right-0 h-11 w-11 items-center justify-center rounded-full border-2 border-white"
+      style={{ backgroundColor: toBg || '#1B84FF' }}>
       {SwapTo && <SwapTo width={24} height={24} />}
     </View>
   </View>
 );
 
-export function TransactionDetailSheet({ visible, onClose, transaction }: TransactionDetailSheetProps) {
+export function TransactionDetailSheet({
+  visible,
+  onClose,
+  transaction,
+}: TransactionDetailSheetProps) {
   if (!transaction) return null;
 
   const { icon, type, amount, currency = 'NGN', createdAt, toAddress, txHash, fee } = transaction;
 
   const renderIcon = () => {
     if (icon?.type === 'swap') {
-      return <LargeSwapIcon SwapFrom={icon.SwapFrom} SwapTo={icon.SwapTo} fromBg={icon.swapFromBg} toBg={icon.swapToBg} />;
+      return (
+        <LargeSwapIcon
+          SwapFrom={icon.SwapFrom}
+          SwapTo={icon.SwapTo}
+          fromBg={icon.swapFromBg}
+          toBg={icon.swapToBg}
+        />
+      );
     }
     if (icon?.type === 'token') {
       return <LargeTokenIcon Token={icon.Token} bgColor={icon.bgColor} />;
@@ -90,6 +159,18 @@ export function TransactionDetailSheet({ visible, onClose, transaction }: Transa
     if (icon?.type === 'icon' && icon.iconName) {
       return <LargeActionIcon name={icon.iconName} />;
     }
+
+    const inferredAssetIcon = resolveTransactionAssetIcon(transaction);
+    if (inferredAssetIcon) {
+      return (
+        <LargeTokenIcon
+          Token={inferredAssetIcon.Token}
+          bgColor={inferredAssetIcon.bgColor}
+          withBorder={inferredAssetIcon.withBorder}
+        />
+      );
+    }
+
     return <LargeActionIcon name="activity" />;
   };
 
@@ -101,7 +182,9 @@ export function TransactionDetailSheet({ visible, onClose, transaction }: Transa
         <Text className="mt-1 font-subtitle text-[32px] text-text-primary">
           {formatAmount(amount)} {currency}
         </Text>
-        <Text className="mt-1 font-caption text-caption text-text-secondary">{formatDate(createdAt)}</Text>
+        <Text className="mt-1 font-caption text-caption text-text-secondary">
+          {formatDate(createdAt)}
+        </Text>
       </View>
 
       <View className="mt-2 border-t border-surface pt-2">
@@ -114,7 +197,12 @@ export function TransactionDetailSheet({ visible, onClose, transaction }: Transa
         {type === 'deposit' && (
           <>
             <DetailRow label="Method" value={transaction.subtitle || 'Card'} />
-            <DetailRow label="Status" value={transaction.status === 'completed' ? 'Completed' : 'Pending'} isGreen={transaction.status === 'completed'} />
+            <DetailRow
+              label="Status"
+              value={statusLabel(transaction.status)}
+              isGreen={transaction.status === 'completed'}
+              isDanger={transaction.status === 'failed'}
+            />
           </>
         )}
 
@@ -122,7 +210,12 @@ export function TransactionDetailSheet({ visible, onClose, transaction }: Transa
         {type === 'withdraw' && (
           <>
             <DetailRow label="To" value={transaction.subtitle || 'Bank Account'} />
-            <DetailRow label="Status" value={transaction.status === 'completed' ? 'Completed' : 'Processing'} isGreen={transaction.status === 'completed'} />
+            <DetailRow
+              label="Status"
+              value={statusLabel(transaction.status)}
+              isGreen={transaction.status === 'completed'}
+              isDanger={transaction.status === 'failed'}
+            />
           </>
         )}
 
@@ -133,7 +226,9 @@ export function TransactionDetailSheet({ visible, onClose, transaction }: Transa
 
         {/* Common details */}
         {txHash && <DetailRow label="Transaction ID" value={txHash} copyable />}
-        {fee && <DetailRow label="Fees" value={fee} isGreen={fee.toLowerCase().includes('covered')} />}
+        {fee && (
+          <DetailRow label="Fees" value={fee} isGreen={fee.toLowerCase().includes('covered')} />
+        )}
       </View>
     </BottomSheet>
   );

@@ -33,6 +33,15 @@ const WALLET_ENDPOINTS = {
   ADDRESSES: '/v1/wallets/:chain/address', // Full path: /api/v1/wallets/:chain/address
 };
 
+function isNotFoundError(error: unknown): boolean {
+  return Boolean(
+    error &&
+    typeof error === 'object' &&
+    'status' in error &&
+    (error as { status?: number }).status === 404
+  );
+}
+
 export const walletService = {
   /**
    * Get wallet balance and tokens
@@ -70,7 +79,13 @@ export const walletService = {
       params: { limit, offset },
     });
 
-    const rows = Array.isArray(response) ? response : response?.items || [];
+    const rows = Array.isArray(response)
+      ? response
+      : response?.items ||
+        response?.withdrawals ||
+        response?.data?.items ||
+        response?.data?.withdrawals ||
+        [];
     const items = rows.map((tx: any) => ({
       id: tx?.id || tx?.withdrawal_id || '',
       type: 'withdraw',
@@ -120,10 +135,22 @@ export const walletService = {
    * Create transfer/withdrawal
    */
   async createTransfer(data: CreateTransferRequest): Promise<CreateTransferResponse> {
-    const response = await apiClient.post<any>(WALLET_ENDPOINTS.TRANSFER, {
+    const payload = {
       amount: parseFloat(data.amount),
       destination_address: data.toAddress,
-    });
+    };
+
+    let response: any;
+    try {
+      response = await apiClient.post<any>(WALLET_ENDPOINTS.TRANSFER, payload);
+    } catch (error) {
+      // Compatibility fallback for environments that have not mounted /withdrawals/crypto yet.
+      if (isNotFoundError(error)) {
+        response = await apiClient.post<any>(WALLET_ENDPOINTS.TRANSACTIONS, payload);
+      } else {
+        throw error;
+      }
+    }
 
     return {
       estimatedFee: '0',

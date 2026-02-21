@@ -18,6 +18,7 @@ export interface RegistrationData {
   country: string;
   phone: string;
   password: string;
+  authMethod: 'password' | 'passkey';
 }
 
 export interface AuthState {

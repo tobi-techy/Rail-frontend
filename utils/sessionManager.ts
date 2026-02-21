@@ -6,6 +6,7 @@
 import { useAuthStore } from '../stores/authStore';
 import { authService } from '../api/services';
 import { logger } from '../lib/logger';
+import { isAuthSessionInvalidError } from './authErrorClassifier';
 
 export class SessionManager {
   private static refreshTimer: ReturnType<typeof setTimeout> | null = null;
@@ -74,7 +75,20 @@ export class SessionManager {
         '[SessionManager] Token refresh failed',
         error instanceof Error ? error : new Error(String(error))
       );
-      this.handleSessionExpired();
+
+      if (isAuthSessionInvalidError(error)) {
+        logger.warn('[SessionManager] Refresh token is invalid; expiring session', {
+          component: 'SessionManager',
+          action: 'refresh-auth-invalid',
+        });
+        this.handleSessionExpired();
+      } else {
+        logger.warn('[SessionManager] Refresh failed due to transient error; keeping session', {
+          component: 'SessionManager',
+          action: 'refresh-transient-error',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
   }
 

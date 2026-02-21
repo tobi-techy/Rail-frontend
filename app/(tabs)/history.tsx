@@ -12,19 +12,35 @@ import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
 import type { Deposit, Withdrawal } from '@/api/types';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 
+type WithdrawalListResponse =
+  | Withdrawal[]
+  | {
+      withdrawals?: Withdrawal[];
+    }
+  | undefined;
+
 const STATUS_MAP: Record<string, TransactionStatus> = {
   completed: 'completed',
   confirmed: 'completed',
+  success: 'completed',
   pending: 'pending',
   processing: 'pending',
   initiated: 'pending',
+  awaiting_confirmation: 'pending',
   alpaca_debited: 'pending',
   bridge_processing: 'pending',
   onchain_transfer: 'pending',
+  on_chain_transfer: 'pending',
   failed: 'failed',
+  rejected: 'failed',
+  cancelled: 'failed',
+  canceled: 'failed',
+  error: 'failed',
   reversed: 'failed',
   timeout: 'failed',
 };
+
+const normalizeStatus = (status?: string) => (status || '').toLowerCase().trim();
 
 function depositToTransaction(d: Deposit): Transaction {
   return {
@@ -34,7 +50,7 @@ function depositToTransaction(d: Deposit): Transaction {
     subtitle: d.chain ? `${d.currency} · ${d.chain}` : d.currency,
     amount: parseFloat(d.amount) || 0,
     currency: d.currency,
-    status: STATUS_MAP[d.status] ?? 'pending',
+    status: STATUS_MAP[normalizeStatus(d.status)] ?? 'pending',
     createdAt: new Date(d.created_at),
     txHash: d.tx_hash,
   };
@@ -48,10 +64,17 @@ function withdrawalToTransaction(w: Withdrawal): Transaction {
     subtitle: w.destination_chain ? `USD · ${w.destination_chain}` : 'USD',
     amount: parseFloat(w.amount) || 0,
     currency: 'USD',
-    status: STATUS_MAP[w.status] ?? 'pending',
-    createdAt: new Date(w.created_at),
+    status: STATUS_MAP[normalizeStatus(w.status)] ?? 'pending',
+    createdAt: new Date(w.created_at || w.updated_at || new Date().toISOString()),
     txHash: w.tx_hash,
   };
+}
+
+function normalizeWithdrawals(data: WithdrawalListResponse): Withdrawal[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.withdrawals)) return data.withdrawals;
+  return [];
 }
 
 export default function History() {
@@ -70,9 +93,11 @@ export default function History() {
   };
 
   const transactions = useMemo(() => {
+    const withdrawalRows = normalizeWithdrawals(withdrawals.data as WithdrawalListResponse);
+
     const mapped: Transaction[] = [
       ...(deposits.data?.deposits ?? []).map(depositToTransaction),
-      ...(Array.isArray(withdrawals.data) ? withdrawals.data : []).map(withdrawalToTransaction),
+      ...withdrawalRows.map(withdrawalToTransaction),
     ];
     return mapped.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }, [deposits.data, withdrawals.data]);

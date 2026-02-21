@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { View, Text, FlatList, StatusBar, ViewToken, useWindowDimensions } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { onBoard1, onBoard2, onBoard3, onBoard4 } from '../assets/images';
+import { AppleLogo } from '../assets/svg';
 import { Button } from '@/components/ui';
 import Animated, {
   SharedValue,
@@ -23,7 +24,6 @@ interface OnboardingSlide {
   key: string;
   titleTop: string;
   titleBottom: [string, string];
-  description: string;
   video: any;
 }
 
@@ -32,31 +32,24 @@ const onboardingSlides: OnboardingSlide[] = [
     key: '1',
     titleTop: 'Start small.',
     titleBottom: ['Grow', 'big.'],
-    description:
-      'Put your money to work with just a few taps. No experience needed, no complicated setup.',
     video: onBoard1,
   },
   {
     key: '2',
     titleTop: 'Add money',
     titleBottom: ['in', 'seconds.'],
-    description: 'Fund your account instantly. Simple, secure, and ready when you are.',
     video: onBoard2,
   },
   {
     key: '3',
     titleTop: 'Investing',
     titleBottom: ['made', 'easy.'],
-    description:
-      'We handle the hard part. Your money is automatically invested in a diversified portfolio built for growth.',
     video: onBoard3,
   },
   {
     key: '4',
     titleTop: 'Spend.',
     titleBottom: ['Save.', 'Repeat.'],
-    description:
-      'Round up your everyday purchases and invest the spare change. Small steps, big results over time.',
     video: onBoard4,
   },
 ];
@@ -106,28 +99,10 @@ const VideoSlide = memo(function VideoSlide({
         <Text className="font-headline text-display-lg uppercase text-white">
           {item.titleTop} {item.titleBottom[0]} {item.titleBottom[1]}
         </Text>
-        <Text className="mt-2 font-body text-body leading-6 text-white/70">{item.description}</Text>
       </View>
     </View>
   );
 });
-
-// Animated progress indicator
-function ProgressIndicator({
-  currentIndex,
-  progress,
-}: {
-  currentIndex: number;
-  progress: SharedValue<number>;
-}) {
-  return (
-    <View className="absolute left-6 right-6 top-16 flex-row gap-x-2">
-      {onboardingSlides.map((_, index) => (
-        <IndicatorBar key={index} index={index} currentIndex={currentIndex} progress={progress} />
-      ))}
-    </View>
-  );
-}
 
 const IndicatorBar = memo(function IndicatorBar({
   index,
@@ -242,13 +217,13 @@ export default function App() {
         {/*<ProgressIndicator currentIndex={currentIndex} progress={progress} />*/}
 
         <View
-          className="absolute left-0 right-0 px-5"
+          className="absolute left-1 right-1"
           style={{ bottom: Math.max(insets.bottom, 16) + 12 }}>
-          <View className="flex-row gap-x-3">
+          <View className="flex-row gap-x-2">
             <Button
               title="Sign Up with Apple"
+              leftIcon={<AppleLogo width={24} height={24} />}
               size="large"
-              flex
               onPress={() => {
                 appleSignIn(undefined, {
                   onSuccess: (resp) => {
@@ -265,7 +240,6 @@ export default function App() {
             <Button
               title="Continue with Mail"
               size="large"
-              flex
               onPress={() => router.push(ROUTES.AUTH.SIGNUP as any)}
               variant="orange"
             />

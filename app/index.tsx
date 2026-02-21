@@ -21,6 +21,7 @@ export default function IndexScreen() {
   }, [hydrated]);
 
   if (!hydrated) {
+    // Show splash color while store hydrates to avoid white flash
     return <View style={{ flex: 1, backgroundColor: '#FF2E01' }} />;
   }
 

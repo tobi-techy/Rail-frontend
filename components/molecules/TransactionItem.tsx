@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import { SvgProps } from 'react-native-svg';
 import { Icon } from '../atoms';
-import { UsdcIcon, UsdtIcon } from '@/assets/svg';
+import * as SvgAssets from '@/assets/svg';
 
 export type TransactionType = 'send' | 'receive' | 'swap' | 'deposit' | 'withdraw';
 export type TransactionStatus = 'completed' | 'pending' | 'failed';
@@ -15,6 +15,8 @@ export interface Transaction {
   subtitle: string;
   amount: number;
   currency?: string;
+  assetSymbol?: string;
+  merchant?: string;
   status: TransactionStatus;
   createdAt: Date;
   txHash?: string;
@@ -46,27 +48,205 @@ const formatAmount = (amount: number, type: TransactionType, currency = 'NGN') =
   return { text: `${sign}${num} ${currency}`, isCredit };
 };
 
-const getDepositTokenIcon = (
-  currency?: string
-): { Token: SvgComponent; bgColor: string } | null => {
-  const normalized = currency?.trim().toUpperCase();
+type ResolvedAssetIcon = {
+  Token: SvgComponent;
+  bgColor?: string;
+  withBorder?: boolean;
+};
+
+const TOKEN_ICON_BY_SYMBOL: Record<string, SvgComponent> = {
+  USDC: SvgAssets.UsdcIcon,
+  USDT: SvgAssets.UsdtIcon,
+  SOL: SvgAssets.SolanaIcon,
+  SOLANA: SvgAssets.SolanaIcon,
+  BNB: SvgAssets.BnbIcon,
+  MATIC: SvgAssets.MaticIcon,
+  BASE: SvgAssets.BaseIcon,
+  AVAX: SvgAssets.AvalancheIcon,
+  AVALANCHE: SvgAssets.AvalancheIcon,
+  NGN: SvgAssets.NgnIcon,
+  USD: SvgAssets.UsdIcon,
+  GBP: SvgAssets.GbpIcon,
+  EUR: SvgAssets.EurIcon,
+};
+
+const FIAT_ICON_BY_SYMBOL: Record<string, SvgComponent> = {
+  USD: SvgAssets.DollarCurrencyIcon,
+  EUR: SvgAssets.EuroCurrencyIcon,
+  GBP: SvgAssets.PoundCurrencyIcon,
+  NGN: SvgAssets.NairaCurrencyIcon,
+};
+
+const COMPANY_LOGO_BY_ALIAS: Record<string, SvgComponent> = {
+  adidas: SvgAssets.AdidasLogo,
+  airbnb: SvgAssets.AirbnbLogo,
+  amazon: SvgAssets.AmazonLogo,
+  apple: SvgAssets.AppleLogo,
+  asianpaints: SvgAssets.AsianPaintsLogo,
+  asus: SvgAssets.AsusLogo,
+  audi: SvgAssets.AudiLogo,
+  bitcon: SvgAssets.BitconLogo,
+  bitcoin: SvgAssets.BitconLogo,
+  blinkit: SvgAssets.BlinkitLogo,
+  bmw: SvgAssets.BmwLogo,
+  cocacola: SvgAssets.CocacolaLogo,
+  coca: SvgAssets.CocacolaLogo,
+  discord: SvgAssets.DiscordLogo,
+  facebook: SvgAssets.FacebookLogo,
+  fila: SvgAssets.FilaLogo,
+  flipkart: SvgAssets.FlipkartLogo,
+  ford: SvgAssets.FordLogo,
+  gpay: SvgAssets.GpayLogo,
+  googlepay: SvgAssets.GpayLogo,
+  hdfc: SvgAssets.HdfcLogo,
+  hero: SvgAssets.HeroLogo,
+  honda: SvgAssets.HondaLogo,
+  hp: SvgAssets.HpLogo,
+  ikea: SvgAssets.IkeaLogo,
+  instagram: SvgAssets.InstagramLogo,
+  inter: SvgAssets.InterLogo,
+  kia: SvgAssets.KiaLogo,
+  lenovo: SvgAssets.LenovoLogo,
+  mahindra: SvgAssets.MahindraLogo,
+  mcdonalds: SvgAssets.McdonaldsLogo,
+  mercedes: SvgAssets.MercedesLogo,
+  netflix: SvgAssets.NetflixLogo,
+  nike: SvgAssets.NikeLogo,
+  nokia: SvgAssets.NokiaLogo,
+  oppo: SvgAssets.OppoLogo,
+  paypal: SvgAssets.PaypalLogo,
+  pepsi: SvgAssets.PepsiLogo,
+  puma: SvgAssets.PumaLogo,
+  rbi: SvgAssets.RbiLogo,
+  royalenfield: SvgAssets.RoyalenfieldLogo,
+  samsung: SvgAssets.SamsungLogo,
+  sbi: SvgAssets.SbiLogo,
+  skoda: SvgAssets.SkodaLogo,
+  starbucks: SvgAssets.StarbucksLogo,
+  suzuki: SvgAssets.SuzukiLogo,
+  swiggy: SvgAssets.SwiggyLogo,
+  tata: SvgAssets.TataLogo,
+  tesla: SvgAssets.TeslaLogo,
+  toyata: SvgAssets.ToyataLogo,
+  toyota: SvgAssets.ToyataLogo,
+  tvs: SvgAssets.TvsLogo,
+  visa: SvgAssets.VisaLogo,
+  vivo: SvgAssets.VivoLogo,
+  twitter: SvgAssets.XLogo,
+};
+
+const COMPANY_ALIAS_ENTRIES = Object.entries(COMPANY_LOGO_BY_ALIAS).sort(
+  ([left], [right]) => right.length - left.length
+);
+const COMPACT_ALIAS_MATCH = new Set([
+  'asianpaints',
+  'cocacola',
+  'googlepay',
+  'mcdonalds',
+  'royalenfield',
+]);
+
+const normalizeSymbol = (value?: string) =>
+  value
+    ?.trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '') ?? '';
+
+const tokenizeSymbols = (value?: string) =>
+  (value ?? '')
+    .split(/[\s,./|()\-_:·]+/)
+    .map((token) => normalizeSymbol(token))
+    .filter(Boolean);
+
+const normalizeCompanyValue = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const resolveSymbolIcon = (symbol?: string): ResolvedAssetIcon | null => {
+  const normalized = normalizeSymbol(symbol);
   if (!normalized) return null;
 
-  if (normalized === 'USDC') {
-    return { Token: UsdcIcon, bgColor: 'transparent' };
+  if (FIAT_ICON_BY_SYMBOL[normalized]) {
+    return {
+      Token: FIAT_ICON_BY_SYMBOL[normalized],
+      bgColor: '#FFFFFF',
+      withBorder: true,
+    };
   }
 
-  if (normalized === 'USDT') {
-    return { Token: UsdtIcon, bgColor: 'transparent' };
+  if (TOKEN_ICON_BY_SYMBOL[normalized]) {
+    return {
+      Token: TOKEN_ICON_BY_SYMBOL[normalized],
+      bgColor: 'transparent',
+    };
   }
 
   return null;
 };
 
-const TokenIcon = ({ Token, bgColor }: { Token?: SvgComponent; bgColor?: string }) => (
+const resolveSymbolIconFromText = (value?: string): ResolvedAssetIcon | null => {
+  for (const token of tokenizeSymbols(value)) {
+    const icon = resolveSymbolIcon(token);
+    if (icon) return icon;
+  }
+  return null;
+};
+
+const resolveCompanyLogo = (
+  values: (string | undefined)[]
+): { Token: SvgComponent; bgColor: string; withBorder: true } | null => {
+  const joined = values.filter(Boolean).join(' ');
+  if (!joined) return null;
+
+  const compactValue = normalizeCompanyValue(joined);
+  const parts = joined
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+
+  for (const [alias, Logo] of COMPANY_ALIAS_ENTRIES) {
+    const isTokenMatch = parts.includes(alias);
+    const isCompactMatch = COMPACT_ALIAS_MATCH.has(alias) && compactValue.includes(alias);
+    const isMatch = isTokenMatch || isCompactMatch;
+    if (isMatch) {
+      return {
+        Token: Logo,
+        bgColor: '#FFFFFF',
+        withBorder: true,
+      };
+    }
+  }
+
+  return null;
+};
+
+export const resolveTransactionAssetIcon = (transaction: Transaction): ResolvedAssetIcon | null => {
+  const fromFields = [
+    resolveSymbolIcon(transaction.assetSymbol),
+    resolveSymbolIcon(transaction.currency),
+    resolveSymbolIconFromText(transaction.title),
+    resolveSymbolIconFromText(transaction.subtitle),
+  ].find(Boolean);
+
+  if (fromFields) return fromFields;
+
+  return resolveCompanyLogo([transaction.merchant, transaction.title, transaction.subtitle]);
+};
+
+const TokenIcon = ({
+  Token,
+  bgColor,
+  withBorder,
+}: {
+  Token?: SvgComponent;
+  bgColor?: string;
+  withBorder?: boolean;
+}) => (
   <View
     className="h-12 w-12 items-center justify-center rounded-full"
-    style={{ backgroundColor: bgColor || '#1B84FF' }}>
+    style={{
+      backgroundColor: bgColor || '#1B84FF',
+      borderWidth: withBorder ? 1 : 0,
+      borderColor: '#E6E8EC',
+    }}>
     {Token ? (
       <Token width={28} height={28} />
     ) : (
@@ -128,11 +308,15 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
     return <ActionIcon name={icon.iconName} />;
   }
 
-  if (type === 'deposit') {
-    const depositTokenIcon = getDepositTokenIcon(transaction.currency);
-    if (depositTokenIcon) {
-      return <TokenIcon Token={depositTokenIcon.Token} bgColor={depositTokenIcon.bgColor} />;
-    }
+  const inferredAssetIcon = resolveTransactionAssetIcon(transaction);
+  if (inferredAssetIcon) {
+    return (
+      <TokenIcon
+        Token={inferredAssetIcon.Token}
+        bgColor={inferredAssetIcon.bgColor}
+        withBorder={inferredAssetIcon.withBorder}
+      />
+    );
   }
 
   const defaultIcons: Record<TransactionType, string> = {
@@ -157,6 +341,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
     transaction.currency
   );
   const isPending = transaction.status === 'pending';
+  const isFailed = transaction.status === 'failed';
 
   return (
     <TouchableOpacity className="flex-row items-center py-3" activeOpacity={0.7} {...props}>
@@ -175,12 +360,15 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
 
       <View className="items-end">
         <Text
-          className={`font-subtitle text-subtitle ${isPending ? 'text-text-secondary' : isCredit ? 'text-success' : 'text-text-primary'}`}
+          className={`font-subtitle text-subtitle ${isPending ? 'text-text-secondary' : isFailed ? 'text-destructive' : isCredit ? 'text-success' : 'text-text-primary'}`}
           numberOfLines={1}>
           {amountText}
         </Text>
         {isPending && (
           <Text className="mt-[2px] font-caption text-[12px] text-primary">Pending</Text>
+        )}
+        {isFailed && (
+          <Text className="mt-[2px] font-caption text-[12px] text-destructive">Failed</Text>
         )}
       </View>
     </TouchableOpacity>

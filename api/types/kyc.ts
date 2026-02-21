@@ -36,6 +36,31 @@ export type StartSumsubSessionResponse = {
   level_name: string;
 };
 
+// --- Direct KYC Submit ---
+
+export type SubmitKYCRequest = {
+  tax_id: string;
+  tax_id_type: TaxIdType;
+  issuing_country: Country;
+  id_document_front: string;
+  id_document_back?: string;
+  disclosures: KycDisclosures;
+};
+
+export interface KYCProviderResult {
+  success: boolean;
+  status: string;
+  error?: string;
+}
+
+export interface SubmitKYCResponse {
+  status: 'submitted' | 'partial_failure' | 'failed';
+  provider_reference?: string;
+  bridge_result: KYCProviderResult;
+  alpaca_result: KYCProviderResult;
+  message: string;
+}
+
 // --- KYC Status ---
 
 export type KycStatus = 'pending' | 'processing' | 'approved' | 'rejected' | 'expired';

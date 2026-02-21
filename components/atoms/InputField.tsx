@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useRef } from 'react';
+import React, { forwardRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,20 +6,17 @@ import {
   TouchableOpacity,
   TextInputProps,
   NativeSyntheticEvent,
-  LayoutChangeEvent,
 } from 'react-native';
-import { Canvas, RoundedRect } from '@shopify/react-native-skia';
 import Animated, {
   Easing,
   useAnimatedStyle,
-  useDerivedValue,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 import { Ionicons } from './SafeIonicons';
 
 interface InputFieldProps extends Omit<TextInputProps, 'onFocus' | 'onBlur'> {
-  label: string;
+  label?: string;
   error?: string;
   required?: boolean;
   type?: 'text' | 'email' | 'password' | 'phone';
@@ -29,7 +26,12 @@ interface InputFieldProps extends Omit<TextInputProps, 'onFocus' | 'onBlur'> {
   onFocus?: (e: NativeSyntheticEvent<any>) => void;
   onBlur?: (e: NativeSyntheticEvent<any>) => void;
   variant?: 'light' | 'dark' | 'blended';
+  density?: 'default' | 'compact';
+  containerClassName?: string;
+  inputClassName?: string;
 }
+
+const TIMING = { duration: 200, easing: Easing.out(Easing.cubic) };
 
 export const InputField = forwardRef<TextInput, InputFieldProps>(
   (
@@ -47,140 +49,115 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
       onFocus,
       onBlur,
       variant = 'blended',
+      density = 'default',
+      containerClassName = '',
+      inputClassName = '',
       ...props
     },
     ref
   ) => {
-    const [isFocused, setIsFocused] = React.useState(false);
-    const [renderError, setRenderError] = React.useState(Boolean(error));
+    const isFocused = useSharedValue(false);
+    const errorOpacity = useSharedValue(error ? 1 : 0);
     const [errorText, setErrorText] = React.useState(error ?? '');
-    const [errorLineWidth, setErrorLineWidth] = React.useState(0);
-    const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [focused, setFocused] = React.useState(false);
+
     const isDark = variant === 'dark';
-    const isBlended = variant === 'blended';
-    const errorProgress = useSharedValue(error ? 1 : 0);
+    const hasError = !!error;
+    const isPassword = type === 'password';
+
+    // Update error animation
+    React.useEffect(() => {
+      if (error) {
+        setErrorText(error);
+        errorOpacity.value = withTiming(1, TIMING);
+      } else {
+        errorOpacity.value = withTiming(0, { duration: 160, easing: Easing.in(Easing.cubic) });
+      }
+    }, [error]);
+
+    const handleFocus = useCallback(
+      (e: NativeSyntheticEvent<any>) => {
+        isFocused.value = true;
+        setFocused(true);
+        onFocus?.(e);
+      },
+      [onFocus]
+    );
+
+    const handleBlur = useCallback(
+      (e: NativeSyntheticEvent<any>) => {
+        isFocused.value = false;
+        setFocused(false);
+        onBlur?.(e);
+      },
+      [onBlur]
+    );
+
+    const errorAnimStyle = useAnimatedStyle(() => ({
+      opacity: errorOpacity.value,
+      transform: [{ translateY: (1 - errorOpacity.value) * -4 }],
+    }));
 
     const getKeyboardType = () => {
       switch (type) {
         case 'email':
-          return 'email-address';
+          return 'email-address' as const;
         case 'phone':
-          return 'phone-pad';
+          return 'phone-pad' as const;
         default:
-          return 'default';
+          return 'default' as const;
       }
     };
 
-    const isPassword = type === 'password';
-    const hasError = !!error;
+    const isCompact = density === 'compact';
 
-    const handleFocus = (e: NativeSyntheticEvent<any>) => {
-      setIsFocused(true);
-      onFocus?.(e);
-    };
+    // Container styles — MoonPay-inspired
+    const containerClass = isDark
+      ? `border-b ${isCompact ? 'py-2.5' : 'py-3'} bg-transparent ${
+          focused ? 'border-white' : hasError ? 'border-destructive' : 'border-white/30'
+        }`
+      : variant === 'light'
+        ? `rounded-xl px-3 ${isCompact ? 'py-3.5' : 'py-4'} ${
+            hasError
+              ? 'border border-red-300 bg-red-50'
+              : focused
+                ? 'border border-gray-400 bg-white'
+                : 'border border-gray-200 bg-white'
+          }`
+        : `rounded-xl px-2 ${isCompact ? 'py-4' : 'py-6'} ${
+            hasError
+              ? 'border border-destructive/40 bg-red-50'
+              : focused
+                ? 'border border-black/10 bg-neutral-100'
+                : 'border border-transparent bg-neutral-100'
+          }`;
 
-    const handleBlur = (e: NativeSyntheticEvent<any>) => {
-      setIsFocused(false);
-      onBlur?.(e);
-    };
-
-    useEffect(() => {
-      if (error) {
-        // Clear any existing timer when error appears
-        if (hideTimerRef.current) {
-          clearTimeout(hideTimerRef.current);
-          hideTimerRef.current = null;
-        }
-
-        setErrorText(error);
-        setRenderError(true);
-        errorProgress.value = withTiming(1, {
-          duration: 240,
-          easing: Easing.out(Easing.cubic),
-        });
-        return;
-      }
-
-      // Clear any existing timer before setting new one
-      if (hideTimerRef.current) {
-        clearTimeout(hideTimerRef.current);
-        hideTimerRef.current = null;
-      }
-
-      errorProgress.value = withTiming(0, {
-        duration: 180,
-        easing: Easing.in(Easing.cubic),
-      });
-
-      // Set new timer to hide error after animation
-      hideTimerRef.current = setTimeout(() => {
-        setRenderError(false);
-      }, 180);
-
-      // Cleanup function to clear timer on unmount or dependency change
-      return () => {
-        if (hideTimerRef.current) {
-          clearTimeout(hideTimerRef.current);
-          hideTimerRef.current = null;
-        }
-      };
-    }, [error]);
-
-    const errorAnimatedStyle = useAnimatedStyle(() => ({
-      opacity: errorProgress.value,
-      transform: [{ translateY: (1 - errorProgress.value) * -6 }],
-    }));
-
-    const animatedLineWidth = useDerivedValue(() => errorLineWidth * errorProgress.value, [
-      errorLineWidth,
-    ]);
-
-    const handleErrorLayout = (event: LayoutChangeEvent) => {
-      const width = event.nativeEvent.layout.width;
-      if (width !== errorLineWidth) {
-        setErrorLineWidth(width);
-      }
-    };
-
-    const getContainerStyle = () => {
-      if (isDark) {
-        return `border-b bg-transparent py-3 ${isFocused ? 'border-white' : hasError ? 'border-destructive' : 'border-white/30'}`;
-      }
-      if (isBlended) {
-        if (hasError) {
-          return 'h-[56px] rounded-2xl border border-destructive bg-red-50 px-4';
-        }
-        if (isFocused) {
-          return 'h-[56px] rounded-2xl border border-black/20 bg-neutral-200 px-4';
-        }
-        return 'h-[56px] rounded-2xl border border-transparent bg-neutral-100 px-4';
-      }
-      return `h-[52px] rounded-sm border bg-surface px-4 ${isFocused ? 'border-primary-accent' : hasError ? 'border-destructive' : 'border-transparent'}`;
-    };
+    const textColor = isDark ? 'text-white' : 'text-text-primary';
+    const placeholderColor = isDark ? 'rgba(255,255,255,0.4)' : '#9CA3AF';
+    const labelColor = isDark ? 'text-white/60' : 'text-text-primary';
 
     return (
-      <View className={isDark ? 'mb-2' : 'mb-4'}>
-        <View className="mb-1 flex-row">
-          <Text
-            className={`font-subtitle text-body ${isDark ? 'text-white/60' : 'text-text-primary'}`}>
-            {label}
-          </Text>
-          {required && (
-            <Text
-              className={`font-subtitle text-body ${isDark ? 'text-white/60' : 'text-destructive'}`}>
-              {' '}
-              *
-            </Text>
-          )}
-        </View>
+      <View className="mb-3">
+        {label && (
+          <View className="mb-1.5 flex-row">
+            <Text className={`font-subtitle text-caption ${labelColor}`}>{label}</Text>
+            {required && (
+              <Text
+                className={`font-subtitle text-caption ${isDark ? 'text-white/60' : 'text-destructive'}`}>
+                {' '}
+                *
+              </Text>
+            )}
+          </View>
+        )}
 
-        <View className={`flex-row items-center ${getContainerStyle()}`}>
+        <View className={`flex-row items-center ${containerClass} ${containerClassName}`}>
           {icon && (
             <Ionicons
               name={icon}
-              size={20}
-              color={hasError ? '#F44336' : isFocused ? '#1B84FF' : isDark ? '#fff' : '#757575'}
-              style={{ marginRight: 12 }}
+              size={18}
+              color={hasError ? '#F44336' : isDark ? '#fff' : '#9CA3AF'}
+              style={{ marginRight: 10 }}
             />
           )}
 
@@ -189,36 +166,38 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
             value={value}
             onChangeText={onChangeText}
             placeholder={placeholder}
-            placeholderTextColor={isDark ? 'rgba(255,255,255,0.5)' : '#9CA3AF'}
+            placeholderTextColor={placeholderColor}
             keyboardType={getKeyboardType()}
             autoCapitalize={type === 'email' ? 'none' : 'sentences'}
             autoCorrect={false}
             secureTextEntry={isPassword && !isPasswordVisible}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            className={`flex-1 font-body text-body ${isDark ? 'text-white' : 'text-text-primary'}`}
+            className={`flex-1 font-body ${isCompact ? 'text-[17px]' : 'text-body'} ${textColor} ${inputClassName}`}
+            style={{ paddingVertical: 0 }}
             {...props}
           />
 
           {isPassword && (
-            <TouchableOpacity onPress={onTogglePasswordVisibility} className="ml-2">
+            <TouchableOpacity
+              onPress={onTogglePasswordVisibility}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              className="ml-2">
               <Ionicons
-                name={isPasswordVisible ? 'eye-off' : 'eye'}
+                name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
                 size={20}
-                color={hasError ? '#F44336' : isDark ? '#fff' : '#757575'}
+                color={isDark ? '#fff' : '#9CA3AF'}
               />
             </TouchableOpacity>
           )}
         </View>
 
-        {renderError && (
-          <Animated.View style={errorAnimatedStyle}>
-            <View className="mt-1.5" onLayout={handleErrorLayout}>
-              <Text
-                className={`mt-1 font-caption text-caption ${isDark ? 'text-white' : 'text-destructive'}`}>
-                {errorText}
-              </Text>
-            </View>
+        {(hasError || errorText) && (
+          <Animated.View style={errorAnimStyle}>
+            <Text
+              className={`mt-1.5 font-caption text-caption ${isDark ? 'text-white' : 'text-destructive'}`}>
+              {errorText}
+            </Text>
           </Animated.View>
         )}
       </View>

@@ -5,6 +5,7 @@ import { authService, passcodeService } from '../api/services';
 import type { User as ApiUser } from '../api/types';
 import { secureStorage } from '../utils/secureStorage';
 import { safeError, sanitizeForLog } from '../utils/logSanitizer';
+import { isAuthSessionInvalidError } from '../utils/authErrorClassifier';
 import { logger } from '../lib/logger';
 
 const MAX_RETRIES = 3;
@@ -48,6 +49,7 @@ export interface RegistrationData {
   country: string;
   phone: string;
   password: string;
+  authMethod: 'password' | 'passkey';
 }
 
 interface AuthState {
@@ -171,6 +173,7 @@ const initialState: AuthState = {
     country: '',
     phone: '',
     password: '',
+    authMethod: 'password',
   },
 };
 
@@ -184,11 +187,13 @@ const createSecureStorage = () => ({
       const parsed = JSON.parse(data);
       if (!parsed || typeof parsed !== 'object') return null;
 
-      const [secureAccessToken, secureRefreshToken, securePasscodeSessionToken] = await Promise.all([
-        withRetry(() => secureStorage.getItem(`${name}_accessToken`)),
-        withRetry(() => secureStorage.getItem(`${name}_refreshToken`)),
-        withRetry(() => secureStorage.getItem(`${name}_passcodeSessionToken`)),
-      ]);
+      const [secureAccessToken, secureRefreshToken, securePasscodeSessionToken] = await Promise.all(
+        [
+          withRetry(() => secureStorage.getItem(`${name}_accessToken`)),
+          withRetry(() => secureStorage.getItem(`${name}_refreshToken`)),
+          withRetry(() => secureStorage.getItem(`${name}_passcodeSessionToken`)),
+        ]
+      );
 
       parsed.accessToken = secureAccessToken ?? null;
       parsed.refreshToken = secureRefreshToken ?? null;
@@ -326,7 +331,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       logout: async () => {
         set({ isLoading: true });
         let logoutFailed = false;
-        
+
         try {
           // Call API to invalidate tokens on server
           await authService.logout();
@@ -343,7 +348,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         try {
           // CRITICAL: Clean up SessionManager timers
           // This prevents background timers from firing after logout
-          const { cleanup } = await import('../utils/sessionManager').then(m => ({ cleanup: m.default.cleanup }));
+          const { cleanup } = await import('../utils/sessionManager').then((m) => ({
+            cleanup: m.default.cleanup,
+          }));
           cleanup();
         } catch (cleanupError) {
           logger.warn('[AuthStore] SessionManager cleanup failed', {
@@ -375,10 +382,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
         // If backend logout failed, log for monitoring
         if (logoutFailed) {
-          logger.warn('[AuthStore] Logout completed with local state cleared, but backend call failed', {
-            component: 'AuthStore',
-            action: 'logout-partial-success',
-          });
+          logger.warn(
+            '[AuthStore] Logout completed with local state cleared, but backend call failed',
+            {
+              component: 'AuthStore',
+              action: 'logout-partial-success',
+            }
+          );
         } else {
           logger.info('[AuthStore] Logout completed successfully', {
             component: 'AuthStore',
@@ -476,8 +486,27 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             error: error instanceof Error ? error.message : 'Session refresh failed',
             isLoading: false,
           });
-          // If refresh fails, logout user
-          get().logout();
+
+          if (isAuthSessionInvalidError(error)) {
+            logger.warn('[AuthStore] Session refresh rejected by auth service; logging out', {
+              component: 'AuthStore',
+              action: 'refresh-auth-invalid',
+              status: (error as any)?.status ?? (error as any)?.response?.status,
+              code: (error as any)?.code ?? (error as any)?.error?.code,
+            });
+            // Keep existing behavior for truly invalid sessions.
+            get().logout();
+          } else {
+            logger.warn(
+              '[AuthStore] Session refresh failed due to transient error; preserving session',
+              {
+                component: 'AuthStore',
+                action: 'refresh-transient-error',
+                error: error instanceof Error ? error.message : String(error),
+              }
+            );
+          }
+
           throw error;
         }
       },
@@ -537,7 +566,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
 
       checkPasscodeSessionExpiry: () => {
-        const { passcodeSessionToken, passcodeSessionExpiresAt, isAuthenticated, lastActivityAt } = get();
+        const { passcodeSessionToken, passcodeSessionExpiresAt, isAuthenticated, lastActivityAt } =
+          get();
 
         // If not authenticated, no passcode session to check
         if (!isAuthenticated) return false;
@@ -550,7 +580,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           const lastActivity = new Date(lastActivityAt).getTime();
           const now = Date.now();
           const PASSCODE_SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes of inactivity
-          
+
           if (now - lastActivity >= PASSCODE_SESSION_TIMEOUT) {
             logger.debug('[AuthStore] Passcode session expired due to inactivity', {
               component: 'AuthStore',

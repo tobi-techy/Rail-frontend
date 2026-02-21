@@ -1,16 +1,14 @@
 import { useCallback } from 'react';
-import { router } from 'expo-router';
 import { useKYCStatus } from '@/api/hooks/useKYC';
-import { ROUTES } from '@/constants/routes';
 
 /**
  * Gate features behind KYC approval.
  *
  * Usage:
  *   const { isApproved, requireKyc } = useKycGate();
- *   <Button onPress={() => requireKyc(() => router.push('/virtual-account'))} />
+ *   <Button onPress={() => requireKyc(() => router.push('/virtual-account'), () => setShowKycSheet(true))} />
  *
- * If KYC is not approved, redirects to the KYC screen.
+ * If KYC is not approved, invokes the unverified callback.
  * If approved, executes the callback immediately.
  */
 export function useKycGate() {
@@ -18,11 +16,11 @@ export function useKycGate() {
   const isApproved = kycStatus?.status === 'approved';
 
   const requireKyc = useCallback(
-    (onApproved: () => void) => {
+    (onApproved: () => void, onUnverified?: () => void) => {
       if (isApproved) {
         onApproved();
       } else {
-        router.push(ROUTES.AUTH.KYC as any);
+        onUnverified?.();
       }
     },
     [isApproved]

@@ -11,7 +11,7 @@ export interface OnboardingAddress {
 }
 
 export interface OnboardingCompleteRequest {
-  password: string;
+  password?: string;
   firstName: string;
   lastName: string;
   dateOfBirth: string;

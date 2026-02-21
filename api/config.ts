@@ -1,4 +1,4 @@
-import { env, isDev } from '../utils/env';
+import { env } from '../utils/env';
 
 export const API_CONFIG = {
   baseURL: env.EXPO_PUBLIC_API_URL,

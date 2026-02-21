@@ -6,7 +6,6 @@ export const ROUTES = {
     VERIFY_EMAIL: '/(auth)/verify-email',
     FORGOT_PASSWORD: '/(auth)/forgot-password',
     RESET_PASSWORD: '/(auth)/reset-password',
-    KYC: '/(auth)/kyc',
     CREATE_PASSCODE: '/(auth)/create-passcode',
     CONFIRM_PASSCODE: '/(auth)/confirm-passcode',
     COMPLETE_PROFILE: {

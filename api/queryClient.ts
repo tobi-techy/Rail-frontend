@@ -62,6 +62,10 @@ export const queryKeys = {
     all: ['station'] as const,
     home: () => [...queryKeys.station.all, 'home'] as const,
   },
+  allocation: {
+    all: ['allocation'] as const,
+    balances: () => [...queryKeys.allocation.all, 'balances'] as const,
+  },
   wallet: {
     all: ['wallet'] as const,
     balance: () => [...queryKeys.wallet.all, 'balance'] as const,
@@ -95,6 +99,7 @@ export const invalidateQueries = {
   auth: () => queryClient.invalidateQueries({ queryKey: queryKeys.auth.all }),
   portfolio: () => queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.all }),
   station: () => queryClient.invalidateQueries({ queryKey: queryKeys.station.all }),
+  allocation: () => queryClient.invalidateQueries({ queryKey: queryKeys.allocation.all }),
   wallet: () => queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all }),
   funding: () => queryClient.invalidateQueries({ queryKey: queryKeys.funding.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),

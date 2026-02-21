@@ -1,11 +1,18 @@
-import { checkWelcomeStatus, determineRoute } from '../../utils/routeHelpers';
+import { checkWelcomeStatus, determineRoute, validateAccessToken } from '../../utils/routeHelpers';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { userService } from '@/api/services';
 import { ROUTES } from '../../constants/routes';
 import type { AuthState, RouteConfig } from '../../types/routing.types';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(),
   setItem: jest.fn(),
+}));
+
+jest.mock('@/api/services', () => ({
+  userService: {
+    getProfile: jest.fn(),
+  },
 }));
 
 describe('routeHelpers', () => {
@@ -16,7 +23,6 @@ describe('routeHelpers', () => {
     isOnWelcomeScreen: false,
     isOnLoginPasscode: false,
     isOnVerifyEmail: false,
-    isOnKycScreen: false,
     isOnCreatePasscode: false,
     isOnConfirmPasscode: false,
     isOnCompleteProfile: false,
@@ -48,6 +54,37 @@ describe('routeHelpers', () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
       const result = await checkWelcomeStatus();
       expect(result).toBe(false);
+    });
+  });
+
+  describe('validateAccessToken', () => {
+    it('returns true when profile fetch succeeds', async () => {
+      (userService.getProfile as jest.Mock).mockResolvedValue({ id: 'u1' });
+
+      const result = await validateAccessToken();
+      expect(result).toBe(true);
+    });
+
+    it('returns false on auth-invalid errors', async () => {
+      (userService.getProfile as jest.Mock).mockRejectedValue({
+        status: 401,
+        code: 'HTTP_401',
+        message: 'Authentication required',
+      });
+
+      const result = await validateAccessToken();
+      expect(result).toBe(false);
+    });
+
+    it('returns true on transient network errors', async () => {
+      (userService.getProfile as jest.Mock).mockRejectedValue({
+        status: 0,
+        code: 'NETWORK_ERROR',
+        message: 'Network error',
+      });
+
+      const result = await validateAccessToken();
+      expect(result).toBe(true);
     });
   });
 
@@ -116,6 +153,22 @@ describe('routeHelpers', () => {
         {
           ...baseAuthState,
           user: { id: 'u1', onboardingStatus: 'started' },
+          onboardingStatus: 'kyc_rejected',
+          isAuthenticated: true,
+          accessToken: 'token',
+        },
+        baseConfig,
+        true,
+        true
+      );
+      expect(route).toBe(ROUTES.TABS);
+    });
+
+    it('allows authenticated kyc_pending users to continue to tabs', () => {
+      const route = determineRoute(
+        {
+          ...baseAuthState,
+          user: { id: 'u1', onboardingStatus: 'started' },
           onboardingStatus: 'kyc_pending',
           isAuthenticated: true,
           accessToken: 'token',
@@ -124,7 +177,7 @@ describe('routeHelpers', () => {
         true,
         true
       );
-      expect(route).toBe(ROUTES.AUTH.KYC);
+      expect(route).toBe(ROUTES.TABS);
     });
 
     it('uses latest onboardingStatus for stored credentials fallback', () => {

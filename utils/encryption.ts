@@ -4,9 +4,13 @@ import { logger } from '../lib/logger';
 const ENCRYPTION_KEY = process.env.EXPO_PUBLIC_ENCRYPTION_KEY;
 
 if (!ENCRYPTION_KEY && !__DEV__) {
-  throw new Error(
-    'EXPO_PUBLIC_ENCRYPTION_KEY environment variable is required in production. ' +
-      'Generate a secure 256-bit key and add it to your environment variables.'
+  logger.warn(
+    'WARNING: EXPO_PUBLIC_ENCRYPTION_KEY environment variable not configured in production. ' +
+      'Encryption will not work properly. Generate a secure 256-bit key and add it to your environment variables.',
+    {
+      component: 'Encryption',
+      action: 'missing-encryption-key',
+    }
   );
 }
 

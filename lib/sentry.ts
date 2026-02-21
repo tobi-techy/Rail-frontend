@@ -1,9 +1,15 @@
 import * as Sentry from '@sentry/react-native';
 
 const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
+let sentryInitialized = false;
 
 export function initSentry() {
+  if (sentryInitialized) {
+    return;
+  }
+
   if (!SENTRY_DSN || SENTRY_DSN.includes('your-sentry-dsn') || SENTRY_DSN.includes('placeholder')) {
+    sentryInitialized = true;
     return;
   }
 
@@ -35,11 +41,17 @@ export function initSentry() {
         return event;
       },
     });
+    sentryInitialized = true;
   } catch (error) {
+    sentryInitialized = true; // Mark as initialized even on failure
     if (__DEV__) {
       console.error('[Sentry] Failed to initialize:', error);
     }
   }
+}
+
+export function isSentryInitialized() {
+  return sentryInitialized;
 }
 
 export { Sentry };

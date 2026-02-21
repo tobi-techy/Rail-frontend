@@ -1,5 +1,4 @@
 import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { LogOut } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from 'expo-router';
@@ -8,7 +7,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BottomSheet, SettingsSheet } from '@/components/sheets';
 import { SegmentedSlider } from '@/components/molecules';
 import { useAuthStore } from '@/stores/authStore';
-import { Button } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
+import { logger } from '@/lib/logger';
+import {
+  useAllocationBalances,
+  useCreatePasscode,
+  useDisableAllocationMode,
+  useEnableAllocationMode,
+  usePasscodeStatus,
+  useUpdatePasscode,
+} from '@/api/hooks';
 import {
   AllocationIcon,
   AutoInvestIcon,
@@ -24,6 +32,12 @@ import {
   TwoFactorAuthIcon,
 } from '@/assets/svg/filled';
 
+const DEFAULT_BASE_ALLOCATION = 70;
+const PIN_REGEX = /^\d{4}$/;
+const PIN_MAX_LENGTH = 4;
+const MIN_BASE_ALLOCATION = 1;
+const MAX_BASE_ALLOCATION = 99;
+
 type SettingItem = { icon: ReactNode; label: string; onPress?: () => void; danger?: boolean };
 
 type SheetType =
@@ -32,6 +46,7 @@ type SheetType =
   | 'roundups'
   | 'limits'
   | 'biometrics'
+  | 'pin'
   | 'logout'
   | 'delete'
   | null;
@@ -59,20 +74,61 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
   </View>
 );
 
+const sanitizePin = (value: string) => value.replace(/\D/g, '').slice(0, PIN_MAX_LENGTH);
+const clampBaseAllocation = (value: number) => {
+  if (!Number.isFinite(value)) return DEFAULT_BASE_ALLOCATION;
+  return Math.min(MAX_BASE_ALLOCATION, Math.max(MIN_BASE_ALLOCATION, Math.round(value)));
+};
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+  return fallback;
+};
+
 export default function Settings() {
   const navigation = useNavigation();
+
+  const logout = useAuthStore((s) => s.logout);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
+  const isBiometricEnabled = useAuthStore((s) => s.isBiometricEnabled);
+  const hasPasscodeInStore = useAuthStore((s) => s.hasPasscode);
+  const enableBiometric = useAuthStore((s) => s.enableBiometric);
+  const disableBiometric = useAuthStore((s) => s.disableBiometric);
+
   const [activeSheet, setActiveSheet] = useState<SheetType>(null);
-  const [baseAllocation, setBaseAllocation] = useState(60);
+  const [baseAllocation, setBaseAllocation] = useState(DEFAULT_BASE_ALLOCATION);
   const [autoInvestEnabled, setAutoInvestEnabled] = useState(false);
   const [roundupsEnabled, setRoundupsEnabled] = useState(true);
   const [spendingLimit, setSpendingLimit] = useState(500);
-  const [biometricsEnabled, setBiometricsEnabled] = useState(
-    useAuthStore.getState().isBiometricEnabled
-  );
+  const [biometricsEnabled, setBiometricsEnabled] = useState(isBiometricEnabled);
+  const [isAllocationModeActive, setIsAllocationModeActive] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const logout = useAuthStore((s) => s.logout);
-  const deleteAccount = useAuthStore((s) => s.deleteAccount);
+  const [allocationFeedback, setAllocationFeedback] = useState<string | null>(null);
+
+  const [currentPin, setCurrentPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [pinSuccess, setPinSuccess] = useState<string | null>(null);
+
+  const { data: allocationBalances, refetch: refetchAllocationBalances } = useAllocationBalances();
+  const { mutateAsync: enableAllocationMode, isPending: isEnablingAllocation } =
+    useEnableAllocationMode();
+  const { mutateAsync: disableAllocationMode, isPending: isDisablingAllocation } =
+    useDisableAllocationMode();
+
+  const { data: passcodeStatus, refetch: refetchPasscodeStatus } = usePasscodeStatus();
+  const { mutateAsync: createPasscode, isPending: isCreatingPasscode } = useCreatePasscode();
+  const { mutateAsync: updatePasscode, isPending: isUpdatingPasscode } = useUpdatePasscode();
+
+  const hasPasscodeConfigured = passcodeStatus?.enabled ?? hasPasscodeInStore;
+  const isSavingAllocation = isEnablingAllocation || isDisablingAllocation;
+  const isSavingPin = isCreatingPasscode || isUpdatingPasscode;
 
   useEffect(() => {
     AsyncStorage.multiGet([
@@ -82,12 +138,11 @@ export default function Settings() {
       'spendingLimit',
     ]).then((values) => {
       values.forEach(([key, value]) => {
-        if (value !== null) {
-          if (key === 'baseAllocation') setBaseAllocation(Number(value));
-          else if (key === 'autoInvestEnabled') setAutoInvestEnabled(value === 'true');
-          else if (key === 'roundupsEnabled') setRoundupsEnabled(value === 'true');
-          else if (key === 'spendingLimit') setSpendingLimit(Number(value));
-        }
+        if (value === null) return;
+        if (key === 'baseAllocation') setBaseAllocation(clampBaseAllocation(Number(value)));
+        else if (key === 'autoInvestEnabled') setAutoInvestEnabled(value === 'true');
+        else if (key === 'roundupsEnabled') setRoundupsEnabled(value === 'true');
+        else if (key === 'spendingLimit') setSpendingLimit(Number(value));
       });
     });
   }, []);
@@ -99,15 +154,38 @@ export default function Settings() {
         ['autoInvestEnabled', String(autoInvestEnabled)],
         ['roundupsEnabled', String(roundupsEnabled)],
         ['spendingLimit', String(spendingLimit)],
-        ['biometricsEnabled', String(biometricsEnabled)],
       ]);
-      // Sync biometrics to auth store so login-passcode respects it
-      const store = useAuthStore.getState();
-      if (biometricsEnabled && !store.isBiometricEnabled) store.enableBiometric();
-      if (!biometricsEnabled && store.isBiometricEnabled) store.disableBiometric();
     }, 300);
     return () => clearTimeout(timeout);
-  }, [baseAllocation, autoInvestEnabled, roundupsEnabled, spendingLimit, biometricsEnabled]);
+  }, [baseAllocation, autoInvestEnabled, roundupsEnabled, spendingLimit]);
+
+  useEffect(() => {
+    setBiometricsEnabled(isBiometricEnabled);
+  }, [isBiometricEnabled]);
+
+  useEffect(() => {
+    if (biometricsEnabled === isBiometricEnabled) return;
+    if (biometricsEnabled) {
+      enableBiometric();
+      return;
+    }
+    disableBiometric();
+  }, [biometricsEnabled, isBiometricEnabled, enableBiometric, disableBiometric]);
+
+  useEffect(() => {
+    if (allocationBalances?.mode_active === undefined) return;
+    setIsAllocationModeActive(allocationBalances.mode_active);
+  }, [allocationBalances?.mode_active]);
+
+  useEffect(() => {
+    if (activeSheet !== 'pin') return;
+    setCurrentPin('');
+    setNewPin('');
+    setConfirmPin('');
+    setPinError(null);
+    setPinSuccess(null);
+    void refetchPasscodeStatus();
+  }, [activeSheet, refetchPasscodeStatus]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -124,11 +202,121 @@ export default function Settings() {
 
   const closeSheet = () => setActiveSheet(null);
 
+  const openAllocationSheet = () => {
+    setAllocationFeedback(null);
+    setActiveSheet('allocation');
+    void refetchAllocationBalances();
+  };
+
+  const openPinSheet = () => {
+    setActiveSheet('pin');
+  };
+
+  const handleBiometricToggle = (value: boolean) => {
+    if (value && !hasPasscodeConfigured) {
+      Alert.alert(
+        'PIN Required',
+        'Create a 4-digit PIN first. Biometrics are only available after PIN setup.'
+      );
+      return;
+    }
+    setBiometricsEnabled(value);
+  };
+
+  const handleSaveAllocation = async () => {
+    if (isSavingAllocation) return;
+
+    const spendingRatio = Math.min(0.99, Math.max(0.01, baseAllocation / 100));
+    const stashRatio = Number((1 - spendingRatio).toFixed(2));
+
+    try {
+      const response = await enableAllocationMode({
+        spending_ratio: Number(spendingRatio.toFixed(2)),
+        stash_ratio: stashRatio,
+      });
+      setIsAllocationModeActive(true);
+      setAllocationFeedback(response.message || 'Base/Active split updated.');
+      await refetchAllocationBalances();
+      closeSheet();
+    } catch (error) {
+      const errorMessage = getErrorMessage(error, 'Failed to update Base/Active split.');
+      setAllocationFeedback(errorMessage);
+      Alert.alert('Split Update Failed', errorMessage);
+    }
+  };
+
+  const handleDisableAllocation = async () => {
+    if (isSavingAllocation) return;
+    try {
+      const response = await disableAllocationMode();
+      setIsAllocationModeActive(false);
+      setAllocationFeedback(response.message || 'Base/Active split disabled.');
+      await refetchAllocationBalances();
+      closeSheet();
+    } catch (error) {
+      const errorMessage = getErrorMessage(error, 'Failed to disable Base/Active split.');
+      setAllocationFeedback(errorMessage);
+      Alert.alert('Disable Failed', errorMessage);
+    }
+  };
+
+  const handleSubmitPin = async () => {
+    if (isSavingPin) return;
+    setPinError(null);
+    setPinSuccess(null);
+
+    if (hasPasscodeConfigured && !PIN_REGEX.test(currentPin)) {
+      setPinError('Current PIN must be exactly 4 digits.');
+      return;
+    }
+
+    if (!PIN_REGEX.test(newPin)) {
+      setPinError('New PIN must be exactly 4 digits.');
+      return;
+    }
+
+    if (!PIN_REGEX.test(confirmPin)) {
+      setPinError('Confirm PIN must be exactly 4 digits.');
+      return;
+    }
+
+    if (newPin !== confirmPin) {
+      setPinError('New PIN and confirmation do not match.');
+      return;
+    }
+
+    try {
+      if (hasPasscodeConfigured) {
+        await updatePasscode({
+          currentPasscode: currentPin,
+          newPasscode: newPin,
+          confirmPasscode: confirmPin,
+        });
+      } else {
+        await createPasscode({
+          passcode: newPin,
+          confirmPasscode: confirmPin,
+        });
+      }
+
+      setPinSuccess(
+        hasPasscodeConfigured ? 'PIN updated successfully.' : 'PIN created successfully.'
+      );
+      setCurrentPin('');
+      setNewPin('');
+      setConfirmPin('');
+      await refetchPasscodeStatus();
+      setTimeout(() => closeSheet(), 500);
+    } catch (error) {
+      const fallback = hasPasscodeConfigured ? 'Failed to update PIN.' : 'Failed to create PIN.';
+      setPinError(getErrorMessage(error, fallback));
+    }
+  };
+
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
       await logout();
-      // Show success feedback
       Alert.alert('Success', 'You have been logged out successfully.');
       closeSheet();
     } catch (error) {
@@ -179,7 +367,7 @@ export default function Settings() {
           <SettingButton
             icon={<AllocationIcon width={34} height={34} color="#121212" />}
             label="Base/Active Split"
-            onPress={() => setActiveSheet('allocation')}
+            onPress={openAllocationSheet}
           />
           <SettingButton
             icon={<AutoInvestIcon width={34} height={34} />}
@@ -207,6 +395,7 @@ export default function Settings() {
           <SettingButton
             icon={<SecurityIcon width={34} height={34} color="#121212" />}
             label="PIN"
+            onPress={openPinSheet}
           />
           <SettingButton
             icon={<TwoFactorAuthIcon width={34} height={34} color="#121212" />}
@@ -245,33 +434,54 @@ export default function Settings() {
         </Section>
       </ScrollView>
 
-      {/* Base/Active Split Sheet */}
       <BottomSheet visible={activeSheet === 'allocation'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Base/Active Split</Text>
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
-          Set how your deposits are split between Base (savings) and Active (investments).
+          Set how new deposits are split between Base and Active allocations.
         </Text>
+
+        {allocationFeedback ? (
+          <View className="mb-4 rounded-xl border border-neutral-200 bg-neutral-100 p-3">
+            <Text className="font-caption text-caption text-text-secondary">
+              {allocationFeedback}
+            </Text>
+          </View>
+        ) : null}
+
         <SegmentedSlider
           value={baseAllocation}
-          onValueChange={setBaseAllocation}
+          onValueChange={(value) => setBaseAllocation(clampBaseAllocation(value))}
+          min={MIN_BASE_ALLOCATION}
+          max={MAX_BASE_ALLOCATION}
+          step={1}
           label="Base Allocation"
-          segments={50}
+          segments={49}
           activeColor="#8B5CF6"
         />
+
         <View className="my-4 flex-row justify-between">
           <View className="items-center">
             <Text className="font-subtitle text-2xl">{baseAllocation}%</Text>
-            <Text className="font-caption text-sm text-text-secondary">Base (Savings)</Text>
+            <Text className="font-caption text-sm text-text-secondary">Base</Text>
           </View>
           <View className="items-center">
             <Text className="font-subtitle text-2xl">{100 - baseAllocation}%</Text>
-            <Text className="font-caption text-sm text-text-secondary">Active (Invest)</Text>
+            <Text className="font-caption text-sm text-text-secondary">Active</Text>
           </View>
         </View>
-        <Button title="Save Changes" variant="black" onPress={closeSheet} />
+
+        <View className="flex-row gap-3">
+          <Button
+            title={isSavingAllocation ? '' : 'Save Changes'}
+            variant="black"
+            onPress={handleSaveAllocation}
+            disabled={isSavingAllocation}
+            flex>
+            {isSavingAllocation && <ActivityIndicator color="#fff" />}
+          </Button>
+        </View>
       </BottomSheet>
 
-      {/* Auto Invest Sheet */}
       <SettingsSheet
         visible={activeSheet === 'autoInvest'}
         onClose={closeSheet}
@@ -282,7 +492,6 @@ export default function Settings() {
         onToggleChange={setAutoInvestEnabled}
       />
 
-      {/* Round-ups Sheet */}
       <SettingsSheet
         visible={activeSheet === 'roundups'}
         onClose={closeSheet}
@@ -293,7 +502,6 @@ export default function Settings() {
         onToggleChange={setRoundupsEnabled}
       />
 
-      {/* Spending Limits Sheet */}
       <BottomSheet visible={activeSheet === 'limits'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Spending Limits</Text>
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
@@ -314,7 +522,6 @@ export default function Settings() {
         <Button title="Save Limit" variant="black" onPress={closeSheet} />
       </BottomSheet>
 
-      {/* Biometrics Sheet */}
       <SettingsSheet
         visible={activeSheet === 'biometrics'}
         onClose={closeSheet}
@@ -322,10 +529,69 @@ export default function Settings() {
         subtitle="Use Face ID or fingerprint to unlock the app and authorize transactions."
         toggleLabel="Enable Biometrics"
         toggleValue={biometricsEnabled}
-        onToggleChange={setBiometricsEnabled}
+        onToggleChange={handleBiometricToggle}
       />
 
-      {/* Logout Sheet */}
+      <BottomSheet visible={activeSheet === 'pin'} onClose={closeSheet}>
+        <Text className="mb-2 font-subtitle text-xl">
+          {hasPasscodeConfigured ? 'Update PIN' : 'Create PIN'}
+        </Text>
+        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+          Enter a 4-digit PIN used to unlock sensitive actions on your account.
+        </Text>
+
+        <View className="gap-3">
+          {hasPasscodeConfigured ? (
+            <Input
+              label="Current PIN"
+              value={currentPin}
+              onChangeText={(value) => setCurrentPin(sanitizePin(value))}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={PIN_MAX_LENGTH}
+              placeholder="••••"
+            />
+          ) : null}
+          <Input
+            label={hasPasscodeConfigured ? 'New PIN' : 'PIN'}
+            value={newPin}
+            onChangeText={(value) => setNewPin(sanitizePin(value))}
+            keyboardType="number-pad"
+            secureTextEntry
+            maxLength={PIN_MAX_LENGTH}
+            placeholder="••••"
+          />
+          <Input
+            label="Confirm PIN"
+            value={confirmPin}
+            onChangeText={(value) => setConfirmPin(sanitizePin(value))}
+            keyboardType="number-pad"
+            secureTextEntry
+            maxLength={PIN_MAX_LENGTH}
+            placeholder="••••"
+          />
+        </View>
+
+        {pinError ? (
+          <Text className="mt-3 font-caption text-caption text-destructive">{pinError}</Text>
+        ) : null}
+        {pinSuccess ? (
+          <Text className="mt-3 font-caption text-caption text-success">{pinSuccess}</Text>
+        ) : null}
+
+        <View className="mt-6 flex-row gap-3">
+          <Button title="Cancel" variant="ghost" onPress={closeSheet} disabled={isSavingPin} flex />
+          <Button
+            title={isSavingPin ? '' : hasPasscodeConfigured ? 'Update PIN' : 'Create PIN'}
+            variant="black"
+            onPress={handleSubmitPin}
+            disabled={isSavingPin}
+            flex>
+            {isSavingPin && <ActivityIndicator color="#fff" />}
+          </Button>
+        </View>
+      </BottomSheet>
+
       <BottomSheet visible={activeSheet === 'logout'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Log Out</Text>
 
@@ -358,11 +624,9 @@ export default function Settings() {
         </View>
       </BottomSheet>
 
-      {/* Delete Account Sheet */}
       <BottomSheet visible={activeSheet === 'delete'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl text-text-primary">Delete Account</Text>
 
-        {/* Wallet Card Illustration */}
         <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-10">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-red-100">
             <TrashIcon width={34} height={34} color="#EF4444" />

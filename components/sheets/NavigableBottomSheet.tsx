@@ -58,7 +58,10 @@ export function NavigableBottomSheet({
   const { height: screenHeight } = Dimensions.get('window');
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(screenHeight);
-  const initialStack = useMemo(() => getInitialStack(initialScreenId, screens), [initialScreenId, screens]);
+  const initialStack = useMemo(
+    () => getInitialStack(initialScreenId, screens),
+    [initialScreenId, screens]
+  );
   const defaultScreenId = initialStack[0];
   const localNavigation = useNavigableBottomSheet(defaultScreenId);
   const { screenStack, setScreenStack, goBack, reset } = navigation ?? localNavigation;
@@ -193,9 +196,7 @@ export function NavigableBottomSheet({
   );
 }
 
-export function useNavigableBottomSheet(
-  initialScreenId?: string
-): NavigableBottomSheetNavigation {
+export function useNavigableBottomSheet(initialScreenId?: string): NavigableBottomSheetNavigation {
   const [screenStack, setScreenStack] = useState<string[]>(() =>
     initialScreenId ? [initialScreenId] : []
   );
@@ -211,7 +212,12 @@ export function useNavigableBottomSheet(
   const reset = useCallback(
     (nextInitialScreenId?: string) => {
       const seedScreenId = nextInitialScreenId ?? initialScreenId;
-      setScreenStack(seedScreenId ? [seedScreenId] : []);
+      setScreenStack((prev) => {
+        const next = seedScreenId ? [seedScreenId] : [];
+        const sameLength = prev.length === next.length;
+        const sameValues = sameLength && prev.every((value, index) => value === next[index]);
+        return sameValues ? prev : next;
+      });
     },
     [initialScreenId]
   );

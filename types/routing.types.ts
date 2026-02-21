@@ -9,7 +9,6 @@ export interface RouteConfig {
   isOnWelcomeScreen: boolean;
   isOnLoginPasscode: boolean;
   isOnVerifyEmail: boolean;
-  isOnKycScreen: boolean;
   isOnCreatePasscode: boolean;
   isOnConfirmPasscode: boolean;
   isOnCompleteProfile: boolean;

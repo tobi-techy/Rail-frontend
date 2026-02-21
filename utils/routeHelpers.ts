@@ -3,6 +3,7 @@ import { userService } from '@/api/services';
 import { logger } from '@/lib/logger';
 import { ROUTES } from '@/constants/routes';
 import { isKycSubmissionRequired, isProfileCompletionRequired } from '@/utils/onboardingFlow';
+import { isAuthSessionInvalidError } from '@/utils/authErrorClassifier';
 import type { RouteConfig, AuthState } from '@/types/routing.types';
 
 export const normalizeRoutePath = (route: string): string =>
@@ -20,12 +21,17 @@ export const validateAccessToken = async (): Promise<boolean> => {
     });
     return true;
   } catch (error) {
+    const isSessionInvalid = isAuthSessionInvalidError(error);
+
     logger.warn('[Auth] Token validation failed', {
       component: 'routeHelpers',
-      action: 'token-validation-failed',
+      action: isSessionInvalid ? 'token-validation-auth-invalid' : 'token-validation-transient',
       error: error instanceof Error ? error.message : String(error),
+      isSessionInvalid,
     });
-    return false;
+
+    // Preserve session on transient/network/server errors.
+    return !isSessionInvalid;
   }
 };
 
@@ -59,7 +65,6 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname === normalizeRoutePath(ROUTES.AUTH.VERIFY_EMAIL) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.FORGOT_PASSWORD) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.RESET_PASSWORD) ||
-    pathname === normalizeRoutePath(ROUTES.AUTH.KYC) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_PASSCODE) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CONFIRM_PASSCODE) ||
     pathname.startsWith('/complete-profile/'),
@@ -79,7 +84,6 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
   isOnWelcomeScreen: pathname === '/' || pathname === normalizeRoutePath(ROUTES.INTRO),
   isOnLoginPasscode: pathname === '/login-passcode',
   isOnVerifyEmail: pathname === normalizeRoutePath(ROUTES.AUTH.VERIFY_EMAIL),
-  isOnKycScreen: pathname === normalizeRoutePath(ROUTES.AUTH.KYC),
   isOnCreatePasscode: pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_PASSCODE),
   isOnConfirmPasscode: pathname === normalizeRoutePath(ROUTES.AUTH.CONFIRM_PASSCODE),
   isOnCompleteProfile: pathname.startsWith('/complete-profile/'),
@@ -120,10 +124,8 @@ const handleAuthenticatedUser = (
     return ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO;
   }
 
-  if (needsKYC) {
-    if (config.isOnKycScreen) return null;
-    return ROUTES.AUTH.KYC;
-  }
+  // KYC-rejected users can enter the app; KYC collection is in-context via bottom sheets.
+  if (needsKYC && config.inAppGroup) return null;
 
   // If on passcode screen and session is valid -> go to dashboard
   if (config.isOnLoginPasscode) {
@@ -144,9 +146,6 @@ const handleAuthenticatedUser = (
   }
 
   if (isInCriticalAuthFlow(config)) return null;
-
-  // Allow completed users to access KYC screen (for feature gating flows)
-  if (config.isOnKycScreen) return null;
 
   if (userOnboardingStatus === 'completed' && config.inAppGroup) return null;
 

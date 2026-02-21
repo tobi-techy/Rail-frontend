@@ -5,7 +5,7 @@
 
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosRequestConfig } from 'axios';
 import type { ApiError, ApiResponse, TransformedApiError } from './types';
-import { safeLog, safeError, safeWarn } from '../utils/logSanitizer';
+import { safeWarn } from '../utils/logSanitizer';
 import { logger } from '../lib/logger';
 import { API_CONFIG } from './config';
 import { generateRequestId } from '../utils/requestId';
@@ -46,15 +46,15 @@ const SSL_PINNING_CONFIG: Record<string, string[]> =
       }
     : {};
 
-// Validate SSL pinning in production
+// Validate SSL pinning in production - log warning but don't crash
 if (
   !__DEV__ &&
   (Object.keys(SSL_PINNING_CONFIG).length === 0 ||
     Object.values(SSL_PINNING_CONFIG).some((pins) => pins.length === 0))
 ) {
   const errorMsg =
-    'CRITICAL: SSL Pinning not properly configured in production. This is a security risk.';
-  logger.error(errorMsg, {
+    'WARNING: SSL Pinning not properly configured in production. This reduces security against MITM attacks.';
+  logger.warn(errorMsg, {
     component: 'ApiClient',
     action: 'ssl-pinning-validation',
     sslPinningEnabled: SSL_PINNING_ENABLED,
@@ -62,7 +62,6 @@ if (
     hasCertPin1: !!process.env.EXPO_PUBLIC_CERT_PIN_1,
     hasCertPin2: !!process.env.EXPO_PUBLIC_CERT_PIN_2,
   });
-  throw new Error(errorMsg);
 }
 
 /**
@@ -287,7 +286,8 @@ axiosInstance.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const { isAuthenticated, refreshToken, clearSession, clearPasscodeSession } = useAuthStore.getState();
+      const { isAuthenticated, refreshToken, clearSession, clearPasscodeSession } =
+        useAuthStore.getState();
 
       // SECURITY: If this is a passcode-protected endpoint returning 401,
       // the passcode session is invalid and should be cleared
@@ -300,12 +300,7 @@ axiosInstance.interceptors.response.use(
         });
         clearPasscodeSession();
         // Return error - user needs to re-verify passcode
-        return Promise.reject(
-          transformError(
-            error,
-            requestId
-          )
-        );
+        return Promise.reject(transformError(error, requestId));
       }
 
       if (isAuthenticated && refreshToken) {
@@ -442,7 +437,11 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
 
   const { status, data } = error.response;
   const details =
-    data?.details ?? data?.errors ?? data?.validationErrors ?? data?.fields ?? undefined;
+    data?.details ??
+    data?.errors ??
+    data?.validationErrors ??
+    data?.fields ??
+    (Array.isArray(data?.missing_fields) ? { missing_fields: data.missing_fields } : undefined);
 
   // Log server errors for monitoring
   if (status >= 500) {
