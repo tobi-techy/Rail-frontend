@@ -6,6 +6,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { walletService } from '../services';
 import { queryKeys, invalidateQueries } from '../queryClient';
+import { useAnalytics, ANALYTICS_EVENTS } from '../../utils/analytics';
 import type {
   GetTransactionsRequest,
   CreateTransferRequest,
@@ -63,12 +64,27 @@ export function useTransaction(txId: string) {
  */
 export function useCreateTransfer() {
   const queryClient = useQueryClient();
+  const { track } = useAnalytics();
 
   return useMutation({
     mutationFn: (data: CreateTransferRequest) => walletService.createTransfer(data),
-    onSuccess: () => {
+    onSuccess: (response, variables) => {
+      // Track transfer completed
+      track(ANALYTICS_EVENTS.TRANSFER_COMPLETED, {
+        transfer_id: response.id,
+        amount: variables.amount,
+        recipient: variables.recipient?.slice(0, 6) + '...', // Partial for privacy
+        network: variables.network,
+      });
+
       // Invalidate wallet queries to refresh balance and transactions
       invalidateQueries.wallet();
+    },
+    onError: (error, variables) => {
+      track(ANALYTICS_EVENTS.TRANSFER_FAILED, {
+        amount: variables.amount,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     },
   });
 }
