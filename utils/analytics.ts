@@ -11,35 +11,60 @@ import { logger } from '@/lib/logger';
  * Hook to access PostHog analytics
  */
 export function useAnalytics() {
-  const posthog = usePostHog();
-  const user = useAuthStore((s) => s.user);
+   const posthog = usePostHog();
+   const user = useAuthStore((s) => s.user);
 
-  return {
-    /**
-     * Track a custom event
-     */
-    track: (eventName: string, properties?: Record<string, any>) => {
-      try {
-        posthog?.capture(eventName, properties);
-        if (__DEV__) {
-          logger.debug(`[Analytics] Event tracked: ${eventName}`, properties);
-        }
-      } catch (error) {
-        logger.error('[Analytics] Failed to track event', {
-          component: 'Analytics',
-          action: 'track-event-failed',
-          eventName,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    },
+   if (!posthog && __DEV__) {
+     logger.warn('[Analytics] PostHog instance not available', {
+       component: 'Analytics',
+       action: 'posthog-not-initialized',
+     });
+   }
+
+   return {
+     /**
+      * Track a custom event
+      */
+     track: (eventName: string, properties?: Record<string, any>) => {
+       try {
+         if (!posthog) {
+           logger.error('[Analytics] PostHog not initialized, cannot track event', {
+             component: 'Analytics',
+             action: 'posthog-null',
+             eventName,
+           });
+           return;
+         }
+
+         posthog.capture(eventName, properties);
+         if (__DEV__) {
+           logger.debug(`[Analytics] Event tracked: ${eventName}`, properties);
+         }
+       } catch (error) {
+         logger.error('[Analytics] Failed to track event', {
+           component: 'Analytics',
+           action: 'track-event-failed',
+           eventName,
+           error: error instanceof Error ? error.message : String(error),
+         });
+       }
+     },
 
     /**
      * Track screen view
      */
     trackScreen: (screenName: string, properties?: Record<string, any>) => {
       try {
-        posthog?.screen(screenName, properties);
+        if (!posthog) {
+          logger.error('[Analytics] PostHog not initialized, cannot track screen', {
+            component: 'Analytics',
+            action: 'posthog-null-screen',
+            screenName,
+          });
+          return;
+        }
+
+        posthog.screen(screenName, properties);
         if (__DEV__) {
           logger.debug(`[Analytics] Screen viewed: ${screenName}`, properties);
         }
@@ -58,7 +83,16 @@ export function useAnalytics() {
      */
     identify: (userId: string, properties?: Record<string, any>) => {
       try {
-        posthog?.identify(userId, properties);
+        if (!posthog) {
+          logger.error('[Analytics] PostHog not initialized, cannot identify user', {
+            component: 'Analytics',
+            action: 'posthog-null-identify',
+            userId,
+          });
+          return;
+        }
+
+        posthog.identify(userId, properties);
         if (__DEV__) {
           logger.debug(`[Analytics] User identified: ${userId}`, properties);
         }
@@ -77,7 +111,15 @@ export function useAnalytics() {
      */
     setUserProperties: (properties: Record<string, any>) => {
       try {
-        posthog?.setPersonProperties(properties);
+        if (!posthog) {
+          logger.error('[Analytics] PostHog not initialized, cannot set user properties', {
+            component: 'Analytics',
+            action: 'posthog-null-properties',
+          });
+          return;
+        }
+
+        posthog.setPersonProperties(properties);
         if (__DEV__) {
           logger.debug('[Analytics] User properties set', properties);
         }

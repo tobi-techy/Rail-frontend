@@ -1,5 +1,9 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface StashCardProps {
   title: string;
@@ -22,20 +26,29 @@ export const StashCard: React.FC<StashCardProps> = ({
   disabled,
   testID,
 }) => {
-  const Container: any = onPress ? Pressable : View;
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Container
-      className={`rounded-lg border border-gray-200 bg-white p-lg ${className || ''} ${disabled ? 'opacity-50' : ''}`}
-      onPress={onPress}
+    <AnimatedPressable
+      style={animStyle}
+      className={`rounded-2xl border border-gray-200 bg-transparent px-5 py-5 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress?.();
+      }}
+      onPressIn={() => {
+        scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+      }}
       disabled={disabled}
       testID={testID}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={onPress ? `${title}: ${amount}${amountCents || ''}` : undefined}
       accessibilityState={{ disabled }}>
-      <View className="mb-md self-start">{icon}</View>
-
-      <Text className="mb-1 font-body text-caption text-text-tertiary">{title}</Text>
+      <View className="mb-14 self-start">{icon}</View>
 
       <View className="flex-row items-baseline">
         <Text className="font-subtitle text-stash text-text-primary">{amount}</Text>
@@ -43,6 +56,8 @@ export const StashCard: React.FC<StashCardProps> = ({
           <Text className="font-subtitle text-stash text-text-tertiary">{amountCents}</Text>
         )}
       </View>
-    </Container>
+
+      <Text className="mt-1 font-body text-body tracking-wide text-text-tertiary">{title}</Text>
+    </AnimatedPressable>
   );
 };

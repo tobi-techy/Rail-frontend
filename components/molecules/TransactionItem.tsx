@@ -41,10 +41,12 @@ export interface TransactionItemProps extends TouchableOpacityProps {
 const formatAmount = (amount: number, type: TransactionType, currency = 'NGN') => {
   const isCredit = type === 'receive' || type === 'deposit';
   const sign = isCredit ? '+' : '-';
+  const abs = Math.abs(amount);
+  const hasDecimals = abs % 1 !== 0;
   const num = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
+    minimumFractionDigits: hasDecimals ? 2 : 0,
     maximumFractionDigits: 2,
-  }).format(Math.abs(amount));
+  }).format(abs);
   return { text: `${sign}${num} ${currency}`, isCredit };
 };
 
@@ -52,6 +54,7 @@ type ResolvedAssetIcon = {
   Token: SvgComponent;
   bgColor?: string;
   withBorder?: boolean;
+  isSymbol?: boolean;
 };
 
 const TOKEN_ICON_BY_SYMBOL: Record<string, SvgComponent> = {
@@ -68,13 +71,17 @@ const TOKEN_ICON_BY_SYMBOL: Record<string, SvgComponent> = {
   USD: SvgAssets.UsdIcon,
   GBP: SvgAssets.GbpIcon,
   EUR: SvgAssets.EurIcon,
+  CAD: SvgAssets.CadIcon,
+  MXN: SvgAssets.MxnIcon,
 };
 
 const FIAT_ICON_BY_SYMBOL: Record<string, SvgComponent> = {
-  USD: SvgAssets.DollarCurrencyIcon,
-  EUR: SvgAssets.EuroCurrencyIcon,
-  GBP: SvgAssets.PoundCurrencyIcon,
-  NGN: SvgAssets.NairaCurrencyIcon,
+  USD: SvgAssets.UsdIcon,
+  EUR: SvgAssets.EurIcon,
+  GBP: SvgAssets.GbpIcon,
+  NGN: SvgAssets.NgnIcon,
+  CAD: SvgAssets.CadIcon,
+  MXN: SvgAssets.MxnIcon,
 };
 
 const COMPANY_LOGO_BY_ALIAS: Record<string, SvgComponent> = {
@@ -165,10 +172,12 @@ const resolveSymbolIcon = (symbol?: string): ResolvedAssetIcon | null => {
   if (!normalized) return null;
 
   if (FIAT_ICON_BY_SYMBOL[normalized]) {
+    const isNgn = normalized === 'NGN';
     return {
       Token: FIAT_ICON_BY_SYMBOL[normalized],
-      bgColor: '#FFFFFF',
-      withBorder: true,
+      bgColor: isNgn ? '#008751' : '#FFFFFF',
+      withBorder: !isNgn,
+      isSymbol: isNgn,
     };
   }
 
@@ -231,24 +240,36 @@ export const resolveTransactionAssetIcon = (transaction: Transaction): ResolvedA
   return resolveCompanyLogo([transaction.merchant, transaction.title, transaction.subtitle]);
 };
 
+const ICON_SIZE = 48;
+
+// SVGs that are symbol/logo style (not full-bleed flags) — render centered, not stretched
+const SYMBOL_ICONS = new Set(['NgnIcon']);
+
 const TokenIcon = ({
   Token,
   bgColor,
   withBorder,
+  isSymbol,
 }: {
   Token?: SvgComponent;
   bgColor?: string;
   withBorder?: boolean;
+  isSymbol?: boolean;
 }) => (
   <View
-    className="h-12 w-12 items-center justify-center rounded-full"
     style={{
+      width: ICON_SIZE,
+      height: ICON_SIZE,
+      borderRadius: ICON_SIZE / 2,
       backgroundColor: bgColor || '#1B84FF',
       borderWidth: withBorder ? 1 : 0,
       borderColor: '#E6E8EC',
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
     }}>
     {Token ? (
-      <Token width={28} height={28} />
+      <Token width={isSymbol ? 28 : ICON_SIZE + 8} height={isSymbol ? 28 : ICON_SIZE + 8} />
     ) : (
       <Icon library="feather" name="dollar-sign" size={24} color="#FFFFFF" />
     )}
@@ -315,6 +336,7 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
         Token={inferredAssetIcon.Token}
         bgColor={inferredAssetIcon.bgColor}
         withBorder={inferredAssetIcon.withBorder}
+        isSymbol={inferredAssetIcon.isSymbol}
       />
     );
   }
@@ -360,7 +382,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
 
       <View className="items-end">
         <Text
-          className={`font-subtitle text-subtitle ${isPending ? 'text-text-secondary' : isFailed ? 'text-destructive' : isCredit ? 'text-success' : 'text-text-primary'}`}
+          className={`font-subtitle text-subtitle ${isPending ? 'text-text-secondary' : isFailed ? 'text-destructive' : isCredit ? 'text-success' : transaction.type === 'withdraw' || transaction.type === 'send' ? 'text-destructive' : 'text-text-primary'}`}
           numberOfLines={1}>
           {amountText}
         </Text>

@@ -90,6 +90,10 @@ export const queryKeys = {
     transactions: (params?: unknown) => [...queryKeys.funding.all, 'transactions', params] as const,
     virtualAccount: () => [...queryKeys.funding.all, 'virtual-account'] as const,
   },
+  spending: {
+    all: ['spending'] as const,
+    stash: () => [...queryKeys.spending.all, 'stash'] as const,
+  },
 };
 
 /**

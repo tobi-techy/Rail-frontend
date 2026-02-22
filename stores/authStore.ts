@@ -297,6 +297,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             lockoutUntil: null,
             isLoading: false,
           });
+          // TODO: identify user in feedback SDK
         } catch (error: any) {
           safeError('[AuthStore] Login failed:', error);
 
@@ -379,6 +380,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           hasCompletedOnboarding: false,
         });
         set({ isLoading: false });
+        // TODO: clear feedback SDK identity
 
         // If backend logout failed, log for monitoring
         if (logoutFailed) {

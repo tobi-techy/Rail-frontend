@@ -23,8 +23,8 @@ export interface BottomSheetScreen {
 }
 
 interface NavigableBottomSheetProps {
-  visible: boolean;
-  onClose: () => void;
+  visible?: boolean;
+  onClose?: () => void;
   screens: BottomSheetScreen[];
   initialScreenId?: string;
   showCloseButton?: boolean;
@@ -47,8 +47,8 @@ const getInitialStack = (initialScreenId?: string, screens: BottomSheetScreen[] 
 };
 
 export function NavigableBottomSheet({
-  visible,
-  onClose,
+  visible = true,
+  onClose = () => {},
   screens,
   initialScreenId,
   showCloseButton = true,

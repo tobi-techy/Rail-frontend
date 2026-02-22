@@ -49,63 +49,73 @@ function AppNavigator() {
       initialRouteName="index"
       screenOptions={{
         headerShown: false,
-        sceneStyle: { backgroundColor: '#FFFFFF' },
         contentStyle: { backgroundColor: '#FFFFFF' },
       }}>
       <Stack.Screen
         name="index"
         options={{
-          sceneStyle: { backgroundColor: '#FF2E01' },
           contentStyle: { backgroundColor: '#FF2E01' },
         }}
       />
       <Stack.Screen
         name="login-passcode"
         options={{
-          sceneStyle: { backgroundColor: '#FFFFFF' },
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />
       <Stack.Screen
         name="intro"
         options={{
-          sceneStyle: { backgroundColor: '#000000' },
           contentStyle: { backgroundColor: '#000000' },
         }}
       />
       <Stack.Screen
         name="(auth)"
         options={{
-          sceneStyle: { backgroundColor: '#FFFFFF' },
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />
       <Stack.Screen
         name="(tabs)"
         options={{
-          sceneStyle: { backgroundColor: '#FFFFFF' },
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />
       {/* Stash screens - disabled until feature is complete */}
-      {/* <Stack.Screen name="spending-stash" options={{ headerShown: false }} /> */}
-      {/* <Stack.Screen name="investment-stash" options={{ headerShown: false }} /> */}
+      <Stack.Screen
+        name="spending-stash"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_bottom',
+          animationTypeForReplace: 'push',
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen name="investment-stash" options={{ headerShown: false }} />
       <Stack.Screen
         name="withdraw"
         options={{
           headerShown: false,
           animation: 'slide_from_bottom',
           animationTypeForReplace: 'push',
-          sceneStyle: { backgroundColor: '#FFFFFF' },
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />
+      <Stack.Screen
+        name="kyc"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_bottom',
+          animationTypeForReplace: 'push',
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      />
+
       <Stack.Screen
         name="virtual-account"
         options={{
           headerShown: false,
           presentation: 'modal',
-          sceneStyle: { backgroundColor: '#FFFFFF' },
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />
@@ -173,7 +183,7 @@ export default function Layout() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Initialize session after splash
+  // Initialize session and Gleap after splash
   useEffect(() => {
     if (showSplash) return;
     try {
@@ -201,52 +211,52 @@ export default function Layout() {
   }
 
   return (
-    <PostHogProvider
-      apiKey="phc_bG9OhXAMZfICZ0hFeCcHJSx5FGzpBhN4nDHbZAIYhbR"
-      options={{
-        host: 'https://us.i.posthog.com',
-        // Enable session recording. Requires enabling in your project settings as well.
-        // Default is false.
-        enableSessionReplay: true,
+    <ErrorBoundary>
+      <StatusBar barStyle={'dark-content'} />
+      <KeyboardProvider>
+        <QueryClientProvider client={queryClient}>
+          <SafeAreaProvider style={{ flex: 1, backgroundColor: SPLASH_BG }}>
+            <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
+              <PostHogProvider
+                apiKey="phc_bG9OhXAMZfICZ0hFeCcHJSx5FGzpBhN4nDHbZAIYhbR"
+                options={{
+                  host: 'https://us.i.posthog.com',
+                  // Enable session recording. Requires enabling in your project settings as well.
+                  // Default is false.
+                  enableSessionReplay: true,
 
-        sessionReplayConfig: {
-          // Whether text inputs are masked. Default is true.
-          // Password inputs are always masked regardless
-          maskAllTextInputs: true,
+                  sessionReplayConfig: {
+                    // Whether text inputs are masked. Default is true.
+                    // Password inputs are always masked regardless
+                    maskAllTextInputs: true,
 
-          // Whether images are masked. Default is true.
-          maskAllImages: true,
+                    // Whether images are masked. Default is true.
+                    maskAllImages: true,
 
-          // Capture logs automatically. Default is true.
-          // Android only (Native Logcat only)
-          captureLog: true,
+                    // Capture logs automatically. Default is true.
+                    // Android only (Native Logcat only)
+                    captureLog: true,
 
-          // Whether network requests are captured in recordings. Default is true
-          // Only metric-like data like speed, size, and response code are captured.
-          // No data is captured from the request or response body.
-          // iOS only
-          captureNetworkTelemetry: true,
+                    // Whether network requests are captured in recordings. Default is true
+                    // Only metric-like data like speed, size, and response code are captured.
+                    // No data is captured from the request or response body.
+                    // iOS only
+                    captureNetworkTelemetry: true,
 
-          // Throttling delay used to reduce the number of snapshots captured
-          // and reduce performance impact. Default is 1000ms
-          throttleDelayMs: 1000,
-        },
-      }}>
-      <PostHogSurveyProvider>
-        <ErrorBoundary>
-          <StatusBar barStyle={'dark-content'} />
-          <KeyboardProvider>
-            <QueryClientProvider client={queryClient}>
-              <SafeAreaProvider style={{ flex: 1, backgroundColor: SPLASH_BG }}>
-                <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
+                    // Throttling delay used to reduce the number of snapshots captured
+                    // and reduce performance impact. Default is 1000ms
+                    throttleDelayMs: 1000,
+                  },
+                }}>
+                <PostHogSurveyProvider>
                   <AppNavigator />
                   <FeedbackPopupHost />
-                </View>
-              </SafeAreaProvider>
-            </QueryClientProvider>
-          </KeyboardProvider>
-        </ErrorBoundary>
-      </PostHogSurveyProvider>
-    </PostHogProvider>
+                </PostHogSurveyProvider>
+              </PostHogProvider>
+            </View>
+          </SafeAreaProvider>
+        </QueryClientProvider>
+      </KeyboardProvider>
+    </ErrorBoundary>
   );
 }

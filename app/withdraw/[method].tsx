@@ -357,9 +357,15 @@ export default function WithdrawAmountScreen() {
         return current;
       }
 
+      // Cap input at the maximum withdrawable amount
+      const nextNumeric = Number.parseFloat(trimmedInt);
+      if (nextNumeric > maxWithdrawable) {
+        return formatMaxAmount(maxWithdrawable);
+      }
+
       return trimmedInt;
     });
-  }, []);
+  }, [maxWithdrawable]);
 
   const onMaxPress = useCallback(() => {
     setDidTryContinue(false);

@@ -50,7 +50,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
   return (
     <View {...props}>
-      {title && <Text className="mb-md font-headline-2 text-headline-2 text-text-primary">{title}</Text>}
+      {title && <Text className="mb-md font-headline-2 text-headline-3 text-text-primary">{title}</Text>}
       {grouped.map((group) => (
         <View key={group.label} className="mb-md">
           <Text className="mb-sm font-caption text-[13px] uppercase tracking-wide text-text-secondary">

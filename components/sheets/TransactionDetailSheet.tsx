@@ -29,10 +29,14 @@ const formatDate = (date: Date) =>
   ' at ' +
   date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-const formatAmount = (amount: number) =>
-  new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-    Math.abs(amount)
-  );
+const formatAmount = (amount: number) => {
+  const abs = Math.abs(amount);
+  const hasDecimals = abs % 1 !== 0;
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: 2,
+  }).format(abs);
+};
 
 const truncateAddress = (address: string) =>
   address.length > 12 ? `${address.slice(0, 4)}...${address.slice(-4)}` : address;
@@ -78,24 +82,33 @@ const DetailRow = ({
   );
 };
 
+const LARGE_ICON_SIZE = 64;
+
 const LargeTokenIcon = ({
   Token,
   bgColor,
   withBorder,
+  isSymbol,
 }: {
   Token?: SvgComponent;
   bgColor?: string;
   withBorder?: boolean;
+  isSymbol?: boolean;
 }) => (
   <View
-    className="h-16 w-16 items-center justify-center rounded-full"
     style={{
-      backgroundColor: bgColor || '#1B84FF',
-      borderWidth: withBorder ? 1 : 0,
+      width: LARGE_ICON_SIZE,
+      height: LARGE_ICON_SIZE,
+      borderRadius: LARGE_ICON_SIZE / 2,
+      borderWidth: withBorder && isSymbol ? 1 : 0,
       borderColor: '#E6E8EC',
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: bgColor || '#1B84FF',
     }}>
     {Token ? (
-      <Token width={36} height={36} />
+      <Token width={isSymbol ? 36 : LARGE_ICON_SIZE + 8} height={isSymbol ? 36 : LARGE_ICON_SIZE + 8} />
     ) : (
       <Icon library="feather" name="dollar-sign" size={32} color="#FFFFFF" />
     )}
@@ -167,6 +180,7 @@ export function TransactionDetailSheet({
           Token={inferredAssetIcon.Token}
           bgColor={inferredAssetIcon.bgColor}
           withBorder={inferredAssetIcon.withBorder}
+          isSymbol={inferredAssetIcon.isSymbol}
         />
       );
     }

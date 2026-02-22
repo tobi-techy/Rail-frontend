@@ -1,14 +1,22 @@
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Pressable } from 'react-native';
 import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo } from 'react';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 import { router, useNavigation } from 'expo-router';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { StashCard } from '@/components/molecules/StashCard';
-import { ArrowDown, PlusIcon, LayoutGrid, ChevronRight } from 'lucide-react-native';
+import {
+  ArrowDown,
+  PlusIcon,
+  LayoutGrid,
+  ChevronRight,
+  Bell,
+  MessageCircle,
+} from 'lucide-react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
-import type { Transaction } from '@/components/molecules/TransactionItem';
+import { FeedbackSheet } from '@/components/sheets/FeedbackSheet';import type { Transaction } from '@/components/molecules/TransactionItem';
 import { useStation, useKYCStatus } from '@/api/hooks';
-import type { ActivityItem } from '@/api/types';
+import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
+import type { ActivityItem, Deposit, Withdrawal } from '@/api/types';
 import { Button } from '../../components/ui';
 import {
   InvestmentDisclaimerSheet,
@@ -18,9 +26,12 @@ import {
   useNavigableBottomSheet,
   type BottomSheetScreen,
 } from '@/components/sheets';
+import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { useAuthStore } from '@/stores/authStore';
+import Avatar, { genConfig } from '@zamplyy/react-native-nice-avatar';
 import { PhantomIcon, SolflareIcon, SolanaIcon } from '@/assets/svg';
-import { BankIcon, CashIcon, CoinIcon, InvestmentIcon } from '@/assets/svg/filled';
+import { BankIcon, CoinIcon, EarnIcon, AllocationIcon, CardIcon } from '@/assets/svg/filled';
+import { VisaLogo } from '@/assets/svg';
 import { invalidateQueries } from '@/api/queryClient';
 
 // ── Helpers ──────────────────────────────────────────────
@@ -61,6 +72,62 @@ const mapActivity = (items: ActivityItem[], currency?: string): Transaction[] =>
     status: 'completed' as const,
     createdAt: new Date(a.created_at),
   }));
+
+type TransactionStatus = 'completed' | 'pending' | 'failed';
+type WithdrawalListResponse = Withdrawal[] | { withdrawals?: Withdrawal[] } | undefined;
+
+const STATUS_MAP: Record<string, TransactionStatus> = {
+  completed: 'completed',
+  confirmed: 'completed',
+  success: 'completed',
+  pending: 'pending',
+  processing: 'pending',
+  initiated: 'pending',
+  awaiting_confirmation: 'pending',
+  alpaca_debited: 'pending',
+  bridge_processing: 'pending',
+  onchain_transfer: 'pending',
+  on_chain_transfer: 'pending',
+  failed: 'failed',
+  rejected: 'failed',
+  cancelled: 'failed',
+  canceled: 'failed',
+  error: 'failed',
+  reversed: 'failed',
+  timeout: 'failed',
+};
+
+const normalizeStatus = (s?: string) => (s || '').toLowerCase().trim();
+
+const depositToTx = (d: Deposit): Transaction => ({
+  id: d.id,
+  type: 'deposit',
+  title: 'Deposit',
+  subtitle: d.chain ? `${d.currency} · ${d.chain}` : d.currency,
+  amount: parseFloat(d.amount) || 0,
+  currency: d.currency,
+  status: STATUS_MAP[normalizeStatus(d.status)] ?? 'pending',
+  createdAt: new Date(d.created_at),
+  txHash: d.tx_hash,
+});
+
+const withdrawalToTx = (w: Withdrawal): Transaction => ({
+  id: w.id,
+  type: 'withdraw',
+  title: 'Withdrawal',
+  subtitle: w.destination_chain ? `USD · ${w.destination_chain}` : 'USD',
+  amount: parseFloat(w.amount) || 0,
+  currency: 'USD',
+  status: STATUS_MAP[normalizeStatus(w.status)] ?? 'pending',
+  createdAt: new Date(w.created_at || w.updated_at || new Date().toISOString()),
+  txHash: w.tx_hash,
+});
+
+const normalizeWithdrawals = (data: WithdrawalListResponse): Withdrawal[] => {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  return data.withdrawals ?? [];
+};
 
 interface FundingActionItem {
   id: string;
@@ -111,6 +178,8 @@ const Dashboard = () => {
   const [showSendSheet, setShowSendSheet] = useState(false);
   const [showCryptoReceive, setShowCryptoReceive] = useState(false);
   const [showKYCSheet, setShowKYCSheet] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
   const receiveSheetNavigation = useNavigableBottomSheet('receive-main');
   const sendSheetNavigation = useNavigableBottomSheet('send-main');
   const { navigateTo: navigateReceiveTo, reset: resetReceiveSheet } = receiveSheetNavigation;
@@ -135,6 +204,8 @@ const Dashboard = () => {
 
   // Station data
   const { data: station, refetch } = useStation();
+  const deposits = useDeposits(10);
+  const withdrawals = useWithdrawals(10);
 
   // KYC — prefetch so fiat button responds instantly
   const { data: kycStatus } = useKYCStatus();
@@ -196,24 +267,45 @@ const Dashboard = () => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([refetch(), invalidateQueries.wallet()]);
+      await Promise.all([
+        refetch(),
+        deposits.refetch(),
+        withdrawals.refetch(),
+        invalidateQueries.wallet(),
+      ]);
     } finally {
       setRefreshing(false);
     }
-  }, [refetch]);
+  }, [refetch, deposits, withdrawals]);
+
+  const user = useAuthStore((s) => s.user);
+  const avatarName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'Rail User';
+  const avatarConfig = useMemo(() => genConfig(avatarName), [avatarName]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
       headerLeft: () => (
         <View className="flex-row items-center gap-x-3 pl-md">
+          <Avatar size={36} {...avatarConfig} />
           <Text className="font-subtitle text-headline-1">Station</Text>
+        </View>
+      ),
+      headerRight: () => (
+        <View className="flex-row items-center gap-x-4 pr-md">
+          <Pressable onPress={() => setShowFeedback(true)} hitSlop={8}>
+            <MessageCircle size={22} color="#111" strokeWidth={1.8} />
+          </Pressable>
+          <Pressable hitSlop={8}>
+            <Bell size={22} color="#111" strokeWidth={1.8} />
+          </Pressable>
         </View>
       ),
       title: '',
       headerStyle: { backgroundColor: 'transparent' },
     });
-  }, [navigation]);
+  }, [navigation, avatarName, setShowFeedback]);
 
   // Derived display values
   const balance = fmt(station?.total_balance, '$00.00');
@@ -223,9 +315,13 @@ const Dashboard = () => {
   const brokerCash = parseMoney(station?.broker_cash);
   const stashOnly = Math.max(0, investTotal - brokerCash);
   const stash = splitDollars(stashOnly.toFixed(2));
-  const transactions = station?.recent_activity
-    ? mapActivity(station.recent_activity, station.currency)
-    : [];
+  const transactions = useMemo(() => {
+    const rows: Transaction[] = [
+      ...(deposits.data?.deposits ?? []).map(depositToTx),
+      ...normalizeWithdrawals(withdrawals.data as WithdrawalListResponse).map(withdrawalToTx),
+    ];
+    return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 3);
+  }, [deposits.data, withdrawals.data]);
 
   const receiveMainActions = useMemo<FundingActionItem[]>(
     () => [
@@ -389,7 +485,7 @@ const Dashboard = () => {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
       }>
-      <View className="px-md">
+      <View className="px-md pb-32">
         {/* Balance */}
         <BalanceCard
           balance={balance}
@@ -415,29 +511,48 @@ const Dashboard = () => {
           />
         </View>
 
-        {/* Stash Cards — disabled until feature is complete */}
-
-        <View className="mt-5 flex-row gap-3">
-          <StashCard
-            title="Spending Stash"
-            amount={spend.dollars}
-            amountCents={spend.cents}
-            icon={<CashIcon width={40} height={40} color="white" />}
-            className="flex-1"
-            onPress={() => router.push('/spending-stash')}
-          />
-          <StashCard
-            title="Investment Stash"
-            amount={stash.dollars}
-            amountCents={stash.cents}
-            icon={<InvestmentIcon width={40} height={40} color="white" />}
-            className="flex-1"
-            onPress={() => router.push('/investment-stash')}
-          />
+        {/* Stash Cards */}
+        <View className="mt-5 gap-3">
+          <View className="flex-row gap-3">
+            <StashCard
+              title="Spend"
+              amount={spend.dollars}
+              amountCents={spend.cents}
+              icon={<EarnIcon width={36} height={36} />}
+              className="flex-1"
+              // onPress={() => router.push('/spending-stash')}
+            />
+            <StashCard
+              title="Stash"
+              amount={stash.dollars}
+              amountCents={stash.cents}
+              icon={<AllocationIcon width={36} height={36} />}
+              className="flex-1"
+              // onPress={() => router.push('/investment-stash')}
+            />
+          </View>
+          {/*<View className="flex-row gap-3">
+            <StashCard
+              title="Rail+ Card"
+              amount="$0"
+              amountCents=".00"
+              icon={<VisaLogo color={'#fff'} width={36} height={24} />}
+              className="flex-1"
+              // onPress={() => router.push('/spending-stash/card' as any)}
+            />
+            <StashCard
+              title="Rail+ Card"
+              amount="$0"
+              amountCents=".00"
+              icon={<VisaLogo color={'#fff'} width={36} height={24} />}
+              className="flex-1"
+              // onPress={() => router.push('/spending-stash/card' as any)}
+            />
+          </View>*/}
         </View>
 
         {/* Transactions */}
-        <View className="rounded-3xl py-5">
+        <View className="py-5">
           {transactions.length === 0 ? (
             <View className="items-center justify-center rounded-3xl bg-white px-5 py-8">
               <TransactionsEmptyIllustration width={220} height={140} />
@@ -449,7 +564,11 @@ const Dashboard = () => {
               </Text>
             </View>
           ) : (
-            <TransactionList title="Recent Activity" transactions={transactions} />
+            <TransactionList
+              transactions={transactions}
+              title="Recent Activity"
+              onTransactionPress={setSelectedTransaction}
+            />
           )}
         </View>
       </View>
@@ -479,6 +598,12 @@ const Dashboard = () => {
 
       <InvestmentDisclaimerSheet visible={showDisclaimer} onAccept={handleAcceptDisclaimer} />
       <CryptoReceiveSheet visible={showCryptoReceive} onClose={() => setShowCryptoReceive(false)} />
+      <TransactionDetailSheet
+        visible={!!selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+        transaction={selectedTransaction}
+      />
+      <FeedbackSheet visible={showFeedback} onClose={() => setShowFeedback(false)} />
     </ScrollView>
   );
 };

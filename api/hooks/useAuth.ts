@@ -51,11 +51,11 @@ const grantPostLoginPasscodeSession = () => {
  * Login mutation
  */
 export function useLogin() {
-  const { track, identify } = useAnalytics();
+   const { track, identify } = useAnalytics();
 
-  return useMutation({
-    mutationFn: (data: LoginRequest) => authService.login(data),
-    onSuccess: async (response) => {
+   return useMutation({
+     mutationFn: (data: LoginRequest) => authService.login(data),
+     onSuccess: async (response) => {
       const nowIso = new Date().toISOString();
 
       // Update auth store with response data
@@ -188,18 +188,30 @@ export function useResendCode() {
  * Logout mutation
  */
 export function useLogout() {
-  const queryClient = useQueryClient();
+   const queryClient = useQueryClient();
+   const { track } = useAnalytics();
 
-  return useMutation({
-    mutationFn: () => authService.logout(),
-    onSuccess: () => {
-      // Clear auth store
-      useAuthStore.getState().reset();
+   return useMutation({
+     mutationFn: () => authService.logout(),
+     onSuccess: () => {
+       // Track logout event
+       track(ANALYTICS_EVENTS.SIGN_OUT, {
+         timestamp: new Date().toISOString(),
+       });
 
-      // Clear all cached data
-      queryClient.clear();
-    },
-  });
+       // Clear auth store
+       useAuthStore.getState().reset();
+
+       // Clear all cached data
+       queryClient.clear();
+     },
+     onError: (error) => {
+       track(ANALYTICS_EVENTS.ERROR_OCCURRED, {
+         component: 'useLogout',
+         error: error instanceof Error ? error.message : 'Logout failed',
+       });
+     },
+   });
 }
 
 /**
@@ -238,7 +250,9 @@ export function useCurrentUser() {
  * Apple Sign-In mutation
  */
 export function useAppleSignIn() {
-  return useMutation({
+   const { track, identify } = useAnalytics();
+
+   return useMutation({
     mutationFn: async () => {
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -277,9 +291,27 @@ export function useAppleSignIn() {
 
       await syncPasscodeStatus();
 
+      // Track analytics
+      track(ANALYTICS_EVENTS.SIGN_IN_COMPLETED, {
+        user_id: response.user.id,
+        email: response.user.email,
+        provider: 'apple',
+        onboarding_status: response.user.onboardingStatus,
+      });
+
+      // Identify user in PostHog
+      if (response.user.id) {
+        identify(response.user.id, {
+          email: response.user.email,
+          first_name: response.user.firstName,
+          last_name: response.user.lastName,
+          auth_provider: 'apple',
+        });
+      }
+
       invalidateQueries.auth();
       invalidateQueries.wallet();
       invalidateQueries.user();
-    },
-  });
-}
+      },
+      });
+      }

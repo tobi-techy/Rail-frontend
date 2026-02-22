@@ -2844,6 +2844,13 @@
   resolved "https://registry.npmjs.org/@xmldom/xmldom/-/xmldom-0.8.11.tgz"
   integrity sha512-cQzWCtO6C8TQiYl1ruKNn2U6Ao4o4WBBcbL61yJl84x+j5sOWWFU9X7DpND8XZG3daDppSsigMdfAIl2upQBRw==
 
+"@zamplyy/react-native-nice-avatar@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.npmjs.org/@zamplyy/react-native-nice-avatar/-/react-native-nice-avatar-1.1.2.tgz"
+  integrity sha512-QYq/quUHoAI6BPeyHMvV9wkRp9y0VA6ZSmuukK2RW+a+tT9/rYSs9nc7CFLBmWb+KAS9sp9IFH14YUhj3F3xJw==
+  dependencies:
+    chroma-js "^2.4.2"
+
 abab@^2.0.6:
   version "2.0.6"
   resolved "https://registry.npmjs.org/abab/-/abab-2.0.6.tgz"
@@ -3553,6 +3560,11 @@ chownr@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/chownr/-/chownr-3.0.0.tgz"
   integrity sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g==
+
+chroma-js@^2.4.2:
+  version "2.6.0"
+  resolved "https://registry.npmjs.org/chroma-js/-/chroma-js-2.6.0.tgz"
+  integrity sha512-BLHvCB9s8Z1EV4ethr6xnkl/P2YRFOGqfgvuMG/MyCbZPrTA+NeiByY6XvgF0zP4/2deU2CXnWyMa3zu1LqQ3A==
 
 chrome-launcher@^0.15.2:
   version "0.15.2"
@@ -4918,6 +4930,18 @@ expo-haptics@~15.0.8:
   version "15.0.8"
   resolved "https://registry.npmjs.org/expo-haptics/-/expo-haptics-15.0.8.tgz"
   integrity sha512-lftutojy8Qs8zaDzzjwM3gKHFZ8bOOEZDCkmh2Ddpe95Ra6kt2izeOfOfKuP/QEh0MZ1j9TfqippyHdRd1ZM9g==
+
+expo-image-loader@~6.0.0:
+  version "6.0.0"
+  resolved "https://registry.npmjs.org/expo-image-loader/-/expo-image-loader-6.0.0.tgz"
+  integrity sha512-nKs/xnOGw6ACb4g26xceBD57FKLFkSwEUTDXEDF3Gtcu3MqF3ZIYd3YM+sSb1/z9AKV1dYT7rMSGVNgsveXLIQ==
+
+expo-image-picker@~17.0.10:
+  version "17.0.10"
+  resolved "https://registry.npmjs.org/expo-image-picker/-/expo-image-picker-17.0.10.tgz"
+  integrity sha512-a2xrowp2trmvXyUWgX3O6Q2rZaa2C59AqivKI7+bm+wLvMfTEbZgldLX4rEJJhM8xtmEDTNU+lzjtObwzBRGaw==
+  dependencies:
+    expo-image-loader "~6.0.0"
 
 expo-json-utils@~0.15.0:
   version "0.15.0"
@@ -8154,6 +8178,11 @@ react-native-gesture-handler@*, react-native-gesture-handler@~2.28.0:
     "@egjs/hammerjs" "^2.0.17"
     hoist-non-react-statics "^3.3.0"
     invariant "^2.2.4"
+
+react-native-gleapsdk@^15.2.1:
+  version "15.2.1"
+  resolved "https://registry.npmjs.org/react-native-gleapsdk/-/react-native-gleapsdk-15.2.1.tgz"
+  integrity sha512-SBvL5h0aZu1AaC4jy2xWLVk6VM6UHrCj/7bqhaWPDhRIwutJ92ZIW5VDXxSzRXHCiZh1oIy9z7uyN1YrjkveKQ==
 
 react-native-is-edge-to-edge@^1.1.6, react-native-is-edge-to-edge@^1.2.1:
   version "1.2.1"
