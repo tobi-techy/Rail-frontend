@@ -223,7 +223,8 @@ axiosInstance.interceptors.request.use(
           method: config.method,
           path: normalizeRequestPath(config.url),
         });
-      } else {
+      } else if (!config.headers?.['X-Requested-With']) {
+        // Only warn when not using the native-client bypass header
         logger.warn('[API Client] Missing CSRF token for state-changing request', {
           component: 'ApiClient',
           action: 'csrf-token-missing',

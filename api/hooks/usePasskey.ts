@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Passkey } from 'react-native-passkey';
 import type { FinishPasskeyRegistrationRequest } from '../types';
+import { queryKeys } from '../queryClient';
+import { passkeyService } from '../services';
 
 export function usePasskeys() {
   return useQuery({
