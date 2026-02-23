@@ -106,7 +106,7 @@ export default function History() {
     navigation.setOptions({
       headerLeft: () => (
         <View className="flex-row items-center gap-x-3 pl-md">
-          <Text className="font-subtitle text-headline-1 text-text-primary">History</Text>
+          <Text className="font-subtitle text-headline-1 text-text-primary">Activity</Text>
         </View>
       ),
       headerShown: true,

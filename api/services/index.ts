@@ -13,6 +13,7 @@ export { kycService } from './kyc.service';
 export { stationService } from './station.service';
 export { fundingService } from './funding.service';
 export { allocationService } from './allocation.service';
+export { passkeyService } from './passkey.service';
 
 // Re-export for convenience
 export { default as auth } from './auth.service';

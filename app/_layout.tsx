@@ -88,7 +88,6 @@ function AppNavigator() {
           headerShown: false,
           animation: 'slide_from_bottom',
           animationTypeForReplace: 'push',
-          presentation: 'modal',
         }}
       />
       <Stack.Screen name="investment-stash" options={{ headerShown: false }} />
@@ -116,6 +115,14 @@ function AppNavigator() {
         options={{
           headerShown: false,
           presentation: 'modal',
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      />
+      <Stack.Screen
+        name="passkey-settings"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />

@@ -32,3 +32,6 @@ export * from './useFunding';
 
 // Allocation hooks
 export * from './useAllocation';
+
+// Passkey hooks
+export * from './usePasskey';

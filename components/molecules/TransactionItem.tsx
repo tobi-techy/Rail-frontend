@@ -240,7 +240,7 @@ export const resolveTransactionAssetIcon = (transaction: Transaction): ResolvedA
   return resolveCompanyLogo([transaction.merchant, transaction.title, transaction.subtitle]);
 };
 
-const ICON_SIZE = 48;
+const ICON_SIZE = 44;
 
 // SVGs that are symbol/logo style (not full-bleed flags) — render centered, not stretched
 const SYMBOL_ICONS = new Set(['NgnIcon']);
@@ -366,23 +366,23 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
   const isFailed = transaction.status === 'failed';
 
   return (
-    <TouchableOpacity className="flex-row items-center py-3" activeOpacity={0.7} {...props}>
+    <TouchableOpacity className="flex-row items-center py-[10px]" activeOpacity={0.7} {...props}>
       <View className="mr-sm">
         <TransactionIcon transaction={transaction} />
       </View>
 
       <View className="flex-1">
-        <Text className="font-subtitle text-subtitle text-text-primary" numberOfLines={1}>
+        <Text className="font-subtitle text-[15px] text-text-primary" numberOfLines={1}>
           {transaction.title}
         </Text>
-        <Text className="mt-[2px] font-caption text-caption text-text-secondary" numberOfLines={1}>
+        <Text className="mt-[2px] font-caption text-[12px] text-text-secondary" numberOfLines={1}>
           {transaction.subtitle}
         </Text>
       </View>
 
       <View className="items-end">
         <Text
-          className={`font-subtitle text-subtitle ${isPending ? 'text-text-secondary' : isFailed ? 'text-destructive' : isCredit ? 'text-success' : transaction.type === 'withdraw' || transaction.type === 'send' ? 'text-destructive' : 'text-text-primary'}`}
+          className={`font-subtitle text-[15px] ${isPending ? 'text-text-secondary' : isFailed ? 'text-destructive' : isCredit ? 'text-success' : transaction.type === 'withdraw' || transaction.type === 'send' ? 'text-destructive' : 'text-text-primary'}`}
           numberOfLines={1}>
           {amountText}
         </Text>

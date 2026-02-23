@@ -1,7 +1,20 @@
 import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { LogOut } from 'lucide-react-native';
+import {
+  LogOut,
+  KeyRound,
+  Fingerprint,
+  Shield,
+  Users,
+  Scale,
+  HeadphonesIcon,
+  Trash2,
+  ShieldCheck,
+  TrendingUp,
+  Repeat2,
+  ArrowLeftRight,
+} from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { useNavigation } from 'expo-router';
+import { useNavigation, router } from 'expo-router';
 import { useLayoutEffect, useState, useEffect, type ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BottomSheet, SettingsSheet } from '@/components/sheets';
@@ -17,20 +30,6 @@ import {
   usePasscodeStatus,
   useUpdatePasscode,
 } from '@/api/hooks';
-import {
-  AllocationIcon,
-  AutoInvestIcon,
-  RoundupIcon,
-  SwapIcon,
-  BiometricsIcon,
-  SecurityIcon,
-  TrashIcon,
-  RefferalIcon,
-  LegalIcon,
-  SupportIcon,
-  LogOutIcon,
-  TwoFactorAuthIcon,
-} from '@/assets/svg/filled';
 
 const DEFAULT_BASE_ALLOCATION = 70;
 const PIN_REGEX = /^\d{4}$/;
@@ -365,22 +364,22 @@ export default function Settings() {
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
         <Section title="Spend">
           <SettingButton
-            icon={<AllocationIcon width={34} height={34} color="#121212" />}
+            icon={<ArrowLeftRight size={26} color="#121212" />}
             label="Base/Active Split"
             onPress={openAllocationSheet}
           />
           <SettingButton
-            icon={<AutoInvestIcon width={34} height={34} />}
+            icon={<TrendingUp size={26} color="#121212" />}
             label="Auto Invest"
             onPress={() => setActiveSheet('autoInvest')}
           />
           <SettingButton
-            icon={<RoundupIcon width={34} height={34} />}
+            icon={<Repeat2 size={26} color="#121212" />}
             label="Round-ups"
             onPress={() => setActiveSheet('roundups')}
           />
           <SettingButton
-            icon={<SwapIcon width={34} height={34} color="#121212" />}
+            icon={<Scale size={26} color="#121212" />}
             label="Limits"
             onPress={() => setActiveSheet('limits')}
           />
@@ -388,45 +387,38 @@ export default function Settings() {
 
         <Section title="Security">
           <SettingButton
-            icon={<BiometricsIcon width={34} height={34} color="#121212" />}
+            icon={<Fingerprint size={26} color="#121212" />}
             label="Biometrics"
             onPress={() => setActiveSheet('biometrics')}
           />
           <SettingButton
-            icon={<SecurityIcon width={34} height={34} color="#121212" />}
+            icon={<Shield size={26} color="#121212" />}
             label="PIN"
             onPress={openPinSheet}
           />
           <SettingButton
-            icon={<TwoFactorAuthIcon width={34} height={34} color="#121212" />}
-            label={'2-Factor Auth'}
+            icon={<KeyRound size={26} color="#121212" />}
+            label="Passkeys"
+            onPress={() => router.push('/passkey-settings')}
           />
+          <SettingButton icon={<ShieldCheck size={26} color="#121212" />} label={'2-Factor Auth'} />
         </Section>
 
         <Section title="More">
-          <SettingButton
-            icon={<RefferalIcon width={34} height={34} color="#121212" />}
-            label="Referrals"
-          />
-          <SettingButton
-            icon={<LegalIcon width={34} height={34} color="#121212" />}
-            label="Legal"
-          />
-          <SettingButton
-            icon={<SupportIcon width={34} height={34} color="#121212" />}
-            label="Support"
-          />
+          <SettingButton icon={<Users size={26} color="#121212" />} label="Referrals" />
+          <SettingButton icon={<Scale size={26} color="#121212" />} label="Legal" />
+          <SettingButton icon={<HeadphonesIcon size={26} color="#121212" />} label="Support" />
         </Section>
 
         <Section title="Account">
           <SettingButton
-            icon={<LogOutIcon width={34} height={34} color="#F44336" />}
+            icon={<LogOut size={26} color="#F44336" />}
             label="Logout"
             danger
             onPress={() => setActiveSheet('logout')}
           />
           <SettingButton
-            icon={<TrashIcon width={34} height={34} color="#F44336" />}
+            icon={<Trash2 size={26} color="#F44336" />}
             label={'Delete Account'}
             danger
             onPress={() => setActiveSheet('delete')}
@@ -629,7 +621,7 @@ export default function Settings() {
 
         <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-10">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-red-100">
-            <TrashIcon width={34} height={34} color="#EF4444" />
+            <Trash2 size={32} color="#EF4444" />
           </View>
         </View>
 

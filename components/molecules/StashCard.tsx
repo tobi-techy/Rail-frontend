@@ -32,7 +32,7 @@ export const StashCard: React.FC<StashCardProps> = ({
   return (
     <AnimatedPressable
       style={animStyle}
-      className={`rounded-2xl border border-gray-200 bg-transparent px-5 py-5 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
+      className={`max-w-[50%] rounded-2xl border border-gray-200 bg-transparent px-5 py-5 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress?.();

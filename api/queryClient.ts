@@ -94,6 +94,10 @@ export const queryKeys = {
     all: ['spending'] as const,
     stash: () => [...queryKeys.spending.all, 'stash'] as const,
   },
+  passkeys: {
+    all: ['passkeys'] as const,
+    list: () => [...queryKeys.passkeys.all, 'list'] as const,
+  },
 };
 
 /**
@@ -107,6 +111,7 @@ export const invalidateQueries = {
   wallet: () => queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all }),
   funding: () => queryClient.invalidateQueries({ queryKey: queryKeys.funding.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
+  passkeys: () => queryClient.invalidateQueries({ queryKey: queryKeys.passkeys.all }),
   all: () => queryClient.invalidateQueries(),
 };
 

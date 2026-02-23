@@ -82,6 +82,7 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/virtual-account') ||
     pathname.startsWith('/profile') ||
     pathname.startsWith('/authorize-transaction') ||
+    pathname.startsWith('/passkey-settings') ||
     pathname.startsWith('/kyc'),
   isOnWelcomeScreen: pathname === '/' || pathname === normalizeRoutePath(ROUTES.INTRO),
   isOnLoginPasscode: pathname === '/login-passcode',

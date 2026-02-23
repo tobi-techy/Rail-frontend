@@ -5,15 +5,18 @@ import { router, useNavigation } from 'expo-router';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { StashCard } from '@/components/molecules/StashCard';
 import {
-  ArrowDown,
-  PlusIcon,
+  ArrowDownLeft,
+  ArrowUpRight,
   LayoutGrid,
   ChevronRight,
   Bell,
   MessageCircle,
+  Landmark,
+  Wallet,
 } from 'lucide-react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
-import { FeedbackSheet } from '@/components/sheets/FeedbackSheet';import type { Transaction } from '@/components/molecules/TransactionItem';
+import { FeedbackSheet } from '@/components/sheets/FeedbackSheet';
+import type { Transaction } from '@/components/molecules/TransactionItem';
 import { useStation, useKYCStatus } from '@/api/hooks';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
 import type { ActivityItem, Deposit, Withdrawal } from '@/api/types';
@@ -29,9 +32,8 @@ import {
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { useAuthStore } from '@/stores/authStore';
 import Avatar, { genConfig } from '@zamplyy/react-native-nice-avatar';
-import { PhantomIcon, SolflareIcon, SolanaIcon } from '@/assets/svg';
-import { BankIcon, CoinIcon, EarnIcon, AllocationIcon, CardIcon } from '@/assets/svg/filled';
-import { VisaLogo } from '@/assets/svg';
+import { PhantomIcon, SolflareIcon, SolanaIcon, VisaLogo } from '@/assets/svg';
+import { EarnIcon, AllocationIcon, CardIcon } from '@/assets/svg/filled';
 import { invalidateQueries } from '@/api/queryClient';
 
 // ── Helpers ──────────────────────────────────────────────
@@ -329,14 +331,14 @@ const Dashboard = () => {
         id: 'fiat',
         label: 'Fiat',
         sublabel: 'Receive assets via US bank account',
-        icon: <BankIcon width={32} height={32} color="#6366F1" />,
+        icon: <Landmark size={26} color="#6366F1" />,
         onPress: handleFiatPress,
       },
       {
         id: 'crypto',
         label: 'Crypto',
         sublabel: 'Receive assets via wallet address',
-        icon: <CoinIcon width={32} height={32} color="#6366F1" />,
+        icon: <Wallet size={26} color="#6366F1" />,
         onPress: handleReceiveCryptoPress,
       },
       {
@@ -377,7 +379,7 @@ const Dashboard = () => {
         id: 'wire',
         label: 'Wire Transfer',
         sublabel: 'Receive via wire transfer',
-        icon: <BankIcon width={28} height={28} color="#6366F1" />,
+        icon: <Landmark size={26} color="#6366F1" />,
         onPress: handleCloseReceiveSheet,
       },
     ],
@@ -390,14 +392,14 @@ const Dashboard = () => {
         id: 'fiat',
         label: 'Fiat',
         sublabel: 'Send to US bank account',
-        icon: <BankIcon width={28} height={28} color="#6366F1" />,
+        icon: <Landmark size={26} color="#6366F1" />,
         onPress: () => startWithdrawalFlow('fiat'),
       },
       {
         id: 'crypto',
         label: 'To Wallet',
         sublabel: 'Send to wallet address',
-        icon: <CoinIcon width={32} height={32} color="#6366F1" />,
+        icon: <Wallet size={26} color="#6366F1" />,
         onPress: () => startWithdrawalFlow('crypto'),
       },
       {
@@ -438,7 +440,7 @@ const Dashboard = () => {
         id: 'wire',
         label: 'Wire Transfer',
         sublabel: 'Send through wire transfer',
-        icon: <BankIcon width={28} height={28} color="#6366F1" />,
+        icon: <Landmark size={26} color="#6366F1" />,
         onPress: handleCloseSendSheet,
       },
     ],
@@ -498,14 +500,14 @@ const Dashboard = () => {
           <Button
             title="Receive"
             onPress={() => setShowReceiveSheet(true)}
-            leftIcon={<PlusIcon size={24} color="white" />}
+            leftIcon={<ArrowDownLeft size={20} color="white" />}
             size="small"
             variant="black"
           />
           <Button
             title="Send"
             onPress={() => setShowSendSheet(true)}
-            leftIcon={<ArrowDown size={24} color="black" />}
+            leftIcon={<ArrowUpRight size={20} color="black" />}
             size="small"
             variant="white"
           />
@@ -520,7 +522,7 @@ const Dashboard = () => {
               amountCents={spend.cents}
               icon={<EarnIcon width={36} height={36} />}
               className="flex-1"
-              // onPress={() => router.push('/spending-stash')}
+              onPress={() => router.push('/spending-stash')}
             />
             <StashCard
               title="Stash"

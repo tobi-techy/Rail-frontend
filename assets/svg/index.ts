@@ -10,10 +10,10 @@ export { default as PhantomIcon } from './phantom.svg';
 export { default as SolflareIcon } from './solflare.svg';
 
 // Fiat currency flag icons
-export { default as NgnIcon } from './NGN.svg';
-export { default as UsdIcon } from './USD.svg';
-export { default as GbpIcon } from './GBP.svg';
-export { default as EurIcon } from './EUR.svg';
+export { default as NgnIcon } from './ngn.svg';
+export { default as UsdIcon } from './usd.svg';
+export { default as GbpIcon } from './gbp.svg';
+export { default as EurIcon } from './eur.svg';
 export { default as CadIcon } from './CAD.svg';
 export { default as MxnIcon } from './MXN.svg';
 
