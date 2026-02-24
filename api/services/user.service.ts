@@ -11,9 +11,6 @@ import type {
   KYCVerificationRequest,
   KYCVerificationResponse,
   KYCStatusResponse,
-  GetNotificationsRequest,
-  GetNotificationsResponse,
-  MarkNotificationReadRequest,
   Enable2FAResponse,
   Verify2FARequest,
   Verify2FAResponse,
@@ -35,8 +32,6 @@ const USER_ENDPOINTS = {
   UPDATE_SETTINGS: '/user/settings',
   KYC_SUBMIT: '/user/kyc/submit',
   KYC_STATUS: '/user/kyc/status',
-  NOTIFICATIONS: '/user/notifications',
-  MARK_READ: '/user/notifications/read',
   DEVICES: '/user/devices',
   REMOVE_DEVICE: '/user/devices/:id',
 };
@@ -101,23 +96,6 @@ export const userService = {
    */
   async getKYCStatus(): Promise<KYCStatusResponse> {
     return apiClient.get<KYCStatusResponse>(USER_ENDPOINTS.KYC_STATUS);
-  },
-
-  /**
-   * Get notifications
-   */
-  async getNotifications(params?: GetNotificationsRequest): Promise<GetNotificationsResponse> {
-    return apiClient.get<GetNotificationsResponse>(
-      USER_ENDPOINTS.NOTIFICATIONS,
-      { params }
-    );
-  },
-
-  /**
-   * Mark notifications as read
-   */
-  async markNotificationsRead(data: MarkNotificationReadRequest): Promise<void> {
-    return apiClient.post(USER_ENDPOINTS.MARK_READ, data);
   },
 
   /**

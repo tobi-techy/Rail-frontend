@@ -2,7 +2,7 @@
   "expo": {
     "name": "Rail Money",
     "slug": "rail",
-    "version": "1.0.0",
+    "version": "1.0.5",
     "scheme": "rail",
     "platforms": ["ios", "android"],
     "web": {
@@ -19,8 +19,8 @@
       [
         "@sentry/react-native/expo",
         {
-          "organization": "YOUR_SENTRY_ORG",
-          "project": "YOUR_SENTRY_PROJECT"
+          "organization": "rail-money",
+          "project": "react-native"
         }
       ],
       "expo-web-browser",
@@ -43,9 +43,13 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSFaceIDUsageDescription": "Use Face ID to authenticate and secure your account",
-        "NSCameraUsageDescription": "Camera access is required for QR code scanning"
+        "NSCameraUsageDescription": "Camera access is required for QR code scanning",
+        "UIRequiredDeviceCapabilities": ["armv7"],
+        "UISupportedInterfaceOrientations": ["UIInterfaceOrientationPortrait"],
+        "UIStatusBarStyle": "UIStatusBarStyleDefault"
       },
-      "icon": "./assets/app-icon/app-icon.png"
+      "icon": "./assets/app-icon/app-icon.png",
+      "appleTeamId": "A239A6TG6R"
     },
     "android": {
       "adaptiveIcon": {
@@ -58,7 +62,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "d2824fee-1afc-48e0-a253-e72399dd968b"
+        "projectId": "8623a74b-7fb3-4d57-a2d6-b3fdef785ff0"
       }
     }
   }

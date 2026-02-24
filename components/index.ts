@@ -8,6 +8,12 @@ export { CountryPicker } from './atoms/CountryPicker';
 export { PhoneNumberInput } from './atoms/PhoneNumberInput';
 export { Icon } from './atoms/Icon';
 export { Ionicons } from './atoms/SafeIonicons';
+export { StaggeredChild } from './atoms/AnimatedScreen';
+export { Confetti } from './atoms/Confetti';
+
+// Templates
+export { AuthScreen, SelectionScreen } from './templates';
+export type { SelectionOption } from './templates';
 
 // Molecules
 export { BalanceCard } from './molecules/BalanceCard';
@@ -28,6 +34,9 @@ export type { TransactionListProps } from './molecules/TransactionList';
 
 // Sheets
 export { BottomSheet, ActionSheet, InfoSheet, SettingsSheet } from './sheets';
+
+// Auth
+export { AuthGradient } from './AuthGradient';
 
 // Design tokens
 export { colors, typography, spacing, borderRadius, shadows } from '../design/tokens';

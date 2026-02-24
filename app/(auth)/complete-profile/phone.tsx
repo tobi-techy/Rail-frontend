@@ -1,73 +1,43 @@
 import React, { useState } from 'react';
-import { View, Text, StatusBar, Pressable } from 'react-native';
+import { View, Text, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
-import { PhoneNumberInput } from '@/components';
-import { useAuthStore } from '@/stores';
-import { Ionicons } from '@/components/atoms/SafeIonicons';
+import { PhoneNumberInput, AuthGradient, StaggeredChild } from '@/components';
+import { ROUTES } from '@/constants/routes';
 
 export default function Phone() {
-  const { registrationData, updateRegistrationData, updateUser } = useAuthStore();
-  const [phone, setPhone] = useState(registrationData.phone);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleComplete = async () => {
-    // Optional phone validation if needed, or if it's optional allow empty?
-    // User request said "optional phone" in original conversation context,
-    // but typically "complete profile" implies finalizing.
-    // Let's assume it's optional as per original code `label="Phone (Optional)"`.
-
-    setIsLoading(true);
-    updateRegistrationData({ phone });
-
-    // Simulate API call and Finalize
-    setTimeout(() => {
-      setIsLoading(false);
-      // Commit data to user profile
-      updateUser({
-        fullName: `${registrationData.firstName} ${registrationData.lastName}`,
-        // In a real app we'd map the rest of the data to the user object or make an API call
-      });
-
-      // Navigate to Create Passcode
-      router.push('/(auth)/create-passcode');
-    }, 1000);
-  };
+  const [phone, setPhone] = useState('');
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
-      <View className="flex-1 px-6 pt-4">
-        <Pressable onPress={() => router.back()} className="mb-4">
-          <Ionicons name="arrow-back" size={24} color="black" />
-        </Pressable>
-        <View className="mb-8">
-          <Text className="font-display text-[60px] text-gray-900">Phone Number</Text>
-          <Text className="font-body-medium mt-2 text-[14px] text-gray-600">
-            Add a phone number (Optional)
-          </Text>
-        </View>
+    <AuthGradient>
+      <SafeAreaView className="flex-1" edges={['top']}>
+        <StatusBar barStyle="light-content" />
+        <View className="flex-1 px-6 pt-4">
+          <StaggeredChild index={0}>
+            <View className="mb-8 mt-4">
+              <Text className="font-display text-[60px] text-white">Phone Number</Text>
+              <Text className="font-body-medium mt-2 text-[14px] text-white/70">
+                Add a phone number (Optional)
+              </Text>
+            </View>
+          </StaggeredChild>
 
-        <View className="gap-y-4">
-          <PhoneNumberInput
-            label="Phone Number"
-            value={phone}
-            onChangeText={setPhone}
-            error={error}
-          />
-        </View>
+          <StaggeredChild index={1}>
+            <PhoneNumberInput label="Phone Number" value={phone} onChangeText={setPhone} variant="dark" />
+          </StaggeredChild>
 
-        <View className="mt-auto pb-4">
-          <Button
-            title="Complete Setup"
-            onPress={handleComplete}
-            loading={isLoading}
-            className="rounded-full font-body"
-          />
+          <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>
+            <View className="pb-4">
+              <Button
+                title="Next"
+                onPress={() => router.push(ROUTES.AUTH.COMPLETE_PROFILE.PROFILE_MILESTONE as any)}
+                variant="black"
+              />
+            </View>
+          </StaggeredChild>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </AuthGradient>
   );
 }

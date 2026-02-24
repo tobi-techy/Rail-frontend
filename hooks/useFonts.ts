@@ -48,23 +48,39 @@ export const useFonts = (): FontLoadingResult => {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Load fonts function
+   * Load fonts function with timeout and retry logic
    */
   const loadFonts = async (): Promise<void> => {
     try {
       setState('loading');
       setError(null);
 
-      // Load all custom fonts
-      await Font.loadAsync(FONT_FILES);
+      // Add timeout to prevent infinite loading
+      const fontLoadPromise = Font.loadAsync(FONT_FILES);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Font loading timeout')), 10000);
+      });
+
+      await Promise.race([fontLoadPromise, timeoutPromise]);
+
+      const allFontsLoaded = FontValidation.areAllCustomFontsLoaded();
+      if (!allFontsLoaded && __DEV__) {
+        console.warn('[useFonts] Some fonts may not have loaded properly');
+      }
 
       setState('loaded');
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Unknown error occurred while loading fonts';
-      console.error('Font loading error:', errorMessage);
+      if (__DEV__) {
+        console.error('[useFonts] Font loading error:', errorMessage);
+      }
       setError(errorMessage);
       setState('error');
+
+      if (!__DEV__) {
+        setTimeout(() => setState('loaded'), 1000);
+      }
     }
   };
 

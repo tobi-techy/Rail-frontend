@@ -23,17 +23,19 @@ export const HeaderAction = ({
   icon,
   accessibilityLabel,
   onPress,
+  variant = 'light',
 }: {
   icon: React.ComponentProps<typeof Feather>['name'];
   accessibilityLabel: string;
   onPress: () => void;
+  variant?: 'light' | 'dark';
 }) => (
   <TouchableOpacity
     onPress={onPress}
     accessibilityRole="button"
     accessibilityLabel={accessibilityLabel}
-    className="h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-    <Feather name={icon} size={22} color="#111827" />
+    className="h-10 w-10 items-center justify-center rounded-full">
+    <Feather name={icon} size={22} color={variant === 'dark' ? '#fff' : '#1f2937'} />
   </TouchableOpacity>
 );
 

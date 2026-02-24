@@ -1,11 +1,12 @@
 import * as SecureStore from 'expo-secure-store';
+import { logger } from '@/lib/logger';
 
 export const secureStorage = {
   async setItem(key: string, value: string) {
     try {
       await SecureStore.setItemAsync(key, value);
     } catch (error) {
-      console.error('SecureStore setItem error:', error);
+      logger.error('SecureStore setItem error', { component: 'SecureStorage', key, error });
       throw error;
     }
   },
@@ -14,7 +15,7 @@ export const secureStorage = {
     try {
       return await SecureStore.getItemAsync(key);
     } catch (error) {
-      console.error('SecureStore getItem error:', error);
+      logger.error('SecureStore getItem error', { component: 'SecureStorage', key, error });
       return null;
     }
   },
@@ -23,7 +24,7 @@ export const secureStorage = {
     try {
       await SecureStore.deleteItemAsync(key);
     } catch (error) {
-      console.error('SecureStore deleteItem error:', error);
+      logger.error('SecureStore deleteItem error', { component: 'SecureStorage', key, error });
     }
   },
 

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="gWith" x1="12" y1="5" x2="12" y2="19" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7CA6FF"/>
+      <stop offset="1" stop-color="#4C7DFF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- tray -->
+  <path fill="url(#gWith)" d="M6.0 13.6c0-1.2.8-2.0 2.0-2.0h8.0c1.2 0 2.0.8 2.0 2.0v4.2c0 1.2-.8 2.0-2.0 2.0H8.0c-1.2 0-2.0-.8-2.0-2.0v-4.2Z"/>
+
+  <!-- arrow up (white cut) -->
+  <path fill="#FFFFFF" fill-opacity=".92" d="M12 4.9c.55 0 1 .45 1 1v5.1l1.2-1.2c.4-.4 1.05-.4 1.45 0 .4.4.4 1.05 0 1.45l-2.9 2.9c-.4.4-1.05.4-1.45 0l-2.9-2.9c-.4-.4-.4-1.05 0-1.45.4-.4 1.05-.4 1.45 0l1.2 1.2V5.9c0-.55.45-1 1-1Z"/>
+
+  <!-- tray notch highlight -->
+  <path fill="#FFFFFF" fill-opacity=".18" d="M8.0 14.2h8.0c.5 0 .9.4.9.9s-.4.9-.9.9H8.0c-.5 0-.9-.4-.9-.9s.4-.9.9-.9Z"/>
+</svg>

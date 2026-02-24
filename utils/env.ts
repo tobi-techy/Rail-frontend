@@ -17,24 +17,22 @@ interface Env {
 }
 
 function validateEnv(): Env {
-  const missing: string[] = [];
-
-  for (const key of requiredEnvVars) {
-    if (!process.env[key]) {
-      missing.push(key);
-    }
-  }
-
-  if (missing.length > 0 && !__DEV__) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-  }
-
   const localhost = Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080';
 
+  // In production builds from Xcode, env vars may not be available
+  // Use fallback values for production
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://api.userail.money/api';
+
+  if (!apiUrl && !__DEV__) {
+    console.warn('EXPO_PUBLIC_API_URL not set, using fallback');
+  }
+
   return {
-    EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL || localhost,
-    EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
-    EXPO_PUBLIC_ENV: (process.env.EXPO_PUBLIC_ENV as Env['EXPO_PUBLIC_ENV']) || 'development',
+    EXPO_PUBLIC_API_URL: apiUrl || localhost,
+    EXPO_PUBLIC_SENTRY_DSN:
+      process.env.EXPO_PUBLIC_SENTRY_DSN ||
+      'https://e48781d34dd30b8321d915e0aaa00628@o4510763790237696.ingest.de.sentry.io/4510763838210128',
+    EXPO_PUBLIC_ENV: (process.env.EXPO_PUBLIC_ENV as Env['EXPO_PUBLIC_ENV']) || 'production',
   };
 }
 

@@ -1,174 +1,131 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StatusBar, TextInput, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { Input, Button } from '../../components/ui';
-import { InputField } from '@/components';
-import { useLogin } from '@/api/hooks';
-import { useAuthStore } from '@/stores/authStore';
+import { router } from 'expo-router';
+import { Button } from '@/components/ui';
+import { AuthGradient, InputField, StaggeredChild } from '@/components';
+import { ROUTES, type AuthRoute } from '@/constants/routes';
+
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const isValidPassword = (password: string): boolean => {
+  return password.length >= 8;
+};
 
 export default function SignIn() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const insets = useSafeAreaInsets();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
 
-  const { mutate: login, isPending: isLoading } = useLogin();
-
-  const updateField = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
     }
 
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
+    if (!isValidEmail(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    if (!isValidPassword(password)) {
+      Alert.alert('Error', 'Password must be at least 8 characters');
+      return;
+    }
 
-  const handleSignIn = () => {
-    if (!validateForm()) return;
-
-    login(
-      {
-        email: formData.email,
-        password: formData.password,
-      },
-      {
-        onSuccess: (response) => {
-          // Route directly to home screen after successful sign-in
-          router.replace('/(tabs)');
-        },
-        onError: (error: any) => {
-          console.error('Login error:', error);
-
-          // Handle specific error codes
-          const errorCode = error?.error?.code;
-          const errorMessage = error?.error?.message;
-
-          let displayMessage = 'Invalid email or password';
-
-          switch (errorCode) {
-            case 'INVALID_CREDENTIALS':
-              displayMessage = 'Invalid email or password. Please try again.';
-              break;
-            case 'ACCOUNT_INACTIVE':
-              displayMessage = 'Your account is inactive. Please contact support.';
-              break;
-            case 'UNAUTHORIZED':
-              // Check if email needs verification
-              if (errorMessage?.toLowerCase().includes('verif')) {
-                useAuthStore.setState({ pendingVerificationEmail: formData.email });
-                router.push('/(auth)/verify-email');
-                return;
-              }
-              displayMessage = errorMessage || displayMessage;
-              break;
-            case 'VALIDATION_ERROR':
-              displayMessage = 'Please check your email and password.';
-              break;
-            default:
-              displayMessage = errorMessage || displayMessage;
-          }
-          setErrors({
-            password: displayMessage,
-          });
-        },
-      }
-    );
+    setIsLoading(true);
+    try {
+      router.replace(ROUTES.TABS as any);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
-
+    <AuthGradient>
+      <StatusBar barStyle="light-content" />
       <KeyboardAwareScrollView
-        className="flex-1"
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        bottomOffset={40}>
-        {/* Content */}
-        <View className="flex-1 px-6 pb-6">
-          {/* Title */}
-          <View className="mb-8 mt-4">
-            <Text className="font-display text-[60px] text-gray-900">Welcome Back</Text>
-            <Text className="mt-2 font-body text-body text-gray-600">
-              Sign in to continue your investment journey
-            </Text>
-          </View>
-
-          {/* Form */}
-          <View className="gap-y-4">
-            <InputField
-              required
-              label="Email Address"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChangeText={(value: string) => updateField('email', value)}
-              error={errors.email}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              textContentType="emailAddress"
-            />
-
-            <InputField
-              required
-              label="Password"
-              placeholder="Enter your password"
-              value={formData.password}
-              onChangeText={(value: string) => updateField('password', value)}
-              error={errors.password}
-              secureTextEntry={!showPassword}
-              textContentType="password"
-            />
-          </View>
-
-          {/* Forgot Password & Passcode Login */}
-          <View className="mt-4 flex-row justify-end">
-            <TouchableOpacity
-              onPress={() => router.push('/(auth)/forgot-password')}
-              className="self-end">
-              <Text className="font-subtitle text-caption text-primary-tertiary">
-                Forgot Password?
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top + 16,
+          paddingBottom: insets.bottom + 20,
+        }}
+        keyboardShouldPersistTaps="handled">
+        <View className="flex-1 px-6">
+          <StaggeredChild index={0}>
+            <View className="mb-10">
+              <Text className="font-display text-[60px] leading-[1.1] text-white">
+                Welcome Back
               </Text>
-            </TouchableOpacity>
+              <Text className="mt-2 font-body text-body text-white/70">Sign in to continue</Text>
+            </View>
+          </StaggeredChild>
+
+          <View className="gap-y-2">
+            <StaggeredChild index={1}>
+              <InputField
+                label="Email"
+                placeholder="Enter your email"
+                value={email}
+                onChangeText={setEmail}
+                type="email"
+                variant="dark"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                blurOnSubmit={false}
+              />
+            </StaggeredChild>
+
+            <StaggeredChild index={2}>
+              <InputField
+                ref={passwordRef}
+                label="Password"
+                placeholder="Enter your password"
+                value={password}
+                onChangeText={setPassword}
+                type="password"
+                variant="dark"
+                isPasswordVisible={showPassword}
+                onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
+                returnKeyType="done"
+                onSubmitEditing={handleSignIn}
+              />
+            </StaggeredChild>
+
+            <StaggeredChild index={3}>
+              <TouchableOpacity
+                onPress={() => router.push(ROUTES.AUTH.FORGOT_PASSWORD)}
+                className="self-end"
+                accessibilityLabel="Forgot Password"
+                accessibilityHint="Navigate to reset your password">
+                <Text className="font-subtitle text-[13px] text-white/60">Forgot Password?</Text>
+              </TouchableOpacity>
+            </StaggeredChild>
           </View>
 
-          {/* Sign In Button */}
-          <View className="absolute bottom-0 left-0 right-0 mx-[24px]">
-            <Button
-              title="Sign in"
-              onPress={handleSignIn}
-              loading={isLoading}
-              className="rounded-full"
-              variant="white"
-            />
-
-            <TouchableOpacity onPress={() => router.push('/(auth)')} className="mt-4 self-center">
-              <Text className="text-center font-subtitle text-[14px] text-caption text-gray-900">
-                New to Rail? <Text className="text-primary-tertiary">Sign up</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
+            <View className="pt-8">
+              <Button title="Sign In" onPress={handleSignIn} variant="black" loading={isLoading} />
+              <TouchableOpacity
+                onPress={() => router.push(ROUTES.AUTH.INDEX)}
+                className="mt-4"
+                accessibilityLabel="Sign up"
+                accessibilityHint="Navigate to registration">
+                <Text className="text-center font-body text-[14px] text-white/70">
+                  New to Rail? <Text className="font-subtitle text-white underline">Sign Up</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </StaggeredChild>
         </View>
       </KeyboardAwareScrollView>
-    </SafeAreaView>
+    </AuthGradient>
   );
 }

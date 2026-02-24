@@ -3,8 +3,10 @@ import { View, Text, TouchableOpacity, Pressable, Dimensions, ScrollView } from 
 import { ArrowRight, ChevronRight } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import { colors, typography, spacing, borderRadius, animations } from '@/design/tokens';
+import { colors, typography, spacing, borderRadius } from '@/design/tokens';
 import { TransactionDetails } from '@/stores/withdrawalStore';
+
+const ANIMATION_DURATION = 200;
 
 interface ConfirmTransactionModalProps {
   visible: boolean;
@@ -35,7 +37,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
   useEffect(() => {
     if (visible && transaction) {
       translateY.value = withSpring(0, SPRING_CONFIG);
-      overlayOpacity.value = withTiming(1, { duration: animations.normal });
+      overlayOpacity.value = withTiming(1, { duration: ANIMATION_DURATION });
     }
   }, [visible, transaction]);
 
@@ -43,7 +45,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
     translateY.value = withSpring(screenHeight, SPRING_CONFIG, () => {
       runOnJS(onClose)();
     });
-    overlayOpacity.value = withTiming(0, { duration: animations.normal });
+    overlayOpacity.value = withTiming(0, { duration: ANIMATION_DURATION });
   };
 
   const pan = Gesture.Pan()
@@ -92,8 +94,8 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
                 left: 0,
                 right: 0,
                 backgroundColor: colors.background.main,
-                borderTopLeftRadius: borderRadius.modal,
-                borderTopRightRadius: borderRadius.modal,
+                borderTopLeftRadius: borderRadius.lg,
+                borderTopRightRadius: borderRadius.lg,
                 maxHeight: maxSheetHeight,
                 // Center on large screens
                 width: screenWidth >= 768 ? Math.min(560, screenWidth) : screenWidth,
@@ -119,7 +121,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
                   width: 40,
                   height: 4,
                   borderRadius: borderRadius.full,
-                  backgroundColor: colors.border.secondary,
+                  backgroundColor: '#E5E7EB',
                 }}
               />
             </View>
@@ -135,7 +137,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
               <Text
                 numberOfLines={1}
                 style={{
-                  fontFamily: typography.fonts['body-bold'],
+                  fontFamily: typography.fonts.headline,
                   fontSize: 20,
                   color: colors.text.primary,
                   textAlign: 'center',
@@ -146,7 +148,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
               <Text
                 style={{
                   fontFamily: typography.fonts.body,
-                  fontSize: typography.styles.label.size,
+                  fontSize: 14,
                   color: '#6B7280',
                   textAlign: 'center',
                   marginTop: 4,
@@ -165,7 +167,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
               <View style={{ alignItems: 'center', paddingBottom: spacing.md, paddingHorizontal: spacing.lg }}>
                 <Text
                   style={{
-                    fontFamily: typography.fonts['body-bold'],
+                    fontFamily: typography.fonts.headline,
                     fontSize: 40,
                     color: colors.text.primary,
                     marginBottom: 4,
@@ -175,7 +177,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
                 </Text>
                 <Text
                   style={{
-                    fontFamily: typography.fonts['body-medium'],
+                    fontFamily: typography.fonts.subtitle,
                     fontSize: 16,
                     color: '#6B7280',
                   }}
@@ -188,14 +190,14 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
               <View style={{ paddingHorizontal: spacing.lg }}>
                 {/* From */}
                 <View style={{ marginBottom: spacing.md }}>
-                  <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 12, color: '#6B7280', marginBottom: 8 }}>From</Text>
+                  <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280', marginBottom: 8 }}>From</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 14, color: colors.text.primary }}>
+                    <Text style={{ fontFamily: typography.fonts.subtitle, fontSize: 14, color: colors.text.primary }}>
                       {transaction.fromAccount}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
                       <View style={{ height: 4, width: 4, borderRadius: 2, backgroundColor: '#6B7280', marginRight: 4 }} />
-                      <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 11, color: '#6B7280' }}>
+                      <Text style={{ fontFamily: typography.fonts.body, fontSize: 11, color: '#6B7280' }}>
                         {transaction.fromAddress}
                       </Text>
                     </View>
@@ -204,12 +206,12 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
 
                 {/* Receiving Address */}
                 <View style={{ marginBottom: spacing.md }}>
-                  <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Receiving address</Text>
+                  <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Receiving address</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 14, color: colors.text.primary }}>
+                    <Text style={{ fontFamily: typography.fonts.subtitle, fontSize: 14, color: colors.text.primary }}>
                       {transaction.recipientName}
                     </Text>
-                    <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 11, color: '#6B7280', backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <Text style={{ fontFamily: typography.fonts.body, fontSize: 11, color: '#6B7280', backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
                       {transaction.recipientAddress}
                     </Text>
                   </View>
@@ -217,12 +219,12 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
 
                 {/* Token */}
                 <View style={{ marginBottom: spacing.md }}>
-                  <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Token</Text>
+                  <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Token</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontFamily: typography.fonts['body-bold'], fontSize: 14, color: colors.text.primary }}>
+                    <Text style={{ fontFamily: typography.fonts.headline, fontSize: 14, color: colors.text.primary }}>
                       {transaction.amount}
                     </Text>
-                    <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 12, color: '#6B7280' }}>
+                    <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280' }}>
                       {transaction.usdAmount}
                     </Text>
                   </View>
@@ -230,19 +232,19 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
 
                 {/* Network */}
                 <View style={{ marginBottom: spacing.md }}>
-                  <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Network</Text>
+                  <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Network</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <View style={{ height: 28, width: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#14F195' }}>
-                      <Text style={{ fontFamily: typography.fonts['body-bold'], fontSize: 11, color: colors.text.primary }}>S</Text>
+                      <Text style={{ fontFamily: typography.fonts.button, fontSize: 11, color: colors.text.primary }}>S</Text>
                     </View>
-                    <Text style={{ marginLeft: 8, fontFamily: typography.fonts['body-medium'], fontSize: 12, color: colors.text.primary }}>
+                    <Text style={{ marginLeft: 8, fontFamily: typography.fonts.body, fontSize: 12, color: colors.text.primary }}>
                       {transaction.fromNetwork.name}
                     </Text>
                     <ArrowRight size={14} color="#6B7280" strokeWidth={2} style={{ marginHorizontal: 8 }} />
                     <View style={{ height: 28, width: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#627EEA' }}>
-                      <Text style={{ fontFamily: typography.fonts['body-bold'], fontSize: 11, color: '#FFFFFF' }}>E</Text>
+                      <Text style={{ fontFamily: typography.fonts.button, fontSize: 11, color: '#FFFFFF' }}>E</Text>
                     </View>
-                    <Text style={{ marginLeft: 8, fontFamily: typography.fonts['body-medium'], fontSize: 12, color: colors.text.primary }}>
+                    <Text style={{ marginLeft: 8, fontFamily: typography.fonts.body, fontSize: 12, color: colors.text.primary }}>
                       {transaction.toNetwork.name}
                     </Text>
                   </View>
@@ -250,12 +252,12 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
 
                 {/* Fee */}
                 <View style={{ marginBottom: spacing.md }}>
-                  <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Fee</Text>
+                  <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Fee</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <View style={{ height: 20, width: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#EF4444', marginRight: 8 }}>
                       <Text style={{ color: '#FFFFFF', fontSize: 10 }}>⛽</Text>
                     </View>
-                    <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 12, color: colors.text.primary }}>
+                    <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: colors.text.primary }}>
                       {transaction.fee}
                     </Text>
                   </View>
@@ -263,13 +265,13 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
 
                 {/* Bridge Provider */}
                 <View style={{ marginBottom: spacing.sm }}>
-                  <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Bridge provider</Text>
+                  <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Bridge provider</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <View style={{ height: 20, width: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#8B5CF6', marginRight: 8 }}>
-                        <Text style={{ color: '#FFFFFF', fontSize: 10, fontFamily: typography.fonts['body-bold'] }}>B</Text>
+                        <Text style={{ color: '#FFFFFF', fontSize: 10, fontFamily: typography.fonts.button }}>B</Text>
                       </View>
-                      <Text style={{ fontFamily: typography.fonts['body-medium'], fontSize: 12, color: colors.text.primary }}>
+                      <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: colors.text.primary }}>
                         {transaction.bridgeProvider.name}
                       </Text>
                     </View>
@@ -293,7 +295,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
                 activeOpacity={0.8}
                 style={{
                   backgroundColor: colors.text.primary,
-                  borderRadius: borderRadius.xxl,
+                  borderRadius: borderRadius.full,
                   paddingVertical: spacing.md,
                   alignItems: 'center',
                 }}
@@ -302,7 +304,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
                   style={{
                     color: colors.text.onPrimary,
                     fontSize: 16,
-                    fontFamily: typography.fonts['body-bold'],
+                    fontFamily: typography.fonts.button,
                   }}
                 >
                   {isLoading ? 'Processing...' : 'Confirm'}

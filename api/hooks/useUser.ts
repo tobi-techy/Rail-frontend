@@ -9,8 +9,6 @@ import { queryKeys, invalidateQueries } from '../queryClient';
 import type {
   UpdateSettingsRequest,
   KYCVerificationRequest,
-  GetNotificationsRequest,
-  MarkNotificationReadRequest,
   Verify2FARequest,
   RemoveDeviceRequest,
   ChangePasswordRequest,
@@ -117,34 +115,6 @@ export function useKYCStatus() {
     queryKey: queryKeys.user.kycStatus(),
     queryFn: () => userService.getKYCStatus(),
     staleTime: 60 * 1000, // 1 minute
-  });
-}
-
-/**
- * Get notifications
- */
-export function useNotifications(params?: GetNotificationsRequest) {
-  return useQuery({
-    queryKey: queryKeys.user.notifications(params),
-    queryFn: () => userService.getNotifications(params),
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
-  });
-}
-
-/**
- * Mark notifications as read mutation
- */
-export function useMarkNotificationsRead() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: MarkNotificationReadRequest) => 
-      userService.markNotificationsRead(data),
-    onSuccess: () => {
-      // Invalidate notifications to refresh
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.all });
-    },
   });
 }
 

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="gOut2" x1="12" y1="5" x2="12" y2="19" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF7A7A"/>
+      <stop offset="1" stop-color="#FF375F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- door -->
+  <path fill="url(#gOut2)" d="M6.2 5.4h7.2c1.2 0 2 .8 2 2v9.2c0 1.2-.8 2-2 2H6.2c-1.2 0-2-.8-2-2V7.4c0-1.2.8-2 2-2Z"/>
+  <circle cx="12.8" cy="12" r="0.9" fill="#FFFFFF" fill-opacity=".35"/>
+
+  <!-- arrow out -->
+  <path fill="url(#gOut2)" d="M14.6 12c0-.35.18-.68.48-.87l4.2-2.7c.8-.5 1.8.07 1.8 1.02v5.1c0 .95-1.0 1.52-1.8 1.02l-4.2-2.7c-.3-.19-.48-.52-.48-.87Z"/>
+</svg>

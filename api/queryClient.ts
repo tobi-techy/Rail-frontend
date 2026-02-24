@@ -73,8 +73,6 @@ export const queryKeys = {
     profile: () => [...queryKeys.user.all, 'profile'] as const,
     settings: () => [...queryKeys.user.all, 'settings'] as const,
     kycStatus: () => [...queryKeys.user.all, 'kyc-status'] as const,
-    notifications: (filters?: unknown) =>
-      [...queryKeys.user.all, 'notifications', filters] as const,
     devices: () => [...queryKeys.user.all, 'devices'] as const,
   },
 };

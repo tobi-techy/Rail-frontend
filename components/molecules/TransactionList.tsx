@@ -1,52 +1,66 @@
 import React from 'react';
-import { View, Text, FlatList, ViewProps } from 'react-native';
+import { View, Text, ViewProps } from 'react-native';
 import { TransactionItem, Transaction } from './TransactionItem';
-import { colors } from '@/design/tokens';
-import { Icon } from '@/components/atoms';
 
 export interface TransactionListProps extends Omit<ViewProps, 'children'> {
   transactions: Transaction[];
   title?: string;
   onTransactionPress?: (transaction: Transaction) => void;
-  emptyStateMessage?: string;
 }
+
+type GroupedTransactions = { label: string; data: Transaction[] }[];
+
+const groupByDate = (transactions: Transaction[]): GroupedTransactions => {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+
+  const groups: Record<string, Transaction[]> = {};
+
+  transactions.forEach((tx) => {
+    const txDate = new Date(tx.createdAt);
+    let label: string;
+
+    if (txDate.toDateString() === today.toDateString()) {
+      label = 'Today';
+    } else if (txDate.toDateString() === yesterday.toDateString()) {
+      label = 'Yesterday';
+    } else if (txDate > weekAgo) {
+      label = 'This Week';
+    } else {
+      label = txDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    }
+
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(tx);
+  });
+
+  return Object.entries(groups).map(([label, data]) => ({ label, data }));
+};
 
 export const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
   title,
   onTransactionPress,
-  emptyStateMessage = 'You have no transactions yet.',
-  style,
   ...props
 }) => {
-  const renderItem = ({ item }: { item: Transaction }) => (
-    <TransactionItem transaction={item} onPress={() => onTransactionPress?.(item)} />
-  );
-
-  const renderEmptyState = () => (
-    <View className="items-center justify-center p-8">
-      <Icon name="file-tray-outline" size={48} color={colors.text.tertiary} />
-      <Text className="mt-4 text-center font-body text-base text-gray-500">
-        {emptyStateMessage}
-      </Text>
-    </View>
-  );
+  const grouped = groupByDate(transactions);
 
   return (
-    <View style={style} {...props}>
-      <View className="flex-row items-center justify-between">
-        {title && <Text className="font-subtitle text-headline-2 text-gray-900">{title}</Text>}
-        <Text className="font-body text-headline-2 text-gray-500">see all</Text>
-      </View>
-      <FlatList
-        data={transactions}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={renderEmptyState}
-        scrollEnabled={false}
-        ItemSeparatorComponent={() => <View className="h-3" />}
-        contentContainerStyle={{ paddingVertical: 12 }}
-      />
+    <View {...props}>
+      {title && <Text className="mb-md font-headline-2 text-headline-2 text-text-primary">{title}</Text>}
+      {grouped.map((group) => (
+        <View key={group.label} className="mb-md">
+          <Text className="mb-sm font-caption text-[13px] uppercase tracking-wide text-text-secondary">
+            {group.label}
+          </Text>
+          {group.data.map((tx) => (
+            <TransactionItem key={tx.id} transaction={tx} onPress={() => onTransactionPress?.(tx)} />
+          ))}
+        </View>
+      ))}
     </View>
   );
 };

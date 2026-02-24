@@ -3,30 +3,41 @@ import { StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  withSpring,
   withTiming,
+  withDelay,
   Easing,
   interpolate,
 } from 'react-native-reanimated';
 
 interface AnimatedScreenProps {
   children: React.ReactNode;
+  delay?: number;
 }
 
-export function AnimatedScreen({ children }: AnimatedScreenProps) {
+export function AnimatedScreen({ children, delay = 0 }: AnimatedScreenProps) {
   const progress = useSharedValue(0);
+  const opacity = useSharedValue(0);
 
   useEffect(() => {
-    progress.value = withTiming(1, {
-      duration: 350,
-      easing: Easing.out(Easing.cubic),
-    });
+    opacity.value = withDelay(
+      delay,
+      withTiming(1, { duration: 250, easing: Easing.out(Easing.ease) })
+    );
+    progress.value = withDelay(
+      delay,
+      withSpring(1, {
+        damping: 24,
+        stiffness: 200,
+        mass: 0.9,
+      })
+    );
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 1], [0, 1]),
+    opacity: opacity.value,
     transform: [
-      { translateY: interpolate(progress.value, [0, 1], [20, 0]) },
-      { scale: interpolate(progress.value, [0, 1], [0.98, 1]) },
+      { translateY: interpolate(progress.value, [0, 1], [32, 0]) },
     ],
   }));
 

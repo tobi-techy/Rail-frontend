@@ -20,6 +20,7 @@ export interface KeypadProps extends ViewProps {
   showFingerprint?: boolean;
   disabled?: boolean;
   className?: string;
+  variant?: 'light' | 'dark';
 }
 
 export const Keypad: React.FC<KeypadProps> = ({
@@ -27,8 +28,12 @@ export const Keypad: React.FC<KeypadProps> = ({
   showFingerprint = false,
   disabled = false,
   className = '',
+  variant = 'light',
   ...rest
 }) => {
+  const isDark = variant === 'dark';
+  const iconColor = isDark ? '#fff' : '#121212';
+
   const handlePress = (key: KeypadKey) => {
     if (disabled) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -52,16 +57,16 @@ export const Keypad: React.FC<KeypadProps> = ({
             return (
               <TouchableOpacity
                 key={key}
-                className="mx-1.5 h-[72px] flex-1 items-center justify-center rounded-full active:bg-surface"
+                className={`mx-1.5 h-[72px] flex-1 items-center justify-center rounded-full ${isDark ? 'active:bg-white/10' : 'active:bg-surface'}`}
                 activeOpacity={0.7}
                 onPress={() => handlePress(key)}
                 disabled={disabled}>
                 {isBackspace ? (
-                  <Trash size={24} color="#121212" />
+                  <Trash size={24} color={iconColor} />
                 ) : isFingerprint ? (
-                  <Fingerprint size={24} color="#121212" />
+                  <Fingerprint size={24} color={iconColor} />
                 ) : (
-                  <Text className="font-subtitle text-headline-2 text-text-primary">{key}</Text>
+                  <Text className={`font-subtitle text-headline-2 ${isDark ? 'text-white' : 'text-text-primary'}`}>{key}</Text>
                 )}
               </TouchableOpacity>
             );

@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
-import { Pressable, Dimensions, Modal, StyleSheet } from 'react-native';
+import { Pressable, Dimensions, Modal, StyleSheet, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { X } from 'lucide-react-native';
 
 const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
@@ -31,21 +32,18 @@ export function BottomSheet({
   const { height: screenHeight } = Dimensions.get('window');
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(screenHeight);
-  const overlayOpacity = useSharedValue(0);
 
   const animateClose = useCallback(() => {
     translateY.value = withSpring(screenHeight, SPRING_CONFIG, () => {
       runOnJS(onClose)();
     });
-    overlayOpacity.value = withTiming(0, { duration: 200 });
-  }, [onClose, screenHeight, translateY, overlayOpacity]);
+  }, [onClose, screenHeight, translateY]);
 
   useEffect(() => {
     if (visible) {
       translateY.value = withSpring(0, SPRING_CONFIG);
-      overlayOpacity.value = withTiming(1, { duration: 200 });
     }
-  }, [visible, translateY, overlayOpacity]);
+  }, [visible, translateY]);
 
   const pan = Gesture.Pan()
     .onUpdate((e) => {
@@ -70,15 +68,13 @@ export function BottomSheet({
     <Modal
       visible={visible}
       transparent
-      animationType="none"
+      animationType="fade"
       statusBarTranslucent
       onRequestClose={dismissible ? animateClose : undefined}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <Pressable
-          className="flex-1 bg-black/30"
-          style={StyleSheet.absoluteFill}
-          onPress={dismissible ? animateClose : undefined}
-        />
+        <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={dismissible ? animateClose : undefined} />
+        </BlurView>
 
         <GestureDetector gesture={pan}>
           <Animated.View

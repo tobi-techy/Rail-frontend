@@ -8,6 +8,40 @@ import type { ApiError, ApiResponse, TransformedApiError } from './types';
 import { safeLog, safeError } from '../utils/logSanitizer';
 import { API_CONFIG } from './config';
 import { generateRequestId } from '../utils/requestId';
+import { useAuthStore } from '../stores/authStore';
+
+/**
+ * SSL Certificate Pinning Configuration
+ * In production, requests will only succeed if the server's certificate matches
+ *
+ * SECURITY WARNING: Empty config disables SSL pinning. For production:
+ * 1. Obtain your server's certificate hash:
+ *    openssl s_client -connect api.yourdomain.com:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
+ * 2. Add at least 2 pins (primary + backup) for certificate rotation
+ * 3. Set EXPO_PUBLIC_API_URL environment variable for production
+ *
+ * Example configuration:
+ * const SSL_PINNING_CONFIG: Record<string, string[]> = {
+ *   'api.rail.com': [
+ *     'sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+ *     'sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=',
+ *   ],
+ * };
+ */
+
+const SSL_PINNING_ENABLED = __DEV__
+  ? false
+  : Boolean(process.env.EXPO_PUBLIC_SSL_PINNING_ENABLED) === true;
+
+const SSL_PINNING_CONFIG: Record<string, string[]> =
+  SSL_PINNING_ENABLED && process.env.EXPO_PUBLIC_API_URL
+    ? {
+        [new URL(process.env.EXPO_PUBLIC_API_URL).hostname]: [
+          process.env.EXPO_PUBLIC_CERT_PIN_1 || '',
+          process.env.EXPO_PUBLIC_CERT_PIN_2 || '',
+        ].filter(Boolean),
+      }
+    : {};
 
 /**
  * Custom Axios instance type that returns unwrapped data
@@ -60,14 +94,12 @@ const axiosInstance = axios.create({
  */
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const { useAuthStore } = require('../stores/authStore');
     const { accessToken, isAuthenticated, updateLastActivity } = useAuthStore.getState();
 
     if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
-    // Add request ID for tracing
     config.headers['X-Request-ID'] = generateRequestId();
 
     if (isAuthenticated) updateLastActivity();
@@ -113,7 +145,6 @@ axiosInstance.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const { useAuthStore } = require('../stores/authStore');
       const { isAuthenticated, refreshToken, reset } = useAuthStore.getState();
 
       if (isAuthenticated && refreshToken) {

@@ -36,7 +36,7 @@ export default function InvestmentStashScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activePeriod, setActivePeriod] = useState('6M');
   const [chartData, setChartData] = useState(() => generateChartData('6M'));
-  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {

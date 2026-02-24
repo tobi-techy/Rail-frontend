@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="gSend" x1="12" y1="4.5" x2="12" y2="19.5" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A08BFF"/>
+      <stop offset="1" stop-color="#6C7CFF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- stem -->
+  <path fill="url(#gSend)" d="M11 18.2c0 .66.54 1.2 1.2 1.2s1.2-.54 1.2-1.2V9.9c0-.66-.54-1.2-1.2-1.2S11 9.24 11 9.9v8.3Z"/>
+  <!-- head -->
+  <path fill="url(#gSend)" d="M17.5 11.1c-.47.47-1.23.47-1.7 0l-3.6-3.6-3.6 3.6c-.47.47-1.23.47-1.7 0-.47-.47-.47-1.23 0-1.7l4.45-4.45c.47-.47 1.23-.47 1.7 0l4.45 4.45c.47.47.47 1.23 0 1.7Z"/>
+  <!-- tiny highlight -->
+  <circle cx="10.6" cy="17.1" r="1.0" fill="#FFFFFF" fill-opacity=".16"/>
+</svg>

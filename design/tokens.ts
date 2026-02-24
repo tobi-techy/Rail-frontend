@@ -1,38 +1,36 @@
 /**
- * Design tokens from RAIL-DESIGN.json v1.4.0
- * Vivid Minimalism: High-contrast white/black with energetic blue accent
- * Typography: Pramukh Rounded for headings, SF Pro Rounded for body/UI
+ * Design tokens from RAIL-DESIGN.json v3.0.0
+ * Clean minimal design: Black, White, Rail Red, Rail Green
  */
 
 export const colors = {
   primary: {
-    accent: '#1B84FF',
-    secondary: '#487984',
-    tertiary: '#FF5A00',
+    accent: '#FF2E01',
+    dark: '#E02900',
+    secondary: '#00C853',
+    tertiary: '#FF2E01',
   },
   background: {
     main: '#FFFFFF',
     surface: '#F5F5F5',
   },
   text: {
-    primary: '#121212',
+    primary: '#000000',
     secondary: '#757575',
     onPrimary: '#FFFFFF',
   },
   semantic: {
     success: '#00C853',
-    destructive: '#F44336',
+    destructive: '#FF2E01',
   },
   overlay: 'rgba(0, 0, 0, 0.7)',
 } as const;
 
 export const typography = {
   fonts: {
-    // Headings - Pramukh Rounded
     display: 'PramukhRounded-Bold',
     headline: 'PramukhRounded-Bold',
     headline2: 'PramukhRounded-Semibold',
-    // Body/UI - SF Pro Rounded
     subtitle: 'SF-Pro-Rounded-Medium',
     body: 'SF-Pro-Rounded-Regular',
     caption: 'SF-Pro-Rounded-Regular',
@@ -77,8 +75,8 @@ export const shadows = {
 } as const;
 
 export const components = {
-  button: { height: 48, borderRadius: 8 },
-  input: { height: 48, borderRadius: 8 },
+  button: { height: 52, borderRadius: 9999 },
+  input: { height: 52, borderRadius: 12 },
   card: { borderRadius: 16, padding: 16 },
   icon: { sizeM: 24, sizeL: 32 },
 } as const;
