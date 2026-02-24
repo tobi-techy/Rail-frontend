@@ -34,13 +34,20 @@ export interface VerifyPasscodeRequest {
   passcode: string;
 }
 
+export interface PasscodeLoginRequest {
+  passcode: string;
+  refresh_token: string;
+  email?: string;
+  phone?: string;
+}
+
 export interface VerifyPasscodeResponse {
   verified: boolean;
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: string;
-  passcodeSessionToken: string; // Used to track passcode session (10 mins)
-  passcodeSessionExpiresAt: string; // Expiry time for passcode session
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: string;
+  passcodeSessionToken?: string;
+  passcodeSessionExpiresAt?: string;
 }
 
 export interface DeletePasscodeRequest {

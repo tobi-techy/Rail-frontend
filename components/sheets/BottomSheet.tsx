@@ -1,10 +1,9 @@
 import React, { useEffect, useCallback } from 'react';
-import { Pressable, Dimensions, Modal, StyleSheet, View } from 'react-native';
+import { Keyboard, Pressable, Dimensions, Modal, StyleSheet, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -13,6 +12,7 @@ import { BlurView } from 'expo-blur';
 import { X } from 'lucide-react-native';
 
 const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
+const KB_SPRING = { damping: 22, stiffness: 280, mass: 0.8 };
 
 interface BottomSheetProps {
   visible: boolean;
@@ -32,6 +32,7 @@ export function BottomSheet({
   const { height: screenHeight } = Dimensions.get('window');
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(screenHeight);
+  const keyboardOffset = useSharedValue(0);
 
   const animateClose = useCallback(() => {
     translateY.value = withSpring(screenHeight, SPRING_CONFIG, () => {
@@ -44,6 +45,27 @@ export function BottomSheet({
       translateY.value = withSpring(0, SPRING_CONFIG);
     }
   }, [visible, translateY]);
+
+  // Track keyboard to lift the sheet
+  useEffect(() => {
+    if (!visible) return;
+
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = Keyboard.addListener(showEvent, (e) => {
+      // Subtract bottom inset since the sheet already accounts for it
+      keyboardOffset.value = withSpring(e.endCoordinates.height - insets.bottom, KB_SPRING);
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => {
+      keyboardOffset.value = withSpring(0, KB_SPRING);
+    });
+
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, [visible, insets.bottom, keyboardOffset]);
 
   const pan = Gesture.Pan()
     .onUpdate((e) => {
@@ -60,6 +82,7 @@ export function BottomSheet({
 
   const sheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
+    bottom: 24 + keyboardOffset.value,
   }));
 
   if (!visible) return null;
@@ -73,12 +96,15 @@ export function BottomSheet({
       onRequestClose={dismissible ? animateClose : undefined}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={dismissible ? animateClose : undefined} />
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={dismissible ? animateClose : undefined}
+          />
         </BlurView>
 
         <GestureDetector gesture={pan}>
           <Animated.View
-            className="absolute bottom-6 left-3 right-3 rounded-[34px] bg-white px-6 pt-6"
+            className="absolute left-3 right-3 rounded-[34px] bg-white px-6 pt-6"
             style={[sheetStyle, { paddingBottom: Math.max(insets.bottom, 10) }]}>
             {showCloseButton && (
               <Pressable

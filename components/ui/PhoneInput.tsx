@@ -97,7 +97,11 @@ export const PhoneInput = forwardRef<TextInput, PhoneInputProps>(
     const handleBlur = () => {
       setIsFocused(false);
       if (!value) {
-        Animated.timing(animatedValue, { toValue: 0, duration: 200, useNativeDriver: false }).start();
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: false,
+        }).start();
       }
     };
 
@@ -116,15 +120,19 @@ export const PhoneInput = forwardRef<TextInput, PhoneInputProps>(
               {showCountryPicker && (
                 <TouchableOpacity
                   onPress={() => setShowPicker(true)}
-                  className="flex-row items-center border-r border-surface px-4 py-4"
-                >
+                  className="min-h-[44px] flex-row items-center border-r border-surface px-4 py-4"
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select country code, currently ${selectedCountry.country} ${selectedCountry.dialCode}`}
+                  accessibilityHint="Opens country picker">
                   <Text className="mr-1 text-lg">{selectedCountry.flag}</Text>
-                  <Text className="mr-1 font-body text-body text-text-primary">{selectedCountry.dialCode}</Text>
+                  <Text className="mr-1 font-body text-body text-text-primary">
+                    {selectedCountry.dialCode}
+                  </Text>
                   <Ionicons name="chevron-down" size={16} color="#757575" />
                 </TouchableOpacity>
               )}
 
-              <View className="flex-1 relative">
+              <View className="relative flex-1">
                 <TextInput
                   ref={inputRef}
                   value={formattedValue}
@@ -135,6 +143,7 @@ export const PhoneInput = forwardRef<TextInput, PhoneInputProps>(
                   placeholderTextColor="#757575"
                   keyboardType="phone-pad"
                   textContentType="telephoneNumber"
+                  accessibilityLabel={label || 'Phone number'}
                   {...props}
                 />
               </View>
@@ -142,8 +151,9 @@ export const PhoneInput = forwardRef<TextInput, PhoneInputProps>(
               {value && (
                 <TouchableOpacity
                   onPress={() => onChangeText('', selectedCountry.dialCode, '')}
-                  className="mr-4 rounded-full bg-surface p-1"
-                >
+                  className="mr-2 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-surface p-2"
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear phone number">
                   <Ionicons name="close" size={16} color="#757575" />
                 </TouchableOpacity>
               )}
@@ -164,11 +174,17 @@ export const PhoneInput = forwardRef<TextInput, PhoneInputProps>(
           <View className="flex-1 bg-background-main">
             <View className="border-b border-surface px-6 py-4">
               <View className="flex-row items-center justify-between">
-                <TouchableOpacity onPress={() => setShowPicker(false)}>
+                <TouchableOpacity
+                  onPress={() => setShowPicker(false)}
+                  className="-ml-2 min-h-[44px] min-w-[44px] items-center justify-center"
+                  accessibilityRole="button"
+                  accessibilityLabel="Close country picker">
                   <Ionicons name="close" size={24} color="#121212" />
                 </TouchableOpacity>
-                <Text className="font-headline-2 text-subtitle text-text-primary">Select Country</Text>
-                <View style={{ width: 24 }} />
+                <Text className="font-headline-2 text-subtitle text-text-primary">
+                  Select Country
+                </Text>
+                <View style={{ width: 44 }} />
               </View>
             </View>
 
@@ -177,16 +193,27 @@ export const PhoneInput = forwardRef<TextInput, PhoneInputProps>(
                 <TouchableOpacity
                   key={country.code}
                   onPress={() => handleCountrySelect(country)}
-                  className={`flex-row items-center border-b border-surface px-6 py-4 ${
+                  className={`min-h-[56px] flex-row items-center border-b border-surface px-6 py-4 ${
                     selectedCountry.code === country.code ? 'bg-surface' : ''
                   }`}
-                >
+                  accessibilityRole="button"
+                  accessibilityLabel={`${country.country}, ${country.dialCode}`}
+                  accessibilityState={{ selected: selectedCountry.code === country.code }}>
                   <Text className="mr-3 text-2xl">{country.flag}</Text>
                   <View className="flex-1">
                     <Text className="font-body text-body text-text-primary">{country.country}</Text>
-                    <Text className="font-caption text-caption text-text-secondary">{country.dialCode}</Text>
+                    <Text className="font-caption text-caption text-text-secondary">
+                      {country.dialCode}
+                    </Text>
                   </View>
-                  {selectedCountry.code === country.code && <Ionicons name="checkmark" size={20} color="#00C853" />}
+                  {selectedCountry.code === country.code && (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color="#00C853"
+                      accessibilityLabel="Selected"
+                    />
+                  )}
                 </TouchableOpacity>
               ))}
             </ScrollView>

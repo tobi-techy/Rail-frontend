@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, ViewProps, ViewStyle } from 'react-native';
-import { colors, borderRadius, spacing, shadows } from '../../design/tokens';
+import { View, ViewProps } from 'react-native';
 
 export interface CardProps extends ViewProps {
   padding?: 'none' | 'small' | 'medium' | 'large';
@@ -8,30 +7,22 @@ export interface CardProps extends ViewProps {
   children: React.ReactNode;
 }
 
+const paddingClasses = {
+  none: '',
+  small: 'p-sm',
+  medium: 'p-md',
+  large: 'p-lg',
+} as const;
+
 export const Card: React.FC<CardProps> = ({
   padding = 'medium',
   className,
   children,
-  style,
   ...props
-}) => {
-  const paddingValue = {
-    none: 0,
-    small: spacing.sm,
-    medium: spacing.md,
-    large: spacing.lg,
-  }[padding];
-
-  const cardStyle: ViewStyle = {
-    backgroundColor: colors.background.surface,
-    borderRadius: borderRadius.md,
-    padding: paddingValue,
-    ...shadows.card,
-  };
-
-  return (
-    <View className={className} style={[cardStyle, style]} {...props}>
-      {children}
-    </View>
-  );
-};
+}) => (
+  <View
+    className={`rounded-md bg-surface shadow-card ${paddingClasses[padding]} ${className || ''}`}
+    {...props}>
+    {children}
+  </View>
+);

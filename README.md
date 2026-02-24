@@ -44,22 +44,41 @@ cp .env.example .env
 ```
 
 Required environment variables:
+
 - `EXPO_PUBLIC_API_URL` - Backend API URL
 - `EXPO_PUBLIC_SENTRY_DSN` - Sentry error tracking DSN
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `bun start` | Start Expo dev server |
-| `bun ios` | Run on iOS simulator |
-| `bun android` | Run on Android emulator |
-| `bun test` | Run tests |
-| `bun test:coverage` | Run tests with coverage |
-| `bun lint` | Run ESLint and Prettier |
-| `bun format` | Fix linting issues |
-| `bun typecheck` | TypeScript type checking |
-| `bun validate` | Run all checks |
+| Command             | Description              |
+| ------------------- | ------------------------ |
+| `bun start`         | Start Expo dev server    |
+| `bun ios`           | Run on iOS simulator     |
+| `bun android`       | Run on Android emulator  |
+| `bun test`          | Run tests                |
+| `bun test:coverage` | Run tests with coverage  |
+| `bun lint`          | Run ESLint and Prettier  |
+| `bun format`        | Fix linting issues       |
+| `bun typecheck`     | TypeScript type checking |
+| `bun validate`      | Run all checks           |
+
+## EAS Build Profiles
+
+- `development`: local dev client
+- `preview`: internal distribution
+- `testflight`: App Store/TestFlight build wired to staging backend (`https://rail-backend-service-production.up.railway.app/api`)
+- `production`: production release profile
+
+Example TestFlight build:
+
+```bash
+eas build --platform ios --profile testflight
+```
+
+For Xcode archive/TestFlight uploads, `ios/.xcode.env` now defaults Release builds to staging:
+
+- `EXPO_PUBLIC_ENV=staging`
+- `EXPO_PUBLIC_API_URL=https://rail-backend-service-production.up.railway.app/api`
 
 ## Project Structure
 

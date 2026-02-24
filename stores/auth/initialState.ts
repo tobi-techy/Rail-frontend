@@ -30,5 +30,6 @@ export const initialState: AuthState = {
     postalCode: '',
     country: '',
     phone: '',
+    password: '',
   },
 };

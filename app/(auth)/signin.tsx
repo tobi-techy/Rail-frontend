@@ -1,11 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, TextInput, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
-import { ROUTES, type AuthRoute } from '@/constants/routes';
+import { ROUTES } from '@/constants/routes';
+import { useLogin } from '@/api/hooks/useAuth';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { getPostAuthRoute } from '@/utils/onboardingFlow';
 
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -20,37 +23,79 @@ export default function SignIn() {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const passwordRef = useRef<TextInput>(null);
+  const { mutate: login, isPending } = useLogin();
+  const { showError, showWarning } = useFeedbackPopup();
 
-  const handleSignIn = async () => {
+  const handleSignIn = () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+      if (!email) setEmailError('Email is required');
+      if (!password) setPasswordError('Password is required');
+      showWarning('Missing Fields', 'Please enter both email and password.');
       return;
     }
 
     if (!isValidEmail(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      setEmailError('Please enter a valid email address');
+      showWarning('Invalid Email', 'Please enter a valid email address.');
       return;
     }
 
     if (!isValidPassword(password)) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
+      setPasswordError('Password must be at least 8 characters');
+      showWarning('Weak Password', 'Password must be at least 8 characters.');
       return;
     }
 
-    setIsLoading(true);
-    try {
-      router.replace(ROUTES.TABS as any);
-    } finally {
-      setIsLoading(false);
-    }
+    setEmailError('');
+    setPasswordError('');
+
+    // Clear password from state immediately for security
+    // Store in temp variable to pass to login function
+    const passwordToUse = password;
+    setPassword('');
+
+    login(
+      { email: email.trim().toLowerCase(), password: passwordToUse },
+      {
+        onSuccess: (response) => {
+          const targetRoute = getPostAuthRoute(response.user?.onboardingStatus);
+          router.replace(targetRoute as any);
+        },
+        onError: (error: any) => {
+          // Categorize error for better user messaging
+          let userMessage = 'Sign in failed. Please try again.';
+
+          if (error?.code === 'NETWORK_ERROR') {
+            userMessage = 'Connection error. Check your internet and try again.';
+          } else if (error?.status === 429) {
+            userMessage = 'Too many attempts. Please wait a moment.';
+          } else if (error?.status >= 500) {
+            userMessage = 'Server error. Please try again later.';
+          } else if (error?.status === 401 || error?.status === 403) {
+            userMessage = 'Invalid email or password.';
+          } else if (error?.message) {
+            userMessage = error.message;
+          }
+
+          setPasswordError(userMessage);
+          showError('Sign In Failed', userMessage);
+          // Password already cleared from state above
+        },
+      }
+    );
   };
 
   return (
     <AuthGradient>
-      <StatusBar barStyle="light-content" />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={Platform.OS === 'android'}
+      />
       <KeyboardAwareScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -61,10 +106,10 @@ export default function SignIn() {
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
-              <Text className="font-display text-[60px] leading-[1.1] text-white">
+              <Text className="font-headline text-auth-title leading-[1.1] text-black">
                 Welcome Back
               </Text>
-              <Text className="mt-2 font-body text-body text-white/70">Sign in to continue</Text>
+              <Text className="mt-2 font-body text-body text-black/60">Sign in to continue</Text>
             </View>
           </StaggeredChild>
 
@@ -74,12 +119,15 @@ export default function SignIn() {
                 label="Email"
                 placeholder="Enter your email"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  if (emailError) setEmailError('');
+                }}
                 type="email"
-                variant="dark"
+                error={emailError}
                 returnKeyType="next"
                 onSubmitEditing={() => passwordRef.current?.focus()}
-                blurOnSubmit={false}
+                // blurOnSubmit={false}
               />
             </StaggeredChild>
 
@@ -89,9 +137,12 @@ export default function SignIn() {
                 label="Password"
                 placeholder="Enter your password"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(value) => {
+                  setPassword(value);
+                  if (passwordError) setPasswordError('');
+                }}
                 type="password"
-                variant="dark"
+                error={passwordError}
                 isPasswordVisible={showPassword}
                 onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
                 returnKeyType="done"
@@ -105,21 +156,21 @@ export default function SignIn() {
                 className="self-end"
                 accessibilityLabel="Forgot Password"
                 accessibilityHint="Navigate to reset your password">
-                <Text className="font-subtitle text-[13px] text-white/60">Forgot Password?</Text>
+                <Text className="font-subtitle text-small text-black/50">Forgot Password?</Text>
               </TouchableOpacity>
             </StaggeredChild>
           </View>
 
           <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
-              <Button title="Sign In" onPress={handleSignIn} variant="black" loading={isLoading} />
+              <Button title="Sign In" onPress={handleSignIn} loading={isPending} />
               <TouchableOpacity
-                onPress={() => router.push(ROUTES.AUTH.INDEX)}
+                onPress={() => router.push(ROUTES.AUTH.SIGNUP as any)}
                 className="mt-4"
                 accessibilityLabel="Sign up"
                 accessibilityHint="Navigate to registration">
-                <Text className="text-center font-body text-[14px] text-white/70">
-                  New to Rail? <Text className="font-subtitle text-white underline">Sign Up</Text>
+                <Text className="text-center font-body text-caption text-black/60">
+                  New to Rail? <Text className="font-subtitle text-black underline">Sign Up</Text>
                 </Text>
               </TouchableOpacity>
             </View>

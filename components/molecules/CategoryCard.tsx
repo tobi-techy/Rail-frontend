@@ -66,13 +66,11 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
   const accessibilityLabel = useMemo(
     () =>
       `${title} category. ${basketLabel}. Performance ${isPositive ? 'up' : 'down'} ${performanceLabel}.`,
-    [title, basketLabel, isPositive, performanceLabel],
+    [title, basketLabel, isPositive, performanceLabel]
   );
 
   const gradientColors: readonly [string, string] =
-    Array.isArray(iconGradient) && iconGradient.length === 2
-      ? iconGradient
-      : DEFAULT_GRADIENT;
+    Array.isArray(iconGradient) && iconGradient.length === 2 ? iconGradient : DEFAULT_GRADIENT;
 
   return (
     <TouchableOpacity
@@ -82,8 +80,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
       accessibilityLabel={accessibilityLabel}
       className={['w-full active:opacity-90', className].filter(Boolean).join(' ')}
       style={style}
-      {...props}
-    >
+      {...props}>
       <View
         className="w-full rounded-[28px] border border-[#EEF1F8] bg-white px-4 py-5"
         style={{
@@ -92,8 +89,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
           shadowRadius: 18,
           shadowOffset: { width: 0, height: 12 },
           elevation: 3,
-        }}
-      >
+        }}>
         <View className="flex-row items-start justify-between">
           <LinearGradient
             colors={gradientColors}
@@ -110,8 +106,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
               shadowOffset: { width: 0, height: 8 },
               shadowRadius: 16,
               elevation: 6,
-            }}
-          >
+            }}>
             {SvgIcon ? (
               <SvgIcon width={24} height={24} />
             ) : (
@@ -120,30 +115,26 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
           </LinearGradient>
 
           <View className="rounded-full bg-[#F4F5FA] px-3 py-1">
-            <Text className="text-[12px] font-body-medium text-[#5A5D72]">
-              {basketLabel}
-            </Text>
+            <Text className="font-body-medium text-[12px] text-[#5A5D72]">{basketLabel}</Text>
           </View>
         </View>
 
         <View className="mt-6 flex-row justify-between">
-       <View>
-       <Text
-            className="text-[18px] font-body-bold text-text-primary"
-            numberOfLines={1}
-          >
-            {title}
-          </Text>
-          <View className="mt-2 flex-row items-center">
-            <View
-              className={`mr-2 h-2 w-2 rounded-full ${isPositive ? 'bg-[#1BC773]' : 'bg-[#FB088F]'}`}
-              accessibilityLabel={isPositive ? 'Positive performance' : 'Negative performance'}
-            />
-            <Text className={`text-[14px] font-body-medium ${isPositive ? 'text-[#1E1A3E]' : 'text-[#FB088F]'}`}>
-              {performanceLabel}
+          <View>
+            <Text className="font-body-bold text-[18px] text-text-primary" numberOfLines={1}>
+              {title}
             </Text>
+            <View className="mt-2 flex-row items-center">
+              <View
+                className={`mr-2 h-2 w-2 rounded-full ${isPositive ? 'bg-[#1BC773]' : 'bg-[#FB088F]'}`}
+                accessibilityLabel={isPositive ? 'Positive performance' : 'Negative performance'}
+              />
+              <Text
+                className={`font-body-medium text-[14px] ${isPositive ? 'text-[#1E1A3E]' : 'text-[#FB088F]'}`}>
+                {isPositive ? '↑' : '↓'} {performanceLabel}
+              </Text>
+            </View>
           </View>
-       </View>
 
           {tokenLogos.length > 0 && (
             <View className="mt-4 flex-row">
@@ -154,20 +145,15 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
                   style={{
                     marginLeft: index > 0 ? -10 : 0,
                     zIndex: 3 - index,
-                  }}
-                >
-                  <Image
-                    source={src}
-                    className="h-7 w-7 rounded-full"
-                  />
+                  }}>
+                  <Image source={src} className="h-7 w-7 rounded-full" />
                 </View>
               ))}
               {tokenLogos.length > 3 && (
                 <View
                   className="h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#949FFF]"
-                  style={{ marginLeft: -10 }}
-                >
-                  <Text className="text-[12px] font-body-bold text-white">
+                  style={{ marginLeft: -10 }}>
+                  <Text className="font-body-bold text-[12px] text-white">
                     +{tokenLogos.length - 3}
                   </Text>
                 </View>

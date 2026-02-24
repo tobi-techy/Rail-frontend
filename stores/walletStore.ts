@@ -52,9 +52,9 @@ interface WalletActions {
 }
 
 const initialState: WalletState = {
-  tokens: MOCK_TOKENS,
+  tokens: [],
   totalBalanceUSD: 0,
-  transactions: MOCK_TRANSACTIONS,
+  transactions: [],
   isLoading: false,
   error: null,
   selectedToken: null,
@@ -130,9 +130,9 @@ export const useWalletStore = create<WalletState & WalletActions>()(
             .filter(Boolean) as Token[];
 
           if (tokens.length === 0) {
-            logger.error('[WalletStore] No valid tokens received, using mock data');
+            logger.error('[WalletStore] No valid tokens received');
             set({
-              tokens: MOCK_TOKENS,
+              tokens: __DEV__ ? MOCK_TOKENS : [],
               isLoading: false,
             });
           } else {
@@ -148,9 +148,9 @@ export const useWalletStore = create<WalletState & WalletActions>()(
           const errorMessage =
             error?.error?.message || error?.message || ERROR_MESSAGES.WALLET.LOAD_FAILED;
 
-          // Fallback to mock data if API fails
+          // Fallback to mock data only in dev
           set({
-            tokens: MOCK_TOKENS,
+            tokens: __DEV__ ? MOCK_TOKENS : [],
             error: errorMessage,
             isLoading: false,
           });
@@ -243,9 +243,9 @@ export const useWalletStore = create<WalletState & WalletActions>()(
             '[WalletStore] Failed to fetch transactions',
             error instanceof Error ? error : { error }
           );
-          // Fallback to mock data if API fails
+          // Fallback to mock data only in dev
           set({
-            transactions: MOCK_TRANSACTIONS,
+            transactions: __DEV__ ? MOCK_TRANSACTIONS : [],
             error: error instanceof Error ? error.message : ERROR_MESSAGES.WALLET.LOAD_FAILED,
             isLoading: false,
           });

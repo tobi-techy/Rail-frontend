@@ -1,31 +1,25 @@
 export const ROUTES = {
+  INTRO: '/intro',
   AUTH: {
-    INDEX: '/(auth)',
+    SIGNUP: '/(auth)/signup',
     SIGNIN: '/(auth)/signin',
     VERIFY_EMAIL: '/(auth)/verify-email',
     FORGOT_PASSWORD: '/(auth)/forgot-password',
+    RESET_PASSWORD: '/(auth)/reset-password',
+    KYC: '/(auth)/kyc',
     CREATE_PASSCODE: '/(auth)/create-passcode',
     CONFIRM_PASSCODE: '/(auth)/confirm-passcode',
-    WELCOME_COMPLETE: '/(auth)/welcome-complete',
     COMPLETE_PROFILE: {
       PERSONAL_INFO: '/(auth)/complete-profile/personal-info',
       DATE_OF_BIRTH: '/(auth)/complete-profile/date-of-birth',
       ADDRESS: '/(auth)/complete-profile/address',
       PHONE: '/(auth)/complete-profile/phone',
-      PROFILE_MILESTONE: '/(auth)/complete-profile/profile-milestone',
       CREATE_PASSWORD: '/(auth)/complete-profile/create-password',
-      INVESTMENT_GOAL: '/(auth)/complete-profile/investment-goal',
-      INVESTMENT_EXPERIENCE: '/(auth)/complete-profile/investment-experience',
-      YEARLY_INCOME: '/(auth)/complete-profile/yearly-income',
-      EMPLOYMENT_STATUS: '/(auth)/complete-profile/employment-status',
-    },
-    ONBOARDING: {
-      TRUST_DEVICE: '/(auth)/onboarding/trust-device',
-      ENABLE_FACEID: '/(auth)/onboarding/enable-faceid',
-      ENABLE_NOTIFICATIONS: '/(auth)/onboarding/enable-notifications',
     },
   },
   TABS: '/(tabs)',
+  SPENDING_STASH: '/spending-stash',
+  INVESTMENT_STASH: '/investment-stash',
 } as const;
 
 export type AuthRoute = (typeof ROUTES.AUTH)[keyof typeof ROUTES.AUTH];

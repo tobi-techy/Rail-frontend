@@ -5,7 +5,7 @@
 
 import { QueryClient } from '@tanstack/react-query';
 import type { TransformedApiError } from './types';
-import { safeError } from '../utils/logSanitizer';
+import { safeWarn } from '../utils/logSanitizer';
 
 function isTransformedApiError(error: unknown): error is TransformedApiError {
   return (
@@ -39,7 +39,7 @@ export const queryClient = new QueryClient({
     mutations: {
       retry: false,
       onError: (error) => {
-        if (__DEV__) safeError('[Mutation Error]', error);
+        if (__DEV__) safeWarn('[Mutation Error]', error);
       },
     },
   },
@@ -58,6 +58,10 @@ export const queryKeys = {
     all: ['portfolio'] as const,
     overview: () => [...queryKeys.portfolio.all, 'overview'] as const,
   },
+  station: {
+    all: ['station'] as const,
+    home: () => [...queryKeys.station.all, 'home'] as const,
+  },
   wallet: {
     all: ['wallet'] as const,
     balance: () => [...queryKeys.wallet.all, 'balance'] as const,
@@ -72,8 +76,15 @@ export const queryKeys = {
     all: ['user'] as const,
     profile: () => [...queryKeys.user.all, 'profile'] as const,
     settings: () => [...queryKeys.user.all, 'settings'] as const,
+    kycBridgeLink: () => [...queryKeys.user.all, 'kyc-bridge-link'] as const,
     kycStatus: () => [...queryKeys.user.all, 'kyc-status'] as const,
+    kycSession: () => [...queryKeys.user.all, 'kyc-session'] as const,
     devices: () => [...queryKeys.user.all, 'devices'] as const,
+  },
+  funding: {
+    all: ['funding'] as const,
+    transactions: (params?: unknown) => [...queryKeys.funding.all, 'transactions', params] as const,
+    virtualAccount: () => [...queryKeys.funding.all, 'virtual-account'] as const,
   },
 };
 
@@ -83,7 +94,9 @@ export const queryKeys = {
 export const invalidateQueries = {
   auth: () => queryClient.invalidateQueries({ queryKey: queryKeys.auth.all }),
   portfolio: () => queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.all }),
+  station: () => queryClient.invalidateQueries({ queryKey: queryKeys.station.all }),
   wallet: () => queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all }),
+  funding: () => queryClient.invalidateQueries({ queryKey: queryKeys.funding.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
   all: () => queryClient.invalidateQueries(),
 };

@@ -5,7 +5,8 @@
 
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosRequestConfig } from 'axios';
 import type { ApiError, ApiResponse, TransformedApiError } from './types';
-import { safeLog, safeError } from '../utils/logSanitizer';
+import { safeLog, safeError, safeWarn } from '../utils/logSanitizer';
+import { logger } from '../lib/logger';
 import { API_CONFIG } from './config';
 import { generateRequestId } from '../utils/requestId';
 import { useAuthStore } from '../stores/authStore';
@@ -29,9 +30,11 @@ import { useAuthStore } from '../stores/authStore';
  * };
  */
 
+// CRITICAL: SSL Pinning Configuration
+// In production, MUST have valid pins configured
 const SSL_PINNING_ENABLED = __DEV__
   ? false
-  : Boolean(process.env.EXPO_PUBLIC_SSL_PINNING_ENABLED) === true;
+  : process.env.EXPO_PUBLIC_SSL_PINNING_ENABLED !== 'false'; // Enabled by default in production
 
 const SSL_PINNING_CONFIG: Record<string, string[]> =
   SSL_PINNING_ENABLED && process.env.EXPO_PUBLIC_API_URL
@@ -42,6 +45,25 @@ const SSL_PINNING_CONFIG: Record<string, string[]> =
         ].filter(Boolean),
       }
     : {};
+
+// Validate SSL pinning in production
+if (
+  !__DEV__ &&
+  (Object.keys(SSL_PINNING_CONFIG).length === 0 ||
+    Object.values(SSL_PINNING_CONFIG).some((pins) => pins.length === 0))
+) {
+  const errorMsg =
+    'CRITICAL: SSL Pinning not properly configured in production. This is a security risk.';
+  logger.error(errorMsg, {
+    component: 'ApiClient',
+    action: 'ssl-pinning-validation',
+    sslPinningEnabled: SSL_PINNING_ENABLED,
+    apiUrl: process.env.EXPO_PUBLIC_API_URL,
+    hasCertPin1: !!process.env.EXPO_PUBLIC_CERT_PIN_1,
+    hasCertPin2: !!process.env.EXPO_PUBLIC_CERT_PIN_2,
+  });
+  throw new Error(errorMsg);
+}
 
 /**
  * Custom Axios instance type that returns unwrapped data
@@ -59,23 +81,99 @@ interface ApiClient {
 const AUTH_ENDPOINTS = [
   '/v1/auth/login',
   '/v1/auth/register',
-  '/v1/auth/verify-code',
+  '/v1/auth/verify',
+  '/v1/auth/resend-code',
+  '/v1/auth/forgot-password',
+  '/v1/auth/reset-password',
   '/v1/auth/refresh',
+  '/v1/auth/social/login',
+  '/v1/auth/webauthn/login/begin',
+  '/v1/auth/webauthn/login/finish',
+  '/v1/auth/passcode-login',
   '/v1/security/passcode/verify',
 ];
 
+function normalizeRequestPath(url?: string): string {
+  if (!url) return '';
+
+  try {
+    const parsed = url.startsWith('http') ? new URL(url) : new URL(url, API_CONFIG.baseURL);
+    return parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`;
+  } catch {
+    const pathOnly = url.split('?')[0];
+    return pathOnly.startsWith('/') ? pathOnly : `/${pathOnly}`;
+  }
+}
+
 function isAuthEndpoint(url?: string): boolean {
-  if (!url) return false;
-  // Extract path from URL and normalize
-  let path = url.startsWith('http') ? new URL(url).pathname : url;
-  path = path.startsWith('/') ? path : '/' + path;
+  const path = normalizeRequestPath(url);
+  if (!path) return false;
+
   return AUTH_ENDPOINTS.some(
     (endpoint) => path === endpoint || path === '/' + endpoint || path.endsWith('/' + endpoint)
   );
 }
 
+function isPasscodeProtectedEndpoint(method?: string, url?: string): boolean {
+  const path = normalizeRequestPath(url);
+  if (!path || !method) return false;
+
+  const normalizedMethod = method.toUpperCase();
+  if (normalizedMethod === 'POST' && path === '/v1/security/ip-whitelist') return true;
+  if (normalizedMethod === 'POST' && path === '/v1/security/withdrawals/confirm') return true;
+  if (normalizedMethod === 'POST' && /^\/v1\/security\/devices\/[^/]+\/trust$/.test(path))
+    return true;
+  if (normalizedMethod === 'DELETE' && /^\/v1\/security\/devices\/[^/]+$/.test(path)) return true;
+  if (normalizedMethod === 'DELETE' && /^\/v1\/security\/ip-whitelist\/[^/]+$/.test(path))
+    return true;
+
+  return false;
+}
+
 // Token refresh state to prevent race conditions
 let refreshPromise: Promise<void> | null = null;
+
+/**
+ * SECURITY: Atomic refresh promise getter/creator
+ * Ensures only one refresh happens even with concurrent 401s
+ * Uses a closure to prevent race conditions in the check-then-set pattern
+ */
+function getOrCreateRefreshPromise(): Promise<void> {
+  if (!refreshPromise) {
+    logger.debug('[API Client] Creating new refresh promise', {
+      component: 'ApiClient',
+      action: 'refresh-promise-created',
+    });
+
+    refreshPromise = useAuthStore
+      .getState()
+      .refreshSession()
+      .then(() => {
+        logger.debug('[API Client] Token refresh succeeded', {
+          component: 'ApiClient',
+          action: 'refresh-success',
+        });
+      })
+      .catch((err) => {
+        logger.error('[API Client] Token refresh failed', {
+          component: 'ApiClient',
+          action: 'refresh-failure',
+          error: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
+      })
+      .finally(() => {
+        refreshPromise = null; // Clear for next refresh attempt
+      });
+  } else {
+    logger.debug('[API Client] Reusing existing refresh promise', {
+      component: 'ApiClient',
+      action: 'refresh-promise-reused',
+    });
+  }
+
+  return refreshPromise;
+}
 
 /**
  * Create base axios instance
@@ -90,11 +188,19 @@ const axiosInstance = axios.create({
 });
 
 /**
- * Request interceptor - adds auth token and request ID
+ * Request interceptor - adds auth token, request ID, and CSRF token
  */
 axiosInstance.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const { accessToken, isAuthenticated, updateLastActivity } = useAuthStore.getState();
+  async (config: InternalAxiosRequestConfig) => {
+    const {
+      accessToken,
+      isAuthenticated,
+      updateLastActivity,
+      passcodeSessionToken,
+      checkPasscodeSessionExpiry,
+      clearPasscodeSession,
+      csrfToken,
+    } = useAuthStore.getState();
 
     if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
@@ -102,12 +208,48 @@ axiosInstance.interceptors.request.use(
 
     config.headers['X-Request-ID'] = generateRequestId();
 
+    // Add CSRF token for state-changing requests
+    // SECURITY: Only for authenticated, non-auth endpoints
+    const needsCSRF = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(
+      (config.method || 'GET').toUpperCase()
+    );
+
+    if (needsCSRF && isAuthenticated && !isAuthEndpoint(config.url)) {
+      if (csrfToken && config.headers) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+        logger.debug('[API Client] CSRF token added to request', {
+          component: 'ApiClient',
+          action: 'csrf-token-added',
+          method: config.method,
+          path: normalizeRequestPath(config.url),
+        });
+      } else {
+        logger.warn('[API Client] Missing CSRF token for state-changing request', {
+          component: 'ApiClient',
+          action: 'csrf-token-missing',
+          method: config.method,
+          path: normalizeRequestPath(config.url),
+        });
+      }
+    }
+
+    if (config.headers && isPasscodeProtectedEndpoint(config.method, config.url)) {
+      const hasPasscodeHeader = !!config.headers['X-Passcode-Session'];
+      const isPasscodeSessionExpired = checkPasscodeSessionExpiry();
+
+      if (!hasPasscodeHeader && passcodeSessionToken && !isPasscodeSessionExpired) {
+        config.headers['X-Passcode-Session'] = passcodeSessionToken;
+      } else if (!hasPasscodeHeader && passcodeSessionToken && isPasscodeSessionExpired) {
+        clearPasscodeSession();
+      }
+    }
+
     if (isAuthenticated) updateLastActivity();
 
     return config;
   },
   (error: AxiosError) => {
-    safeError('[API Request Error]', error);
+    safeWarn('[API Request Error]', error);
     return Promise.reject(error);
   }
 );
@@ -145,36 +287,87 @@ axiosInstance.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const { isAuthenticated, refreshToken, reset } = useAuthStore.getState();
+      const { isAuthenticated, refreshToken, clearSession, clearPasscodeSession } = useAuthStore.getState();
+
+      // SECURITY: If this is a passcode-protected endpoint returning 401,
+      // the passcode session is invalid and should be cleared
+      if (isPasscodeProtectedEndpoint(originalRequest.method, originalRequest.url)) {
+        logger.warn('[API Client] 401 on passcode-protected endpoint - clearing passcode session', {
+          component: 'ApiClient',
+          action: 'passcode-session-invalid-401',
+          method: originalRequest.method,
+          url: originalRequest.url,
+        });
+        clearPasscodeSession();
+        // Return error - user needs to re-verify passcode
+        return Promise.reject(
+          transformError(
+            error,
+            requestId
+          )
+        );
+      }
 
       if (isAuthenticated && refreshToken) {
         try {
-          // Prevent race condition - reuse existing refresh promise
-          if (!refreshPromise) {
-            refreshPromise = useAuthStore
-              .getState()
-              .refreshSession()
-              .finally(() => {
-                refreshPromise = null;
-              });
-          }
-          await refreshPromise;
+          // SECURITY: Atomic refresh using single promise
+          // All concurrent 401s will wait for the same refresh
+          await getOrCreateRefreshPromise();
 
+          // SECURITY: Validate new token was actually refreshed
           const newAccessToken = useAuthStore.getState().accessToken;
-          if (originalRequest.headers && newAccessToken) {
+          if (!newAccessToken) {
+            logger.error('[API Client] Token refresh returned empty token', {
+              component: 'ApiClient',
+              action: 'no-token-returned',
+            });
+            // Only clear session if refresh token was actually invalid (not a network error)
+            clearSession();
+            return Promise.reject(new Error('Token refresh failed: no token returned'));
+          }
+
+          if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            logger.debug('[API Client] Retrying request with new token', {
+              component: 'ApiClient',
+              action: 'retry-with-token',
+            });
             return axiosInstance.request(originalRequest);
           }
         } catch (refreshError) {
-          safeLog('[API Client] Token refresh failed, clearing session');
-          reset();
+          logger.error('[API Client] Token refresh error', {
+            component: 'ApiClient',
+            action: 'refresh-error',
+            error: refreshError instanceof Error ? refreshError.message : String(refreshError),
+          });
+
+          // Only clear session if refresh token is invalid (401 from refresh endpoint)
+          // Network errors should NOT clear session - user may still have valid tokens
+          const isRefreshEndpoint = isAuthEndpoint(originalRequest.url);
+          const isInvalidTokenError = error.response?.status === 401 && isRefreshEndpoint;
+
+          if (isInvalidTokenError) {
+            logger.debug('[API Client] Clearing session due to invalid refresh token', {
+              component: 'ApiClient',
+              action: 'clear-session-invalid-token',
+            });
+            clearSession();
+          } else {
+            logger.debug('[API Client] Not clearing session - network error or non-refresh 401', {
+              component: 'ApiClient',
+              action: 'skip-clear-session',
+              isRefreshEndpoint,
+              status: error.response?.status,
+            });
+          }
+
           return Promise.reject(refreshError);
         }
       }
     }
 
     if (__DEV__) {
-      safeError('[API Error]', {
+      safeWarn('[API Error]', {
         url: error.config?.url,
         method: error.config?.method,
         status: error.response?.status,
@@ -189,9 +382,56 @@ axiosInstance.interceptors.response.use(
 
 /**
  * Transform axios error to consistent format
+ * Categorizes errors to help UI display appropriate messages
  */
 function transformError(error: AxiosError<any>, requestId?: string): TransformedApiError {
   if (!error.response) {
+    // Network error - no response from server
+    const isAuth = isAuthEndpoint(error.config?.url);
+    const errorCode = (error as any).code;
+
+    // Enhanced diagnostics for network errors
+    safeWarn('[API] Network error - no response from server', {
+      requestId,
+      originalError: error.message,
+      code: errorCode,
+      errno: (error as any).errno,
+      url: error.config?.url,
+      method: error.config?.method,
+      isAuthEndpoint: isAuth,
+      timeout: error.config?.timeout,
+    });
+
+    // Specific error messages based on error code
+    if (errorCode === 'ECONNABORTED' || errorCode === 'ETIMEDOUT') {
+      return {
+        code: 'NETWORK_TIMEOUT',
+        message: 'Request timeout. Please check your connection and try again.',
+        status: 0,
+        requestId,
+      };
+    }
+
+    if (errorCode === 'ECONNREFUSED' || errorCode === 'ENOTFOUND') {
+      return {
+        code: 'NETWORK_ERROR',
+        message:
+          'Unable to connect to server. Please check your internet connection and API configuration.',
+        status: 0,
+        requestId,
+      };
+    }
+
+    if (errorCode === 'ERR_TLS_CERT_ALTNAME' || errorCode === 'CERT_HAS_EXPIRED') {
+      return {
+        code: 'SSL_ERROR',
+        message: 'SSL certificate error. Please try again or contact support.',
+        status: 0,
+        requestId,
+      };
+    }
+
+    // Default network error
     return {
       code: 'NETWORK_ERROR',
       message: 'Network error. Please check your connection.',
@@ -201,15 +441,38 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
   }
 
   const { status, data } = error.response;
+  const details =
+    data?.details ?? data?.errors ?? data?.validationErrors ?? data?.fields ?? undefined;
+
+  // Log server errors for monitoring
+  if (status >= 500) {
+    safeWarn('[API] Server error', {
+      status,
+      code: data?.code,
+      requestId,
+      url: error.config?.url,
+    });
+  }
 
   // Backend error with code and message
   if (data?.code && data?.message) {
     return {
       code: data.code,
       message: data.message,
-      details: data.details,
+      details,
       status,
       requestId: data.requestId || requestId,
+    };
+  }
+
+  // Legacy error format: { error: "message" } or { error: { code, message } }
+  if (typeof data?.error === 'string') {
+    return {
+      code: `HTTP_${status}`,
+      message: data.error,
+      details,
+      status,
+      requestId,
     };
   }
 
@@ -218,7 +481,7 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
     return {
       code: data.error.code || `HTTP_${status}`,
       message: data.error.message || getDefaultMessage(status),
-      details: data.error.details,
+      details: data.error.details ?? details,
       status,
       requestId,
     };
@@ -227,7 +490,7 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
   return {
     code: `HTTP_${status}`,
     message: data?.message || getDefaultMessage(status),
-    details: data?.details,
+    details,
     status,
     requestId,
   };

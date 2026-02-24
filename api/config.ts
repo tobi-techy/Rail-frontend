@@ -2,7 +2,7 @@ import { env, isDev } from '../utils/env';
 
 export const API_CONFIG = {
   baseURL: env.EXPO_PUBLIC_API_URL,
-  timeout: 30000,
+  timeout: 45000,
   retries: 3,
   retryDelay: 1000,
 } as const;
@@ -20,18 +20,21 @@ export const ENDPOINTS = {
     RESET_PASSWORD: '/auth/reset-password',
   },
   WALLET: {
-    BALANCE: '/wallet/balance',
-    TRANSACTIONS: '/wallet/transactions',
-    TRANSFER: '/wallet/transfer',
-    DEPOSIT_ADDRESS: '/wallet/deposit-address',
+    BALANCE: '/v1/balances',
+    TRANSACTIONS: '/v1/withdrawals',
+    TRANSFER: '/v1/withdrawals',
+    DEPOSIT_ADDRESS: '/v1/funding/deposit/address',
     ADDRESSES: '/v1/wallets/:chain/address',
   },
   PORTFOLIO: {
     OVERVIEW: '/v1/portfolio/overview',
   },
+  ACCOUNT: {
+    STATION: '/v1/account/station',
+  },
   USER: {
-    PROFILE: '/user/profile',
-    UPDATE: '/user/update',
+    PROFILE: '/v1/users/me',
+    UPDATE: '/v1/users/me',
   },
   PASSCODE: {
     CREATE: '/security/passcode/create',

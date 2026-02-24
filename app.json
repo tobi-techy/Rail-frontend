@@ -2,7 +2,7 @@
   "expo": {
     "name": "Rail Money",
     "slug": "rail",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "scheme": "rail",
     "platforms": ["ios", "android"],
     "web": {
@@ -17,6 +17,15 @@
       "expo-local-authentication",
       "expo-font",
       [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FF2E01",
+          "image": "./assets/app-icon/logo-transparent.png",
+          "imageWidth": 150,
+          "resizeMode": "contain"
+        }
+      ],
+      [
         "@sentry/react-native/expo",
         {
           "organization": "rail-money",
@@ -24,7 +33,8 @@
         }
       ],
       "expo-web-browser",
-      "expo-video"
+      "expo-video",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -35,7 +45,9 @@
     "userInterfaceStyle": "light",
     "assetBundlePatterns": ["**/*"],
     "splash": {
-      "backgroundColor": "#FF5A00"
+      "image": "./assets/app-icon/logo-transparent.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF2E01"
     },
     "ios": {
       "supportsTablet": true,

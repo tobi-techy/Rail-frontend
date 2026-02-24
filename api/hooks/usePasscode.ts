@@ -7,6 +7,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { passcodeService } from '../services';
 import { queryKeys } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
+import { logger } from '../../lib/logger';
 import type {
   CreatePasscodeRequest,
   UpdatePasscodeRequest,
@@ -35,65 +36,159 @@ export function usePasscodeStatus() {
 export function useCreatePasscode() {
   return useMutation({
     mutationFn: (data: CreatePasscodeRequest) => passcodeService.createPasscode(data),
-    onSuccess: (response) => {
-      // Update user state to reflect passcode creation
-      const currentUser = useAuthStore.getState().user;
-      if (currentUser) {
-        useAuthStore.setState({
-          user: { ...currentUser, hasPasscode: true },
-          hasPasscode: true,
-        });
-      }
+    onSuccess: () => {
+      useAuthStore.setState({
+        hasPasscode: true,
+      });
     },
   });
 }
+
+/**
+ * Retry logic with exponential backoff for network errors
+ */
+const retryWithBackoff = async <T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  initialDelayMs: number = 500
+): Promise<T> => {
+  let lastError: any;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      const err = error as any;
+      const code = String(err?.code || '').toUpperCase();
+      const message = String(err?.message || '').toLowerCase();
+
+      // Only retry transport-level failures (no HTTP response/status)
+      const isNetworkError =
+        err?.status === 0 ||
+        code === 'NETWORK_ERROR' ||
+        code === 'NETWORK_TIMEOUT' ||
+        code.startsWith('ECONN') ||
+        code.startsWith('ETIMEDOUT') ||
+        message.includes('network error') ||
+        message.includes('timeout');
+
+      if (!isNetworkError || attempt === maxRetries) {
+        throw error;
+      }
+
+      // Exponential backoff: 500ms, 1s, 2s
+      const delayMs = initialDelayMs * Math.pow(2, attempt);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  throw lastError;
+};
 
 /**
  * Verify passcode mutation
  * Used for both authentication (login) and authorization (withdrawals)
  * - For login: Returns and stores accessToken + refreshToken
  * - For withdrawals: Returns optional sessionToken for sensitive operations
+ * - Network errors are automatically retried with exponential backoff
  */
 export function useVerifyPasscode() {
   return useMutation({
-    mutationFn: (data: VerifyPasscodeRequest) => passcodeService.verifyPasscode(data),
+    mutationFn: async (data: VerifyPasscodeRequest) => {
+      const authState = useAuthStore.getState();
+
+      // For returning users without a valid JWT, use identifier-based passcode login.
+      if (!authState.isAuthenticated || !authState.accessToken) {
+        // First attempt refresh-based recovery when a refresh token exists.
+        if (authState.refreshToken) {
+          try {
+            await authState.refreshSession();
+            return retryWithBackoff(() => passcodeService.verifyPasscode(data));
+          } catch {
+            // Fall through to identifier-based passcode login.
+          }
+        }
+
+        const email = authState.user?.email;
+        const phone = (authState.user as any)?.phone || authState.user?.phoneNumber;
+        const refreshToken = authState.refreshToken;
+
+        if (!refreshToken) {
+          throw {
+            code: 'MISSING_REFRESH_TOKEN',
+            message: 'Session expired. Please sign in again.',
+            status: 401,
+          };
+        }
+
+        if (!email && !phone) {
+          throw {
+            code: 'MISSING_IDENTIFIER',
+            message: 'Unable to verify PIN: missing account identifier.',
+            status: 400,
+          };
+        }
+
+        return retryWithBackoff(() =>
+          passcodeService.passcodeLogin({
+            passcode: data.passcode,
+            refresh_token: refreshToken,
+            email: email || undefined,
+            phone: phone || undefined,
+          })
+        );
+      }
+
+      return retryWithBackoff(() => passcodeService.verifyPasscode(data));
+    },
     onSuccess: (response) => {
       if (response.verified) {
         const now = new Date();
-        
+
         // Store all tokens in a single setState call to ensure atomicity
         const updates: any = {
           isAuthenticated: true,
+          hasPasscode: true,
           lastActivityAt: now.toISOString(),
           tokenIssuedAt: now.toISOString(),
         };
-        
-        // Add authentication tokens (for login flow)
+
+        // Add authentication tokens (for login flow) - tokens are optional
         if (response.accessToken && response.refreshToken) {
-          console.log('[useVerifyPasscode] Storing access and refresh tokens');
+          logger.debug('[useVerifyPasscode] Storing access and refresh tokens', {
+            component: 'useVerifyPasscode',
+            action: 'store-tokens',
+          });
           updates.accessToken = response.accessToken;
           updates.refreshToken = response.refreshToken;
-          
+
           // Set token expiry (7 days or from response)
-          const tokenExpiresAt = response.expiresAt 
+          const tokenExpiresAt = response.expiresAt
             ? new Date(response.expiresAt)
             : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
           updates.tokenExpiresAt = tokenExpiresAt.toISOString();
         }
-        
-        // Add passcode session tokens (for withdrawal/sensitive operations)
+
+        // Add passcode session tokens (for withdrawal/sensitive operations) - tokens are optional
         if (response.passcodeSessionToken && response.passcodeSessionExpiresAt) {
-          console.log('[useVerifyPasscode] Storing passcode session tokens');
+          logger.debug('[useVerifyPasscode] Storing passcode session tokens', {
+            component: 'useVerifyPasscode',
+            action: 'store-passcode-tokens',
+          });
           updates.passcodeSessionToken = response.passcodeSessionToken;
           updates.passcodeSessionExpiresAt = response.passcodeSessionExpiresAt;
         }
-        
-        console.log('[useVerifyPasscode] Applying updates to auth store:', {
+
+        logger.debug('[useVerifyPasscode] Applying updates to auth store', {
+          component: 'useVerifyPasscode',
+          action: 'apply-updates',
           hasAccessToken: !!updates.accessToken,
           hasRefreshToken: !!updates.refreshToken,
           hasPasscodeSessionToken: !!updates.passcodeSessionToken,
         });
-        
+
         // Apply all updates atomically
         useAuthStore.setState(updates);
       }
@@ -119,8 +214,8 @@ export function useDeletePasscode() {
   return useMutation({
     mutationFn: (data: DeletePasscodeRequest) => passcodeService.deletePasscode(data),
     onSuccess: () => {
-      // Clear passcode session from store
       useAuthStore.setState({
+        hasPasscode: false,
         passcodeSessionToken: undefined,
         passcodeSessionExpiresAt: undefined,
       });

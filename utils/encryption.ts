@@ -1,4 +1,5 @@
 import CryptoJS from 'crypto-js';
+import { logger } from '../lib/logger';
 
 const ENCRYPTION_KEY = process.env.EXPO_PUBLIC_ENCRYPTION_KEY;
 
@@ -19,7 +20,10 @@ const getEncryptionKey = (): string => {
     for (let i = 0; i < 32; i++) {
       result += chars[randomValues[i] % chars.length];
     }
-    console.warn('[Encryption] Using generated development key');
+    logger.warn('[Encryption] Using generated development key', {
+      component: 'Encryption',
+      action: 'generated-dev-key',
+    });
     return result;
   }
   throw new Error('Encryption key not configured');

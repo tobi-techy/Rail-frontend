@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,16 @@ import {
   TouchableOpacity,
   TextInputProps,
   NativeSyntheticEvent,
+  LayoutChangeEvent,
 } from 'react-native';
+import { Canvas, RoundedRect } from '@shopify/react-native-skia';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { Ionicons } from './SafeIonicons';
 
 interface InputFieldProps extends Omit<TextInputProps, 'onFocus' | 'onBlur'> {
@@ -19,7 +28,7 @@ interface InputFieldProps extends Omit<TextInputProps, 'onFocus' | 'onBlur'> {
   onTogglePasswordVisibility?: () => void;
   onFocus?: (e: NativeSyntheticEvent<any>) => void;
   onBlur?: (e: NativeSyntheticEvent<any>) => void;
-  variant?: 'light' | 'dark';
+  variant?: 'light' | 'dark' | 'blended';
 }
 
 export const InputField = forwardRef<TextInput, InputFieldProps>(
@@ -37,13 +46,19 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
       onTogglePasswordVisibility,
       onFocus,
       onBlur,
-      variant = 'light',
+      variant = 'blended',
       ...props
     },
     ref
   ) => {
     const [isFocused, setIsFocused] = React.useState(false);
+    const [renderError, setRenderError] = React.useState(Boolean(error));
+    const [errorText, setErrorText] = React.useState(error ?? '');
+    const [errorLineWidth, setErrorLineWidth] = React.useState(0);
+    const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isDark = variant === 'dark';
+    const isBlended = variant === 'blended';
+    const errorProgress = useSharedValue(error ? 1 : 0);
 
     const getKeyboardType = () => {
       switch (type) {
@@ -69,6 +84,80 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
       onBlur?.(e);
     };
 
+    useEffect(() => {
+      if (error) {
+        // Clear any existing timer when error appears
+        if (hideTimerRef.current) {
+          clearTimeout(hideTimerRef.current);
+          hideTimerRef.current = null;
+        }
+
+        setErrorText(error);
+        setRenderError(true);
+        errorProgress.value = withTiming(1, {
+          duration: 240,
+          easing: Easing.out(Easing.cubic),
+        });
+        return;
+      }
+
+      // Clear any existing timer before setting new one
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
+
+      errorProgress.value = withTiming(0, {
+        duration: 180,
+        easing: Easing.in(Easing.cubic),
+      });
+
+      // Set new timer to hide error after animation
+      hideTimerRef.current = setTimeout(() => {
+        setRenderError(false);
+      }, 180);
+
+      // Cleanup function to clear timer on unmount or dependency change
+      return () => {
+        if (hideTimerRef.current) {
+          clearTimeout(hideTimerRef.current);
+          hideTimerRef.current = null;
+        }
+      };
+    }, [error]);
+
+    const errorAnimatedStyle = useAnimatedStyle(() => ({
+      opacity: errorProgress.value,
+      transform: [{ translateY: (1 - errorProgress.value) * -6 }],
+    }));
+
+    const animatedLineWidth = useDerivedValue(() => errorLineWidth * errorProgress.value, [
+      errorLineWidth,
+    ]);
+
+    const handleErrorLayout = (event: LayoutChangeEvent) => {
+      const width = event.nativeEvent.layout.width;
+      if (width !== errorLineWidth) {
+        setErrorLineWidth(width);
+      }
+    };
+
+    const getContainerStyle = () => {
+      if (isDark) {
+        return `border-b bg-transparent py-3 ${isFocused ? 'border-white' : hasError ? 'border-destructive' : 'border-white/30'}`;
+      }
+      if (isBlended) {
+        if (hasError) {
+          return 'h-[56px] rounded-2xl border border-destructive bg-red-50 px-4';
+        }
+        if (isFocused) {
+          return 'h-[56px] rounded-2xl border border-black/20 bg-neutral-200 px-4';
+        }
+        return 'h-[56px] rounded-2xl border border-transparent bg-neutral-100 px-4';
+      }
+      return `h-[52px] rounded-sm border bg-surface px-4 ${isFocused ? 'border-primary-accent' : hasError ? 'border-destructive' : 'border-transparent'}`;
+    };
+
     return (
       <View className={isDark ? 'mb-2' : 'mb-4'}>
         <View className="mb-1 flex-row">
@@ -85,20 +174,7 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
           )}
         </View>
 
-        <View
-          className={`flex-row items-center ${
-            isDark ? 'border-b bg-transparent py-3' : 'h-[52px] rounded-sm border bg-surface px-4'
-          } ${
-            isFocused
-              ? isDark
-                ? 'border-white'
-                : 'border-primary-accent'
-              : hasError
-                ? 'border-destructive'
-                : isDark
-                  ? 'border-white/30'
-                  : 'border-transparent'
-          }`}>
+        <View className={`flex-row items-center ${getContainerStyle()}`}>
           {icon && (
             <Ionicons
               name={icon}
@@ -113,7 +189,7 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
             value={value}
             onChangeText={onChangeText}
             placeholder={placeholder}
-            placeholderTextColor={isDark ? 'rgba(255,255,255,0.5)' : '#757575'}
+            placeholderTextColor={isDark ? 'rgba(255,255,255,0.5)' : '#9CA3AF'}
             keyboardType={getKeyboardType()}
             autoCapitalize={type === 'email' ? 'none' : 'sentences'}
             autoCorrect={false}
@@ -135,11 +211,15 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
           )}
         </View>
 
-        {hasError && (
-          <Text
-            className={`mt-1 font-caption text-caption ${isDark ? 'text-white' : 'text-destructive'}`}>
-            {error}
-          </Text>
+        {renderError && (
+          <Animated.View style={errorAnimatedStyle}>
+            <View className="mt-1.5" onLayout={handleErrorLayout}>
+              <Text
+                className={`mt-1 font-caption text-caption ${isDark ? 'text-white' : 'text-destructive'}`}>
+                {errorText}
+              </Text>
+            </View>
+          </Animated.View>
         )}
       </View>
     );

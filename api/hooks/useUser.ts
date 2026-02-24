@@ -110,7 +110,7 @@ export function useSubmitKYC() {
 /**
  * Get KYC status
  */
-export function useKYCStatus() {
+export function useUserKYCStatus() {
   return useQuery({
     queryKey: queryKeys.user.kycStatus(),
     queryFn: () => userService.getKYCStatus(),

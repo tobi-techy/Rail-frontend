@@ -1,12 +1,19 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, Pressable, Dimensions, ScrollView } from 'react-native';
 import { ArrowRight, ChevronRight } from 'lucide-react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+} from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import { colors, typography, spacing, borderRadius } from '@/design/tokens';
 import { TransactionDetails } from '@/stores/withdrawalStore';
 
 const ANIMATION_DURATION = 200;
+const SPRING_CONFIG = { damping: 20, stiffness: 200 };
+const MUTED = '#6B7280';
 
 interface ConfirmTransactionModalProps {
   visible: boolean;
@@ -15,12 +22,6 @@ interface ConfirmTransactionModalProps {
   onConfirm: () => void;
   isLoading?: boolean;
 }
-
-// Bottom sheet configuration
-const SPRING_CONFIG = {
-  damping: 20,
-  stiffness: 200,
-};
 
 export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = ({
   visible,
@@ -42,271 +43,198 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
   }, [visible, transaction]);
 
   const animateClose = () => {
-    translateY.value = withSpring(screenHeight, SPRING_CONFIG, () => {
-      runOnJS(onClose)();
-    });
+    translateY.value = withSpring(screenHeight, SPRING_CONFIG, () => runOnJS(onClose)());
     overlayOpacity.value = withTiming(0, { duration: ANIMATION_DURATION });
   };
 
   const pan = Gesture.Pan()
     .onUpdate((e) => {
-      if (e.translationY > 0) {
-        translateY.value = e.translationY;
-      }
+      if (e.translationY > 0) translateY.value = e.translationY;
     })
     .onEnd((e) => {
-      if (e.translationY > 80 || e.velocityY > 800) {
-        runOnJS(animateClose)();
-      } else {
-        translateY.value = withSpring(0, SPRING_CONFIG);
-      }
+      if (e.translationY > 80 || e.velocityY > 800) runOnJS(animateClose)();
+      else translateY.value = withSpring(0, SPRING_CONFIG);
     });
 
-  const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
+  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
+  const overlayStyle = useAnimatedStyle(() => ({ opacity: overlayOpacity.value }));
 
-  const overlayStyle = useAnimatedStyle(() => ({
-    opacity: overlayOpacity.value,
-  }));
+  if (!transaction || !visible) return null;
 
-  if (!transaction || !visible) {
-    return null;
-  }
+  const Label = ({ children }: { children: string }) => (
+    <Text className="mb-2 font-body text-small text-text-secondary">{children}</Text>
+  );
+
+  const Pill = ({ children }: { children: string }) => (
+    <View className="flex-row items-center rounded-sm bg-surface px-2 py-1">
+      <View className="mr-1 h-1 w-1 rounded-full bg-text-secondary" />
+      <Text className="font-body text-small text-text-secondary">{children}</Text>
+    </View>
+  );
 
   return (
     <Animated.View
-      // overlay
       className="absolute inset-0"
-      style={[{ backgroundColor: colors.overlay }, overlayStyle]}
-    >
-      {/* tap outside to close */}
-      <Pressable className="flex-1" onPress={animateClose} accessibilityRole="button" accessibilityLabel="Close">
+      style={[{ backgroundColor: 'rgba(0,0,0,0.7)' }, overlayStyle]}>
+      <Pressable
+        className="flex-1"
+        onPress={animateClose}
+        accessibilityRole="button"
+        accessibilityLabel="Close">
         <GestureDetector gesture={pan}>
           <Animated.View
-            // sheet container
-            className="w-full"
+            className="absolute bottom-0 left-0 right-0 self-center rounded-t-lg bg-white"
             style={[
               sheetStyle,
               {
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                backgroundColor: colors.background.main,
-                borderTopLeftRadius: borderRadius.lg,
-                borderTopRightRadius: borderRadius.lg,
                 maxHeight: maxSheetHeight,
-                // Center on large screens
                 width: screenWidth >= 768 ? Math.min(560, screenWidth) : screenWidth,
-                alignSelf: 'center',
-                // shadow
-                ...{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: -4 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 12,
-                  elevation: 10,
-                },
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -4 },
+                shadowOpacity: 0.12,
+                shadowRadius: 12,
+                elevation: 10,
               },
-            ]}
-          >
-            {/* drag handle */}
-            <View
-              style={{ alignItems: 'center', paddingTop: spacing.md }}
-              accessible={false}
-            >
-              <View
-                style={{
-                  width: 40,
-                  height: 4,
-                  borderRadius: borderRadius.full,
-                  backgroundColor: '#E5E7EB',
-                }}
-              />
+            ]}>
+            {/* Drag handle */}
+            <View className="items-center pt-md">
+              <View className="h-1 w-10 rounded-full bg-gray-200" />
             </View>
 
             {/* Header */}
-            <View
-              style={{
-                paddingHorizontal: spacing.lg,
-                paddingTop: spacing.md,
-                paddingBottom: spacing.sm,
-              }}
-            >
-              <Text
-                numberOfLines={1}
-                style={{
-                  fontFamily: typography.fonts.headline,
-                  fontSize: 20,
-                  color: colors.text.primary,
-                  textAlign: 'center',
-                }}
-              >
+            <View className="px-lg pb-sm pt-md">
+              <Text className="text-center font-headline text-headline-3 text-text-primary">
                 Confirm Transaction
               </Text>
               <Text
-                style={{
-                  fontFamily: typography.fonts.body,
-                  fontSize: 14,
-                  color: '#6B7280',
-                  textAlign: 'center',
-                  marginTop: 4,
-                  lineHeight: 18,
-                }}
-              >
-                Please review all details carefully, transactions once{'\n'}completed are irreversible.
+                className="mt-1 text-center font-body text-caption text-text-secondary"
+                style={{ lineHeight: 18 }}>
+                Please review all details carefully, transactions once{'\n'}completed are
+                irreversible.
               </Text>
             </View>
 
             <ScrollView
-              contentContainerStyle={{ paddingBottom: spacing.xl }}
-              showsVerticalScrollIndicator={false}
-            >
+              contentContainerStyle={{ paddingBottom: 32 }}
+              showsVerticalScrollIndicator={false}>
               {/* Amount */}
-              <View style={{ alignItems: 'center', paddingBottom: spacing.md, paddingHorizontal: spacing.lg }}>
-                <Text
-                  style={{
-                    fontFamily: typography.fonts.headline,
-                    fontSize: 40,
-                    color: colors.text.primary,
-                    marginBottom: 4,
-                  }}
-                >
+              <View className="items-center px-lg pb-md">
+                <Text className="mb-1 font-headline text-[40px] text-text-primary">
                   {transaction.usdAmount}
                 </Text>
-                <Text
-                  style={{
-                    fontFamily: typography.fonts.subtitle,
-                    fontSize: 16,
-                    color: '#6B7280',
-                  }}
-                >
+                <Text className="font-subtitle text-body text-text-secondary">
                   {transaction.amount}
                 </Text>
               </View>
 
-              {/* Transaction Details */}
-              <View style={{ paddingHorizontal: spacing.lg }}>
+              <View className="px-lg">
                 {/* From */}
-                <View style={{ marginBottom: spacing.md }}>
-                  <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280', marginBottom: 8 }}>From</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontFamily: typography.fonts.subtitle, fontSize: 14, color: colors.text.primary }}>
+                <View className="mb-md">
+                  <Label>From</Label>
+                  <View className="flex-row items-center justify-between">
+                    <Text className="font-subtitle text-caption text-text-primary">
                       {transaction.fromAccount}
                     </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-                      <View style={{ height: 4, width: 4, borderRadius: 2, backgroundColor: '#6B7280', marginRight: 4 }} />
-                      <Text style={{ fontFamily: typography.fonts.body, fontSize: 11, color: '#6B7280' }}>
-                        {transaction.fromAddress}
-                      </Text>
-                    </View>
+                    <Pill>{transaction.fromAddress}</Pill>
                   </View>
                 </View>
 
                 {/* Receiving Address */}
-                <View style={{ marginBottom: spacing.md }}>
-                  <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Receiving address</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontFamily: typography.fonts.subtitle, fontSize: 14, color: colors.text.primary }}>
+                <View className="mb-md">
+                  <Label>Receiving address</Label>
+                  <View className="flex-row items-center justify-between">
+                    <Text className="font-subtitle text-caption text-text-primary">
                       {transaction.recipientName}
                     </Text>
-                    <Text style={{ fontFamily: typography.fonts.body, fontSize: 11, color: '#6B7280', backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <Text className="rounded-sm bg-surface px-2 py-1 font-body text-small text-text-secondary">
                       {transaction.recipientAddress}
                     </Text>
                   </View>
                 </View>
 
                 {/* Token */}
-                <View style={{ marginBottom: spacing.md }}>
-                  <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Token</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontFamily: typography.fonts.headline, fontSize: 14, color: colors.text.primary }}>
+                <View className="mb-md">
+                  <Label>Token</Label>
+                  <View className="flex-row items-center justify-between">
+                    <Text className="font-headline text-caption text-text-primary">
                       {transaction.amount}
                     </Text>
-                    <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280' }}>
+                    <Text className="font-body text-small text-text-secondary">
                       {transaction.usdAmount}
                     </Text>
                   </View>
                 </View>
 
                 {/* Network */}
-                <View style={{ marginBottom: spacing.md }}>
-                  <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Network</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ height: 28, width: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#14F195' }}>
-                      <Text style={{ fontFamily: typography.fonts.button, fontSize: 11, color: colors.text.primary }}>S</Text>
+                <View className="mb-md">
+                  <Label>Network</Label>
+                  <View className="flex-row items-center">
+                    <View
+                      className="h-7 w-7 items-center justify-center rounded-full"
+                      style={{ backgroundColor: '#14F195' }}>
+                      <Text className="font-button text-small text-text-primary">S</Text>
                     </View>
-                    <Text style={{ marginLeft: 8, fontFamily: typography.fonts.body, fontSize: 12, color: colors.text.primary }}>
+                    <Text className="ml-2 font-body text-small text-text-primary">
                       {transaction.fromNetwork.name}
                     </Text>
-                    <ArrowRight size={14} color="#6B7280" strokeWidth={2} style={{ marginHorizontal: 8 }} />
-                    <View style={{ height: 28, width: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#627EEA' }}>
-                      <Text style={{ fontFamily: typography.fonts.button, fontSize: 11, color: '#FFFFFF' }}>E</Text>
+                    <ArrowRight
+                      size={14}
+                      color={MUTED}
+                      strokeWidth={2}
+                      style={{ marginHorizontal: 8 }}
+                    />
+                    <View
+                      className="h-7 w-7 items-center justify-center rounded-full"
+                      style={{ backgroundColor: '#627EEA' }}>
+                      <Text className="font-button text-small text-white">E</Text>
                     </View>
-                    <Text style={{ marginLeft: 8, fontFamily: typography.fonts.body, fontSize: 12, color: colors.text.primary }}>
+                    <Text className="ml-2 font-body text-small text-text-primary">
                       {transaction.toNetwork.name}
                     </Text>
                   </View>
                 </View>
 
                 {/* Fee */}
-                <View style={{ marginBottom: spacing.md }}>
-                  <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Fee</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ height: 20, width: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#EF4444', marginRight: 8 }}>
-                      <Text style={{ color: '#FFFFFF', fontSize: 10 }}>⛽</Text>
+                <View className="mb-md">
+                  <Label>Fee</Label>
+                  <View className="flex-row items-center">
+                    <View className="mr-2 h-5 w-5 items-center justify-center rounded-full bg-destructive">
+                      <Text className="text-[10px] text-white">⛽</Text>
                     </View>
-                    <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: colors.text.primary }}>
+                    <Text className="font-body text-small text-text-primary">
                       {transaction.fee}
                     </Text>
                   </View>
                 </View>
 
                 {/* Bridge Provider */}
-                <View style={{ marginBottom: spacing.sm }}>
-                  <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Bridge provider</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <View style={{ height: 20, width: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#8B5CF6', marginRight: 8 }}>
-                        <Text style={{ color: '#FFFFFF', fontSize: 10, fontFamily: typography.fonts.button }}>B</Text>
+                <View className="mb-sm">
+                  <Label>Bridge provider</Label>
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <View
+                        className="mr-2 h-5 w-5 items-center justify-center rounded-full"
+                        style={{ backgroundColor: '#8B5CF6' }}>
+                        <Text className="font-button text-[10px] text-white">B</Text>
                       </View>
-                      <Text style={{ fontFamily: typography.fonts.body, fontSize: 12, color: colors.text.primary }}>
+                      <Text className="font-body text-small text-text-primary">
                         {transaction.bridgeProvider.name}
                       </Text>
                     </View>
-                    <ChevronRight size={14} color="#6B7280" strokeWidth={2} />
+                    <ChevronRight size={14} color={MUTED} strokeWidth={2} />
                   </View>
                 </View>
               </View>
             </ScrollView>
 
-            {/* Action Button */}
-            <View
-              style={{
-                paddingHorizontal: spacing.lg,
-                paddingBottom: spacing.lg,
-                paddingTop: spacing.md,
-              }}
-            >
+            {/* Confirm Button */}
+            <View className="px-lg pb-lg pt-md">
               <TouchableOpacity
                 onPress={onConfirm}
                 disabled={isLoading}
                 activeOpacity={0.8}
-                style={{
-                  backgroundColor: colors.text.primary,
-                  borderRadius: borderRadius.full,
-                  paddingVertical: spacing.md,
-                  alignItems: 'center',
-                }}
-              >
-                <Text
-                  style={{
-                    color: colors.text.onPrimary,
-                    fontSize: 16,
-                    fontFamily: typography.fonts.button,
-                  }}
-                >
+                className="items-center rounded-full bg-black py-md">
+                <Text className="font-button text-body text-white">
                   {isLoading ? 'Processing...' : 'Confirm'}
                 </Text>
               </TouchableOpacity>
@@ -317,4 +245,3 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
     </Animated.View>
   );
 };
-

@@ -16,12 +16,7 @@ export default function CompleteProfileLayout() {
       <Stack.Screen name="date-of-birth" />
       <Stack.Screen name="address" />
       <Stack.Screen name="phone" />
-      <Stack.Screen name="profile-milestone" />
       <Stack.Screen name="create-password" />
-      <Stack.Screen name="investment-goal" />
-      <Stack.Screen name="investment-experience" />
-      <Stack.Screen name="yearly-income" />
-      <Stack.Screen name="employment-status" />
     </Stack>
   );
 }

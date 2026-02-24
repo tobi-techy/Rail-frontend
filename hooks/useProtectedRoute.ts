@@ -1,13 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { router, useSegments, usePathname } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
+import { authService, passcodeService } from '@/api/services';
+import { logger } from '@/lib/logger';
 import type { AuthState } from '@/types/routing.types';
 import {
   buildRouteConfig,
   determineRoute,
   validateAccessToken,
   checkWelcomeStatus,
+  normalizeRoutePath,
 } from '@/utils/routeHelpers';
 import { SessionManager } from '@/utils/sessionManager';
 
@@ -25,41 +28,86 @@ export function useProtectedRoute() {
     isAuthenticated: useAuthStore((state) => state.isAuthenticated),
     accessToken: useAuthStore((state) => state.accessToken),
     refreshToken: useAuthStore((state) => state.refreshToken),
+    hasPasscode: useAuthStore((state) => state.hasPasscode),
     onboardingStatus: useAuthStore((state) => state.onboardingStatus),
     pendingVerificationEmail: useAuthStore((state) => state.pendingVerificationEmail),
+    lastActivityAt: useAuthStore((state) => state.lastActivityAt),
   };
 
   const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const hasNavigatedRef = useRef(false);
   const appState = useRef(AppState.currentState);
-  const isInitialMount = useRef(true);
+
+  const refreshBackendAuthState = useCallback(async () => {
+    const state = useAuthStore.getState();
+    if (!state.isAuthenticated || !state.accessToken) return;
+
+    try {
+      const currentUserResponse = await authService.getCurrentUser();
+      const backendUser = currentUserResponse?.user ?? currentUserResponse;
+      const backendOnboardingStatus =
+        currentUserResponse?.onboarding?.onboardingStatus ?? backendUser?.onboardingStatus;
+
+      if (backendUser) {
+        useAuthStore.setState({
+          user: backendUser,
+          onboardingStatus: backendOnboardingStatus ?? state.onboardingStatus,
+        });
+      }
+    } catch (error) {
+      logger.warn('[Auth] Failed to refresh user profile state', {
+        component: 'useProtectedRoute',
+        action: 'refresh-user-profile',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    try {
+      const passcodeStatus = await passcodeService.getStatus();
+      useAuthStore.setState({
+        hasPasscode: Boolean(passcodeStatus.enabled),
+      });
+    } catch (error) {
+      logger.warn('[Auth] Failed to refresh passcode status', {
+        component: 'useProtectedRoute',
+        action: 'refresh-passcode-status',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }, []);
 
   // Initialize app: validate token and check welcome status
   // Runs on every mount (app reload) and re-validates routing
   useEffect(() => {
-    // Removed artificial delays - let the app initialize naturally
+    let isMounted = true;
 
     const initializeApp = async () => {
-      if (__DEV__) {
-        console.log('[Auth] App initializing - checking routing...');
-      }
+      logger.debug('[Auth] App initializing - checking routing...', {
+        component: 'useProtectedRoute',
+        action: 'initialize-app',
+      });
 
       try {
         const welcomed = await checkWelcomeStatus();
-        setHasSeenWelcome(welcomed);
+        if (isMounted) setHasSeenWelcome(welcomed);
 
         const freshState = useAuthStore.getState();
         const hasValidAuthData = freshState.isAuthenticated && freshState.accessToken;
 
-        if (__DEV__) {
-          console.log('[Auth] State after hydration:', {
-            hasUser: !!freshState.user,
-            hasAccessToken: !!freshState.accessToken,
-            hasRefreshToken: !!freshState.refreshToken,
-            isAuthenticated: freshState.isAuthenticated,
-          });
-        }
+        // CRITICAL: Add detailed logging for debugging old user routing issues
+        logger.debug('[Auth] State after hydration (DETAILED)', {
+          component: 'useProtectedRoute',
+          action: 'hydration-complete',
+          hasUser: !!freshState.user,
+          userId: freshState.user?.id,
+          isAuthenticated: freshState.isAuthenticated,
+          hasPasscode: freshState.hasPasscode,
+          hasAccessToken: !!freshState.accessToken,
+          hasRefreshToken: !!freshState.refreshToken,
+          onboardingStatus: freshState.onboardingStatus,
+          hasValidAuthData,
+          welcomed,
+        });
 
         if (hasValidAuthData) {
           const shouldValidate = __DEV__ ? freshState.lastActivityAt : true;
@@ -67,78 +115,94 @@ export function useProtectedRoute() {
             try {
               const isValid = await validateAccessToken();
               if (!isValid) {
-                if (__DEV__) {
-                  console.log('[Auth] Token invalid on app load');
-                }
+                logger.info('[Auth] Token invalid on app load', {
+                  component: 'useProtectedRoute',
+                  action: 'token-validation-failed',
+                });
                 SessionManager.handleSessionExpired();
+                return;
               }
             } catch (validationError) {
-              if (__DEV__) {
-                console.warn('[Auth] Token validation failed, continuing:', validationError);
-              }
+              logger.warn('[Auth] Token validation failed, continuing', {
+                component: 'useProtectedRoute',
+                action: 'token-validation-error',
+                error:
+                  validationError instanceof Error
+                    ? validationError.message
+                    : String(validationError),
+              });
             }
           }
-        }
 
-        hasNavigatedRef.current = false;
-      } catch (error) {
-        if (__DEV__) {
-          console.error('[Auth] Error initializing app:', error);
+          await refreshBackendAuthState();
+        } else if (freshState.user) {
+          // CRITICAL: User has stored credentials but no valid auth tokens
+          // This is the case for old users after app backgrounding
+          logger.info('[Auth] User has stored credentials but tokens invalid/missing', {
+            component: 'useProtectedRoute',
+            action: 'stored-credentials-detected',
+            userId: freshState.user.id,
+            hasPasscode: freshState.hasPasscode,
+          });
         }
+      } catch (error) {
+        logger.error(
+          '[Auth] Error initializing app',
+          error instanceof Error ? error : new Error(String(error))
+        );
       } finally {
-        setIsReady(true);
-        isInitialMount.current = false;
+        if (isMounted) setIsReady(true);
       }
     };
 
-    initializeApp();
-  }, []); // Run once on mount (which happens on every app reload)
+    if (useAuthStore.persist.hasHydrated()) {
+      void initializeApp();
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
+      void initializeApp();
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [refreshBackendAuthState]); // Run once on mount (which happens on every app reload)
 
   // Listen for app state changes (foreground/background)
+  // Reset passcode session timer on foreground (activity-based timeout)
   useEffect(() => {
     const subscription = AppState.addEventListener(
       'change',
       async (nextAppState: AppStateStatus) => {
-        if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
-          if (__DEV__) {
-            console.log('[Auth] App going to background - clearing passcode session for security');
-          }
-
-          const { isAuthenticated, clearPasscodeSession } = useAuthStore.getState();
-          if (isAuthenticated) {
-            clearPasscodeSession();
-          }
-        }
-
         if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-          if (__DEV__) {
-            console.log('[Auth] App came to foreground - re-validating routing');
-          }
-
-          hasNavigatedRef.current = false;
-
           const freshState = useAuthStore.getState();
 
-          if (freshState.isAuthenticated && SessionManager.isPasscodeSessionExpired()) {
-            if (__DEV__) {
-              console.log(
-                '[Auth] Passcode session expired - need to re-authenticate with passcode'
-              );
-            }
-            SessionManager.handlePasscodeSessionExpired();
-            return;
-          }
+          logger.debug('[Auth] App came to foreground', {
+            component: 'useProtectedRoute',
+            action: 'app-foreground',
+          });
 
           if (freshState.isAuthenticated) {
-            freshState.updateLastActivity();
-          }
-
-          if (freshState.isAuthenticated && freshState.checkTokenExpiry()) {
-            if (__DEV__) {
-              console.log('[Auth] 7-day token expired after app resume');
+            if (freshState.checkTokenExpiry()) {
+              logger.info('[Auth] 7-day token expired after app resume', {
+                component: 'useProtectedRoute',
+                action: 'token-expired-on-resume',
+              });
+              SessionManager.handleSessionExpired();
+              return;
             }
-            SessionManager.handleSessionExpired();
-            return;
+
+            // Reset passcode session timer on activity (extends session)
+            if (freshState.passcodeSessionExpiresAt) {
+              SessionManager.resetPasscodeSessionTimer();
+            }
+
+            freshState.updateLastActivity();
+            await refreshBackendAuthState();
           }
         }
 
@@ -149,20 +213,14 @@ export function useProtectedRoute() {
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [refreshBackendAuthState]);
 
   useEffect(() => {
     if (!isReady) {
-      if (__DEV__) {
-        console.log('[Auth] Routing check skipped - app not ready');
-      }
-      return;
-    }
-
-    if (hasNavigatedRef.current) {
-      if (__DEV__) {
-        console.log('[Auth] Routing check skipped - already navigated in this session');
-      }
+      logger.debug('[Auth] Routing check skipped - app not ready', {
+        component: 'useProtectedRoute',
+        action: 'routing-check-skipped',
+      });
       return;
     }
 
@@ -173,7 +231,9 @@ export function useProtectedRoute() {
       accessToken: freshAuthState.accessToken,
       refreshToken: freshAuthState.refreshToken,
       onboardingStatus: freshAuthState.onboardingStatus,
+      hasPasscode: freshAuthState.hasPasscode,
       pendingVerificationEmail: freshAuthState.pendingVerificationEmail,
+      lastActivityAt: freshAuthState.lastActivityAt,
     };
 
     const hasValidPasscodeSession = currentAuthState.isAuthenticated
@@ -188,33 +248,44 @@ export function useProtectedRoute() {
       hasValidPasscodeSession
     );
 
-    if (__DEV__) {
-      console.log('[Auth] Routing check:', {
-        currentPath: pathname,
-        targetRoute,
-        isAuthenticated: currentAuthState.isAuthenticated,
-        hasUser: !!currentAuthState.user,
-        hasToken: !!currentAuthState.accessToken,
-        hasRefreshToken: !!currentAuthState.refreshToken,
-        hasValidPasscodeSession,
-      });
-    }
+    logger.debug('[Auth] Routing check', {
+      component: 'useProtectedRoute',
+      action: 'routing-check',
+      currentPath: pathname,
+      targetRoute,
+      isAuthenticated: currentAuthState.isAuthenticated,
+      hasUser: !!currentAuthState.user,
+      hasPasscode: currentAuthState.hasPasscode,
+      hasValidPasscodeSession,
+    });
 
     if (targetRoute) {
-      if (__DEV__) {
-        console.log(`[Auth] Navigating to: ${targetRoute}`);
+      const normalizedTargetRoute = normalizeRoutePath(targetRoute);
+      if (normalizedTargetRoute === pathname) {
+        logger.debug('[Auth] Target route already active', {
+          component: 'useProtectedRoute',
+          action: 'route-already-active',
+        });
+        return;
       }
-      hasNavigatedRef.current = true;
+
+      logger.debug(`[Auth] Navigating to: ${targetRoute}`, {
+        component: 'useProtectedRoute',
+        action: 'navigate',
+        targetRoute,
+      });
       router.replace(targetRoute as any);
     } else {
-      if (__DEV__) {
-        console.log('[Auth] No navigation needed - user is in correct place');
-      }
+      logger.debug('[Auth] No navigation needed - user is in correct place', {
+        component: 'useProtectedRoute',
+        action: 'no-navigation-needed',
+      });
     }
   }, [
     authState.user,
     authState.isAuthenticated,
     authState.accessToken,
+    authState.hasPasscode,
     authState.onboardingStatus,
     authState.pendingVerificationEmail,
     pathname,

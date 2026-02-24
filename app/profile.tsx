@@ -32,6 +32,9 @@ const Profile = () => {
 
   // Format percentage with sign
   const formatPercentage = (value: number) => {
+    if (typeof value !== 'number' || isNaN(value)) {
+      return '0.00%';
+    }
     const sign = value >= 0 ? '+' : '';
     return `${sign}${value.toFixed(2)}%`;
   };
@@ -81,7 +84,6 @@ const Profile = () => {
         <BalanceCard
           balance={displayBalance}
           percentChange={displayPerformance}
-          buyingPower={displayBuyingPower}
           timeframe="Last 30d"
           className="rounded-x"
         />

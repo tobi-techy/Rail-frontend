@@ -5,6 +5,7 @@
 
 import { useAuthStore } from '../stores/authStore';
 import { authService } from '../api/services';
+import { logger } from '../lib/logger';
 
 export class SessionManager {
   private static refreshTimer: ReturnType<typeof setTimeout> | null = null;
@@ -38,28 +39,41 @@ export class SessionManager {
     const { refreshToken, isAuthenticated } = useAuthStore.getState();
 
     if (!refreshToken || !isAuthenticated) {
-      if (__DEV__) {
-        console.warn('[SessionManager] No refresh token available or not authenticated');
-      }
+      logger.warn('[SessionManager] No refresh token available or not authenticated', {
+        component: 'SessionManager',
+        action: 'refresh-token-failed',
+        hasRefreshToken: !!refreshToken,
+        isAuthenticated,
+      });
       this.handleSessionExpired();
       return;
     }
 
     try {
       const response = await authService.refreshToken({ refreshToken });
+      const tokenExpiresAt = response.expiresAt
+        ? new Date(response.expiresAt).toISOString()
+        : useAuthStore.getState().tokenExpiresAt;
 
       useAuthStore.setState({
         accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
+        refreshToken: response.refreshToken || refreshToken,
+        tokenExpiresAt,
       });
 
       if (response.expiresAt) {
         this.scheduleTokenRefresh(response.expiresAt);
       }
+
+      logger.debug('[SessionManager] Token refreshed successfully', {
+        component: 'SessionManager',
+        action: 'token-refreshed',
+      });
     } catch (error) {
-      if (__DEV__) {
-        console.error('[SessionManager] Token refresh failed:', error);
-      }
+      logger.error(
+        '[SessionManager] Token refresh failed',
+        error instanceof Error ? error : new Error(String(error))
+      );
       this.handleSessionExpired();
     }
   }
@@ -81,13 +95,38 @@ export class SessionManager {
     const REFRESH_BUFFER = 5 * 60 * 1000;
     const refreshTime = Math.max(0, timeUntilExpiry - REFRESH_BUFFER);
 
+    logger.debug('[SessionManager] Token refresh scheduled', {
+      component: 'SessionManager',
+      action: 'schedule-refresh',
+      expiresAt,
+      timeUntilExpiry,
+      refreshTime,
+    });
+
     if (refreshTime > 0) {
       this.refreshTimer = setTimeout(() => {
-        this.refreshToken();
+        this.refreshToken().catch((error) => {
+          logger.error(
+            '[SessionManager] Token refresh in setTimeout failed',
+            error instanceof Error ? error : new Error(String(error))
+          );
+          this.handleSessionExpired();
+        });
       }, refreshTime);
     } else {
       // Token is already expired or expires very soon
-      this.refreshToken();
+      logger.warn('[SessionManager] Token expires very soon, refreshing immediately', {
+        component: 'SessionManager',
+        action: 'immediate-refresh',
+        timeUntilExpiry,
+      });
+      this.refreshToken().catch((error) => {
+        logger.error(
+          '[SessionManager] Immediate token refresh failed',
+          error instanceof Error ? error : new Error(String(error))
+        );
+        this.handleSessionExpired();
+      });
     }
   }
 
@@ -121,7 +160,8 @@ export class SessionManager {
   }
 
   /**
-   * Check if passcode session is expired
+   * Check if passcode session is expired based on last activity
+   * Passcode session expires after 10 minutes of INACTIVITY (not wall-clock time)
    */
   static isPasscodeSessionExpired(): boolean {
     const { checkPasscodeSessionExpiry } = useAuthStore.getState();
@@ -130,9 +170,32 @@ export class SessionManager {
 
   /**
    * Schedule passcode session expiration check
-   * Passcode session lasts 10 minutes
+   * Passcode session lasts 10 minutes of INACTIVITY
+   * SECURITY: Validates expiry timestamp to prevent bypass attacks
    */
   static schedulePasscodeSessionExpiry(expiresAt: string): void {
+    // SECURITY: Validate expiresAt is a valid ISO string
+    try {
+      const expiryTime = new Date(expiresAt).getTime();
+      if (isNaN(expiryTime)) {
+        logger.error('[SessionManager] Invalid expiry timestamp format', {
+          component: 'SessionManager',
+          action: 'invalid-expiry-format',
+          expiresAt,
+        });
+        this.handlePasscodeSessionExpired();
+        return;
+      }
+    } catch (error) {
+      logger.error('[SessionManager] Failed to parse expiry timestamp', {
+        component: 'SessionManager',
+        action: 'parse-error',
+        error: error instanceof Error ? error.message : String(error),
+      });
+      this.handlePasscodeSessionExpired();
+      return;
+    }
+
     // Clear existing timer
     if (this.passcodeSessionTimer) {
       clearTimeout(this.passcodeSessionTimer);
@@ -141,26 +204,113 @@ export class SessionManager {
 
     const timeUntilExpiry = this.getTimeUntilExpiry(expiresAt);
 
-    if (timeUntilExpiry > 0) {
-      this.passcodeSessionTimer = setTimeout(() => {
-        this.handlePasscodeSessionExpired();
-      }, timeUntilExpiry);
-    } else {
-      // Passcode session is already expired
-      this.handlePasscodeSessionExpired();
+    // SECURITY: Cap timeout to prevent integer overflow or suspicious values
+    const MAX_TIMEOUT = 10 * 60 * 1000; // 10 minutes max (actual passcode session duration)
+    const MIN_TIMEOUT = 1000; // 1 second minimum
+
+    let scheduledTimeout = timeUntilExpiry;
+    if (scheduledTimeout > MAX_TIMEOUT) {
+      logger.warn('[SessionManager] Expiry time exceeds 10 minute limit', {
+        component: 'SessionManager',
+        action: 'timeout-clamped',
+        requested: scheduledTimeout,
+        clamped: MAX_TIMEOUT,
+      });
+      scheduledTimeout = MAX_TIMEOUT;
     }
+
+    if (scheduledTimeout < MIN_TIMEOUT) {
+      // Passcode session is already expired or about to expire
+      logger.debug('[SessionManager] Passcode session already expired', {
+        component: 'SessionManager',
+        action: 'already-expired',
+        timeUntilExpiry,
+      });
+      this.handlePasscodeSessionExpired();
+      return;
+    }
+
+    this.passcodeSessionTimer = setTimeout(() => {
+      logger.debug('[SessionManager] Passcode session expired (scheduled)', {
+        component: 'SessionManager',
+        action: 'scheduled-expiry',
+      });
+      this.handlePasscodeSessionExpired();
+    }, scheduledTimeout);
+
+    logger.debug('[SessionManager] Passcode session expiry scheduled', {
+      component: 'SessionManager',
+      action: 'schedule-passcode-expiry',
+      expiresAt,
+      scheduledTimeoutMs: scheduledTimeout,
+    });
+  }
+
+  /**
+   * Reset passcode session timer on activity (app foreground)
+   * Call this when app comes to foreground to extend session
+   */
+  static resetPasscodeSessionTimer(): void {
+    const state = useAuthStore.getState();
+    if (!state.passcodeSessionExpiresAt) {
+      return;
+    }
+
+    const now = Date.now();
+    const expiresAt = new Date(state.passcodeSessionExpiresAt).getTime();
+    const timeUntilExpiry = Math.max(0, expiresAt - now);
+
+    // Only reset if session is still valid (has at least 1 minute remaining)
+    if (timeUntilExpiry < 60 * 1000) {
+      logger.debug('[SessionManager] Passcode session expired, not resetting timer', {
+        component: 'SessionManager',
+        action: 'skip-reset-expired',
+        timeUntilExpiry,
+      });
+      return;
+    }
+
+    // Extend session by 10 minutes from now (activity-based timeout)
+    const newExpiresAt = new Date(now + 10 * 60 * 1000).toISOString();
+    useAuthStore.setState({
+      passcodeSessionExpiresAt: newExpiresAt,
+    });
+
+    this.schedulePasscodeSessionExpiry(newExpiresAt);
+
+    logger.debug('[SessionManager] Passcode session timer reset on activity', {
+      component: 'SessionManager',
+      action: 'reset-timer',
+      previousExpiry: state.passcodeSessionExpiresAt,
+      newExpiry: newExpiresAt,
+    });
   }
 
   /**
    * Initialize session management
-   * Call this on app start
+   * MUST be called after auth store is hydrated from AsyncStorage
+   * Call this on app start after store.hydrate() completes
    */
   static initialize(): void {
     if (this.initialized) {
+      logger.debug('[SessionManager] Already initialized, skipping', {
+        component: 'SessionManager',
+        action: 'initialize-skip',
+      });
       return;
     }
 
     const state = useAuthStore.getState();
+
+    // CRITICAL: Validate store is hydrated before accessing auth state
+    if (typeof (state as any)._hasHydrated !== 'undefined' && !(state as any)._hasHydrated) {
+      logger.warn('[SessionManager] Cannot initialize - auth store not hydrated yet', {
+        component: 'SessionManager',
+        action: 'initialize-early',
+      });
+      return;
+    }
+
     const {
       accessToken,
       refreshToken,
@@ -169,12 +319,24 @@ export class SessionManager {
       checkTokenExpiry,
       user,
     } = state;
+
     if (!isAuthenticated || !accessToken || !refreshToken) {
+      logger.debug('[SessionManager] No valid auth data - skipping initialization', {
+        component: 'SessionManager',
+        action: 'initialize-no-auth',
+        isAuthenticated,
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+      });
       return;
     }
 
     // Check if 7-day token has expired
     if (checkTokenExpiry()) {
+      logger.warn('[SessionManager] Token expired during initialization', {
+        component: 'SessionManager',
+        action: 'token-expired-init',
+      });
       this.handleSessionExpired();
       return;
     }
@@ -182,6 +344,10 @@ export class SessionManager {
     // Check if passcode session has expired
     if (passcodeSessionExpiresAt) {
       if (this.isPasscodeSessionExpired()) {
+        logger.info('[SessionManager] Passcode session expired during initialization', {
+          component: 'SessionManager',
+          action: 'passcode-expired-init',
+        });
         this.handlePasscodeSessionExpired();
       } else {
         // Schedule passcode session expiry
@@ -197,6 +363,12 @@ export class SessionManager {
     this.scheduleHealthCheck();
 
     this.initialized = true;
+
+    logger.info('[SessionManager] Session management initialized successfully', {
+      component: 'SessionManager',
+      action: 'initialized',
+      hasPasscodeSession: !!passcodeSessionExpiresAt,
+    });
   }
 
   /**
@@ -206,18 +378,39 @@ export class SessionManager {
     // Check session health every 30 minutes for token expiry only
     const CHECK_INTERVAL = 30 * 60 * 1000;
 
+    logger.debug('[SessionManager] Health check scheduled', {
+      component: 'SessionManager',
+      action: 'health-check-scheduled',
+      interval: CHECK_INTERVAL,
+    });
+
     setTimeout(() => {
       const { isAuthenticated, accessToken, checkTokenExpiry } = useAuthStore.getState();
 
       if (isAuthenticated && accessToken) {
+        logger.debug('[SessionManager] Running health check', {
+          component: 'SessionManager',
+          action: 'health-check-run',
+        });
+
         // Check if 7-day token has expired
         if (checkTokenExpiry()) {
+          logger.warn('[SessionManager] Health check detected expired token', {
+            component: 'SessionManager',
+            action: 'health-check-expired-token',
+          });
           this.handleSessionExpired();
           return;
         }
 
         // Attempt to refresh token to ensure it's still valid
-        this.refreshToken();
+        this.refreshToken().catch((error) => {
+          logger.warn('[SessionManager] Health check token refresh failed', {
+            component: 'SessionManager',
+            action: 'health-check-refresh-failed',
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
       }
 
       // Schedule next check if still initialized

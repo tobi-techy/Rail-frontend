@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { walletService } from '../api/services';
+import { logger } from '../lib/logger';
 import type { Token, Network } from '@/lib/domain/wallet/models';
 import { MOCK_TOKENS } from '@/__mocks__/wallet.mock';
 import { ERROR_MESSAGES } from '@/lib/constants/messages';
@@ -40,27 +41,27 @@ export interface WithdrawalState {
   recipientAddress: string;
   selectedToken: Token | null;
   amount: string;
-  
+
   // Transaction details
   transaction: TransactionDetails | null;
-  
+
   // Validation states
   errors: {
     amount?: string;
     address?: string;
     general?: string;
   };
-  
+
   // UI states
   isLoading: boolean;
   step: 'amount' | 'confirm' | 'processing' | 'success';
   showConfirmModal: boolean;
-  
+
   // Available data
   availableRecipients: Recipient[];
   availableTokens: Token[];
   availableNetworks: Network[];
-  
+
   // User data
   accountName: string;
   accountAddress: string;
@@ -71,27 +72,27 @@ export interface WithdrawalActions {
   setRecipientAddress: (address: string) => void;
   setSelectedToken: (token: Token) => void;
   setAmount: (amount: string) => void;
-  
+
   // Modal controls
   setShowConfirmModal: (show: boolean) => void;
-  
+
   // Navigation
   setStep: (step: WithdrawalState['step']) => void;
   goBack: () => void;
-  
+
   // Keypad actions
   handleNumberPress: (num: string) => void;
   handleDeletePress: () => void;
-  
+
   // Transaction
   prepareTransaction: () => void;
   submitWithdrawal: () => Promise<void>;
-  
+
   // Validation
   validateAmount: () => boolean;
   validateAddress: () => boolean;
   clearErrors: () => void;
-  
+
   // Reset
   reset: () => void;
 }
@@ -111,9 +112,7 @@ const MOCK_RECIPIENTS: Recipient[] = [
   },
 ];
 
-const MOCK_NETWORKS: Network[] = [
-  { id: 'solana', name: 'Solana', symbol: 'SOL', icon: 'solana' },
-];
+const MOCK_NETWORKS: Network[] = [{ id: 'solana', name: 'Solana', symbol: 'SOL', icon: 'solana' }];
 
 const initialState: WithdrawalState = {
   recipientAddress: '',
@@ -170,7 +169,7 @@ export const useWithdrawalStore = create<WithdrawalState & WithdrawalActions>((s
   // Keypad actions
   handleNumberPress: (num: string) => {
     const { amount } = get();
-    
+
     // Handle decimal point
     if (num === '.') {
       if (amount.includes('.')) return; // Already has decimal
@@ -179,19 +178,19 @@ export const useWithdrawalStore = create<WithdrawalState & WithdrawalActions>((s
         return;
       }
     }
-    
+
     // Prevent leading zeros
     if (amount === '0' && num !== '.') {
       set({ amount: num });
       return;
     }
-    
+
     // Limit decimal places to 2
     if (amount.includes('.')) {
       const [, decimals] = amount.split('.');
       if (decimals && decimals.length >= 2) return;
     }
-    
+
     set({ amount: amount + num });
     get().clearErrors();
   },
@@ -206,12 +205,12 @@ export const useWithdrawalStore = create<WithdrawalState & WithdrawalActions>((s
   // Transaction
   prepareTransaction: () => {
     const { recipientAddress, selectedToken, amount, accountName, accountAddress } = get();
-    
+
     if (!recipientAddress || !selectedToken || !amount) return;
-    
+
     const numAmount = parseFloat(amount);
     const usdAmount = (numAmount * 1).toFixed(2); // Assuming 1:1 for USDC
-    
+
     const transaction: TransactionDetails = {
       fromAccount: accountName,
       fromAddress: accountAddress,
@@ -225,22 +224,22 @@ export const useWithdrawalStore = create<WithdrawalState & WithdrawalActions>((s
       fee: '0.00001 SOL',
       bridgeProvider: { id: 'solana', name: 'Solana Network', estimatedTime: '1-2 seconds' },
     };
-    
+
     set({ transaction });
   },
 
   submitWithdrawal: async () => {
     if (!get().validateAmount()) return;
-    
+
     set({ showConfirmModal: false, step: 'processing', isLoading: true });
-    
+
     try {
       const { recipientAddress, selectedToken, amount } = get();
-      
+
       if (!selectedToken || !recipientAddress || !amount) {
         throw new Error('Missing required fields');
       }
-      
+
       // Call real API to create transfer
       const response = await walletService.createTransfer({
         toAddress: recipientAddress,
@@ -248,7 +247,7 @@ export const useWithdrawalStore = create<WithdrawalState & WithdrawalActions>((s
         amount,
         network: selectedToken.network, // Use network from selected token
       });
-      
+
       // Update transaction with real data from API
       const transaction = get().transaction;
       if (transaction) {
@@ -262,18 +261,21 @@ export const useWithdrawalStore = create<WithdrawalState & WithdrawalActions>((s
         transaction.txHash = response.transaction.txHash || response.transaction.id;
         set({ transaction });
       }
-      
+
       // Success
       set({ step: 'success', isLoading: false });
     } catch (error) {
-      console.error('[WithdrawalStore] Withdrawal failed:', error);
-      set({ 
+      logger.error(
+        '[WithdrawalStore] Withdrawal failed',
+        error instanceof Error ? error : new Error(String(error))
+      );
+      set({
         step: 'amount',
         showConfirmModal: false,
         isLoading: false,
-        errors: { 
-          general: error instanceof Error ? error.message : ERROR_MESSAGES.WALLET.TRANSFER_FAILED
-        }
+        errors: {
+          general: error instanceof Error ? error.message : ERROR_MESSAGES.WALLET.TRANSFER_FAILED,
+        },
       });
     }
   },
@@ -282,40 +284,40 @@ export const useWithdrawalStore = create<WithdrawalState & WithdrawalActions>((s
   validateAmount: () => {
     const { amount, selectedToken } = get();
     const numAmount = parseFloat(amount);
-    
+
     if (!amount || amount === '0') {
       set({ errors: { amount: ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD } });
       return false;
     }
-    
+
     if (isNaN(numAmount) || numAmount <= 0) {
       set({ errors: { amount: ERROR_MESSAGES.VALIDATION.INVALID_AMOUNT } });
       return false;
     }
-    
+
     if (selectedToken && numAmount > selectedToken.balance) {
       set({ errors: { amount: ERROR_MESSAGES.WALLET.INSUFFICIENT_BALANCE } });
       return false;
     }
-    
+
     return true;
   },
 
   validateAddress: () => {
     const { recipientAddress } = get();
-    
+
     if (!recipientAddress.trim()) {
       set({ errors: { address: ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD } });
       return false;
     }
-    
+
     const isValidSolanaAddress = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(recipientAddress);
-    
+
     if (!isValidSolanaAddress) {
       set({ errors: { address: ERROR_MESSAGES.WALLET.INVALID_ADDRESS } });
       return false;
     }
-    
+
     return true;
   },
 

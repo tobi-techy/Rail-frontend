@@ -19,7 +19,7 @@ interface PhoneNumberInputProps {
   error?: string;
   required?: boolean;
   defaultCountry?: string;
-  variant?: 'light' | 'dark';
+  variant?: 'light' | 'dark' | 'blended';
 }
 
 const COUNTRY_CODES: CountryCode[] = [
@@ -137,12 +137,14 @@ export function PhoneNumberInput({
   error,
   required = false,
   defaultCountry = 'US',
-  variant = 'light',
+  variant = 'blended',
 }: PhoneNumberInputProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const isDark = variant === 'dark';
+  const hasError = !!error;
 
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>(
     COUNTRY_CODES.find((country) => country.code === defaultCountry) || COUNTRY_CODES[0]
@@ -153,6 +155,19 @@ export function PhoneNumberInput({
       country.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       country.dialCode.includes(searchQuery)
   );
+
+  const getContainerStyle = () => {
+    if (isDark) {
+      return `border-b bg-transparent py-3 ${hasError ? 'border-destructive' : 'border-white/30'}`;
+    }
+    if (hasError) {
+      return 'h-[56px] rounded-2xl border border-destructive bg-red-50';
+    }
+    if (isFocused || isModalVisible) {
+      return 'h-[56px] rounded-2xl border border-black/20 bg-neutral-200';
+    }
+    return 'h-[56px] rounded-2xl border border-transparent bg-neutral-100';
+  };
 
   const handleCountrySelect = (country: CountryCode) => {
     setSelectedCountry(country);
@@ -177,37 +192,47 @@ export function PhoneNumberInput({
   const renderCountryItem = ({ item }: { item: CountryCode }) => (
     <Pressable
       onPress={() => handleCountrySelect(item)}
-      className="flex-row items-center border-b border-gray-100 px-4 py-3">
+      className="flex-row items-center border-b border-black/5 px-5 py-3">
       <Text className="mr-3 text-2xl">{item.flag}</Text>
       <View className="flex-1">
-        <Text className="font-body-bold text-base text-text-primary">{item.name}</Text>
-        <Text className="text-gray-700 font-heading-regular text-sm">{item.dialCode}</Text>
+        <Text className="font-body text-body text-text-primary">{item.name}</Text>
+        <Text className="font-caption text-caption text-text-secondary">{item.dialCode}</Text>
       </View>
     </Pressable>
   );
 
   return (
-    <View className={isDark ? 'space-y-1' : 'space-y-2'}>
+    <View className={isDark ? 'mb-2' : 'mb-4'}>
       {label && (
-        <View className="flex-row items-center">
-          <Text className={`font-heading-medium text-sm ${isDark ? 'text-white/60' : 'text-text-primary'}`}>{label}</Text>
-          {required && <Text className={`ml-1 text-sm ${isDark ? 'text-white/60' : 'text-red-500'}`}>*</Text>}
+        <View className="mb-1 flex-row">
+          <Text className={`font-subtitle text-body ${isDark ? 'text-white/60' : 'text-text-primary'}`}>
+            {label}
+          </Text>
+          {required && (
+            <Text className={`font-subtitle text-body ${isDark ? 'text-white/60' : 'text-destructive'}`}>
+              {' '}
+              *
+            </Text>
+          )}
         </View>
       )}
 
       <Pressable onPress={() => inputRef.current?.focus()}>
-        <View
-          className={`flex-row items-center ${
-            isDark ? 'bg-transparent border-b border-white/30' : 'bg-white border border-gray-300 rounded-xl'
-          } ${error ? 'border-red-500' : ''}`}>
+        <View className={`flex-row items-center ${getContainerStyle()}`}>
           <Pressable
             onPress={() => setIsModalVisible(true)}
-            className={`flex-row items-center py-3 pr-3 ${isDark ? 'border-r border-white/30' : 'border-r border-gray-300 px-3 py-4'}`}>
+            className={`mr-3 flex-row items-center border-r py-3 pr-3 ${
+              isDark ? 'border-white/30' : 'border-black/10 pl-4'
+            }`}>
             <Text className="mr-2 text-lg">{selectedCountry.flag}</Text>
-            <Text className={`font-heading-regular mr-1 text-base ${isDark ? 'text-white' : 'text-text-primary'}`}>
+            <Text className={`mr-1 font-body text-body ${isDark ? 'text-white' : 'text-text-primary'}`}>
               {selectedCountry.dialCode}
             </Text>
-            <Ionicons name="chevron-down" size={16} color={isDark ? '#fff' : '#A0A0A0'} />
+            <Ionicons
+              name="chevron-down"
+              size={16}
+              color={hasError ? '#F44336' : isDark ? '#FFFFFF' : isModalVisible ? '#1B84FF' : '#757575'}
+            />
           </Pressable>
 
           <TextInput
@@ -215,42 +240,55 @@ export function PhoneNumberInput({
             value={value}
             onChangeText={handlePhoneNumberChange}
             placeholder={placeholder}
-            placeholderTextColor={isDark ? 'rgba(255,255,255,0.5)' : '#A0A0A0'}
+            placeholderTextColor={isDark ? 'rgba(255,255,255,0.5)' : '#9CA3AF'}
             keyboardType="number-pad"
             returnKeyType="done"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             onSubmitEditing={Keyboard.dismiss}
             maxLength={selectedCountry.maxLength + 4} // Account for formatting chars
-            className={`font-heading-regular flex-1 py-3 text-base ${isDark ? 'text-white pl-3' : 'text-text-primary px-4 py-4'}`}
+            className={`flex-1 py-3 font-body text-body ${
+              isDark ? 'pl-3 text-white' : 'pr-4 text-text-primary'
+            }`}
           />
 
           {value.length > 0 && (
-            <Pressable onPress={() => { onChangeText(''); Keyboard.dismiss(); }} className="pr-3">
+            <Pressable
+              onPress={() => {
+                onChangeText('');
+                Keyboard.dismiss();
+              }}
+              className="pr-4">
               <Ionicons name="close-circle" size={20} color={isDark ? 'rgba(255,255,255,0.5)' : '#A0A0A0'} />
             </Pressable>
           )}
         </View>
       </Pressable>
 
-      {error && <Text className={`font-heading-regular text-sm ${isDark ? 'text-white' : 'text-red-500'}`}>{error}</Text>}
+      {error && (
+        <Text className={`mt-1 font-caption text-caption ${isDark ? 'text-white' : 'text-destructive'}`}>
+          {error}
+        </Text>
+      )}
 
       <Modal visible={isModalVisible} animationType="slide" presentationStyle="pageSheet">
         <View className="flex-1 bg-white">
-          <View className="flex-row items-center justify-between border-b border-gray-200 px-4 py-4">
-            <Text className="font-subheading text-[24px] text-text-primary">Select Country Code</Text>
+          <View className="flex-row items-center justify-between border-b border-black/5 px-5 py-4">
+            <Text className="font-subtitle text-[30px] text-text-primary">Select Country Code</Text>
             <Pressable onPress={() => setIsModalVisible(false)} className="p-2">
               <Ionicons name="close" size={24} color="#000000" />
             </Pressable>
           </View>
 
-          <View className="border-b border-gray-200 px-4 py-3">
-            <View className="flex-row items-center rounded-xl border border-gray-300 bg-gray-50 px-4 py-3">
-              <Ionicons name="search" size={20} color="#A0A0A0" />
+          <View className="border-b border-black/5 px-5 py-3">
+            <View className="h-[52px] flex-row items-center rounded-2xl border border-transparent bg-neutral-100 px-4">
+              <Ionicons name="search" size={20} color="#757575" />
               <TextInput
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder="Search countries or codes..."
-                className="font-heading-regular ml-3 flex-1 text-base text-text-primary"
-                placeholderTextColor="#A0A0A0"
+                className="ml-3 flex-1 font-body text-body text-text-primary"
+                placeholderTextColor="#9CA3AF"
               />
             </View>
           </View>
@@ -262,6 +300,7 @@ export function PhoneNumberInput({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             className="flex-1"
+            contentContainerStyle={{ paddingBottom: 24 }}
           />
         </View>
       </Modal>

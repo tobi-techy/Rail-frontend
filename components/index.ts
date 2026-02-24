@@ -38,8 +38,5 @@ export { BottomSheet, ActionSheet, InfoSheet, SettingsSheet } from './sheets';
 // Auth
 export { AuthGradient } from './AuthGradient';
 
-// Design tokens
-export { colors, typography, spacing, borderRadius, shadows } from '../design/tokens';
-
 // Export types
 export * from '../types';

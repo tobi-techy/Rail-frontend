@@ -54,7 +54,7 @@ const CardIntroScreen = ({ onCreateCard }: CardIntroScreenProps) => {
       </View>
 
       <View className="mt-14">
-        <Text className="leading- font-display text-display-lg text-gray-900">
+        <Text className="font-headline text-display-lg leading-tight text-gray-900">
           Virtual card, ready.
         </Text>
         <Text className="mt-2 font-body text-body text-gray-600">

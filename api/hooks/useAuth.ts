@@ -4,7 +4,8 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { authService } from '../services';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { authService, passcodeService } from '../services';
 import { queryKeys, invalidateQueries } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
 import type {
@@ -14,26 +15,63 @@ import type {
   ResendCodeRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
-  User,
 } from '../types';
+
+const TOKEN_EXPIRY_DAYS = 7;
+
+const getTokenExpiryIso = (expiresAt?: string): string => {
+  if (expiresAt) return new Date(expiresAt).toISOString();
+
+  const now = new Date();
+  return new Date(now.getTime() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
+};
+
+const syncPasscodeStatus = async () => {
+  try {
+    const status = await passcodeService.getStatus();
+    useAuthStore.setState({ hasPasscode: Boolean(status.enabled) });
+  } catch {
+    // Keep the last known state on transient failures to avoid relaxing auth gates.
+  }
+};
+
+/**
+ * After a successful email/password login, grant a passcode session so the user
+ * isn't immediately redirected to /login-passcode by useProtectedRoute.
+ * The user already proved identity via credentials — requiring passcode again is redundant.
+ */
+const grantPostLoginPasscodeSession = () => {
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 10 * 60 * 1000); // 10 minutes
+  useAuthStore.getState().setPasscodeSession('login-granted', expiresAt.toISOString());
+};
 
 /**
  * Login mutation
  */
 export function useLogin() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (data: LoginRequest) => authService.login(data),
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
+      const nowIso = new Date().toISOString();
+
       // Update auth store with response data
       useAuthStore.setState({
         user: response.user,
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
         isAuthenticated: true,
+        pendingVerificationEmail: null,
         onboardingStatus: response.user.onboardingStatus || null,
+        lastActivityAt: nowIso,
+        tokenIssuedAt: nowIso,
+        tokenExpiresAt: getTokenExpiryIso(response.expiresAt),
       });
+
+      // Grant passcode session BEFORE syncing status so routing doesn't bounce to /login-passcode
+      grantPostLoginPasscodeSession();
+
+      await syncPasscodeStatus();
 
       // Invalidate and refetch relevant queries
       invalidateQueries.auth();
@@ -66,29 +104,35 @@ export function useRegister() {
  * Verify email code mutation
  */
 export function useVerifyCode() {
-  const TOKEN_EXPIRY_DAYS = 7;
-  const DEFAULT_ONBOARDING_STATUS = 'wallets_pending';
+  const DEFAULT_ONBOARDING_STATUS = 'started';
 
   return useMutation({
     mutationFn: (data: VerifyCodeRequest) => authService.verifyCode(data),
     onSuccess: (response) => {
+      if (!response.user || !response.accessToken) {
+        useAuthStore.setState({ pendingVerificationEmail: null });
+        return;
+      }
+
       const now = new Date();
-      const defaultExpiryTime = new Date(now.getTime() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-      const tokenExpiresAt = response.expiresAt 
-        ? new Date(response.expiresAt)
-        : defaultExpiryTime;
-      
+      const tokenExpiresAt = getTokenExpiryIso(response.expiresAt);
+      const refreshToken = response.refreshToken || useAuthStore.getState().refreshToken;
+
       useAuthStore.setState({
         user: response.user,
         accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
+        refreshToken: refreshToken || null,
         isAuthenticated: true,
         pendingVerificationEmail: null,
-        onboardingStatus: response.user.onboardingStatus || DEFAULT_ONBOARDING_STATUS,
+        onboardingStatus:
+          response.onboarding_status || response.user.onboardingStatus || DEFAULT_ONBOARDING_STATUS,
+        currentOnboardingStep: response.onboarding?.currentStep ?? null,
         lastActivityAt: now.toISOString(),
         tokenIssuedAt: now.toISOString(),
-        tokenExpiresAt: tokenExpiresAt.toISOString(),
+        tokenExpiresAt,
       });
+
+      void syncPasscodeStatus();
     },
   });
 }
@@ -138,27 +182,6 @@ export function useResetPassword() {
   });
 }
 
-
-
-/**
- * Verify email mutation
- */
-export function useVerifyEmail() {
-  return useMutation({
-    mutationFn: (token: string) => authService.verifyEmail({ token }),
-    onSuccess: () => {
-      // Update user's email verified status
-      const currentUser = useAuthStore.getState().user;
-      if (currentUser) {
-        useAuthStore.setState({
-          user: { ...currentUser, emailVerified: true },
-        });
-      }
-    },
-  });
-}
-
-
 /**
  * Get current user query
  */
@@ -170,5 +193,55 @@ export function useCurrentUser() {
     queryFn: () => authService.getCurrentUser(),
     enabled: isAuthenticated,
     staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+/**
+ * Apple Sign-In mutation
+ */
+export function useAppleSignIn() {
+  return useMutation({
+    mutationFn: async () => {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        throw new Error('Apple identity token missing');
+      }
+
+      return authService.socialLogin({
+        provider: 'apple',
+        idToken: credential.identityToken,
+        givenName: credential.fullName?.givenName ?? undefined,
+        familyName: credential.fullName?.familyName ?? undefined,
+      });
+    },
+    onSuccess: async (response) => {
+      const nowIso = new Date().toISOString();
+
+      useAuthStore.setState({
+        user: response.user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        isAuthenticated: true,
+        pendingVerificationEmail: null,
+        onboardingStatus: response.user.onboardingStatus || null,
+        lastActivityAt: nowIso,
+        tokenIssuedAt: nowIso,
+        tokenExpiresAt: response.expiresAt,
+      });
+
+      grantPostLoginPasscodeSession();
+
+      await syncPasscodeStatus();
+
+      invalidateQueries.auth();
+      invalidateQueries.wallet();
+      invalidateQueries.user();
+    },
   });
 }

@@ -37,36 +37,36 @@ export const WithdrawScreenHeader: React.FC<WithdrawScreenHeaderProps> = ({
   };
 
   return (
-    <View className="flex-row items-center justify-between px-6 py-4 bg-white">
+    <View className="flex-row items-center justify-between bg-white px-6 py-4">
       {showBackButton ? (
         <TouchableOpacity
           onPress={handleBack}
-          className="h-10 w-10 items-center justify-center rounded-full bg-[#F3F4F6]"
+          className="h-11 w-11 items-center justify-center rounded-full bg-[#F3F4F6]"
           activeOpacity={0.7}
-        >
+          accessibilityRole="button"
+          accessibilityLabel="Go back">
           <ArrowLeft size={18} color="#111827" strokeWidth={2} />
         </TouchableOpacity>
       ) : (
-        <View className="w-10" />
+        <View className="w-11" />
       )}
 
       <View className="flex-1 items-center">
         <Text className="text-lg font-semibold text-[#0B1120]">{title}</Text>
-        {subtitle && (
-          <Text className="mt-1 text-sm text-[#6B7280]">{subtitle}</Text>
-        )}
+        {subtitle && <Text className="mt-1 text-sm text-[#6B7280]">{subtitle}</Text>}
       </View>
 
       {showCloseButton ? (
         <TouchableOpacity
           onPress={handleClose}
-          className="h-10 w-10 items-center justify-center rounded-full bg-[#F3F4F6]"
+          className="h-11 w-11 items-center justify-center rounded-full bg-[#F3F4F6]"
           activeOpacity={0.7}
-        >
+          accessibilityRole="button"
+          accessibilityLabel="Close">
           <X size={18} color="#111827" strokeWidth={2} />
         </TouchableOpacity>
       ) : (
-        <View className="w-10" />
+        <View className="w-11" />
       )}
     </View>
   );

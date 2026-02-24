@@ -1,6 +1,7 @@
 /**
  * Design tokens from RAIL-DESIGN.json v3.0.0
- * Clean minimal design: Black, White, Rail Red, Rail Green
+ * DEPRECATED — use tailwind.config.js as the single source of truth.
+ * This file is kept only for backward compatibility during migration.
  */
 
 export const colors = {

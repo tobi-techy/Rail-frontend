@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text } from 'react-native';
-import { colors, typography } from '../../design/tokens';
+import { Ionicons } from '@expo/vector-icons';
 
 export interface SearchBarProps {
   placeholder?: string;
@@ -40,10 +40,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <View
-      className={`flex-row items-center bg-surface rounded-sm px-4 py-3 ${disabled ? 'opacity-50' : ''} ${className || ''}`}
-    >
+      className={`flex-row items-center rounded-sm bg-surface px-4 py-3 ${disabled ? 'opacity-50' : ''} ${className || ''}`}>
       <View className="mr-3">
-        <Text className="text-text-secondary text-body">🔍</Text>
+        <Text className="text-body text-text-secondary">🔍</Text>
       </View>
 
       <TextInput
@@ -51,18 +50,21 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         onChangeText={handleChangeText}
         onSubmitEditing={() => onSearch?.(value)}
         placeholder={placeholder}
-        placeholderTextColor={colors.text.secondary}
+        placeholderTextColor="#757575"
         editable={!disabled}
         autoFocus={autoFocus}
         returnKeyType="search"
-        className="flex-1 text-body text-text-primary"
-        style={{ fontFamily: typography.fonts.body }}
+        className="flex-1 font-body text-body text-text-primary"
         accessibilityLabel="Search input"
       />
 
       {value.length > 0 && (
-        <TouchableOpacity onPress={handleClear} className="ml-3 p-1" accessibilityLabel="Clear search">
-          <Text className="text-text-secondary text-body">✕</Text>
+        <TouchableOpacity
+          onPress={handleClear}
+          className="ml-2 min-h-[44px] min-w-[44px] items-center justify-center p-2"
+          accessibilityRole="button"
+          accessibilityLabel="Clear search">
+          <Ionicons name="close" size={18} color="#757575" />
         </TouchableOpacity>
       )}
     </View>

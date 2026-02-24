@@ -20,12 +20,22 @@ function log(level: LogLevel, message: string, context?: LogContext | Error) {
 
   // Dev: log to console
   if (__DEV__) {
-    const data =
-      context instanceof Error
-        ? { error: context.message, stack: context.stack }
-        : context
-          ? sanitizeObject(context)
-          : undefined;
+    let data;
+    if (context instanceof Error) {
+      // SECURITY: Sanitize stack traces to prevent path/internal info leakage
+      const sanitizedStack = context.stack
+        ? context.stack
+            .split('\n')
+            .map((line) => {
+              // Remove absolute file paths, keep only filename
+              return line.replace(/\/.*\//g, '').replace(/\\.*\\/g, '');
+            })
+            .join('\n')
+        : undefined;
+      data = { error: context.message, stack: sanitizedStack };
+    } else {
+      data = context ? sanitizeObject(context) : undefined;
+    }
 
     console[level](sanitizedMessage, data ?? '');
     return;

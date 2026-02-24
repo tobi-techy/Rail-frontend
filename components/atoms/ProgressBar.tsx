@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, ViewProps, ViewStyle } from 'react-native';
-import { colors, borderRadius } from '../../design/tokens';
 
 export interface ProgressBarProps extends ViewProps {
   progress: number;
@@ -13,37 +12,29 @@ export interface ProgressBarProps extends ViewProps {
 export const ProgressBar: React.FC<ProgressBarProps> = ({
   progress,
   height = 8,
-  backgroundColor = colors.background.surface,
-  progressColor = colors.primary.accent,
+  backgroundColor = '#F5F5F5',
+  progressColor = '#FF2E01',
   className,
   style,
   ...props
 }) => {
   const clampedProgress = Math.max(0, Math.min(100, progress));
 
-  const containerStyle: ViewStyle = {
-    height,
-    backgroundColor,
-    borderRadius: borderRadius.full,
-    overflow: 'hidden',
-  };
-
-  const progressStyle: ViewStyle = {
-    height: '100%',
-    width: `${clampedProgress}%`,
-    backgroundColor: progressColor,
-    borderRadius: borderRadius.full,
-  };
-
   return (
     <View
       className={className}
-      style={[containerStyle, style]}
+      style={[{ height, backgroundColor, borderRadius: 9999, overflow: 'hidden' }, style]}
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 100, now: clampedProgress }}
-      {...props}
-    >
-      <View style={progressStyle} />
+      {...props}>
+      <View
+        style={{
+          height: '100%',
+          width: `${clampedProgress}%`,
+          backgroundColor: progressColor,
+          borderRadius: 9999,
+        }}
+      />
     </View>
   );
 };

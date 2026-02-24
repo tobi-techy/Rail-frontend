@@ -26,19 +26,21 @@ export const StashCard: React.FC<StashCardProps> = ({
 
   return (
     <Container
-      className={`rounded-[24px] border border-gray-100 bg-white p-[24px] ${className || ''}`}
+      className={`rounded-lg border border-gray-200 bg-white p-lg ${className || ''} ${disabled ? 'opacity-50' : ''}`}
       onPress={onPress}
       disabled={disabled}
       testID={testID}
-      accessibilityRole={onPress ? 'button' : undefined}>
-      <View className="mb-[18px] self-start">{icon}</View>
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={onPress ? `${title}: ${amount}${amountCents || ''}` : undefined}
+      accessibilityState={{ disabled }}>
+      <View className="mb-md self-start">{icon}</View>
 
-      <Text className="mb-[6px] font-body text-[15px] text-gray-400">{title}</Text>
+      <Text className="mb-1 font-body text-caption text-text-tertiary">{title}</Text>
 
       <View className="flex-row items-baseline">
-        <Text className="font-subtitle text-[22px] text-[#121212]">{amount}</Text>
+        <Text className="font-subtitle text-stash text-text-primary">{amount}</Text>
         {amountCents && (
-          <Text className="font-subtitle text-[22px] text-gray-400">{amountCents}</Text>
+          <Text className="font-subtitle text-stash text-text-tertiary">{amountCents}</Text>
         )}
       </View>
     </Container>
