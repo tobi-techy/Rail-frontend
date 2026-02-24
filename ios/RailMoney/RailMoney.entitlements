@@ -8,7 +8,7 @@
     </array>
     <key>com.apple.developer.associated-domains</key>
     <array>
-      <string>webcredentials:rail.app</string>
+      <string>webcredentials:userail.money</string>
     </array>
   </dict>
 </plist>
