@@ -95,7 +95,7 @@ export function useUpdateSettings() {
 /**
  * Submit KYC verification mutation
  */
-export function useSubmitKYC() {
+export function useSubmitUserKYC() {
   const queryClient = useQueryClient();
 
   return useMutation({

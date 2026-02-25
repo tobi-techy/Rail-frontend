@@ -1,7 +1,7 @@
 import { ROUTES } from '@/constants/routes';
 
 const PROFILE_REQUIRED_STATUSES = new Set(['started', 'wallets_pending']);
-const KYC_REQUIRED_STATUSES = new Set(['kyc_pending', 'kyc_rejected']);
+const KYC_REQUIRED_STATUSES = new Set(['kyc_rejected']);
 const APP_READY_STATUSES = new Set(['completed', 'kyc_approved']);
 
 export const resolveOnboardingStatus = (status?: string | null): string => {
@@ -26,6 +26,7 @@ export const isOnboardingAppReady = (status?: string | null): boolean => {
  */
 export const getPostAuthRoute = (status?: string | null): string => {
   if (isProfileCompletionRequired(status)) return ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO;
-  if (isKycSubmissionRequired(status)) return ROUTES.AUTH.KYC;
+  // KYC is handled in-context via bottom sheets after auth.
+  if (isKycSubmissionRequired(status)) return ROUTES.TABS;
   return ROUTES.TABS;
 };

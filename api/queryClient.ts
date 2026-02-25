@@ -62,6 +62,10 @@ export const queryKeys = {
     all: ['station'] as const,
     home: () => [...queryKeys.station.all, 'home'] as const,
   },
+  allocation: {
+    all: ['allocation'] as const,
+    balances: () => [...queryKeys.allocation.all, 'balances'] as const,
+  },
   wallet: {
     all: ['wallet'] as const,
     balance: () => [...queryKeys.wallet.all, 'balance'] as const,
@@ -86,6 +90,14 @@ export const queryKeys = {
     transactions: (params?: unknown) => [...queryKeys.funding.all, 'transactions', params] as const,
     virtualAccount: () => [...queryKeys.funding.all, 'virtual-account'] as const,
   },
+  spending: {
+    all: ['spending'] as const,
+    stash: () => [...queryKeys.spending.all, 'stash'] as const,
+  },
+  passkeys: {
+    all: ['passkeys'] as const,
+    list: () => [...queryKeys.passkeys.all, 'list'] as const,
+  },
 };
 
 /**
@@ -95,9 +107,11 @@ export const invalidateQueries = {
   auth: () => queryClient.invalidateQueries({ queryKey: queryKeys.auth.all }),
   portfolio: () => queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.all }),
   station: () => queryClient.invalidateQueries({ queryKey: queryKeys.station.all }),
+  allocation: () => queryClient.invalidateQueries({ queryKey: queryKeys.allocation.all }),
   wallet: () => queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all }),
   funding: () => queryClient.invalidateQueries({ queryKey: queryKeys.funding.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
+  passkeys: () => queryClient.invalidateQueries({ queryKey: queryKeys.passkeys.all }),
   all: () => queryClient.invalidateQueries(),
 };
 

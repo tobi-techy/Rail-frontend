@@ -10,6 +10,8 @@ import { useLogin } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { getPostAuthRoute } from '@/utils/onboardingFlow';
 
+import { isSafeInput } from '@/utils/security';
+
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
@@ -41,6 +43,12 @@ export default function SignIn() {
     if (!isValidEmail(email)) {
       setEmailError('Please enter a valid email address');
       showWarning('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
+    if (!isSafeInput(email) || !isSafeInput(password)) {
+      setEmailError('Invalid input detected');
+      showWarning('Invalid Input', 'Please check your input and try again.');
       return;
     }
 

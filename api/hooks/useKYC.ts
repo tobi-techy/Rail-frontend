@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { kycService } from '../services';
 import { queryKeys } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
-import type { StartSumsubSessionRequest, KycStatus } from '../types';
+import type { StartSumsubSessionRequest, KycStatus, SubmitKYCRequest } from '../types';
 
 export function useKYCStatus(enabled = true) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -21,6 +21,17 @@ export function useStartSumsubSession() {
 
   return useMutation({
     mutationFn: (data: StartSumsubSessionRequest) => kycService.startSumsubSession(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.kycStatus() });
+    },
+  });
+}
+
+export function useSubmitKYC() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: SubmitKYCRequest) => kycService.submitKYC(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.kycStatus() });
     },

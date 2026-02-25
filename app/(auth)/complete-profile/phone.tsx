@@ -6,15 +6,106 @@ import { Button } from '../../../components/ui';
 import { PhoneNumberInput, AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { useOnboardingComplete } from '@/api/hooks/useOnboarding';
+import type { OnboardingCompleteRequest } from '@/api/types';
+
+const E164_REGEX = /^\+[1-9]\d{7,14}$/;
+
+const normalizePhone = (
+  rawPhone: string | undefined,
+  country: string | undefined
+): string | undefined => {
+  if (!rawPhone?.trim()) return undefined;
+  const compact = rawPhone.replace(/[^\d+]/g, '');
+  if (compact.startsWith('+')) {
+    const normalized = `+${compact.slice(1).replace(/\D/g, '')}`;
+    return E164_REGEX.test(normalized) ? normalized : undefined;
+  }
+  const digits = rawPhone.replace(/\D/g, '');
+  if ((country === 'US' || country === 'CA') && digits.length === 10) {
+    return `+1${digits}`;
+  }
+  return undefined;
+};
+
+const isPasskeySignupMethod = (value?: string) => value === 'passkey';
 
 export default function Phone() {
   const registrationData = useAuthStore((state) => state.registrationData);
   const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
+  const clearRegistrationData = useAuthStore((state) => state.clearRegistrationData);
+  const updateUser = useAuthStore((state) => state.updateUser);
+  const setOnboardingStatus = useAuthStore((state) => state.setOnboardingStatus);
   const [phone, setPhone] = useState(registrationData.phone || '');
+  const { showWarning, showError } = useFeedbackPopup();
+  const { mutate: completeOnboarding, isPending } = useOnboardingComplete();
+  const isPasskeySignup = isPasskeySignupMethod(registrationData.authMethod);
 
   const handleNext = () => {
-    updateRegistrationData({ phone: phone.trim() });
-    router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_PASSWORD as any);
+    const normalizedPhone = phone.trim();
+    const nextRegistrationData = {
+      ...registrationData,
+      phone: normalizedPhone,
+    };
+    updateRegistrationData({ phone: normalizedPhone });
+
+    if (!isPasskeySignup) {
+      router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_PASSWORD as any);
+      return;
+    }
+
+    const payload: OnboardingCompleteRequest = {
+      firstName: nextRegistrationData.firstName,
+      lastName: nextRegistrationData.lastName,
+      dateOfBirth: nextRegistrationData.dob,
+      country: nextRegistrationData.country,
+      address: {
+        street: nextRegistrationData.street,
+        city: nextRegistrationData.city,
+        state: nextRegistrationData.state,
+        postalCode: nextRegistrationData.postalCode,
+        country: nextRegistrationData.country,
+      },
+      phone: normalizePhone(nextRegistrationData.phone, nextRegistrationData.country),
+    };
+
+    if (
+      !payload.firstName ||
+      !payload.lastName ||
+      !payload.dateOfBirth ||
+      !payload.country ||
+      !payload.address.street ||
+      !payload.address.city ||
+      !payload.address.state ||
+      !payload.address.postalCode
+    ) {
+      showWarning('Incomplete Profile', 'Please complete all required profile fields.');
+      router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
+      return;
+    }
+
+    completeOnboarding(payload, {
+      onSuccess: (response) => {
+        const firstName = payload.firstName.trim();
+        const lastName = payload.lastName.trim();
+        const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+
+        updateUser({
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          fullName: fullName || undefined,
+          phoneNumber: payload.phone || undefined,
+        });
+
+        setOnboardingStatus(response.onboarding?.onboardingStatus || 'kyc_pending');
+        clearRegistrationData();
+        router.replace(ROUTES.AUTH.CREATE_PASSCODE as any);
+      },
+      onError: (error: any) => {
+        showError('Profile Submission Failed', error?.message || 'Please try again.');
+      },
+    });
   };
 
   return (
@@ -41,7 +132,11 @@ export default function Phone() {
 
           <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button title="Next" onPress={handleNext} />
+              <Button
+                title={isPasskeySignup ? 'Create Account' : 'Next'}
+                onPress={handleNext}
+                loading={isPending}
+              />
             </View>
           </StaggeredChild>
         </View>

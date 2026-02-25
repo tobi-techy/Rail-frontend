@@ -111,7 +111,7 @@ export function useBiometric() {
       // Verify biometric works on device first
       const result = await LocalAuthentication.authenticateAsync({
         disableDeviceFallback: false,
-        reason: 'Enable biometric authentication for RAIL',
+        promptMessage: 'Enable biometric authentication for RAIL',
         fallbackLabel: 'Use passcode instead',
       });
 
@@ -186,7 +186,7 @@ export function useBiometric() {
     try {
       const result = await LocalAuthentication.authenticateAsync({
         disableDeviceFallback: false,
-        reason: 'Authenticate with your biometric',
+        promptMessage: 'Authenticate with your biometric',
         fallbackLabel: 'Use passcode instead',
       });
 

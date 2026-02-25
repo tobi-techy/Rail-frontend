@@ -31,5 +31,6 @@ export const initialState: AuthState = {
     country: '',
     phone: '',
     password: '',
+    authMethod: 'password',
   },
 };

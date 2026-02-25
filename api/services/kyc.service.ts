@@ -4,10 +4,13 @@ import type {
   StartSumsubSessionResponse,
   KYCStatusResponse,
   BridgeKYCLinkResponse,
+  SubmitKYCRequest,
+  SubmitKYCResponse,
 } from '../types';
 
 const KYC_ENDPOINTS = {
   SUMSUB_SESSION: '/v1/kyc/sumsub/session',
+  SUBMIT: '/v1/kyc/submit',
   STATUS: '/v1/kyc/status',
   BRIDGE_LINK: '/v1/kyc/bridge/link',
 } as const;
@@ -15,6 +18,10 @@ const KYC_ENDPOINTS = {
 export const kycService = {
   async startSumsubSession(data: StartSumsubSessionRequest): Promise<StartSumsubSessionResponse> {
     return apiClient.post<StartSumsubSessionResponse>(KYC_ENDPOINTS.SUMSUB_SESSION, data);
+  },
+
+  async submitKYC(data: SubmitKYCRequest): Promise<SubmitKYCResponse> {
+    return apiClient.post<SubmitKYCResponse>(KYC_ENDPOINTS.SUBMIT, data);
   },
 
   async getKYCStatus(): Promise<KYCStatusResponse> {

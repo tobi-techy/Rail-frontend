@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -6,6 +6,8 @@ import { ArrowLeft } from 'lucide-react-native';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { BankIcon, CoinIcon } from '@/assets/svg/filled';
 import { useKycGate } from '@/hooks/useKycGate';
+import { useKYCStatus } from '@/api/hooks';
+import { KYCVerificationSheet } from '@/components/sheets';
 
 function WithdrawOptionCard({
   title,
@@ -35,7 +37,9 @@ function WithdrawOptionCard({
 }
 
 export default function WithdrawMethodSelectorScreen() {
+  const [showKYCSheet, setShowKYCSheet] = useState(false);
   const { requireKyc } = useKycGate();
+  const { data: kycStatus } = useKYCStatus();
 
   return (
     <ErrorBoundary>
@@ -65,7 +69,12 @@ export default function WithdrawMethodSelectorScreen() {
             <WithdrawOptionCard
               title="Fiat"
               subtitle="Withdraw to US bank account via routing details"
-              onPress={() => requireKyc(() => router.push('/withdraw/fiat' as any))}
+              onPress={() =>
+                requireKyc(
+                  () => router.push('/withdraw/fiat' as any),
+                  () => setShowKYCSheet(true)
+                )
+              }
               icon={<BankIcon width={24} height={24} />}
               accessibilityLabel="Select fiat withdrawal"
             />
@@ -79,6 +88,12 @@ export default function WithdrawMethodSelectorScreen() {
             />
           </View>
         </View>
+
+        <KYCVerificationSheet
+          visible={showKYCSheet}
+          onClose={() => setShowKYCSheet(false)}
+          kycStatus={kycStatus}
+        />
       </SafeAreaView>
     </ErrorBoundary>
   );

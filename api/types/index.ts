@@ -19,3 +19,5 @@ export * from './twofa';
 export * from './device';
 export * from './station';
 export * from './funding';
+export * from './allocation';
+export * from './passkey';

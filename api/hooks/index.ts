@@ -29,3 +29,9 @@ export * from './useStation';
 
 // Funding hooks
 export * from './useFunding';
+
+// Allocation hooks
+export * from './useAllocation';
+
+// Passkey hooks
+export * from './usePasskey';

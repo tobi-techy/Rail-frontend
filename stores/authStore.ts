@@ -3,8 +3,10 @@ import { persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService, passcodeService } from '../api/services';
 import type { User as ApiUser } from '../api/types';
+import Gleap from 'react-native-gleapsdk';
 import { secureStorage } from '../utils/secureStorage';
 import { safeError, sanitizeForLog } from '../utils/logSanitizer';
+import { isAuthSessionInvalidError } from '../utils/authErrorClassifier';
 import { logger } from '../lib/logger';
 
 const MAX_RETRIES = 3;
@@ -48,6 +50,7 @@ export interface RegistrationData {
   country: string;
   phone: string;
   password: string;
+  authMethod: 'password' | 'passkey';
 }
 
 interface AuthState {
@@ -100,8 +103,8 @@ interface AuthActions {
   refreshSession: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
   updateLastActivity: () => void;
-  checkTokenExpiry: () => boolean; // Check if 7-day token has expired
-  clearExpiredSession: () => void; // Clear session if 7-day token expired
+  checkTokenExpiry: () => boolean; // Check if session expired (7 days inactivity or backend session expired)
+  clearExpiredSession: () => void; // Clear session if expired
 
   // Passcode session management
   clearPasscodeSession: () => void;
@@ -171,6 +174,7 @@ const initialState: AuthState = {
     country: '',
     phone: '',
     password: '',
+    authMethod: 'password',
   },
 };
 
@@ -184,11 +188,13 @@ const createSecureStorage = () => ({
       const parsed = JSON.parse(data);
       if (!parsed || typeof parsed !== 'object') return null;
 
-      const [secureAccessToken, secureRefreshToken, securePasscodeSessionToken] = await Promise.all([
-        withRetry(() => secureStorage.getItem(`${name}_accessToken`)),
-        withRetry(() => secureStorage.getItem(`${name}_refreshToken`)),
-        withRetry(() => secureStorage.getItem(`${name}_passcodeSessionToken`)),
-      ]);
+      const [secureAccessToken, secureRefreshToken, securePasscodeSessionToken] = await Promise.all(
+        [
+          withRetry(() => secureStorage.getItem(`${name}_accessToken`)),
+          withRetry(() => secureStorage.getItem(`${name}_refreshToken`)),
+          withRetry(() => secureStorage.getItem(`${name}_passcodeSessionToken`)),
+        ]
+      );
 
       parsed.accessToken = secureAccessToken ?? null;
       parsed.refreshToken = secureRefreshToken ?? null;
@@ -274,7 +280,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           }
 
           const now = new Date();
-          const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+          const sessionExpiresAt = response.sessionExpiresAt
+            ? new Date(response.sessionExpiresAt)
+            : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days fallback
 
           set({
             user: response.user,
@@ -287,10 +295,17 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             hasPasscode: false,
             lastActivityAt: now.toISOString(),
             tokenIssuedAt: now.toISOString(),
-            tokenExpiresAt: response.expiresAt || expiresAt.toISOString(),
+            tokenExpiresAt: sessionExpiresAt.toISOString(),
             loginAttempts: 0, // Reset on successful login
             lockoutUntil: null,
             isLoading: false,
+          });
+          // TODO: identify user in feedback SDK
+          Gleap.identifyContact(response.user.id, {
+            email: response.user.email,
+            name: response.user.firstName
+              ? `${response.user.firstName} ${response.user.lastName ?? ''}`.trim()
+              : undefined,
           });
         } catch (error: any) {
           safeError('[AuthStore] Login failed:', error);
@@ -326,7 +341,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       logout: async () => {
         set({ isLoading: true });
         let logoutFailed = false;
-        
+
         try {
           // Call API to invalidate tokens on server
           await authService.logout();
@@ -343,7 +358,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         try {
           // CRITICAL: Clean up SessionManager timers
           // This prevents background timers from firing after logout
-          const { cleanup } = await import('../utils/sessionManager').then(m => ({ cleanup: m.default.cleanup }));
+          const { cleanup } = await import('../utils/sessionManager').then((m) => ({
+            cleanup: m.default.cleanup,
+          }));
           cleanup();
         } catch (cleanupError) {
           logger.warn('[AuthStore] SessionManager cleanup failed', {
@@ -372,13 +389,18 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           hasCompletedOnboarding: false,
         });
         set({ isLoading: false });
+        // TODO: clear feedback SDK identity
+        Gleap.clearIdentity();
 
         // If backend logout failed, log for monitoring
         if (logoutFailed) {
-          logger.warn('[AuthStore] Logout completed with local state cleared, but backend call failed', {
-            component: 'AuthStore',
-            action: 'logout-partial-success',
-          });
+          logger.warn(
+            '[AuthStore] Logout completed with local state cleared, but backend call failed',
+            {
+              component: 'AuthStore',
+              action: 'logout-partial-success',
+            }
+          );
         } else {
           logger.info('[AuthStore] Logout completed successfully', {
             component: 'AuthStore',
@@ -456,28 +478,112 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
 
         set({ isLoading: true });
-        try {
-          const response = await authService.refreshToken({ refreshToken });
-          const nextTokenExpiry = response.expiresAt
-            ? new Date(response.expiresAt).toISOString()
-            : get().tokenExpiresAt;
+        const applyRefreshTokens = (
+          response: {
+            accessToken: string;
+            refreshToken: string;
+            expiresAt: string;
+            csrfToken?: string;
+          },
+          fallbackRefreshToken: string
+        ) => {
+          const now = new Date();
+          const currentExpiry = get().tokenExpiresAt
+            ? new Date(get().tokenExpiresAt!).getTime()
+            : 0;
+          const responseExpiry = response.expiresAt ? new Date(response.expiresAt).getTime() : 0;
+          const nextExpiry = Math.max(
+            currentExpiry,
+            responseExpiry,
+            now.getTime() + 7 * 24 * 60 * 60 * 1000
+          );
 
           set({
             accessToken: response.accessToken,
-            refreshToken: response.refreshToken || refreshToken,
+            refreshToken: response.refreshToken || fallbackRefreshToken,
             csrfToken: response.csrfToken || get().csrfToken,
             isAuthenticated: true,
-            tokenExpiresAt: nextTokenExpiry,
+            lastActivityAt: now.toISOString(),
+            tokenExpiresAt: new Date(nextExpiry).toISOString(),
             error: null,
             isLoading: false,
           });
+        };
+
+        try {
+          const response = await authService.refreshToken({ refreshToken });
+          applyRefreshTokens(response, refreshToken);
         } catch (error) {
+          const latestRefreshToken = get().refreshToken;
+          const hasRotatedRefreshToken =
+            !!latestRefreshToken && latestRefreshToken !== refreshToken;
+
+          // If another flow (e.g. passkey login) rotated refresh token while this refresh was in-flight,
+          // retry once with the latest token before forcing logout.
+          if (isAuthSessionInvalidError(error) && hasRotatedRefreshToken) {
+            logger.warn('[AuthStore] Refresh token changed during refresh; retrying with latest', {
+              component: 'AuthStore',
+              action: 'refresh-token-rotated-retry',
+            });
+
+            try {
+              const retryResponse = await authService.refreshToken({
+                refreshToken: latestRefreshToken!,
+              });
+              applyRefreshTokens(retryResponse, latestRefreshToken!);
+              return;
+            } catch (retryError) {
+              set({
+                error: retryError instanceof Error ? retryError.message : 'Session refresh failed',
+                isLoading: false,
+              });
+
+              if (isAuthSessionInvalidError(retryError)) {
+                logger.warn('[AuthStore] Refresh retry rejected; logging out', {
+                  component: 'AuthStore',
+                  action: 'refresh-retry-auth-invalid',
+                });
+                get().logout();
+              } else {
+                logger.warn(
+                  '[AuthStore] Refresh retry failed due to transient error; preserving session',
+                  {
+                    component: 'AuthStore',
+                    action: 'refresh-retry-transient-error',
+                    error: retryError instanceof Error ? retryError.message : String(retryError),
+                  }
+                );
+              }
+
+              throw retryError;
+            }
+          }
+
           set({
             error: error instanceof Error ? error.message : 'Session refresh failed',
             isLoading: false,
           });
-          // If refresh fails, logout user
-          get().logout();
+
+          if (isAuthSessionInvalidError(error)) {
+            logger.warn('[AuthStore] Session refresh rejected by auth service; logging out', {
+              component: 'AuthStore',
+              action: 'refresh-auth-invalid',
+              status: (error as any)?.status ?? (error as any)?.response?.status,
+              code: (error as any)?.code ?? (error as any)?.error?.code,
+            });
+            // Keep existing behavior for truly invalid sessions.
+            get().logout();
+          } else {
+            logger.warn(
+              '[AuthStore] Session refresh failed due to transient error; preserving session',
+              {
+                component: 'AuthStore',
+                action: 'refresh-transient-error',
+                error: error instanceof Error ? error.message : String(error),
+              }
+            );
+          }
+
           throw error;
         }
       },
@@ -489,29 +595,49 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
       },
 
-      // Session activity tracking
+      // Session activity tracking — sliding window extends session on activity
       updateLastActivity: () => {
-        set({ lastActivityAt: new Date().toISOString() });
+        const now = new Date();
+        const currentExpiry = get().tokenExpiresAt ? new Date(get().tokenExpiresAt!).getTime() : 0;
+        // Ensure session is always at least 7 days from last activity
+        const minExpiry = now.getTime() + 7 * 24 * 60 * 60 * 1000;
+        const newExpiry = Math.max(currentExpiry, minExpiry);
+
+        set({
+          lastActivityAt: now.toISOString(),
+          tokenExpiresAt: new Date(newExpiry).toISOString(),
+        });
       },
 
-      // Check if 7-day token has expired
+      // Check if session has expired due to inactivity (7 days without activity)
       checkTokenExpiry: () => {
-        const { tokenExpiresAt, isAuthenticated } = get();
+        const { tokenExpiresAt, isAuthenticated, lastActivityAt } = get();
 
         // If not authenticated, no token to check
         if (!isAuthenticated) return false;
 
-        // If no expiry time set, assume expired
-        if (!tokenExpiresAt) return true;
+        const now = Date.now();
+        const INACTIVITY_LIMIT = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-        // Check if 7 days have passed since token issuance
-        const expiryTime = new Date(tokenExpiresAt).getTime();
-        const now = new Date().getTime();
+        // Primary check: inactivity-based expiry
+        if (lastActivityAt) {
+          const lastActivity = new Date(lastActivityAt).getTime();
+          if (now - lastActivity >= INACTIVITY_LIMIT) return true;
+        }
 
-        return now >= expiryTime;
+        // Secondary check: absolute session expiry from backend
+        if (tokenExpiresAt) {
+          const expiryTime = new Date(tokenExpiresAt).getTime();
+          if (now >= expiryTime) return true;
+        } else {
+          // No expiry time set — assume expired for safety
+          return true;
+        }
+
+        return false;
       },
 
-      // Clear session if 7-day token has expired
+      // Clear session if expired (inactivity or backend session expired)
       clearExpiredSession: () => {
         set({
           isAuthenticated: false,
@@ -537,7 +663,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
 
       checkPasscodeSessionExpiry: () => {
-        const { passcodeSessionToken, passcodeSessionExpiresAt, isAuthenticated, lastActivityAt } = get();
+        const { passcodeSessionToken, passcodeSessionExpiresAt, isAuthenticated, lastActivityAt } =
+          get();
 
         // If not authenticated, no passcode session to check
         if (!isAuthenticated) return false;
@@ -550,7 +677,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           const lastActivity = new Date(lastActivityAt).getTime();
           const now = Date.now();
           const PASSCODE_SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes of inactivity
-          
+
           if (now - lastActivity >= PASSCODE_SESSION_TIMEOUT) {
             logger.debug('[AuthStore] Passcode session expired due to inactivity', {
               component: 'AuthStore',
@@ -620,7 +747,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
       setTokens: (accessToken: string, refreshToken: string) => {
         const now = new Date();
-        const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+        const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
 
         set({
           accessToken,
@@ -687,9 +814,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
           if (response.verified) {
             const now = new Date();
-            const tokenExpiresAt = response.expiresAt
-              ? new Date(response.expiresAt)
-              : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const sessionExpiresAt = response.sessionExpiresAt
+              ? new Date(response.sessionExpiresAt)
+              : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
             set({
               accessToken: response.accessToken,
@@ -697,7 +824,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
               isAuthenticated: true,
               lastActivityAt: now.toISOString(),
               tokenIssuedAt: now.toISOString(),
-              tokenExpiresAt: tokenExpiresAt.toISOString(),
+              tokenExpiresAt: sessionExpiresAt.toISOString(),
               passcodeSessionToken: response.passcodeSessionToken,
               passcodeSessionExpiresAt: response.passcodeSessionExpiresAt,
             });

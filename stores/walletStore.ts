@@ -288,11 +288,7 @@ export const useWalletStore = create<WalletState & WalletActions>()(
 
       // Reset
       reset: () => {
-        set({
-          ...initialState,
-          tokens: MOCK_TOKENS,
-          transactions: MOCK_TRANSACTIONS,
-        });
+        set(initialState);
         get().calculateTotalBalance();
       },
     }),

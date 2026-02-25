@@ -5,9 +5,23 @@ export { default as SolanaIcon } from './solana.svg';
 export { default as BnbIcon } from './bnb.svg';
 export { default as MaticIcon } from './matic.svg';
 export { default as BaseIcon } from './base.svg';
+export { default as AvalancheIcon } from './avalanche.svg';
+export { default as PhantomIcon } from './phantom.svg';
+export { default as SolflareIcon } from './solflare.svg';
+
+// Fiat currency flag icons
 export { default as NgnIcon } from './ngn.svg';
 export { default as UsdIcon } from './usd.svg';
 export { default as GbpIcon } from './gbp.svg';
 export { default as EurIcon } from './eur.svg';
-export { default as PhantomIcon } from './phantom.svg';
-export { default as SolflareIcon } from './solflare.svg';
+export { default as CadIcon } from './CAD.svg';
+export { default as MxnIcon } from './MXN.svg';
+
+// Currency symbol icons
+export { default as DollarCurrencyIcon } from './Currency=Dollar.svg';
+export { default as EuroCurrencyIcon } from './Currency=Euro.svg';
+export { default as NairaCurrencyIcon } from './Currency=Naira.svg';
+export { default as PoundCurrencyIcon } from './Currency=Pound.svg';
+
+// Company logos
+export * from './company';

@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, ShieldAlert, X } from 'lucide-react-native';
+import { Passkey } from 'react-native-passkey';
+import { ArrowLeft, CheckCircle2, ShieldAlert, X } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -14,12 +15,24 @@ import Animated, {
   FadeIn,
   SlideInUp,
 } from 'react-native-reanimated';
-import { useKYCStatus, useStation } from '@/api/hooks';
+import { useKYCStatus, useStation, useVerifyPasscode } from '@/api/hooks';
+import { authService } from '@/api/services';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Keypad } from '@/components/molecules/Keypad';
-import { BottomSheet } from '@/components/sheets';
+import { PasscodeInput } from '@/components/molecules/PasscodeInput';
+import { BottomSheet, KYCVerificationSheet } from '@/components/sheets';
 import { Button, Input } from '@/components/ui';
-import { useInitiateWithdrawal } from '@/api/hooks/useFunding';
+import { useInitiateFiatWithdrawal, useInitiateWithdrawal } from '@/api/hooks/useFunding';
+import { invalidateQueries, queryClient, queryKeys } from '@/api/queryClient';
+import { useAuthStore } from '@/stores/authStore';
+import { SessionManager } from '@/utils/sessionManager';
+import { getNativePasskey } from '@/utils/passkeyNative';
+import {
+  beginPasskeyPrompt,
+  canStartPasskeyPrompt,
+  endPasskeyPrompt,
+  markPasskeyPromptSuccess,
+} from '@/utils/passkeyPromptGuard';
 
 const BRAND_RED = '#FF2E01';
 
@@ -104,6 +117,73 @@ const formatMaxAmount = (amount: number) => {
   return fixed.endsWith('.00') ? String(Math.trunc(amount)) : fixed;
 };
 
+type ProfileNamePayload = {
+  email?: string;
+};
+
+type WebAuthnOptionsPayload = {
+  publicKey?: Record<string, any>;
+  [key: string]: any;
+};
+
+const safeName = (value?: string) => value?.trim() || '';
+
+const normalizePasskeyGetRequest = (options: WebAuthnOptionsPayload) => {
+  const publicKey = (options?.publicKey ?? options) as Record<string, any>;
+
+  if (!publicKey?.challenge || !publicKey?.rpId) {
+    throw new Error('Invalid passkey options from server');
+  }
+
+  return {
+    challenge: publicKey.challenge,
+    rpId: publicKey.rpId,
+    timeout: publicKey.timeout,
+    allowCredentials: publicKey.allowCredentials,
+    userVerification: publicKey.userVerification,
+    extensions: publicKey.extensions,
+  };
+};
+
+const isPasskeyCancelledError = (error: any) => {
+  const code = String(error?.code || error?.error || '').toLowerCase();
+  const message = String(error?.message || '').toLowerCase();
+
+  return (
+    code.includes('usercancel') ||
+    code.includes('cancel') ||
+    code.includes('abort') ||
+    message.includes('cancelled') ||
+    message.includes('canceled')
+  );
+};
+
+const getPasskeyFallbackMessage = (error: any) => {
+  const code = String(error?.code || error?.error || '').toUpperCase();
+  const message = String(error?.message || '').toLowerCase();
+
+  if (code === 'NOCREDENTIALS' || message.includes('no credentials')) {
+    return 'No passkey found on this device. Enter your PIN.';
+  }
+
+  if (code === 'INVALID_SESSION') {
+    return 'Passkey session expired. Please try again or enter your PIN.';
+  }
+
+  if (code === 'NETWORK_ERROR' || code === 'NETWORK_TIMEOUT' || error?.status === 0) {
+    return 'Network issue during passkey sign-in. Enter your PIN.';
+  }
+
+  if (
+    code === 'PASSCODE_SESSION_UNAVAILABLE' ||
+    code === 'PASSCODE_SESSION_UNAVAILABLE_AFTER_PASSKEY'
+  ) {
+    return 'Authorization session was not created. Enter your PIN to continue.';
+  }
+
+  return 'Passkey verification failed. Enter your PIN to continue.';
+};
+
 // Animated amount display component with smooth transitions
 function AnimatedAmount({ amount }: { amount: string }) {
   const scale = useSharedValue(1);
@@ -147,6 +227,7 @@ function AnimatedAmount({ amount }: { amount: string }) {
 
 export default function WithdrawAmountScreen() {
   const insets = useSafeAreaInsets();
+  const user = useAuthStore((state) => state.user as ProfileNamePayload | undefined);
   const { data: station } = useStation();
   const params = useLocalSearchParams<{ method?: string }>();
 
@@ -162,10 +243,22 @@ export default function WithdrawAmountScreen() {
   const [isDetailsSheetVisible, setIsDetailsSheetVisible] = useState(false);
   const [destinationInput, setDestinationInput] = useState('');
   const [didTryDestination, setDidTryDestination] = useState(false);
-  const [didSaveDestination, setDidSaveDestination] = useState(false);
-  const [withdrawalError, setWithdrawalError] = useState('');
+  const [isAuthorizeScreenVisible, setIsAuthorizeScreenVisible] = useState(false);
+  const [authPasscode, setAuthPasscode] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
+  const [isSubmissionSheetVisible, setIsSubmissionSheetVisible] = useState(false);
+  const [submitWithActiveSession, setSubmitWithActiveSession] = useState(false);
+  const [passkeyAvailable, setPasskeyAvailable] = useState(false);
+  const [showKycSheet, setShowKycSheet] = useState(false);
 
-  const { mutate: initiateWithdrawal, isPending: isSubmitting } = useInitiateWithdrawal();
+  const { mutate: initiateWithdrawal, isPending: isSubmittingCrypto } = useInitiateWithdrawal();
+  const { mutate: initiateFiatWithdrawal, isPending: isSubmittingFiat } =
+    useInitiateFiatWithdrawal();
+  const { mutate: verifyPasscode, isPending: isPasscodeVerifying } = useVerifyPasscode();
+  const isSubmitting = isSubmittingCrypto || isSubmittingFiat;
+  const isAuthorizing = isPasscodeVerifying || isPasskeyLoading;
+  const passkeyPromptScope = `withdraw-authorize:${safeName(user?.email) || 'unknown'}`;
 
   // Animation values
   const headerOpacity = useSharedValue(0);
@@ -189,6 +282,11 @@ export default function WithdrawAmountScreen() {
       pillsOpacity.value = withTiming(0.7, { duration: 200 });
     }
   }, [rawAmount]);
+
+  useEffect(() => {
+    const hasEmail = Boolean(safeName(user?.email));
+    setPasskeyAvailable(Passkey.isSupported() && hasEmail);
+  }, [user?.email]);
 
   const availableBalance = useMemo(() => {
     const parsed = Number.parseFloat(station?.spend_balance ?? '');
@@ -244,48 +342,55 @@ export default function WithdrawAmountScreen() {
   const canContinue = Boolean(numericAmount > 0 && !amountError);
   const canSaveDestination = Boolean(!destinationError);
 
-  const onAmountKeyPress = useCallback((key: string) => {
-    if (didSaveDestination && selectedMethod === 'crypto') return;
-    setDidTryContinue(false);
+  const onAmountKeyPress = useCallback(
+    (key: string) => {
+      setDidTryContinue(false);
 
-    setRawAmount((current) => {
-      if (key === 'backspace') {
-        if (current === '0') return current;
-        const nextValue = current.slice(0, -1);
-        return normalizeAmount(nextValue);
-      }
+      setRawAmount((current) => {
+        if (key === 'backspace') {
+          if (current === '0') return current;
+          const nextValue = current.slice(0, -1);
+          return normalizeAmount(nextValue);
+        }
 
-      if (key === 'decimal') {
-        if (current.includes('.')) return current;
-        return `${current}.`;
-      }
+        if (key === 'decimal') {
+          if (current.includes('.')) return current;
+          return `${current}.`;
+        }
 
-      if (!/^\d$/.test(key)) {
-        return current;
-      }
+        if (!/^\d$/.test(key)) {
+          return current;
+        }
 
-      if (current.includes('.')) {
-        const [intPart, decimalPart = ''] = current.split('.');
-        if (decimalPart.length >= 2) return current;
-        return `${intPart}.${decimalPart}${key}`;
-      }
+        if (current.includes('.')) {
+          const [intPart, decimalPart = ''] = current.split('.');
+          if (decimalPart.length >= 2) return current;
+          return `${intPart}.${decimalPart}${key}`;
+        }
 
-      const nextInt = current === '0' ? key : `${current}${key}`;
-      const trimmedInt = nextInt.replace(/^0+(?=\d)/, '') || '0';
+        const nextInt = current === '0' ? key : `${current}${key}`;
+        const trimmedInt = nextInt.replace(/^0+(?=\d)/, '') || '0';
 
-      if (trimmedInt.length > MAX_INTEGER_DIGITS) {
-        return current;
-      }
+        if (trimmedInt.length > MAX_INTEGER_DIGITS) {
+          return current;
+        }
 
-      return trimmedInt;
-    });
-  }, []);
+        // Cap input at the maximum withdrawable amount
+        const nextNumeric = Number.parseFloat(trimmedInt);
+        if (nextNumeric > maxWithdrawable) {
+          return formatMaxAmount(maxWithdrawable);
+        }
+
+        return trimmedInt;
+      });
+    },
+    [maxWithdrawable]
+  );
 
   const onMaxPress = useCallback(() => {
-    if (didSaveDestination && selectedMethod === 'crypto') return;
     setDidTryContinue(false);
     setRawAmount(formatMaxAmount(maxWithdrawable));
-  }, [maxWithdrawable, didSaveDestination, selectedMethod]);
+  }, [maxWithdrawable]);
 
   const onContinuePress = useCallback(() => {
     setDidTryContinue(true);
@@ -298,33 +403,206 @@ export default function WithdrawAmountScreen() {
     setIsDetailsSheetVisible(true);
   }, [canContinue]);
 
+  const hasActivePasscodeSession = useCallback(() => {
+    const authState = useAuthStore.getState();
+    if (!authState.isAuthenticated || !authState.passcodeSessionToken) {
+      return false;
+    }
+    return !SessionManager.isPasscodeSessionExpired();
+  }, []);
+
   const onSaveDestination = useCallback(() => {
     setDidTryDestination(true);
-    setWithdrawalError('');
+    setAuthError('');
 
     if (!canSaveDestination) return;
+
+    setIsDetailsSheetVisible(false);
+    setAuthPasscode('');
+    if (hasActivePasscodeSession()) {
+      setIsAuthorizeScreenVisible(false);
+      setSubmitWithActiveSession(true);
+      return;
+    }
+
+    setIsAuthorizeScreenVisible(true);
+  }, [canSaveDestination, hasActivePasscodeSession]);
+
+  const onCloseSubmittedSheet = useCallback(() => {
+    setIsSubmissionSheetVisible(false);
+    setRawAmount('0');
+    setDestinationInput('');
+    setDidTryContinue(false);
+    setDidTryDestination(false);
+  }, []);
+
+  const onSubmitAuthorizedWithdrawal = useCallback(() => {
+    const normalizedAmount = Number(numericAmount.toFixed(2));
+    const destination = destinationInput.trim();
+
+    const onSuccess = () => {
+      setIsAuthorizeScreenVisible(false);
+      setIsSubmissionSheetVisible(true);
+      setAuthPasscode('');
+      setAuthError('');
+      void Promise.all([
+        invalidateQueries.station(),
+        invalidateQueries.funding(),
+        invalidateQueries.allocation(),
+        invalidateQueries.wallet(),
+        queryClient.refetchQueries({ queryKey: queryKeys.station.home(), type: 'active' }),
+        queryClient.refetchQueries({ queryKey: queryKeys.funding.all, type: 'active' }),
+      ]);
+    };
+
+    const onError = (err: any) => {
+      const errorMarker = String(err?.code || err?.error?.code || err?.message || '').toUpperCase();
+      if (
+        errorMarker.includes('PASSCODE_SESSION_REQUIRED') ||
+        errorMarker.includes('PASSCODE_SESSION_INVALID')
+      ) {
+        setIsAuthorizeScreenVisible(true);
+        setAuthError('Authorization expired. Confirm with passkey or PIN to continue.');
+        return;
+      }
+
+      setIsAuthorizeScreenVisible(true);
+      setAuthError(err?.message || 'Withdrawal failed. Please try again.');
+    };
 
     if (selectedMethod === 'crypto') {
       initiateWithdrawal(
         {
-          amount: Number(numericAmount.toFixed(2)),
-          destination_address: destinationInput.trim(),
+          amount: normalizedAmount,
+          destination_address: destination,
         },
         {
-          onSuccess: () => {
-            setDidSaveDestination(true);
-            setIsDetailsSheetVisible(false);
+          onSuccess,
+          onError,
+        }
+      );
+      return;
+    }
+
+    initiateFiatWithdrawal(
+      {
+        amount: normalizedAmount,
+        currency: 'USD',
+        routing_number: destination.replace(/\D/g, ''),
+      },
+      {
+        onSuccess,
+        onError,
+      }
+    );
+  }, [destinationInput, initiateFiatWithdrawal, initiateWithdrawal, numericAmount, selectedMethod]);
+
+  useEffect(() => {
+    if (!submitWithActiveSession) return;
+    setSubmitWithActiveSession(false);
+    onSubmitAuthorizedWithdrawal();
+  }, [onSubmitAuthorizedWithdrawal, submitWithActiveSession]);
+
+  const onPasscodeAuthorize = useCallback(
+    (code: string) => {
+      if (isAuthorizing || isSubmitting) return;
+
+      setAuthError('');
+
+      verifyPasscode(
+        { passcode: code },
+        {
+          onSuccess: (result) => {
+            if (!result.verified) {
+              setAuthError('Invalid PIN. Please try again.');
+              setAuthPasscode('');
+              return;
+            }
+            onSubmitAuthorizedWithdrawal();
           },
           onError: (err: any) => {
-            setWithdrawalError(err?.message || 'Withdrawal failed. Please try again.');
+            setAuthError(err?.error?.message || err?.message || 'Failed to verify PIN.');
+            setAuthPasscode('');
           },
         }
       );
-    } else {
-      setDidSaveDestination(true);
-      setIsDetailsSheetVisible(false);
+    },
+    [isAuthorizing, isSubmitting, onSubmitAuthorizedWithdrawal, verifyPasscode]
+  );
+
+  const onPasskeyAuthorize = useCallback(async () => {
+    if (isAuthorizing || isSubmitting) return;
+
+    const email = safeName(user?.email);
+    if (!Passkey.isSupported() || !email) {
+      setAuthError('Passkey is unavailable. Enter your PIN to continue.');
+      return;
     }
-  }, [canSaveDestination, selectedMethod, numericAmount, destinationInput, initiateWithdrawal]);
+
+    if (!canStartPasskeyPrompt(passkeyPromptScope, 'manual')) return;
+    if (!beginPasskeyPrompt()) return;
+
+    setAuthError('');
+    setIsPasskeyLoading(true);
+
+    try {
+      const beginResponse = await authService.beginPasskeyLogin({ email });
+      const passkeyRequest = normalizePasskeyGetRequest(beginResponse.options);
+      const assertion = await getNativePasskey(passkeyRequest);
+
+      const finishResponse = await authService.finishPasskeyLogin({
+        sessionId: beginResponse.sessionId,
+        response: {
+          ...assertion,
+          type: assertion.type || 'public-key',
+        },
+      });
+
+      const nowIso = new Date().toISOString();
+      const passcodeSessionToken = String(finishResponse.passcodeSessionToken || '').trim();
+      if (!passcodeSessionToken) {
+        const missingSessionError: any = new Error(
+          'Passcode session not issued after passkey login'
+        );
+        missingSessionError.code = 'PASSCODE_SESSION_UNAVAILABLE_AFTER_PASSKEY';
+        throw missingSessionError;
+      }
+      const tokenExpiresAt = finishResponse.expiresAt
+        ? new Date(finishResponse.expiresAt).toISOString()
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      const passcodeSessionExpiresAt = finishResponse.passcodeSessionExpiresAt
+        ? new Date(finishResponse.passcodeSessionExpiresAt).toISOString()
+        : new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+      useAuthStore.setState({
+        user: finishResponse.user,
+        accessToken: finishResponse.accessToken,
+        refreshToken: finishResponse.refreshToken,
+        csrfToken: finishResponse.csrfToken || useAuthStore.getState().csrfToken,
+        isAuthenticated: true,
+        pendingVerificationEmail: null,
+        onboardingStatus: finishResponse.user.onboardingStatus || null,
+        lastActivityAt: nowIso,
+        tokenIssuedAt: nowIso,
+        tokenExpiresAt,
+        passcodeSessionToken,
+        passcodeSessionExpiresAt,
+      });
+      SessionManager.schedulePasscodeSessionExpiry(passcodeSessionExpiresAt);
+      markPasskeyPromptSuccess(passkeyPromptScope);
+
+      onSubmitAuthorizedWithdrawal();
+    } catch (err: any) {
+      if (isPasskeyCancelledError(err)) {
+        setAuthError('Passkey cancelled. Enter your PIN to continue.');
+        return;
+      }
+      setAuthError(getPasskeyFallbackMessage(err));
+    } finally {
+      endPasskeyPrompt();
+      setIsPasskeyLoading(false);
+    }
+  }, [isAuthorizing, isSubmitting, onSubmitAuthorizedWithdrawal, passkeyPromptScope, user?.email]);
 
   const onDestinationChange = useCallback(
     (value: string) => {
@@ -369,34 +647,100 @@ export default function WithdrawAmountScreen() {
   if (selectedMethod === 'fiat' && !isFiatApproved) {
     return (
       <ErrorBoundary>
+        <>
+          <SafeAreaView className="flex-1 bg-white">
+            <StatusBar barStyle="dark-content" backgroundColor="white" />
+            <View className="flex-row items-center px-5 pb-4 pt-2">
+              <TouchableOpacity onPress={() => router.back()} hitSlop={12} className="mr-4 p-1">
+                <ArrowLeft size={24} color="#111" />
+              </TouchableOpacity>
+              <Text className="font-subtitle text-lg text-gray-900">Withdraw</Text>
+            </View>
+            <View className="flex-1 items-center justify-center px-6">
+              <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
+                <ShieldAlert size={32} color="#F59E0B" />
+              </View>
+              <Text className="mb-2 font-subtitle text-xl text-gray-900">
+                Verification Required
+              </Text>
+              <Text className="mb-8 text-center font-body text-sm text-gray-500">
+                Complete identity verification to withdraw fiat to a bank account.
+              </Text>
+              <View className="w-full gap-y-3">
+                <Button title="Start Verification" onPress={() => setShowKycSheet(true)} />
+                <Button
+                  title="Use Crypto Instead"
+                  variant="white"
+                  onPress={() => router.replace('/withdraw/crypto' as any)}
+                />
+              </View>
+            </View>
+          </SafeAreaView>
+
+          <KYCVerificationSheet
+            visible={showKycSheet}
+            onClose={() => setShowKycSheet(false)}
+            kycStatus={kycStatus}
+          />
+        </>
+      </ErrorBoundary>
+    );
+  }
+
+  if (isAuthorizeScreenVisible) {
+    return (
+      <ErrorBoundary>
         <SafeAreaView className="flex-1 bg-white">
           <StatusBar barStyle="dark-content" backgroundColor="white" />
-          <View className="flex-row items-center px-5 pb-4 pt-2">
-            <TouchableOpacity onPress={() => router.back()} hitSlop={12} className="mr-4 p-1">
-              <ArrowLeft size={24} color="#111" />
+
+          <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
+            <TouchableOpacity
+              className="size-11 items-center justify-center rounded-full bg-gray-100"
+              onPress={() => {
+                if (isAuthorizing || isSubmitting) return;
+                setIsAuthorizeScreenVisible(false);
+              }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Go back">
+              <ArrowLeft size={20} color="#111111" />
             </TouchableOpacity>
-            <Text className="font-subtitle text-lg text-gray-900">Withdraw</Text>
+            <Text className="font-subtitle text-[20px] text-text-primary">Confirm withdrawal</Text>
+            <View className="size-11" />
           </View>
-          <View className="flex-1 items-center justify-center px-6">
-            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
-              <ShieldAlert size={32} color="#F59E0B" />
-            </View>
-            <Text className="mb-2 font-subtitle text-xl text-gray-900">Verification Required</Text>
-            <Text className="mb-8 text-center font-body text-sm text-gray-500">
-              Complete identity verification to withdraw fiat to a bank account.
+
+          <View className="px-6 pt-4">
+            <Text className="font-body text-[14px] text-text-secondary">
+              Use passkey or your account PIN to authorize this transaction.
             </Text>
-            <View className="w-full gap-y-3">
-              <Button
-                title="Start Verification"
-                onPress={() => router.push('/(auth)/kyc' as any)}
-              />
-              <Button
-                title="Use Crypto Instead"
-                variant="white"
-                onPress={() => router.replace('/withdraw/crypto' as any)}
-              />
-            </View>
+
+            {(isAuthorizing || isSubmitting) && (
+              <View className="mt-3 flex-row items-center gap-2">
+                <ActivityIndicator size="small" color="#111111" />
+                <Text className="font-body text-[13px] text-text-secondary">
+                  {isSubmitting ? 'Submitting withdrawal...' : 'Authorizing...'}
+                </Text>
+              </View>
+            )}
           </View>
+
+          <PasscodeInput
+            subtitle="Use passkey or enter your account PIN"
+            length={4}
+            value={authPasscode}
+            onValueChange={(value) => {
+              setAuthPasscode(value);
+              if (authError) setAuthError('');
+            }}
+            onComplete={onPasscodeAuthorize}
+            errorText={authError}
+            showToggle
+            showFingerprint={passkeyAvailable}
+            onFingerprint={onPasskeyAuthorize}
+            autoSubmit
+            variant="light"
+            className="mt-3 flex-1"
+          />
         </SafeAreaView>
       </ErrorBoundary>
     );
@@ -502,18 +846,6 @@ export default function WithdrawAmountScreen() {
           entering={SlideInUp.delay(200).duration(500)}
           className="border-t border-white/20 px-5 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
-          {didSaveDestination && (
-            <Animated.View
-              entering={FadeIn.springify()}
-              className="mb-3 rounded-2xl bg-white/90 px-4 py-3">
-              <Text className="font-body text-[13px]" style={{ color: BRAND_RED }}>
-                {selectedMethod === 'crypto'
-                  ? 'Withdrawal submitted. Check history for status.'
-                  : 'Payout details added. You can proceed to review.'}
-              </Text>
-            </Animated.View>
-          )}
-
           {didTryContinue && !!amountError && (
             <Animated.View entering={FadeIn.duration(200)}>
               <Text className="mb-2 font-body text-[13px] text-white/90">{amountError}</Text>
@@ -523,7 +855,7 @@ export default function WithdrawAmountScreen() {
           <Button
             title="Continue"
             onPress={onContinuePress}
-            disabled={!canContinue || didSaveDestination}
+            disabled={!canContinue}
             variant="white"
             className="bg-white"
           />
@@ -575,12 +907,8 @@ export default function WithdrawAmountScreen() {
               </View>
             </View>
 
-            {!!withdrawalError && (
-              <Text className="mt-3 font-body text-[13px] text-red-500">{withdrawalError}</Text>
-            )}
-
             <Button
-              title={selectedMethod === 'crypto' ? 'Withdraw' : 'Save payout details'}
+              title="Continue"
               className="mt-5"
               onPress={onSaveDestination}
               disabled={isSubmitting}
@@ -588,6 +916,37 @@ export default function WithdrawAmountScreen() {
             />
           </View>
         </BottomSheet>
+
+        <BottomSheet
+          visible={isSubmissionSheetVisible}
+          onClose={onCloseSubmittedSheet}
+          showCloseButton={false}
+          dismissible>
+          <View className="items-center pb-1">
+            <View className="size-16 items-center justify-center rounded-full bg-green-100">
+              <CheckCircle2 size={28} color="#10B981" />
+            </View>
+            <Text className="mt-5 text-center font-subtitle text-[30px] leading-[36px] text-text-primary">
+              Withdrawal{'\n'}submitted
+            </Text>
+            <Text className="mt-3 text-center font-body text-[16px] text-text-secondary">
+              Your transaction is on its way. You can check History for live status.
+            </Text>
+
+            <Button
+              title="Close"
+              className="mt-6 bg-surface"
+              variant="white"
+              onPress={onCloseSubmittedSheet}
+            />
+          </View>
+        </BottomSheet>
+
+        <KYCVerificationSheet
+          visible={showKycSheet}
+          onClose={() => setShowKycSheet(false)}
+          kycStatus={kycStatus}
+        />
       </SafeAreaView>
     </ErrorBoundary>
   );

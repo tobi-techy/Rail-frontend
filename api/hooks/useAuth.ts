@@ -8,6 +8,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { authService, passcodeService } from '../services';
 import { queryKeys, invalidateQueries } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
+import { useAnalytics, ANALYTICS_EVENTS } from '../../utils/analytics';
 import type {
   LoginRequest,
   RegisterRequest,
@@ -50,9 +51,11 @@ const grantPostLoginPasscodeSession = () => {
  * Login mutation
  */
 export function useLogin() {
-  return useMutation({
-    mutationFn: (data: LoginRequest) => authService.login(data),
-    onSuccess: async (response) => {
+   const { track, identify } = useAnalytics();
+
+   return useMutation({
+     mutationFn: (data: LoginRequest) => authService.login(data),
+     onSuccess: async (response) => {
       const nowIso = new Date().toISOString();
 
       // Update auth store with response data
@@ -73,10 +76,31 @@ export function useLogin() {
 
       await syncPasscodeStatus();
 
+      // Track analytics
+      track(ANALYTICS_EVENTS.SIGN_IN_COMPLETED, {
+        user_id: response.user.id,
+        email: response.user.email,
+        onboarding_status: response.user.onboardingStatus,
+      });
+
+      // Identify user in PostHog
+      if (response.user.id) {
+        identify(response.user.id, {
+          email: response.user.email,
+          first_name: response.user.firstName,
+          last_name: response.user.lastName,
+        });
+      }
+
       // Invalidate and refetch relevant queries
       invalidateQueries.auth();
       invalidateQueries.wallet();
       invalidateQueries.user();
+    },
+    onError: (error) => {
+      track(ANALYTICS_EVENTS.SIGN_IN_STARTED, {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     },
   });
 }
@@ -86,6 +110,8 @@ export function useLogin() {
  * IMPORTANT: Does NOT set isAuthenticated - user must verify email first
  */
 export function useRegister() {
+  const { track } = useAnalytics();
+
   return useMutation({
     mutationFn: (data: RegisterRequest) => authService.register(data),
     onSuccess: (response, variables) => {
@@ -95,6 +121,18 @@ export function useRegister() {
         pendingVerificationEmail: variables.email || variables.phone || response.identifier,
         isAuthenticated: false, // Explicitly ensure not authenticated
         user: null, // No user object until verified
+      });
+
+      // Track signup started
+      track(ANALYTICS_EVENTS.SIGN_UP_STARTED, {
+        identifier_type: variables.email ? 'email' : 'phone',
+        identifier: variables.email || variables.phone,
+      });
+    },
+    onError: (error) => {
+      track(ANALYTICS_EVENTS.ERROR_OCCURRED, {
+        component: 'useRegister',
+        error: error instanceof Error ? error.message : 'Registration failed',
       });
     },
   });
@@ -150,18 +188,30 @@ export function useResendCode() {
  * Logout mutation
  */
 export function useLogout() {
-  const queryClient = useQueryClient();
+   const queryClient = useQueryClient();
+   const { track } = useAnalytics();
 
-  return useMutation({
-    mutationFn: () => authService.logout(),
-    onSuccess: () => {
-      // Clear auth store
-      useAuthStore.getState().reset();
+   return useMutation({
+     mutationFn: () => authService.logout(),
+     onSuccess: () => {
+       // Track logout event
+       track(ANALYTICS_EVENTS.SIGN_OUT, {
+         timestamp: new Date().toISOString(),
+       });
 
-      // Clear all cached data
-      queryClient.clear();
-    },
-  });
+       // Clear auth store
+       useAuthStore.getState().reset();
+
+       // Clear all cached data
+       queryClient.clear();
+     },
+     onError: (error) => {
+       track(ANALYTICS_EVENTS.ERROR_OCCURRED, {
+         component: 'useLogout',
+         error: error instanceof Error ? error.message : 'Logout failed',
+       });
+     },
+   });
 }
 
 /**
@@ -200,7 +250,9 @@ export function useCurrentUser() {
  * Apple Sign-In mutation
  */
 export function useAppleSignIn() {
-  return useMutation({
+   const { track, identify } = useAnalytics();
+
+   return useMutation({
     mutationFn: async () => {
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -239,9 +291,27 @@ export function useAppleSignIn() {
 
       await syncPasscodeStatus();
 
+      // Track analytics
+      track(ANALYTICS_EVENTS.SIGN_IN_COMPLETED, {
+        user_id: response.user.id,
+        email: response.user.email,
+        provider: 'apple',
+        onboarding_status: response.user.onboardingStatus,
+      });
+
+      // Identify user in PostHog
+      if (response.user.id) {
+        identify(response.user.id, {
+          email: response.user.email,
+          first_name: response.user.firstName,
+          last_name: response.user.lastName,
+          auth_provider: 'apple',
+        });
+      }
+
       invalidateQueries.auth();
       invalidateQueries.wallet();
       invalidateQueries.user();
-    },
-  });
-}
+      },
+      });
+      }

@@ -12,6 +12,8 @@ export { onboardingService } from './onboarding.service';
 export { kycService } from './kyc.service';
 export { stationService } from './station.service';
 export { fundingService } from './funding.service';
+export { allocationService } from './allocation.service';
+export { passkeyService } from './passkey.service';
 
 // Re-export for convenience
 export { default as auth } from './auth.service';
@@ -23,3 +25,4 @@ export { default as onboarding } from './onboarding.service';
 export { default as kyc } from './kyc.service';
 export { default as station } from './station.service';
 export { default as funding } from './funding.service';
+export { default as allocation } from './allocation.service';

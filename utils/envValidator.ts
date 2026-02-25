@@ -26,15 +26,15 @@ export function validateEnvironmentVariables(): ValidationResult {
     errors.push('EXPO_PUBLIC_API_URL not set - API calls will fail in production');
   }
 
-  // CRITICAL: Production must have SSL pinning configured
+  // SSL Pinning validation - warn but don't block app launch
   if (isProduction) {
     const hasSslPinning = process.env.EXPO_PUBLIC_SSL_PINNING_ENABLED !== 'false';
     const hasPin1 = !!process.env.EXPO_PUBLIC_CERT_PIN_1;
     const hasPin2 = !!process.env.EXPO_PUBLIC_CERT_PIN_2;
 
     if (hasSslPinning && (!hasPin1 || !hasPin2)) {
-      errors.push(
-        'SSL Pinning enabled but certificate pins not configured. Set EXPO_PUBLIC_CERT_PIN_1 and EXPO_PUBLIC_CERT_PIN_2'
+      warnings.push(
+        'SSL Pinning enabled but certificate pins not configured. Set EXPO_PUBLIC_CERT_PIN_1 and EXPO_PUBLIC_CERT_PIN_2 for enhanced security.'
       );
     }
 

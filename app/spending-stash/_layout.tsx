@@ -6,7 +6,7 @@ export default function SpendingStashLayout() {
     <ErrorBoundary>
       <Stack
         screenOptions={{
-          headerShown: true,
+          headerShown: false,
           headerTitle: '',
           headerShadowVisible: false,
           headerStyle: { backgroundColor: '#fff' },

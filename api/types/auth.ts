@@ -13,6 +13,7 @@ export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
+  sessionExpiresAt?: string;
   csrfToken?: string;
 }
 
@@ -37,6 +38,7 @@ export interface VerifyCodeResponse {
   accessToken?: string;
   refreshToken?: string;
   expiresAt?: string;
+  sessionExpiresAt?: string;
   onboarding_status?: string;
   next_step?: string;
   onboarding?: OnboardingStatusResponse;
@@ -120,6 +122,7 @@ export interface SocialLoginResponse {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
+  sessionExpiresAt?: string;
   csrfToken?: string;
   isNewUser: boolean;
 }
@@ -145,5 +148,8 @@ export interface WebAuthnLoginFinishResponse {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
+  sessionExpiresAt?: string;
   csrfToken?: string;
+  passcodeSessionToken?: string;
+  passcodeSessionExpiresAt?: string;
 }

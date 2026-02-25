@@ -17,11 +17,15 @@
       "channel": "testflight",
       "env": {
         "EXPO_PUBLIC_ENV": "staging",
-        "EXPO_PUBLIC_API_URL": "https://rail-backend-service-production.up.railway.app/api"
+        "EXPO_PUBLIC_API_URL": "https://api.userail.money/api"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://api.userail.money/api"
+      }
     }
   },
   "submit": {

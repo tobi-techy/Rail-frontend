@@ -6,6 +6,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { walletService } from '../services';
 import { queryKeys, invalidateQueries } from '../queryClient';
+import { useAnalytics, ANALYTICS_EVENTS } from '../../utils/analytics';
 import type {
   GetTransactionsRequest,
   CreateTransferRequest,
@@ -19,13 +20,20 @@ import type {
 
 /**
  * Get wallet balance
+ * Optimized for fast loading with aggressive caching:
+ * - Uses cached data immediately if available
+ * - Refetches in background after 15 seconds (faster than 30s to show updates quicker)
+ * - Refetches every 45 seconds (balance is critical, monitor frequently)
+ * - Prefers cached data on mount (avoids zero flash)
  */
 export function useWalletBalance() {
   return useQuery({
     queryKey: queryKeys.wallet.balance(),
     queryFn: () => walletService.getBalance(),
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
+    staleTime: 15 * 1000, // 15 seconds - balance becomes stale faster
+    refetchInterval: 45 * 1000, // Refetch every 45 seconds (more frequent for balance)
+    refetchOnWindowFocus: true, // Refetch when app comes to foreground
+    refetchOnReconnect: true, // Refetch when connection restored
   });
 }
 
@@ -56,12 +64,27 @@ export function useTransaction(txId: string) {
  */
 export function useCreateTransfer() {
   const queryClient = useQueryClient();
+  const { track } = useAnalytics();
 
   return useMutation({
     mutationFn: (data: CreateTransferRequest) => walletService.createTransfer(data),
-    onSuccess: () => {
+    onSuccess: (response, variables) => {
+      // Track transfer completed
+      track(ANALYTICS_EVENTS.TRANSFER_COMPLETED, {
+        transfer_id: response.id,
+        amount: variables.amount,
+        recipient: variables.recipient?.slice(0, 6) + '...', // Partial for privacy
+        network: variables.network,
+      });
+
       // Invalidate wallet queries to refresh balance and transactions
       invalidateQueries.wallet();
+    },
+    onError: (error, variables) => {
+      track(ANALYTICS_EVENTS.TRANSFER_FAILED, {
+        amount: variables.amount,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     },
   });
 }
@@ -119,12 +142,12 @@ export function useNetworks() {
 
 /**
  * Get wallet addresses, optionally filtered by chain
- * 
+ *
  * Optimizations:
  * - 5min stale time (addresses rarely change)
  * - Cached per chain filter for efficient lookups
  * - Prevents refetch on window focus
- * 
+ *
  * Note: Returns error if:
  * - 401: User not authenticated or token expired
  * - 404: Endpoint not implemented

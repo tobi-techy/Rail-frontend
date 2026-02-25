@@ -11,35 +11,77 @@ interface Env {
   EXPO_PUBLIC_ENV?: 'development' | 'staging' | 'production';
 }
 
-const PHYSICAL_DEVICE_API_URL = 'https://rail-backend-service-production.up.railway.app/api';
+const DEFAULT_REMOTE_API_URL = 'https://api.userail.money/api';
+const PHYSICAL_DEVICE_API_URL = process.env.EXPO_PUBLIC_STAGING_API_URL ?? DEFAULT_REMOTE_API_URL;
 const SIMULATOR_API_URL =
   Platform.OS === 'android' ? 'http://10.0.2.2:8080/api' : 'http://localhost:8080/api';
 
 const DEFAULT_API_URLS: Record<NonNullable<Env['EXPO_PUBLIC_ENV']>, string> = {
   development: SIMULATOR_API_URL,
-  staging: 'https://rail-backend-service-production.up.railway.app/api',
-  production: 'https://api.userail.money/api',
+  staging: DEFAULT_REMOTE_API_URL,
+  production: DEFAULT_REMOTE_API_URL,
 };
+
+function isLocalhostHost(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+}
+
+function isPlaceholderHost(hostname: string): boolean {
+  return hostname === 'api.yourapp.com' || hostname === 'yourapp.com' || hostname === 'example.com';
+}
+
+function normalizeUrl(input?: string): string | null {
+  if (!input) return null;
+  try {
+    return new URL(input).toString().replace(/\/$/, '');
+  } catch {
+    return null;
+  }
+}
+
+function resolveDeviceFallbackUrl(): string {
+  return normalizeUrl(PHYSICAL_DEVICE_API_URL) ?? DEFAULT_REMOTE_API_URL;
+}
+
+function resolveDevApiUrl(rawApiUrl: string): string {
+  const normalizedCandidate = normalizeUrl(rawApiUrl);
+
+  if (!Device.isDevice) {
+    // Simulators/emulators should keep localhost defaults for local backend testing.
+    return normalizedCandidate ?? SIMULATOR_API_URL;
+  }
+
+  if (normalizedCandidate) {
+    const parsed = new URL(normalizedCandidate);
+    if (!isLocalhostHost(parsed.hostname) && !isPlaceholderHost(parsed.hostname)) {
+      return normalizedCandidate;
+    }
+  }
+
+  // Physical devices cannot resolve localhost and should avoid placeholder hosts.
+  return resolveDeviceFallbackUrl();
+}
 
 function resolveApiUrl(rawApiUrl: string): string {
   if (__DEV__) {
-    return Device.isDevice ? PHYSICAL_DEVICE_API_URL : SIMULATOR_API_URL;
+    return resolveDevApiUrl(rawApiUrl);
   }
 
   try {
     const parsed = new URL(rawApiUrl);
-    const isLocalhost =
-      parsed.hostname === 'localhost' ||
-      parsed.hostname === '127.0.0.1' ||
-      parsed.hostname === '::1';
+    const normalized = parsed.toString().replace(/\/$/, '');
 
-    if (Device.isDevice && isLocalhost) {
-      return PHYSICAL_DEVICE_API_URL;
+    if (isPlaceholderHost(parsed.hostname)) {
+      return DEFAULT_REMOTE_API_URL;
     }
 
-    return parsed.toString().replace(/\/$/, '');
+    if (Device.isDevice && isLocalhostHost(parsed.hostname)) {
+      return resolveDeviceFallbackUrl();
+    }
+
+    return normalized;
   } catch {
-    return rawApiUrl;
+    return normalizeUrl(rawApiUrl) ?? resolveDeviceFallbackUrl();
   }
 }
 
@@ -59,9 +101,7 @@ function validateEnv(): Env {
 
   return {
     EXPO_PUBLIC_API_URL: apiUrl || DEFAULT_API_URLS.development,
-    EXPO_PUBLIC_SENTRY_DSN:
-      process.env.EXPO_PUBLIC_SENTRY_DSN ||
-      'https://e48781d34dd30b8321d915e0aaa00628@o4510763790237696.ingest.de.sentry.io/4510763838210128',
+    EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
     EXPO_PUBLIC_ENV: runtimeEnv,
   };
 }

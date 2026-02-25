@@ -1,8 +1,17 @@
 import { router } from 'expo-router';
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { View, Text, FlatList, StatusBar, ViewToken, useWindowDimensions } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  ViewToken,
+  useWindowDimensions,
+  Platform,
+  StatusBar,
+} from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { onBoard1, onBoard2, onBoard3, onBoard4 } from '../assets/images';
+import { AppleLogo } from '../assets/svg';
 import { Button } from '@/components/ui';
 import Animated, {
   SharedValue,
@@ -23,7 +32,6 @@ interface OnboardingSlide {
   key: string;
   titleTop: string;
   titleBottom: [string, string];
-  description: string;
   video: any;
 }
 
@@ -32,31 +40,24 @@ const onboardingSlides: OnboardingSlide[] = [
     key: '1',
     titleTop: 'Start small.',
     titleBottom: ['Grow', 'big.'],
-    description:
-      'Put your money to work with just a few taps. No experience needed, no complicated setup.',
     video: onBoard1,
   },
   {
     key: '2',
     titleTop: 'Add money',
     titleBottom: ['in', 'seconds.'],
-    description: 'Fund your account instantly. Simple, secure, and ready when you are.',
     video: onBoard2,
   },
   {
     key: '3',
     titleTop: 'Investing',
     titleBottom: ['made', 'easy.'],
-    description:
-      'We handle the hard part. Your money is automatically invested in a diversified portfolio built for growth.',
     video: onBoard3,
   },
   {
     key: '4',
     titleTop: 'Spend.',
     titleBottom: ['Save.', 'Repeat.'],
-    description:
-      'Round up your everyday purchases and invest the spare change. Small steps, big results over time.',
     video: onBoard4,
   },
 ];
@@ -77,10 +78,21 @@ const VideoSlide = memo(function VideoSlide({
   height: number;
   topInset: number;
 }) {
+  const [firstFrameRendered, setFirstFrameRendered] = useState(false);
   const player = useVideoPlayer(item.video, (p) => {
     p.loop = true;
     p.muted = true;
   });
+
+  useEffect(() => {
+    setFirstFrameRendered(false);
+  }, [item.key]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const fallback = setTimeout(() => setFirstFrameRendered(true), 1500);
+    return () => clearTimeout(fallback);
+  }, [isActive, item.key]);
 
   // Play/pause based on visibility
   useEffect(() => {
@@ -99,35 +111,36 @@ const VideoSlide = memo(function VideoSlide({
         style={{ width, height: height * 0.75, position: 'absolute', bottom: 0 }}
         contentFit="cover"
         nativeControls={false}
+        surfaceType={Platform.OS === 'android' ? 'textureView' : undefined}
+        onFirstFrameRender={() => setFirstFrameRendered(true)}
+        useExoShutter={false}
       />
+
+      {!firstFrameRendered && (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width,
+            height: height * 0.75,
+            backgroundColor: '#000000',
+            zIndex: 5,
+          }}
+        />
+      )}
 
       {/* Text content — pinned to top with safe area */}
       <View className="z-10 w-full px-5" style={{ paddingTop: topInset + 16 }}>
         <Text className="font-headline text-display-lg uppercase text-white">
           {item.titleTop} {item.titleBottom[0]} {item.titleBottom[1]}
         </Text>
-        <Text className="mt-2 font-body text-body leading-6 text-white/70">{item.description}</Text>
       </View>
     </View>
   );
 });
-
-// Animated progress indicator
-function ProgressIndicator({
-  currentIndex,
-  progress,
-}: {
-  currentIndex: number;
-  progress: SharedValue<number>;
-}) {
-  return (
-    <View className="absolute left-6 right-6 top-16 flex-row gap-x-2">
-      {onboardingSlides.map((_, index) => (
-        <IndicatorBar key={index} index={index} currentIndex={currentIndex} progress={progress} />
-      ))}
-    </View>
-  );
-}
 
 const IndicatorBar = memo(function IndicatorBar({
   index,
@@ -159,6 +172,7 @@ const IndicatorBar = memo(function IndicatorBar({
 
 export default function App() {
   const { width, height } = useWindowDimensions();
+  const isCompactWidth = width < 380;
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<OnboardingSlide>>(null);
@@ -218,7 +232,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <View className="flex-1 bg-black">
-        <StatusBar barStyle="light-content" />
+        <StatusBar hidden />
 
         <FlatList
           ref={flatListRef}
@@ -236,19 +250,25 @@ export default function App() {
           initialNumToRender={1}
           maxToRenderPerBatch={1}
           windowSize={3}
-          removeClippedSubviews
+          removeClippedSubviews={false}
         />
 
         {/*<ProgressIndicator currentIndex={currentIndex} progress={progress} />*/}
 
         <View
-          className="absolute left-0 right-0 px-5"
+          className="absolute left-1 right-1"
           style={{ bottom: Math.max(insets.bottom, 16) + 12 }}>
-          <View className="flex-row gap-x-3">
+          <View
+            style={{
+              flexDirection: isCompactWidth ? 'column' : 'row',
+              rowGap: isCompactWidth ? 10 : 0,
+              columnGap: isCompactWidth ? 0 : 8,
+            }}>
             <Button
               title="Sign Up with Apple"
+              leftIcon={<AppleLogo width={24} height={24} />}
               size="large"
-              flex
+              flex={!isCompactWidth}
               onPress={() => {
                 appleSignIn(undefined, {
                   onSuccess: (resp) => {
@@ -265,7 +285,7 @@ export default function App() {
             <Button
               title="Continue with Mail"
               size="large"
-              flex
+              flex={!isCompactWidth}
               onPress={() => router.push(ROUTES.AUTH.SIGNUP as any)}
               variant="orange"
             />

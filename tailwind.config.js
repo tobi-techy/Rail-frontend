@@ -60,7 +60,7 @@ module.exports = {
         // Named sizes for previously hardcoded values
         'balance-lg': ['60px', { lineHeight: '1.1' }],
         'balance-sm': ['32px', { lineHeight: '1.1' }],
-        'auth-title': ['34px', { lineHeight: '1.1' }],
+        'auth-title': ['40px', { lineHeight: '1.1' }],
         keypad: ['30px', { lineHeight: '1.2' }],
         stash: ['26px', { lineHeight: '1.2' }],
       },

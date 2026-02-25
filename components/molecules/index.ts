@@ -10,3 +10,4 @@ export * from './StashCard';
 export * from './TransactionItem';
 export * from './TransactionList';
 export * from './PasscodeInput';
+export { MaskedBalance } from './MaskedBalance';

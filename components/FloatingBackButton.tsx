@@ -4,19 +4,20 @@ import { BlurView } from 'expo-blur';
 import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { useHaptics } from '@/hooks/useHaptics';
 
 export function FloatingBackButton() {
   const insets = useSafeAreaInsets();
   const scale = useSharedValue(1);
+  const { impact } = useHaptics();
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impact();
     router.back();
   };
 

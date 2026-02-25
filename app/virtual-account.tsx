@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -13,9 +13,10 @@ import { ArrowLeft, Copy, Building2, CheckCircle, ShieldAlert } from 'lucide-rea
 import * as Clipboard from 'expo-clipboard';
 import { useKYCStatus } from '@/api/hooks';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { useKycGate } from '@/hooks/useKycGate';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui';
+import { KYCVerificationSheet } from '@/components/sheets';
+import { useUIStore } from '@/stores';
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   const { showInfo } = useFeedbackPopup();
@@ -40,9 +41,10 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 export default function VirtualAccountScreen() {
-  const { data: kycStatus, refetch, isRefetching } = useKYCStatus();
-  const { showInfo } = useFeedbackPopup();
-  const { isApproved, isLoading: isKycLoading } = useKycGate();
+  const [showKYCSheet, setShowKYCSheet] = useState(false);
+  const { data: kycStatus, refetch, isRefetching, isLoading: isKycLoading } = useKYCStatus();
+  const selectedCurrency = useUIStore((s) => s.currency);
+  const isApproved = kycStatus?.status === 'approved';
 
   // Gate: require KYC approval
   if (isKycLoading) {
@@ -55,24 +57,32 @@ export default function VirtualAccountScreen() {
 
   if (!isApproved) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
-        <View className="flex-row items-center px-5 pb-4 pt-2">
-          <TouchableOpacity onPress={() => router.back()} hitSlop={12} className="mr-4 p-1">
-            <ArrowLeft size={24} color="#111" />
-          </TouchableOpacity>
-          <Text className="font-subtitle text-lg text-gray-900">Bank Account</Text>
-        </View>
-        <View className="flex-1 items-center justify-center px-6">
-          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
-            <ShieldAlert size={32} color="#F59E0B" />
+      <>
+        <SafeAreaView className="flex-1 bg-white">
+          <View className="flex-row items-center px-5 pb-4 pt-2">
+            <TouchableOpacity onPress={() => router.back()} hitSlop={12} className="mr-4 p-1">
+              <ArrowLeft size={24} color="#111" />
+            </TouchableOpacity>
+            <Text className="font-subtitle text-lg text-gray-900">Bank Account</Text>
           </View>
-          <Text className="mb-2 font-subtitle text-xl text-gray-900">Verification Required</Text>
-          <Text className="mb-8 text-center font-body text-sm text-gray-500">
-            Complete identity verification to access your bank account details.
-          </Text>
-          <Button title="Start Verification" onPress={() => router.push('/(auth)/kyc' as any)} />
-        </View>
-      </SafeAreaView>
+          <View className="flex-1 items-center justify-center px-6">
+            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
+              <ShieldAlert size={32} color="#F59E0B" />
+            </View>
+            <Text className="mb-2 font-subtitle text-xl text-gray-900">Verification Required</Text>
+            <Text className="mb-8 text-center font-body text-sm text-gray-500">
+              Complete identity verification to access your bank account details.
+            </Text>
+            <Button title="Start Verification" onPress={() => setShowKYCSheet(true)} />
+          </View>
+        </SafeAreaView>
+
+        <KYCVerificationSheet
+          visible={showKYCSheet}
+          onClose={() => setShowKYCSheet(false)}
+          kycStatus={kycStatus}
+        />
+      </>
     );
   }
 
@@ -115,7 +125,7 @@ export default function VirtualAccountScreen() {
             <DetailRow label="Account Number" value={kycStatus?.provider_reference ?? '—'} />
             <DetailRow label="Routing Number" value="101019644" />
             <DetailRow label="Account Type" value="Checking" />
-            <DetailRow label="Currency" value="USD" />
+            <DetailRow label="Currency" value={selectedCurrency} />
           </View>
 
           {/* Info note */}

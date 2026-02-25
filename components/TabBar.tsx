@@ -3,8 +3,8 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { useHaptics } from '@/hooks/useHaptics';
 
 type TabBarProps = BottomTabBarProps & {
   rightIcon?: React.ReactNode;
@@ -25,13 +25,14 @@ function TabBarItem({
 }) {
   const scale = useSharedValue(1);
   const { options } = descriptor;
+  const { impact } = useHaptics();
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
   const onPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impact();
     const event = navigation.emit({
       type: 'tabPress',
       target: route.key,
@@ -75,6 +76,7 @@ export function TabBar({
   rightIconAccessibilityLabel,
 }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const { impact } = useHaptics();
 
   return (
     <View style={[styles.wrapper, { paddingBottom: insets.bottom + 1 }]} pointerEvents="box-none">
@@ -96,7 +98,7 @@ export function TabBar({
         {rightIcon && (
           <Pressable
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              impact();
               onRightIconPress?.();
             }}
             style={styles.rightButton}

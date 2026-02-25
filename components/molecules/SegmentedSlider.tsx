@@ -8,6 +8,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useHaptics } from '@/hooks/useHaptics';
 
 interface SegmentedSliderProps {
   value: number;
@@ -38,14 +39,15 @@ export function SegmentedSlider({
 }: SegmentedSliderProps) {
   const sliderWidth = useSharedValue(0);
   const lastSegment = useRef(-1);
+  const { impact } = useHaptics();
 
   const normalizedValue =
     max === min ? 0 : Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
   const activeSegments = Math.round((normalizedValue / 100) * segments);
 
   const triggerHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, []);
+    impact(Haptics.ImpactFeedbackStyle.Light);
+  }, [impact]);
 
   const handleValueChange = useCallback(
     (newValue: number) => {

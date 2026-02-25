@@ -89,9 +89,8 @@ export const authService = {
    */
   async login(data: LoginRequest): Promise<LoginResponse> {
     // SECURITY: Rate limiting
-    if (!loginRateLimiter.isAllowed('login', 5, 300000)) {
-      // 5 attempts per 5 minutes
-      const resetTime = loginRateLimiter.getResetTime('login');
+    if (!(await loginRateLimiter.isAllowed('login'))) {
+      const resetTime = await loginRateLimiter.getResetTime('login');
       throw new Error(
         `Too many login attempts. Try again in ${Math.ceil(resetTime / 1000)} seconds`
       );
@@ -146,7 +145,7 @@ export const authService = {
 
     const accessToken = payload?.accessToken ?? payload?.access_token;
     const refreshToken = payload?.refreshToken ?? payload?.refresh_token ?? data.refreshToken;
-    const expiresAt = payload?.expiresAt ?? payload?.expires_at;
+    const sessionExpiresAt = payload?.sessionExpiresAt ?? payload?.session_expires_at;
     const csrfToken = payload?.csrfToken ?? payload?.csrf_token;
 
     if (!accessToken) {
@@ -156,7 +155,7 @@ export const authService = {
     return {
       accessToken,
       refreshToken,
-      expiresAt: expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      expiresAt: sessionExpiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       csrfToken,
     };
   },
@@ -187,8 +186,8 @@ export const authService = {
    */
   async forgotPassword(data: ForgotPasswordRequest): Promise<void> {
     // SECURITY: Rate limiting - 3 requests per hour
-    if (!passwordResetRateLimiter.isAllowed('forgot-password', 3, 3600000)) {
-      const resetTime = passwordResetRateLimiter.getResetTime('forgot-password');
+    if (!(await passwordResetRateLimiter.isAllowed('forgot-password'))) {
+      const resetTime = await passwordResetRateLimiter.getResetTime('forgot-password');
       throw new Error(
         `Too many password reset requests. Try again in ${Math.ceil(resetTime / 60000)} minutes`
       );
@@ -245,9 +244,7 @@ export const authService = {
   /**
    * Finish passkey login ceremony and exchange assertion for auth tokens.
    */
-  async finishPasskeyLogin(
-    data: WebAuthnLoginFinishRequest
-  ): Promise<WebAuthnLoginFinishResponse> {
+  async finishPasskeyLogin(data: WebAuthnLoginFinishRequest): Promise<WebAuthnLoginFinishResponse> {
     return withNetworkRetry(() =>
       apiClient.post<WebAuthnLoginFinishResponse>(AUTH_ENDPOINTS.WEBAUTHN_LOGIN_FINISH, data)
     );

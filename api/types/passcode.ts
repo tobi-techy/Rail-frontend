@@ -46,6 +46,7 @@ export interface VerifyPasscodeResponse {
   accessToken?: string;
   refreshToken?: string;
   expiresAt?: string;
+  sessionExpiresAt?: string;
   passcodeSessionToken?: string;
   passcodeSessionExpiresAt?: string;
 }
