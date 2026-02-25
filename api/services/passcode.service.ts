@@ -67,7 +67,7 @@ export const passcodeService = {
     const userId = useAuthStore.getState().user?.id || 'unknown';
 
     // Check rate limiting
-    const allowance = passcodeRateLimiter.checkAllowance(userId);
+    const allowance = await passcodeRateLimiter.checkAllowance(userId);
     if (!allowance.canAttempt) {
       const remainingSeconds = Math.ceil((allowance.remainingMs || 0) / 1000);
       const message = `Too many passcode attempts. Try again in ${remainingSeconds} seconds.`;
@@ -89,7 +89,7 @@ export const passcodeService = {
       );
 
       // Success - clear rate limiter record
-      passcodeRateLimiter.recordSuccessfulAttempt(userId);
+      await passcodeRateLimiter.recordSuccessfulAttempt(userId);
 
       logger.debug('[PasscodeService] Passcode verified successfully', {
         component: 'PasscodeService',
@@ -99,8 +99,8 @@ export const passcodeService = {
       return response;
     } catch (error) {
       // Failed attempt - record it
-      const backoffDelay = passcodeRateLimiter.recordFailedAttempt(userId);
-      const attemptInfo = passcodeRateLimiter.getAttemptInfo(userId);
+      const backoffDelay = await passcodeRateLimiter.recordFailedAttempt(userId);
+      const attemptInfo = await passcodeRateLimiter.getAttemptInfo(userId);
 
       logger.warn('[PasscodeService] Passcode verification failed', {
         component: 'PasscodeService',

@@ -9,6 +9,8 @@ import { ROUTES } from '@/constants/routes';
 import { useResetPassword } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 
+import { validatePassword } from '@/utils/inputValidator';
+
 export default function ResetPassword() {
   const params = useLocalSearchParams<{ token?: string | string[] }>();
   const token = useMemo(() => {
@@ -31,9 +33,13 @@ export default function ResetPassword() {
       return;
     }
 
-    if (password.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
-      showWarning('Weak Password', 'Password must be at least 8 characters.');
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setPasswordError(passwordValidation.errors[0] ?? 'Password does not meet requirements');
+      showWarning(
+        'Weak Password',
+        passwordValidation.errors[0] ?? 'Password does not meet requirements'
+      );
       return;
     }
 

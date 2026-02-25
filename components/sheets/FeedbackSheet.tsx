@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ActivityIndicator, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import { BottomSheet } from './BottomSheet';
 import { useAuthStore } from '@/stores/authStore';
 import apiClient from '@/api/client';
+import { useHaptics } from '@/hooks/useHaptics';
 
 const CATEGORIES = ['Bug', 'Idea', 'Question', 'Other'] as const;
 type Category = (typeof CATEGORIES)[number];
@@ -17,6 +17,7 @@ interface Props {
 export function FeedbackSheet({ visible, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
+  const { impact, notification } = useHaptics();
   const [category, setCategory] = useState<Category>('Idea');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,7 +36,7 @@ export function FeedbackSheet({ visible, onClose }: Props) {
 
   const submit = async () => {
     if (!message.trim()) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impact();
     setLoading(true);
     try {
       await apiClient.post('/feedback', {
@@ -52,7 +53,7 @@ export function FeedbackSheet({ visible, onClose }: Props) {
     } finally {
       setLoading(false);
       setDone(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      notification();
       setTimeout(handleClose, 1400);
     }
   };
@@ -62,25 +63,23 @@ export function FeedbackSheet({ visible, onClose }: Props) {
       <View style={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 16 }}>
         {done ? (
           <View className="items-center py-8">
-            <Text className="text-2xl mb-2">🎉</Text>
+            <Text className="mb-2 text-2xl">🎉</Text>
             <Text className="text-[17px] font-semibold text-black">Thanks for the feedback!</Text>
-            <Text className="text-[14px] text-black/50 mt-1">We&apos;ll look into it.</Text>
+            <Text className="mt-1 text-[14px] text-black/50">We&apos;ll look into it.</Text>
           </View>
         ) : (
           <>
-            <Text className="text-[18px] font-semibold text-black mb-1">Send feedback</Text>
-            <Text className="text-[13px] text-black/50 mb-5">Help us improve Rail.</Text>
+            <Text className="mb-1 text-[18px] font-semibold text-black">Send feedback</Text>
+            <Text className="mb-5 text-[13px] text-black/50">Help us improve Rail.</Text>
 
             {/* Category pills */}
-            <View className="flex-row gap-x-2 mb-4">
+            <View className="mb-4 flex-row gap-x-2">
               {CATEGORIES.map((c) => (
                 <Pressable
                   key={c}
                   onPress={() => setCategory(c)}
-                  className={`px-3 py-1.5 rounded-full border ${
-                    category === c
-                      ? 'bg-black border-black'
-                      : 'bg-white border-gray-200'
+                  className={`rounded-full border px-3 py-1.5 ${
+                    category === c ? 'border-black bg-black' : 'border-gray-200 bg-white'
                   }`}>
                   <Text
                     className={`text-[13px] font-medium ${
@@ -101,7 +100,7 @@ export function FeedbackSheet({ visible, onClose }: Props) {
               multiline
               numberOfLines={4}
               textAlignVertical="top"
-              className="bg-gray-50 rounded-2xl p-4 text-[15px] text-black min-h-[110px] border border-gray-100"
+              className="min-h-[110px] rounded-2xl border border-gray-100 bg-gray-50 p-4 text-[15px] text-black"
               style={{ fontFamily: 'SF-Pro-Rounded-Regular' }}
             />
 
@@ -109,7 +108,7 @@ export function FeedbackSheet({ visible, onClose }: Props) {
             <Pressable
               onPress={submit}
               disabled={!message.trim() || loading}
-              className={`mt-4 rounded-2xl py-4 items-center ${
+              className={`mt-4 items-center rounded-2xl py-4 ${
                 message.trim() ? 'bg-black' : 'bg-gray-100'
               }`}>
               {loading ? (

@@ -23,8 +23,16 @@ import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { BottomSheet, KYCVerificationSheet } from '@/components/sheets';
 import { Button, Input } from '@/components/ui';
 import { useInitiateFiatWithdrawal, useInitiateWithdrawal } from '@/api/hooks/useFunding';
+import { invalidateQueries, queryClient, queryKeys } from '@/api/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import { SessionManager } from '@/utils/sessionManager';
+import { getNativePasskey } from '@/utils/passkeyNative';
+import {
+  beginPasskeyPrompt,
+  canStartPasskeyPrompt,
+  endPasskeyPrompt,
+  markPasskeyPromptSuccess,
+} from '@/utils/passkeyPromptGuard';
 
 const BRAND_RED = '#FF2E01';
 
@@ -166,6 +174,13 @@ const getPasskeyFallbackMessage = (error: any) => {
     return 'Network issue during passkey sign-in. Enter your PIN.';
   }
 
+  if (
+    code === 'PASSCODE_SESSION_UNAVAILABLE' ||
+    code === 'PASSCODE_SESSION_UNAVAILABLE_AFTER_PASSKEY'
+  ) {
+    return 'Authorization session was not created. Enter your PIN to continue.';
+  }
+
   return 'Passkey verification failed. Enter your PIN to continue.';
 };
 
@@ -233,6 +248,7 @@ export default function WithdrawAmountScreen() {
   const [authError, setAuthError] = useState('');
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [isSubmissionSheetVisible, setIsSubmissionSheetVisible] = useState(false);
+  const [submitWithActiveSession, setSubmitWithActiveSession] = useState(false);
   const [passkeyAvailable, setPasskeyAvailable] = useState(false);
   const [showKycSheet, setShowKycSheet] = useState(false);
 
@@ -242,6 +258,7 @@ export default function WithdrawAmountScreen() {
   const { mutate: verifyPasscode, isPending: isPasscodeVerifying } = useVerifyPasscode();
   const isSubmitting = isSubmittingCrypto || isSubmittingFiat;
   const isAuthorizing = isPasscodeVerifying || isPasskeyLoading;
+  const passkeyPromptScope = `withdraw-authorize:${safeName(user?.email) || 'unknown'}`;
 
   // Animation values
   const headerOpacity = useSharedValue(0);
@@ -325,47 +342,50 @@ export default function WithdrawAmountScreen() {
   const canContinue = Boolean(numericAmount > 0 && !amountError);
   const canSaveDestination = Boolean(!destinationError);
 
-  const onAmountKeyPress = useCallback((key: string) => {
-    setDidTryContinue(false);
+  const onAmountKeyPress = useCallback(
+    (key: string) => {
+      setDidTryContinue(false);
 
-    setRawAmount((current) => {
-      if (key === 'backspace') {
-        if (current === '0') return current;
-        const nextValue = current.slice(0, -1);
-        return normalizeAmount(nextValue);
-      }
+      setRawAmount((current) => {
+        if (key === 'backspace') {
+          if (current === '0') return current;
+          const nextValue = current.slice(0, -1);
+          return normalizeAmount(nextValue);
+        }
 
-      if (key === 'decimal') {
-        if (current.includes('.')) return current;
-        return `${current}.`;
-      }
+        if (key === 'decimal') {
+          if (current.includes('.')) return current;
+          return `${current}.`;
+        }
 
-      if (!/^\d$/.test(key)) {
-        return current;
-      }
+        if (!/^\d$/.test(key)) {
+          return current;
+        }
 
-      if (current.includes('.')) {
-        const [intPart, decimalPart = ''] = current.split('.');
-        if (decimalPart.length >= 2) return current;
-        return `${intPart}.${decimalPart}${key}`;
-      }
+        if (current.includes('.')) {
+          const [intPart, decimalPart = ''] = current.split('.');
+          if (decimalPart.length >= 2) return current;
+          return `${intPart}.${decimalPart}${key}`;
+        }
 
-      const nextInt = current === '0' ? key : `${current}${key}`;
-      const trimmedInt = nextInt.replace(/^0+(?=\d)/, '') || '0';
+        const nextInt = current === '0' ? key : `${current}${key}`;
+        const trimmedInt = nextInt.replace(/^0+(?=\d)/, '') || '0';
 
-      if (trimmedInt.length > MAX_INTEGER_DIGITS) {
-        return current;
-      }
+        if (trimmedInt.length > MAX_INTEGER_DIGITS) {
+          return current;
+        }
 
-      // Cap input at the maximum withdrawable amount
-      const nextNumeric = Number.parseFloat(trimmedInt);
-      if (nextNumeric > maxWithdrawable) {
-        return formatMaxAmount(maxWithdrawable);
-      }
+        // Cap input at the maximum withdrawable amount
+        const nextNumeric = Number.parseFloat(trimmedInt);
+        if (nextNumeric > maxWithdrawable) {
+          return formatMaxAmount(maxWithdrawable);
+        }
 
-      return trimmedInt;
-    });
-  }, [maxWithdrawable]);
+        return trimmedInt;
+      });
+    },
+    [maxWithdrawable]
+  );
 
   const onMaxPress = useCallback(() => {
     setDidTryContinue(false);
@@ -383,6 +403,14 @@ export default function WithdrawAmountScreen() {
     setIsDetailsSheetVisible(true);
   }, [canContinue]);
 
+  const hasActivePasscodeSession = useCallback(() => {
+    const authState = useAuthStore.getState();
+    if (!authState.isAuthenticated || !authState.passcodeSessionToken) {
+      return false;
+    }
+    return !SessionManager.isPasscodeSessionExpired();
+  }, []);
+
   const onSaveDestination = useCallback(() => {
     setDidTryDestination(true);
     setAuthError('');
@@ -391,8 +419,14 @@ export default function WithdrawAmountScreen() {
 
     setIsDetailsSheetVisible(false);
     setAuthPasscode('');
+    if (hasActivePasscodeSession()) {
+      setIsAuthorizeScreenVisible(false);
+      setSubmitWithActiveSession(true);
+      return;
+    }
+
     setIsAuthorizeScreenVisible(true);
-  }, [canSaveDestination]);
+  }, [canSaveDestination, hasActivePasscodeSession]);
 
   const onCloseSubmittedSheet = useCallback(() => {
     setIsSubmissionSheetVisible(false);
@@ -411,9 +445,28 @@ export default function WithdrawAmountScreen() {
       setIsSubmissionSheetVisible(true);
       setAuthPasscode('');
       setAuthError('');
+      void Promise.all([
+        invalidateQueries.station(),
+        invalidateQueries.funding(),
+        invalidateQueries.allocation(),
+        invalidateQueries.wallet(),
+        queryClient.refetchQueries({ queryKey: queryKeys.station.home(), type: 'active' }),
+        queryClient.refetchQueries({ queryKey: queryKeys.funding.all, type: 'active' }),
+      ]);
     };
 
     const onError = (err: any) => {
+      const errorMarker = String(err?.code || err?.error?.code || err?.message || '').toUpperCase();
+      if (
+        errorMarker.includes('PASSCODE_SESSION_REQUIRED') ||
+        errorMarker.includes('PASSCODE_SESSION_INVALID')
+      ) {
+        setIsAuthorizeScreenVisible(true);
+        setAuthError('Authorization expired. Confirm with passkey or PIN to continue.');
+        return;
+      }
+
+      setIsAuthorizeScreenVisible(true);
       setAuthError(err?.message || 'Withdrawal failed. Please try again.');
     };
 
@@ -443,6 +496,12 @@ export default function WithdrawAmountScreen() {
       }
     );
   }, [destinationInput, initiateFiatWithdrawal, initiateWithdrawal, numericAmount, selectedMethod]);
+
+  useEffect(() => {
+    if (!submitWithActiveSession) return;
+    setSubmitWithActiveSession(false);
+    onSubmitAuthorizedWithdrawal();
+  }, [onSubmitAuthorizedWithdrawal, submitWithActiveSession]);
 
   const onPasscodeAuthorize = useCallback(
     (code: string) => {
@@ -480,13 +539,16 @@ export default function WithdrawAmountScreen() {
       return;
     }
 
+    if (!canStartPasskeyPrompt(passkeyPromptScope, 'manual')) return;
+    if (!beginPasskeyPrompt()) return;
+
     setAuthError('');
     setIsPasskeyLoading(true);
 
     try {
       const beginResponse = await authService.beginPasskeyLogin({ email });
       const passkeyRequest = normalizePasskeyGetRequest(beginResponse.options);
-      const assertion = await Passkey.get(passkeyRequest);
+      const assertion = await getNativePasskey(passkeyRequest);
 
       const finishResponse = await authService.finishPasskeyLogin({
         sessionId: beginResponse.sessionId,
@@ -497,25 +559,37 @@ export default function WithdrawAmountScreen() {
       });
 
       const nowIso = new Date().toISOString();
+      const passcodeSessionToken = String(finishResponse.passcodeSessionToken || '').trim();
+      if (!passcodeSessionToken) {
+        const missingSessionError: any = new Error(
+          'Passcode session not issued after passkey login'
+        );
+        missingSessionError.code = 'PASSCODE_SESSION_UNAVAILABLE_AFTER_PASSKEY';
+        throw missingSessionError;
+      }
       const tokenExpiresAt = finishResponse.expiresAt
         ? new Date(finishResponse.expiresAt).toISOString()
         : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      const passcodeSessionExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      const passcodeSessionExpiresAt = finishResponse.passcodeSessionExpiresAt
+        ? new Date(finishResponse.passcodeSessionExpiresAt).toISOString()
+        : new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
       useAuthStore.setState({
         user: finishResponse.user,
         accessToken: finishResponse.accessToken,
         refreshToken: finishResponse.refreshToken,
+        csrfToken: finishResponse.csrfToken || useAuthStore.getState().csrfToken,
         isAuthenticated: true,
         pendingVerificationEmail: null,
         onboardingStatus: finishResponse.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,
         tokenExpiresAt,
-        passcodeSessionToken: 'passkey-login',
+        passcodeSessionToken,
         passcodeSessionExpiresAt,
       });
       SessionManager.schedulePasscodeSessionExpiry(passcodeSessionExpiresAt);
+      markPasskeyPromptSuccess(passkeyPromptScope);
 
       onSubmitAuthorizedWithdrawal();
     } catch (err: any) {
@@ -525,9 +599,10 @@ export default function WithdrawAmountScreen() {
       }
       setAuthError(getPasskeyFallbackMessage(err));
     } finally {
+      endPasskeyPrompt();
       setIsPasskeyLoading(false);
     }
-  }, [isAuthorizing, isSubmitting, onSubmitAuthorizedWithdrawal, user?.email]);
+  }, [isAuthorizing, isSubmitting, onSubmitAuthorizedWithdrawal, passkeyPromptScope, user?.email]);
 
   const onDestinationChange = useCallback(
     (value: string) => {

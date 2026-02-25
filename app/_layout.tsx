@@ -1,22 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Stack } from 'expo-router';
-import { StatusBar, View } from 'react-native';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { AppState, Platform, StatusBar, View } from 'react-native';
+import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import * as SplashScreen from 'expo-splash-screen';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { initSentry } from '@/lib/sentry';
 import { initGlobalErrorHandlers, logger } from '@/lib/logger';
 import { validateEnvironmentVariables } from '@/utils/envValidator';
 import { useFonts } from '@/hooks/useFonts';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { enforceDeviceSecurity } from '@/utils/deviceSecurity';
+import { initEncryption } from '@/utils/encryption';
 import { SplashScreen as CustomSplash } from '@/components/SplashScreen';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { FeedbackPopupHost } from '@/components/ui';
-import queryClient from '@/api/queryClient';
+import queryClient, { queryKeys } from '@/api/queryClient';
+import { stationService } from '@/api/services/station.service';
 import SessionManager from '@/utils/sessionManager';
-import { PostHogProvider, PostHogSurveyProvider } from 'posthog-react-native';
+import Gleap from 'react-native-gleapsdk';
+import { PostHogProvider, PostHogSurveyProvider, usePostHog } from 'posthog-react-native';
+import { useAuthStore } from '@/stores/authStore';
+import { useUIStore } from '@/stores';
+import { isPasskeyPromptInFlight } from '@/utils/passkeyPromptGuard';
 import '../global.css';
 
 // Keep native splash visible until we're ready
@@ -43,13 +50,21 @@ if (!envValidation.isValid && !__DEV__) {
   });
 }
 
+function AppReadyTracker() {
+  const posthog = usePostHog();
+  useEffect(() => {
+    posthog?.capture('app_opened', { platform: 'ios' });
+  }, [posthog]);
+  return null;
+}
+
 function AppNavigator() {
   return (
     <Stack
       initialRouteName="index"
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#FFFFFF' },
+        contentStyle: { backgroundColor: Platform.OS === 'android' ? SPLASH_BG : '#FFFFFF' },
       }}>
       <Stack.Screen
         name="index"
@@ -78,7 +93,7 @@ function AppNavigator() {
       <Stack.Screen
         name="(tabs)"
         options={{
-          contentStyle: { backgroundColor: '#FFFFFF' },
+          contentStyle: { backgroundColor: Platform.OS === 'android' ? SPLASH_BG : '#FFFFFF' },
         }}
       />
       {/* Stash screens - disabled until feature is complete */}
@@ -126,6 +141,14 @@ function AppNavigator() {
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />
+      <Stack.Screen
+        name="settings-notifications"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      />
     </Stack>
   );
 }
@@ -135,14 +158,29 @@ export default function Layout() {
   const [showSplash, setShowSplash] = useState(true);
   const [securityChecked, setSecurityChecked] = useState(false);
   const [customSplashStartTime, setCustomSplashStartTime] = useState<number | null>(null);
+  const refreshCurrencyRates = useUIStore((s) => s.refreshCurrencyRates);
 
   useProtectedRoute();
 
   useEffect(() => {
-    enforceDeviceSecurity({ allowContinue: true }).finally(() => {
-      setSecurityChecked(true);
-    });
+    Promise.all([enforceDeviceSecurity({ allowContinue: __DEV__ }), initEncryption()]).finally(
+      () => {
+        setSecurityChecked(true);
+      }
+    );
   }, []);
+
+  useEffect(() => {
+    focusManager.setFocused(AppState.currentState === 'active');
+    const sub = AppState.addEventListener('change', (nextState) => {
+      focusManager.setFocused(nextState === 'active');
+    });
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    void refreshCurrencyRates();
+  }, [refreshCurrencyRates]);
 
   // Hide native splash once custom splash is mounted, start timer
   const onCustomSplashReady = useCallback(async () => {
@@ -195,6 +233,9 @@ export default function Layout() {
     if (showSplash) return;
     try {
       SessionManager.initialize();
+      Gleap.initialize(process.env.EXPO_PUBLIC_GLEAP_TOKEN ?? '');
+      Gleap.showFeedbackButton(false);
+      Gleap.showFeedbackButton(false);
     } catch (error) {
       logger.error(
         '[Layout] SessionManager init failed',
@@ -202,6 +243,98 @@ export default function Layout() {
       );
     }
   }, [showSplash]);
+
+  useEffect(() => {
+    if (showSplash) return;
+    const state = useAuthStore.getState();
+    if (!state?.isAuthenticated || !state?.accessToken) return;
+
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.station.home(),
+      queryFn: () => stationService.getStation(),
+      staleTime: 0,
+    });
+  }, [showSplash]);
+
+  // Biometric lock on resume
+  const requireBiometricOnResume = useUIStore((s) => s.requireBiometricOnResume);
+  const appWasBackground = useRef(false);
+  const isAuthenticating = useRef(false);
+  const lastBackgroundAt = useRef<number | null>(null);
+  const lastAuthPromptAt = useRef(0);
+  const authCooldownUntil = useRef(0);
+
+  useEffect(() => {
+    if (!requireBiometricOnResume) {
+      appWasBackground.current = false;
+      isAuthenticating.current = false;
+      lastBackgroundAt.current = null;
+      authCooldownUntil.current = 0;
+      return;
+    }
+
+    const sub = AppState.addEventListener('change', async (nextState) => {
+      if (nextState === 'background') {
+        // Ignore background events triggered by the authentication sheet itself.
+        if (isAuthenticating.current || isPasskeyPromptInFlight()) return;
+        appWasBackground.current = true;
+        lastBackgroundAt.current = Date.now();
+        return;
+      }
+
+      // Ignore transient inactive transitions caused by system overlays/prompts.
+      if (nextState !== 'active') return;
+      if (isAuthenticating.current || !appWasBackground.current) return;
+      if (isPasskeyPromptInFlight()) {
+        appWasBackground.current = false;
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastAuthPromptAt.current < 2000) {
+        logger.debug('[Layout] Resume biometric skipped (recent prompt)', { component: 'Layout' });
+        appWasBackground.current = false;
+        return;
+      }
+      if (now < authCooldownUntil.current) {
+        logger.debug('[Layout] Resume biometric suppressed by cooldown', { component: 'Layout' });
+        return;
+      }
+
+      const backgroundDuration = lastBackgroundAt.current ? now - lastBackgroundAt.current : 0;
+      if (backgroundDuration > 0 && backgroundDuration < 1000) {
+        logger.debug('[Layout] Resume biometric skipped (short background bounce)', {
+          component: 'Layout',
+        });
+        appWasBackground.current = false;
+        return;
+      }
+
+      appWasBackground.current = false;
+      isAuthenticating.current = true;
+      lastAuthPromptAt.current = now;
+      try {
+        logger.debug('[Layout] Resume biometric challenge started', { component: 'Layout' });
+        const result = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Authenticate to continue',
+          cancelLabel: 'Cancel',
+        });
+        if (!result.success) {
+          authCooldownUntil.current = Date.now() + 30_000;
+        } else {
+          authCooldownUntil.current = Date.now() + 1_500;
+        }
+      } catch {
+        authCooldownUntil.current = Date.now() + 30_000;
+        logger.warn('[Layout] Biometric resume auth error', { component: 'Layout' });
+      } finally {
+        isAuthenticating.current = false;
+        appWasBackground.current = false;
+        lastBackgroundAt.current = null;
+      }
+    });
+    return () => sub.remove();
+  }, [requireBiometricOnResume]);
 
   const fontsReady = fontsLoaded || fontError;
 
@@ -225,37 +358,17 @@ export default function Layout() {
           <SafeAreaProvider style={{ flex: 1, backgroundColor: SPLASH_BG }}>
             <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
               <PostHogProvider
-                apiKey="phc_bG9OhXAMZfICZ0hFeCcHJSx5FGzpBhN4nDHbZAIYhbR"
+                apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
                 options={{
                   host: 'https://us.i.posthog.com',
-                  // Enable session recording. Requires enabling in your project settings as well.
-                  // Default is false.
                   enableSessionReplay: true,
-
                   sessionReplayConfig: {
-                    // Whether text inputs are masked. Default is true.
-                    // Password inputs are always masked regardless
                     maskAllTextInputs: true,
-
-                    // Whether images are masked. Default is true.
-                    maskAllImages: true,
-
-                    // Capture logs automatically. Default is true.
-                    // Android only (Native Logcat only)
-                    captureLog: true,
-
-                    // Whether network requests are captured in recordings. Default is true
-                    // Only metric-like data like speed, size, and response code are captured.
-                    // No data is captured from the request or response body.
-                    // iOS only
-                    captureNetworkTelemetry: true,
-
-                    // Throttling delay used to reduce the number of snapshots captured
-                    // and reduce performance impact. Default is 1000ms
-                    throttleDelayMs: 1000,
+                    maskAllImages: false,
                   },
                 }}>
                 <PostHogSurveyProvider>
+                  <AppReadyTracker />
                   <AppNavigator />
                   <FeedbackPopupHost />
                 </PostHogSurveyProvider>

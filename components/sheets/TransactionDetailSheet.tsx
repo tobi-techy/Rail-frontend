@@ -9,6 +9,8 @@ import {
   SvgComponent,
   resolveTransactionAssetIcon,
 } from '../molecules/TransactionItem';
+import { MaskedBalance } from '../molecules/MaskedBalance';
+import { useUIStore } from '@/stores';
 
 interface TransactionDetailSheetProps {
   visible: boolean;
@@ -108,7 +110,10 @@ const LargeTokenIcon = ({
       backgroundColor: bgColor || '#1B84FF',
     }}>
     {Token ? (
-      <Token width={isSymbol ? 36 : LARGE_ICON_SIZE + 8} height={isSymbol ? 36 : LARGE_ICON_SIZE + 8} />
+      <Token
+        width={isSymbol ? 36 : LARGE_ICON_SIZE + 8}
+        height={isSymbol ? 36 : LARGE_ICON_SIZE + 8}
+      />
     ) : (
       <Icon library="feather" name="dollar-sign" size={32} color="#FFFFFF" />
     )}
@@ -151,6 +156,7 @@ export function TransactionDetailSheet({
   onClose,
   transaction,
 }: TransactionDetailSheetProps) {
+  const { isBalanceVisible } = useUIStore();
   if (!transaction) return null;
 
   const { icon, type, amount, currency = 'NGN', createdAt, toAddress, txHash, fee } = transaction;
@@ -193,9 +199,12 @@ export function TransactionDetailSheet({
       <View className="items-center pb-4">
         {renderIcon()}
         <Text className="mt-4 font-caption text-body text-text-secondary">{typeLabels[type]}</Text>
-        <Text className="mt-1 font-subtitle text-[32px] text-text-primary">
-          {formatAmount(amount)} {currency}
-        </Text>
+        <MaskedBalance
+          value={`${formatAmount(amount)} ${currency}`}
+          visible={isBalanceVisible}
+          textClass="text-[32px]"
+          colorClass="text-text-primary"
+        />
         <Text className="mt-1 font-caption text-caption text-text-secondary">
           {formatDate(createdAt)}
         </Text>

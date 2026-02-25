@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -8,6 +8,14 @@ import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { useVerifyPasscode } from '@/api/hooks';
 import { authService } from '@/api/services';
 import { useAuthStore } from '@/stores/authStore';
+import { SessionManager } from '@/utils/sessionManager';
+import { getNativePasskey } from '@/utils/passkeyNative';
+import {
+  beginPasskeyPrompt,
+  canStartPasskeyPrompt,
+  endPasskeyPrompt,
+  markPasskeyPromptSuccess,
+} from '@/utils/passkeyPromptGuard';
 
 // ─── Passkey helpers (mirrors login-passcode.tsx) ────────────────────────────
 
@@ -38,11 +46,16 @@ const isPasskeyCancelledError = (err: any) => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function AuthorizeTransactionScreen() {
   const params = useLocalSearchParams();
-  const { transactionId, amount, type, recipient } = params;
+  const rawAmount = typeof params.amount === 'string' ? params.amount : '';
+  const rawType = typeof params.type === 'string' ? params.type : '';
+  const rawRecipient = typeof params.recipient === 'string' ? params.recipient : '';
+
+  // Sanitize URL params — strip anything that isn't alphanumeric/basic punctuation
+  const amount = rawAmount.replace(/[^0-9.]/g, '').slice(0, 20);
+  const type = rawType.replace(/[^a-zA-Z]/g, '').slice(0, 30);
+  const recipient = rawRecipient.replace(/[^a-zA-Z0-9@._\-]/g, '').slice(0, 100);
 
   const user = useAuthStore((s) => s.user);
   const isBiometricEnabled = useAuthStore((s) => s.isBiometricEnabled);
@@ -51,7 +64,7 @@ export default function AuthorizeTransactionScreen() {
   const [error, setError] = useState('');
   const [passkeyAvailable, setPasskeyAvailable] = useState(false);
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
-  const autoAttemptedRef = useRef(false);
+  const passkeyPromptScope = `authorize-transaction:${user?.id ?? user?.email ?? 'unknown'}`;
 
   const { mutate: verifyPasscode, isPending: isLoading } = useVerifyPasscode();
 
@@ -60,28 +73,41 @@ export default function AuthorizeTransactionScreen() {
     if (Passkey.isSupported() && user?.email) setPasskeyAvailable(true);
   }, [user?.email]);
 
-  // Auto-trigger passkey if biometrics are enabled
-  useEffect(() => {
-    if (!isBiometricEnabled || !passkeyAvailable || autoAttemptedRef.current) return;
-    autoAttemptedRef.current = true;
-    handlePasskeyAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isBiometricEnabled, passkeyAvailable]);
-
   const handlePasskeyAuth = useCallback(async () => {
     if (isPasskeyLoading || isLoading || !user?.email) return;
+
+    if (!canStartPasskeyPrompt(passkeyPromptScope, 'manual')) return;
+    if (!beginPasskeyPrompt()) return;
+
     setError('');
     setIsPasskeyLoading(true);
 
     try {
       const beginResponse = await authService.beginPasskeyLogin({ email: user.email });
       const passkeyRequest = normalizePasskeyGetRequest(beginResponse.options);
-      const assertion = await Passkey.get(passkeyRequest);
+      const assertion = await getNativePasskey(passkeyRequest);
 
-      await authService.finishPasskeyLogin({
+      const finishResponse = await authService.finishPasskeyLogin({
         sessionId: beginResponse.sessionId,
         response: { ...assertion, type: assertion.type || 'public-key' },
       });
+
+      const nowIso = new Date().toISOString();
+      const passcodeSessionToken = String(finishResponse.passcodeSessionToken || '').trim();
+      if (!passcodeSessionToken) {
+        throw new Error('Passkey verified but authorization session was not created');
+      }
+      const passcodeSessionExpiresAt = finishResponse.passcodeSessionExpiresAt
+        ? new Date(finishResponse.passcodeSessionExpiresAt).toISOString()
+        : new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      useAuthStore.setState({
+        lastActivityAt: nowIso,
+        passcodeSessionToken,
+        passcodeSessionExpiresAt,
+        csrfToken: finishResponse.csrfToken || useAuthStore.getState().csrfToken,
+      });
+      SessionManager.schedulePasscodeSessionExpiry(passcodeSessionExpiresAt);
+      markPasskeyPromptSuccess(passkeyPromptScope);
 
       // Passkey verified — proceed
       router.back();
@@ -92,9 +118,10 @@ export default function AuthorizeTransactionScreen() {
       }
       setError('Passkey failed. Enter your PIN to continue.');
     } finally {
+      endPasskeyPrompt();
       setIsPasskeyLoading(false);
     }
-  }, [isPasskeyLoading, isLoading, user?.email]);
+  }, [isPasskeyLoading, isLoading, passkeyPromptScope, user?.email]);
 
   const handlePasscodeSubmit = useCallback(
     (code: string) => {
@@ -152,7 +179,7 @@ export default function AuthorizeTransactionScreen() {
         </View>
 
         {/* Passkey button — shown when available and not auto-triggering */}
-        {passkeyAvailable && !isBiometricEnabled && (
+        {passkeyAvailable && (
           <View className="mt-8 px-6">
             <TouchableOpacity
               onPress={handlePasskeyAuth}

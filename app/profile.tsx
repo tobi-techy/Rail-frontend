@@ -6,10 +6,14 @@ import { Avatar } from '@rneui/base';
 import { usePortfolioOverview } from '@/api';
 import { ArrowDown, PlusIcon } from 'lucide-react-native';
 import { Button } from '../components/ui';
+import { useUIStore } from '@/stores';
+import { convertFromUsd, formatCurrencyAmount } from '@/utils/currency';
 
 const Profile = () => {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
+  const selectedCurrency = useUIStore((s) => s.currency);
+  const currencyRates = useUIStore((s) => s.currencyRates);
 
   // Fetch portfolio overview with automatic refetching
   const { data: portfolio, isError, error, refetch } = usePortfolioOverview();
@@ -27,7 +31,12 @@ const Profile = () => {
   // Format currency with proper decimals
   const formatCurrency = (value: string) => {
     const num = parseFloat(value);
-    return isNaN(num) ? '$0.00' : `$${num.toFixed(2)}`;
+    return isNaN(num)
+      ? formatCurrencyAmount(0, selectedCurrency)
+      : formatCurrencyAmount(
+          convertFromUsd(num, selectedCurrency, currencyRates),
+          selectedCurrency
+        );
   };
 
   // Format percentage with sign

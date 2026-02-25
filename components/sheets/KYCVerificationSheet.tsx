@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import {
   AlertTriangle,
@@ -8,9 +8,10 @@ import {
   FileText,
   RefreshCw,
 } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { Button } from '@/components/ui';
-import { type KYCStatusResponse } from '@/api/types/kyc';
-import { useKYCStatus } from '@/api/hooks/useKYC';
+import { type KYCStatusResponse, type KycStatus } from '@/api/types/kyc';
+import { useKYCStatus, useKycStatusPolling } from '@/api/hooks/useKYC';
 import { useAuthStore } from '@/stores/authStore';
 import {
   NavigableBottomSheet,
@@ -28,7 +29,6 @@ type ScreenStatusMode = 'not_started' | 'pending' | 'approved' | 'rejected';
 
 const resolveStatusMode = (status?: KYCStatusResponse): ScreenStatusMode => {
   const value = status?.status ?? 'not_started';
-
   if (value === 'approved') return 'approved';
   if (value === 'rejected' || value === 'expired') return 'rejected';
   if (value === 'processing' || (value === 'pending' && status?.has_submitted)) return 'pending';
@@ -46,22 +46,37 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
     return 'there';
   }, [user?.firstName, user?.fullName]);
 
+  // #7: Use polling with timeout recovery when pending
+  const [pollingTimedOut, setPollingTimedOut] = useState(false);
+  const [pollResetKey, setPollResetKey] = useState(0);
+  const isPending = resolveStatusMode(kycStatus) === 'pending';
+
+  const handleTerminal = useCallback((status: KycStatus) => {
+    setPollingTimedOut(false);
+  }, []);
+
+  const handleTimeout = useCallback(() => {
+    setPollingTimedOut(true);
+  }, []);
+
   const {
-    data: liveKycStatus,
+    data: polledStatus,
     refetch: refetchKycStatus,
     isRefetching: isRefetchingStatus,
-  } = useKYCStatus(visible);
+  } = useKycStatusPolling(visible && isPending, handleTerminal, {
+    onTimeout: handleTimeout,
+    resetKey: pollResetKey,
+  });
 
-  const status = liveKycStatus ?? kycStatus;
+  // Fallback to non-polling query when not pending
+  const { data: staticStatus } = useKYCStatus(visible && !isPending);
+
+  const status = polledStatus ?? staticStatus ?? kycStatus;
   const statusMode = resolveStatusMode(status);
 
   const navigation = useNavigableBottomSheet('intro');
   const { reset: resetNavigation } = navigation;
   const wasVisibleRef = useRef(false);
-
-  const resetFlow = useCallback(() => {
-    // Legacy state resets removed since we use Zustand & screens now
-  }, []);
 
   const getInitialScreen = useCallback(() => {
     if (statusMode === 'approved') return 'approved';
@@ -73,57 +88,39 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
     if (!visible) {
       wasVisibleRef.current = false;
       resetNavigation('intro');
-      resetFlow();
+      setPollingTimedOut(false);
       return;
     }
-
     if (!wasVisibleRef.current) {
       wasVisibleRef.current = true;
       resetNavigation(getInitialScreen());
     }
-  }, [visible, getInitialScreen, resetNavigation, resetFlow]);
+  }, [visible, getInitialScreen, resetNavigation]);
 
   useEffect(() => {
-    if (!visible) return;
-
-    if (statusMode === 'approved') {
-      resetNavigation('approved');
-      return;
-    }
+    if (visible && statusMode === 'approved') resetNavigation('approved');
   }, [visible, statusMode, resetNavigation]);
 
   const handleStart = useCallback(() => {
     onClose();
-    // Using simple setTimeout to ensure modal completes close animation cleanly
-    setTimeout(() => {
-      import('expo-router').then(({ router }) => router.push('/kyc'));
-    }, 100);
+    requestAnimationFrame(() => router.push('/kyc'));
   }, [onClose]);
 
   const handleCheckStatus = useCallback(async () => {
+    setPollingTimedOut(false);
+    setPollResetKey((k) => k + 1);
     const result = await refetchKycStatus();
     const nextMode = resolveStatusMode(result.data ?? status);
-
-    if (nextMode === 'approved') {
-      resetNavigation('approved');
-      return;
-    }
-
-    if (nextMode === 'rejected') {
-      resetNavigation('intro');
-    }
+    if (nextMode === 'approved') resetNavigation('approved');
+    else if (nextMode === 'rejected') resetNavigation('intro');
   }, [refetchKycStatus, status, resetNavigation]);
 
   const handleRetry = useCallback(() => {
     onClose();
-    setTimeout(() => {
-      import('expo-router').then(({ router }) => router.push('/kyc'));
-    }, 100);
+    requestAnimationFrame(() => router.push('/kyc'));
   }, [onClose]);
 
-  const closeSheet = useCallback(() => {
-    onClose();
-  }, [onClose]);
+  const closeSheet = useCallback(() => onClose(), [onClose]);
 
   const introTitle =
     statusMode === 'approved'
@@ -221,6 +218,16 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
               </View>
             )}
 
+            {/* #7: Polling timeout recovery */}
+            {statusMode === 'pending' && pollingTimedOut && (
+              <View className="mb-4 rounded-2xl bg-amber-50 px-4 py-3">
+                <Text className="font-body text-[13px] leading-5 text-amber-800">
+                  Verification is taking longer than usual. Tap &quot;Refresh status&quot; to check
+                  manually.
+                </Text>
+              </View>
+            )}
+
             {statusMode === 'approved' ? (
               <Button title="Close" onPress={closeSheet} />
             ) : statusMode === 'pending' ? (
@@ -236,7 +243,7 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
             ) : (
               <Button
                 title={statusMode === 'rejected' ? 'Retry verification' : 'Get started'}
-                onPress={handleStart}
+                onPress={statusMode === 'rejected' ? handleRetry : handleStart}
               />
             )}
           </View>

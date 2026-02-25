@@ -2,33 +2,24 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ChevronRight, X, Car, CreditCard, Home, Globe } from 'lucide-react-native';
+import { ChevronRight, X, Check } from 'lucide-react-native';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Button } from '@/components/ui';
 import { useKycStore } from '@/stores/kycStore';
-import { COUNTRY_LABELS, type Country } from '@/api/types/kyc';
-import type { KycDocumentType } from '@/components/sheets/CameraOverlay';
+import { COUNTRY_LABELS, COUNTRY_HELP_TEXT, type Country } from '@/api/types/kyc';
 
-const COUNTRIES: Country[] = ['USA', 'GBR', 'NGA'];
-
-const DOC_TYPES: { id: KycDocumentType; label: string; icon: React.ElementType }[] = [
-  { id: 'drivers_license', label: 'Driver license', icon: Car },
-  { id: 'id_card', label: 'ID card', icon: CreditCard },
-  { id: 'residence_permit', label: 'Residence permit', icon: Home },
-  { id: 'passport', label: 'Passport', icon: Globe },
+const COUNTRIES: { code: Country; flag: string }[] = [
+  { code: 'USA', flag: '🇺🇸' },
+  { code: 'GBR', flag: '🇬🇧' },
+  { code: 'NGA', flag: '🇳🇬' },
 ];
 
 export default function KycDetailsScreen() {
-  const { country, setCountry, setDocumentType } = useKycStore();
+  const { country, setCountry } = useKycStore();
   const [showCountryPicker, setShowCountryPicker] = useState(false);
 
-  const handleSelectDoc = (docType: KycDocumentType) => {
-    setDocumentType(docType);
-    router.push('/kyc/documents');
-  };
-
-  const selectedCountryLabel = COUNTRY_LABELS[country] || 'Select country';
-  const getCountryFlag = (c: Country) => (c === 'USA' ? '🇺🇸' : c === 'GBR' ? '🇬🇧' : '🇳🇬');
+  const current = COUNTRIES.find((c) => c.code === country) ?? COUNTRIES[0];
 
   return (
     <ErrorBoundary>
@@ -46,51 +37,57 @@ export default function KycDetailsScreen() {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 44 }}>
-          <Text className="mb-6 font-display text-[22px] leading-7 text-gray-900">
-            Select country where your ID document was issued.
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 44, flex: 1 }}>
+          <Text className="mb-2 font-display text-[28px] leading-9 text-gray-900">
+            Verify your identity
+          </Text>
+          <Text className="mb-10 font-body text-[15px] leading-6 text-gray-500">
+            Select the country that issued your ID document.
           </Text>
 
           <Pressable
             onPress={() => setShowCountryPicker(true)}
-            className="mb-10 flex-row items-center justify-between rounded-xl bg-slate-50 p-4"
+            className="flex-row items-center justify-between rounded-2xl border border-gray-200 bg-white px-5 py-4"
             accessibilityRole="button">
             <View className="flex-row items-center gap-3">
-              <Text className="text-xl">{getCountryFlag(country)}</Text>
-              <Text className="font-subtitle text-[16px] text-gray-900">
-                {selectedCountryLabel}
-              </Text>
+              <Text className="text-2xl">{current.flag}</Text>
+              <View>
+                <Text className="font-subtitle text-[16px] text-gray-900">
+                  {COUNTRY_LABELS[country]}
+                </Text>
+                <Text className="mt-0.5 font-body text-[12px] text-gray-400">
+                  {COUNTRY_HELP_TEXT[country]}
+                </Text>
+              </View>
             </View>
             <ChevronRight size={20} color="#9CA3AF" />
           </Pressable>
 
-          <Text className="mb-4 font-display text-[20px] text-gray-900">
-            Select your document type
-          </Text>
-
-          <View className="gap-y-3">
-            {DOC_TYPES.map((doc) => {
-              const Icon = doc.icon;
-              return (
-                <Pressable
-                  key={doc.id}
-                  onPress={() => handleSelectDoc(doc.id)}
-                  className="flex-row items-center justify-between rounded-xl bg-slate-50 p-4 active:bg-slate-100"
-                  accessibilityRole="button">
-                  <View className="flex-row items-center gap-3">
-                    <Icon size={22} color="#4B5563" strokeWidth={1.5} />
-                    <Text className="font-subtitle text-[16px] text-gray-900">{doc.label}</Text>
-                  </View>
-                  <ChevronRight size={20} color="#9CA3AF" />
-                </Pressable>
-              );
-            })}
+          <View className="mt-8 rounded-2xl bg-gray-50 px-5 py-4">
+            <Text className="mb-3 font-subtitle text-[13px] text-gray-700">
+              What you&apos;ll need
+            </Text>
+            {[
+              'A valid government-issued ID',
+              'Your tax identification number',
+              'About 2 minutes',
+            ].map((item) => (
+              <View key={item} className="mb-2 flex-row items-center gap-2.5">
+                <View className="size-5 items-center justify-center rounded-full bg-gray-900">
+                  <Check size={12} color="#fff" strokeWidth={3} />
+                </View>
+                <Text className="font-body text-[14px] text-gray-600">{item}</Text>
+              </View>
+            ))}
           </View>
 
-          <View className="mt-60 items-center px-4">
-            <Text className="text-center font-body text-[13px] leading-5 text-gray-500">
-              If you can&apos;t find your document type or country of issue, contact{' '}
-              <Text className="font-subtitle text-primary">support</Text>.
+          <View className="flex-1" />
+
+          <View className="pb-4">
+            <Button title="Continue" onPress={() => router.push('/kyc/documents')} />
+            <Text className="mt-4 text-center font-body text-[12px] leading-5 text-gray-400">
+              Can&apos;t find your country?{' '}
+              <Text className="font-subtitle text-primary">Contact support</Text>
             </Text>
           </View>
         </ScrollView>
@@ -110,21 +107,25 @@ export default function KycDetailsScreen() {
             <ScrollView>
               {COUNTRIES.map((c) => (
                 <Pressable
-                  key={c}
+                  key={c.code}
                   onPress={() => {
-                    setCountry(c);
+                    setCountry(c.code);
                     setShowCountryPicker(false);
                   }}
                   className={`flex-row items-center justify-between border-b border-gray-50 px-6 py-4 ${
-                    country === c ? 'bg-slate-50' : 'bg-white'
+                    country === c.code ? 'bg-slate-50' : 'bg-white'
                   }`}>
                   <View className="flex-row items-center gap-3">
-                    <Text className="text-xl">{getCountryFlag(c)}</Text>
+                    <Text className="text-xl">{c.flag}</Text>
                     <Text className="font-subtitle text-[16px] text-gray-900">
-                      {COUNTRY_LABELS[c]}
+                      {COUNTRY_LABELS[c.code]}
                     </Text>
                   </View>
-                  {country === c && <View className="size-2.5 rounded-full bg-primary" />}
+                  {country === c.code && (
+                    <View className="size-6 items-center justify-center rounded-full bg-gray-900">
+                      <Check size={14} color="#fff" strokeWidth={3} />
+                    </View>
+                  )}
                 </Pressable>
               ))}
             </ScrollView>

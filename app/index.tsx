@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { View } from 'react-native';
-import { Redirect } from 'expo-router';
+import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
+import { SessionManager } from '@/utils/sessionManager';
 
 /**
  * Root index — waits for store hydration, then routes:
@@ -13,6 +14,8 @@ export default function IndexScreen() {
   const [hydrated, setHydrated] = useState(useAuthStore.persist.hasHydrated());
   const user = useAuthStore((s) => s.user);
   const hasPasscode = useAuthStore((s) => s.hasPasscode);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const accessToken = useAuthStore((s) => s.accessToken);
 
   useEffect(() => {
     if (!hydrated) {
@@ -20,18 +23,27 @@ export default function IndexScreen() {
     }
   }, [hydrated]);
 
-  if (!hydrated) {
-    // Show splash color while store hydrates to avoid white flash
-    return <View style={{ flex: 1, backgroundColor: '#FF2E01' }} />;
-  }
+  const hasValidAuthSession = Boolean(isAuthenticated && accessToken);
+  const hasValidPasscodeSession = hasValidAuthSession
+    ? !SessionManager.isPasscodeSessionExpired()
+    : false;
 
-  if (user && hasPasscode) {
-    return <Redirect href={'/login-passcode' as any} />;
-  }
+  const targetRoute = !hydrated
+    ? null
+    : hasValidAuthSession && (!hasPasscode || hasValidPasscodeSession)
+      ? '/(tabs)'
+      : user && hasPasscode
+        ? '/login-passcode'
+        : user && !hasPasscode
+          ? '/(auth)/signin'
+          : '/intro';
 
-  if (user && !hasPasscode) {
-    return <Redirect href={'/(auth)/signin' as any} />;
-  }
+  useEffect(() => {
+    if (targetRoute) {
+      router.replace(targetRoute as any);
+    }
+  }, [targetRoute]);
 
-  return <Redirect href={'/intro' as any} />;
+  // Keep an orange surface while startup routing resolves.
+  return <View style={{ flex: 1, backgroundColor: '#FF2E01' }} />;
 }

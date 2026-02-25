@@ -1,11 +1,7 @@
 import React, { useRef, useCallback } from 'react';
 import { ScrollView, View, Text, TouchableOpacity, Dimensions } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { useHaptics } from '@/hooks/useHaptics';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const ITEM_WIDTH = 56;
@@ -34,8 +30,12 @@ function MonthDot({
   return (
     <TouchableOpacity
       onPress={onPress}
-      onPressIn={() => { scale.value = withSpring(0.88, { damping: 15, stiffness: 400 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 12, stiffness: 300 }); }}
+      onPressIn={() => {
+        scale.value = withSpring(0.88, { damping: 15, stiffness: 400 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 12, stiffness: 300 });
+      }}
       activeOpacity={1}
       style={{ width: ITEM_WIDTH, alignItems: 'center', paddingVertical: 8 }}>
       <Animated.View style={animStyle}>
@@ -79,17 +79,18 @@ function MonthDot({
 export function MonthScrubber({ selectedIndex, onSelect, activeIndices = [] }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const activeSet = new Set(activeIndices);
+  const { selection } = useHaptics();
 
   const handleSelect = useCallback(
     (index: number) => {
-      Haptics.selectionAsync();
+      selection();
       onSelect(index);
       // Scroll to keep selected item centered
       const screenWidth = Dimensions.get('window').width;
       const offset = index * ITEM_WIDTH - screenWidth / 2 + ITEM_WIDTH / 2;
       scrollRef.current?.scrollTo({ x: Math.max(0, offset), animated: true });
     },
-    [onSelect]
+    [onSelect, selection]
   );
 
   return (

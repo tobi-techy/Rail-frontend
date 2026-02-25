@@ -11,11 +11,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft, Plus, Trash2, KeyRound } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { BottomSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
 import { usePasskeys, useRegisterPasskey, useDeletePasskey } from '@/api/hooks';
 import type { PasskeyCredential } from '@/api/types';
+import { useHaptics } from '@/hooks/useHaptics';
 
 const formatDate = (iso: string | null) => {
   if (!iso) return 'Never';
@@ -29,9 +29,11 @@ const formatDate = (iso: string | null) => {
 function PasskeyRow({
   credential,
   onDelete,
+  onPressDelete,
 }: {
   credential: PasskeyCredential;
   onDelete: (id: string, name: string) => void;
+  onPressDelete: () => void;
 }) {
   return (
     <View className="bg-surface-secondary mb-3 flex-row items-center rounded-2xl border border-surface p-4">
@@ -48,7 +50,7 @@ function PasskeyRow({
       </View>
       <TouchableOpacity
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onPressDelete();
           onDelete(credential.id, credential.name || 'Passkey');
         }}
         className="ml-2 h-9 w-9 items-center justify-center rounded-full bg-red-50"
@@ -62,22 +64,43 @@ function PasskeyRow({
 export default function PasskeySettingsScreen() {
   const [showRegisterSheet, setShowRegisterSheet] = useState(false);
   const [passkeyName, setPasskeyName] = useState('');
+  const { impact, notification } = useHaptics();
 
   const { data, isLoading, isError } = usePasskeys();
   const credentials = data ?? [];
   const { mutateAsync: registerPasskey, isPending: isRegistering } = useRegisterPasskey();
   const { mutateAsync: deletePasskey, isPending: isDeleting } = useDeletePasskey();
 
+  const getRegistrationErrorMessage = (err: any) => {
+    const code = String(err?.code || err?.error || '').toUpperCase();
+    const message = String(err?.message || '').toLowerCase();
+    const codeSuffix = code ? ` (code: ${code})` : '';
+
+    if (code === 'NOCREDENTIALS' || message.includes('no credentials')) {
+      return `iOS did not return a passkey credential. Make sure iCloud Keychain is enabled, then reinstall the app and try again.${codeSuffix}`;
+    }
+
+    if (code === 'WEBAUTHN_UNAVAILABLE' || code === 'WEBAUTHN_SESSION_UNAVAILABLE') {
+      return `Passkey service is unavailable on server. Check backend WebAuthn/Redis configuration.${codeSuffix}`;
+    }
+
+    if (code === 'INVALID_SESSION') {
+      return `Passkey session expired. Please try registration again.${codeSuffix}`;
+    }
+
+    return `${err?.message || 'Could not register passkey. Try again.'}${codeSuffix}`;
+  };
+
   const handleRegister = async () => {
     try {
       await registerPasskey(passkeyName.trim() || undefined);
       setShowRegisterSheet(false);
       setPasskeyName('');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      notification();
     } catch (err: any) {
       // User cancelled — no alert needed
       if (err?.name === 'NotAllowedError' || err?.message?.includes('cancel')) return;
-      Alert.alert('Registration Failed', err?.message || 'Could not register passkey. Try again.');
+      Alert.alert('Registration Failed', getRegistrationErrorMessage(err));
     }
   };
 
@@ -90,7 +113,7 @@ export default function PasskeySettingsScreen() {
         onPress: async () => {
           try {
             await deletePasskey(id);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            notification();
           } catch (err: any) {
             Alert.alert('Error', err?.message || 'Failed to remove passkey.');
           }
@@ -162,7 +185,12 @@ export default function PasskeySettingsScreen() {
 
         {/* Credential list */}
         {credentials.map((cred) => (
-          <PasskeyRow key={cred.id} credential={cred} onDelete={handleDelete} />
+          <PasskeyRow
+            key={cred.id}
+            credential={cred}
+            onDelete={handleDelete}
+            onPressDelete={() => impact()}
+          />
         ))}
 
         {/* Add button when list is non-empty */}

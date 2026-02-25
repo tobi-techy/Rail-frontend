@@ -4,6 +4,7 @@ import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-e
 import { router, useNavigation } from 'expo-router';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { StashCard } from '@/components/molecules/StashCard';
+import { FeatureBanner } from '@/components/molecules/FeatureBanner';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -15,11 +16,11 @@ import {
   Wallet,
 } from 'lucide-react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
-import { FeedbackSheet } from '@/components/sheets/FeedbackSheet';
+import Gleap from 'react-native-gleapsdk';
 import type { Transaction } from '@/components/molecules/TransactionItem';
 import { useStation, useKYCStatus } from '@/api/hooks';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
-import type { ActivityItem, Deposit, Withdrawal } from '@/api/types';
+import type { Deposit, Withdrawal } from '@/api/types';
 import { Button } from '../../components/ui';
 import {
   InvestmentDisclaimerSheet,
@@ -31,16 +32,19 @@ import {
 } from '@/components/sheets';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { useAuthStore } from '@/stores/authStore';
+import { useUIStore } from '@/stores';
+import type { Currency } from '@/stores/uiStore';
 import Avatar, { genConfig } from '@zamplyy/react-native-nice-avatar';
-import { PhantomIcon, SolflareIcon, SolanaIcon, VisaLogo } from '@/assets/svg';
-import { EarnIcon, AllocationIcon, CardIcon } from '@/assets/svg/filled';
+import { PhantomIcon, SolflareIcon, SolanaIcon } from '@/assets/svg';
+import { EarnIcon, AllocationIcon } from '@/assets/svg/filled';
 import { invalidateQueries } from '@/api/queryClient';
+import { convertFromUsd, formatCurrencyAmount, type FxRates } from '@/utils/currency';
 
 // ── Helpers ──────────────────────────────────────────────
 
-const fmt = (value: string | undefined, fallback = '$0.00') => {
+const fmt = (value: string | undefined, currency: Currency, rates: FxRates, fallback = '---') => {
   const n = parseFloat(value ?? '');
-  return isNaN(n) ? fallback : `$${n.toFixed(2)}`;
+  return isNaN(n) ? fallback : formatCurrencyAmount(convertFromUsd(n, currency, rates), currency);
 };
 
 const fmtPct = (value: string | undefined) => {
@@ -49,31 +53,19 @@ const fmtPct = (value: string | undefined) => {
   return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
 };
 
-const splitDollars = (value: string) => {
+const splitDollars = (value: string, currency: Currency, rates: FxRates) => {
   const n = parseFloat(value ?? '');
-  if (isNaN(n)) return { dollars: '$0', cents: '.00' };
-  const [d, c] = n.toFixed(2).split('.');
-  return { dollars: `$${d}`, cents: `.${c}` };
+  if (isNaN(n)) return { dollars: formatCurrencyAmount(0, currency), cents: '' };
+  const formatted = formatCurrencyAmount(convertFromUsd(n, currency, rates), currency);
+  const match = formatted.match(/^(.+?)([.,]\d{2})$/);
+  if (!match) return { dollars: formatted, cents: '' };
+  return { dollars: match[1], cents: match[2] };
 };
 
 const parseMoney = (value: string | undefined) => {
   const n = parseFloat(value ?? '');
   return Number.isFinite(n) ? n : 0;
 };
-
-const VALID_ACTIVITY_TYPES = new Set(['send', 'receive', 'swap', 'deposit', 'withdraw']);
-
-const mapActivity = (items: ActivityItem[], currency?: string): Transaction[] =>
-  items.map((a) => ({
-    id: a.id,
-    type: VALID_ACTIVITY_TYPES.has(a.type) ? (a.type as Transaction['type']) : 'deposit',
-    title: a.description,
-    subtitle: a.type,
-    amount: parseFloat(a.amount) || 0,
-    currency: currency?.toUpperCase(),
-    status: 'completed' as const,
-    createdAt: new Date(a.created_at),
-  }));
 
 type TransactionStatus = 'completed' | 'pending' | 'failed';
 type WithdrawalListResponse = Withdrawal[] | { withdrawals?: Withdrawal[] } | undefined;
@@ -181,7 +173,6 @@ const Dashboard = () => {
   const [showCryptoReceive, setShowCryptoReceive] = useState(false);
   const [showKYCSheet, setShowKYCSheet] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const [showFeedback, setShowFeedback] = useState(false);
   const receiveSheetNavigation = useNavigableBottomSheet('receive-main');
   const sendSheetNavigation = useNavigableBottomSheet('send-main');
   const { navigateTo: navigateReceiveTo, reset: resetReceiveSheet } = receiveSheetNavigation;
@@ -205,7 +196,7 @@ const Dashboard = () => {
   };
 
   // Station data
-  const { data: station, refetch } = useStation();
+  const { data: station, refetch, isPending: isStationPending } = useStation();
   const deposits = useDeposits(10);
   const withdrawals = useWithdrawals(10);
 
@@ -273,6 +264,9 @@ const Dashboard = () => {
         refetch(),
         deposits.refetch(),
         withdrawals.refetch(),
+        invalidateQueries.station(),
+        invalidateQueries.funding(),
+        invalidateQueries.allocation(),
         invalidateQueries.wallet(),
       ]);
     } finally {
@@ -280,10 +274,27 @@ const Dashboard = () => {
     }
   }, [refetch, deposits, withdrawals]);
 
-  const user = useAuthStore((s) => s.user);
-  const avatarName =
-    [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'Rail User';
-  const avatarConfig = useMemo(() => genConfig(avatarName), [avatarName]);
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      void refetch();
+      void deposits.refetch();
+      void withdrawals.refetch();
+      void invalidateQueries.station();
+      void invalidateQueries.wallet();
+    });
+    return unsubscribe;
+  }, [navigation, refetch, deposits, withdrawals]);
+
+  const userFirstName = useAuthStore((s) => s.user?.firstName);
+  const userLastName = useAuthStore((s) => s.user?.lastName);
+  const userEmail = useAuthStore((s) => s.user?.email);
+  const selectedCurrency = useUIStore((s) => s.currency);
+  const currencyRates = useUIStore((s) => s.currencyRates);
+  const avatarName = useMemo(
+    () => [userFirstName, userLastName].filter(Boolean).join(' ') || userEmail || 'Rail User',
+    [userFirstName, userLastName, userEmail]
+  );
+  const avatarConfig = useMemo(() => genConfig({}), [avatarName]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -296,7 +307,7 @@ const Dashboard = () => {
       ),
       headerRight: () => (
         <View className="flex-row items-center gap-x-4 pr-md">
-          <Pressable onPress={() => setShowFeedback(true)} hitSlop={8}>
+          <Pressable onPress={() => Gleap.open()} hitSlop={8}>
             <MessageCircle size={22} color="#111" strokeWidth={1.8} />
           </Pressable>
           <Pressable hitSlop={8}>
@@ -307,16 +318,23 @@ const Dashboard = () => {
       title: '',
       headerStyle: { backgroundColor: 'transparent' },
     });
-  }, [navigation, avatarName, setShowFeedback]);
+  }, [navigation, avatarConfig]);
 
   // Derived display values
-  const balance = fmt(station?.total_balance, '$00.00');
-  const monthChange = fmtPct(station?.balance_trends?.spend?.month_change);
-  const spend = splitDollars(station?.spend_balance ?? '0');
-  const investTotal = parseMoney(station?.invest_balance);
-  const brokerCash = parseMoney(station?.broker_cash);
+  const hasStationData = Boolean(station?.total_balance) && !isStationPending;
+  const balance = hasStationData
+    ? fmt(station?.total_balance, selectedCurrency, currencyRates)
+    : '---';
+  const monthChange = hasStationData ? fmtPct(station?.balance_trends?.spend?.month_change) : '---';
+  const spend = hasStationData
+    ? splitDollars(station?.spend_balance ?? '0', selectedCurrency, currencyRates)
+    : { dollars: '---', cents: '' };
+  const investTotal = hasStationData ? parseMoney(station?.invest_balance) : 0;
+  const brokerCash = hasStationData ? parseMoney(station?.broker_cash) : 0;
   const stashOnly = Math.max(0, investTotal - brokerCash);
-  const stash = splitDollars(stashOnly.toFixed(2));
+  const stash = hasStationData
+    ? splitDollars(stashOnly.toFixed(2), selectedCurrency, currencyRates)
+    : { dollars: '---', cents: '' };
   const transactions = useMemo(() => {
     const rows: Transaction[] = [
       ...(deposits.data?.deposits ?? []).map(depositToTx),
@@ -553,6 +571,12 @@ const Dashboard = () => {
           </View>*/}
         </View>
 
+        {/* Feature banners */}
+        <FeatureBanner
+          kycApproved={kycStatus?.status === 'approved'}
+          onKYCPress={() => setShowKYCSheet(true)}
+        />
+
         {/* Transactions */}
         <View className="py-5">
           {transactions.length === 0 ? (
@@ -605,7 +629,6 @@ const Dashboard = () => {
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
       />
-      <FeedbackSheet visible={showFeedback} onClose={() => setShowFeedback(false)} />
     </ScrollView>
   );
 };

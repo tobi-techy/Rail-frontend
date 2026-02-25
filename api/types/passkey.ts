@@ -25,7 +25,8 @@ export interface FinishPasskeyRegistrationRequest {
 }
 
 export interface FinishPasskeyRegistrationResponse {
-  credential: PasskeyCredential;
+  message: string;
+  name: string;
 }
 
 export interface DeletePasskeyResponse {

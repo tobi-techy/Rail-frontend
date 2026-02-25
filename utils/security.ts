@@ -63,17 +63,11 @@ export const maskSensitiveData = (data: Record<string, unknown>): Record<string,
 };
 
 /**
- * Validate that a string doesn't contain potential injection attacks
+ * Validate that a string doesn't contain potential injection attacks.
+ * Used at form submission sites to sanitize user input.
  */
 export const isSafeInput = (input: string): boolean => {
-  const dangerousPatterns = [
-    /<script/i,
-    /javascript:/i,
-    /on\w+=/i,
-    /data:/i,
-    /vbscript:/i,
-  ];
-
+  const dangerousPatterns = [/<script/i, /javascript:/i, /on\w+=/i, /data:/i, /vbscript:/i];
   return !dangerousPatterns.some((pattern) => pattern.test(input));
 };
 

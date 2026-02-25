@@ -1,6 +1,14 @@
 import { router } from 'expo-router';
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { View, Text, FlatList, StatusBar, ViewToken, useWindowDimensions } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  ViewToken,
+  useWindowDimensions,
+  Platform,
+  StatusBar,
+} from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { onBoard1, onBoard2, onBoard3, onBoard4 } from '../assets/images';
 import { AppleLogo } from '../assets/svg';
@@ -70,10 +78,21 @@ const VideoSlide = memo(function VideoSlide({
   height: number;
   topInset: number;
 }) {
+  const [firstFrameRendered, setFirstFrameRendered] = useState(false);
   const player = useVideoPlayer(item.video, (p) => {
     p.loop = true;
     p.muted = true;
   });
+
+  useEffect(() => {
+    setFirstFrameRendered(false);
+  }, [item.key]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const fallback = setTimeout(() => setFirstFrameRendered(true), 1500);
+    return () => clearTimeout(fallback);
+  }, [isActive, item.key]);
 
   // Play/pause based on visibility
   useEffect(() => {
@@ -92,7 +111,26 @@ const VideoSlide = memo(function VideoSlide({
         style={{ width, height: height * 0.75, position: 'absolute', bottom: 0 }}
         contentFit="cover"
         nativeControls={false}
+        surfaceType={Platform.OS === 'android' ? 'textureView' : undefined}
+        onFirstFrameRender={() => setFirstFrameRendered(true)}
+        useExoShutter={false}
       />
+
+      {!firstFrameRendered && (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width,
+            height: height * 0.75,
+            backgroundColor: '#000000',
+            zIndex: 5,
+          }}
+        />
+      )}
 
       {/* Text content — pinned to top with safe area */}
       <View className="z-10 w-full px-5" style={{ paddingTop: topInset + 16 }}>
@@ -134,6 +172,7 @@ const IndicatorBar = memo(function IndicatorBar({
 
 export default function App() {
   const { width, height } = useWindowDimensions();
+  const isCompactWidth = width < 380;
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<OnboardingSlide>>(null);
@@ -193,7 +232,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <View className="flex-1 bg-black">
-        <StatusBar barStyle="light-content" />
+        <StatusBar hidden />
 
         <FlatList
           ref={flatListRef}
@@ -211,7 +250,7 @@ export default function App() {
           initialNumToRender={1}
           maxToRenderPerBatch={1}
           windowSize={3}
-          removeClippedSubviews
+          removeClippedSubviews={false}
         />
 
         {/*<ProgressIndicator currentIndex={currentIndex} progress={progress} />*/}
@@ -219,11 +258,17 @@ export default function App() {
         <View
           className="absolute left-1 right-1"
           style={{ bottom: Math.max(insets.bottom, 16) + 12 }}>
-          <View className="flex-row gap-x-2">
+          <View
+            style={{
+              flexDirection: isCompactWidth ? 'column' : 'row',
+              rowGap: isCompactWidth ? 10 : 0,
+              columnGap: isCompactWidth ? 0 : 8,
+            }}>
             <Button
               title="Sign Up with Apple"
               leftIcon={<AppleLogo width={24} height={24} />}
               size="large"
+              flex={!isCompactWidth}
               onPress={() => {
                 appleSignIn(undefined, {
                   onSuccess: (resp) => {
@@ -240,6 +285,7 @@ export default function App() {
             <Button
               title="Continue with Mail"
               size="large"
+              flex={!isCompactWidth}
               onPress={() => router.push(ROUTES.AUTH.SIGNUP as any)}
               variant="orange"
             />

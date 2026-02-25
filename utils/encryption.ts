@@ -1,46 +1,84 @@
 import CryptoJS from 'crypto-js';
+import * as SecureStore from 'expo-secure-store';
+import * as ExpoCrypto from 'expo-crypto';
 import { logger } from '../lib/logger';
 
-const ENCRYPTION_KEY = process.env.EXPO_PUBLIC_ENCRYPTION_KEY;
+const SECURE_STORE_KEY = 'rail_encryption_key';
+// Fixed salt — not secret, just ensures the PBKDF2 output is domain-separated
+const PBKDF2_SALT = CryptoJS.enc.Hex.parse('7261696c6d6f6e657961707076310000');
+const PBKDF2_ITERATIONS = 10000;
+const KEY_SIZE = 256 / 32; // 256-bit key
 
-if (!ENCRYPTION_KEY && !__DEV__) {
-  logger.warn(
-    'WARNING: EXPO_PUBLIC_ENCRYPTION_KEY environment variable not configured in production. ' +
-      'Encryption will not work properly. Generate a secure 256-bit key and add it to your environment variables.',
-    {
-      component: 'Encryption',
-      action: 'missing-encryption-key',
-    }
-  );
+let _cachedKey: CryptoJS.lib.WordArray | null = null;
+
+function deriveKey(rawKey: string): CryptoJS.lib.WordArray {
+  return CryptoJS.PBKDF2(rawKey, PBKDF2_SALT, {
+    keySize: KEY_SIZE,
+    iterations: PBKDF2_ITERATIONS,
+    hasher: CryptoJS.algo.SHA256,
+  });
 }
 
-const getEncryptionKey = (): string => {
-  if (ENCRYPTION_KEY) return ENCRYPTION_KEY;
-  if (__DEV__) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    const randomValues = new Uint32Array(32);
-    crypto.getRandomValues(randomValues);
-    for (let i = 0; i < 32; i++) {
-      result += chars[randomValues[i] % chars.length];
+/**
+ * Initialize the encryption key from SecureStore.
+ * Generates a new random key on first launch and persists it.
+ * Must be called once at app startup (before any encrypt/decrypt calls).
+ */
+export async function initEncryption(): Promise<void> {
+  if (_cachedKey) return;
+
+  try {
+    let rawKey = await SecureStore.getItemAsync(SECURE_STORE_KEY);
+    if (!rawKey) {
+      rawKey = ExpoCrypto.getRandomBytes(32).reduce(
+        (hex, b) => hex + b.toString(16).padStart(2, '0'),
+        ''
+      );
+      await SecureStore.setItemAsync(SECURE_STORE_KEY, rawKey);
+      logger.debug('[Encryption] Generated and stored new device-bound key', {
+        component: 'Encryption',
+        action: 'key-generated',
+      });
     }
-    logger.warn('[Encryption] Using generated development key', {
+    _cachedKey = deriveKey(rawKey);
+  } catch (err) {
+    logger.error('[Encryption] Failed to init encryption key from SecureStore', {
       component: 'Encryption',
-      action: 'generated-dev-key',
+      action: 'init-failed',
+      error: err instanceof Error ? err.message : String(err),
     });
-    return result;
+    if (__DEV__) {
+      const bytes = new Uint8Array(32);
+      crypto.getRandomValues(bytes);
+      const rawKey = Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      _cachedKey = deriveKey(rawKey);
+      logger.warn('[Encryption] Using ephemeral dev fallback key', {
+        component: 'Encryption',
+        action: 'dev-fallback-key',
+      });
+    } else {
+      throw err;
+    }
   }
-  throw new Error('Encryption key not configured');
-};
+}
+
+function getKey(): CryptoJS.lib.WordArray {
+  if (!_cachedKey) {
+    throw new Error('[Encryption] Key not initialized. Call initEncryption() at app startup.');
+  }
+  return _cachedKey;
+}
 
 export const encryptData = (data: string): string => {
   if (!data) throw new Error('Data to encrypt cannot be empty');
-  return CryptoJS.AES.encrypt(data, getEncryptionKey()).toString();
+  return CryptoJS.AES.encrypt(data, getKey()).toString();
 };
 
 export const decryptData = (encryptedData: string): string => {
   if (!encryptedData) throw new Error('Encrypted data cannot be empty');
-  const bytes = CryptoJS.AES.decrypt(encryptedData, getEncryptionKey());
+  const bytes = CryptoJS.AES.decrypt(encryptedData, getKey());
   const decrypted = bytes.toString(CryptoJS.enc.Utf8);
   if (!decrypted) throw new Error('Failed to decrypt data');
   return decrypted;

@@ -12,6 +12,13 @@ import { SessionManager } from '@/utils/sessionManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { APP_VERSION } from '@/utils/appVersion';
+import { getNativePasskey } from '@/utils/passkeyNative';
+import {
+  beginPasskeyPrompt,
+  canStartPasskeyPrompt,
+  endPasskeyPrompt,
+  markPasskeyPromptSuccess,
+} from '@/utils/passkeyPromptGuard';
 
 type ProfileNamePayload = {
   firstName?: string;
@@ -98,7 +105,6 @@ export default function LoginPasscodeScreen() {
   const updateUser = useAuthStore((state) => state.updateUser);
   const isBiometricEnabled = useAuthStore((state) => state.isBiometricEnabled);
   const profileFetchAttemptedRef = useRef(false);
-  const passkeyAutoAttemptedRef = useRef(false);
   const combinedStoredFullName = [safeName(user?.firstName), safeName(user?.lastName)]
     .filter(Boolean)
     .join(' ')
@@ -111,6 +117,7 @@ export default function LoginPasscodeScreen() {
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
   const [lockoutSecondsRemaining, setLockoutSecondsRemaining] = useState(0);
+  const passkeyPromptScope = `login-passcode:${user?.id || safeName(user?.email) || 'unknown'}`;
 
   const { mutate: verifyPasscode, isPending: isLoading } = useVerifyPasscode();
   const { showError, showWarning } = useFeedbackPopup();
@@ -177,13 +184,21 @@ export default function LoginPasscodeScreen() {
       return;
     }
 
+    if (!canStartPasskeyPrompt(passkeyPromptScope, 'manual')) {
+      return;
+    }
+
+    if (!beginPasskeyPrompt()) {
+      return;
+    }
+
     setError('');
     setIsPasskeyLoading(true);
 
     try {
       const beginResponse = await authService.beginPasskeyLogin({ email });
       const passkeyRequest = normalizePasskeyGetRequest(beginResponse.options);
-      const assertion = await Passkey.get(passkeyRequest);
+      const assertion = await getNativePasskey(passkeyRequest);
 
       const finishResponse = await authService.finishPasskeyLogin({
         sessionId: beginResponse.sessionId,
@@ -194,26 +209,33 @@ export default function LoginPasscodeScreen() {
       });
 
       const nowIso = new Date().toISOString();
+      const passcodeSessionToken = String(finishResponse.passcodeSessionToken || '').trim();
       const tokenExpiresAt = finishResponse.expiresAt
         ? new Date(finishResponse.expiresAt).toISOString()
         : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      const passcodeSessionExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      const passcodeSessionExpiresAt = finishResponse.passcodeSessionExpiresAt
+        ? new Date(finishResponse.passcodeSessionExpiresAt).toISOString()
+        : new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
       useAuthStore.setState({
         user: finishResponse.user,
         accessToken: finishResponse.accessToken,
         refreshToken: finishResponse.refreshToken,
+        csrfToken: finishResponse.csrfToken || useAuthStore.getState().csrfToken,
         isAuthenticated: true,
         pendingVerificationEmail: null,
         onboardingStatus: finishResponse.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,
         tokenExpiresAt,
-        passcodeSessionToken: 'passkey-login',
+        passcodeSessionToken: passcodeSessionToken || undefined,
         passcodeSessionExpiresAt,
       });
 
-      SessionManager.schedulePasscodeSessionExpiry(passcodeSessionExpiresAt);
+      if (passcodeSessionToken) {
+        SessionManager.schedulePasscodeSessionExpiry(passcodeSessionExpiresAt);
+      }
+      markPasskeyPromptSuccess(passkeyPromptScope);
       if (!useAuthStore.getState().isBiometricEnabled) {
         useAuthStore.getState().enableBiometric();
       }
@@ -240,24 +262,10 @@ export default function LoginPasscodeScreen() {
         showError('Passkey Sign-in Failed', fallbackMessage);
       }
     } finally {
+      endPasskeyPrompt();
       setIsPasskeyLoading(false);
     }
-  }, [isPasskeyLoading, isLoading, showError, showWarning, user?.email]);
-
-  // Auto-trigger passkey on mount when user opted in and passkey is supported.
-  useEffect(() => {
-    if (!isBiometricEnabled || !passkeyAvailable) return;
-    if (passkeyAutoAttemptedRef.current) return;
-
-    passkeyAutoAttemptedRef.current = true;
-    handlePasskeyAuth();
-  }, [isBiometricEnabled, passkeyAvailable, handlePasskeyAuth]);
-
-  useEffect(() => {
-    if (passkeyAvailable) {
-      passkeyAutoAttemptedRef.current = false;
-    }
-  }, [passkeyAvailable, user?.id]);
+  }, [isPasskeyLoading, isLoading, passkeyPromptScope, showError, showWarning, user?.email]);
 
   const handlePasscodeSubmit = useCallback(
     (code: string) => {

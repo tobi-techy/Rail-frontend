@@ -16,6 +16,7 @@ import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui';
 import { KYCVerificationSheet } from '@/components/sheets';
+import { useUIStore } from '@/stores';
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   const { showInfo } = useFeedbackPopup();
@@ -42,6 +43,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 export default function VirtualAccountScreen() {
   const [showKYCSheet, setShowKYCSheet] = useState(false);
   const { data: kycStatus, refetch, isRefetching, isLoading: isKycLoading } = useKYCStatus();
+  const selectedCurrency = useUIStore((s) => s.currency);
   const isApproved = kycStatus?.status === 'approved';
 
   // Gate: require KYC approval
@@ -123,7 +125,7 @@ export default function VirtualAccountScreen() {
             <DetailRow label="Account Number" value={kycStatus?.provider_reference ?? '—'} />
             <DetailRow label="Routing Number" value="101019644" />
             <DetailRow label="Account Type" value="Checking" />
-            <DetailRow label="Currency" value="USD" />
+            <DetailRow label="Currency" value={selectedCurrency} />
           </View>
 
           {/* Info note */}

@@ -9,7 +9,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { useHaptics } from '@/hooks/useHaptics';
 
 export interface BarChartMonth {
   month: string; // e.g. "Jan"
@@ -46,28 +46,18 @@ function Bar({
 }) {
   const targetH = maxValue > 0 ? Math.max((value / maxValue) * chartHeight, MIN_BAR_H) : MIN_BAR_H;
 
-  const h = useDerivedValue(() =>
-    Math.max(targetH * animProgress.value, MIN_BAR_H)
-  );
+  const h = useDerivedValue(() => Math.max(targetH * animProgress.value, MIN_BAR_H));
   const y = useDerivedValue(() => chartHeight - h.value);
 
   // selected=black, has value=dark grey, zero=light grey
   const color = isSelected ? '#000000' : value > 0 ? '#C0C0C0' : '#EBEBEB';
 
-  return (
-    <RoundedRect
-      x={x}
-      y={y}
-      width={barWidth}
-      height={h}
-      r={BAR_RADIUS}
-      color={color}
-    />
-  );
+  return <RoundedRect x={x} y={y} width={barWidth} height={h} r={BAR_RADIUS} color={color} />;
 }
 
 export function SpendingBarChart({ data, selectedIndex, onSelect, height = CHART_HEIGHT }: Props) {
   const { width: screenWidth } = useWindowDimensions();
+  const { selection } = useHaptics();
   const PAD = 24;
   const chartWidth = screenWidth - PAD * 2;
   const count = data.length || 1;
@@ -86,7 +76,9 @@ export function SpendingBarChart({ data, selectedIndex, onSelect, height = CHART
       {/* Value labels above bars */}
       <View style={{ height: 20, flexDirection: 'row', marginBottom: 4 }}>
         {data.map((d, i) => (
-          <View key={i} style={{ width: barWidth + (i < count - 1 ? gap : 0), alignItems: 'center' }}>
+          <View
+            key={i}
+            style={{ width: barWidth + (i < count - 1 ? gap : 0), alignItems: 'center' }}>
             {i === selectedIndex && (
               <Text style={{ fontFamily: 'SF-Pro-Rounded-Semibold', fontSize: 11, color: '#000' }}>
                 {d.value > 0 ? `$${Math.round(d.value)}` : ''}
@@ -99,7 +91,14 @@ export function SpendingBarChart({ data, selectedIndex, onSelect, height = CHART
       {/* Bars */}
       <Canvas style={{ width: chartWidth, height }}>
         {/* Baseline track */}
-        <RoundedRect x={0} y={height - MIN_BAR_H} width={chartWidth} height={MIN_BAR_H} r={4} color="#F2F2F2" />
+        <RoundedRect
+          x={0}
+          y={height - MIN_BAR_H}
+          width={chartWidth}
+          height={MIN_BAR_H}
+          r={4}
+          color="#F2F2F2"
+        />
         {data.map((d, i) => (
           <Bar
             key={i}
@@ -123,7 +122,7 @@ export function SpendingBarChart({ data, selectedIndex, onSelect, height = CHART
             isSelected={i === selectedIndex}
             width={barWidth + (i < count - 1 ? gap : 0)}
             onPress={() => {
-              Haptics.selectionAsync();
+              selection();
               onSelect(i);
             }}
           />
@@ -150,8 +149,12 @@ function MonthLabel({
   return (
     <Pressable
       onPress={onPress}
-      onPressIn={() => { scale.value = withSpring(0.88, { damping: 15 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 15 }); }}
+      onPressIn={() => {
+        scale.value = withSpring(0.88, { damping: 15 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 15 });
+      }}
       style={{ width, alignItems: 'center' }}>
       <Animated.Text
         style={[

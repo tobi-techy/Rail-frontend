@@ -1,11 +1,10 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Icon } from './atoms/Icon';
+import { AlertTriangle } from 'lucide-react-native';
 import { logger } from '../lib/logger';
 import { safeError } from '../utils/logSanitizer';
 import { Sentry } from '../lib/sentry';
-import { Button } from '@/components/ui/Button';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -44,11 +43,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     safeError('[ErrorBoundary] Caught error:', {
       message: errorMessage,
       name: error?.name,
-      stack: errorStack.substring(0, 200),
+      // Only include stack in dev — avoid leaking component tree in production
+      stack: __DEV__ ? errorStack.substring(0, 200) : undefined,
     });
-    safeError('[ErrorBoundary] Error info:', errorInfo);
 
-    // Log to console with full details for debugging
     if (__DEV__) {
       console.error('[ErrorBoundary] Full error:', error);
       console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
@@ -105,36 +103,30 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <SafeAreaView style={styles.container}>
           <View style={styles.content}>
-            <View style={styles.iconContainer}>
-              <Icon name="alert-circle" size={64} color="#EF4444" strokeWidth={2} />
+            {/* Icon — top left, Klarna-style */}
+            <View style={styles.iconWrap}>
+              <AlertTriangle size={64} color="#0A0A0A" strokeWidth={1.5} />
             </View>
 
-            <Text style={styles.title}>Something went wrong</Text>
-
+            <Text style={styles.title}>Something went wrong.</Text>
             <Text style={styles.message}>
-              We&apos;re sorry for the inconvenience. The app encountered an unexpected error.
+              An unexpected error occurred. Your data is safe — try again or restart the app.
             </Text>
 
-            {this.retryCount >= this.maxRetries - 1 && (
-              <Text style={styles.retryWarning}>
-                Multiple errors detected. Please restart the app if this continues.
-              </Text>
-            )}
-
             {__DEV__ && (
-              <View style={styles.errorDetails}>
-                <Text style={styles.errorTitle}>Error Details:</Text>
-                <Text style={styles.errorText} numberOfLines={5}>
+              <View style={styles.devBox}>
+                <Text style={styles.devText} numberOfLines={4}>
                   {this.state.error.message?.substring(0, 200) || 'Unknown error'}
                 </Text>
               </View>
             )}
+          </View>
 
-            <Button
-              title="Try again"
-              onPress={this.resetError}
-              className="absolute bottom-0 w-full"
-            />
+          {/* CTA pinned to bottom */}
+          <View style={styles.footer}>
+            <TouchableOpacity style={styles.button} onPress={this.resetError} activeOpacity={0.85}>
+              <Text style={styles.buttonText}>Try again</Text>
+            </TouchableOpacity>
           </View>
         </SafeAreaView>
       );
@@ -151,64 +143,48 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    position: 'relative',
+    paddingHorizontal: 28,
+    paddingTop: 24,
   },
-  iconContainer: {
-    marginBottom: 24,
+  iconWrap: {
+    marginBottom: 32,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#070914',
+    color: '#0A0A0A',
     marginBottom: 12,
-    textAlign: 'center',
+    lineHeight: 34,
   },
   message: {
     fontSize: 16,
     color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 32,
     lineHeight: 24,
   },
-  errorDetails: {
+  devBox: {
+    marginTop: 24,
     backgroundColor: '#FEF2F2',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-    width: '100%',
+    padding: 12,
+    borderRadius: 10,
   },
-  errorTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#DC2626',
-    marginBottom: 8,
-  },
-  errorText: {
-    fontSize: 12,
+  devText: {
+    fontSize: 11,
     color: '#991B1B',
     fontFamily: 'monospace',
   },
+  footer: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
   button: {
-    backgroundColor: '#3B82F6',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    minWidth: 200,
+    backgroundColor: '#0A0A0A',
+    paddingVertical: 18,
+    borderRadius: 100,
+    alignItems: 'center',
   },
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  retryWarning: {
-    fontSize: 14,
-    color: '#F59E0B',
-    textAlign: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 20,
   },
 });

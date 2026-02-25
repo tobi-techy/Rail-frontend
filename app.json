@@ -54,6 +54,12 @@
       "supportsTablet": true,
       "buildNumber": "2",
       "bundleIdentifier": "com.railmoney.rail",
+      "splash": {
+        "image": "./assets/app-icon/logo-transparent.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#FF2E01"
+      },
+      "associatedDomains": ["webcredentials:api.userail.money", "webcredentials:userail.money"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSFaceIDUsageDescription": "Use Face ID to authenticate and secure your account",
@@ -68,9 +74,15 @@
       "appleTeamId": "A239A6TG6R"
     },
     "android": {
+      "icon": "./assets/app-icon/app-icon.png",
+      "splash": {
+        "image": "./assets/app-icon/logo-transparent.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#FF2E01"
+      },
       "adaptiveIcon": {
-        "foregroundImage": "./assets/app-icon/logo-dark.png",
-        "backgroundColor": "#FF5A00"
+        "foregroundImage": "./assets/app-icon/app-icon.png",
+        "backgroundColor": "#FF2E01"
       },
       "package": "com.railmoney.rail",
       "permissions": ["android.permission.USE_BIOMETRIC", "android.permission.USE_FINGERPRINT"]

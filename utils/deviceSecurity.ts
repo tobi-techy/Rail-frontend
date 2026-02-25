@@ -23,42 +23,46 @@ export interface SecurityCheckResult {
  * Perform comprehensive device security check
  */
 export async function checkDeviceSecurity(): Promise<SecurityCheckResult> {
-  // Skip on iOS to avoid TurboModule crash
-  if (Platform.OS === 'ios') {
-    return {
-      isSecure: true,
-      isJailbroken: false,
-      isRooted: false,
-      isDebuggedMode: false,
-      isOnExternalStorage: false,
-      hookDetected: false,
-    };
-  }
-
   try {
-    const isJailbroken = JailMonkey.isJailBroken();
-    const isDebuggedMode = JailMonkey.isDebuggedMode();
-    const hookDetected = JailMonkey.hookDetected();
+    const safeCallBoolean = async (
+      fn: () => boolean | Promise<boolean> | unknown,
+      fallback = false
+    ): Promise<boolean> => {
+      try {
+        const value = fn();
+        const resolved =
+          value && typeof (value as Promise<unknown>).then === 'function'
+            ? await (value as Promise<unknown>)
+            : value;
 
-    const isRooted = Platform.OS === 'android' ? JailMonkey.isJailBroken() : false;
+        if (typeof resolved === 'boolean') return resolved;
+        if (typeof resolved === 'number') return resolved !== 0;
+        if (typeof resolved === 'string') return resolved.toLowerCase() === 'true';
+        return fallback;
+      } catch {
+        return fallback;
+      }
+    };
+
+    const isJailbroken = await safeCallBoolean(() => JailMonkey.isJailBroken());
+    const isDebuggedMode = await safeCallBoolean(() => JailMonkey.isDebuggedMode());
+    const hookDetected = await safeCallBoolean(() => JailMonkey.hookDetected());
+    const isRooted =
+      Platform.OS === 'android' ? await safeCallBoolean(() => JailMonkey.isJailBroken()) : false;
     const isOnExternalStorage =
-      Platform.OS === 'android' ? JailMonkey.isOnExternalStorage() : false;
+      Platform.OS === 'android'
+        ? await safeCallBoolean(() => JailMonkey.isOnExternalStorage())
+        : false;
 
     const isSecure = !isJailbroken && !isRooted && !isDebuggedMode && !hookDetected;
 
-    return {
-      isSecure,
-      isJailbroken,
-      isRooted,
-      isDebuggedMode,
-      isOnExternalStorage,
-      hookDetected,
-    };
+    return { isSecure, isJailbroken, isRooted, isDebuggedMode, isOnExternalStorage, hookDetected };
   } catch (error) {
     logger.error(
       '[deviceSecurity] Security check failed',
       error instanceof Error ? error : new Error(String(error))
     );
+    // Fail open on check error (native module unavailable) but log it
     return {
       isSecure: true,
       isJailbroken: false,
@@ -90,32 +94,30 @@ export async function enforceDeviceSecurity(options?: {
     if (result.isDebuggedMode) issues.push('debugger attached');
     if (result.hookDetected) issues.push('tampering detected');
 
-    logger.error('[DeviceSecurity] Device security check failed', {
+    const logContext = {
       component: 'DeviceSecurity',
       action: 'security-check-failed',
       issues,
       isProduction: !__DEV__,
       ...result,
-    });
+    };
 
     const message = `This device appears to be ${issues.join(', ')}. For your security, the app cannot continue.`;
 
-    if (__DEV__) {
-      // In development, allow user to continue with warning
-      logger.warn('[DeviceSecurity] Allowing dev build to continue on compromised device', {
+    const shouldAllowInThisBuild = __DEV__ || options?.allowContinue === true;
+
+    if (shouldAllowInThisBuild) {
+      // In development, just log — don't interrupt with an alert
+      logger.warn('[DeviceSecurity] Dev/override build on potentially compromised device', {
         component: 'DeviceSecurity',
         action: 'dev-override',
         issues,
       });
-
-      Alert.alert(
-        '⚠️ Development: Security Warning',
-        `${message}\n\nThis device is not secure, but the app is in development mode.`,
-        [{ text: 'Continue Anyway', style: 'default' }]
-      );
+      logger.warn('[DeviceSecurity] Device security check failed', logContext);
       return true;
     } else {
       // In production, BLOCK the app
+      logger.error('[DeviceSecurity] Device security check failed', logContext);
       Alert.alert('🔒 Security Alert', message, [
         {
           text: 'Close App',
@@ -141,7 +143,7 @@ export async function enforceDeviceSecurity(options?: {
  * Quick check if device is compromised (no UI)
  */
 export function isDeviceCompromised(): boolean {
-  if (__DEV__ || Platform.OS === 'ios') return false;
+  if (__DEV__) return false;
   try {
     return JailMonkey.isJailBroken() || JailMonkey.hookDetected();
   } catch {

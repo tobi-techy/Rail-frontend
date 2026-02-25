@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, TouchableOpacityProps } from 'react-nativ
 import { SvgProps } from 'react-native-svg';
 import { Icon } from '../atoms';
 import * as SvgAssets from '@/assets/svg';
+import { useUIStore } from '@/stores';
+import { MaskedBalance } from './MaskedBalance';
 
 export type TransactionType = 'send' | 'receive' | 'swap' | 'deposit' | 'withdraw';
 export type TransactionStatus = 'completed' | 'pending' | 'failed';
@@ -364,6 +366,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
   );
   const isPending = transaction.status === 'pending';
   const isFailed = transaction.status === 'failed';
+  const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
 
   return (
     <TouchableOpacity className="flex-row items-center py-[10px]" activeOpacity={0.7} {...props}>
@@ -381,11 +384,22 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
       </View>
 
       <View className="items-end">
-        <Text
-          className={`font-subtitle text-[15px] ${isPending ? 'text-text-secondary' : isFailed ? 'text-destructive' : isCredit ? 'text-success' : transaction.type === 'withdraw' || transaction.type === 'send' ? 'text-destructive' : 'text-text-primary'}`}
-          numberOfLines={1}>
-          {amountText}
-        </Text>
+        <MaskedBalance
+          value={amountText}
+          visible={isBalanceVisible}
+          textClass="text-[16px]"
+          colorClass={
+            isPending
+              ? 'text-text-secondary'
+              : isFailed
+                ? 'text-destructive'
+                : isCredit
+                  ? 'text-success'
+                  : transaction.type === 'withdraw' || transaction.type === 'send'
+                    ? 'text-destructive'
+                    : 'text-text-primary'
+          }
+        />
         {isPending && (
           <Text className="mt-[2px] font-caption text-[12px] text-primary">Pending</Text>
         )}

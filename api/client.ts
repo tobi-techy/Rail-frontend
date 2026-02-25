@@ -10,58 +10,28 @@ import { logger } from '../lib/logger';
 import { API_CONFIG } from './config';
 import { generateRequestId } from '../utils/requestId';
 import { useAuthStore } from '../stores/authStore';
+import { sslPinningAdapter, SSL_PINNING_ACTIVE } from './sslPinningAdapter';
 
 /**
  * SSL Certificate Pinning Configuration
- * In production, requests will only succeed if the server's certificate matches
+ * In production with pins configured, all requests are routed through
+ * react-native-ssl-pinning (AFNetworking on iOS, OkHttp on Android).
  *
- * SECURITY WARNING: Empty config disables SSL pinning. For production:
- * 1. Obtain your server's certificate hash:
- *    openssl s_client -connect api.yourdomain.com:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
- * 2. Add at least 2 pins (primary + backup) for certificate rotation
- * 3. Set EXPO_PUBLIC_API_URL environment variable for production
+ * Pins are SPKI SHA-256 hashes. Generate with:
+ *   openssl s_client -connect api.userail.money:443 -servername api.userail.money 2>/dev/null \
+ *     | sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' > leaf.pem
+ *   openssl x509 -in leaf.pem -pubkey -noout \
+ *     | openssl pkey -pubin -outform der \
+ *     | openssl dgst -sha256 -binary | openssl enc -base64
  *
- * Example configuration:
- * const SSL_PINNING_CONFIG: Record<string, string[]> = {
- *   'api.rail.com': [
- *     'sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
- *     'sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=',
- *   ],
- * };
+ * Set EXPO_PUBLIC_CERT_PIN_1 (leaf) and EXPO_PUBLIC_CERT_PIN_2 (intermediate) in EAS.
  */
-
-// CRITICAL: SSL Pinning Configuration
-// In production, MUST have valid pins configured
-const SSL_PINNING_ENABLED = __DEV__
-  ? false
-  : process.env.EXPO_PUBLIC_SSL_PINNING_ENABLED !== 'false'; // Enabled by default in production
-
-const SSL_PINNING_CONFIG: Record<string, string[]> =
-  SSL_PINNING_ENABLED && process.env.EXPO_PUBLIC_API_URL
-    ? {
-        [new URL(process.env.EXPO_PUBLIC_API_URL).hostname]: [
-          process.env.EXPO_PUBLIC_CERT_PIN_1 || '',
-          process.env.EXPO_PUBLIC_CERT_PIN_2 || '',
-        ].filter(Boolean),
-      }
-    : {};
-
-// Validate SSL pinning in production - log warning but don't crash
-if (
-  !__DEV__ &&
-  (Object.keys(SSL_PINNING_CONFIG).length === 0 ||
-    Object.values(SSL_PINNING_CONFIG).some((pins) => pins.length === 0))
-) {
-  const errorMsg =
-    'WARNING: SSL Pinning not properly configured in production. This reduces security against MITM attacks.';
-  logger.warn(errorMsg, {
-    component: 'ApiClient',
-    action: 'ssl-pinning-validation',
-    sslPinningEnabled: SSL_PINNING_ENABLED,
-    apiUrl: process.env.EXPO_PUBLIC_API_URL,
-    hasCertPin1: !!process.env.EXPO_PUBLIC_CERT_PIN_1,
-    hasCertPin2: !!process.env.EXPO_PUBLIC_CERT_PIN_2,
-  });
+if (!__DEV__ && !SSL_PINNING_ACTIVE) {
+  logger.error(
+    '[ApiClient] SSL certificate pins not configured in production. ' +
+      'Set EXPO_PUBLIC_CERT_PIN_1 and EXPO_PUBLIC_CERT_PIN_2 to enable pinning.',
+    { component: 'ApiClient', action: 'ssl-pinning-missing' }
+  );
 }
 
 /**
@@ -104,20 +74,34 @@ function normalizeRequestPath(url?: string): string {
   }
 }
 
+function stripApiPrefix(path: string): string {
+  if (path === '/api') return '/';
+  if (path.startsWith('/api/')) return path.slice(4);
+  return path;
+}
+
 function isAuthEndpoint(url?: string): boolean {
-  const path = normalizeRequestPath(url);
-  if (!path) return false;
+  const rawPath = normalizeRequestPath(url);
+  if (!rawPath) return false;
+  const path = stripApiPrefix(rawPath);
 
   return AUTH_ENDPOINTS.some(
-    (endpoint) => path === endpoint || path === '/' + endpoint || path.endsWith('/' + endpoint)
+    (endpoint) =>
+      path === endpoint ||
+      rawPath === endpoint ||
+      path.endsWith(endpoint) ||
+      rawPath.endsWith(endpoint)
   );
 }
 
 function isPasscodeProtectedEndpoint(method?: string, url?: string): boolean {
-  const path = normalizeRequestPath(url);
-  if (!path || !method) return false;
+  const rawPath = normalizeRequestPath(url);
+  if (!rawPath || !method) return false;
+  const path = stripApiPrefix(rawPath);
 
   const normalizedMethod = method.toUpperCase();
+  if (normalizedMethod === 'POST' && /^\/v1\/withdrawals(?:\/(?:crypto|fiat))?$/.test(path))
+    return true;
   if (normalizedMethod === 'POST' && path === '/v1/security/ip-whitelist') return true;
   if (normalizedMethod === 'POST' && path === '/v1/security/withdrawals/confirm') return true;
   if (normalizedMethod === 'POST' && /^\/v1\/security\/devices\/[^/]+\/trust$/.test(path))
@@ -185,6 +169,7 @@ const axiosInstance = axios.create({
     Accept: 'application/json',
     'X-Requested-With': 'RailApp',
   },
+  ...(SSL_PINNING_ACTIVE ? { adapter: sslPinningAdapter } : {}),
 });
 
 /**
@@ -259,17 +244,43 @@ axiosInstance.interceptors.request.use(
  * Response interceptor - handles token refresh and error transformation
  */
 axiosInstance.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    // Keep local passcode-session state in sync with one-time server validation middleware.
+    if (isPasscodeProtectedEndpoint(response.config?.method, response.config?.url)) {
+      useAuthStore.getState().clearPasscodeSession();
+    }
+    return response.data;
+  },
   async (error: AxiosError<ApiError>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
       _retryCount?: number;
     };
     const requestId = originalRequest?.headers?.['X-Request-ID'] as string | undefined;
+    const statusCode = error.response?.status;
+
+    if (isPasscodeProtectedEndpoint(originalRequest?.method, originalRequest?.url)) {
+      const passcodeErrorCode = String(
+        (error.response?.data as any)?.code ||
+          (error.response?.data as any)?.error ||
+          (error.response?.data as any)?.error?.code ||
+          ''
+      ).toUpperCase();
+
+      if (
+        statusCode === 401 ||
+        statusCode === 403 ||
+        passcodeErrorCode === 'PASSCODE_SESSION_REQUIRED' ||
+        passcodeErrorCode === 'PASSCODE_SESSION_INVALID'
+      ) {
+        useAuthStore.getState().clearPasscodeSession();
+        return Promise.reject(transformError(error, requestId));
+      }
+    }
 
     // Handle 429 Rate Limiting
-    if (error.response?.status === 429) {
-      const retryAfter = error.response.headers['retry-after'];
+    if (statusCode === 429) {
+      const retryAfter = error.response?.headers?.['retry-after'];
       const retryCount = originalRequest._retryCount || 0;
 
       if (retryCount < 3 && retryAfter) {
@@ -281,11 +292,7 @@ axiosInstance.interceptors.response.use(
     }
 
     // Handle 401 - Token refresh
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !isAuthEndpoint(originalRequest.url)
-    ) {
+    if (statusCode === 401 && !originalRequest._retry && !isAuthEndpoint(originalRequest.url)) {
       originalRequest._retry = true;
 
       const { isAuthenticated, refreshToken, clearSession, clearPasscodeSession } =

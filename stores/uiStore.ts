@@ -1,40 +1,134 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DEFAULT_USD_BASE_EXCHANGE_RATES, sanitizeFxRates, type FxRates } from '@/utils/currency';
+import { getBestAvailableFxRates } from '@/utils/currencyRates';
+
+export type Currency = 'USD' | 'GBP' | 'EUR' | 'NGN';
+export type AppTheme = 'system' | 'light' | 'dark';
+export type AppLanguage = 'en' | 'fr' | 'es' | 'de';
 
 interface UIState {
+  // Balance visibility
   isBalanceVisible: boolean;
+  // Currency
+  currency: Currency;
+  currencyRates: FxRates;
+  currencyRatesUpdatedAt: string | null;
+  isCurrencyRatesRefreshing: boolean;
+  // Preferences
+  hapticsEnabled: boolean;
+  pushNotificationsEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  requireBiometricOnResume: boolean;
+  theme: AppTheme;
+  language: AppLanguage;
 }
 
 interface UIActions {
   toggleBalanceVisibility: () => void;
   setBalanceVisibility: (visible: boolean) => void;
+  setCurrency: (currency: Currency) => void;
+  setCurrencyRates: (rates: FxRates, updatedAt?: string) => void;
+  refreshCurrencyRates: (options?: { forceRefresh?: boolean }) => Promise<void>;
+  setHapticsEnabled: (enabled: boolean) => void;
+  setPushNotificationsEnabled: (enabled: boolean) => void;
+  setEmailNotificationsEnabled: (enabled: boolean) => void;
+  setRequireBiometricOnResume: (enabled: boolean) => void;
+  setTheme: (theme: AppTheme) => void;
+  setLanguage: (language: AppLanguage) => void;
 }
 
 const initialState: UIState = {
   isBalanceVisible: true,
+  currency: 'USD',
+  currencyRates: DEFAULT_USD_BASE_EXCHANGE_RATES,
+  currencyRatesUpdatedAt: null,
+  isCurrencyRatesRefreshing: false,
+  hapticsEnabled: true,
+  pushNotificationsEnabled: true,
+  emailNotificationsEnabled: true,
+  requireBiometricOnResume: false,
+  theme: 'system',
+  language: 'en',
 };
 
 export const useUIStore = create<UIState & UIActions>()(
   persist(
     (set) => ({
       ...initialState,
-
-      toggleBalanceVisibility: () => {
-        set((state) => ({ isBalanceVisible: !state.isBalanceVisible }));
+      toggleBalanceVisibility: () =>
+        set((state) => ({ isBalanceVisible: !state.isBalanceVisible })),
+      setBalanceVisibility: (visible) => set({ isBalanceVisible: visible }),
+      setCurrency: (currency) => set({ currency }),
+      setCurrencyRates: (rates, updatedAt = new Date().toISOString()) =>
+        set({
+          currencyRates: sanitizeFxRates(rates),
+          currencyRatesUpdatedAt: updatedAt,
+        }),
+      refreshCurrencyRates: async (options) => {
+        set({ isCurrencyRatesRefreshing: true });
+        try {
+          const payload = await getBestAvailableFxRates({
+            forceRefresh: options?.forceRefresh ?? false,
+          });
+          set({
+            currencyRates: payload.rates,
+            currencyRatesUpdatedAt: payload.updatedAt,
+          });
+        } finally {
+          set({ isCurrencyRatesRefreshing: false });
+        }
       },
-
-      setBalanceVisibility: (visible: boolean) => {
-        set({ isBalanceVisible: visible });
-      },
+      setHapticsEnabled: (enabled) => set({ hapticsEnabled: enabled }),
+      setPushNotificationsEnabled: (enabled) => set({ pushNotificationsEnabled: enabled }),
+      setEmailNotificationsEnabled: (enabled) => set({ emailNotificationsEnabled: enabled }),
+      setRequireBiometricOnResume: (enabled) => set({ requireBiometricOnResume: enabled }),
+      setTheme: (theme) => set({ theme }),
+      setLanguage: (language) => set({ language }),
     }),
     {
       name: 'ui-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({
-        isBalanceVisible: state.isBalanceVisible,
-      }),
+      version: 3,
+      migrate: (persistedState: any, version: number) => {
+        if (!persistedState || typeof persistedState !== 'object') {
+          return persistedState;
+        }
+
+        if (version < 2) {
+          const legacyNotificationsEnabled =
+            typeof persistedState.notificationsEnabled === 'boolean'
+              ? persistedState.notificationsEnabled
+              : true;
+
+          return {
+            ...persistedState,
+            pushNotificationsEnabled:
+              typeof persistedState.pushNotificationsEnabled === 'boolean'
+                ? persistedState.pushNotificationsEnabled
+                : legacyNotificationsEnabled,
+            emailNotificationsEnabled:
+              typeof persistedState.emailNotificationsEnabled === 'boolean'
+                ? persistedState.emailNotificationsEnabled
+                : legacyNotificationsEnabled,
+          };
+        }
+
+        if (version < 3) {
+          return {
+            ...persistedState,
+            currencyRates: sanitizeFxRates((persistedState as any).currencyRates),
+            currencyRatesUpdatedAt:
+              typeof persistedState.currencyRatesUpdatedAt === 'string'
+                ? persistedState.currencyRatesUpdatedAt
+                : null,
+            isCurrencyRatesRefreshing: false,
+          };
+        }
+
+        return persistedState;
+      },
     }
   )
 );
-

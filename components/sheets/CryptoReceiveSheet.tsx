@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Pressable } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import * as Haptics from 'expo-haptics';
 import QRCodeStyled from 'react-native-qrcode-styled';
 import { Copy, Check, RefreshCw } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
 import { Button } from '../ui';
 import { useWalletAddresses } from '@/api/hooks/useWallet';
 import { SOLANA_TESTNET_CHAIN } from '@/utils/chains';
+import { useHaptics } from '@/hooks/useHaptics';
 
 interface CryptoReceiveSheetProps {
   visible: boolean;
@@ -17,6 +17,7 @@ interface CryptoReceiveSheetProps {
 export function CryptoReceiveSheet({ visible, onClose }: CryptoReceiveSheetProps) {
   const { data: wallet, isLoading, isError, refetch } = useWalletAddresses(SOLANA_TESTNET_CHAIN);
   const [copied, setCopied] = useState(false);
+  const { notification } = useHaptics();
 
   // Reset copied state when sheet closes
   useEffect(() => {
@@ -30,10 +31,10 @@ export function CryptoReceiveSheet({ visible, onClose }: CryptoReceiveSheetProps
   const handleCopy = useCallback(async () => {
     if (!address) return;
     await Clipboard.setStringAsync(address);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    notification();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [address]);
+  }, [address, notification]);
 
   const handleClose = useCallback(() => {
     onClose();

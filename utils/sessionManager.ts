@@ -12,7 +12,7 @@ export class SessionManager {
   private static refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private static passcodeSessionTimer: ReturnType<typeof setTimeout> | null = null;
   private static initialized = false;
-  private static readonly SESSION_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000; // 7 days (for token expiry)
+  private static readonly SESSION_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000; // 7 days of INACTIVITY triggers logout
   private static readonly PASSCODE_SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
   /**
@@ -52,19 +52,30 @@ export class SessionManager {
 
     try {
       const response = await authService.refreshToken({ refreshToken });
-      const tokenExpiresAt = response.expiresAt
-        ? new Date(response.expiresAt).toISOString()
-        : useAuthStore.getState().tokenExpiresAt;
+
+      // response.expiresAt is now sessionExpiresAt from backend (30 days).
+      // Never shorten the existing session expiry — only extend it.
+      const now = new Date();
+      const currentExpiry = useAuthStore.getState().tokenExpiresAt
+        ? new Date(useAuthStore.getState().tokenExpiresAt!).getTime()
+        : 0;
+      const responseExpiry = response.expiresAt ? new Date(response.expiresAt).getTime() : 0;
+      const nextExpiry = Math.max(
+        currentExpiry,
+        responseExpiry,
+        now.getTime() + 7 * 24 * 60 * 60 * 1000
+      );
 
       useAuthStore.setState({
         accessToken: response.accessToken,
         refreshToken: response.refreshToken || refreshToken,
-        tokenExpiresAt,
+        lastActivityAt: now.toISOString(),
+        tokenExpiresAt: new Date(nextExpiry).toISOString(),
       });
 
-      if (response.expiresAt) {
-        this.scheduleTokenRefresh(response.expiresAt);
-      }
+      // Schedule next access token refresh (5 min before access token expiry = ~55 min)
+      const accessTokenRefreshMs = 55 * 60 * 1000;
+      this.scheduleTokenRefresh(new Date(now.getTime() + accessTokenRefreshMs).toISOString());
 
       logger.debug('[SessionManager] Token refreshed successfully', {
         component: 'SessionManager',
@@ -345,7 +356,7 @@ export class SessionManager {
       return;
     }
 
-    // Check if 7-day token has expired
+    // Check if session has expired (inactivity or backend session expired)
     if (checkTokenExpiry()) {
       logger.warn('[SessionManager] Token expired during initialization', {
         component: 'SessionManager',
