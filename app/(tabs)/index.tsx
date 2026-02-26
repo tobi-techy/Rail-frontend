@@ -551,24 +551,6 @@ const Dashboard = () => {
               // onPress={() => router.push('/investment-stash')}
             />
           </View>
-          {/*<View className="flex-row gap-3">
-            <StashCard
-              title="Rail+ Card"
-              amount="$0"
-              amountCents=".00"
-              icon={<VisaLogo color={'#fff'} width={36} height={24} />}
-              className="flex-1"
-              // onPress={() => router.push('/spending-stash/card' as any)}
-            />
-            <StashCard
-              title="Rail+ Card"
-              amount="$0"
-              amountCents=".00"
-              icon={<VisaLogo color={'#fff'} width={36} height={24} />}
-              className="flex-1"
-              // onPress={() => router.push('/spending-stash/card' as any)}
-            />
-          </View>*/}
         </View>
 
         {/* Feature banners */}

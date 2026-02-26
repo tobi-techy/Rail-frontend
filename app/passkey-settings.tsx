@@ -1,18 +1,11 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  TextInput,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft, Plus, Trash2, KeyRound } from 'lucide-react-native';
 import { BottomSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
+import { InputField } from '@/components/atoms/InputField';
 import { usePasskeys, useRegisterPasskey, useDeletePasskey } from '@/api/hooks';
 import type { PasskeyCredential } from '@/api/types';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -211,18 +204,15 @@ export default function PasskeySettingsScreen() {
           Give this passkey a name so you can identify it later (e.g. &quot;iPhone 15&quot;).
         </Text>
 
-        <View className="bg-surface-secondary mb-6 rounded-xl border border-surface px-4 py-3">
-          <TextInput
-            value={passkeyName}
-            onChangeText={setPasskeyName}
-            placeholder="Passkey name (optional)"
-            placeholderTextColor="#9CA3AF"
-            className="font-body text-base text-text-primary"
-            maxLength={40}
-            returnKeyType="done"
-            onSubmitEditing={handleRegister}
-          />
-        </View>
+        <InputField
+          value={passkeyName}
+          onChangeText={setPasskeyName}
+          placeholder="Passkey name (optional)"
+          maxLength={40}
+          returnKeyType="done"
+          onSubmitEditing={handleRegister}
+          containerClassName="mb-6"
+        />
 
         <View className="flex-row gap-3">
           <Button

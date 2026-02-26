@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, Pressable, Modal, FlatList, TextInput, Keyboard } from 'react-native';
+import { View, Text, Pressable, Modal, FlatList, Keyboard } from 'react-native';
+import type { TextInput } from 'react-native';
 import { Ionicons } from './SafeIonicons';
+import { InputField } from './InputField';
 
 interface CountryCode {
   code: string;
@@ -92,7 +94,7 @@ const COUNTRY_CODES: CountryCode[] = [
 // Format phone number based on country
 const formatPhoneNumber = (digits: string, countryCode: string): string => {
   if (!digits) return '';
-  
+
   switch (countryCode) {
     case 'US':
     case 'CA':
@@ -141,7 +143,6 @@ export function PhoneNumberInput({
 }: PhoneNumberInputProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const isDark = variant === 'dark';
   const hasError = !!error;
@@ -156,19 +157,6 @@ export function PhoneNumberInput({
       country.dialCode.includes(searchQuery)
   );
 
-  const getContainerStyle = () => {
-    if (isDark) {
-      return `border-b bg-transparent py-3 ${hasError ? 'border-destructive' : 'border-white/30'}`;
-    }
-    if (hasError) {
-      return 'h-[56px] rounded-2xl border border-destructive bg-red-50';
-    }
-    if (isFocused || isModalVisible) {
-      return 'h-[56px] rounded-2xl border border-black/20 bg-neutral-200';
-    }
-    return 'h-[56px] rounded-2xl border border-transparent bg-neutral-100';
-  };
-
   const handleCountrySelect = (country: CountryCode) => {
     setSelectedCountry(country);
     setIsModalVisible(false);
@@ -180,10 +168,10 @@ export function PhoneNumberInput({
   const handlePhoneNumberChange = (text: string) => {
     // Strip all non-digits
     const digits = text.replace(/\D/g, '');
-    
+
     // Limit to country's max length
     const limitedDigits = digits.slice(0, selectedCountry.maxLength);
-    
+
     // Format and update
     const formatted = formatPhoneNumber(limitedDigits, selectedCountry.code);
     onChangeText(formatted);
@@ -203,73 +191,58 @@ export function PhoneNumberInput({
 
   return (
     <View className={isDark ? 'mb-2' : 'mb-4'}>
-      {label && (
-        <View className="mb-1 flex-row">
-          <Text className={`font-subtitle text-body ${isDark ? 'text-white/60' : 'text-text-primary'}`}>
-            {label}
-          </Text>
-          {required && (
-            <Text className={`font-subtitle text-body ${isDark ? 'text-white/60' : 'text-destructive'}`}>
-              {' '}
-              *
-            </Text>
-          )}
-        </View>
-      )}
-
-      <Pressable onPress={() => inputRef.current?.focus()}>
-        <View className={`flex-row items-center ${getContainerStyle()}`}>
+      <InputField
+        ref={inputRef}
+        label={label}
+        required={required}
+        value={value}
+        onChangeText={handlePhoneNumberChange}
+        placeholder={placeholder}
+        keyboardType="number-pad"
+        returnKeyType="done"
+        onSubmitEditing={Keyboard.dismiss}
+        maxLength={selectedCountry.maxLength + 4}
+        variant={variant}
+        error={error}
+        leftAccessory={
           <Pressable
             onPress={() => setIsModalVisible(true)}
-            className={`mr-3 flex-row items-center border-r py-3 pr-3 ${
-              isDark ? 'border-white/30' : 'border-black/10 pl-4'
+            className={`mr-1 min-h-[44px] min-w-[44px] flex-row items-center border-r pr-3 ${
+              isDark ? 'border-white/30' : 'border-black/10'
             }`}>
             <Text className="mr-2 text-lg">{selectedCountry.flag}</Text>
-            <Text className={`mr-1 font-body text-body ${isDark ? 'text-white' : 'text-text-primary'}`}>
+            <Text
+              className={`mr-1 font-body text-body ${isDark ? 'text-white' : 'text-text-primary'}`}>
               {selectedCountry.dialCode}
             </Text>
             <Ionicons
               name="chevron-down"
               size={16}
-              color={hasError ? '#F44336' : isDark ? '#FFFFFF' : isModalVisible ? '#1B84FF' : '#757575'}
+              color={
+                hasError ? '#F44336' : isDark ? '#FFFFFF' : isModalVisible ? '#111827' : '#757575'
+              }
             />
           </Pressable>
-
-          <TextInput
-            ref={inputRef}
-            value={value}
-            onChangeText={handlePhoneNumberChange}
-            placeholder={placeholder}
-            placeholderTextColor={isDark ? 'rgba(255,255,255,0.5)' : '#9CA3AF'}
-            keyboardType="number-pad"
-            returnKeyType="done"
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            onSubmitEditing={Keyboard.dismiss}
-            maxLength={selectedCountry.maxLength + 4} // Account for formatting chars
-            className={`flex-1 py-3 font-body text-body ${
-              isDark ? 'pl-3 text-white' : 'pr-4 text-text-primary'
-            }`}
-          />
-
-          {value.length > 0 && (
+        }
+        rightAccessory={
+          value.length > 0 ? (
             <Pressable
               onPress={() => {
                 onChangeText('');
                 Keyboard.dismiss();
               }}
-              className="pr-4">
-              <Ionicons name="close-circle" size={20} color={isDark ? 'rgba(255,255,255,0.5)' : '#A0A0A0'} />
+              className="min-h-[44px] min-w-[44px] items-center justify-center"
+              accessibilityRole="button"
+              accessibilityLabel="Clear phone number">
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={isDark ? 'rgba(255,255,255,0.6)' : '#A0A0A0'}
+              />
             </Pressable>
-          )}
-        </View>
-      </Pressable>
-
-      {error && (
-        <Text className={`mt-1 font-caption text-caption ${isDark ? 'text-white' : 'text-destructive'}`}>
-          {error}
-        </Text>
-      )}
+          ) : undefined
+        }
+      />
 
       <Modal visible={isModalVisible} animationType="slide" presentationStyle="pageSheet">
         <View className="flex-1 bg-white">
@@ -281,16 +254,14 @@ export function PhoneNumberInput({
           </View>
 
           <View className="border-b border-black/5 px-5 py-3">
-            <View className="h-[52px] flex-row items-center rounded-2xl border border-transparent bg-neutral-100 px-4">
-              <Ionicons name="search" size={20} color="#757575" />
-              <TextInput
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Search countries or codes..."
-                className="ml-3 flex-1 font-body text-body text-text-primary"
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
+            <InputField
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search countries or codes..."
+              icon="search-outline"
+              density="compact"
+              inputWrapperClassName="rounded-2xl border-transparent bg-neutral-100"
+            />
           </View>
 
           <FlatList

@@ -1,10 +1,15 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DEFAULT_USD_BASE_EXCHANGE_RATES, sanitizeFxRates, type FxRates } from '@/utils/currency';
+import {
+  DEFAULT_USD_BASE_EXCHANGE_RATES,
+  isSupportedCurrency,
+  sanitizeFxRates,
+  type FxRates,
+} from '@/utils/currency';
 import { getBestAvailableFxRates } from '@/utils/currencyRates';
 
-export type Currency = 'USD' | 'GBP' | 'EUR' | 'NGN';
+export type Currency = 'USD' | 'EUR';
 export type AppTheme = 'system' | 'light' | 'dark';
 export type AppLanguage = 'en' | 'fr' | 'es' | 'de';
 
@@ -90,44 +95,54 @@ export const useUIStore = create<UIState & UIActions>()(
     {
       name: 'ui-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 3,
+      version: 4,
       migrate: (persistedState: any, version: number) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
         }
 
+        let migrated = { ...persistedState };
+
         if (version < 2) {
           const legacyNotificationsEnabled =
-            typeof persistedState.notificationsEnabled === 'boolean'
-              ? persistedState.notificationsEnabled
+            typeof migrated.notificationsEnabled === 'boolean'
+              ? migrated.notificationsEnabled
               : true;
 
-          return {
-            ...persistedState,
+          migrated = {
+            ...migrated,
             pushNotificationsEnabled:
-              typeof persistedState.pushNotificationsEnabled === 'boolean'
-                ? persistedState.pushNotificationsEnabled
+              typeof migrated.pushNotificationsEnabled === 'boolean'
+                ? migrated.pushNotificationsEnabled
                 : legacyNotificationsEnabled,
             emailNotificationsEnabled:
-              typeof persistedState.emailNotificationsEnabled === 'boolean'
-                ? persistedState.emailNotificationsEnabled
+              typeof migrated.emailNotificationsEnabled === 'boolean'
+                ? migrated.emailNotificationsEnabled
                 : legacyNotificationsEnabled,
           };
         }
 
         if (version < 3) {
-          return {
-            ...persistedState,
-            currencyRates: sanitizeFxRates((persistedState as any).currencyRates),
+          migrated = {
+            ...migrated,
+            currencyRates: sanitizeFxRates((migrated as any).currencyRates),
             currencyRatesUpdatedAt:
-              typeof persistedState.currencyRatesUpdatedAt === 'string'
-                ? persistedState.currencyRatesUpdatedAt
+              typeof migrated.currencyRatesUpdatedAt === 'string'
+                ? migrated.currencyRatesUpdatedAt
                 : null,
             isCurrencyRatesRefreshing: false,
           };
         }
 
-        return persistedState;
+        if (version < 4) {
+          migrated = {
+            ...migrated,
+            currency: isSupportedCurrency(migrated.currency) ? migrated.currency : 'USD',
+            currencyRates: sanitizeFxRates((migrated as any).currencyRates),
+          };
+        }
+
+        return migrated;
       },
     }
   )

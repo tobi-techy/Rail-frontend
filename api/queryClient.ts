@@ -90,9 +90,44 @@ export const queryKeys = {
     transactions: (params?: unknown) => [...queryKeys.funding.all, 'transactions', params] as const,
     virtualAccount: () => [...queryKeys.funding.all, 'virtual-account'] as const,
   },
+  market: {
+    all: ['market'] as const,
+    filters: () => [...queryKeys.market.all, 'filters'] as const,
+    explore: (filters?: unknown) => [...queryKeys.market.all, 'explore', filters] as const,
+    popular: (symbols: string[]) => [...queryKeys.market.all, 'popular', symbols] as const,
+    instrument: (
+      symbol: string,
+      includeBars?: boolean,
+      barsTimeframe?: string,
+      barsLimit?: number
+    ) =>
+      [
+        ...queryKeys.market.all,
+        'instrument',
+        symbol,
+        includeBars,
+        barsTimeframe,
+        barsLimit,
+      ] as const,
+    bars: (symbol: string, timeframe?: string, start?: string, end?: string) =>
+      [...queryKeys.market.all, 'bars', symbol, timeframe, start, end] as const,
+  },
+  news: {
+    all: ['news'] as const,
+    marketFeed: (filters?: unknown) => [...queryKeys.news.all, 'market-feed', filters] as const,
+  },
   spending: {
     all: ['spending'] as const,
     stash: () => [...queryKeys.spending.all, 'stash'] as const,
+  },
+  investment: {
+    all: ['investment'] as const,
+    stash: () => [...queryKeys.investment.all, 'stash'] as const,
+    positions: (params?: unknown) => [...queryKeys.investment.all, 'positions', params] as const,
+    distribution: (limit?: number) => [...queryKeys.investment.all, 'distribution', limit] as const,
+    transactions: (params?: unknown) =>
+      [...queryKeys.investment.all, 'transactions', params] as const,
+    performance: (period?: string) => [...queryKeys.investment.all, 'performance', period] as const,
   },
   passkeys: {
     all: ['passkeys'] as const,
@@ -110,6 +145,9 @@ export const invalidateQueries = {
   allocation: () => queryClient.invalidateQueries({ queryKey: queryKeys.allocation.all }),
   wallet: () => queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all }),
   funding: () => queryClient.invalidateQueries({ queryKey: queryKeys.funding.all }),
+  market: () => queryClient.invalidateQueries({ queryKey: queryKeys.market.all }),
+  news: () => queryClient.invalidateQueries({ queryKey: queryKeys.news.all }),
+  investment: () => queryClient.invalidateQueries({ queryKey: queryKeys.investment.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
   passkeys: () => queryClient.invalidateQueries({ queryKey: queryKeys.passkeys.all }),
   all: () => queryClient.invalidateQueries(),

@@ -1,6 +1,6 @@
 import { useNavigation } from 'expo-router';
 import React, { useLayoutEffect, useState, useMemo } from 'react';
-import { Text, View, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { Text, View, ScrollView, RefreshControl } from 'react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
 import type {
   Transaction,
@@ -101,6 +101,7 @@ export default function History() {
     ];
     return mapped.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }, [deposits.data, withdrawals.data]);
+  const showSkeleton = isLoading && transactions.length === 0;
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -115,17 +116,9 @@ export default function History() {
     });
   }, [navigation]);
 
-  if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background-main">
-        <ActivityIndicator size="small" color="#000" />
-      </View>
-    );
-  }
-
   return (
     <View className="flex-1 bg-background-main">
-      {transactions.length === 0 ? (
+      {!showSkeleton && transactions.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
           <TransactionsEmptyIllustration width={220} height={140} />
           <Text className="mt-4 text-center font-subtitle text-subtitle text-text-primary">
@@ -146,6 +139,8 @@ export default function History() {
             transactions={transactions}
             onTransactionPress={setSelectedTransaction}
             className="pt-md"
+            isLoading={showSkeleton}
+            loadingItems={6}
           />
         </ScrollView>
       )}

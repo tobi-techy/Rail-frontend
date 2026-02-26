@@ -1,11 +1,14 @@
 import React from 'react';
 import { View, Text, ViewProps } from 'react-native';
-import { TransactionItem, Transaction } from './TransactionItem';
+import { Skeleton } from '../atoms';
+import { TransactionItem, Transaction, TransactionItemSkeleton } from './TransactionItem';
 
 export interface TransactionListProps extends Omit<ViewProps, 'children'> {
   transactions: Transaction[];
   title?: string;
   onTransactionPress?: (transaction: Transaction) => void;
+  isLoading?: boolean;
+  loadingItems?: number;
 }
 
 type GroupedTransactions = { label: string; data: Transaction[] }[];
@@ -44,20 +47,57 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
   title,
   onTransactionPress,
+  isLoading = false,
+  loadingItems = 6,
   ...props
 }) => {
+  if (isLoading) {
+    const firstGroupCount = Math.max(1, Math.ceil(loadingItems / 2));
+    const secondGroupCount = Math.max(0, loadingItems - firstGroupCount);
+
+    return (
+      <View {...props}>
+        {title && (
+          <Text className="mb-md font-headline-2 text-headline-3 text-text-primary">{title}</Text>
+        )}
+
+        <View className="mb-md">
+          <Skeleton className="mb-sm h-3 w-[80px] rounded-sm" />
+          {Array.from({ length: firstGroupCount }).map((_, index) => (
+            <TransactionItemSkeleton key={`tx-skeleton-group-1-${index}`} />
+          ))}
+        </View>
+
+        {secondGroupCount > 0 && (
+          <View className="mb-md">
+            <Skeleton className="mb-sm h-3 w-[94px] rounded-sm" />
+            {Array.from({ length: secondGroupCount }).map((_, index) => (
+              <TransactionItemSkeleton key={`tx-skeleton-group-2-${index}`} />
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  }
+
   const grouped = groupByDate(transactions);
 
   return (
     <View {...props}>
-      {title && <Text className="mb-md font-headline-2 text-headline-3 text-text-primary">{title}</Text>}
+      {title && (
+        <Text className="mb-md font-headline-2 text-headline-3 text-text-primary">{title}</Text>
+      )}
       {grouped.map((group) => (
         <View key={group.label} className="mb-md">
           <Text className="mb-sm font-caption text-[13px] uppercase tracking-wide text-text-secondary">
             {group.label}
           </Text>
           {group.data.map((tx) => (
-            <TransactionItem key={tx.id} transaction={tx} onPress={() => onTransactionPress?.(tx)} />
+            <TransactionItem
+              key={tx.id}
+              transaction={tx}
+              onPress={() => onTransactionPress?.(tx)}
+            />
           ))}
         </View>
       ))}

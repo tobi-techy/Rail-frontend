@@ -1,5 +1,4 @@
 export { Card } from './Card';
-export { Chart } from './Chart';
 export { InputField } from './InputField';
 export { Modal } from './Modal';
 export { ProgressBar } from './ProgressBar';
@@ -7,3 +6,4 @@ export { CountryPicker } from './CountryPicker';
 export { PhoneNumberInput } from './PhoneNumberInput';
 export { Icon } from './Icon';
 export { Ionicons } from './SafeIonicons';
+export { Skeleton } from './Skeleton';

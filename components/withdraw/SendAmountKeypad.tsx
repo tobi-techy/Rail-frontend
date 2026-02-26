@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { ChevronDown, XIcon } from 'lucide-react-native';
 import { Token } from '@/stores/withdrawalStore';
 import { InputField } from '../atoms/InputField';
@@ -29,11 +29,12 @@ export const SendAmountKeypad: React.FC<SendAmountKeypadProps> = ({
   const displayAmount = amount || '0';
   const numAmount = parseFloat(amount) || 0;
   const tokenUsdRate =
-    selectedToken && typeof selectedToken.usdValue === 'number' && Number.isFinite(selectedToken.usdValue)
+    selectedToken &&
+    typeof selectedToken.usdValue === 'number' &&
+    Number.isFinite(selectedToken.usdValue)
       ? selectedToken.usdValue
       : null;
-  const usdValue =
-    tokenUsdRate !== null ? (numAmount * tokenUsdRate).toFixed(2) : '0.00';
+  const usdValue = tokenUsdRate !== null ? (numAmount * tokenUsdRate).toFixed(2) : '0.00';
   const triggerFeedback = useKeypadFeedback();
 
   const keypadButtons = [

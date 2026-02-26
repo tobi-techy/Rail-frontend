@@ -1,12 +1,12 @@
 import { View, Text } from 'react-native';
 import React from 'react';
 
-const Stash = () => {
+const Investment = () => {
   return (
     <View>
-      <Text>Stash</Text>
+      <Text>first</Text>
     </View>
   );
 };
 
-export default Stash;
+export default Investment;

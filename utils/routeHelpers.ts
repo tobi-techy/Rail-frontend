@@ -71,6 +71,8 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
   inTabsGroup: segments[0] === '(tabs)',
   inAppGroup:
     segments[0] === '(tabs)' ||
+    segments[0] === 'market-explore' ||
+    segments[0] === 'market-asset' ||
     segments[0] === 'spending-stash' ||
     segments[0] === 'investment-stash' ||
     segments[0] === 'withdraw' ||
@@ -80,6 +82,8 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/spending-stash') ||
     pathname.startsWith('/investment-stash') ||
     pathname.startsWith('/withdraw') ||
+    pathname.startsWith('/market-explore') ||
+    pathname.startsWith('/market-asset') ||
     pathname.startsWith('/virtual-account') ||
     pathname.startsWith('/settings-notifications') ||
     pathname.startsWith('/profile') ||

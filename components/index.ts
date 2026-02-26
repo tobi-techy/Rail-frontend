@@ -1,6 +1,5 @@
 // Atoms
 export { Card } from './atoms/Card';
-export { Chart } from './atoms/Chart';
 export { InputField } from './atoms/InputField';
 export { Modal } from './atoms/Modal';
 export { ProgressBar } from './atoms/ProgressBar';

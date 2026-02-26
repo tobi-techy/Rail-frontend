@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
-import { Clock1, Home, Settings } from 'lucide-react-native';
+import { Clock1, Home, Settings, TrendingUp } from 'lucide-react-native';
 
 import { TabBar } from '@/components/TabBar';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -21,6 +21,15 @@ export default function TabLayout() {
             title: 'Home',
             tabBarIcon: ({ color, focused }) => (
               <Home size={24} color={color} fill={focused ? color : '#999'} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="market"
+          options={{
+            title: 'Market',
+            tabBarIcon: ({ color, focused }) => (
+              <TrendingUp size={24} color={color} fill={focused ? color : '#999'} />
             ),
           }}
         />

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import { SvgProps } from 'react-native-svg';
-import { Icon } from '../atoms';
+import { Icon, Skeleton } from '../atoms';
 import * as SvgAssets from '@/assets/svg';
 import { useUIStore } from '@/stores';
 import { MaskedBalance } from './MaskedBalance';
@@ -244,9 +244,6 @@ export const resolveTransactionAssetIcon = (transaction: Transaction): ResolvedA
 
 const ICON_SIZE = 44;
 
-// SVGs that are symbol/logo style (not full-bleed flags) — render centered, not stretched
-const SYMBOL_ICONS = new Set(['NgnIcon']);
-
 const TokenIcon = ({
   Token,
   bgColor,
@@ -410,3 +407,21 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
     </TouchableOpacity>
   );
 };
+
+export const TransactionItemSkeleton: React.FC = () => (
+  <View className="flex-row items-center py-[10px]">
+    <View className="mr-sm">
+      <Skeleton className="h-12 w-12 rounded-full" />
+    </View>
+
+    <View className="flex-1">
+      <Skeleton className="h-4 w-2/5 rounded-sm" />
+      <Skeleton className="mt-[6px] h-3 w-3/5 rounded-sm" />
+    </View>
+
+    <View className="ml-3 items-end">
+      <Skeleton className="h-4 w-[92px] rounded-sm" />
+      <Skeleton className="mt-[6px] h-3 w-[62px] rounded-sm" />
+    </View>
+  </View>
+);

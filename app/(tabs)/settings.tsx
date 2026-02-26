@@ -375,12 +375,10 @@ export default function Settings() {
     }
   };
 
-  const CURRENCIES: Currency[] = ['USD', 'GBP', 'EUR', 'NGN'];
+  const CURRENCIES: Currency[] = ['USD', 'EUR'];
   const CURRENCY_LABELS: Record<Currency, string> = {
     USD: 'US Dollar (USD)',
-    GBP: 'British Pound (GBP)',
     EUR: 'Euro (EUR)',
-    NGN: 'Nigerian Naira (NGN)',
   };
 
   // ── Render ───────────────────────────────────────────────────────────────────

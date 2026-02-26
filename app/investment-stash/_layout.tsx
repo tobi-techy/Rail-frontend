@@ -7,7 +7,7 @@ export default function InvestmentStashLayout() {
     <ErrorBoundary>
       <Stack
         screenOptions={{
-          headerShown: true,
+          headerShown: false,
           headerTitle: '',
           headerShadowVisible: false,
           headerStyle: { backgroundColor: '#fff' },
