@@ -31,6 +31,11 @@ export const ENDPOINTS = {
   },
   ACCOUNT: {
     STATION: '/v1/account/station',
+    INVESTMENT_STASH: '/v1/account/investment-stash',
+    INVESTMENT_POSITIONS: '/v1/account/investment-stash/positions',
+    INVESTMENT_DISTRIBUTION: '/v1/account/investment-stash/distribution',
+    INVESTMENT_TRANSACTIONS: '/v1/account/investment-stash/transactions',
+    INVESTMENT_PERFORMANCE: '/v1/account/investment-stash/performance',
   },
   USER: {
     PROFILE: '/v1/users/me',

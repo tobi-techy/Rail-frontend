@@ -7,22 +7,38 @@ import { useHaptics } from '@/hooks/useHaptics';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
+interface StashCardBadge {
+  label: string;
+  /** 'green' | 'red' | 'gray' */
+  color: 'green' | 'red' | 'gray';
+}
+
 interface StashCardProps {
   title: string;
   amount: string;
   amountCents?: string;
   icon: React.ReactNode;
+  badge?: StashCardBadge;
+  subtitle?: string;
   className?: string;
   onPress?: () => void;
   disabled?: boolean;
   testID?: string;
 }
 
+const BADGE_COLORS: Record<StashCardBadge['color'], { bg: string; text: string; dot: string }> = {
+  green: { bg: '#ECFDF3', text: '#15803D', dot: '#22C55E' },
+  red: { bg: '#FEF2F2', text: '#B91C1C', dot: '#EF4444' },
+  gray: { bg: '#F3F4F6', text: '#6B7280', dot: '#9CA3AF' },
+};
+
 export const StashCard: React.FC<StashCardProps> = ({
   title,
   amount,
   amountCents,
   icon,
+  badge,
+  subtitle,
   className,
   onPress,
   disabled,
@@ -32,6 +48,8 @@ export const StashCard: React.FC<StashCardProps> = ({
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const { isBalanceVisible } = useUIStore();
   const { impact } = useHaptics();
+
+  const badgeColors = badge ? BADGE_COLORS[badge.color] : null;
 
   return (
     <AnimatedPressable
@@ -52,7 +70,22 @@ export const StashCard: React.FC<StashCardProps> = ({
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={onPress ? `${title}: ${amount}${amountCents || ''}` : undefined}
       accessibilityState={{ disabled }}>
-      <View className="mb-14 self-start">{icon}</View>
+      {/* Icon row + badge */}
+      <View className="mb-14 flex-row items-start justify-between">
+        <View>{icon}</View>
+        {badge && badgeColors ? (
+          <View
+            style={{ backgroundColor: badgeColors.bg }}
+            className="flex-row items-center gap-1 rounded-full px-2 py-[3px]">
+            <View
+              style={{ backgroundColor: badgeColors.dot, width: 6, height: 6, borderRadius: 3 }}
+            />
+            <Text style={{ color: badgeColors.text, fontSize: 11, fontWeight: '600' }}>
+              {badge.label}
+            </Text>
+          </View>
+        ) : null}
+      </View>
 
       <View className="min-w-0 flex-row items-baseline">
         <MaskedBalance
@@ -64,6 +97,9 @@ export const StashCard: React.FC<StashCardProps> = ({
       </View>
 
       <Text className="mt-1 font-body text-body tracking-wide text-text-tertiary">{title}</Text>
+      {subtitle ? (
+        <Text className="mt-0.5 font-body text-[11px] text-text-tertiary">{subtitle}</Text>
+      ) : null}
     </AnimatedPressable>
   );
 };

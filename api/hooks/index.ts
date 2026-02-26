@@ -35,3 +35,9 @@ export * from './useAllocation';
 
 // Passkey hooks
 export * from './usePasskey';
+
+// Market hooks
+export * from './useMarket';
+
+// Investment hooks
+export * from './useInvestment';

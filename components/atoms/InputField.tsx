@@ -1,26 +1,23 @@
-import React, { forwardRef, useCallback } from 'react';
+import React, { forwardRef, useMemo, useState } from 'react';
 import {
-  View,
+  NativeSyntheticEvent,
   Text,
   TextInput,
-  TouchableOpacity,
   TextInputProps,
-  NativeSyntheticEvent,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
 import { Ionicons } from './SafeIonicons';
 
-interface InputFieldProps extends Omit<TextInputProps, 'onFocus' | 'onBlur'> {
+export interface InputFieldProps extends Omit<TextInputProps, 'onFocus' | 'onBlur'> {
   label?: string;
+  helperText?: string;
   error?: string;
   required?: boolean;
   type?: 'text' | 'email' | 'password' | 'phone';
   icon?: keyof typeof Ionicons.glyphMap;
+  rightIcon?: keyof typeof Ionicons.glyphMap;
+  onRightIconPress?: () => void;
   isPasswordVisible?: boolean;
   onTogglePasswordVisibility?: () => void;
   onFocus?: (e: NativeSyntheticEvent<any>) => void;
@@ -28,179 +25,192 @@ interface InputFieldProps extends Omit<TextInputProps, 'onFocus' | 'onBlur'> {
   variant?: 'light' | 'dark' | 'blended';
   density?: 'default' | 'compact';
   containerClassName?: string;
+  inputWrapperClassName?: string;
   inputClassName?: string;
+  leftAccessory?: React.ReactNode;
+  rightAccessory?: React.ReactNode;
 }
 
-const TIMING = { duration: 200, easing: Easing.out(Easing.cubic) };
+const getKeyboardType = (type: InputFieldProps['type']) => {
+  switch (type) {
+    case 'email':
+      return 'email-address' as const;
+    case 'phone':
+      return 'phone-pad' as const;
+    default:
+      return 'default' as const;
+  }
+};
 
 export const InputField = forwardRef<TextInput, InputFieldProps>(
   (
     {
       label,
+      helperText,
       error,
       required = false,
       type = 'text',
       icon,
-      value,
-      onChangeText,
-      placeholder,
+      rightIcon,
+      onRightIconPress,
       isPasswordVisible = false,
       onTogglePasswordVisibility,
       onFocus,
       onBlur,
-      variant = 'blended',
+      variant = 'light',
       density = 'default',
       containerClassName = '',
+      inputWrapperClassName = '',
       inputClassName = '',
+      leftAccessory,
+      rightAccessory,
+      autoCapitalize,
+      autoCorrect,
+      keyboardType,
+      placeholderTextColor,
+      multiline,
+      editable = true,
+      style,
       ...props
     },
     ref
   ) => {
-    const isFocused = useSharedValue(false);
-    const errorOpacity = useSharedValue(error ? 1 : 0);
-    const [errorText, setErrorText] = React.useState(error ?? '');
-    const [focused, setFocused] = React.useState(false);
-
-    const isDark = variant === 'dark';
-    const hasError = !!error;
+    const [focused, setFocused] = useState(false);
+    const hasError = Boolean(error);
     const isPassword = type === 'password';
-
-    // Update error animation
-    React.useEffect(() => {
-      if (error) {
-        setErrorText(error);
-        errorOpacity.value = withTiming(1, TIMING);
-      } else {
-        errorOpacity.value = withTiming(0, { duration: 160, easing: Easing.in(Easing.cubic) });
-      }
-    }, [error]);
-
-    const handleFocus = useCallback(
-      (e: NativeSyntheticEvent<any>) => {
-        isFocused.value = true;
-        setFocused(true);
-        onFocus?.(e);
-      },
-      [onFocus]
-    );
-
-    const handleBlur = useCallback(
-      (e: NativeSyntheticEvent<any>) => {
-        isFocused.value = false;
-        setFocused(false);
-        onBlur?.(e);
-      },
-      [onBlur]
-    );
-
-    const errorAnimStyle = useAnimatedStyle(() => ({
-      opacity: errorOpacity.value,
-      transform: [{ translateY: (1 - errorOpacity.value) * -4 }],
-    }));
-
-    const getKeyboardType = () => {
-      switch (type) {
-        case 'email':
-          return 'email-address' as const;
-        case 'phone':
-          return 'phone-pad' as const;
-        default:
-          return 'default' as const;
-      }
-    };
-
+    const isDark = variant === 'dark';
     const isCompact = density === 'compact';
 
-    // Container styles — MoonPay-inspired
-    const containerClass = isDark
-      ? `border-b ${isCompact ? 'py-2.5' : 'py-3'} bg-transparent ${
-          focused ? 'border-white' : hasError ? 'border-destructive' : 'border-white/30'
-        }`
-      : variant === 'light'
-        ? `rounded-xl px-3 ${isCompact ? 'py-3.5' : 'py-4'} ${
-            hasError
-              ? 'border border-red-300 bg-red-50'
-              : focused
-                ? 'border border-gray-400 bg-white'
-                : 'border border-gray-200 bg-white'
-          }`
-        : `rounded-xl px-2 ${isCompact ? 'py-4' : 'py-6'} ${
-            hasError
-              ? 'border border-destructive/40 bg-red-50'
-              : focused
-                ? 'border border-black/10 bg-neutral-100'
-                : 'border border-transparent bg-neutral-100'
-          }`;
+    const labelColorClass = isDark ? 'text-white/70' : 'text-text-secondary';
+    const textColorClass = isDark ? 'text-white' : 'text-text-primary';
+    const secondaryTextColorClass = isDark ? 'text-white/70' : 'text-text-secondary';
 
-    const textColor = isDark ? 'text-white' : 'text-text-primary';
-    const placeholderColor = isDark ? 'rgba(255,255,255,0.4)' : '#9CA3AF';
-    const labelColor = isDark ? 'text-white/60' : 'text-text-primary';
+    const borderColor = useMemo(() => {
+      if (!editable) return '#D4D4D4';
+      if (hasError) return '#DC2626';
+      if (focused) return isDark ? '#FFFFFF' : '#111827';
+      return isDark ? 'rgba(255,255,255,0.28)' : '#D4D4D8';
+    }, [editable, focused, hasError, isDark]);
+
+    const backgroundColor = isDark ? 'rgba(255,255,255,0.06)' : editable ? '#FFFFFF' : '#F5F5F5';
+
+    const handleFocus = (e: NativeSyntheticEvent<any>) => {
+      setFocused(true);
+      onFocus?.(e);
+    };
+
+    const handleBlur = (e: NativeSyntheticEvent<any>) => {
+      setFocused(false);
+      onBlur?.(e);
+    };
+
+    const showRightAction = Boolean(
+      rightAccessory ||
+      (isPassword && onTogglePasswordVisibility) ||
+      (rightIcon && onRightIconPress)
+    );
 
     return (
-      <View className="mb-3">
-        {label && (
-          <View className="mb-1.5 flex-row">
-            <Text className={`font-subtitle text-caption ${labelColor}`}>{label}</Text>
-            {required && (
-              <Text
-                className={`font-subtitle text-caption ${isDark ? 'text-white/60' : 'text-destructive'}`}>
-                {' '}
+      <View className={`w-full ${containerClassName}`}>
+        {label ? (
+          <View className="mb-2 flex-row items-center">
+            <Text className={`font-subtitle text-[13px] leading-[18px] ${labelColorClass}`}>
+              {label}
+            </Text>
+            {required ? (
+              <Text className={`ml-1 font-subtitle text-[13px] leading-[18px] ${labelColorClass}`}>
                 *
               </Text>
-            )}
+            ) : null}
           </View>
-        )}
+        ) : null}
 
-        <View className={`flex-row items-center ${containerClass} ${containerClassName}`}>
-          {icon && (
+        <View
+          className={`w-full flex-row rounded-xl border px-4 ${
+            multiline
+              ? 'min-h-[110px] items-start py-3'
+              : isCompact
+                ? 'h-12 items-center'
+                : 'h-14 items-center'
+          } ${editable ? '' : 'opacity-70'} ${inputWrapperClassName}`}
+          style={{ borderColor, backgroundColor }}>
+          {leftAccessory ? (
+            <View className="mr-3 items-center justify-center">{leftAccessory}</View>
+          ) : null}
+
+          {!leftAccessory && icon ? (
             <Ionicons
               name={icon}
-              size={18}
-              color={hasError ? '#F44336' : isDark ? '#fff' : '#9CA3AF'}
+              size={20}
+              color={hasError ? '#DC2626' : isDark ? '#FFFFFF' : '#9CA3AF'}
               style={{ marginRight: 10 }}
             />
-          )}
+          ) : null}
 
           <TextInput
             ref={ref}
-            value={value}
-            onChangeText={onChangeText}
-            placeholder={placeholder}
-            placeholderTextColor={placeholderColor}
-            keyboardType={getKeyboardType()}
-            autoCapitalize={type === 'email' ? 'none' : 'sentences'}
-            autoCorrect={false}
-            secureTextEntry={isPassword && !isPasswordVisible}
+            editable={editable}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            className={`flex-1 font-body ${isCompact ? 'text-[17px]' : 'text-body'} ${textColor} ${inputClassName}`}
-            style={{ paddingVertical: 0 }}
+            keyboardType={keyboardType ?? getKeyboardType(type)}
+            autoCapitalize={autoCapitalize ?? (type === 'email' ? 'none' : 'sentences')}
+            autoCorrect={autoCorrect ?? false}
+            secureTextEntry={isPassword && !isPasswordVisible}
+            placeholderTextColor={
+              placeholderTextColor ?? (isDark ? 'rgba(255,255,255,0.55)' : '#B3B3B3')
+            }
+            multiline={multiline}
+            textAlignVertical={multiline ? 'top' : 'center'}
+            className={`flex-1 font-body ${isCompact ? 'text-[16px]' : 'text-body'} leading-[22px] ${textColorClass} ${inputClassName}`}
+            style={[{ paddingVertical: 0 }, style]}
+            accessibilityLabel={
+              props.accessibilityLabel || label || props.placeholder || 'Input field'
+            }
             {...props}
           />
 
-          {isPassword && (
-            <TouchableOpacity
-              onPress={onTogglePasswordVisibility}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              className="ml-2">
-              <Ionicons
-                name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
-                size={20}
-                color={isDark ? '#fff' : '#9CA3AF'}
-              />
-            </TouchableOpacity>
-          )}
+          {showRightAction ? (
+            <View className="ml-2 items-center justify-center">
+              {rightAccessory ? (
+                rightAccessory
+              ) : isPassword && onTogglePasswordVisibility ? (
+                <TouchableOpacity
+                  onPress={onTogglePasswordVisibility}
+                  className="min-h-[44px] min-w-[44px] items-center justify-center"
+                  accessibilityRole="button"
+                  accessibilityLabel={isPasswordVisible ? 'Hide password' : 'Show password'}>
+                  <Ionicons
+                    name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={isDark ? '#FFFFFF' : '#6B7280'}
+                  />
+                </TouchableOpacity>
+              ) : rightIcon && onRightIconPress ? (
+                <TouchableOpacity
+                  onPress={onRightIconPress}
+                  className="min-h-[44px] min-w-[44px] items-center justify-center"
+                  accessibilityRole="button"
+                  accessibilityLabel="Input action">
+                  <Ionicons name={rightIcon} size={20} color={isDark ? '#FFFFFF' : '#6B7280'} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : null}
         </View>
 
-        {(hasError || errorText) && (
-          <Animated.View style={errorAnimStyle}>
-            <Text
-              className={`mt-1.5 font-caption text-caption ${isDark ? 'text-white' : 'text-destructive'}`}>
-              {errorText}
-            </Text>
-          </Animated.View>
-        )}
+        {hasError ? (
+          <Text
+            className={`mt-2 font-caption text-caption ${isDark ? 'text-white/85' : 'text-destructive'}`}>
+            {error}
+          </Text>
+        ) : helperText ? (
+          <Text className={`mt-2 font-caption text-caption ${secondaryTextColorClass}`}>
+            {helperText}
+          </Text>
+        ) : null}
       </View>
     );
   }
 );
+
+InputField.displayName = 'InputField';

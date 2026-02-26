@@ -82,7 +82,7 @@ export function TabBar({
     <View style={[styles.wrapper, { paddingBottom: insets.bottom + 1 }]} pointerEvents="box-none">
       <View style={styles.row}>
         <View style={styles.container}>
-          <BlurView intensity={40} tint="light" style={styles.blur}>
+          <BlurView intensity={9} tint="default" style={styles.blur}>
             {state.routes.map((route, index) => (
               <TabBarItem
                 key={route.key}
@@ -94,22 +94,6 @@ export function TabBar({
             ))}
           </BlurView>
         </View>
-
-        {rightIcon && (
-          <Pressable
-            onPress={() => {
-              impact();
-              onRightIconPress?.();
-            }}
-            style={styles.rightButton}
-            accessibilityRole="button"
-            accessibilityLabel={rightIconAccessibilityLabel}
-            accessibilityState={{ disabled: !onRightIconPress }}>
-            <BlurView intensity={80} tint="light" style={styles.rightButtonBlur}>
-              {rightIcon}
-            </BlurView>
-          </Pressable>
-        )}
       </View>
     </View>
   );

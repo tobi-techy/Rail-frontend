@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { InputField } from '@/components/atoms/InputField';
 
 export interface SearchBarProps {
   placeholder?: string;
@@ -39,34 +40,32 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <View
-      className={`flex-row items-center rounded-sm bg-surface px-4 py-3 ${disabled ? 'opacity-50' : ''} ${className || ''}`}>
-      <View className="mr-3">
-        <Text className="text-body text-text-secondary">🔍</Text>
-      </View>
-
-      <TextInput
+    <View className={className || ''}>
+      <InputField
         value={value}
         onChangeText={handleChangeText}
         onSubmitEditing={() => onSearch?.(value)}
         placeholder={placeholder}
-        placeholderTextColor="#757575"
         editable={!disabled}
         autoFocus={autoFocus}
         returnKeyType="search"
-        className="flex-1 font-body text-body text-text-primary"
+        icon="search-outline"
+        density="compact"
+        inputWrapperClassName="rounded-full border-surface bg-surface"
+        inputClassName="text-body"
         accessibilityLabel="Search input"
+        rightAccessory={
+          value.length > 0 ? (
+            <TouchableOpacity
+              onPress={handleClear}
+              className="min-h-[44px] min-w-[44px] items-center justify-center"
+              accessibilityRole="button"
+              accessibilityLabel="Clear search">
+              <Ionicons name="close" size={18} color="#757575" />
+            </TouchableOpacity>
+          ) : undefined
+        }
       />
-
-      {value.length > 0 && (
-        <TouchableOpacity
-          onPress={handleClear}
-          className="ml-2 min-h-[44px] min-w-[44px] items-center justify-center p-2"
-          accessibilityRole="button"
-          accessibilityLabel="Clear search">
-          <Ionicons name="close" size={18} color="#757575" />
-        </TouchableOpacity>
-      )}
     </View>
   );
 };

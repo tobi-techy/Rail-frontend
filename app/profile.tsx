@@ -1,10 +1,10 @@
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { useNavigation } from 'expo-router';
-import React, { useCallback, useLayoutEffect, useState, useMemo } from 'react';
-import { Chart, BalanceCard } from '@/components';
+import React, { useCallback, useLayoutEffect, useState } from 'react';
+import { BalanceCard } from '@/components';
 import { Avatar } from '@rneui/base';
 import { usePortfolioOverview } from '@/api';
-import { ArrowDown, PlusIcon } from 'lucide-react-native';
+import { PlusIcon } from 'lucide-react-native';
 import { Button } from '../components/ui';
 import { useUIStore } from '@/stores';
 import { convertFromUsd, formatCurrencyAmount } from '@/utils/currency';
@@ -16,7 +16,7 @@ const Profile = () => {
   const currencyRates = useUIStore((s) => s.currencyRates);
 
   // Fetch portfolio overview with automatic refetching
-  const { data: portfolio, isError, error, refetch } = usePortfolioOverview();
+  const { data: portfolio, refetch } = usePortfolioOverview();
 
   // Pull to refresh handler
   const onRefresh = useCallback(async () => {
@@ -48,15 +48,9 @@ const Profile = () => {
     return `${sign}${value.toFixed(2)}%`;
   };
 
-  // Only show error if no cached data exists and it's not a 404
-  const is404 = error?.error?.code === 'HTTP_404';
-  const showError = isError && !portfolio && !is404;
-
   // Use loading placeholder values when no data yet
   const displayBalance = portfolio ? formatCurrency(portfolio.totalPortfolio) : '$00.00';
   const displayPerformance = portfolio ? formatPercentage(portfolio.performanceLast30d) : '---%';
-  const displayBuyingPower = portfolio ? formatCurrency(portfolio.buyingPower) : '$---';
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
@@ -76,13 +70,6 @@ const Profile = () => {
       },
     });
   }, [navigation]);
-  // Prepare chart data (7 points) based on portfolio total (flat series)
-  const chartValue = portfolio ? parseFloat(portfolio.totalPortfolio) || 0 : 0;
-  const chartData = useMemo(
-    () => Array.from({ length: 7 }, () => ({ value: chartValue })),
-    [chartValue]
-  );
-
   return (
     <ScrollView
       className="flex-1"

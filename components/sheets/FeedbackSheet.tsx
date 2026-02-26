@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheet } from './BottomSheet';
 import { useAuthStore } from '@/stores/authStore';
 import apiClient from '@/api/client';
 import { useHaptics } from '@/hooks/useHaptics';
+import { InputField } from '@/components/atoms/InputField';
 
 const CATEGORIES = ['Bug', 'Idea', 'Question', 'Other'] as const;
 type Category = (typeof CATEGORIES)[number];
@@ -92,16 +93,14 @@ export function FeedbackSheet({ visible, onClose }: Props) {
             </View>
 
             {/* Message input */}
-            <TextInput
+            <InputField
               value={message}
               onChangeText={setMessage}
               placeholder="What's on your mind?"
-              placeholderTextColor="#00000040"
               multiline
               numberOfLines={4}
-              textAlignVertical="top"
-              className="min-h-[110px] rounded-2xl border border-gray-100 bg-gray-50 p-4 text-[15px] text-black"
-              style={{ fontFamily: 'SF-Pro-Rounded-Regular' }}
+              inputWrapperClassName="min-h-[110px] border-gray-100 bg-gray-50"
+              inputClassName="text-[15px] text-black"
             />
 
             {/* Submit */}

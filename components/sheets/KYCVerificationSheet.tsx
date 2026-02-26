@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import {
   AlertTriangle,
   Camera,
@@ -253,11 +253,11 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
   ];
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={closeSheet}>
-      <View className="flex-1 justify-end bg-black/40">
-        <Pressable className="flex-1" onPress={closeSheet} />
-        <NavigableBottomSheet navigation={navigation} screens={screens} />
-      </View>
-    </Modal>
+    <NavigableBottomSheet
+      visible={visible}
+      onClose={closeSheet}
+      navigation={navigation}
+      screens={screens}
+    />
   );
 }

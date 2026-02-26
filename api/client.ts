@@ -456,10 +456,23 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
   if (status >= 500) {
     safeWarn('[API] Server error', {
       status,
-      code: data?.code,
+      code: typeof data === 'object' ? data?.code : undefined,
       requestId,
       url: error.config?.url,
     });
+  }
+
+  if (typeof data === 'string') {
+    const trimmed = data.trim().toLowerCase();
+    const isHTMLResponse = trimmed.startsWith('<!doctype html') || trimmed.startsWith('<html');
+    if (isHTMLResponse) {
+      return {
+        code: `HTTP_${status}`,
+        message: getDefaultMessage(status),
+        status,
+        requestId,
+      };
+    }
   }
 
   // Backend error with code and message

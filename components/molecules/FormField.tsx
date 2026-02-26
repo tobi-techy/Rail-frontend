@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInputProps } from 'react-native';
+import { View, TextInputProps } from 'react-native';
 import { InputField } from '../atoms/InputField';
 
 export interface FormFieldProps extends TextInputProps {
@@ -27,12 +27,10 @@ export const FormField: React.FC<FormFieldProps> = ({
       label={label}
       error={error}
       required={required}
+      helperText={helperText}
       type={type}
       icon={icon as any}
       {...inputProps}
     />
-    {helperText && !error && (
-      <Text className="-mb-4 mt-1 font-caption text-caption text-text-tertiary">{helperText}</Text>
-    )}
   </View>
 );

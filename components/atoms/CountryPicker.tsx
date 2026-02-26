@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Modal, FlatList, TextInput } from 'react-native';
+import { View, Text, Pressable, Modal, FlatList } from 'react-native';
 import { Ionicons } from './SafeIonicons';
+import { InputField } from './InputField';
 
 interface Country {
   code: string;
@@ -100,7 +101,7 @@ export function CountryPicker({
   const isDark = variant === 'dark';
   const hasError = !!error;
 
-  const selectedCountry = COUNTRIES.find(country => country.name === value);
+  const selectedCountry = COUNTRIES.find((country) => country.name === value);
 
   const filteredCountries = COUNTRIES.filter((country) =>
     country.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -108,15 +109,15 @@ export function CountryPicker({
 
   const getContainerStyle = () => {
     if (isDark) {
-      return `py-3 border-b ${hasError ? 'border-destructive' : 'border-white/30'} bg-transparent`;
+      return `h-[56px] rounded-xl border px-4 ${hasError ? 'border-destructive' : 'border-white/30'} bg-white/5`;
     }
     if (hasError) {
-      return 'h-[56px] rounded-2xl border border-destructive bg-red-50 px-4';
+      return 'h-[56px] rounded-xl border border-destructive bg-white px-4';
     }
     if (isModalVisible) {
-      return 'h-[56px] rounded-2xl border border-black/20 bg-neutral-200 px-4';
+      return 'h-[56px] rounded-xl border border-black/20 bg-white px-4';
     }
-    return 'h-[56px] rounded-2xl border border-transparent bg-neutral-100 px-4';
+    return 'h-[56px] rounded-xl border border-[#D4D4D8] bg-white px-4';
   };
 
   const handleCountrySelect = (country: Country) => {
@@ -129,7 +130,7 @@ export function CountryPicker({
     <Pressable
       onPress={() => handleCountrySelect(item)}
       className="flex-row items-center border-b border-black/5 px-5 py-3">
-      <Text className="text-2xl mr-3">{item.flag}</Text>
+      <Text className="mr-3 text-2xl">{item.flag}</Text>
       <Text className="flex-1 font-body text-body text-text-primary">{item.name}</Text>
     </Pressable>
   );
@@ -138,11 +139,13 @@ export function CountryPicker({
     <View className={isDark ? 'mb-2' : 'mb-4'}>
       {label && (
         <View className="mb-1 flex-row">
-          <Text className={`font-subtitle text-body ${isDark ? 'text-white/60' : 'text-text-primary'}`}>
+          <Text
+            className={`font-subtitle text-body ${isDark ? 'text-white/60' : 'text-text-primary'}`}>
             {label}
           </Text>
           {required && (
-            <Text className={`font-subtitle text-body ${isDark ? 'text-white/60' : 'text-destructive'}`}>
+            <Text
+              className={`font-subtitle text-body ${isDark ? 'text-white/60' : 'text-destructive'}`}>
               {' '}
               *
             </Text>
@@ -153,16 +156,18 @@ export function CountryPicker({
       <Pressable
         onPress={() => setIsModalVisible(true)}
         className={`flex-row items-center justify-between ${getContainerStyle()}`}>
-        <View className="flex-row items-center flex-1">
+        <View className="flex-1 flex-row items-center">
           {selectedCountry ? (
             <>
-              <Text className="text-2xl mr-3">{selectedCountry.flag}</Text>
-              <Text className={`font-body text-body ${isDark ? 'text-white' : 'text-text-primary'}`}>
+              <Text className="mr-3 text-2xl">{selectedCountry.flag}</Text>
+              <Text
+                className={`font-body text-body ${isDark ? 'text-white' : 'text-text-primary'}`}>
                 {selectedCountry.name}
               </Text>
             </>
           ) : (
-            <Text className={`font-body text-body ${isDark ? 'text-white/50' : 'text-text-tertiary'}`}>
+            <Text
+              className={`font-body text-body ${isDark ? 'text-white/50' : 'text-text-tertiary'}`}>
               {placeholder}
             </Text>
           )}
@@ -175,7 +180,8 @@ export function CountryPicker({
       </Pressable>
 
       {error && (
-        <Text className={`mt-1 font-caption text-caption ${isDark ? 'text-white' : 'text-destructive'}`}>
+        <Text
+          className={`mt-1 font-caption text-caption ${isDark ? 'text-white' : 'text-destructive'}`}>
           {error}
         </Text>
       )}
@@ -190,16 +196,14 @@ export function CountryPicker({
           </View>
 
           <View className="border-b border-black/5 px-5 py-3">
-            <View className="h-[52px] flex-row items-center rounded-2xl border border-transparent bg-neutral-100 px-4">
-              <Ionicons name="search" size={20} color="#757575" />
-              <TextInput
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Search countries..."
-                className="ml-3 flex-1 font-body text-body text-text-primary"
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
+            <InputField
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search countries..."
+              icon="search-outline"
+              density="compact"
+              inputWrapperClassName="rounded-2xl border-transparent bg-neutral-100"
+            />
           </View>
 
           <FlatList

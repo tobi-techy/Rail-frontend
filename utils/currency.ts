@@ -4,19 +4,15 @@ export type FxRates = Record<Currency, number>;
 
 export const DEFAULT_USD_BASE_EXCHANGE_RATES: FxRates = {
   USD: 1,
-  GBP: 0.79,
   EUR: 0.92,
-  NGN: 1620,
 };
 
 const CURRENCY_LOCALE: Record<Currency, string> = {
   USD: 'en-US',
-  GBP: 'en-GB',
   EUR: 'en-IE',
-  NGN: 'en-NG',
 };
 
-export const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'GBP', 'EUR', 'NGN'];
+export const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'EUR'];
 
 export const isSupportedCurrency = (value?: string | null): value is Currency =>
   !!value && SUPPORTED_CURRENCIES.includes(value.toUpperCase() as Currency);
