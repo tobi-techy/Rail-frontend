@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
 import { PhantomIcon, SolflareIcon, SolanaIcon } from '@/assets/svg';
@@ -19,24 +20,31 @@ interface MoreFundingOptionsSheetProps {
 }
 
 export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingOptionsSheetProps) {
+  const openMethodFlow = (method: 'phantom' | 'solflare') => {
+    onClose();
+    requestAnimationFrame(() => {
+      router.push({
+        pathname: '/withdraw/[method]',
+        params: {
+          method,
+          flow: mode === 'deposit' ? 'fund' : 'send',
+        },
+      } as any);
+    });
+  };
+
   const options: FundingOption[] = [
     {
       id: 'phantom',
       label: 'Phantom',
       icon: <PhantomIcon width={28} height={28} />,
-      onPress: () => {
-        onClose();
-        // TODO: Solana Mobile Wallet Adapter — Phantom
-      },
+      onPress: () => openMethodFlow('phantom'),
     },
     {
       id: 'solflare',
       label: 'Solflare',
       icon: <SolflareIcon width={28} height={28} />,
-      onPress: () => {
-        onClose();
-        // TODO: Solana Mobile Wallet Adapter — Solflare
-      },
+      onPress: () => openMethodFlow('solflare'),
     },
     {
       id: 'solana-pay',

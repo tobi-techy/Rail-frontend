@@ -39,11 +39,11 @@ export function useInvestmentDistribution(limit = 10) {
 
 export function useInvestmentTransactions(params?: InvestmentTransactionsParams) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const safeParams: Required<InvestmentTransactionsParams> = {
+  const safeParams: InvestmentTransactionsParams = {
     limit: params?.limit ?? 20,
     offset: params?.offset ?? 0,
     side: params?.side ?? 'all',
-    status: params?.status ?? 'filled',
+    ...(params?.status ? { status: params.status } : {}),
   };
 
   return useQuery({

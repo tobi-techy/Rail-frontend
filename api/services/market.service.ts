@@ -32,6 +32,9 @@ const omitUndefined = (
     string | number | boolean
   >;
 
+const normalizeSymbol = (symbol: string): string => symbol.trim().toUpperCase();
+const encodeSymbol = (symbol: string): string => encodeURIComponent(normalizeSymbol(symbol));
+
 export const marketService = {
   async getExplore(params?: MarketExploreQueryParams): Promise<MarketExploreResponse> {
     const requestParams = omitUndefined({
@@ -70,7 +73,7 @@ export const marketService = {
       barsLimit?: number;
     }
   ): Promise<MarketInstrumentDetailsResponse> {
-    const endpoint = MARKET_ENDPOINTS.INSTRUMENT.replace(':symbol', symbol.toUpperCase());
+    const endpoint = MARKET_ENDPOINTS.INSTRUMENT.replace(':symbol', encodeSymbol(symbol));
     const include = options?.includeBars ? 'bars' : undefined;
     const requestParams = omitUndefined({
       include,
@@ -82,7 +85,7 @@ export const marketService = {
   },
 
   async getBars(symbol: string, params?: MarketBarsQueryParams): Promise<MarketBarsResponse> {
-    const endpoint = MARKET_ENDPOINTS.BARS.replace(':symbol', symbol.toUpperCase());
+    const endpoint = MARKET_ENDPOINTS.BARS.replace(':symbol', encodeSymbol(symbol));
     const requestParams = omitUndefined({
       timeframe: params?.timeframe,
       start: params?.start,
@@ -113,7 +116,12 @@ export const marketService = {
 
   async getPopularInstruments(symbols: string[]): Promise<MarketInstrumentDetailsResponse[]> {
     if (!symbols.length) return [];
-    const uniqueSymbols = Array.from(new Set(symbols.map((symbol) => symbol.toUpperCase().trim())));
+    const uniqueSymbols = Array.from(
+      new Set(
+        symbols.map((symbol) => normalizeSymbol(symbol)).filter((symbol) => symbol.length > 0)
+      )
+    );
+    if (!uniqueSymbols.length) return [];
     const instruments = await Promise.all(
       uniqueSymbols.map((symbol) =>
         marketService

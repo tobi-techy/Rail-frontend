@@ -16,7 +16,7 @@ import {
   Wallet,
 } from 'lucide-react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
-import Gleap from 'react-native-gleapsdk';
+import gleap from '@/utils/gleap';
 import type { Transaction } from '@/components/molecules/TransactionItem';
 import { useStation, useKYCStatus } from '@/api/hooks';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
@@ -213,7 +213,7 @@ const Dashboard = () => {
   }, [kycStatus]);
 
   const startWithdrawalFlow = useCallback(
-    (method: 'fiat' | 'crypto') => {
+    (method: 'fiat' | 'crypto' | 'phantom' | 'solflare', flow: 'send' | 'fund' = 'send') => {
       if (method === 'fiat' && kycStatus?.status !== 'approved') {
         setShowSendSheet(false);
         setShowReceiveSheet(false);
@@ -226,7 +226,10 @@ const Dashboard = () => {
 
       // Let bottom sheet dismissal settle before route transition.
       requestAnimationFrame(() => {
-        router.push(`/withdraw/${method}` as any);
+        router.push({
+          pathname: '/withdraw/[method]',
+          params: { method, flow },
+        } as any);
       });
     },
     [kycStatus?.status]
@@ -307,7 +310,7 @@ const Dashboard = () => {
       ),
       headerRight: () => (
         <View className="flex-row items-center gap-x-4 pr-md">
-          <Pressable onPress={() => Gleap.open()} hitSlop={8}>
+          <Pressable onPress={() => gleap.open()} hitSlop={8}>
             <MessageCircle size={22} color="#111" strokeWidth={1.8} />
           </Pressable>
           <Pressable hitSlop={8}>
@@ -377,14 +380,14 @@ const Dashboard = () => {
         label: 'Phantom',
         sublabel: 'Connect Phantom wallet',
         icon: <PhantomIcon width={28} height={28} />,
-        onPress: handleCloseReceiveSheet,
+        onPress: () => startWithdrawalFlow('phantom', 'fund'),
       },
       {
         id: 'solflare',
         label: 'Solflare',
         sublabel: 'Connect Solflare wallet',
         icon: <SolflareIcon width={28} height={28} />,
-        onPress: handleCloseReceiveSheet,
+        onPress: () => startWithdrawalFlow('solflare', 'fund'),
       },
       {
         id: 'solana-pay',
@@ -401,7 +404,7 @@ const Dashboard = () => {
         onPress: handleCloseReceiveSheet,
       },
     ],
-    [handleCloseReceiveSheet]
+    [handleCloseReceiveSheet, startWithdrawalFlow]
   );
 
   const sendMainActions = useMemo<FundingActionItem[]>(
@@ -438,14 +441,14 @@ const Dashboard = () => {
         label: 'Phantom',
         sublabel: 'Send using Phantom wallet',
         icon: <PhantomIcon width={28} height={28} />,
-        onPress: handleCloseSendSheet,
+        onPress: () => startWithdrawalFlow('phantom'),
       },
       {
         id: 'solflare',
         label: 'Solflare',
         sublabel: 'Send using Solflare wallet',
         icon: <SolflareIcon width={28} height={28} />,
-        onPress: handleCloseSendSheet,
+        onPress: () => startWithdrawalFlow('solflare'),
       },
       {
         id: 'solana-pay',
@@ -462,7 +465,7 @@ const Dashboard = () => {
         onPress: handleCloseSendSheet,
       },
     ],
-    [handleCloseSendSheet]
+    [handleCloseSendSheet, startWithdrawalFlow]
   );
 
   const receiveScreens = useMemo<BottomSheetScreen[]>(

@@ -61,13 +61,27 @@ const formatUsd = (amount: number): string =>
     maximumFractionDigits: 2,
   }).format(amount);
 
+const sanitizeInitialAmount = (value?: string): string => {
+  const numeric = Number.parseFloat(String(value ?? ''));
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return '0';
+  }
+
+  const fixed = numeric.toFixed(2);
+  if (fixed.endsWith('.00')) return String(Math.trunc(numeric));
+  return fixed.endsWith('0') ? fixed.slice(0, -1) : fixed;
+};
+
 export default function MarketTradeAmountScreen() {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ symbol?: string; side?: string }>();
+  const params = useLocalSearchParams<{ symbol?: string; side?: string; amount?: string }>();
 
   const symbol = typeof params.symbol === 'string' ? params.symbol.toUpperCase() : '';
   const side: OrderSide = params.side === 'sell' ? 'sell' : 'buy';
-  const [rawAmount, setRawAmount] = useState('0');
+  const initialAmount = sanitizeInitialAmount(
+    typeof params.amount === 'string' ? params.amount : undefined
+  );
+  const [rawAmount, setRawAmount] = useState(initialAmount);
 
   const marketInstrumentQuery = useMarketInstrument(symbol || null);
   const { data: station } = useStation();

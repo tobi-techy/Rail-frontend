@@ -139,6 +139,8 @@ export default function MarketScreen() {
   );
 
   const displayedAssets = useMemo(() => cleanedExploreAssets.slice(0, 8), [cleanedExploreAssets]);
+  const marketExploreErrorMessage =
+    marketExploreQuery.error?.message?.trim() || 'Please try again.';
 
   const stockCount = firstPage?.facets.types.find((item) => item.value === 'stock')?.count ?? null;
   const etfCount = firstPage?.facets.types.find((item) => item.value === 'etf')?.count ?? null;
@@ -322,6 +324,31 @@ export default function MarketScreen() {
                   }
                 />
               ))}
+            </View>
+          ) : marketExploreQuery.isError ? (
+            <View className="rounded-md border border-surface bg-white p-md">
+              <Text className="font-subtitle text-body text-text-primary">
+                Unable to load assets
+              </Text>
+              <Text className="mt-1 font-caption text-caption text-text-secondary">
+                {marketExploreErrorMessage}
+              </Text>
+              <View className="mt-4 flex-row gap-2">
+                <Button
+                  title={marketExploreQuery.isRefetching ? 'Retrying…' : 'Retry'}
+                  size="small"
+                  onPress={() => {
+                    void marketExploreQuery.refetch();
+                  }}
+                  disabled={marketExploreQuery.isRefetching}
+                />
+                <Button
+                  title="Open explorer"
+                  size="small"
+                  variant="white"
+                  onPress={onOpenExplore}
+                />
+              </View>
             </View>
           ) : (
             <View className="rounded-md border border-surface bg-white p-md">

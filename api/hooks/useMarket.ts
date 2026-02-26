@@ -75,20 +75,22 @@ export function useMarketInstrument(
     barsLimit?: number;
   }
 ) {
+  const normalizedSymbol = symbol?.trim().toUpperCase() || undefined;
+
   return useQuery({
     queryKey: queryKeys.market.instrument(
-      symbol || '',
+      normalizedSymbol ?? '',
       !!options?.includeBars,
       options?.barsTimeframe,
       options?.barsLimit
     ),
     queryFn: () =>
-      marketService.getInstrument(symbol as string, {
+      marketService.getInstrument(normalizedSymbol as string, {
         includeBars: options?.includeBars,
         barsTimeframe: options?.barsTimeframe,
         barsLimit: options?.barsLimit,
       }),
-    enabled: !!symbol,
+    enabled: !!normalizedSymbol,
     staleTime: 10 * 1000,
   });
 }

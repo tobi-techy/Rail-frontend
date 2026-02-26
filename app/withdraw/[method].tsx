@@ -40,17 +40,50 @@ const springConfig = { damping: 15, stiffness: 200, mass: 0.8 };
 const gentleSpring = { damping: 20, stiffness: 150, mass: 1 };
 
 type WithdrawMethod = 'fiat' | 'crypto';
+type ExtendedWithdrawMethod = WithdrawMethod | 'phantom' | 'solflare' | 'asset-buy' | 'asset-sell';
+type FundingFlow = 'send' | 'fund';
 
-const LIMITS: Record<WithdrawMethod, number> = {
+const METHOD_ALIASES: Record<string, ExtendedWithdrawMethod> = {
+  fiat: 'fiat',
+  crypto: 'crypto',
+  phantom: 'phantom',
+  solflare: 'solflare',
+  'fund-phantom': 'phantom',
+  'fund-solflare': 'solflare',
+  'asset-buy': 'asset-buy',
+  'asset-sell': 'asset-sell',
+  'stock-buy': 'asset-buy',
+  'stock-sell': 'asset-sell',
+  'buy-stock': 'asset-buy',
+  'sell-stock': 'asset-sell',
+  buy: 'asset-buy',
+  sell: 'asset-sell',
+};
+
+const resolveMethod = (value?: string): ExtendedWithdrawMethod => {
+  if (!value) return 'crypto';
+  return METHOD_ALIASES[value.toLowerCase()] ?? 'crypto';
+};
+
+const resolveFlow = (value?: string): FundingFlow => {
+  if (!value) return 'send';
+  return value.toLowerCase() === 'fund' ? 'fund' : 'send';
+};
+
+const LIMITS: Record<ExtendedWithdrawMethod, number> = {
   fiat: 10_000,
   crypto: 50_000,
+  phantom: 50_000,
+  solflare: 50_000,
+  'asset-buy': 100_000,
+  'asset-sell': 100_000,
 };
 
 const FALLBACK_AVAILABLE_BALANCE = 0;
 const MAX_INTEGER_DIGITS = 12;
 
 const METHOD_COPY: Record<
-  WithdrawMethod,
+  ExtendedWithdrawMethod,
   {
     title: string;
     subtitle: string;
@@ -78,6 +111,42 @@ const METHOD_COPY: Record<
     detailHint: 'Double-check this address. Crypto withdrawals cannot be reversed.',
     detailLabel: 'Wallet address',
     detailPlaceholder: 'Paste wallet address',
+  },
+  phantom: {
+    title: 'Send to Phantom',
+    subtitle: 'Send assets to your Phantom wallet',
+    limitLabel: 'Wallet withdrawal limit',
+    detailTitle: 'Add Phantom wallet address',
+    detailHint: 'Use your Solana wallet address from Phantom.',
+    detailLabel: 'Phantom wallet address',
+    detailPlaceholder: 'Paste Phantom address',
+  },
+  solflare: {
+    title: 'Send to Solflare',
+    subtitle: 'Send assets to your Solflare wallet',
+    limitLabel: 'Wallet withdrawal limit',
+    detailTitle: 'Add Solflare wallet address',
+    detailHint: 'Use your Solana wallet address from Solflare.',
+    detailLabel: 'Solflare wallet address',
+    detailPlaceholder: 'Paste Solflare address',
+  },
+  'asset-buy': {
+    title: 'Buy asset',
+    subtitle: 'Set amount and symbol for an asset buy',
+    limitLabel: 'Asset buy limit',
+    detailTitle: 'Add asset symbol',
+    detailHint: 'Use the symbol you want to buy, like AAPL, SPY, or BTC.',
+    detailLabel: 'Asset symbol',
+    detailPlaceholder: 'AAPL',
+  },
+  'asset-sell': {
+    title: 'Sell asset',
+    subtitle: 'Set amount and symbol for an asset sell',
+    limitLabel: 'Asset sell limit',
+    detailTitle: 'Add asset symbol',
+    detailHint: 'Use the symbol you want to sell, like AAPL, SPY, or BTC.',
+    detailLabel: 'Asset symbol',
+    detailPlaceholder: 'AAPL',
   },
 };
 
@@ -229,19 +298,72 @@ export default function WithdrawAmountScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user as ProfileNamePayload | undefined);
   const { data: station } = useStation();
-  const params = useLocalSearchParams<{ method?: string }>();
+  const params = useLocalSearchParams<{ method?: string; symbol?: string; flow?: string }>();
 
-  const selectedMethod: WithdrawMethod =
-    params.method === 'fiat' || params.method === 'crypto' ? params.method : 'crypto';
-  const { data: kycStatus, isLoading: isKycStatusLoading } = useKYCStatus(
-    selectedMethod === 'fiat'
+  const selectedMethod = resolveMethod(
+    typeof params.method === 'string' ? params.method : undefined
   );
+  const flow = resolveFlow(typeof params.flow === 'string' ? params.flow : undefined);
+  const isFundFlow = flow === 'fund';
+  const methodCopy = useMemo(() => {
+    const base = METHOD_COPY[selectedMethod];
+    if (!isFundFlow) return base;
+
+    if (selectedMethod === 'phantom') {
+      return {
+        ...base,
+        title: 'Fund with Phantom',
+        subtitle: 'Move assets from Phantom into your Rail wallet',
+        limitLabel: 'Funding limit',
+        detailTitle: 'Add Phantom wallet address',
+        detailHint: 'Use the Phantom address where funds will be sent from.',
+        detailLabel: 'Phantom wallet address',
+      };
+    }
+
+    if (selectedMethod === 'solflare') {
+      return {
+        ...base,
+        title: 'Fund with Solflare',
+        subtitle: 'Move assets from Solflare into your Rail wallet',
+        limitLabel: 'Funding limit',
+        detailTitle: 'Add Solflare wallet address',
+        detailHint: 'Use the Solflare address where funds will be sent from.',
+        detailLabel: 'Solflare wallet address',
+      };
+    }
+
+    if (selectedMethod === 'crypto') {
+      return {
+        ...base,
+        title: 'Fund with Wallet',
+        subtitle: 'Move assets from your wallet into Rail',
+        limitLabel: 'Funding limit',
+      };
+    }
+
+    return base;
+  }, [isFundFlow, selectedMethod]);
+  const isFiatMethod = selectedMethod === 'fiat';
+  const isAssetTradeMethod = selectedMethod === 'asset-buy' || selectedMethod === 'asset-sell';
+  const isAssetBuyMethod = selectedMethod === 'asset-buy';
+  const isCryptoDestinationMethod =
+    selectedMethod === 'crypto' || selectedMethod === 'phantom' || selectedMethod === 'solflare';
+  const { data: kycStatus, isLoading: isKycStatusLoading } = useKYCStatus(isFiatMethod);
   const isFiatApproved = kycStatus?.status === 'approved';
+  const prefilledAssetSymbol = useMemo(() => {
+    if (!isAssetTradeMethod) return '';
+    const raw = typeof params.symbol === 'string' ? params.symbol : '';
+    return raw
+      .toUpperCase()
+      .replace(/[^A-Z0-9.-]/g, '')
+      .slice(0, 12);
+  }, [isAssetTradeMethod, params.symbol]);
 
   const [rawAmount, setRawAmount] = useState('0');
   const [didTryContinue, setDidTryContinue] = useState(false);
   const [isDetailsSheetVisible, setIsDetailsSheetVisible] = useState(false);
-  const [destinationInput, setDestinationInput] = useState('');
+  const [destinationInput, setDestinationInput] = useState(prefilledAssetSymbol);
   const [didTryDestination, setDidTryDestination] = useState(false);
   const [isAuthorizeScreenVisible, setIsAuthorizeScreenVisible] = useState(false);
   const [authPasscode, setAuthPasscode] = useState('');
@@ -251,6 +373,11 @@ export default function WithdrawAmountScreen() {
   const [submitWithActiveSession, setSubmitWithActiveSession] = useState(false);
   const [passkeyAvailable, setPasskeyAvailable] = useState(false);
   const [showKycSheet, setShowKycSheet] = useState(false);
+
+  useEffect(() => {
+    if (!isAssetTradeMethod || !prefilledAssetSymbol) return;
+    setDestinationInput((current) => current || prefilledAssetSymbol);
+  }, [isAssetTradeMethod, prefilledAssetSymbol]);
 
   const { mutate: initiateWithdrawal, isPending: isSubmittingCrypto } = useInitiateWithdrawal();
   const { mutate: initiateFiatWithdrawal, isPending: isSubmittingFiat } =
@@ -289,12 +416,18 @@ export default function WithdrawAmountScreen() {
   }, [user?.email]);
 
   const availableBalance = useMemo(() => {
-    const parsed = Number.parseFloat(station?.spend_balance ?? '');
+    const source =
+      selectedMethod === 'asset-buy'
+        ? station?.broker_cash
+        : selectedMethod === 'asset-sell'
+          ? station?.invest_balance
+          : station?.spend_balance;
+    const parsed = Number.parseFloat(source ?? '');
     if (Number.isFinite(parsed) && parsed >= 0) {
       return parsed;
     }
     return FALLBACK_AVAILABLE_BALANCE;
-  }, [station?.spend_balance]);
+  }, [selectedMethod, station?.broker_cash, station?.invest_balance, station?.spend_balance]);
 
   const withdrawalLimit = LIMITS[selectedMethod];
   const maxWithdrawable = Math.min(withdrawalLimit, availableBalance);
@@ -307,29 +440,38 @@ export default function WithdrawAmountScreen() {
   const amountError = useMemo(() => {
     if (numericAmount <= 0) return 'Enter an amount greater than $0.00.';
     if (numericAmount > withdrawalLimit) {
-      return `This amount is above your ${selectedMethod} withdrawal limit of $${formatCurrency(withdrawalLimit)}.`;
+      return `This amount is above your ${methodCopy.limitLabel.toLowerCase()} of $${formatCurrency(withdrawalLimit)}.`;
     }
     if (numericAmount > availableBalance) {
       return `Insufficient funds. You need $${formatCurrency(numericAmount - availableBalance)} more.`;
     }
     return '';
-  }, [availableBalance, numericAmount, selectedMethod, withdrawalLimit]);
+  }, [availableBalance, methodCopy.limitLabel, numericAmount, withdrawalLimit]);
 
   const destinationError = useMemo(() => {
     if (!destinationInput.trim()) {
-      return selectedMethod === 'fiat'
-        ? 'Routing number is required.'
-        : 'Wallet address is required.';
+      if (selectedMethod === 'fiat') return 'Routing number is required.';
+      if (selectedMethod === 'asset-buy' || selectedMethod === 'asset-sell') {
+        return 'Asset symbol is required.';
+      }
+      return 'Wallet address is required.';
     }
 
-    if (selectedMethod === 'fiat') {
+    if (isFiatMethod) {
       const digitsOnly = destinationInput.replace(/\D/g, '');
       if (digitsOnly.length !== 9) {
         return 'Routing number must be exactly 9 digits.';
       }
     }
 
-    if (selectedMethod === 'crypto') {
+    if (isAssetTradeMethod) {
+      const ticker = destinationInput.trim().toUpperCase();
+      if (!/^[A-Z][A-Z0-9.-]{0,11}$/.test(ticker)) {
+        return 'Enter a valid asset symbol (e.g. AAPL).';
+      }
+    }
+
+    if (isCryptoDestinationMethod) {
       const trimmedAddress = destinationInput.trim();
       if (trimmedAddress.length < 18) {
         return 'Wallet address looks too short.';
@@ -337,7 +479,13 @@ export default function WithdrawAmountScreen() {
     }
 
     return '';
-  }, [destinationInput, selectedMethod]);
+  }, [
+    destinationInput,
+    isAssetTradeMethod,
+    isCryptoDestinationMethod,
+    isFiatMethod,
+    selectedMethod,
+  ]);
 
   const canContinue = Boolean(numericAmount > 0 && !amountError);
   const canSaveDestination = Boolean(!destinationError);
@@ -467,7 +615,9 @@ export default function WithdrawAmountScreen() {
       }
 
       setIsAuthorizeScreenVisible(true);
-      setAuthError(err?.message || 'Withdrawal failed. Please try again.');
+      setAuthError(
+        err?.message || `${isFundFlow ? 'Funding' : 'Withdrawal'} failed. Please try again.`
+      );
     };
 
     if (selectedMethod === 'crypto') {
@@ -484,6 +634,35 @@ export default function WithdrawAmountScreen() {
       return;
     }
 
+    if (selectedMethod === 'phantom' || selectedMethod === 'solflare') {
+      initiateWithdrawal(
+        {
+          amount: normalizedAmount,
+          destination_address: destination,
+        },
+        {
+          onSuccess,
+          onError,
+        }
+      );
+      return;
+    }
+
+    if (selectedMethod === 'asset-buy' || selectedMethod === 'asset-sell') {
+      setIsAuthorizeScreenVisible(false);
+      setAuthPasscode('');
+      setAuthError('');
+      router.push({
+        pathname: '/market-asset/trade',
+        params: {
+          symbol: destination.toUpperCase(),
+          side: selectedMethod === 'asset-buy' ? 'buy' : 'sell',
+          amount: normalizedAmount.toFixed(2),
+        },
+      } as any);
+      return;
+    }
+
     initiateFiatWithdrawal(
       {
         amount: normalizedAmount,
@@ -495,7 +674,14 @@ export default function WithdrawAmountScreen() {
         onError,
       }
     );
-  }, [destinationInput, initiateFiatWithdrawal, initiateWithdrawal, numericAmount, selectedMethod]);
+  }, [
+    destinationInput,
+    initiateFiatWithdrawal,
+    initiateWithdrawal,
+    isFundFlow,
+    numericAmount,
+    selectedMethod,
+  ]);
 
   useEffect(() => {
     if (!submitWithActiveSession) return;
@@ -608,18 +794,43 @@ export default function WithdrawAmountScreen() {
     (value: string) => {
       setDidTryDestination(false);
 
-      if (selectedMethod === 'fiat') {
+      if (isFiatMethod) {
         setDestinationInput(value.replace(/\D/g, '').slice(0, 9));
+        return;
+      }
+
+      if (isAssetTradeMethod) {
+        setDestinationInput(
+          value
+            .toUpperCase()
+            .replace(/[^A-Z0-9.-]/g, '')
+            .slice(0, 12)
+        );
         return;
       }
 
       setDestinationInput(value);
     },
-    [selectedMethod]
+    [isAssetTradeMethod, isFiatMethod]
   );
 
-  const methodCopy = METHOD_COPY[selectedMethod];
   const displayAmount = toDisplayAmount(rawAmount);
+  const balanceLabel = isAssetBuyMethod
+    ? 'Buying power'
+    : isAssetTradeMethod
+      ? 'Invest balance'
+      : 'Balance';
+  const flowTitle = isAssetTradeMethod ? 'Trade' : isFundFlow ? 'Fund' : 'Withdraw';
+  const authorizeTitle = isAssetTradeMethod
+    ? 'Confirm order'
+    : isFundFlow
+      ? 'Confirm funding'
+      : 'Confirm withdrawal';
+  const submittingTitle = isAssetTradeMethod
+    ? 'Preparing order...'
+    : isFundFlow
+      ? 'Submitting funding...'
+      : 'Submitting withdrawal...';
 
   // Animated styles
   const headerAnimatedStyle = useAnimatedStyle(() => ({
@@ -636,7 +847,7 @@ export default function WithdrawAmountScreen() {
     opacity: pillsOpacity.value,
   }));
 
-  if (selectedMethod === 'fiat' && isKycStatusLoading) {
+  if (isFiatMethod && isKycStatusLoading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator size="large" color="#000" />
@@ -644,7 +855,7 @@ export default function WithdrawAmountScreen() {
     );
   }
 
-  if (selectedMethod === 'fiat' && !isFiatApproved) {
+  if (isFiatMethod && !isFiatApproved) {
     return (
       <ErrorBoundary>
         <>
@@ -705,7 +916,7 @@ export default function WithdrawAmountScreen() {
               accessibilityLabel="Go back">
               <ArrowLeft size={20} color="#111111" />
             </TouchableOpacity>
-            <Text className="font-subtitle text-[20px] text-text-primary">Confirm withdrawal</Text>
+            <Text className="font-subtitle text-[20px] text-text-primary">{authorizeTitle}</Text>
             <View className="size-11" />
           </View>
 
@@ -718,7 +929,7 @@ export default function WithdrawAmountScreen() {
               <View className="mt-3 flex-row items-center gap-2">
                 <ActivityIndicator size="small" color="#111111" />
                 <Text className="font-body text-[13px] text-text-secondary">
-                  {isSubmitting ? 'Submitting withdrawal...' : 'Authorizing...'}
+                  {isSubmitting ? submittingTitle : 'Authorizing...'}
                 </Text>
               </View>
             )}
@@ -765,7 +976,7 @@ export default function WithdrawAmountScreen() {
               accessibilityLabel="Close withdraw flow">
               <X size={20} color="#FFFFFF" />
             </TouchableOpacity>
-            <Text className="font-subtitle text-[20px] text-white">Withdraw</Text>
+            <Text className="font-subtitle text-[20px] text-white">{flowTitle}</Text>
             <View className="size-11" />
           </Animated.View>
 
@@ -802,7 +1013,7 @@ export default function WithdrawAmountScreen() {
               className="mt-6 flex-row items-center justify-center gap-2">
               <View className="flex-row items-center rounded-full bg-white/20 px-3 py-2">
                 <Text className="font-body text-[13px] text-white/90">
-                  Balance: ${formatCurrency(availableBalance)}
+                  {balanceLabel}: ${formatCurrency(availableBalance)}
                 </Text>
               </View>
 
@@ -880,9 +1091,9 @@ export default function WithdrawAmountScreen() {
                 value={destinationInput}
                 onChangeText={onDestinationChange}
                 placeholder={methodCopy.detailPlaceholder}
-                autoCapitalize="none"
+                autoCapitalize={isAssetTradeMethod ? 'characters' : 'none'}
                 autoCorrect={false}
-                keyboardType={selectedMethod === 'fiat' ? 'number-pad' : 'default'}
+                keyboardType={isFiatMethod ? 'number-pad' : 'default'}
                 className="h-14 rounded-xl"
                 error={
                   didTryDestination || destinationInput.length > 0 ? destinationError : undefined
@@ -892,7 +1103,13 @@ export default function WithdrawAmountScreen() {
 
             <View className="mt-4 rounded-2xl bg-surface px-4 py-3">
               <View className="flex-row items-center justify-between">
-                <Text className="font-body text-[13px] text-text-secondary">Withdrawal amount</Text>
+                <Text className="font-body text-[13px] text-text-secondary">
+                  {isAssetTradeMethod
+                    ? 'Order amount'
+                    : isFundFlow
+                      ? 'Funding amount'
+                      : 'Withdrawal amount'}
+                </Text>
                 <Text
                   className="font-subtitle text-[15px] text-text-primary"
                   style={{ fontVariant: ['tabular-nums'] }}>
@@ -901,8 +1118,8 @@ export default function WithdrawAmountScreen() {
               </View>
               <View className="mt-2 flex-row items-center justify-between">
                 <Text className="font-body text-[13px] text-text-secondary">Method</Text>
-                <Text className="font-subtitle text-[15px] capitalize text-text-primary">
-                  {selectedMethod}
+                <Text className="font-subtitle text-[15px] text-text-primary">
+                  {methodCopy.title}
                 </Text>
               </View>
             </View>
@@ -927,10 +1144,13 @@ export default function WithdrawAmountScreen() {
               <CheckCircle2 size={28} color="#10B981" />
             </View>
             <Text className="mt-5 text-center font-subtitle text-[30px] leading-[36px] text-text-primary">
-              Withdrawal{'\n'}submitted
+              {isAssetTradeMethod ? 'Order' : isFundFlow ? 'Funding' : 'Withdrawal'}
+              {'\n'}submitted
             </Text>
             <Text className="mt-3 text-center font-body text-[16px] text-text-secondary">
-              Your transaction is on its way. You can check History for live status.
+              {isFundFlow
+                ? 'Your funding transaction is on its way. You can check History for live status.'
+                : 'Your transaction is on its way. You can check History for live status.'}
             </Text>
 
             <Button

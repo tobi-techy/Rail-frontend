@@ -20,7 +20,7 @@ import { FeedbackPopupHost } from '@/components/ui';
 import queryClient, { queryKeys } from '@/api/queryClient';
 import { stationService } from '@/api/services/station.service';
 import SessionManager from '@/utils/sessionManager';
-import Gleap from 'react-native-gleapsdk';
+import gleap from '@/utils/gleap';
 import { PostHogProvider, PostHogSurveyProvider, usePostHog } from 'posthog-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores';
@@ -250,9 +250,9 @@ export default function Layout() {
     if (showSplash) return;
     try {
       SessionManager.initialize();
-      Gleap.initialize(process.env.EXPO_PUBLIC_GLEAP_TOKEN ?? '');
-      Gleap.showFeedbackButton(false);
-      Gleap.showFeedbackButton(false);
+      gleap.initialize(process.env.EXPO_PUBLIC_GLEAP_TOKEN ?? '');
+      gleap.showFeedbackButton(false);
+      gleap.showFeedbackButton(false);
     } catch (error) {
       logger.error(
         '[Layout] SessionManager init failed',

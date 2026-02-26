@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService, passcodeService } from '../api/services';
 import type { User as ApiUser } from '../api/types';
-import Gleap from 'react-native-gleapsdk';
+import gleap from '@/utils/gleap';
 import { secureStorage } from '../utils/secureStorage';
 import { safeError, sanitizeForLog } from '../utils/logSanitizer';
 import { isAuthSessionInvalidError } from '../utils/authErrorClassifier';
@@ -301,7 +301,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             isLoading: false,
           });
           // TODO: identify user in feedback SDK
-          Gleap.identifyContact(response.user.id, {
+          gleap.identifyContact(response.user.id, {
             email: response.user.email,
             name: response.user.firstName
               ? `${response.user.firstName} ${response.user.lastName ?? ''}`.trim()
@@ -390,7 +390,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         });
         set({ isLoading: false });
         // TODO: clear feedback SDK identity
-        Gleap.clearIdentity();
+        gleap.clearIdentity();
 
         // If backend logout failed, log for monitoring
         if (logoutFailed) {

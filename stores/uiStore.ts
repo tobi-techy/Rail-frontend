@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   DEFAULT_USD_BASE_EXCHANGE_RATES,
-  isSupportedCurrency,
+  migrateLegacyCurrency,
   sanitizeFxRates,
   type FxRates,
 } from '@/utils/currency';
@@ -65,7 +65,7 @@ export const useUIStore = create<UIState & UIActions>()(
       toggleBalanceVisibility: () =>
         set((state) => ({ isBalanceVisible: !state.isBalanceVisible })),
       setBalanceVisibility: (visible) => set({ isBalanceVisible: visible }),
-      setCurrency: (currency) => set({ currency }),
+      setCurrency: (currency) => set({ currency: migrateLegacyCurrency(currency) }),
       setCurrencyRates: (rates, updatedAt = new Date().toISOString()) =>
         set({
           currencyRates: sanitizeFxRates(rates),
@@ -95,7 +95,7 @@ export const useUIStore = create<UIState & UIActions>()(
     {
       name: 'ui-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 4,
+      version: 5,
       migrate: (persistedState: any, version: number) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
@@ -137,7 +137,14 @@ export const useUIStore = create<UIState & UIActions>()(
         if (version < 4) {
           migrated = {
             ...migrated,
-            currency: isSupportedCurrency(migrated.currency) ? migrated.currency : 'USD',
+            currencyRates: sanitizeFxRates((migrated as any).currencyRates),
+          };
+        }
+
+        if (version < 5) {
+          migrated = {
+            ...migrated,
+            currency: migrateLegacyCurrency((migrated as any).currency),
             currencyRates: sanitizeFxRates((migrated as any).currencyRates),
           };
         }

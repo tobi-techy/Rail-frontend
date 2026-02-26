@@ -210,8 +210,11 @@ export default function MarketAssetDetailScreen() {
   const onOpenTrade = (side: 'buy' | 'sell') => {
     if (!instrument) return;
     router.push({
-      pathname: '/market-asset/trade',
-      params: { symbol: instrument.symbol, side },
+      pathname: '/withdraw/[method]',
+      params: {
+        method: side === 'buy' ? 'asset-buy' : 'asset-sell',
+        symbol: instrument.symbol,
+      },
     } as any);
   };
 
@@ -248,10 +251,10 @@ export default function MarketAssetDetailScreen() {
                   </View>
                   <View className="ml-3 flex-1">
                     <Text className="font-subtitle text-body text-text-primary" numberOfLines={1}>
-                      {instrument.name}
+                      {instrument.symbol}
                     </Text>
                     <Text className="font-caption text-caption text-text-secondary">
-                      {instrument.symbol}
+                      {instrument.name}
                     </Text>
                   </View>
                 </View>
@@ -352,11 +355,11 @@ export default function MarketAssetDetailScreen() {
                   points={chartData}
                   animated
                   color={lineColor}
-                  lineThickness={3}
+                  lineThickness={1}
                   gradientFillColors={[`${lineColor}24`, `${lineColor}00`]}
                   horizontalPadding={0}
                   verticalPadding={20}
-                  style={{ width: '100%', height: 260 }}
+                  style={{ width: '150%', height: 390 }}
                 />
               ) : hasChartError ? (
                 <View className="mx-md h-[260px] items-center justify-center rounded-xl border border-surface bg-surface/30 px-md">

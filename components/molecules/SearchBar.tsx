@@ -34,6 +34,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   const handleClear = () => {
+    if (disabled) return;
     if (!isControlled) setInternalValue('');
     onClear?.();
     onChangeText?.('');
@@ -55,7 +56,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         inputClassName="text-body"
         accessibilityLabel="Search input"
         rightAccessory={
-          value.length > 0 ? (
+          value.length > 0 && !disabled ? (
             <TouchableOpacity
               onPress={handleClear}
               className="min-h-[44px] min-w-[44px] items-center justify-center"
