@@ -6,12 +6,36 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BASE_WIDTH = 393;
 const BASE_HEIGHT = 852;
 
-// Solana Seeker: 2670×1200 @ 460ppi → ~6.36" display, ~20:9 aspect
+// Solana Seeker: 2670×1200 @ 460ppi -> ~6.36" display, ~20:9 aspect
 const SEEKER_ASPECT = 2670 / 1200; // ~2.225
 
 const aspectRatio = SCREEN_HEIGHT / SCREEN_WIDTH;
-const isTallDisplay = aspectRatio > 2.0; // 20:9 or taller (Seeker, modern Android)
+const isTallDisplay = aspectRatio >= 2.0; // 20:9 or taller (Seeker, modern Android)
 const isSmallDevice = SCREEN_WIDTH < 375;
+const isAspectSeekerLike = Math.abs(aspectRatio - SEEKER_ASPECT) < 0.08;
+
+type AndroidConstants = {
+  Brand?: string;
+  Manufacturer?: string;
+  Model?: string;
+};
+
+const getAndroidConstants = (): AndroidConstants => {
+  if (Platform.OS !== 'android') return {};
+  return (Platform.constants ?? {}) as AndroidConstants;
+};
+
+const toComparable = (value?: string): string => String(value || '').toLowerCase();
+const androidConstants = getAndroidConstants();
+const brand = toComparable(androidConstants.Brand);
+const manufacturer = toComparable(androidConstants.Manufacturer);
+const model = toComparable(androidConstants.Model);
+
+export const isSeekerDevice =
+  Platform.OS === 'android' &&
+  (model.includes('seeker') ||
+    manufacturer.includes('solana mobile') ||
+    brand.includes('solana mobile'));
 
 // Scale factors
 const widthScale = SCREEN_WIDTH / BASE_WIDTH;
@@ -52,6 +76,8 @@ export const layout = {
   isAndroid: Platform.OS === 'android',
   isTallDisplay,
   isSmallDevice,
+  isSeekerDevice,
+  isSeekerLikeAspect: isAspectSeekerLike,
 
   // Spacing
   screenPadding: scale(24),

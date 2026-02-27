@@ -1,5 +1,12 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, Pressable, Dimensions, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+  ScrollView,
+  useWindowDimensions,
+} from 'react-native';
 import { ArrowRight, ChevronRight } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
@@ -10,6 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { TransactionDetails } from '@/stores/withdrawalStore';
+import { layout, moderateScale, responsive } from '@/utils/layout';
 
 const ANIMATION_DURATION = 200;
 const SPRING_CONFIG = { damping: 20, stiffness: 200 };
@@ -30,8 +38,16 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
   onConfirm,
   isLoading = false,
 }) => {
-  const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
-  const maxSheetHeight = Math.min(screenHeight * 0.75, 640);
+  const { height: screenHeight, width: screenWidth } = useWindowDimensions();
+  const maxHeightRatio = layout.isSeekerDevice
+    ? 0.8
+    : responsive({ default: 0.75, tall: 0.78, android: 0.77 });
+  const maxSheetHeight = Math.min(screenHeight * maxHeightRatio, 680);
+  const amountFontSize = moderateScale(
+    layout.isSeekerDevice ? 34 : responsive({ default: 40, tall: 38, android: 36 }),
+    0.45
+  );
+  const bottomSpacing = layout.isSeekerDevice ? 24 : 32;
   const translateY = useSharedValue(screenHeight);
   const overlayOpacity = useSharedValue(0);
 
@@ -115,11 +131,13 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
             </View>
 
             <ScrollView
-              contentContainerStyle={{ paddingBottom: 32 }}
+              contentContainerStyle={{ paddingBottom: bottomSpacing }}
               showsVerticalScrollIndicator={false}>
               {/* Amount */}
               <View className="items-center px-lg pb-md">
-                <Text className="mb-1 font-headline text-[40px] text-text-primary">
+                <Text
+                  className="mb-1 font-headline text-text-primary"
+                  style={{ fontSize: amountFontSize, lineHeight: amountFontSize * 1.1 }}>
                   {transaction.usdAmount}
                 </Text>
                 <Text className="font-subtitle text-body text-text-secondary">

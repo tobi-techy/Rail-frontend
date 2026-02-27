@@ -1,5 +1,12 @@
 import React, { useEffect, useCallback } from 'react';
-import { Keyboard, Pressable, Dimensions, Modal, StyleSheet, Platform } from 'react-native';
+import {
+  Keyboard,
+  Pressable,
+  Modal,
+  StyleSheet,
+  Platform,
+  useWindowDimensions,
+} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,6 +17,7 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { X } from 'lucide-react-native';
+import { layout, responsive } from '@/utils/layout';
 
 const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
 const KB_SPRING = { damping: 22, stiffness: 280, mass: 0.8 };
@@ -29,10 +37,25 @@ export function BottomSheet({
   showCloseButton = true,
   dismissible = true,
 }: BottomSheetProps) {
-  const { height: screenHeight } = Dimensions.get('window');
+  const { height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(screenHeight);
   const keyboardOffset = useSharedValue(0);
+  const sheetBottomBase = layout.isSeekerDevice
+    ? 14
+    : responsive({ default: 24, tall: 20, android: 18 });
+  const sheetSideInset = layout.isSeekerDevice
+    ? 8
+    : responsive({ default: 12, tall: 12, android: 10 });
+  const sheetRadius = layout.isSeekerDevice
+    ? 28
+    : responsive({ default: 34, tall: 32, android: 30 });
+  const sheetPaddingX = layout.isSeekerDevice
+    ? 20
+    : responsive({ default: 24, tall: 24, android: 22 });
+  const sheetPaddingTop = layout.isSeekerDevice
+    ? 20
+    : responsive({ default: 24, tall: 22, android: 20 });
 
   const animateClose = useCallback(() => {
     translateY.value = withSpring(screenHeight, SPRING_CONFIG, () => {
@@ -72,7 +95,7 @@ export function BottomSheet({
       if (e.translationY > 0) translateY.value = e.translationY;
     })
     .onEnd((e) => {
-      if (e.translationY > 100 || e.velocityY > 800) {
+      if (e.translationY > 96 || e.velocityY > 800) {
         runOnJS(animateClose)();
       } else {
         translateY.value = withSpring(0, SPRING_CONFIG);
@@ -82,7 +105,7 @@ export function BottomSheet({
 
   const sheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
-    bottom: 24 + keyboardOffset.value,
+    bottom: sheetBottomBase + keyboardOffset.value,
   }));
 
   if (!visible) return null;
@@ -104,8 +127,18 @@ export function BottomSheet({
 
         <GestureDetector gesture={pan}>
           <Animated.View
-            className="absolute left-3 right-3 rounded-[34px] bg-white px-6 pt-6"
-            style={[sheetStyle, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+            className="absolute bg-white"
+            style={[
+              sheetStyle,
+              {
+                left: sheetSideInset,
+                right: sheetSideInset,
+                borderRadius: sheetRadius,
+                paddingHorizontal: sheetPaddingX,
+                paddingTop: sheetPaddingTop,
+                paddingBottom: Math.max(insets.bottom, 10),
+              },
+            ]}>
             {showCloseButton && (
               <Pressable
                 className="absolute right-5 top-5 z-10 p-1"

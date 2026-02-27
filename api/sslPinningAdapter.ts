@@ -6,12 +6,39 @@ import { fetch as pinnedFetch } from 'react-native-ssl-pinning';
 import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { logger } from '../lib/logger';
 
-const CERT_PINS = [process.env.EXPO_PUBLIC_CERT_PIN_1, process.env.EXPO_PUBLIC_CERT_PIN_2].filter(
-  Boolean
-) as string[];
+function normalizePin(pin?: string): string | null {
+  if (!pin) return null;
 
-// SSL pinning disabled until .cer cert files are bundled in the iOS app
-export const SSL_PINNING_ACTIVE = false;
+  const trimmed = pin.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith('sha256/') || trimmed.startsWith('sha1/')) {
+    return trimmed;
+  }
+
+  // Backward compatibility: envs historically stored raw base64 SHA-256 hashes.
+  if (/^[A-Za-z0-9+/]+={0,2}$/.test(trimmed)) {
+    return `sha256/${trimmed}`;
+  }
+
+  return null;
+}
+
+const RAW_CERT_PINS = [process.env.EXPO_PUBLIC_CERT_PIN_1, process.env.EXPO_PUBLIC_CERT_PIN_2];
+const CERT_PINS = RAW_CERT_PINS.map(normalizePin).filter(Boolean) as string[];
+
+export const SSL_PINNING_ACTIVE = !__DEV__ && CERT_PINS.length > 0;
+
+if (!__DEV__) {
+  RAW_CERT_PINS.forEach((pin, index) => {
+    if (pin && !normalizePin(pin)) {
+      logger.warn('[SSL Pinning] Ignoring invalid certificate pin format', {
+        component: 'sslPinningAdapter',
+        pinIndex: index + 1,
+      });
+    }
+  });
+}
 
 export async function sslPinningAdapter(config: AxiosRequestConfig): Promise<AxiosResponse> {
   const url = config.baseURL

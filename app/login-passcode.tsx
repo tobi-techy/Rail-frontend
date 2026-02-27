@@ -12,7 +12,11 @@ import { SessionManager } from '@/utils/sessionManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { APP_VERSION } from '@/utils/appVersion';
-import { getNativePasskey } from '@/utils/passkeyNative';
+import {
+  getNativePasskey,
+  isPasskeyCancelledError,
+  getPasskeyFallbackMessage,
+} from '@/utils/passkeyNative';
 import {
   beginPasskeyPrompt,
   canStartPasskeyPrompt,
@@ -65,38 +69,6 @@ const normalizePasskeyGetRequest = (options: WebAuthnOptionsPayload) => {
     userVerification: publicKey.userVerification,
     extensions: publicKey.extensions,
   };
-};
-
-const isPasskeyCancelledError = (error: any) => {
-  const code = String(error?.code || error?.error || '').toLowerCase();
-  const message = String(error?.message || '').toLowerCase();
-
-  return (
-    code.includes('usercancel') ||
-    code.includes('cancel') ||
-    code.includes('abort') ||
-    message.includes('cancelled') ||
-    message.includes('canceled')
-  );
-};
-
-const getPasskeyFallbackMessage = (error: any) => {
-  const code = String(error?.code || error?.error || '').toUpperCase();
-  const message = String(error?.message || '').toLowerCase();
-
-  if (code === 'NOCREDENTIALS' || message.includes('no credentials')) {
-    return 'No passkey found for this account on this device. Enter your PIN.';
-  }
-
-  if (code === 'INVALID_SESSION') {
-    return 'Passkey session expired. Please try again or enter your PIN.';
-  }
-
-  if (code === 'NETWORK_ERROR' || code === 'NETWORK_TIMEOUT' || error?.status === 0) {
-    return 'Network issue during passkey sign-in. Enter your PIN.';
-  }
-
-  return 'Passkey sign-in failed. Enter your PIN to continue.';
 };
 
 export default function LoginPasscodeScreen() {

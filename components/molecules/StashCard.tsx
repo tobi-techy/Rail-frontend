@@ -29,7 +29,7 @@ interface StashCardProps {
 const BADGE_COLORS: Record<StashCardBadge['color'], { bg: string; text: string; dot: string }> = {
   green: { bg: '#ECFDF3', text: '#15803D', dot: '#22C55E' },
   red: { bg: '#FEF2F2', text: '#B91C1C', dot: '#EF4444' },
-  gray: { bg: '#F3F4F6', text: '#6B7280', dot: '#9CA3AF' },
+  gray: { bg: '#F3F4F6', text: '#374151', dot: '#9CA3AF' },
 };
 
 export const StashCard: React.FC<StashCardProps> = ({

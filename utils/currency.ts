@@ -14,8 +14,25 @@ const CURRENCY_LOCALE: Record<Currency, string> = {
 
 export const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'EUR'];
 
+const LEGACY_CURRENCY_FALLBACK: Record<string, Currency> = {
+  GBP: 'EUR',
+  NGN: 'USD',
+};
+
+const normalizeCurrencyCode = (value?: string | null): string => value?.trim().toUpperCase() ?? '';
+
+export const migrateLegacyCurrency = (
+  value?: string | null,
+  fallback: Currency = 'USD'
+): Currency => {
+  const normalized = normalizeCurrencyCode(value);
+  if (!normalized) return fallback;
+  if (SUPPORTED_CURRENCIES.includes(normalized as Currency)) return normalized as Currency;
+  return LEGACY_CURRENCY_FALLBACK[normalized] ?? fallback;
+};
+
 export const isSupportedCurrency = (value?: string | null): value is Currency =>
-  !!value && SUPPORTED_CURRENCIES.includes(value.toUpperCase() as Currency);
+  SUPPORTED_CURRENCIES.includes(normalizeCurrencyCode(value) as Currency);
 
 export const sanitizeFxRates = (
   rawRates?: Partial<Record<string, number>> | null,

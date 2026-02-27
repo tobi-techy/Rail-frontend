@@ -19,6 +19,7 @@ import { CameraView, type CameraType, useCameraPermissions } from 'expo-camera';
 import { Camera, RefreshCw, X, Zap, Image as ImageIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { SlideInUp } from 'react-native-reanimated';
+import { logger } from '@/lib/logger';
 
 type CaptureSide = 'front' | 'back';
 export type KycDocumentType = 'drivers_license' | 'id_card' | 'residence_permit' | 'passport';
@@ -103,7 +104,7 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
         return;
       }
     } catch (e) {
-      console.error('[CameraOverlay] Gallery error:', e);
+      logger.error('[CameraOverlay] Gallery error', { error: e });
       setCaptureError('Could not access gallery. Please try again.');
     }
   }, []);
@@ -139,7 +140,7 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
         'Image is still too large after compression. Try moving further from the document.'
       );
     } catch (error) {
-      console.error('[CameraOverlay] Capture error:', error);
+      logger.error('[CameraOverlay] Capture error', { error });
       setCaptureError('Could not access camera. Please try again.');
     } finally {
       setIsCapturing(false);

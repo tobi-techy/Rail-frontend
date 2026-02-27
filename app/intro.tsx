@@ -4,10 +4,10 @@ import {
   View,
   Text,
   FlatList,
-  ViewToken,
   useWindowDimensions,
-  Platform,
   StatusBar,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { onBoard1, onBoard2, onBoard3, onBoard4 } from '../assets/images';
@@ -64,16 +64,46 @@ const onboardingSlides: OnboardingSlide[] = [
 
 const SLIDE_INTERVAL = 6000;
 
-// Memoized video slide - only re-renders when isActive changes
-const VideoSlide = memo(function VideoSlide({
+const SlideTitle = memo(function SlideTitle({
   item,
-  isActive,
+  topInset,
+}: {
+  item: OnboardingSlide;
+  topInset: number;
+}) {
+  return (
+    <View className="z-10 w-full px-5" style={{ paddingTop: topInset + 16 }}>
+      <Text className="font-headline text-display-lg uppercase text-white">
+        {item.titleTop} {item.titleBottom[0]} {item.titleBottom[1]}
+      </Text>
+    </View>
+  );
+});
+
+const StaticSlide = memo(function StaticSlide({
+  item,
+  width,
+  topInset,
+}: {
+  item: OnboardingSlide;
+  width: number;
+  topInset: number;
+}) {
+  return (
+    <View className="flex-1 overflow-hidden bg-black" style={{ width }}>
+      <SlideTitle item={item} topInset={topInset} />
+    </View>
+  );
+});
+
+// Active slide only: creates a single video player to avoid ExoPlayer OOM on Android.
+const ActiveVideoSlide = memo(function ActiveVideoSlide({
+  item,
   width,
   height,
   topInset,
 }: {
   item: OnboardingSlide;
-  isActive: boolean;
   width: number;
   height: number;
   topInset: number;
@@ -89,19 +119,13 @@ const VideoSlide = memo(function VideoSlide({
   }, [item.key]);
 
   useEffect(() => {
-    if (!isActive) return;
     const fallback = setTimeout(() => setFirstFrameRendered(true), 1500);
-    return () => clearTimeout(fallback);
-  }, [isActive, item.key]);
-
-  // Play/pause based on visibility
-  useEffect(() => {
-    if (isActive) {
-      player.play();
-    } else {
+    player.play();
+    return () => {
+      clearTimeout(fallback);
       player.pause();
-    }
-  }, [isActive, player]);
+    };
+  }, [item.key, player]);
 
   return (
     <View className="flex-1 overflow-hidden bg-black" style={{ width }}>
@@ -111,7 +135,6 @@ const VideoSlide = memo(function VideoSlide({
         style={{ width, height: height * 0.75, position: 'absolute', bottom: 0 }}
         contentFit="cover"
         nativeControls={false}
-        surfaceType={Platform.OS === 'android' ? 'textureView' : undefined}
         onFirstFrameRender={() => setFirstFrameRendered(true)}
         useExoShutter={false}
       />
@@ -132,12 +155,7 @@ const VideoSlide = memo(function VideoSlide({
         />
       )}
 
-      {/* Text content — pinned to top with safe area */}
-      <View className="z-10 w-full px-5" style={{ paddingTop: topInset + 16 }}>
-        <Text className="font-headline text-display-lg uppercase text-white">
-          {item.titleTop} {item.titleBottom[0]} {item.titleBottom[1]}
-        </Text>
-      </View>
+      <SlideTitle item={item} topInset={topInset} />
     </View>
   );
 });
@@ -176,20 +194,38 @@ export default function App() {
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<OnboardingSlide>>(null);
+  const currentIndexRef = useRef(0);
   const progress = useSharedValue(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { mutate: appleSignIn } = useAppleSignIn();
   const { showError } = useFeedbackPopup();
 
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
+  const clampIndex = useCallback((index: number) => {
+    return Math.min(onboardingSlides.length - 1, Math.max(0, index));
+  }, []);
 
-  const onViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (viewableItems.length > 0 && viewableItems[0].index !== null) {
-        setCurrentIndex(viewableItems[0].index);
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  const onMomentumScrollEnd = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const rawIndex = Math.round(event.nativeEvent.contentOffset.x / Math.max(width, 1));
+      const nextIndex = clampIndex(Number.isFinite(rawIndex) ? rawIndex : 0);
+      if (nextIndex !== currentIndexRef.current) {
+        setCurrentIndex(nextIndex);
       }
     },
-    []
+    [clampIndex, width]
+  );
+
+  const onScrollToIndexFailed = useCallback(
+    ({ index }: { index: number }) => {
+      const safeIndex = clampIndex(Number.isFinite(index) ? index : 0);
+      flatListRef.current?.scrollToOffset({ offset: safeIndex * width, animated: true });
+      setCurrentIndex(safeIndex);
+    },
+    [clampIndex, width]
   );
 
   // Auto-advance with animated progress
@@ -198,14 +234,19 @@ export default function App() {
     progress.value = withTiming(1, { duration: SLIDE_INTERVAL });
 
     timerRef.current = setTimeout(() => {
-      const nextIndex = (currentIndex + 1) % onboardingSlides.length;
-      flatListRef.current?.scrollToIndex({ animated: true, index: nextIndex });
+      const activeIndex = clampIndex(currentIndexRef.current);
+      const nextIndex = (activeIndex + 1) % onboardingSlides.length;
+      try {
+        flatListRef.current?.scrollToIndex({ animated: true, index: nextIndex });
+      } catch {
+        flatListRef.current?.scrollToOffset({ offset: nextIndex * width, animated: true });
+      }
     }, SLIDE_INTERVAL);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [currentIndex, progress]);
+  }, [clampIndex, currentIndex, progress, width]);
 
   const getItemLayout = useCallback(
     (_: any, index: number) => ({
@@ -217,15 +258,12 @@ export default function App() {
   );
 
   const renderItem = useCallback(
-    ({ item, index }: { item: OnboardingSlide; index: number }) => (
-      <VideoSlide
-        item={item}
-        isActive={index === currentIndex}
-        width={width}
-        height={height}
-        topInset={insets.top}
-      />
-    ),
+    ({ item, index }: { item: OnboardingSlide; index: number }) =>
+      index === currentIndex ? (
+        <ActiveVideoSlide item={item} width={width} height={height} topInset={insets.top} />
+      ) : (
+        <StaticSlide item={item} width={width} topInset={insets.top} />
+      ),
     [currentIndex, width, height, insets.top]
   );
 
@@ -244,13 +282,13 @@ export default function App() {
           scrollEventThrottle={32}
           showsHorizontalScrollIndicator={false}
           keyExtractor={(item) => item.key}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          onScrollToIndexFailed={onScrollToIndexFailed}
           getItemLayout={getItemLayout}
           initialNumToRender={1}
           maxToRenderPerBatch={1}
-          windowSize={3}
-          removeClippedSubviews={false}
+          windowSize={1}
+          removeClippedSubviews
         />
 
         {/*<ProgressIndicator currentIndex={currentIndex} progress={progress} />*/}

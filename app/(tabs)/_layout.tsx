@@ -1,6 +1,5 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
 import { Clock1, Home, Settings, TrendingUp } from 'lucide-react-native';
 
 import { TabBar } from '@/components/TabBar';
@@ -13,7 +12,9 @@ export default function TabLayout() {
         tabBar={(props) => <TabBar {...props} />}
         screenOptions={{
           headerShown: false,
-          sceneStyle: { backgroundColor: Platform.OS === 'android' ? '#FF2E01' : '#fff' },
+          sceneStyle: { backgroundColor: '#fff' },
+          headerStyle: { backgroundColor: '#fff' },
+          headerShadowVisible: false,
         }}>
         <Tabs.Screen
           name="index"

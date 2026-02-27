@@ -71,9 +71,9 @@ export function useCreateTransfer() {
     onSuccess: (response, variables) => {
       // Track transfer completed
       track(ANALYTICS_EVENTS.TRANSFER_COMPLETED, {
-        transfer_id: response.id,
+        transfer_id: response.transaction.id,
         amount: variables.amount,
-        recipient: variables.recipient?.slice(0, 6) + '...', // Partial for privacy
+        recipient: variables.toAddress?.slice(0, 6) + '...', // Partial for privacy
         network: variables.network,
       });
 

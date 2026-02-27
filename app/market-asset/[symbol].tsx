@@ -13,6 +13,7 @@ import { getEffectiveChange, getEffectiveChangePct, getEffectivePrice } from '@/
 import { Skeleton } from '@/components/atoms';
 import { Button } from '@/components/ui';
 import { useUIStore } from '@/stores';
+import { layout, responsive } from '@/utils/layout';
 
 type RangeKey = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y';
 
@@ -201,6 +202,10 @@ export default function MarketAssetDetailScreen() {
   const changePct = instrument ? getEffectiveChangePct(instrument.quote) : 0;
   const positive = change >= 0;
   const lineColor = positive ? '#E83E8C' : '#FF2E01';
+  const chartFrameHeight = layout.isSeekerDevice
+    ? 300
+    : responsive({ default: 260, tall: 292, android: 280 });
+  const chartHeight = chartFrameHeight + (layout.isSeekerDevice ? 30 : 24);
 
   const isInitialLoading = instrumentQuery.isPending && !instrument;
   const hasInstrumentError = instrumentQuery.isError && !instrument;
@@ -210,8 +215,11 @@ export default function MarketAssetDetailScreen() {
   const onOpenTrade = (side: 'buy' | 'sell') => {
     if (!instrument) return;
     router.push({
-      pathname: '/market-asset/trade',
-      params: { symbol: instrument.symbol, side },
+      pathname: '/withdraw/[method]',
+      params: {
+        method: side === 'buy' ? 'asset-buy' : 'asset-sell',
+        symbol: instrument.symbol,
+      },
     } as any);
   };
 
@@ -248,10 +256,10 @@ export default function MarketAssetDetailScreen() {
                   </View>
                   <View className="ml-3 flex-1">
                     <Text className="font-subtitle text-body text-text-primary" numberOfLines={1}>
-                      {instrument.name}
+                      {instrument.symbol}
                     </Text>
                     <Text className="font-caption text-caption text-text-secondary">
-                      {instrument.symbol}
+                      {instrument.name}
                     </Text>
                   </View>
                 </View>
@@ -344,22 +352,27 @@ export default function MarketAssetDetailScreen() {
 
             <View className="mt-md">
               {isChartLoading ? (
-                <View className="h-[260px] w-full justify-center px-md">
-                  <Skeleton className="h-[220px] w-full rounded-xl" />
+                <View className="w-full justify-center px-md" style={{ height: chartFrameHeight }}>
+                  <Skeleton
+                    className="w-full rounded-xl"
+                    style={{ height: chartFrameHeight - 40 }}
+                  />
                 </View>
               ) : chartData.length >= 2 ? (
                 <LineGraph
                   points={chartData}
                   animated
                   color={lineColor}
-                  lineThickness={3}
+                  lineThickness={1}
                   gradientFillColors={[`${lineColor}24`, `${lineColor}00`]}
                   horizontalPadding={0}
                   verticalPadding={20}
-                  style={{ width: '100%', height: 260 }}
+                  style={{ width: '100%', height: chartHeight }}
                 />
               ) : hasChartError ? (
-                <View className="mx-md h-[260px] items-center justify-center rounded-xl border border-surface bg-surface/30 px-md">
+                <View
+                  className="mx-md items-center justify-center rounded-xl border border-surface bg-surface/30 px-md"
+                  style={{ height: chartFrameHeight }}>
                   <Text className="text-center font-caption text-caption text-text-primary">
                     Market history is temporarily unavailable.
                   </Text>
@@ -372,7 +385,9 @@ export default function MarketAssetDetailScreen() {
                   </Pressable>
                 </View>
               ) : (
-                <View className="mx-md h-[260px] items-center justify-center rounded-xl border border-surface bg-surface/30 px-md">
+                <View
+                  className="mx-md items-center justify-center rounded-xl border border-surface bg-surface/30 px-md"
+                  style={{ height: chartFrameHeight }}>
                   <Text className="text-center font-caption text-caption text-text-secondary">
                     No market bars were returned for this symbol in the selected range.
                   </Text>

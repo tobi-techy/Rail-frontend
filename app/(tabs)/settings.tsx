@@ -45,8 +45,8 @@ import {
   usePasscodeStatus,
   useUpdatePasscode,
 } from '@/api/hooks';
-import Gleap from 'react-native-gleapsdk';
-import { formatFxUpdatedAt } from '@/utils/currency';
+import gleap from '@/utils/gleap';
+import { formatFxUpdatedAt, migrateLegacyCurrency } from '@/utils/currency';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -173,6 +173,7 @@ export default function Settings() {
     isCurrencyRatesRefreshing,
     refreshCurrencyRates,
   } = useUIStore();
+  const selectedCurrency = migrateLegacyCurrency(currency);
 
   // Sheet state
   const [activeSheet, setActiveSheet] = useState<SheetType>(null);
@@ -254,6 +255,11 @@ export default function Settings() {
     void refreshCurrencyRates();
   }, [activeSheet, currencyRatesUpdatedAt, refreshCurrencyRates]);
 
+  useEffect(() => {
+    if (currency === selectedCurrency) return;
+    setCurrency(selectedCurrency);
+  }, [currency, selectedCurrency, setCurrency]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
@@ -263,7 +269,8 @@ export default function Settings() {
       ),
       headerShown: true,
       title: '',
-      headerStyle: { backgroundColor: 'transparent' },
+      headerStyle: { backgroundColor: '#FFFFFF' },
+      headerShadowVisible: false,
     });
   }, [navigation]);
 
@@ -484,7 +491,7 @@ export default function Settings() {
           <SettingButton
             icon={<HeadphonesIcon size={26} color="#121212" />}
             label="Support"
-            onPress={() => Gleap.open()}
+            onPress={() => gleap.open()}
           />
         </Section>
 
@@ -642,7 +649,7 @@ export default function Settings() {
           <SheetRow
             key={c}
             label={CURRENCY_LABELS[c]}
-            value={currency === c ? '✓' : undefined}
+            value={selectedCurrency === c ? '✓' : undefined}
             onPress={() => {
               setCurrency(c);
               closeSheet();

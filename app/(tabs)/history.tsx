@@ -112,7 +112,8 @@ export default function History() {
       ),
       headerShown: true,
       title: '',
-      headerStyle: { backgroundColor: 'transparent' },
+      headerStyle: { backgroundColor: '#FFFFFF' },
+      headerShadowVisible: false,
     });
   }, [navigation]);
 

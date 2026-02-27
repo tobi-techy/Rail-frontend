@@ -12,6 +12,14 @@ const toRelativeTime = (iso: string): string => {
   const hour = 60 * minute;
   const day = 24 * hour;
 
+  if (Math.abs(diff) < minute) return 'Now';
+  if (diff < 0) {
+    const futureDiff = Math.abs(diff);
+    if (futureDiff < hour) return `In ${Math.max(1, Math.floor(futureDiff / minute))}m`;
+    if (futureDiff < day) return `In ${Math.floor(futureDiff / hour)}h`;
+    return `In ${Math.floor(futureDiff / day)}d`;
+  }
+
   if (diff < hour) return `${Math.max(1, Math.floor(diff / minute))}m ago`;
   if (diff < day) return `${Math.floor(diff / hour)}h ago`;
   return `${Math.floor(diff / day)}d ago`;
@@ -31,13 +39,17 @@ export function MarketNewsCard({
   };
 
   const onPress = useCallback(() => {
-    if (!item.url) return;
-    WebBrowser.openBrowserAsync(item.url, {
+    const url = item.url?.trim();
+    if (!url) return;
+    const normalizedUrl = url.toLowerCase();
+    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) return;
+
+    WebBrowser.openBrowserAsync(url, {
       presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
       controlsColor: '#111111',
       showInRecents: true,
     }).catch(() => {
-      Linking.openURL(item.url).catch(() => {});
+      Linking.openURL(url).catch(() => {});
     });
   }, [item.url]);
 

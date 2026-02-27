@@ -20,7 +20,7 @@ import { FeedbackPopupHost } from '@/components/ui';
 import queryClient, { queryKeys } from '@/api/queryClient';
 import { stationService } from '@/api/services/station.service';
 import SessionManager from '@/utils/sessionManager';
-import Gleap from 'react-native-gleapsdk';
+import gleap from '@/utils/gleap';
 import { PostHogProvider, PostHogSurveyProvider, usePostHog } from 'posthog-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores';
@@ -54,7 +54,7 @@ if (!envValidation.isValid && !__DEV__) {
 function AppReadyTracker() {
   const posthog = usePostHog();
   useEffect(() => {
-    posthog?.capture('app_opened', { platform: 'ios' });
+    posthog?.capture('app_opened', { platform: Platform.OS });
   }, [posthog]);
   return null;
 }
@@ -65,7 +65,7 @@ function AppNavigator() {
       initialRouteName="index"
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: Platform.OS === 'android' ? SPLASH_BG : '#FFFFFF' },
+        contentStyle: { backgroundColor: '#FFFFFF' },
       }}>
       <Stack.Screen
         name="index"
@@ -94,7 +94,7 @@ function AppNavigator() {
       <Stack.Screen
         name="(tabs)"
         options={{
-          contentStyle: { backgroundColor: Platform.OS === 'android' ? SPLASH_BG : '#FFFFFF' },
+          contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />
       <Stack.Screen
@@ -250,9 +250,8 @@ export default function Layout() {
     if (showSplash) return;
     try {
       SessionManager.initialize();
-      Gleap.initialize(process.env.EXPO_PUBLIC_GLEAP_TOKEN ?? '');
-      Gleap.showFeedbackButton(false);
-      Gleap.showFeedbackButton(false);
+      gleap.initialize(process.env.EXPO_PUBLIC_GLEAP_TOKEN ?? '');
+      gleap.showFeedbackButton(false);
     } catch (error) {
       logger.error(
         '[Layout] SessionManager init failed',
@@ -373,8 +372,8 @@ export default function Layout() {
         <StatusBar barStyle={'dark-content'} />
         <KeyboardProvider>
           <QueryClientProvider client={queryClient}>
-            <SafeAreaProvider style={{ flex: 1, backgroundColor: SPLASH_BG }}>
-              <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
+            <SafeAreaProvider style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+              <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
                 <PostHogProvider
                   apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
                   options={{
