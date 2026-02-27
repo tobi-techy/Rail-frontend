@@ -38,7 +38,7 @@ export default function DateOfBirth() {
       showWarning('Age Requirement', `You must be at least ${MIN_AGE} years old to use Rail.`);
       return;
     }
-    // updateRegistrationData({ dob: dob.toISOString() });
+    updateRegistrationData({ dob: dob.toISOString() });
     router.push(ROUTES.AUTH.COMPLETE_PROFILE.ADDRESS as any);
   };
 
