@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StatusBar, Platform } from 'react-native';
+import { View, Text, StatusBar, Platform, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -31,14 +31,33 @@ export default function DateOfBirth() {
   const { showWarning } = useFeedbackPopup();
   const initialDob = registrationData.dob ? new Date(registrationData.dob) : maxDate;
   const [dob, setDob] = useState<Date>(Number.isNaN(initialDob.getTime()) ? maxDate : initialDob);
+  const [showPicker, setShowPicker] = useState(false);
 
   const handleNext = () => {
     if (getAge(dob) < MIN_AGE) {
       showWarning('Age Requirement', `You must be at least ${MIN_AGE} years old to use Rail.`);
       return;
     }
-    updateRegistrationData({ dob: dob.toISOString() });
+    // updateRegistrationData({ dob: dob.toISOString() });
     router.push(ROUTES.AUTH.COMPLETE_PROFILE.ADDRESS as any);
+  };
+
+  const onChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowPicker(false);
+    }
+
+    if (selectedDate) {
+      setDob(selectedDate);
+    }
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
   return (
@@ -56,19 +75,41 @@ export default function DateOfBirth() {
               <Text className="mt-2 font-body text-caption text-black/60">
                 You must be at least {MIN_AGE} to use Rail
               </Text>
+              <Text className="mt-8 font-body text-caption text-black/60">
+                Select your date of birth
+              </Text>
+              <Pressable
+                onPress={() => setShowPicker(true)}
+                className="mt-2 h-14 w-full flex-row items-center rounded-xl border border-neutral-200 bg-white/5 px-4"
+                style={({ pressed }) => ({
+                  opacity: pressed ? 0.7 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                })}>
+                <Text className="flex-1 font-body text-lg text-black">{formatDate(dob)}</Text>
+                <Text className="text-black/40">📅</Text>
+              </Pressable>
             </View>
           </StaggeredChild>
 
           <StaggeredChild index={1}>
             <View className="mt-28">
-              <DateTimePicker
-                value={dob}
-                mode="date"
-                display="spinner"
-                onChange={(_, date) => date && setDob(date)}
-                maximumDate={maxDate}
-                themeVariant="light"
-              />
+              {showPicker && (
+                <DateTimePicker
+                  value={dob}
+                  mode="date"
+                  textColor="text-black"
+                  accentColor="#FF2E01"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={onChange}
+                  maximumDate={maxDate}
+                  themeVariant="light"
+                />
+              )}
+
+              {/* iOS only: Show "Done" button since we're using spinner mode */}
+              {showPicker && Platform.OS === 'ios' && (
+                <Button title="Confirm" onPress={() => setShowPicker(false)} variant="ghost" />
+              )}
             </View>
           </StaggeredChild>
 
