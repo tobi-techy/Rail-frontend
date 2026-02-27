@@ -32,6 +32,17 @@
           "project": "react-native"
         }
       ],
+      [
+        "@react-native-community/datetimepicker",
+        {
+          "android": {
+            "colorAccent": {
+              "light": "#FF2E01",
+              "dark": "#FF2E01"
+            }
+          }
+        }
+      ],
       "expo-web-browser",
       "expo-video",
       "expo-apple-authentication",
