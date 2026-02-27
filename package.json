@@ -1,7 +1,7 @@
 {
   "name": "rail",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "expo": {
     "doctor": {
       "reactNativeDirectoryCheck": {
@@ -51,6 +51,10 @@
     "@rneui/themed": "4.0.0-rc.8",
     "@sentry/react-native": "~7.2.0",
     "@shopify/react-native-skia": "2.2.12",
+    "@solana-mobile/mobile-wallet-adapter-protocol": "^2.2.5",
+    "@solana-mobile/mobile-wallet-adapter-protocol-web3js": "^2.2.5",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
     "@tanstack/react-query": "^5.90.5",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",
@@ -98,6 +102,7 @@
     "react-native": "0.81.5",
     "react-native-css-interop": "^0.2.1",
     "react-native-gesture-handler": "~2.28.0",
+    "react-native-get-random-values": "^2.0.0",
     "react-native-gifted-charts": "^1.4.74",
     "react-native-gleapsdk": "^15.2.1",
     "react-native-graph": "^1.1.0",
@@ -154,7 +159,7 @@
       "<rootDir>/jest.setup.js"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|@sentry/react-native|sentry-expo|native-base|react-native-svg|moti|react-native-gifted-charts|gifted-charts-core|react-native-reanimated|lucide-react-native)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|@sentry/react-native|sentry-expo|native-base|react-native-svg|moti|react-native-gifted-charts|gifted-charts-core|react-native-reanimated|lucide-react-native|@solana/.*|@solana-mobile/.*)"
     ],
     "collectCoverageFrom": [
       "**/*.{ts,tsx}",

@@ -1,4 +1,12 @@
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+  Pressable,
+  Platform,
+} from 'react-native';
 import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo } from 'react';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 import { router, useNavigation } from 'expo-router';
@@ -129,6 +137,7 @@ interface FundingActionItem {
   sublabel?: string;
   icon: React.ReactNode;
   onPress: () => void;
+  comingSoon?: boolean;
 }
 
 function FundingOptionsList({ actions }: { actions: FundingActionItem[] }) {
@@ -141,9 +150,10 @@ function FundingOptionsList({ actions }: { actions: FundingActionItem[] }) {
         <TouchableOpacity
           key={action.id}
           className="flex-row items-center justify-between rounded-2xl px-0 py-3.5 active:bg-gray-50"
-          onPress={action.onPress}
-          activeOpacity={0.6}>
-          <View className="flex-1 flex-row items-center">
+          onPress={action.comingSoon ? undefined : action.onPress}
+          disabled={action.comingSoon}
+          activeOpacity={action.comingSoon ? 1 : 0.6}>
+          <View className={`flex-1 flex-row items-center${action.comingSoon ? ' opacity-40' : ''}`}>
             <View className="mr-4 h-11 w-11 items-center justify-center rounded-full bg-gray-100">
               {action.icon}
             </View>
@@ -156,7 +166,13 @@ function FundingOptionsList({ actions }: { actions: FundingActionItem[] }) {
               )}
             </View>
           </View>
-          <ChevronRight size={20} color="#9CA3AF" />
+          {action.comingSoon ? (
+            <View className="rounded-full bg-gray-100 px-2 py-0.5">
+              <Text className="font-caption text-[11px] text-gray-400">Soon</Text>
+            </View>
+          ) : (
+            <ChevronRight size={20} color="#9CA3AF" />
+          )}
         </TouchableOpacity>
       ))}
     </ScrollView>
@@ -166,6 +182,7 @@ function FundingOptionsList({ actions }: { actions: FundingActionItem[] }) {
 // ── Component ────────────────────────────────────────────
 
 const Dashboard = () => {
+  const isAndroid = Platform.OS === 'android';
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [showReceiveSheet, setShowReceiveSheet] = useState(false);
@@ -319,7 +336,8 @@ const Dashboard = () => {
         </View>
       ),
       title: '',
-      headerStyle: { backgroundColor: 'transparent' },
+      headerStyle: { backgroundColor: '#FFFFFF' },
+      headerShadowVisible: false,
     });
   }, [navigation, avatarConfig]);
 
@@ -375,26 +393,31 @@ const Dashboard = () => {
 
   const receiveMoreActions = useMemo<FundingActionItem[]>(
     () => [
-      {
-        id: 'phantom',
-        label: 'Phantom',
-        sublabel: 'Connect Phantom wallet',
-        icon: <PhantomIcon width={28} height={28} />,
-        onPress: () => startWithdrawalFlow('phantom', 'fund'),
-      },
-      {
-        id: 'solflare',
-        label: 'Solflare',
-        sublabel: 'Connect Solflare wallet',
-        icon: <SolflareIcon width={28} height={28} />,
-        onPress: () => startWithdrawalFlow('solflare', 'fund'),
-      },
+      ...(isAndroid
+        ? [
+            {
+              id: 'phantom',
+              label: 'Phantom',
+              sublabel: 'Send USDC from Phantom to Rail',
+              icon: <PhantomIcon width={28} height={28} />,
+              onPress: () => startWithdrawalFlow('phantom', 'fund'),
+            },
+            {
+              id: 'solflare',
+              label: 'Solflare',
+              sublabel: 'Send USDC from Solflare to Rail',
+              icon: <SolflareIcon width={28} height={28} />,
+              onPress: () => startWithdrawalFlow('solflare', 'fund'),
+            },
+          ]
+        : []),
       {
         id: 'solana-pay',
         label: 'Solana Pay',
         sublabel: 'Pay with Solana Pay',
         icon: <SolanaIcon width={28} height={28} />,
         onPress: handleCloseReceiveSheet,
+        comingSoon: true,
       },
       {
         id: 'wire',
@@ -402,9 +425,10 @@ const Dashboard = () => {
         sublabel: 'Receive via wire transfer',
         icon: <Landmark size={26} color="#6366F1" />,
         onPress: handleCloseReceiveSheet,
+        comingSoon: true,
       },
     ],
-    [handleCloseReceiveSheet, startWithdrawalFlow]
+    [handleCloseReceiveSheet, isAndroid, startWithdrawalFlow]
   );
 
   const sendMainActions = useMemo<FundingActionItem[]>(
@@ -456,6 +480,7 @@ const Dashboard = () => {
         sublabel: 'Send with Solana Pay',
         icon: <SolanaIcon width={28} height={28} />,
         onPress: handleCloseSendSheet,
+        comingSoon: true,
       },
       {
         id: 'wire',
@@ -463,6 +488,7 @@ const Dashboard = () => {
         sublabel: 'Send through wire transfer',
         icon: <Landmark size={26} color="#6366F1" />,
         onPress: handleCloseSendSheet,
+        comingSoon: true,
       },
     ],
     [handleCloseSendSheet, startWithdrawalFlow]

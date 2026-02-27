@@ -300,7 +300,6 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             lockoutUntil: null,
             isLoading: false,
           });
-          // TODO: identify user in feedback SDK
           gleap.identifyContact(response.user.id, {
             email: response.user.email,
             name: response.user.firstName
@@ -389,7 +388,6 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           hasCompletedOnboarding: false,
         });
         set({ isLoading: false });
-        // TODO: clear feedback SDK identity
         gleap.clearIdentity();
 
         // If backend logout failed, log for monitoring

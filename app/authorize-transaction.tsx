@@ -9,7 +9,7 @@ import { useVerifyPasscode } from '@/api/hooks';
 import { authService } from '@/api/services';
 import { useAuthStore } from '@/stores/authStore';
 import { SessionManager } from '@/utils/sessionManager';
-import { getNativePasskey } from '@/utils/passkeyNative';
+import { getNativePasskey, isPasskeyCancelledError } from '@/utils/passkeyNative';
 import {
   beginPasskeyPrompt,
   canStartPasskeyPrompt,
@@ -17,7 +17,7 @@ import {
   markPasskeyPromptSuccess,
 } from '@/utils/passkeyPromptGuard';
 
-// ─── Passkey helpers (mirrors login-passcode.tsx) ────────────────────────────
+// ─── Passkey helpers ─────────────────────────────────────────────────────────
 
 type WebAuthnOptionsPayload = { publicKey?: Record<string, any>; [key: string]: any };
 
@@ -32,18 +32,6 @@ const normalizePasskeyGetRequest = (options: WebAuthnOptionsPayload) => {
     userVerification: publicKey.userVerification,
     extensions: publicKey.extensions,
   };
-};
-
-const isPasskeyCancelledError = (err: any) => {
-  const code = String(err?.code || err?.error || '').toLowerCase();
-  const msg = String(err?.message || '').toLowerCase();
-  return (
-    code.includes('usercancel') ||
-    code.includes('cancel') ||
-    code.includes('abort') ||
-    msg.includes('cancelled') ||
-    msg.includes('canceled')
-  );
 };
 
 export default function AuthorizeTransactionScreen() {
@@ -230,7 +218,9 @@ export default function AuthorizeTransactionScreen() {
 
         {/* Forgot PIN */}
         <View className="mb-8 items-center px-6">
-          <TouchableOpacity activeOpacity={0.7}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => router.push('/(auth)/forgot-password')}>
             <Text className="font-body-semibold text-[16px] text-[#3B82F6]">Forgot PIN?</Text>
           </TouchableOpacity>
         </View>

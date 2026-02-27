@@ -75,6 +75,15 @@ Example TestFlight build:
 eas build --platform ios --profile testflight
 ```
 
+Android hackathon/release runbook:
+
+- [Seeker Launch Runbook](./docs/hackathon-seeker-launch-runbook.md)
+
+Useful helper scripts:
+
+- `scripts/generate-android-dapp-keystore.sh`
+- `scripts/build-seeker-release-apk.sh`
+
 For Xcode archive/TestFlight uploads, `ios/.xcode.env` now defaults Release builds to staging:
 
 - `EXPO_PUBLIC_ENV=staging`

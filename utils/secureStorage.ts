@@ -40,14 +40,4 @@ export const secureStorage = {
       logger.error('SecureStore deleteItem error', { component: 'SecureStorage', key, error });
     }
   },
-
-  // For complex objects, serialize/deserialize
-  async setObject(key: string, value: any) {
-    await this.setItem(key, JSON.stringify(value));
-  },
-
-  async getObject(key: string): Promise<any | null> {
-    const item = await this.getItem(key);
-    return item ? JSON.parse(item) : null;
-  },
 };

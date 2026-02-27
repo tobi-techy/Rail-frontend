@@ -269,7 +269,8 @@ export default function Settings() {
       ),
       headerShown: true,
       title: '',
-      headerStyle: { backgroundColor: 'transparent' },
+      headerStyle: { backgroundColor: '#FFFFFF' },
+      headerShadowVisible: false,
     });
   }, [navigation]);
 

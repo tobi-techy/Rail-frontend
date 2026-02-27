@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
@@ -11,6 +11,7 @@ interface FundingOption {
   label: string;
   icon: React.ReactNode;
   onPress: () => void;
+  comingSoon?: boolean;
 }
 
 interface MoreFundingOptionsSheetProps {
@@ -20,6 +21,8 @@ interface MoreFundingOptionsSheetProps {
 }
 
 export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingOptionsSheetProps) {
+  const showWalletOptions = Platform.OS === 'android' || mode === 'send';
+
   const openMethodFlow = (method: 'phantom' | 'solflare') => {
     onClose();
     requestAnimationFrame(() => {
@@ -34,35 +37,35 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
   };
 
   const options: FundingOption[] = [
-    {
-      id: 'phantom',
-      label: 'Phantom',
-      icon: <PhantomIcon width={28} height={28} />,
-      onPress: () => openMethodFlow('phantom'),
-    },
-    {
-      id: 'solflare',
-      label: 'Solflare',
-      icon: <SolflareIcon width={28} height={28} />,
-      onPress: () => openMethodFlow('solflare'),
-    },
+    ...(showWalletOptions
+      ? [
+          {
+            id: 'phantom',
+            label: 'Phantom',
+            icon: <PhantomIcon width={28} height={28} />,
+            onPress: () => openMethodFlow('phantom'),
+          },
+          {
+            id: 'solflare',
+            label: 'Solflare',
+            icon: <SolflareIcon width={28} height={28} />,
+            onPress: () => openMethodFlow('solflare'),
+          },
+        ]
+      : []),
     {
       id: 'solana-pay',
       label: 'Solana Pay',
       icon: <SolanaIcon width={28} height={28} />,
-      onPress: () => {
-        onClose();
-        // TODO: Solana Pay integration
-      },
+      onPress: () => {},
+      comingSoon: true,
     },
     {
       id: 'wire',
       label: 'Wire Transfer',
       icon: <BankIcon width={28} height={28} color="#6366F1" />,
-      onPress: () => {
-        onClose();
-        // TODO: Wire transfer flow
-      },
+      onPress: () => {},
+      comingSoon: true,
     },
   ];
 
@@ -81,15 +84,26 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
               ? { borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }
               : undefined
           }
-          onPress={option.onPress}
-          activeOpacity={0.6}>
+          onPress={option.comingSoon ? undefined : option.onPress}
+          disabled={option.comingSoon}
+          activeOpacity={option.comingSoon ? 1 : 0.6}>
           <View className="flex-row items-center gap-4">
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-gray-50">
+            <View
+              className={`h-10 w-10 items-center justify-center rounded-full ${option.comingSoon ? 'bg-gray-100' : 'bg-gray-50'}`}>
               {option.icon}
             </View>
-            <Text className="font-subtitle text-base text-text-primary">{option.label}</Text>
+            <Text
+              className={`font-subtitle text-base ${option.comingSoon ? 'text-gray-400' : 'text-text-primary'}`}>
+              {option.label}
+            </Text>
           </View>
-          <ChevronRight size={18} color="#9CA3AF" />
+          {option.comingSoon ? (
+            <View className="rounded-full bg-gray-100 px-2 py-0.5">
+              <Text className="font-body text-xs text-gray-400">Soon</Text>
+            </View>
+          ) : (
+            <ChevronRight size={18} color="#9CA3AF" />
+          )}
         </TouchableOpacity>
       ))}
     </BottomSheet>
