@@ -20,13 +20,6 @@ export const CATEGORY_PALETTE = ['#FF6B35', '#FFD166', '#06D6A0', '#118AB2', '#9
 export const PERIODS = ['1W', '1M', '6M', '1Y'] as const;
 export type Period = (typeof PERIODS)[number];
 
-export const PERIOD_RANGE_LABEL: Record<Period, string> = {
-  '1W': '7 – 13 Apr',
-  '1M': 'Apr',
-  '6M': 'Jan – Jun',
-  '1Y': 'Jan – Dec',
-};
-
 export function splitAmt(n: number): { dollars: string; cents: string } {
   const [d, c] = Math.abs(n).toFixed(2).split('.');
   return { dollars: `$${d}`, cents: `.${c}` };

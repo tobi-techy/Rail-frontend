@@ -22,7 +22,6 @@ import { useUIStore } from '@/stores';
 import {
   C,
   CATEGORY_PALETTE,
-  PERIOD_RANGE_LABEL,
   splitAmt,
   PeriodSelector,
   StatCard,
@@ -57,14 +56,18 @@ export default function SpendingScreen() {
   const chartW = sw - 32;
 
   const {
+    isLoading,
     availableBalance,
     thisMonthSpend,
+    totalSpent,
     dailyAvg,
     trendPct,
     TrendIcon,
     trendColor,
+    transactionCount,
     monthlyUsedPct,
     chartData,
+    periodRangeLabel,
     categories,
     transactions,
     cardBadge,
@@ -92,8 +95,8 @@ export default function SpendingScreen() {
     [selection]
   );
 
-  const hasSpend = thisMonthSpend > 0;
-  const spentDisplay = isBalanceVisible ? `$${thisMonthSpend.toFixed(2)}` : '****';
+  const hasSpend = totalSpent > 0;
+  const spentDisplay = isBalanceVisible ? `$${totalSpent.toFixed(2)}` : '****';
 
   const barData = useMemo(
     () =>
@@ -166,9 +169,7 @@ export default function SpendingScreen() {
             {spentDisplay}
           </Text>
           <View className="mt-1 flex-row items-center gap-2">
-            <Text className="font-caption text-caption text-[#8E8E93]">
-              {PERIOD_RANGE_LABEL[period]}
-            </Text>
+            <Text className="font-caption text-caption text-[#8E8E93]">{periodRangeLabel}</Text>
             {hasSpend && (
               <View
                 className="flex-row items-center gap-1 rounded-full px-2 py-[3px]"
@@ -262,7 +263,7 @@ export default function SpendingScreen() {
                     {spentDisplay}
                   </Text>
                   <Text className="mt-0.5 font-caption text-[11px] text-[#8E8E93]">
-                    {PERIOD_RANGE_LABEL[period]}
+                    {periodRangeLabel}
                   </Text>
                 </View>
               )}
@@ -286,7 +287,11 @@ export default function SpendingScreen() {
             label="Daily average"
             value={isBalanceVisible ? `$${dailyAvg.toFixed(2)}` : '****'}
           />
-          <StatCard label="Monthly limit used" value={`${monthlyUsedPct.toFixed(0)}%`} />
+          <StatCard
+            label="Transactions"
+            value={transactionCount.toString()}
+            sub={`${monthlyUsedPct.toFixed(0)}% of limit`}
+          />
         </View>
 
         {/* By Category */}
