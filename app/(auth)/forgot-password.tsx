@@ -105,7 +105,7 @@ export default function ForgotPassword() {
                 {isEmailSent ? (
                   <Button
                     title="Back to sign in"
-                    onPress={() => router.replace(ROUTES.AUTH.SIGNIN as any)}
+                    onPress={() => router.replace(ROUTES.AUTH.SIGNIN as never)}
                   />
                 ) : (
                   <Button title="Send reset link" onPress={handleSendReset} loading={isPending} />
@@ -113,7 +113,7 @@ export default function ForgotPassword() {
                 <View className="mt-8 flex-row items-center justify-center">
                   <Text className="font-body text-caption text-black/60">Remember it?</Text>
                   <TouchableOpacity
-                    onPress={() => router.replace(ROUTES.AUTH.SIGNIN as any)}
+                    onPress={() => router.replace(ROUTES.AUTH.SIGNIN as never)}
                     className="ml-2">
                     <Text className="font-body text-caption text-black underline">
                       Back to sign in

@@ -30,35 +30,26 @@ import {
 } from 'lucide-react-native';
 import { useNavigation, router } from 'expo-router';
 import { useLayoutEffect, useState, useEffect, type ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { BottomSheet, SettingsSheet } from '@/components/sheets';
 import { SegmentedSlider } from '@/components/molecules';
+import { Button, Input } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores';
 import type { Currency } from '@/stores/uiStore';
-import { Button, Input } from '@/components/ui';
 import { logger } from '@/lib/logger';
-import {
-  useAllocationBalances,
-  useCreatePasscode,
-  useEnableAllocationMode,
-  usePasscodeStatus,
-  useUpdatePasscode,
-} from '@/api/hooks';
+import { useAllocationBalances, useEnableAllocationMode } from '@/api/hooks';
 import gleap from '@/utils/gleap';
 import { formatFxUpdatedAt, migrateLegacyCurrency } from '@/utils/currency';
+import { usePinChange, sanitizePin } from '@/hooks/usePinChange';
+import { useSpendSettings, clampAlloc } from '@/hooks/useSpendSettings';
 
-// ── Constants ────────────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 
-const DEFAULT_BASE_ALLOCATION = 70;
-const PIN_REGEX = /^\d{4}$/;
-const PIN_MAX_LENGTH = 4;
-const MIN_BASE_ALLOCATION = 1;
-const MAX_BASE_ALLOCATION = 99;
+const CURRENCIES: Currency[] = ['USD', 'EUR'];
+const CURRENCY_LABELS: Record<Currency, string> = { USD: 'US Dollar (USD)', EUR: 'Euro (EUR)' };
 
-// ── Types ────────────────────────────────────────────────────────────────────
-
-type SettingItem = { icon: ReactNode; label: string; onPress?: () => void; danger?: boolean };
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type SheetType =
   | 'allocation'
@@ -74,13 +65,8 @@ type SheetType =
   | 'currency'
   | null;
 
-// ── Pure helpers ─────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const sanitizePin = (v: string) => v.replace(/\D/g, '').slice(0, PIN_MAX_LENGTH);
-const clampAlloc = (v: number) =>
-  Number.isFinite(v)
-    ? Math.min(MAX_BASE_ALLOCATION, Math.max(MIN_BASE_ALLOCATION, Math.round(v)))
-    : DEFAULT_BASE_ALLOCATION;
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (typeof error === 'string') return error;
   if (error && typeof error === 'object' && 'message' in error) {
@@ -90,9 +76,19 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
-// ── UI primitives ─────────────────────────────────────────────────────────────
+// ── UI Primitives ─────────────────────────────────────────────────────────────
 
-const SettingButton = ({ icon, label, onPress, danger }: SettingItem) => (
+const SettingButton = ({
+  icon,
+  label,
+  onPress,
+  danger,
+}: {
+  icon: ReactNode;
+  label: string;
+  onPress?: () => void;
+  danger?: boolean;
+}) => (
   <TouchableOpacity className="mb-md w-[25%] items-center" onPress={onPress}>
     <View className="h-12 w-12 items-center justify-center">{icon}</View>
     <Text
@@ -149,17 +145,14 @@ const SheetToggleRow = ({
   </View>
 );
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Settings ──────────────────────────────────────────────────────────────────
 
 export default function Settings() {
   const navigation = useNavigation();
 
-  // Auth store
   const logout = useAuthStore((s) => s.logout);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
-  const hasPasscodeInStore = useAuthStore((s) => s.hasPasscode);
 
-  // UI store
   const {
     isBalanceVisible,
     toggleBalanceVisibility,
@@ -175,23 +168,38 @@ export default function Settings() {
   } = useUIStore();
   const selectedCurrency = migrateLegacyCurrency(currency);
 
-  // Sheet state
   const [activeSheet, setActiveSheet] = useState<SheetType>(null);
   const closeSheet = () => setActiveSheet(null);
 
-  // Spend settings
-  const [baseAllocation, setBaseAllocation] = useState(DEFAULT_BASE_ALLOCATION);
-  const [autoInvestEnabled, setAutoInvestEnabled] = useState(false);
-  const [roundupsEnabled, setRoundupsEnabled] = useState(true);
-  const [spendingLimit, setSpendingLimit] = useState(500);
+  const {
+    baseAllocation,
+    setBaseAllocation,
+    autoInvestEnabled,
+    setAutoInvestEnabled,
+    roundupsEnabled,
+    setRoundupsEnabled,
+    spendingLimit,
+    setSpendingLimit,
+    MIN_BASE_ALLOCATION,
+    MAX_BASE_ALLOCATION,
+  } = useSpendSettings();
+
   const [allocationFeedback, setAllocationFeedback] = useState<string | null>(null);
 
-  // PIN state
-  const [currentPin, setCurrentPin] = useState('');
-  const [newPin, setNewPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [pinError, setPinError] = useState<string | null>(null);
-  const [pinSuccess, setPinSuccess] = useState<string | null>(null);
+  const {
+    currentPin,
+    setCurrentPin,
+    newPin,
+    setNewPin,
+    confirmPin,
+    setConfirmPin,
+    pinError,
+    pinSuccess,
+    hasPasscodeConfigured,
+    isSavingPin,
+    handleSubmitPin,
+    PIN_MAX_LENGTH,
+  } = usePinChange({ isSheetOpen: activeSheet === 'pin', onSuccess: closeSheet });
 
   // Account state
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -201,83 +209,34 @@ export default function Settings() {
   const { data: allocationBalances, refetch: refetchAllocationBalances } = useAllocationBalances();
   const { mutateAsync: enableAllocationMode, isPending: isEnablingAllocation } =
     useEnableAllocationMode();
-  const { data: passcodeStatus, refetch: refetchPasscodeStatus } = usePasscodeStatus();
-  const { mutateAsync: createPasscode, isPending: isCreatingPasscode } = useCreatePasscode();
-  const { mutateAsync: updatePasscode, isPending: isUpdatingPasscode } = useUpdatePasscode();
-
-  const hasPasscodeConfigured = passcodeStatus?.enabled ?? hasPasscodeInStore;
-  const isSavingAllocation = isEnablingAllocation;
-  const isSavingPin = isCreatingPasscode || isUpdatingPasscode;
-
-  // Persist spend settings
-  useEffect(() => {
-    AsyncStorage.multiGet([
-      'baseAllocation',
-      'autoInvestEnabled',
-      'roundupsEnabled',
-      'spendingLimit',
-    ]).then((values) => {
-      values.forEach(([key, value]) => {
-        if (value === null) return;
-        if (key === 'baseAllocation') setBaseAllocation(clampAlloc(Number(value)));
-        else if (key === 'autoInvestEnabled') setAutoInvestEnabled(value === 'true');
-        else if (key === 'roundupsEnabled') setRoundupsEnabled(value === 'true');
-        else if (key === 'spendingLimit') setSpendingLimit(Number(value));
-      });
-    });
-  }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      AsyncStorage.multiSet([
-        ['baseAllocation', String(baseAllocation)],
-        ['autoInvestEnabled', String(autoInvestEnabled)],
-        ['roundupsEnabled', String(roundupsEnabled)],
-        ['spendingLimit', String(spendingLimit)],
-      ]);
-    }, 300);
-    return () => clearTimeout(t);
-  }, [baseAllocation, autoInvestEnabled, roundupsEnabled, spendingLimit]);
-
-  useEffect(() => {
-    if (activeSheet !== 'pin') return;
-    setCurrentPin('');
-    setNewPin('');
-    setConfirmPin('');
-    setPinError(null);
-    setPinSuccess(null);
-    void refetchPasscodeStatus();
-  }, [activeSheet, refetchPasscodeStatus]);
-
-  useEffect(() => {
-    if (activeSheet !== 'currency') return;
-    if (currencyRatesUpdatedAt) return;
+    if (activeSheet !== 'currency' || currencyRatesUpdatedAt) return;
     void refreshCurrencyRates();
   }, [activeSheet, currencyRatesUpdatedAt, refreshCurrencyRates]);
 
   useEffect(() => {
-    if (currency === selectedCurrency) return;
-    setCurrency(selectedCurrency);
+    if (currency !== selectedCurrency) setCurrency(selectedCurrency);
   }, [currency, selectedCurrency, setCurrency]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
+      headerShown: true,
+      title: '',
+      headerStyle: { backgroundColor: '#FFFFFF' },
+      headerShadowVisible: false,
       headerLeft: () => (
         <View className="flex-row items-center gap-x-3 pl-[14px]">
           <Text className="font-subtitle text-headline-1">Settings</Text>
         </View>
       ),
-      headerShown: true,
-      title: '',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerShadowVisible: false,
     });
   }, [navigation]);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleSaveAllocation = async () => {
-    if (isSavingAllocation) return;
+    if (isEnablingAllocation) return;
     const spendingRatio = Math.min(0.99, Math.max(0.01, baseAllocation / 100));
     const stashRatio = Number((1 - spendingRatio).toFixed(2));
     try {
@@ -292,54 +251,6 @@ export default function Settings() {
       const msg = getErrorMessage(error, 'Failed to update Base/Active split.');
       setAllocationFeedback(msg);
       Alert.alert('Split Update Failed', msg);
-    }
-  };
-
-  const handleSubmitPin = async () => {
-    if (isSavingPin) return;
-    setPinError(null);
-    setPinSuccess(null);
-    if (hasPasscodeConfigured && !PIN_REGEX.test(currentPin)) {
-      setPinError('Current PIN must be exactly 4 digits.');
-      return;
-    }
-    if (!PIN_REGEX.test(newPin)) {
-      setPinError('New PIN must be exactly 4 digits.');
-      return;
-    }
-    if (!PIN_REGEX.test(confirmPin)) {
-      setPinError('Confirm PIN must be exactly 4 digits.');
-      return;
-    }
-    if (newPin !== confirmPin) {
-      setPinError('New PIN and confirmation do not match.');
-      return;
-    }
-    try {
-      if (hasPasscodeConfigured) {
-        await updatePasscode({
-          currentPasscode: currentPin,
-          newPasscode: newPin,
-          confirmPasscode: confirmPin,
-        });
-      } else {
-        await createPasscode({ passcode: newPin, confirmPasscode: confirmPin });
-      }
-      setPinSuccess(
-        hasPasscodeConfigured ? 'PIN updated successfully.' : 'PIN created successfully.'
-      );
-      setCurrentPin('');
-      setNewPin('');
-      setConfirmPin('');
-      await refetchPasscodeStatus();
-      setTimeout(() => closeSheet(), 500);
-    } catch (error) {
-      setPinError(
-        getErrorMessage(
-          error,
-          hasPasscodeConfigured ? 'Failed to update PIN.' : 'Failed to create PIN.'
-        )
-      );
     }
   };
 
@@ -382,13 +293,7 @@ export default function Settings() {
     }
   };
 
-  const CURRENCIES: Currency[] = ['USD', 'EUR'];
-  const CURRENCY_LABELS: Record<Currency, string> = {
-    USD: 'US Dollar (USD)',
-    EUR: 'Euro (EUR)',
-  };
-
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <View className="flex-1 bg-background-main">
@@ -511,7 +416,7 @@ export default function Settings() {
         </Section>
       </ScrollView>
 
-      {/* ── Spend sheets ── */}
+      {/* Spend */}
       <BottomSheet visible={activeSheet === 'allocation'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Base/Active Split</Text>
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
@@ -545,12 +450,12 @@ export default function Settings() {
           </View>
         </View>
         <Button
-          title={isSavingAllocation ? '' : 'Save Changes'}
+          title={isEnablingAllocation ? '' : 'Save Changes'}
           variant="black"
           onPress={handleSaveAllocation}
-          disabled={isSavingAllocation}
+          disabled={isEnablingAllocation}
           flex>
-          {isSavingAllocation && <ActivityIndicator color="#fff" />}
+          {isEnablingAllocation && <ActivityIndicator color="#fff" />}
         </Button>
       </BottomSheet>
 
@@ -593,14 +498,14 @@ export default function Settings() {
         <Button title="Save Limit" variant="black" onPress={closeSheet} />
       </BottomSheet>
 
-      {/* ── Preference sheets ── */}
+      {/* Preferences */}
       <BottomSheet visible={activeSheet === 'privacy'} onClose={closeSheet}>
         <Text className="mb-4 font-subtitle text-xl">Privacy</Text>
         <SheetToggleRow
           label="Hide Balances"
           subtitle="Mask all monetary values in the app"
           value={!isBalanceVisible}
-          onChange={(v) => toggleBalanceVisibility()}
+          onChange={() => toggleBalanceVisibility()}
         />
       </BottomSheet>
 
@@ -658,7 +563,7 @@ export default function Settings() {
         ))}
       </BottomSheet>
 
-      {/* ── Security sheets ── */}
+      {/* Security */}
       <BottomSheet visible={activeSheet === 'pin'} onClose={closeSheet}>
         <Text className="mb-2 font-subtitle text-xl">
           {hasPasscodeConfigured ? 'Update PIN' : 'Create PIN'}
@@ -716,7 +621,7 @@ export default function Settings() {
         </View>
       </BottomSheet>
 
-      {/* ── Account sheets ── */}
+      {/* Account */}
       <BottomSheet visible={activeSheet === 'logout'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Log Out</Text>
         <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-8">

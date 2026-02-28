@@ -34,7 +34,7 @@ export default function PersonalInfo() {
       firstName: normalizedFirstName,
       lastName: normalizedLastName,
     });
-    router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as any);
+    router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never);
   };
 
   return (

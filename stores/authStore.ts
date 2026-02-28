@@ -8,18 +8,26 @@ import { secureStorage } from '../utils/secureStorage';
 import { safeError, sanitizeForLog } from '../utils/logSanitizer';
 import { isAuthSessionInvalidError } from '../utils/authErrorClassifier';
 import { logger } from '../lib/logger';
+import {
+  INACTIVITY_LIMIT_MS,
+  PASSCODE_SESSION_MS,
+  SESSION_DURATION_MS,
+} from '../utils/sessionConstants';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 500;
 const SECURE_VALUE_PLACEHOLDER = '__secure__';
 const SENSITIVE_KEYS = ['accessToken', 'refreshToken', 'passcodeSessionToken'] as const;
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const withRetry = async <T>(
-  operation: () => Promise<T>,
-  retries: number = MAX_RETRIES
-): Promise<T> => {
+const withRetry = async <T>(operation: () => Promise<T>, retries = MAX_RETRIES): Promise<T> => {
   try {
     return await operation();
   } catch (error) {
@@ -31,7 +39,11 @@ const withRetry = async <T>(
   }
 };
 
-// Extend the API User type with additional local fields
+const nowIso = () => new Date().toISOString();
+const sessionExpiry = (from = Date.now()) => new Date(from + SESSION_DURATION_MS).toISOString();
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 export interface User extends Omit<ApiUser, 'phone'> {
   fullName?: string;
   firstName?: string;
@@ -54,70 +66,48 @@ export interface RegistrationData {
 }
 
 interface AuthState {
-  // User & Session
   user: User | null;
   isAuthenticated: boolean;
   accessToken: string | null;
   refreshToken: string | null;
   csrfToken: string | null;
-  lastActivityAt: string | null; // Track last user activity for session timeout
-  tokenIssuedAt: string | null; // Track when token was issued (for 7-day expiry)
-  tokenExpiresAt: string | null; // Track when token expires (7 days from issuance)
-
-  // Onboarding State
+  lastActivityAt: string | null;
+  tokenIssuedAt: string | null;
+  tokenExpiresAt: string | null;
   hasCompletedOnboarding: boolean;
   hasAcknowledgedDisclaimer: boolean;
   onboardingStatus: string | null;
   currentOnboardingStep: string | null;
   registrationData: RegistrationData;
-
-  // Email Verification
   pendingVerificationEmail: string | null;
-
-  // Passcode/Biometric
   hasPasscode: boolean;
   isBiometricEnabled: boolean;
   passcodeSessionToken?: string;
   passcodeSessionExpiresAt?: string;
-
-  // Security
   loginAttempts: number;
   lockoutUntil: string | null;
-
-  // Temp (not persisted)
   _pendingPasscode: string | null;
-
-  // Loading & Error
   isLoading: boolean;
   error: string | null;
 }
 
 interface AuthActions {
-  // Authentication
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: (reason?: string) => Promise<{ funds_swept: string; sweep_tx_hash?: string }>;
   register: (email: string) => Promise<void>;
-
-  // Session management
   refreshSession: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
   updateLastActivity: () => void;
-  checkTokenExpiry: () => boolean; // Check if session expired (7 days inactivity or backend session expired)
-  clearExpiredSession: () => void; // Clear session if expired
-
-  // Passcode session management
+  checkTokenExpiry: () => boolean;
+  clearExpiredSession: () => void;
   clearPasscodeSession: () => void;
   checkPasscodeSessionExpiry: () => boolean;
   setPasscodeSession: (token: string, expiresAt: string) => void;
-
-  // Passcode/Biometric
   setPasscode: (passcode: string) => Promise<void>;
   verifyPasscode: (passcode: string) => Promise<boolean>;
   enableBiometric: () => void;
   disableBiometric: () => void;
-
-  // State Management
   setUser: (user: User) => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   setPendingEmail: (email: string | null) => void;
@@ -125,20 +115,15 @@ interface AuthActions {
   setHasCompletedOnboarding: (completed: boolean) => void;
   setHasAcknowledgedDisclaimer: (acknowledged: boolean) => void;
   setHasPasscode: (hasPasscode: boolean) => void;
-
-  // Registration Flow
   updateRegistrationData: (data: Partial<RegistrationData>) => void;
   clearRegistrationData: () => void;
-
-  // Error handling
   setError: (error: string | null) => void;
   clearError: () => void;
-
-  // Reset
   reset: () => void;
-  /** Clear tokens/session but keep user identity so app routes to login-passcode */
   clearSession: () => void;
 }
+
+// ── Initial state ─────────────────────────────────────────────────────────────
 
 const initialState: AuthState = {
   user: null,
@@ -178,56 +163,43 @@ const initialState: AuthState = {
   },
 };
 
-// Custom storage adapter that uses SecureStore for sensitive data
+// ── Secure storage adapter ────────────────────────────────────────────────────
+
 const createSecureStorage = () => ({
   getItem: async (name: string) => {
     try {
       const data = await withRetry(() => AsyncStorage.getItem(name));
       if (!data) return null;
-
       const parsed = JSON.parse(data);
       if (!parsed || typeof parsed !== 'object') return null;
-
-      const [secureAccessToken, secureRefreshToken, securePasscodeSessionToken] = await Promise.all(
-        [
-          withRetry(() => secureStorage.getItem(`${name}_accessToken`)),
-          withRetry(() => secureStorage.getItem(`${name}_refreshToken`)),
-          withRetry(() => secureStorage.getItem(`${name}_passcodeSessionToken`)),
-        ]
-      );
-
-      parsed.accessToken = secureAccessToken ?? null;
-      parsed.refreshToken = secureRefreshToken ?? null;
-      parsed.passcodeSessionToken = securePasscodeSessionToken ?? undefined;
-
+      const [accessToken, refreshToken, passcodeSessionToken] = await Promise.all([
+        withRetry(() => secureStorage.getItem(`${name}_accessToken`)),
+        withRetry(() => secureStorage.getItem(`${name}_refreshToken`)),
+        withRetry(() => secureStorage.getItem(`${name}_passcodeSessionToken`)),
+      ]);
+      parsed.accessToken = accessToken ?? null;
+      parsed.refreshToken = refreshToken ?? null;
+      parsed.passcodeSessionToken = passcodeSessionToken ?? undefined;
       return parsed;
     } catch (error) {
       safeError('[SecureStorage] getItem error:', error);
       return null;
     }
   },
-  setItem: async (name: string, value: any) => {
+  setItem: async (name: string, value: Record<string, unknown>) => {
     try {
       const toStore = { ...value };
-
       for (const key of SENSITIVE_KEYS) {
         const secureKey = `${name}_${key}`;
         const keyValue = toStore[key];
-
         if (typeof keyValue === 'string' && keyValue.length > 0) {
           await withRetry(() => secureStorage.setItem(secureKey, keyValue));
           toStore[key] = SECURE_VALUE_PLACEHOLDER;
-          continue;
-        }
-
-        await secureStorage.deleteItem(secureKey);
-        if (key === 'passcodeSessionToken') {
-          delete toStore[key];
         } else {
-          toStore[key] = null;
+          await secureStorage.deleteItem(secureKey);
+          toStore[key] = key === 'passcodeSessionToken' ? undefined : null;
         }
       }
-
       await withRetry(() => AsyncStorage.setItem(name, JSON.stringify(toStore)));
     } catch (error) {
       safeError('[SecureStorage] setItem error:', error);
@@ -237,53 +209,42 @@ const createSecureStorage = () => ({
   removeItem: async (name: string) => {
     try {
       await withRetry(() => AsyncStorage.removeItem(name));
-      await secureStorage.deleteItem(`${name}_accessToken`);
-      await secureStorage.deleteItem(`${name}_refreshToken`);
-      await secureStorage.deleteItem(`${name}_passcodeSessionToken`);
+      await Promise.all(SENSITIVE_KEYS.map((k) => secureStorage.deleteItem(`${name}_${k}`)));
     } catch (error) {
       safeError('[SecureStorage] removeItem error:', error);
     }
   },
 });
 
+// ── Store ─────────────────────────────────────────────────────────────────────
+
 export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
     (set, get) => ({
       ...initialState,
 
-      // Authentication
-      login: async (email: string, password: string) => {
-        // Validate inputs
+      login: async (email, password) => {
         if (!email || !password) {
-          const error = new Error('Email and password are required');
-          set({ error: error.message, isLoading: false });
-          throw error;
+          const msg = 'Email and password are required';
+          set({ error: msg, isLoading: false });
+          throw new Error(msg);
         }
-
-        // Check if account is locked
         const { lockoutUntil } = get();
         if (lockoutUntil && new Date(lockoutUntil) > new Date()) {
-          const remainingMinutes = Math.ceil(
-            (new Date(lockoutUntil).getTime() - Date.now()) / 60000
-          );
-          const error = new Error(`Account locked. Try again in ${remainingMinutes} minute(s)`);
-          set({ error: error.message, isLoading: false });
-          throw error;
+          const mins = Math.ceil((new Date(lockoutUntil).getTime() - Date.now()) / 60000);
+          const msg = `Account locked. Try again in ${mins} minute(s)`;
+          set({ error: msg, isLoading: false });
+          throw new Error(msg);
         }
-
         set({ isLoading: true, error: null });
         try {
           const response = await authService.login({ email, password });
-
           if (!response.user || !response.accessToken || !response.refreshToken) {
             throw new Error('Invalid response from authentication service');
           }
-
-          const now = new Date();
-          const sessionExpiresAt = response.sessionExpiresAt
-            ? new Date(response.sessionExpiresAt)
-            : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days fallback
-
+          const expiresAt = response.sessionExpiresAt
+            ? new Date(response.sessionExpiresAt).toISOString()
+            : sessionExpiry();
           set({
             user: response.user,
             isAuthenticated: true,
@@ -291,12 +252,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             refreshToken: response.refreshToken,
             csrfToken: response.csrfToken || null,
             onboardingStatus: response.user.onboardingStatus || null,
-            // Passcode status is fetched from /v1/security/passcode, not user payload.
             hasPasscode: false,
-            lastActivityAt: now.toISOString(),
-            tokenIssuedAt: now.toISOString(),
-            tokenExpiresAt: sessionExpiresAt.toISOString(),
-            loginAttempts: 0, // Reset on successful login
+            lastActivityAt: nowIso(),
+            tokenIssuedAt: nowIso(),
+            tokenExpiresAt: expiresAt,
+            loginAttempts: 0,
             lockoutUntil: null,
             isLoading: false,
           });
@@ -308,29 +268,18 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           });
         } catch (error: any) {
           safeError('[AuthStore] Login failed:', error);
-
-          // Increment failed attempts
-          const currentAttempts = get().loginAttempts;
-          const newAttempts = currentAttempts + 1;
-          let lockoutUntil = null;
-
-          if (newAttempts >= 5) {
-            // Lock out for 15 minutes after 5 failed attempts
-            lockoutUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-            set({ loginAttempts: newAttempts, lockoutUntil });
-          } else {
-            set({ loginAttempts: newAttempts });
-          }
-
-          // SECURITY: Sanitize error message before storing in state
-          const rawErrorMessage =
-            error?.error?.message ||
-            error?.message ||
-            'Login failed. Please check your credentials.';
-          const errorMessage = sanitizeForLog(rawErrorMessage);
-
+          const attempts = get().loginAttempts + 1;
           set({
-            error: errorMessage,
+            loginAttempts: attempts,
+            lockoutUntil:
+              attempts >= MAX_LOGIN_ATTEMPTS
+                ? new Date(Date.now() + LOCKOUT_DURATION_MS).toISOString()
+                : null,
+            error: sanitizeForLog(
+              error?.error?.message ||
+                error?.message ||
+                'Login failed. Please check your credentials.'
+            ),
             isLoading: false,
           });
           throw error;
@@ -340,12 +289,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       logout: async () => {
         set({ isLoading: true });
         let logoutFailed = false;
-
         try {
-          // Call API to invalidate tokens on server
           await authService.logout();
         } catch (error) {
-          // Log error but don't throw - allow local cleanup to proceed
           logoutFailed = true;
           logger.error('[AuthStore] Backend logout failed', {
             component: 'AuthStore',
@@ -353,101 +299,65 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             error: error instanceof Error ? error.message : String(error),
           });
         }
-
         try {
-          // CRITICAL: Clean up SessionManager timers
-          // This prevents background timers from firing after logout
           const { cleanup } = await import('../utils/sessionManager').then((m) => ({
             cleanup: m.default.cleanup,
           }));
           cleanup();
-        } catch (cleanupError) {
+        } catch (e) {
           logger.warn('[AuthStore] SessionManager cleanup failed', {
             component: 'AuthStore',
             action: 'session-manager-cleanup-error',
-            error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+            error: e instanceof Error ? e.message : String(e),
           });
         }
-
         try {
-          // Clean up CSRF token on logout
           const { default: csrfTokenService } = await import('../utils/csrfToken');
           await csrfTokenService.clear();
-        } catch (csrfError) {
+        } catch (e) {
           logger.warn('[AuthStore] CSRF token cleanup failed', {
             component: 'AuthStore',
             action: 'csrf-cleanup-error',
-            error: csrfError instanceof Error ? csrfError.message : String(csrfError),
+            error: e instanceof Error ? e.message : String(e),
           });
         }
-
-        // Clear all auth state on logout
         set({
           ...initialState,
           hasPasscode: false,
           hasCompletedOnboarding: false,
+          isLoading: false,
         });
-        set({ isLoading: false });
         gleap.clearIdentity();
-
-        // If backend logout failed, log for monitoring
-        if (logoutFailed) {
-          logger.warn(
-            '[AuthStore] Logout completed with local state cleared, but backend call failed',
-            {
-              component: 'AuthStore',
-              action: 'logout-partial-success',
-            }
-          );
-        } else {
-          logger.info('[AuthStore] Logout completed successfully', {
+        logger[logoutFailed ? 'warn' : 'info'](
+          `[AuthStore] Logout ${logoutFailed ? 'completed with backend failure' : 'completed successfully'}`,
+          {
             component: 'AuthStore',
-            action: 'logout-success',
-          });
-        }
+            action: logoutFailed ? 'logout-partial-success' : 'logout-success',
+          }
+        );
       },
 
-      deleteAccount: async (reason?: string) => {
+      deleteAccount: async (reason?) => {
         set({ isLoading: true, error: null });
         try {
           const response = await authService.deleteAccount(reason);
-
-          // Clear all auth state after successful deletion
-          set({
-            ...initialState,
-            hasPasscode: false,
-            hasCompletedOnboarding: false,
-          });
-
-          return {
-            funds_swept: response.funds_swept,
-            sweep_tx_hash: response.sweep_tx_hash,
-          };
+          set({ ...initialState, hasPasscode: false, hasCompletedOnboarding: false });
+          return { funds_swept: response.funds_swept, sweep_tx_hash: response.sweep_tx_hash };
         } catch (error: any) {
           safeError('[AuthStore] Delete account failed:', error);
-          const errorMessage = error?.message || 'Failed to delete account';
-          set({ error: errorMessage, isLoading: false });
+          set({ error: error?.message || 'Failed to delete account', isLoading: false });
           throw error;
         }
       },
 
-      register: async (email: string) => {
-        // Validate inputs
+      register: async (email) => {
         if (!email) {
-          const error = new Error('Email is required');
-          set({ error: error.message, isLoading: false });
-          throw error;
+          set({ error: 'Email is required', isLoading: false });
+          throw new Error('Email is required');
         }
-
         set({ isLoading: true, error: null });
         try {
           const response = await authService.register({ email });
-
-          if (!response.identifier && !email) {
-            throw new Error('Invalid response from registration service');
-          }
-
-          // Store pending email but DON'T authenticate yet - user needs to verify
           set({
             pendingVerificationEmail: email || response.identifier,
             isAuthenticated: false,
@@ -456,52 +366,42 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           });
         } catch (error: any) {
           safeError('[AuthStore] Registration failed:', error);
-          // SECURITY: Sanitize error message before storing in state
-          const rawErrorMessage =
-            error?.error?.message || error?.message || 'Registration failed. Please try again.';
-          const errorMessage = sanitizeForLog(rawErrorMessage);
           set({
-            error: errorMessage,
+            error: sanitizeForLog(
+              error?.error?.message || error?.message || 'Registration failed. Please try again.'
+            ),
             isLoading: false,
           });
           throw error;
         }
       },
 
-      // Session management
       refreshSession: async () => {
         const { refreshToken } = get();
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
-
+        if (!refreshToken) throw new Error('No refresh token available');
         set({ isLoading: true });
-        const applyRefreshTokens = (
+
+        const applyTokens = (
           response: {
             accessToken: string;
             refreshToken: string;
             expiresAt: string;
             csrfToken?: string;
           },
-          fallbackRefreshToken: string
+          fallbackToken: string
         ) => {
-          const now = new Date();
-          const currentExpiry = get().tokenExpiresAt
-            ? new Date(get().tokenExpiresAt!).getTime()
-            : 0;
-          const responseExpiry = response.expiresAt ? new Date(response.expiresAt).getTime() : 0;
+          const now = Date.now();
           const nextExpiry = Math.max(
-            currentExpiry,
-            responseExpiry,
-            now.getTime() + 7 * 24 * 60 * 60 * 1000
+            get().tokenExpiresAt ? new Date(get().tokenExpiresAt!).getTime() : 0,
+            response.expiresAt ? new Date(response.expiresAt).getTime() : 0,
+            now + INACTIVITY_LIMIT_MS
           );
-
           set({
             accessToken: response.accessToken,
-            refreshToken: response.refreshToken || fallbackRefreshToken,
+            refreshToken: response.refreshToken || fallbackToken,
             csrfToken: response.csrfToken || get().csrfToken,
             isAuthenticated: true,
-            lastActivityAt: now.toISOString(),
+            lastActivityAt: new Date(now).toISOString(),
             tokenExpiresAt: new Date(nextExpiry).toISOString(),
             error: null,
             isLoading: false,
@@ -509,50 +409,28 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         };
 
         try {
-          const response = await authService.refreshToken({ refreshToken });
-          applyRefreshTokens(response, refreshToken);
+          applyTokens(await authService.refreshToken({ refreshToken }), refreshToken);
         } catch (error) {
-          const latestRefreshToken = get().refreshToken;
-          const hasRotatedRefreshToken =
-            !!latestRefreshToken && latestRefreshToken !== refreshToken;
+          const latestToken = get().refreshToken;
+          const tokenRotated = !!latestToken && latestToken !== refreshToken;
 
-          // If another flow (e.g. passkey login) rotated refresh token while this refresh was in-flight,
-          // retry once with the latest token before forcing logout.
-          if (isAuthSessionInvalidError(error) && hasRotatedRefreshToken) {
-            logger.warn('[AuthStore] Refresh token changed during refresh; retrying with latest', {
+          if (isAuthSessionInvalidError(error) && tokenRotated) {
+            logger.warn('[AuthStore] Refresh token rotated during refresh; retrying', {
               component: 'AuthStore',
               action: 'refresh-token-rotated-retry',
             });
-
             try {
-              const retryResponse = await authService.refreshToken({
-                refreshToken: latestRefreshToken!,
-              });
-              applyRefreshTokens(retryResponse, latestRefreshToken!);
+              applyTokens(
+                await authService.refreshToken({ refreshToken: latestToken! }),
+                latestToken!
+              );
               return;
             } catch (retryError) {
               set({
                 error: retryError instanceof Error ? retryError.message : 'Session refresh failed',
                 isLoading: false,
               });
-
-              if (isAuthSessionInvalidError(retryError)) {
-                logger.warn('[AuthStore] Refresh retry rejected; logging out', {
-                  component: 'AuthStore',
-                  action: 'refresh-retry-auth-invalid',
-                });
-                get().logout();
-              } else {
-                logger.warn(
-                  '[AuthStore] Refresh retry failed due to transient error; preserving session',
-                  {
-                    component: 'AuthStore',
-                    action: 'refresh-retry-transient-error',
-                    error: retryError instanceof Error ? retryError.message : String(retryError),
-                  }
-                );
-              }
-
+              if (isAuthSessionInvalidError(retryError)) get().logout();
               throw retryError;
             }
           }
@@ -561,82 +439,44 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             error: error instanceof Error ? error.message : 'Session refresh failed',
             isLoading: false,
           });
-
           if (isAuthSessionInvalidError(error)) {
-            logger.warn('[AuthStore] Session refresh rejected by auth service; logging out', {
+            logger.warn('[AuthStore] Session refresh rejected; logging out', {
               component: 'AuthStore',
               action: 'refresh-auth-invalid',
-              status: (error as any)?.status ?? (error as any)?.response?.status,
-              code: (error as any)?.code ?? (error as any)?.error?.code,
             });
-            // Keep existing behavior for truly invalid sessions.
             get().logout();
-          } else {
-            logger.warn(
-              '[AuthStore] Session refresh failed due to transient error; preserving session',
-              {
-                component: 'AuthStore',
-                action: 'refresh-transient-error',
-                error: error instanceof Error ? error.message : String(error),
-              }
-            );
           }
-
           throw error;
         }
       },
 
-      updateUser: (userData: Partial<User>) => {
+      updateUser: (userData) => {
         const { user } = get();
-        if (user) {
-          set({ user: { ...user, ...userData } });
-        }
+        if (user) set({ user: { ...user, ...userData } });
       },
 
-      // Session activity tracking — sliding window extends session on activity
       updateLastActivity: () => {
-        const now = new Date();
+        const now = Date.now();
         const currentExpiry = get().tokenExpiresAt ? new Date(get().tokenExpiresAt!).getTime() : 0;
-        // Ensure session is always at least 7 days from last activity
-        const minExpiry = now.getTime() + 7 * 24 * 60 * 60 * 1000;
-        const newExpiry = Math.max(currentExpiry, minExpiry);
-
         set({
-          lastActivityAt: now.toISOString(),
-          tokenExpiresAt: new Date(newExpiry).toISOString(),
+          lastActivityAt: new Date(now).toISOString(),
+          tokenExpiresAt: new Date(
+            Math.max(currentExpiry, now + INACTIVITY_LIMIT_MS)
+          ).toISOString(),
         });
       },
 
-      // Check if session has expired due to inactivity (7 days without activity)
       checkTokenExpiry: () => {
         const { tokenExpiresAt, isAuthenticated, lastActivityAt } = get();
-
-        // If not authenticated, no token to check
         if (!isAuthenticated) return false;
-
         const now = Date.now();
-        const INACTIVITY_LIMIT = 7 * 24 * 60 * 60 * 1000; // 7 days
-
-        // Primary check: inactivity-based expiry
-        if (lastActivityAt) {
-          const lastActivity = new Date(lastActivityAt).getTime();
-          if (now - lastActivity >= INACTIVITY_LIMIT) return true;
-        }
-
-        // Secondary check: absolute session expiry from backend
-        if (tokenExpiresAt) {
-          const expiryTime = new Date(tokenExpiresAt).getTime();
-          if (now >= expiryTime) return true;
-        } else {
-          // No expiry time set — assume expired for safety
+        if (lastActivityAt && now - new Date(lastActivityAt).getTime() >= INACTIVITY_LIMIT_MS)
           return true;
-        }
-
-        return false;
+        if (!tokenExpiresAt) return true;
+        return now >= new Date(tokenExpiresAt).getTime();
       },
 
-      // Clear session if expired (inactivity or backend session expired)
-      clearExpiredSession: () => {
+      clearExpiredSession: () =>
         set({
           isAuthenticated: false,
           accessToken: null,
@@ -647,158 +487,62 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           tokenExpiresAt: null,
           passcodeSessionToken: undefined,
           passcodeSessionExpiresAt: undefined,
-        });
-      },
+        }),
 
-      // Passcode session management
-      clearPasscodeSession: () => {
-        // Only clear passcode session tokens, keep access/refresh tokens and isAuthenticated
-        // User still has valid 7-day tokens, they just need to verify passcode for UI access
-        set({
-          passcodeSessionToken: undefined,
-          passcodeSessionExpiresAt: undefined,
-        });
-      },
+      clearPasscodeSession: () =>
+        set({ passcodeSessionToken: undefined, passcodeSessionExpiresAt: undefined }),
 
       checkPasscodeSessionExpiry: () => {
         const { passcodeSessionToken, passcodeSessionExpiresAt, isAuthenticated, lastActivityAt } =
           get();
-
-        // If not authenticated, no passcode session to check
         if (!isAuthenticated) return false;
-
-        // If no passcode session token, it's expired/missing
         if (!passcodeSessionToken || !passcodeSessionExpiresAt) return true;
-
-        // Check if 10 minutes have passed since last activity
-        if (lastActivityAt) {
-          const lastActivity = new Date(lastActivityAt).getTime();
-          const now = Date.now();
-          const PASSCODE_SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes of inactivity
-
-          if (now - lastActivity >= PASSCODE_SESSION_TIMEOUT) {
-            logger.debug('[AuthStore] Passcode session expired due to inactivity', {
-              component: 'AuthStore',
-              action: 'inactivity-timeout',
-              lastActivityAt,
-              now,
-              elapsedMs: now - lastActivity,
-            });
-            return true;
-          }
-        }
-
-        // Fallback: check timestamp if no lastActivityAt
+        if (
+          lastActivityAt &&
+          Date.now() - new Date(lastActivityAt).getTime() >= PASSCODE_SESSION_MS
+        )
+          return true;
         try {
-          const expiryTime = new Date(passcodeSessionExpiresAt).getTime();
-          const now = new Date().getTime();
-
-          // SECURITY: Check for invalid timestamp (NaN indicates parsing failure)
-          if (isNaN(expiryTime)) {
-            logger.warn('[AuthStore] Invalid passcode session expiry timestamp', {
-              component: 'AuthStore',
-              action: 'invalid-expiry',
-              expiresAt: passcodeSessionExpiresAt,
-            });
-            return true; // Treat as expired for security
-          }
-
-          // SECURITY: Check for suspicious clock skew (future date beyond 15 minutes)
-          const MAX_CLOCK_SKEW = 15 * 60 * 1000; // 15 minute allowance for clock drift
-          if (expiryTime > now + MAX_CLOCK_SKEW) {
-            logger.warn('[AuthStore] Passcode session expiry timestamp beyond max clock skew', {
-              component: 'AuthStore',
-              action: 'clock-skew-detected',
-              expiryTime,
-              now,
-              skewMs: expiryTime - now,
-              maxAllowed: MAX_CLOCK_SKEW,
-            });
-            // Cap to 10 minutes from now (actual session duration)
-            return now >= expiryTime - (15 * 60 * 1000 - 10 * 60 * 1000);
-          }
-
-          // Normal expiry check
-          return now >= expiryTime;
-        } catch (error) {
-          logger.error('[AuthStore] Error checking passcode session expiry', {
-            component: 'AuthStore',
-            action: 'check-expiry-error',
-            error: error instanceof Error ? error.message : String(error),
-          });
-          // Treat as expired if we can't validate
+          const expiry = new Date(passcodeSessionExpiresAt).getTime();
+          if (isNaN(expiry)) return true;
+          // Guard against suspicious clock skew (>15 min in future)
+          if (expiry > Date.now() + 15 * 60 * 1000) return true;
+          return Date.now() >= expiry;
+        } catch {
           return true;
         }
       },
 
-      setPasscodeSession: (token: string, expiresAt: string) => {
-        set({
-          passcodeSessionToken: token,
-          passcodeSessionExpiresAt: expiresAt,
-        });
-      },
+      setPasscodeSession: (token, expiresAt) =>
+        set({ passcodeSessionToken: token, passcodeSessionExpiresAt: expiresAt }),
 
-      // State Management
-      setUser: (user: User) => {
-        set({ user, isAuthenticated: true });
-      },
+      setUser: (user) => set({ user, isAuthenticated: true }),
 
-      setTokens: (accessToken: string, refreshToken: string) => {
-        const now = new Date();
-        const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
-
+      setTokens: (accessToken, refreshToken) =>
         set({
           accessToken,
           refreshToken,
           isAuthenticated: true,
-          lastActivityAt: now.toISOString(),
-          tokenIssuedAt: now.toISOString(),
-          tokenExpiresAt: expiresAt.toISOString(),
-        });
-      },
+          lastActivityAt: nowIso(),
+          tokenIssuedAt: nowIso(),
+          tokenExpiresAt: sessionExpiry(),
+        }),
 
-      setPendingEmail: (email: string | null) => {
-        set({ pendingVerificationEmail: email });
-      },
+      setPendingEmail: (email) => set({ pendingVerificationEmail: email }),
+      setOnboardingStatus: (status, step?) =>
+        set({ onboardingStatus: status, currentOnboardingStep: step || null }),
+      setHasCompletedOnboarding: (completed) => set({ hasCompletedOnboarding: completed }),
+      setHasAcknowledgedDisclaimer: (acknowledged) =>
+        set({ hasAcknowledgedDisclaimer: acknowledged }),
+      setHasPasscode: (hasPasscode) => set({ hasPasscode }),
 
-      setOnboardingStatus: (status: string, step?: string) => {
-        set({
-          onboardingStatus: status,
-          currentOnboardingStep: step || null,
-        });
-      },
+      updateRegistrationData: (data) =>
+        set((s) => ({ registrationData: { ...s.registrationData, ...data } })),
+      clearRegistrationData: () => set({ registrationData: initialState.registrationData }),
 
-      setHasCompletedOnboarding: (completed: boolean) => {
-        set({ hasCompletedOnboarding: completed });
-      },
-
-      setHasAcknowledgedDisclaimer: (acknowledged: boolean) => {
-        set({ hasAcknowledgedDisclaimer: acknowledged });
-      },
-
-      setHasPasscode: (hasPasscode: boolean) => {
-        set({ hasPasscode });
-      },
-
-      updateRegistrationData: (data: Partial<RegistrationData>) => {
-        set((state) => ({
-          registrationData: { ...state.registrationData, ...data },
-        }));
-      },
-
-      clearRegistrationData: () => {
-        set({
-          registrationData: initialState.registrationData,
-        });
-      },
-
-      // Passcode/Biometric
-      setPasscode: async (passcode: string) => {
+      setPasscode: async (passcode) => {
         try {
-          await passcodeService.createPasscode({
-            passcode,
-            confirmPasscode: passcode,
-          });
+          await passcodeService.createPasscode({ passcode, confirmPasscode: passcode });
           set({ hasPasscode: true });
         } catch (error) {
           safeError('[AuthStore] Failed to set passcode:', error);
@@ -806,28 +550,24 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
       },
 
-      verifyPasscode: async (passcode: string) => {
+      verifyPasscode: async (passcode) => {
         try {
           const response = await passcodeService.verifyPasscode({ passcode });
-
           if (response.verified) {
-            const now = new Date();
-            const sessionExpiresAt = response.sessionExpiresAt
-              ? new Date(response.sessionExpiresAt)
-              : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-
+            const expiresAt = response.sessionExpiresAt
+              ? new Date(response.sessionExpiresAt).toISOString()
+              : sessionExpiry();
             set({
               accessToken: response.accessToken,
               refreshToken: response.refreshToken,
               isAuthenticated: true,
-              lastActivityAt: now.toISOString(),
-              tokenIssuedAt: now.toISOString(),
-              tokenExpiresAt: sessionExpiresAt.toISOString(),
+              lastActivityAt: nowIso(),
+              tokenIssuedAt: nowIso(),
+              tokenExpiresAt: expiresAt,
               passcodeSessionToken: response.passcodeSessionToken,
               passcodeSessionExpiresAt: response.passcodeSessionExpiresAt,
             });
           }
-
           return response.verified;
         } catch (error) {
           safeError('[AuthStore] Failed to verify passcode:', error);
@@ -835,29 +575,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
       },
 
-      enableBiometric: () => {
-        set({ isBiometricEnabled: true });
-      },
+      enableBiometric: () => set({ isBiometricEnabled: true }),
+      disableBiometric: () => set({ isBiometricEnabled: false }),
+      setError: (error) => set({ error }),
+      clearError: () => set({ error: null }),
+      reset: () => set(initialState),
 
-      disableBiometric: () => {
-        set({ isBiometricEnabled: false });
-      },
-
-      // Error handling
-      setError: (error: string | null) => {
-        set({ error });
-      },
-
-      clearError: () => {
-        set({ error: null });
-      },
-
-      // Reset
-      reset: () => {
-        set(initialState);
-      },
-
-      clearSession: () => {
+      clearSession: () =>
         set({
           accessToken: null,
           refreshToken: null,
@@ -869,51 +593,32 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           passcodeSessionToken: undefined,
           passcodeSessionExpiresAt: undefined,
           error: null,
-        });
-      },
+        }),
     }),
     {
       name: 'auth-storage',
       storage: createSecureStorage(),
       partialize: (state) => ({
-        // User & Session Data
         user: state.user,
-        accessToken: state.accessToken, // Will be stored securely
-        refreshToken: state.refreshToken, // Will be stored securely
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         csrfToken: state.csrfToken,
         lastActivityAt: state.lastActivityAt,
         tokenIssuedAt: state.tokenIssuedAt,
         tokenExpiresAt: state.tokenExpiresAt,
         isAuthenticated: state.isAuthenticated,
-
-        // Onboarding State
         hasPasscode: state.hasPasscode,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
         onboardingStatus: state.onboardingStatus,
         currentOnboardingStep: state.currentOnboardingStep,
-
-        // Email Verification
         pendingVerificationEmail: state.pendingVerificationEmail,
-
-        // Registration Data (persist during flow, exclude password)
-        registrationData: {
-          ...state.registrationData,
-          password: '',
-        },
-
-        // Passcode/Biometric
+        registrationData: { ...state.registrationData, password: '' },
         isBiometricEnabled: state.isBiometricEnabled,
-        passcodeSessionToken: state.passcodeSessionToken, // Will be stored securely
+        passcodeSessionToken: state.passcodeSessionToken,
         passcodeSessionExpiresAt: state.passcodeSessionExpiresAt,
-
-        // Security
         loginAttempts: state.loginAttempts,
         lockoutUntil: state.lockoutUntil,
-
-        // Disclaimer
         hasAcknowledgedDisclaimer: state.hasAcknowledgedDisclaimer,
-
-        // Include loading and error to satisfy type
         isLoading: state.isLoading,
         error: state.error,
       }),

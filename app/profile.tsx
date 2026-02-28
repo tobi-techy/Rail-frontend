@@ -28,15 +28,12 @@ const Profile = () => {
     }
   }, [refetch]);
 
-  // Format currency with proper decimals
   const formatCurrency = (value: string) => {
     const num = parseFloat(value);
-    return isNaN(num)
-      ? formatCurrencyAmount(0, selectedCurrency)
-      : formatCurrencyAmount(
-          convertFromUsd(num, selectedCurrency, currencyRates),
-          selectedCurrency
-        );
+    return formatCurrencyAmount(
+      isNaN(num) ? 0 : convertFromUsd(num, selectedCurrency, currencyRates),
+      selectedCurrency
+    );
   };
 
   // Format percentage with sign

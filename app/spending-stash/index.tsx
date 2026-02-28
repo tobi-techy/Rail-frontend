@@ -1,448 +1,381 @@
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
-  Platform,
-  StatusBar,
-} from 'react-native';
-import React, { useMemo } from 'react';
-import { useRouter } from 'expo-router';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, ScrollView, Pressable, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import {
   ArrowDownLeft,
-  ArrowLeft,
-  ArrowUpRight,
-  Settings2,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Clock,
-  ChevronRight,
-  Layers,
-  Activity,
+  ArrowUpLeft,
+  ChartBar,
+  ChartLine,
+  ChartPie,
+  Check,
+  ChevronLeft,
+  CreditCard,
 } from 'lucide-react-native';
-import { SpendingLineChart } from '@/components/molecules/SpendingLineChart';
-import { SpendingCategoryItem } from '@/components/molecules/SpendingCategoryItem';
-import { StashCard } from '@/components/molecules/StashCard';
-import { TransactionList } from '@/components/molecules/TransactionList';
-import { VisaLogo } from '@/assets/svg';
-import type {
-  Transaction,
-  TransactionStatus,
-  TransactionType,
-} from '@/components/molecules/TransactionItem';
-import { useSpendingStash } from '@/api/hooks/useSpending';
+import { BottomSheet } from '@/components/sheets';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
+import { useSpendingStashData } from './useSpendingStashData';
+import { StashCard } from '@/components/molecules';
+import { useHaptics } from '@/hooks/useHaptics';
+import { useUIStore } from '@/stores';
+import {
+  C,
+  CATEGORY_PALETTE,
+  PERIOD_RANGE_LABEL,
+  splitAmt,
+  PeriodSelector,
+  StatCard,
+  SectionHeader,
+  CategoryRow,
+  TxRow,
+  EmptyPeriod,
+  type Period,
+} from './components';
 import { Button } from '@/components/ui';
 
-const toNumber = (value?: string | null): number => {
-  const parsed = Number.parseFloat(value ?? '0');
-  return Number.isFinite(parsed) ? parsed : 0;
-};
+const LABEL_STYLE = { fontSize: 11, color: '#8E8E93' } as const;
 
-const CATEGORY_ICON_MAP: Record<string, string> = {
-  food: 'utensils-crossed',
-  drink: 'cup-soda',
-  shopping: 'shopping-bag',
-  transport: 'car',
-  entertainment: 'film',
-  travel: 'plane',
-  health: 'heart-pulse',
-  utility: 'lightbulb',
-  groceries: 'shopping-cart',
-};
+const VIEW_MODES = ['bar', 'line', 'donut'] as const;
+type ViewMode = (typeof VIEW_MODES)[number];
 
-const getCategoryIconName = (category: string): string => {
-  const lower = category.trim().toLowerCase();
-  for (const [key, iconName] of Object.entries(CATEGORY_ICON_MAP)) {
-    if (lower.includes(key)) return iconName;
-  }
-  return 'layers-3';
-};
+const VIEW_OPTIONS: {
+  id: ViewMode;
+  label: string;
+  IconComp: React.ComponentType<{ size: number; color: string; strokeWidth: number }>;
+}[] = [
+  { id: 'bar', label: 'Bar chart', IconComp: ChartBar },
+  { id: 'line', label: 'Line chart', IconComp: ChartLine },
+  { id: 'donut', label: 'Donut chart', IconComp: ChartPie },
+];
 
-const toTransactionType = (direction?: 'debit' | 'credit', amount = 0): TransactionType => {
-  if (direction === 'credit' || amount > 0) return 'receive';
-  return 'withdraw';
-};
+export default function SpendingScreen() {
+  const insets = useSafeAreaInsets();
+  const { impact, selection } = useHaptics();
+  const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
+  const { width: sw } = useWindowDimensions();
+  const chartW = sw - 32;
 
-const toTransactionStatus = (status: string): TransactionStatus => {
-  const normalized = status.toLowerCase();
-  if (normalized === 'pending' || normalized === 'authorized') return 'pending';
-  if (normalized === 'declined' || normalized === 'failed' || normalized === 'timeout')
-    return 'failed';
-  return 'completed';
-};
+  const {
+    availableBalance,
+    thisMonthSpend,
+    dailyAvg,
+    trendPct,
+    TrendIcon,
+    trendColor,
+    monthlyUsedPct,
+    chartData,
+    categories,
+    transactions,
+    cardBadge,
+    cardSubtitle,
+  } = useSpendingStashData();
 
-/** Formats "February 2026" from a Date */
-const formatMonthYear = (d: Date) =>
-  d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const [viewMode, setViewMode] = useState<ViewMode>('bar');
+  const [period, setPeriod] = useState<Period>('6M');
+  const [selectedBarIdx, setSelectedBarIdx] = useState(chartData.length - 1);
+  const [showSettingsSheet, setShowSettingsSheet] = useState(false);
 
-const Spending = () => {
-  const router = useRouter();
-  const { data, isError } = useSpendingStash();
+  const handlePeriod = useCallback(
+    (p: Period) => {
+      selection();
+      setPeriod(p);
+      setSelectedBarIdx(chartData.length - 1);
+    },
+    [selection, chartData.length]
+  );
+  const handleViewMode = useCallback(
+    (m: ViewMode) => {
+      selection();
+      setViewMode(m);
+    },
+    [selection]
+  );
 
-  const monthLabel = useMemo(() => formatMonthYear(new Date()), []);
+  const hasSpend = thisMonthSpend > 0;
+  const spentDisplay = isBalanceVisible ? `$${thisMonthSpend.toFixed(2)}` : '****';
 
-  const thisMonthSpend = toNumber(data?.spending_summary?.this_month_total);
-  const availableBalance = toNumber(data?.balance.available);
-  const dailyAvg = toNumber(data?.spending_summary?.daily_average);
-  const trend = data?.spending_summary?.trend ?? 'stable';
-  const trendPct = data?.spending_summary?.trend_change_percent ?? 0;
-
-  // Spending limit progress
-  const monthlyLimit = toNumber(data?.limits?.monthly?.limit);
-  const monthlyUsed = toNumber(data?.limits?.monthly?.used);
-  const monthlyUsedPct = monthlyLimit > 0 ? Math.min((monthlyUsed / monthlyLimit) * 100, 100) : 0;
-  const dailyLimit = toNumber(data?.limits?.daily?.limit);
-  const dailyUsed = toNumber(data?.limits?.daily?.used);
-  const dailyUsedPct = dailyLimit > 0 ? Math.min((dailyUsed / dailyLimit) * 100, 100) : 0;
-
-  // Card badge
-  const cardBadge = useMemo(() => {
-    if (!data?.card) return undefined;
-    if (data.card.is_frozen) return { label: 'Frozen', color: 'red' as const };
-    if (data.card.status === 'active') return { label: 'Active', color: 'green' as const };
-    return { label: data.card.status, color: 'gray' as const };
-  }, [data?.card]);
-
-  const cardSubtitle = useMemo(() => {
-    if (!data?.card) return undefined;
-    const type = data.card.type?.toLowerCase();
-    if (type === 'virtual') return 'Virtual card';
-    if (type === 'physical') return 'Physical card';
-    return data.card.network ?? undefined;
-  }, [data?.card]);
-
-  const chartData = useMemo(() => {
-    return [
-      { label: 'Jan', value: 0 },
-      { label: 'Feb', value: 0 },
-      { label: 'Mar', value: 0 },
-      { label: 'Apr', value: 0 },
-      { label: 'May', value: 0 },
-      { label: 'Jun', value: Number(thisMonthSpend.toFixed(2)) },
-    ];
-  }, [thisMonthSpend]);
-
-  const categoryCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const tx of data?.recent_transactions.items ?? []) {
-      const category = tx.merchant?.category?.trim();
-      if (!category) continue;
-      counts.set(category, (counts.get(category) ?? 0) + 1);
-    }
-    return counts;
-  }, [data?.recent_transactions.items]);
-
-  const categories = useMemo(
+  const barData = useMemo(
     () =>
-      (data?.top_categories ?? []).map((category, index) => ({
-        id: `${category.name}-${index}`,
-        title: category.name,
-        transactionCount: categoryCounts.get(category.name) ?? 0,
-        amount: -Math.abs(toNumber(category.amount)),
-        percentage: Number(category.percent.toFixed(0)),
-        iconName: getCategoryIconName(category.name),
+      chartData.map((d, i) => ({
+        value: d.value,
+        label: d.label,
+        frontColor: i === selectedBarIdx ? '#000000' : d.value > 0 ? '#D1D1D6' : '#EBEBEB',
+        topLabelComponent:
+          i === selectedBarIdx && d.value > 0
+            ? () => (
+                <Text style={{ fontSize: 11, color: '#000', marginBottom: 2 }}>
+                  ${Math.round(d.value)}
+                </Text>
+              )
+            : undefined,
       })),
-    [categoryCounts, data?.top_categories]
+    [chartData, selectedBarIdx]
   );
 
-  const transactions = useMemo<Transaction[]>(
-    () =>
-      (data?.recent_transactions.items ?? []).map((tx) => {
-        const amount = Math.abs(toNumber(tx.amount));
-        return {
-          id: tx.id,
-          type: toTransactionType(tx.direction, toNumber(tx.amount)),
-          title: tx.merchant?.category || tx.description || 'Card',
-          subtitle: tx.description || tx.merchant?.name || 'Card transaction',
-          amount,
-          currency: tx.currency || data?.balance.currency || 'USD',
-          assetSymbol: tx.currency || data?.balance.currency || 'USD',
-          merchant: tx.merchant?.name || tx.description,
-          status: toTransactionStatus(tx.status),
-          createdAt: new Date(tx.created_at),
-        };
-      }),
-    [data?.balance.currency, data?.recent_transactions.items]
+  const lineData = useMemo(
+    () => chartData.map((d) => ({ value: d.value, label: d.label })),
+    [chartData]
   );
 
-  const pendingAuths = data?.pending_authorizations ?? [];
+  const pieData = useMemo(() => {
+    const segs = categories.slice(0, 5);
+    return segs.length > 0
+      ? segs.map((cat, i) => ({
+          value: Math.abs(cat.amount),
+          color: CATEGORY_PALETTE[i % CATEGORY_PALETTE.length],
+        }))
+      : [{ value: 1, color: C.accent }];
+  }, [categories]);
 
-  const TrendIcon = useMemo(
-    () => (trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus),
-    [trend]
-  );
-  const trendColor = useMemo(
-    () => (trend === 'up' ? '#B91C1C' : trend === 'down' ? '#15803D' : '#6B7280'),
-    [trend]
-  );
+  const availSplit = splitAmt(availableBalance);
+  const spentSplit = splitAmt(thisMonthSpend);
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-white"
-      style={{ paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }}>
-      {/* ── Header ── */}
-      <View className="flex-row items-center justify-between px-5 py-4">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
-          activeOpacity={0.7}>
-          <ArrowLeft size={20} color="#000" />
-        </TouchableOpacity>
-
-        <Text className="font-body-medium text-[16px] text-black">Spending Stash</Text>
-
-        <TouchableOpacity
-          className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
-          activeOpacity={0.7}
-          onPress={() => router.push('/(tabs)/settings')}>
-          <Settings2 size={20} color="#000" />
-        </TouchableOpacity>
+    <View className="flex-1 bg-white">
+      {/* Header */}
+      <View className="flex-row items-center px-4 pb-2" style={{ paddingTop: insets.top + 8 }}>
+        <Pressable
+          onPress={() => {
+            impact();
+            router.back();
+          }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          className="h-11 w-11 items-center justify-center"
+          accessibilityRole="button"
+          accessibilityLabel="Go back">
+          <ChevronLeft size={24} color={C.text} strokeWidth={2} />
+        </Pressable>
+        <Text className="font-headline text-headline-1 text-text-primary">Spending</Text>
       </View>
 
       <ScrollView
         className="flex-1"
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* ── Hero balance ── */}
-        <View className="mt-2 px-5">
-          <Text className="font-body-medium mb-1 text-[16px] text-[#8C8C8C]">
-            Available to Spend
+        bounces>
+        {/* Hero */}
+        <View className="px-4 pb-2 pt-4">
+          <Text className="font-caption text-caption text-[#8E8E93]">Total Spent</Text>
+          <Text
+            className="mt-0.5 font-headline text-[52px] leading-[60px] text-text-primary"
+            style={{ letterSpacing: -1.5 }}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}>
+            {spentDisplay}
           </Text>
-          <Text className="font-subtitle text-[56px] tabular-nums leading-[64px] tracking-[-2px] text-black">
-            ${availableBalance.toFixed(2)}
-          </Text>
-
-          {/* Trend pill */}
-          <View className="mt-2 flex-row items-center gap-3">
-            <View
-              className="flex-row items-center gap-1 rounded-full px-3 py-1"
-              style={{
-                backgroundColor:
-                  trend === 'up' ? '#FEF2F2' : trend === 'down' ? '#ECFDF3' : '#F3F4F6',
-              }}>
-              <TrendIcon size={13} color={trendColor} />
-              <Text style={{ color: trendColor, fontSize: 12, fontWeight: '600' }}>
-                {trendPct > 0 ? `+${trendPct.toFixed(1)}%` : `${trendPct.toFixed(1)}%`} vs last
-                month
-              </Text>
-            </View>
-          </View>
-
-          {/* Stats row */}
-          <View className="mt-4 flex-row gap-6">
-            <View>
-              <Text className="font-body text-[12px] text-[#8C8C8C]">Spent this month</Text>
-              <Text className="font-body-medium text-[15px] text-black">
-                ${thisMonthSpend.toFixed(2)}
-              </Text>
-            </View>
-            <View className="w-px bg-gray-200" />
-            <View>
-              <Text className="font-body text-[12px] text-[#8C8C8C]">Daily avg</Text>
-              <Text className="font-body-medium text-[15px] text-black">
-                ${dailyAvg.toFixed(2)}
-              </Text>
-            </View>
-          </View>
-
-          {isError ? (
-            <Text className="mt-2 font-body text-[12px] text-[#B45309]">
-              ⚠ Showing last known data
+          <View className="mt-1 flex-row items-center gap-2">
+            <Text className="font-caption text-caption text-[#8E8E93]">
+              {PERIOD_RANGE_LABEL[period]}
             </Text>
-          ) : null}
+            {hasSpend && (
+              <View
+                className="flex-row items-center gap-1 rounded-full px-2 py-[3px]"
+                style={{ backgroundColor: `${trendColor}18` }}>
+                <TrendIcon size={11} color={trendColor} strokeWidth={2.5} />
+                <Text className="font-button text-[11px]" style={{ color: trendColor }}>
+                  {Math.abs(trendPct).toFixed(0)}%
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
-        {/* ── Action buttons ── */}
-        <View className="mb-2 ml-5 mt-5 flex-row gap-3">
+        <View className="mb-2 ml-4 flex-row gap-3">
           <Button
-            title="Fund Spend"
+            title="Fund"
             leftIcon={<ArrowDownLeft size={20} color="white" />}
             size="small"
             variant="black"
           />
           <Button
             title="Send"
-            leftIcon={<ArrowUpRight size={20} color="black" />}
+            leftIcon={<ArrowUpLeft size={20} color="#000" />}
             size="small"
             variant="white"
           />
         </View>
 
-        {/* ── Spending limits ── */}
-        {(monthlyLimit > 0 || dailyLimit > 0) && (
-          <View className="mx-5 mt-6 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
-            <Text className="font-body-medium mb-3 text-[13px] uppercase tracking-wide text-[#8C8C8C]">
-              Spending Limits
-            </Text>
-            {monthlyLimit > 0 && (
-              <View className="mb-3">
-                <View className="mb-1.5 flex-row items-center justify-between">
-                  <Text className="font-body text-[13px] text-black">Monthly</Text>
-                  <Text className="font-body-medium text-[13px] text-black">
-                    ${monthlyUsed.toFixed(0)} / ${monthlyLimit.toFixed(0)}
+        {/* Chart */}
+        {!hasSpend ? (
+          <EmptyPeriod />
+        ) : viewMode === 'bar' ? (
+          <Animated.View entering={FadeIn.duration(200)} className="px-4">
+            <BarChart
+              data={barData}
+              width={chartW}
+              height={130}
+              barBorderRadius={6}
+              spacing={6}
+              frontColor="#D1D1D6"
+              hideRules
+              yAxisThickness={0}
+              xAxisThickness={0}
+              hideYAxisText
+              yAxisLabelWidth={0}
+              isAnimated
+              animationDuration={400}
+              onPress={(_item: unknown, index: number) => {
+                selection();
+                setSelectedBarIdx(index);
+              }}
+              xAxisLabelTextStyle={LABEL_STYLE}
+            />
+          </Animated.View>
+        ) : viewMode === 'line' ? (
+          <Animated.View entering={FadeIn.duration(200)} className="px-4">
+            <LineChart
+              data={lineData}
+              width={chartW}
+              height={130}
+              thickness={1.5}
+              color="#000000"
+              startFillColor="rgba(0,0,0,0.07)"
+              endFillColor="rgba(0,0,0,0)"
+              areaChart
+              hideDataPoints
+              hideRules
+              yAxisThickness={0}
+              xAxisThickness={0}
+              hideYAxisText
+              yAxisLabelWidth={0}
+              isAnimated
+              animationDuration={600}
+              xAxisLabelTextStyle={LABEL_STYLE}
+            />
+          </Animated.View>
+        ) : (
+          <Animated.View entering={FadeIn.duration(200)} className="items-center py-4">
+            <PieChart
+              donut
+              data={pieData}
+              radius={100}
+              innerRadius={78}
+              isAnimated
+              animationDuration={500}
+              centerLabelComponent={() => (
+                <View className="items-center px-2">
+                  <Text
+                    className="font-headline text-[24px] text-text-primary"
+                    style={{ letterSpacing: -0.5 }}>
+                    {spentDisplay}
+                  </Text>
+                  <Text className="mt-0.5 font-caption text-[11px] text-[#8E8E93]">
+                    {PERIOD_RANGE_LABEL[period]}
                   </Text>
                 </View>
-                <View className="h-2 overflow-hidden rounded-full bg-gray-200">
-                  <View
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${monthlyUsedPct}%`,
-                      backgroundColor: monthlyUsedPct > 85 ? '#EF4444' : '#000',
-                    }}
-                  />
-                </View>
-              </View>
-            )}
-            {dailyLimit > 0 && (
-              <View>
-                <View className="mb-1.5 flex-row items-center justify-between">
-                  <Text className="font-body text-[13px] text-black">Daily</Text>
-                  <Text className="font-body-medium text-[13px] text-black">
-                    ${dailyUsed.toFixed(0)} / ${dailyLimit.toFixed(0)}
-                  </Text>
-                </View>
-                <View className="h-2 overflow-hidden rounded-full bg-gray-200">
-                  <View
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${dailyUsedPct}%`,
-                      backgroundColor: dailyUsedPct > 85 ? '#EF4444' : '#000',
-                    }}
-                  />
-                </View>
-              </View>
-            )}
-          </View>
+              )}
+            />
+          </Animated.View>
         )}
 
-        {/* ── Chart ── */}
-        <View className="mt-6" style={{ marginHorizontal: -20 }}>
-          <SpendingLineChart
-            data={chartData}
-            lineColor="#000000"
-            gradientColors={['rgba(0,0,0,0.12)', 'rgba(0,0,0,0)']}
+        {/* Period selector */}
+        <PeriodSelector
+          selected={period}
+          onSelect={handlePeriod}
+          onSettings={() => {
+            selection();
+            setShowSettingsSheet(true);
+          }}
+        />
+
+        {/* Stats */}
+        <View className="mx-4 mt-6 flex-row gap-3">
+          <StatCard
+            label="Daily average"
+            value={isBalanceVisible ? `$${dailyAvg.toFixed(2)}` : '****'}
           />
+          <StatCard label="Monthly limit used" value={`${monthlyUsedPct.toFixed(0)}%`} />
         </View>
 
-        {/* ── Your Card ── */}
-        <View className="mt-10 px-5">
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="font-body-medium text-[20px] text-black">Your Card</Text>
-            {data?.card && (
-              <TouchableOpacity activeOpacity={0.7} className="flex-row items-center gap-1">
-                <Text className="font-body text-[13px] text-[#8C8C8C]">Manage</Text>
-                <ChevronRight size={14} color="#8C8C8C" />
-              </TouchableOpacity>
-            )}
-          </View>
-          <View className="w-full pl-[2px]">
-            <StashCard
-              title="Rail+ Card"
-              amount={data?.card?.last_four ? `•••• ${data.card.last_four}` : '•••• ----'}
-              subtitle={cardSubtitle}
-              badge={cardBadge}
-              icon={<VisaLogo color={'#000'} width={36} height={24} />}
-            />
-          </View>
-        </View>
-
-        {/* ── Pending authorizations ── */}
-        {pendingAuths.length > 0 && (
-          <View className="mt-6 px-5">
-            <View className="mb-3 flex-row items-center gap-2">
-              <Clock size={15} color="#8C8C8C" />
-              <Text className="font-body-medium text-[15px] text-black">Pending</Text>
-            </View>
-            <View className="overflow-hidden rounded-2xl border border-gray-100">
-              {pendingAuths.map((auth, i) => (
-                <View
-                  key={auth.id}
-                  className={`flex-row items-center justify-between px-4 py-3 ${i < pendingAuths.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                  <View>
-                    <Text className="font-body-medium text-[14px] text-black">
-                      {auth.merchant_name}
-                    </Text>
-                    {auth.category ? (
-                      <Text className="font-body text-[12px] text-[#8C8C8C]">{auth.category}</Text>
-                    ) : null}
-                  </View>
-                  <Text className="font-body-medium text-[14px] text-[#B45309]">
-                    {auth.amount_formatted ?? `-$${toNumber(auth.amount).toFixed(2)}`}
-                  </Text>
-                </View>
+        {/* By Category */}
+        {categories.length > 0 && (
+          <View className="mt-8">
+            <SectionHeader title="By Category" action="Manage" />
+            <View className="mx-4 overflow-hidden rounded-2xl bg-[#F2F2F7]">
+              {categories.slice(0, 5).map((cat, i, arr) => (
+                <CategoryRow
+                  key={cat.id}
+                  title={cat.title}
+                  transactionCount={cat.transactionCount}
+                  amount={cat.amount}
+                  percentage={cat.percentage}
+                  iconName={cat.iconName ?? 'layers-3'}
+                  color={CATEGORY_PALETTE[i % CATEGORY_PALETTE.length]}
+                  showSep={i < Math.min(arr.length, 5) - 1}
+                />
               ))}
             </View>
           </View>
         )}
 
-        {/* ── By Category ── */}
-        <View className="mt-10 px-5">
-          <View className="mb-2 flex-row items-center justify-between">
-            <View>
-              <Text className="font-body-medium text-[20px] text-black">By Category</Text>
-              <Text className="font-body text-[13px] text-[#8C8C8C]">{monthLabel}</Text>
-            </View>
-          </View>
-
-          <View>
-            {categories.length ? (
-              categories.map((category, index) => (
-                <View key={category.id}>
-                  <SpendingCategoryItem
-                    id={category.id}
-                    title={category.title}
-                    transactionCount={category.transactionCount}
-                    amount={category.amount}
-                    percentage={category.percentage}
-                    iconName={category.iconName}
-                    onPress={() => {}}
-                  />
-                  {index < categories.length - 1 && <View className="h-px bg-gray-100" />}
-                </View>
-              ))
-            ) : (
-              /* Empty state */
-              <View className="items-center py-10">
-                <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-gray-100">
-                  <Layers size={24} color="#8C8C8C" />
-                </View>
-                <Text className="font-body-medium text-[15px] text-black">No spending yet</Text>
-                <Text className="mt-1 font-body text-[13px] text-[#8C8C8C]">
-                  Your category breakdown will appear here.
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* ── Recent Activity ── */}
-        <View className="mt-10 px-5">
-          {transactions.length ? (
-            <TransactionList
-              transactions={transactions}
-              title="Recent Activity"
-              onTransactionPress={() => {}}
+        {/* Your Card */}
+        <View className="mt-8">
+          <SectionHeader title="Your Card" />
+          <View className="mx-4 flex-row gap-3">
+            <StashCard
+              title="Available"
+              amount={availSplit.dollars}
+              amountCents={availSplit.cents}
+              icon={<CreditCard size={28} color={C.text} strokeWidth={1.5} />}
+              badge={cardBadge}
+              subtitle={cardSubtitle}
+              className="flex-1"
             />
-          ) : (
-            <View>
-              <Text className="font-body-medium mb-6 text-[20px] text-black">Recent Activity</Text>
-              <View className="items-center py-10">
-                <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-gray-100">
-                  <Activity size={24} color="#8C8C8C" />
-                </View>
-                <Text className="font-body-medium text-[15px] text-black">No transactions yet</Text>
-                <Text className="mt-1 font-body text-[13px] text-[#8C8C8C]">
-                  Transactions made with your card will appear here.
-                </Text>
-              </View>
-            </View>
-          )}
+            <StashCard
+              title="This month"
+              amount={spentSplit.dollars}
+              amountCents={spentSplit.cents}
+              icon={<TrendIcon size={28} color={trendColor} strokeWidth={1.5} />}
+              className="flex-1"
+            />
+          </View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-};
 
-export default Spending;
+        {/* Recent transactions */}
+        {transactions.length > 0 && (
+          <View className="mt-8">
+            <SectionHeader title="Recent" action="See all" />
+            <View className="mx-4 overflow-hidden rounded-2xl bg-[#F2F2F7]">
+              {transactions.slice(0, 8).map((tx, i, arr) => (
+                <TxRow key={tx.id} transaction={tx} showSep={i < Math.min(arr.length, 8) - 1} />
+              ))}
+            </View>
+          </View>
+        )}
+
+        {transactions.length === 0 && categories.length === 0 && !hasSpend && (
+          <View className="mt-12 items-center px-4">
+            <EmptyPeriod />
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Display settings sheet */}
+      <BottomSheet visible={showSettingsSheet} onClose={() => setShowSettingsSheet(false)}>
+        <Text className="mb-2 font-headline text-[17px] text-text-primary">Display</Text>
+        {VIEW_OPTIONS.map((opt, i) => {
+          const IconComp = opt.IconComp;
+          return (
+            <Pressable
+              key={opt.id}
+              onPress={() => {
+                handleViewMode(opt.id);
+                setShowSettingsSheet(false);
+              }}
+              className={`flex-row items-center py-[14px] ${i < VIEW_OPTIONS.length - 1 ? 'border-b border-[#E5E5EA]' : ''}`}
+              accessibilityRole="button"
+              accessibilityLabel={opt.label}>
+              <View className="mr-[14px] h-10 w-10 items-center justify-center rounded-xl bg-[#F2F2F7]">
+                <IconComp size={20} color="#000000" strokeWidth={1.5} />
+              </View>
+              <Text className="flex-1 font-button text-body text-text-primary">{opt.label}</Text>
+              {viewMode === opt.id && <Check size={20} color="#000000" strokeWidth={2} />}
+            </Pressable>
+          );
+        })}
+      </BottomSheet>
+    </View>
+  );
+}

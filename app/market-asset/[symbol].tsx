@@ -9,7 +9,12 @@ import type { Currency } from '@/stores/uiStore';
 import type { FxRates } from '@/utils/currency';
 import { convertFromUsd, formatCurrencyAmount } from '@/utils/currency';
 import type { MarketBar } from '@/api/types';
-import { getEffectiveChange, getEffectiveChangePct, getEffectivePrice } from '@/utils/market';
+import {
+  getEffectiveChange,
+  getEffectiveChangePct,
+  getEffectivePrice,
+  toNumber,
+} from '@/utils/market';
 import { Skeleton } from '@/components/atoms';
 import { Button } from '@/components/ui';
 import { useUIStore } from '@/stores';
@@ -39,12 +44,6 @@ const RANGE_OPTIONS: RangeOption[] = [
     days: 365 * 5 + 14,
   },
 ];
-
-const toNumber = (value: string | number | null | undefined): number => {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-  const parsed = Number.parseFloat(value ?? '');
-  return Number.isFinite(parsed) ? parsed : 0;
-};
 
 const formatDateParam = (value: Date): string => {
   const year = value.getUTCFullYear();

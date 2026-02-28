@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -14,27 +14,12 @@ import { BottomSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
 import { InputField } from '@/components/atoms/InputField';
 import { useMarketExplore, useMarketNewsFeed } from '@/api/hooks';
-import type { MarketExploreQueryParams, MarketInstrumentType } from '@/api/types';
 import { useUIStore } from '@/stores';
 import { sanitizeAssets } from '@/utils/market';
 import { MarketAssetRow } from '@/components/market/MarketAssetRow';
 import { MarketNewsCard } from '@/components/market/MarketNewsCard';
 import { MarketCategoryCard } from '@/components/market/MarketCategoryCard';
-
-type TypeFilter = 'all' | MarketInstrumentType;
-type SortFilter = 'symbol' | 'top_movers' | 'top_traded';
-
-const SORT_OPTIONS: { id: SortFilter; label: string }[] = [
-  { id: 'symbol', label: 'Alphabetical' },
-  { id: 'top_movers', label: 'Top movers' },
-  { id: 'top_traded', label: 'Top traded' },
-];
-
-const TYPE_OPTIONS: { id: TypeFilter; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'stock', label: 'Stocks' },
-  { id: 'etf', label: 'ETFs' },
-];
+import { useMarketFilters, SORT_OPTIONS, TYPE_OPTIONS } from '@/hooks/useMarketFilters';
 
 function FilterChip({
   label,
@@ -61,10 +46,8 @@ function FilterChip({
 function LoadingSkeleton() {
   return (
     <View className="px-md">
-      {[...Array(4)].map((_, index) => (
-        <View
-          key={`skeleton-${index}`}
-          className="flex-row items-center border-b border-surface py-4">
+      {[...Array(4)].map((_, i) => (
+        <View key={`skeleton-${i}`} className="flex-row items-center border-b border-surface py-4">
           <View className="mr-3 h-12 w-12 rounded-full bg-surface" />
           <View className="flex-1">
             <View className="mb-2 h-4 w-[70%] rounded bg-surface" />
@@ -85,77 +68,49 @@ export default function MarketScreen() {
   const currency = useUIStore((s) => s.currency);
   const rates = useUIStore((s) => s.currencyRates);
 
-  const [searchInput, setSearchInput] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [showFilterSheet, setShowFilterSheet] = useState(false);
-
-  const [appliedType, setAppliedType] = useState<TypeFilter>('stock');
-  const [appliedSort, setAppliedSort] = useState<SortFilter>('top_traded');
-  const [appliedTradableOnly, setAppliedTradableOnly] = useState(false);
-
-  const [draftType, setDraftType] = useState<TypeFilter>('stock');
-  const [draftSort, setDraftSort] = useState<SortFilter>('top_traded');
-  const [draftTradableOnly, setDraftTradableOnly] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchInput.trim());
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [searchInput]);
-
-  const exploreParams = useMemo<MarketExploreQueryParams>(() => {
-    const sortBy =
-      appliedSort === 'top_movers'
-        ? 'change_pct'
-        : appliedSort === 'top_traded'
-          ? 'volume'
-          : 'symbol';
-    const sortOrder = appliedSort === 'symbol' ? 'asc' : 'desc';
-
-    return {
-      q: debouncedSearch || undefined,
-      types: appliedType === 'all' ? undefined : [appliedType],
-      tradable: appliedTradableOnly ? true : undefined,
-      sort_by: sortBy,
-      sort_order: sortOrder,
-      page_size: 20,
-    };
-  }, [appliedSort, appliedTradableOnly, appliedType, debouncedSearch]);
+  const {
+    searchInput,
+    setSearchInput,
+    showFilterSheet,
+    setShowFilterSheet,
+    appliedType,
+    appliedSort,
+    appliedTradableOnly,
+    draftType,
+    setDraftType,
+    draftSort,
+    setDraftSort,
+    draftTradableOnly,
+    setDraftTradableOnly,
+    exploreParams,
+    applyFilters,
+    resetDraft,
+  } = useMarketFilters();
 
   const marketExploreQuery = useMarketExplore(exploreParams);
   const marketNewsQuery = useMarketNewsFeed({ limit: 5 });
 
-  const pages = useMemo(
-    () => marketExploreQuery.data?.pages ?? [],
-    [marketExploreQuery.data?.pages]
-  );
-  const firstPage = pages[0];
-
+  const firstPage = marketExploreQuery.data?.pages[0];
   const cleanedExploreAssets = useMemo(
     () => sanitizeAssets(firstPage?.items ?? []),
     [firstPage?.items]
   );
-
   const displayedAssets = useMemo(() => cleanedExploreAssets.slice(0, 8), [cleanedExploreAssets]);
-  const marketExploreErrorMessage =
-    marketExploreQuery.error?.message?.trim() || 'Please try again.';
 
-  const stockCount = firstPage?.facets.types.find((item) => item.value === 'stock')?.count ?? null;
-  const etfCount = firstPage?.facets.types.find((item) => item.value === 'etf')?.count ?? null;
+  const stockCount = firstPage?.facets.types.find((t) => t.value === 'stock')?.count ?? null;
+  const etfCount = firstPage?.facets.types.find((t) => t.value === 'etf')?.count ?? null;
 
   const marketNewsItems = useMemo(() => {
-    const pages = marketNewsQuery.data?.pages ?? [];
     const seen = new Set<string>();
-    return pages
-      .flatMap((page) => page.news)
+    return (marketNewsQuery.data?.pages ?? [])
+      .flatMap((p) => p.news)
       .filter((item) => {
         if (seen.has(item.id)) return false;
         seen.add(item.id);
         return true;
       });
   }, [marketNewsQuery.data?.pages]);
+
   const marketNewsHasNext = Boolean(
     marketNewsQuery.data?.pages.length &&
     marketNewsQuery.data.pages[marketNewsQuery.data.pages.length - 1]?.next_page_token
@@ -170,20 +125,7 @@ export default function MarketScreen() {
         sort: appliedSort,
         tradable: appliedTradableOnly ? '1' : '0',
       },
-    } as any);
-  };
-
-  const applyFilters = () => {
-    setAppliedType(draftType);
-    setAppliedSort(draftSort);
-    setAppliedTradableOnly(draftTradableOnly);
-    setShowFilterSheet(false);
-  };
-
-  const resetFilters = () => {
-    setDraftType('stock');
-    setDraftSort('top_traded');
-    setDraftTradableOnly(false);
+    });
   };
 
   return (
@@ -210,10 +152,7 @@ export default function MarketScreen() {
                 rightAccessory={
                   searchInput.length > 0 ? (
                     <TouchableOpacity
-                      onPress={() => {
-                        setSearchInput('');
-                        setDebouncedSearch('');
-                      }}
+                      onPress={() => setSearchInput('')}
                       className="min-h-[44px] min-w-[44px] items-center justify-center"
                       accessibilityRole="button"
                       accessibilityLabel="Clear search">
@@ -223,7 +162,6 @@ export default function MarketScreen() {
                 }
               />
             </View>
-
             <Pressable
               onPress={() => setShowFilterSheet(true)}
               className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black"
@@ -235,7 +173,7 @@ export default function MarketScreen() {
 
           <Text className="mt-sm font-caption text-caption text-text-secondary">
             {appliedType === 'all' ? 'All types' : appliedType === 'stock' ? 'Stocks' : 'ETFs'} •{' '}
-            {SORT_OPTIONS.find((option) => option.id === appliedSort)?.label}
+            {SORT_OPTIONS.find((o) => o.id === appliedSort)?.label}
             {appliedTradableOnly ? ' • Tradable only' : ''}
           </Text>
         </View>
@@ -265,7 +203,7 @@ export default function MarketScreen() {
                 router.push({
                   pathname: '/market-explore',
                   params: { type: 'stock', sort: 'top_traded' },
-                } as any)
+                })
               }
             />
             <MarketCategoryCard
@@ -276,7 +214,7 @@ export default function MarketScreen() {
                 router.push({
                   pathname: '/market-explore',
                   params: { type: 'etf', sort: 'top_traded' },
-                } as any)
+                })
               }
             />
             <MarketCategoryCard
@@ -287,7 +225,7 @@ export default function MarketScreen() {
                 router.push({
                   pathname: '/market-explore',
                   params: { type: 'all', sort: 'top_movers' },
-                } as any)
+                })
               }
             />
           </ScrollView>
@@ -320,7 +258,7 @@ export default function MarketScreen() {
                     router.push({
                       pathname: '/market-asset/[symbol]',
                       params: { symbol: item.symbol },
-                    } as any)
+                    })
                   }
                 />
               ))}
@@ -331,7 +269,7 @@ export default function MarketScreen() {
                 Unable to load assets
               </Text>
               <Text className="mt-1 font-caption text-caption text-text-secondary">
-                {marketExploreErrorMessage}
+                {marketExploreQuery.error?.message?.trim() || 'Please try again.'}
               </Text>
               <View className="mt-4 flex-row gap-2">
                 <Button
@@ -389,7 +327,7 @@ export default function MarketScreen() {
               {marketNewsItems.map((news) => (
                 <MarketNewsCard key={news.id} item={news} />
               ))}
-              {marketNewsHasNext ? (
+              {marketNewsHasNext && (
                 <Button
                   title={marketNewsQuery.isFetchingNextPage ? 'Loading more…' : 'Load more news'}
                   variant="white"
@@ -397,7 +335,7 @@ export default function MarketScreen() {
                   disabled={marketNewsQuery.isFetchingNextPage}
                   onPress={() => marketNewsQuery.fetchNextPage()}
                 />
-              ) : null}
+              )}
             </>
           ) : (
             <View className="rounded-md border border-surface bg-white p-md">
@@ -416,24 +354,24 @@ export default function MarketScreen() {
 
           <Text className="mb-2 mt-lg font-caption text-caption text-text-secondary">Type</Text>
           <View className="mb-md flex-row">
-            {TYPE_OPTIONS.map((option) => (
+            {TYPE_OPTIONS.map((o) => (
               <FilterChip
-                key={option.id}
-                label={option.label}
-                active={draftType === option.id}
-                onPress={() => setDraftType(option.id)}
+                key={o.id}
+                label={o.label}
+                active={draftType === o.id}
+                onPress={() => setDraftType(o.id)}
               />
             ))}
           </View>
 
           <Text className="mb-2 font-caption text-caption text-text-secondary">Sort by</Text>
           <View className="mb-md flex-row flex-wrap">
-            {SORT_OPTIONS.map((option) => (
+            {SORT_OPTIONS.map((o) => (
               <FilterChip
-                key={option.id}
-                label={option.label}
-                active={draftSort === option.id}
-                onPress={() => setDraftSort(option.id)}
+                key={o.id}
+                label={o.label}
+                active={draftSort === o.id}
+                onPress={() => setDraftSort(o.id)}
               />
             ))}
           </View>
@@ -442,11 +380,11 @@ export default function MarketScreen() {
           <FilterChip
             label="Tradable only"
             active={draftTradableOnly}
-            onPress={() => setDraftTradableOnly((prev) => !prev)}
+            onPress={() => setDraftTradableOnly((p) => !p)}
           />
 
           <View className="mt-lg flex-row">
-            <Button title="Reset" variant="white" size="small" flex onPress={resetFilters} />
+            <Button title="Reset" variant="white" size="small" flex onPress={resetDraft} />
             <View className="w-2" />
             <Button title="Apply" variant="black" size="small" flex onPress={applyFilters} />
           </View>

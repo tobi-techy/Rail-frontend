@@ -9,8 +9,6 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from 'react-native';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { onBoard1, onBoard2, onBoard3, onBoard4 } from '../assets/images';
 import { AppleLogo } from '../assets/svg';
 import { Button } from '@/components/ui';
 import Animated, {
@@ -27,135 +25,41 @@ import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { ROUTES } from '@/constants/routes';
 import { getPostAuthRoute } from '@/utils/onboardingFlow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-interface OnboardingSlide {
-  key: string;
-  titleTop: string;
-  titleBottom: [string, string];
-  video: any;
-}
-
-const onboardingSlides: OnboardingSlide[] = [
-  {
-    key: '1',
-    titleTop: 'Start small.',
-    titleBottom: ['Grow', 'big.'],
-    video: onBoard1,
-  },
-  {
-    key: '2',
-    titleTop: 'Add money',
-    titleBottom: ['in', 'seconds.'],
-    video: onBoard2,
-  },
-  {
-    key: '3',
-    titleTop: 'Investing',
-    titleBottom: ['made', 'easy.'],
-    video: onBoard3,
-  },
-  {
-    key: '4',
-    titleTop: 'Spend.',
-    titleBottom: ['Save.', 'Repeat.'],
-    video: onBoard4,
-  },
-];
-
-const SLIDE_INTERVAL = 6000;
-
-const SlideTitle = memo(function SlideTitle({
-  item,
-  topInset,
-}: {
-  item: OnboardingSlide;
-  topInset: number;
-}) {
-  return (
-    <View className="z-10 w-full px-5" style={{ paddingTop: topInset + 16 }}>
-      <Text className="font-headline text-display-lg uppercase text-white">
-        {item.titleTop} {item.titleBottom[0]} {item.titleBottom[1]}
-      </Text>
-    </View>
-  );
-});
+import { FONT_FAMILIES } from '@/constants/fonts';
+import { onboardingSlides, SLIDE_INTERVAL } from './intro/onboardingSlides';
+import { ActiveVideoSlide } from './intro/ActiveVideoSlide';
+import { SlideContent } from './intro/SlideContent';
+import type { OnboardingSlide } from './intro/onboardingSlides';
 
 const StaticSlide = memo(function StaticSlide({
   item,
   width,
-  topInset,
-}: {
-  item: OnboardingSlide;
-  width: number;
-  topInset: number;
-}) {
-  return (
-    <View className="flex-1 overflow-hidden bg-black" style={{ width }}>
-      <SlideTitle item={item} topInset={topInset} />
-    </View>
-  );
-});
-
-// Active slide only: creates a single video player to avoid ExoPlayer OOM on Android.
-const ActiveVideoSlide = memo(function ActiveVideoSlide({
-  item,
-  width,
   height,
   topInset,
+  isCompactWidth,
 }: {
   item: OnboardingSlide;
   width: number;
   height: number;
   topInset: number;
+  isCompactWidth: boolean;
 }) {
-  const [firstFrameRendered, setFirstFrameRendered] = useState(false);
-  const player = useVideoPlayer(item.video, (p) => {
-    p.loop = true;
-    p.muted = true;
-  });
-
-  useEffect(() => {
-    setFirstFrameRendered(false);
-  }, [item.key]);
-
-  useEffect(() => {
-    const fallback = setTimeout(() => setFirstFrameRendered(true), 1500);
-    player.play();
-    return () => {
-      clearTimeout(fallback);
-      player.pause();
-    };
-  }, [item.key, player]);
-
   return (
     <View className="flex-1 overflow-hidden bg-black" style={{ width }}>
-      {/* Video behind everything */}
-      <VideoView
-        player={player}
-        style={{ width, height: height * 0.75, position: 'absolute', bottom: 0 }}
-        contentFit="cover"
-        nativeControls={false}
-        onFirstFrameRender={() => setFirstFrameRendered(true)}
-        useExoShutter={false}
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width,
+          height,
+          backgroundColor: 'rgba(0,0,0,0.48)',
+        }}
       />
-
-      {!firstFrameRendered && (
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width,
-            height: height * 0.75,
-            backgroundColor: '#000000',
-            zIndex: 5,
-          }}
-        />
-      )}
-
-      <SlideTitle item={item} topInset={topInset} />
+      <SlideContent item={item} topInset={topInset} isCompactWidth={isCompactWidth} />
     </View>
   );
 });
@@ -170,17 +74,11 @@ const IndicatorBar = memo(function IndicatorBar({
   progress: SharedValue<number>;
 }) {
   const animatedStyle = useAnimatedStyle(() => {
-    if (index < currentIndex) {
-      return { width: '100%' };
-    }
-    if (index === currentIndex) {
-      return {
-        width: `${interpolate(progress.value, [0, 1], [0, 100], Extrapolation.CLAMP)}%`,
-      };
-    }
+    if (index < currentIndex) return { width: '100%' };
+    if (index === currentIndex)
+      return { width: `${interpolate(progress.value, [0, 1], [0, 100], Extrapolation.CLAMP)}%` };
     return { width: '0%' };
   });
-
   return (
     <View className="h-1 flex-1 rounded-full bg-white/30">
       <Animated.View className="h-1 rounded-full bg-white" style={animatedStyle} />
@@ -199,10 +97,13 @@ export default function App() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { mutate: appleSignIn } = useAppleSignIn();
   const { showError } = useFeedbackPopup();
+  const footerBottom = Math.max(insets.bottom, 16) + 12;
+  const progressBottom = footerBottom + (isCompactWidth ? 182 : 168);
 
-  const clampIndex = useCallback((index: number) => {
-    return Math.min(onboardingSlides.length - 1, Math.max(0, index));
-  }, []);
+  const clampIndex = useCallback(
+    (i: number) => Math.min(onboardingSlides.length - 1, Math.max(0, i)),
+    []
+  );
 
   useEffect(() => {
     currentIndexRef.current = currentIndex;
@@ -210,61 +111,63 @@ export default function App() {
 
   const onMomentumScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const rawIndex = Math.round(event.nativeEvent.contentOffset.x / Math.max(width, 1));
-      const nextIndex = clampIndex(Number.isFinite(rawIndex) ? rawIndex : 0);
-      if (nextIndex !== currentIndexRef.current) {
-        setCurrentIndex(nextIndex);
-      }
+      const raw = Math.round(event.nativeEvent.contentOffset.x / Math.max(width, 1));
+      const next = clampIndex(Number.isFinite(raw) ? raw : 0);
+      if (next !== currentIndexRef.current) setCurrentIndex(next);
     },
     [clampIndex, width]
   );
 
   const onScrollToIndexFailed = useCallback(
     ({ index }: { index: number }) => {
-      const safeIndex = clampIndex(Number.isFinite(index) ? index : 0);
-      flatListRef.current?.scrollToOffset({ offset: safeIndex * width, animated: true });
-      setCurrentIndex(safeIndex);
+      const safe = clampIndex(Number.isFinite(index) ? index : 0);
+      flatListRef.current?.scrollToOffset({ offset: safe * width, animated: true });
+      setCurrentIndex(safe);
     },
     [clampIndex, width]
   );
 
-  // Auto-advance with animated progress
   useEffect(() => {
     progress.value = 0;
     progress.value = withTiming(1, { duration: SLIDE_INTERVAL });
-
     timerRef.current = setTimeout(() => {
-      const activeIndex = clampIndex(currentIndexRef.current);
-      const nextIndex = (activeIndex + 1) % onboardingSlides.length;
+      const next = (clampIndex(currentIndexRef.current) + 1) % onboardingSlides.length;
       try {
-        flatListRef.current?.scrollToIndex({ animated: true, index: nextIndex });
+        flatListRef.current?.scrollToIndex({ animated: true, index: next });
       } catch {
-        flatListRef.current?.scrollToOffset({ offset: nextIndex * width, animated: true });
+        flatListRef.current?.scrollToOffset({ offset: next * width, animated: true });
       }
     }, SLIDE_INTERVAL);
-
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [clampIndex, currentIndex, progress, width]);
 
   const getItemLayout = useCallback(
-    (_: any, index: number) => ({
-      length: width,
-      offset: width * index,
-      index,
-    }),
+    (_: unknown, index: number) => ({ length: width, offset: width * index, index }),
     [width]
   );
 
   const renderItem = useCallback(
     ({ item, index }: { item: OnboardingSlide; index: number }) =>
       index === currentIndex ? (
-        <ActiveVideoSlide item={item} width={width} height={height} topInset={insets.top} />
+        <ActiveVideoSlide
+          item={item}
+          width={width}
+          height={height}
+          topInset={insets.top}
+          isCompactWidth={isCompactWidth}
+        />
       ) : (
-        <StaticSlide item={item} width={width} topInset={insets.top} />
+        <StaticSlide
+          item={item}
+          width={width}
+          height={height}
+          topInset={insets.top}
+          isCompactWidth={isCompactWidth}
+        />
       ),
-    [currentIndex, width, height, insets.top]
+    [currentIndex, height, insets.top, isCompactWidth, width]
   );
 
   return (
@@ -291,42 +194,62 @@ export default function App() {
           removeClippedSubviews
         />
 
-        {/*<ProgressIndicator currentIndex={currentIndex} progress={progress} />*/}
+        <View className="absolute left-4 right-4" style={{ bottom: progressBottom }}>
+          <View className="flex-row" style={{ columnGap: 8 }}>
+            {onboardingSlides.map((slide, index) => (
+              <IndicatorBar
+                key={slide.key}
+                index={index}
+                currentIndex={currentIndex}
+                progress={progress}
+              />
+            ))}
+          </View>
+        </View>
 
-        <View
-          className="absolute left-1 right-1"
-          style={{ bottom: Math.max(insets.bottom, 16) + 12 }}>
-          <View
-            style={{
-              flexDirection: isCompactWidth ? 'column' : 'row',
-              rowGap: isCompactWidth ? 10 : 0,
-              columnGap: isCompactWidth ? 0 : 8,
-            }}>
-            <Button
-              title="Sign Up with Apple"
-              leftIcon={<AppleLogo width={24} height={24} />}
-              size="large"
-              flex={!isCompactWidth}
-              onPress={() => {
-                appleSignIn(undefined, {
-                  onSuccess: (resp) => {
-                    const targetRoute = getPostAuthRoute(resp.user?.onboardingStatus);
-                    router.replace(targetRoute as any);
-                  },
-                  onError: () => {
-                    showError('Apple Sign-In Failed', 'Please try again or use email sign in.');
-                  },
-                });
-              }}
-              variant="white"
-            />
-            <Button
-              title="Continue with Mail"
-              size="large"
-              flex={!isCompactWidth}
-              onPress={() => router.push(ROUTES.AUTH.SIGNUP as any)}
-              variant="orange"
-            />
+        <View className="absolute left-4 right-4" style={{ bottom: footerBottom }}>
+          <View className="rounded-3xl border border-white/20 bg-black/70 px-4 py-4">
+            <Text
+              style={{
+                color: '#FFFFFF',
+                fontFamily: FONT_FAMILIES.SF_PRO_ROUNDED.SEMIBOLD,
+                fontSize: 16,
+                lineHeight: 20,
+              }}>
+              Enter RAIL and set your money system in motion.
+            </Text>
+            <View style={{ marginTop: 12, rowGap: 8 }}>
+              <Button
+                title="Continue with Mail"
+                size="large"
+                onPress={() => router.push(ROUTES.AUTH.SIGNUP as never)}
+                variant="orange"
+              />
+              <Button
+                title="Sign Up with Apple"
+                leftIcon={<AppleLogo width={20} height={20} />}
+                size="small"
+                onPress={() => {
+                  appleSignIn(undefined, {
+                    onSuccess: (resp) =>
+                      router.replace(getPostAuthRoute(resp.user?.onboardingStatus) as never),
+                    onError: () =>
+                      showError('Apple Sign-In Failed', 'Please try again or use email sign in.'),
+                  });
+                }}
+                variant="white"
+              />
+            </View>
+            <Text
+              style={{
+                color: '#D1D1D1',
+                fontFamily: FONT_FAMILIES.SF_PRO_ROUNDED.REGULAR,
+                fontSize: 12,
+                lineHeight: 17,
+                marginTop: 10,
+              }}>
+              By continuing, you agree to your account setup and onboarding preferences.
+            </Text>
           </View>
         </View>
       </View>

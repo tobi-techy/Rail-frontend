@@ -59,7 +59,7 @@ export default function ResetPassword() {
             duration: 0,
             action: {
               label: 'Sign In',
-              onPress: () => router.replace(ROUTES.AUTH.SIGNIN as any),
+              onPress: () => router.replace(ROUTES.AUTH.SIGNIN as never),
             },
           });
         },
@@ -151,7 +151,7 @@ export default function ResetPassword() {
                 ) : (
                   <Button
                     title="Request new reset link"
-                    onPress={() => router.replace(ROUTES.AUTH.FORGOT_PASSWORD as any)}
+                    onPress={() => router.replace(ROUTES.AUTH.FORGOT_PASSWORD as never)}
                   />
                 )}
               </View>

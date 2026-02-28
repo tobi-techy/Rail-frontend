@@ -2,10 +2,16 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+  COUNTRY_KYC_REQUIREMENTS,
   COUNTRY_TAX_CONFIG,
+  documentTypeRequiresBack,
+  INVESTMENT_PURPOSE_OPTIONS,
+  type EmploymentStatus,
+  type InvestmentPurpose,
+  type KycIdentityDocumentType,
   type KycDisclosures,
-  type TaxIdType,
   type Country,
+  type TaxIdType,
 } from '@/api/types/kyc';
 
 export type CaptureSide = 'front' | 'back';
@@ -15,12 +21,12 @@ export type CapturedDocument = {
   capturedAt: number;
 };
 
-/** Tax ID types that use passport-style docs (single side only) */
-const SINGLE_SIDE_TAX_TYPES: TaxIdType[] = ['passport'];
-
-/** Auto-resolve whether back-of-ID is needed based on tax ID type */
-export function documentRequiresBack(taxIdType: TaxIdType): boolean {
-  return !SINGLE_SIDE_TAX_TYPES.includes(taxIdType);
+/** Auto-resolve whether back-of-ID is needed based on selected country + document type */
+export function documentRequiresBack(
+  country: Country,
+  documentType: KycIdentityDocumentType
+): boolean {
+  return documentTypeRequiresBack(country, documentType);
 }
 
 interface KycState {
@@ -28,6 +34,9 @@ interface KycState {
   country: Country;
   taxIdType: TaxIdType;
   taxId: string;
+  documentType: KycIdentityDocumentType;
+  employmentStatus: EmploymentStatus | null;
+  investmentPurposes: InvestmentPurpose[];
 
   // Documents
   frontDoc: CapturedDocument | null;
@@ -44,6 +53,9 @@ interface KycState {
   setCountry: (country: Country) => void;
   setTaxIdType: (taxIdType: TaxIdType) => void;
   setTaxId: (taxId: string) => void;
+  setDocumentType: (documentType: KycIdentityDocumentType) => void;
+  setEmploymentStatus: (value: EmploymentStatus | null) => void;
+  toggleInvestmentPurpose: (value: InvestmentPurpose) => void;
   setDocument: (side: CaptureSide, document: CapturedDocument | null) => void;
   setDisclosure: (key: keyof KycDisclosures, value: boolean) => void;
   setDisclosuresConfirmed: (confirmed: boolean) => void;
@@ -64,6 +76,9 @@ export const useKycStore = create<KycState>()(
       country: 'USA',
       taxIdType: 'ssn',
       taxId: '',
+      documentType: COUNTRY_KYC_REQUIREMENTS.USA.acceptedDocuments[0].type,
+      employmentStatus: null,
+      investmentPurposes: [],
       frontDoc: null,
       backDoc: null,
       disclosures: DEFAULT_DISCLOSURES,
@@ -75,11 +90,28 @@ export const useKycStore = create<KycState>()(
         set({
           country,
           taxIdType: COUNTRY_TAX_CONFIG[country][0].type,
+          documentType: COUNTRY_KYC_REQUIREMENTS[country].acceptedDocuments[0].type,
           taxId: '',
+          frontDoc: null,
+          backDoc: null,
         }),
 
       setTaxIdType: (taxIdType) => set({ taxIdType }),
       setTaxId: (taxId) => set({ taxId }),
+      setDocumentType: (documentType) => set({ documentType, frontDoc: null, backDoc: null }),
+      setEmploymentStatus: (employmentStatus) => set({ employmentStatus }),
+      toggleInvestmentPurpose: (value) =>
+        set((state) => {
+          const hasValue = state.investmentPurposes.includes(value);
+          if (hasValue) {
+            return {
+              investmentPurposes: state.investmentPurposes.filter((item) => item !== value),
+            };
+          }
+          const maxSelectable = INVESTMENT_PURPOSE_OPTIONS.length;
+          if (state.investmentPurposes.length >= maxSelectable) return state;
+          return { investmentPurposes: [...state.investmentPurposes, value] };
+        }),
 
       setDocument: (side, document) =>
         set((state) => ({
@@ -100,6 +132,9 @@ export const useKycStore = create<KycState>()(
           country: 'USA',
           taxIdType: 'ssn',
           taxId: '',
+          documentType: COUNTRY_KYC_REQUIREMENTS.USA.acceptedDocuments[0].type,
+          employmentStatus: null,
+          investmentPurposes: [],
           frontDoc: null,
           backDoc: null,
           disclosures: DEFAULT_DISCLOSURES,

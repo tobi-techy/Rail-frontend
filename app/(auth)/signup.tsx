@@ -59,7 +59,7 @@ export default function SignUp() {
       {
         onSuccess: () => {
           showSuccess('Verification Sent', 'Check your email for a 6-digit verification code.');
-          router.push(ROUTES.AUTH.VERIFY_EMAIL as any);
+          router.push(ROUTES.AUTH.VERIFY_EMAIL as never);
         },
         onError: (error: any) => {
           showError('Sign Up Failed', error?.message || 'Registration failed. Please try again.');
@@ -128,7 +128,7 @@ export default function SignUp() {
               </Text>
               <Button title="Continue" onPress={handleSignUp} loading={isPending} />
               <TouchableOpacity
-                onPress={() => router.push(ROUTES.AUTH.SIGNIN as any)}
+                onPress={() => router.push(ROUTES.AUTH.SIGNIN as never)}
                 className="mt-4">
                 <Text className="text-center font-body text-caption text-black/60">
                   Already have an account?{' '}

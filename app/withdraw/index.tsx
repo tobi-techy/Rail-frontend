@@ -71,7 +71,7 @@ export default function WithdrawMethodSelectorScreen() {
               subtitle="Withdraw to US bank account via routing details"
               onPress={() =>
                 requireKyc(
-                  () => router.push('/withdraw/fiat' as any),
+                  () => router.push('/withdraw/fiat' as never),
                   () => setShowKYCSheet(true)
                 )
               }
@@ -82,7 +82,7 @@ export default function WithdrawMethodSelectorScreen() {
             <WithdrawOptionCard
               title="Crypto"
               subtitle="Withdraw to an external wallet address"
-              onPress={() => router.push('/withdraw/crypto' as any)}
+              onPress={() => router.push('/withdraw/crypto' as never)}
               icon={<CoinIcon width={24} height={24} />}
               accessibilityLabel="Select crypto withdrawal"
             />

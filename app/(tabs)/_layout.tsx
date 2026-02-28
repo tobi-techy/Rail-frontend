@@ -25,7 +25,7 @@ export default function TabLayout() {
             ),
           }}
         />
-        <Tabs.Screen
+        {/* <Tabs.Screen
           name="market"
           options={{
             title: 'Market',
@@ -33,7 +33,7 @@ export default function TabLayout() {
               <TrendingUp size={24} color={color} fill={focused ? color : '#999'} />
             ),
           }}
-        />
+        /> */}
         <Tabs.Screen
           name="history"
           options={{

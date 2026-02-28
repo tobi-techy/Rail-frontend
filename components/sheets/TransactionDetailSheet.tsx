@@ -3,12 +3,9 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { BottomSheet } from './BottomSheet';
 import { Icon } from '../atoms';
-import {
-  Transaction,
-  TransactionType,
-  SvgComponent,
-  resolveTransactionAssetIcon,
-} from '../molecules/TransactionItem';
+import { Transaction, TransactionType, SvgComponent } from '../molecules/TransactionItem';
+import { resolveTransactionAssetIcon } from '@/utils/transactionIcon';
+import { formatAbsAmount } from '@/utils/transactionFormat';
 import { MaskedBalance } from '../molecules/MaskedBalance';
 import { useUIStore } from '@/stores';
 
@@ -30,15 +27,6 @@ const formatDate = (date: Date) =>
   date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
   ' at ' +
   date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
-const formatAmount = (amount: number) => {
-  const abs = Math.abs(amount);
-  const hasDecimals = abs % 1 !== 0;
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: hasDecimals ? 2 : 0,
-    maximumFractionDigits: 2,
-  }).format(abs);
-};
 
 const truncateAddress = (address: string) =>
   address.length > 12 ? `${address.slice(0, 4)}...${address.slice(-4)}` : address;
@@ -200,7 +188,7 @@ export function TransactionDetailSheet({
         {renderIcon()}
         <Text className="mt-4 font-caption text-body text-text-secondary">{typeLabels[type]}</Text>
         <MaskedBalance
-          value={`${formatAmount(amount)} ${currency}`}
+          value={`${formatAbsAmount(amount)} ${currency}`}
           visible={isBalanceVisible}
           textClass="text-[32px]"
           colorClass="text-text-primary"

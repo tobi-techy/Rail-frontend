@@ -62,7 +62,7 @@ export default function Address() {
       postalCode: formData.postalCode.trim(),
       country: formData.countryCode,
     });
-    router.push(ROUTES.AUTH.COMPLETE_PROFILE.PHONE as any);
+    router.push(ROUTES.AUTH.COMPLETE_PROFILE.PHONE as never);
   };
 
   return (

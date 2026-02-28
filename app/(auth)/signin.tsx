@@ -72,7 +72,7 @@ export default function SignIn() {
       {
         onSuccess: (response) => {
           const targetRoute = getPostAuthRoute(response.user?.onboardingStatus);
-          router.replace(targetRoute as any);
+          router.replace(targetRoute as never);
         },
         onError: (error: any) => {
           // Categorize error for better user messaging
@@ -174,7 +174,7 @@ export default function SignIn() {
             <View className="pt-8">
               <Button title="Sign In" onPress={handleSignIn} loading={isPending} />
               <TouchableOpacity
-                onPress={() => router.push(ROUTES.AUTH.SIGNUP as any)}
+                onPress={() => router.push(ROUTES.AUTH.SIGNUP as never)}
                 className="mt-4"
                 accessibilityLabel="Sign up"
                 accessibilityHint="Navigate to registration">
