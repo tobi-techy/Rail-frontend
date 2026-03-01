@@ -20,7 +20,6 @@ expo-env.d.ts
 .env.*.local
 
 # iOS
-ios/
 *.pbxuser
 !default.pbxuser
 *.mode1v3
