@@ -130,13 +130,7 @@ const handleAuthenticatedUser = (
   const needsProfile = isProfileCompletionRequired(userOnboardingStatus);
 
   if (needsProfile) {
-    if (
-      config.isOnCompleteProfile ||
-      config.isOnCreatePasscode ||
-      config.isOnConfirmPasscode ||
-      config.inTabsGroup ||
-      config.inAppGroup
-    ) {
+    if (config.isOnCompleteProfile || config.isOnCreatePasscode || config.isOnConfirmPasscode) {
       return null;
     }
     return ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO;

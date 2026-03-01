@@ -1,11 +1,4 @@
-import {
-  View,
-  Text,
-  ScrollView,
-  ActivityIndicator,
-  Switch,
-  Pressable,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Switch, Pressable } from 'react-native';
 import { Passkey } from 'react-native-passkey';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import {
@@ -100,8 +93,12 @@ function SettingButton({
       style={animStyle}
       className="mb-md w-[25%] items-center"
       onPress={onPress}
-      onPressIn={() => { scale.value = withSpring(0.9, { damping: 20, stiffness: 300 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}>
+      onPressIn={() => {
+        scale.value = withSpring(0.9, { damping: 20, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+      }}>
       <View className="h-12 w-12 items-center justify-center">{icon}</View>
       <Text
         className={`mt-xs text-center font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}
@@ -220,7 +217,7 @@ export default function Settings() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // API hooks
-  const { data: allocationBalances, refetch: refetchAllocationBalances } = useAllocationBalances();
+  const { refetch: refetchAllocationBalances } = useAllocationBalances();
   const { mutateAsync: enableAllocationMode, isPending: isEnablingAllocation } =
     useEnableAllocationMode();
 
@@ -295,9 +292,10 @@ export default function Settings() {
     try {
       const result = await deleteAccount('User requested account deletion');
       closeSheet();
-      const fundsMsg = parseFloat(result.funds_swept) > 0
-        ? `$${result.funds_swept} was transferred to our treasury wallet.`
-        : undefined;
+      const fundsMsg =
+        parseFloat(result.funds_swept) > 0
+          ? `$${result.funds_swept} was transferred to our treasury wallet.`
+          : undefined;
       showSuccess('Account Deleted', fundsMsg ?? 'Your account has been permanently deleted.');
     } catch (error: any) {
       showError('Error', error?.message || 'Failed to delete account. Please try again.');
@@ -368,12 +366,19 @@ export default function Settings() {
           <SettingButton
             icon={<Sun size={22} color="#121212" />}
             label="Theme"
-            onPress={() => showInfo('Coming Soon', 'Theme switching will be available once dark and light mode are fully implemented.')}
+            onPress={() =>
+              showInfo(
+                'Coming Soon',
+                'Theme switching will be available once dark and light mode are fully implemented.'
+              )
+            }
           />
           <SettingButton
             icon={<Globe size={22} color="#121212" />}
             label="Language"
-            onPress={() => showInfo('Coming Soon', 'Language selection will be available in a future update.')}
+            onPress={() =>
+              showInfo('Coming Soon', 'Language selection will be available in a future update.')
+            }
           />
           <SettingButton
             icon={<Globe size={22} color="#121212" />}
@@ -632,23 +637,11 @@ export default function Settings() {
       {/* Account */}
       <BottomSheet visible={activeSheet === 'logout'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Log Out</Text>
-        <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-8">
-          <View className="h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-            <LogOut size={32} color="#F59E0B" />
-          </View>
-        </View>
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
           Are you sure you want to log out? You&apos;ll need to sign in again to access your
           account.
         </Text>
-        <View className="flex-row gap-3">
-          <Button
-            title="Cancel"
-            variant="ghost"
-            onPress={closeSheet}
-            disabled={isLoggingOut}
-            flex
-          />
+        <View className=" gap-3">
           <Button
             title={isLoggingOut ? '' : 'Log Out'}
             variant="black"

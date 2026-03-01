@@ -95,7 +95,8 @@ export default function KycSumsubSdkScreen() {
             webViewRef.current?.injectJavaScript(
               `document.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ type: 'token_refresh_response', token: '${token}' }) })); true;`
             );
-          } catch {
+          } catch (error) {
+            console.error('Failed to refresh Sumsub token:', error);
             setSdkError(true);
           }
         }
@@ -127,11 +128,11 @@ export default function KycSumsubSdkScreen() {
       </View>
 
       {sdkError ? (
-        <View className="flex-1 items-center justify-center px-8 gap-4">
-          <Text className="font-subtitle text-[16px] text-gray-900 text-center">
+        <View className="flex-1 items-center justify-center gap-4 px-8">
+          <Text className="text-center font-subtitle text-[16px] text-gray-900">
             Something went wrong
           </Text>
-          <Text className="font-body text-[14px] text-gray-500 text-center">
+          <Text className="text-center font-body text-[14px] text-gray-500">
             The identity scan could not be loaded. Please go back and try again.
           </Text>
           <Pressable
@@ -144,7 +145,7 @@ export default function KycSumsubSdkScreen() {
       ) : (
         <>
           {loading && (
-            <View className="absolute inset-0 items-center justify-center bg-white z-10">
+            <View className="absolute inset-0 z-10 items-center justify-center bg-white">
               <ActivityIndicator size="large" color="#111827" />
               <Text className="mt-3 font-body text-[14px] text-gray-500">
                 Loading identity scan…
@@ -163,8 +164,8 @@ export default function KycSumsubSdkScreen() {
             mediaCapturePermissionGrantType="grant"
             mediaPlaybackRequiresUserAction={false}
             allowsInlineMediaPlayback
-            mixedContentMode="always"
-            originWhitelist={['*']}
+            mixedContentMode="never"
+            originWhitelist={['https://static.sumsub.com', 'https://*.sumsub.com']}
           />
         </>
       )}

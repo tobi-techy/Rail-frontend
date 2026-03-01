@@ -40,23 +40,38 @@ export default function KycPendingScreen() {
     [resetKycState]
   );
 
-  const { data } = useKycStatusPolling(true, handleTerminal, {
+  const { data, isError } = useKycStatusPolling(true, handleTerminal, {
     timeoutMs: 10 * 60 * 1000,
   });
 
   const status = data?.status;
-  const isTerminal = status === 'approved' || status === 'rejected' || status === 'expired';
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="flex-1 items-center justify-center px-8">
-        {status === 'approved' ? (
+        {isError ? (
+          <>
+            <XCircle size={56} color="#EF4444" />
+            <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
+              Connection error
+            </Text>
+            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
+              Unable to check your verification status. Please try again later.
+            </Text>
+            <Pressable
+              onPress={() => router.back()}
+              className="mt-8 rounded-full bg-gray-900 px-8 py-4"
+              accessibilityRole="button">
+              <Text className="font-subtitle text-[15px] text-white">Close</Text>
+            </Pressable>
+          </>
+        ) : status === 'approved' ? (
           <>
             <CheckCircle2 size={56} color="#16A34A" />
-            <Text className="mt-6 font-display text-[26px] text-gray-900 text-center">
+            <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
               You&apos;re verified
             </Text>
-            <Text className="mt-2 font-body text-[15px] leading-6 text-gray-500 text-center">
+            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
               Your identity has been confirmed. Rail is ready.
             </Text>
             <Pressable
@@ -72,10 +87,10 @@ export default function KycPendingScreen() {
         ) : status === 'rejected' || status === 'expired' ? (
           <>
             <XCircle size={56} color="#DC2626" />
-            <Text className="mt-6 font-display text-[26px] text-gray-900 text-center">
+            <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
               Verification unsuccessful
             </Text>
-            <Text className="mt-2 font-body text-[15px] leading-6 text-gray-500 text-center">
+            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
               {data?.rejection_reason ??
                 'We could not verify your identity. Please try again or contact support.'}
             </Text>
@@ -91,10 +106,10 @@ export default function KycPendingScreen() {
             <Animated.View style={animatedStyle}>
               <Clock size={56} color="#111827" />
             </Animated.View>
-            <Text className="mt-6 font-display text-[26px] text-gray-900 text-center">
+            <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
               Verifying your identity
             </Text>
-            <Text className="mt-2 font-body text-[15px] leading-6 text-gray-500 text-center">
+            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
               This usually takes a few minutes. You can close this screen — we&apos;ll notify you
               when it&apos;s done.
             </Text>

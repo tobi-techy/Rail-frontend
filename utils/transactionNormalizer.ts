@@ -1,4 +1,9 @@
-import type { Transaction, TransactionType, TransactionStatus, WithdrawalMethod } from '@/components/molecules/TransactionItem';
+import type {
+  Transaction,
+  TransactionType,
+  TransactionStatus,
+  WithdrawalMethod,
+} from '@/components/molecules/TransactionItem';
 import type { Deposit, Withdrawal } from '@/api/types';
 
 export type WithdrawalListResponse = Withdrawal[] | { withdrawals?: Withdrawal[] } | undefined;
@@ -57,7 +62,9 @@ export const withdrawalToTransaction = (w: Withdrawal): Transaction => {
   const method = inferWithdrawalMethod(w.destination_chain, w.destination_address);
   const addr = w.destination_address;
   const shortAddr = addr
-    ? addr.length > 12 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr
+    ? addr.length > 12
+      ? `${addr.slice(0, 6)}…${addr.slice(-4)}`
+      : addr
     : w.destination_chain || 'USD';
   return {
     id: w.id,
@@ -67,7 +74,7 @@ export const withdrawalToTransaction = (w: Withdrawal): Transaction => {
     amount: parseFloat(w.amount) || 0,
     currency: 'USD',
     status: normalizeStatus(w.status),
-    createdAt: new Date(w.created_at || w.updated_at || new Date().toISOString()),
+    createdAt: new Date(w.created_at || w.updated_at || '1970-01-01T00:00:00Z'),
     txHash: w.tx_hash,
     withdrawalMethod: method,
   };

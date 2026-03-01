@@ -85,7 +85,13 @@ export interface SubmitKYCResponse {
 
 // --- KYC Status ---
 
-export type KycStatus = 'pending' | 'processing' | 'approved' | 'rejected' | 'expired';
+export type KycStatus =
+  | 'not_started'
+  | 'pending'
+  | 'processing'
+  | 'approved'
+  | 'rejected'
+  | 'expired';
 
 export interface KYCStatusResponse {
   user_id?: string;
