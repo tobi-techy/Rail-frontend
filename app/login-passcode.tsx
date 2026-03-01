@@ -8,12 +8,13 @@ import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { useAuthStore } from '@/stores/authStore';
 import { useVerifyPasscode } from '@/api/hooks';
 import { userService } from '@/api/services';
+import { haptics } from '@/utils/haptics';
 import { SessionManager } from '@/utils/sessionManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { useLoginPasskey } from '@/hooks/useLoginPasskey';
-import { APP_VERSION } from '@/utils/appVersion';
 import { safeName } from '@/app/withdraw/method-screen/utils';
+import { clearAutoFired } from '@/utils/passkeyPromptGuard';
 
 type ProfileNamePayload = {
   firstName?: string;
@@ -72,7 +73,7 @@ export default function LoginPasscodeScreen() {
 
   // Merge passkey error into local error display
   useEffect(() => {
-    if (passkeyError) setError(passkeyError);
+    if (passkeyError) { haptics.error(); setError(passkeyError); }
   }, [passkeyError]);
 
   useEffect(() => {
@@ -122,6 +123,7 @@ export default function LoginPasscodeScreen() {
     (code: string) => {
       if (isLoading || isPasskeyLoading) return;
       if (lockoutSecondsRemaining > 0) {
+        haptics.error();
         setError(`PIN is locked. Try again in ${lockoutSecondsRemaining}s.`);
         return;
       }
@@ -133,6 +135,7 @@ export default function LoginPasscodeScreen() {
         {
           onSuccess: async (response) => {
             if (!response.verified) {
+              haptics.error();
               setError('PIN verification failed');
               setPasscode('');
               return;
@@ -156,6 +159,7 @@ export default function LoginPasscodeScreen() {
               error?: { details?: { lockedUntil?: string; locked_until?: string } };
             };
             if (e?.status === 401 && e?.code === 'INVALID_PASSCODE') {
+              haptics.error();
               setError(e?.message || 'Incorrect PIN. Please try again.');
               setPasscode('');
               return;
@@ -181,6 +185,7 @@ export default function LoginPasscodeScreen() {
               return;
             }
             const msg = e?.message || 'Incorrect PIN. Please try again.';
+            haptics.error();
             setError(msg);
             showError('PIN Verification Failed', msg);
             setPasscode('');
@@ -250,6 +255,7 @@ export default function LoginPasscodeScreen() {
               <Text className="font-body text-caption text-text-secondary">Not {userName}? </Text>
               <TouchableOpacity
                 onPress={() => {
+                  clearAutoFired(`login-passcode:${useAuthStore.getState().user?.id || safeName(user?.email) || 'unknown'}`);
                   useAuthStore.getState().reset();
                   router.replace('/(auth)/signin');
                 }}
@@ -260,7 +266,6 @@ export default function LoginPasscodeScreen() {
             <TouchableOpacity onPress={() => router.push('/(auth)/signin')} activeOpacity={0.7}>
               <Text className="font-body text-caption text-text-secondary">Sign in with email</Text>
             </TouchableOpacity>
-            <Text className="font-body text-small text-text-tertiary">v{APP_VERSION}</Text>
           </View>
         </View>
       </SafeAreaView>

@@ -6,6 +6,7 @@ import type {
   Transaction,
   TransactionStatus,
   TransactionType,
+  WithdrawalMethod,
 } from '@/components/molecules/TransactionItem';
 
 const CATEGORY_ICON_MAP: Record<string, string> = {
@@ -32,6 +33,26 @@ const getCategoryIconName = (category: string): string => {
 
 const toTransactionType = (direction?: 'debit' | 'credit', amount = 0): TransactionType =>
   direction === 'credit' || amount > 0 ? 'receive' : 'withdraw';
+
+const inferWithdrawalMethod = (type: string, description: string): WithdrawalMethod | undefined => {
+  const t = (type + ' ' + description).toLowerCase();
+  if (t.includes('fiat') || t.includes('bank') || t.includes('ach')) return 'fiat';
+  if (t.includes('card')) return 'card';
+  if (t.includes('p2p') || t.includes('email') || t.includes('railtag') || t.includes('contact')) return 'p2p';
+  if (t.includes('crypto') || t.includes('wallet') || t.includes('chain') || t.includes('sol') || t.includes('eth')) return 'crypto';
+  return undefined;
+};
+
+const humanizeTitle = (type: string, direction?: 'debit' | 'credit'): string => {
+  const t = type.toLowerCase().replace(/_/g, ' ');
+  if (t.includes('withdrawal') || t.includes('withdraw')) return 'Withdrawal';
+  if (t.includes('deposit')) return 'Deposit';
+  if (t.includes('transfer')) return direction === 'credit' ? 'Transfer In' : 'Transfer Out';
+  if (t.includes('refund')) return 'Refund';
+  if (t.includes('payment')) return 'Payment';
+  if (t.includes('purchase')) return 'Purchase';
+  return direction === 'credit' ? 'Credit' : 'Debit';
+};
 
 const toTransactionStatus = (status: string): TransactionStatus => {
   const s = status.toLowerCase();
@@ -118,18 +139,40 @@ export function useSpendingStashData() {
 
   const transactions = useMemo<Transaction[]>(
     () =>
-      (data?.recent_transactions?.items ?? []).map((tx) => ({
-        id: tx.id,
-        type: toTransactionType(tx.direction, toNumber(tx.amount)),
-        title: tx.merchant?.category || tx.description || 'Transaction',
-        subtitle: tx.description || tx.merchant?.name || '',
-        amount: Math.abs(toNumber(tx.amount)),
-        currency: tx.currency || data?.balance?.currency || 'USD',
-        assetSymbol: tx.currency || data?.balance?.currency || 'USD',
-        merchant: tx.merchant?.name || tx.description,
-        status: toTransactionStatus(tx.status),
-        createdAt: new Date(tx.created_at),
-      })),
+      (data?.recent_transactions?.items ?? []).map((tx) => {
+        const txType = toTransactionType(tx.direction, toNumber(tx.amount));
+        const isWithdrawal = txType === 'withdraw';
+        const withdrawalMethod = isWithdrawal
+          ? inferWithdrawalMethod(tx.type, tx.description)
+          : undefined;
+
+        // Title: merchant name > humanized type (never raw backend strings)
+        const title = tx.merchant?.name || humanizeTitle(tx.type, tx.direction);
+
+        // Subtitle: destination address (truncated) > human description > merchant category
+        const addr = tx.destination_address;
+        const shortAddr = addr
+          ? addr.length > 12 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr
+          : null;
+        const rawDesc = tx.description || '';
+        const isRawBackendString = /[_]/.test(rawDesc) || rawDesc === rawDesc.toUpperCase();
+        const subtitle = shortAddr
+          ?? (isRawBackendString ? (tx.merchant?.category || '') : rawDesc);
+
+        return {
+          id: tx.id,
+          type: txType,
+          title,
+          subtitle,
+          amount: Math.abs(toNumber(tx.amount)),
+          currency: tx.currency || data?.balance?.currency || 'USD',
+          assetSymbol: tx.currency || data?.balance?.currency || 'USD',
+          merchant: tx.merchant?.name,
+          status: toTransactionStatus(tx.status),
+          createdAt: new Date(tx.created_at),
+          withdrawalMethod,
+        };
+      }),
     [data?.balance?.currency, data?.recent_transactions?.items]
   );
 

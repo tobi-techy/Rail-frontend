@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, Platform, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, Keyboard, StatusBar, Platform, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
@@ -75,13 +74,9 @@ export default function SignUp() {
         backgroundColor="transparent"
         translucent={Platform.OS === 'android'}
       />
-      <KeyboardAwareScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingTop: insets.top + 16,
-          paddingBottom: insets.bottom + 20,
-        }}
-        keyboardShouldPersistTaps="handled">
+      <Pressable
+        style={{ flex: 1, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 20 }}
+        onPress={Keyboard.dismiss}>
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
@@ -110,7 +105,7 @@ export default function SignUp() {
             />
           </StaggeredChild>
 
-          <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>
+          <StaggeredChild index={2} delay={120} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
               <Text className="mb-5 text-center font-caption text-small text-black/50">
                 By signing up, you agree to our{' '}
@@ -138,7 +133,7 @@ export default function SignUp() {
             </View>
           </StaggeredChild>
         </View>
-      </KeyboardAwareScrollView>
+      </Pressable>
     </AuthGradient>
   );
 }

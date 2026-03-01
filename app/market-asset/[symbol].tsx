@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Bell } from 'lucide-react-native';
 import { LineGraph, type GraphPoint } from 'react-native-graph';
 import { useMarketBars, useMarketInstrument } from '@/api/hooks';
@@ -159,6 +159,7 @@ function DetailHeaderSkeleton() {
 
 export default function MarketAssetDetailScreen() {
   const params = useLocalSearchParams<{ symbol?: string }>();
+  const insets = useSafeAreaInsets();
   const currency = useUIStore((s) => s.currency);
   const rates = useUIStore((s) => s.currencyRates);
 
@@ -219,14 +220,14 @@ export default function MarketAssetDetailScreen() {
         method: side === 'buy' ? 'asset-buy' : 'asset-sell',
         symbol: instrument.symbol,
       },
-    } as any);
+    } as never);
   };
 
   return (
     <SafeAreaView className="flex-1 bg-background-main" edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 48 }}>
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 32 }}>
         <View className="px-md pb-sm pt-sm">
           <View className="flex-row items-center justify-between">
             <Pressable

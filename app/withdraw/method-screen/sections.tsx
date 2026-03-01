@@ -1,12 +1,16 @@
 import React from 'react';
-import { ActivityIndicator, StatusBar, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StatusBar, Text, TouchableOpacity, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, CheckCircle2, ShieldAlert } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle2, ShieldAlert, ChevronDown } from 'lucide-react-native';
 import { router } from 'expo-router';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { BottomSheet, KYCVerificationSheet } from '@/components/sheets';
 import { Button, Input } from '@/components/ui';
+import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
+import { SUPPORTED_CHAINS } from '@/utils/chains';
+import { useHaptics } from '@/hooks/useHaptics';
 import { formatCurrency } from './utils';
 import type { MethodCopy } from './types';
 
@@ -38,6 +42,7 @@ type WithdrawDetailsSheetProps = {
   fundingError: string;
   isAssetTradeMethod: boolean;
   isFiatMethod: boolean;
+  isCryptoMethod?: boolean;
   isFundFlow: boolean;
   isFundingActionLoading: boolean;
   isMobileWalletFundingFlow: boolean;
@@ -45,6 +50,8 @@ type WithdrawDetailsSheetProps = {
   numericAmount: number;
   onClose: () => void;
   onDestinationChange: (value: string) => void;
+  destinationChain?: string;
+  onChainChange?: (chain: string) => void;
   onSubmit: () => void;
   visible: boolean;
 };
@@ -59,6 +66,65 @@ type WithdrawSubmissionSheetProps = {
   onClose: () => void;
   visible: boolean;
 };
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
+  'SOL-DEVNET': SolanaIcon,
+  'MATIC-AMOY': MaticIcon,
+  'AVAX-FUJI': AvalancheIcon,
+};
+
+function ChainPill({
+  chain,
+  selected,
+  onPress,
+}: {
+  chain: (typeof SUPPORTED_CHAINS)[0];
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const Icon = CHAIN_ICONS[chain.chain];
+  const { selection } = useHaptics();
+
+  return (
+    <AnimatedPressable
+      style={[
+        animStyle,
+        {
+          backgroundColor: selected ? chain.color + '18' : '#F3F4F6',
+          borderWidth: selected ? 1.5 : 1,
+          borderColor: selected ? chain.color : 'transparent',
+        },
+      ]}
+      onPress={() => { selection(); onPress(); }}
+      onPressIn={() => { scale.value = withSpring(0.95, { damping: 20, stiffness: 300 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}
+      className="flex-1 items-center rounded-2xl py-3 px-2"
+      accessibilityRole="button"
+      accessibilityLabel={`Select ${chain.label}`}>
+      {/* USDC + chain icon stack */}
+      <View className="relative mb-2 size-10 items-center justify-center">
+        <View
+          className="size-10 items-center justify-center rounded-full"
+          style={{ backgroundColor: chain.color + '22' }}>
+          {Icon && <Icon width={22} height={22} />}
+        </View>
+        <View className="absolute -bottom-1 -right-1 size-5 items-center justify-center rounded-full bg-white shadow-sm">
+          <UsdcIcon width={13} height={13} />
+        </View>
+      </View>
+      <Text
+        className="font-subtitle text-[12px]"
+        style={{ color: selected ? chain.color : '#374151' }}>
+        {chain.shortLabel}
+      </Text>
+    </AnimatedPressable>
+  );
+}
 
 export function FiatKycRequiredScreen({
   kycStatus,
@@ -178,6 +244,7 @@ export function WithdrawDetailsSheet({
   fundingError,
   isAssetTradeMethod,
   isFiatMethod,
+  isCryptoMethod,
   isFundFlow,
   isFundingActionLoading,
   isMobileWalletFundingFlow,
@@ -185,6 +252,8 @@ export function WithdrawDetailsSheet({
   numericAmount,
   onClose,
   onDestinationChange,
+  destinationChain = 'SOL-DEVNET',
+  onChainChange,
   onSubmit,
   visible,
 }: WithdrawDetailsSheetProps) {
@@ -197,6 +266,23 @@ export function WithdrawDetailsSheet({
         <Text className="mt-2 font-body text-[14px] text-text-secondary">
           {methodCopy.detailHint}
         </Text>
+
+        {/* Chain picker — only for crypto withdrawal */}
+        {isCryptoMethod && !isMobileWalletFundingFlow && onChainChange && (
+          <View className="mt-5">
+            <Text className="mb-2 font-body text-[13px] text-text-secondary">Network</Text>
+            <View className="flex-row gap-2">
+              {SUPPORTED_CHAINS.map((c) => (
+                <ChainPill
+                  key={c.chain}
+                  chain={c}
+                  selected={destinationChain === c.chain}
+                  onPress={() => onChainChange(c.chain)}
+                />
+              ))}
+            </View>
+          </View>
+        )}
 
         {!isMobileWalletFundingFlow && (
           <View className="mt-5">
@@ -219,11 +305,7 @@ export function WithdrawDetailsSheet({
         <View className="mt-4 rounded-2xl bg-surface px-4 py-3">
           <View className="flex-row items-center justify-between">
             <Text className="font-body text-[13px] text-text-secondary">
-              {isAssetTradeMethod
-                ? 'Order amount'
-                : isFundFlow
-                  ? 'Funding amount'
-                  : 'Withdrawal amount'}
+              {isAssetTradeMethod ? 'Order amount' : isFundFlow ? 'Funding amount' : 'Withdrawal amount'}
             </Text>
             <Text
               className="font-subtitle text-[15px] text-text-primary"
@@ -242,6 +324,14 @@ export function WithdrawDetailsSheet({
                 <Text className="font-subtitle text-[15px] text-text-primary">USDC</Text>
               </View>
             </>
+          )}
+          {isCryptoMethod && !isMobileWalletFundingFlow && (
+            <View className="mt-2 flex-row items-center justify-between">
+              <Text className="font-body text-[13px] text-text-secondary">Network</Text>
+              <Text className="font-subtitle text-[15px] text-text-primary">
+                {SUPPORTED_CHAINS.find((c) => c.chain === destinationChain)?.label ?? destinationChain}
+              </Text>
+            </View>
           )}
           <View className="mt-2 flex-row items-center justify-between">
             <Text className="font-body text-[13px] text-text-secondary">Method</Text>

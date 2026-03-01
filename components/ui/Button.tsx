@@ -75,7 +75,7 @@ export const Button = forwardRef<View, ButtonProps>(
       white: 'text-black',
       orange: 'text-white',
       destructive: 'text-white',
-      ghost: 'text-text-secondary',
+      ghost: 'text-white',
     }[variant];
 
     const sizeStyles = size === 'small' ? 'px-4 py-3' : 'px-6 py-5';

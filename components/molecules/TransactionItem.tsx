@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
+import { CreditCard, Wallet, Mail, Tag } from 'lucide-react-native';
 import { Icon, Skeleton } from '../atoms';
 import { useUIStore } from '@/stores';
 import { MaskedBalance } from './MaskedBalance';
@@ -9,6 +10,7 @@ import type { SvgComponent } from '@/utils/transactionIcon';
 
 export type TransactionType = 'send' | 'receive' | 'swap' | 'deposit' | 'withdraw';
 export type TransactionStatus = 'completed' | 'pending' | 'failed';
+export type WithdrawalMethod = 'fiat' | 'crypto' | 'card' | 'p2p';
 export type { SvgComponent };
 
 export interface Transaction {
@@ -25,6 +27,7 @@ export interface Transaction {
   txHash?: string;
   toAddress?: string;
   fee?: string;
+  withdrawalMethod?: WithdrawalMethod;
   icon?: {
     type: 'token' | 'icon' | 'swap';
     Token?: SvgComponent;
@@ -113,11 +116,31 @@ const DEFAULT_ICONS: Record<TransactionType, string> = {
   withdraw: 'minus',
 };
 
+const WITHDRAWAL_BADGE: Record<string, { Icon: React.ComponentType<any>; bg: string }> = {
+  fiat:   { Icon: CreditCard, bg: '#3B82F6' },
+  card:   { Icon: CreditCard, bg: '#3B82F6' },
+  crypto: { Icon: Wallet,     bg: '#8B5CF6' },
+  p2p:    { Icon: Mail,       bg: '#10B981' },
+};
+
+const WithdrawalBadge = ({ method }: { method: string }) => {
+  const badge = WITHDRAWAL_BADGE[method] ?? { Icon: Tag, bg: '#6B7280' };
+  return (
+    <View
+      className="absolute -bottom-0.5 -right-0.5 h-5 w-5 items-center justify-center rounded-full border-2 border-white"
+      style={{ backgroundColor: badge.bg }}>
+      <badge.Icon size={10} color="#fff" strokeWidth={2.5} />
+    </View>
+  );
+};
+
 const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
-  const { icon, type } = transaction;
+  const { icon, type, withdrawalMethod } = transaction;
+
+  let iconEl: React.ReactElement;
 
   if (icon?.type === 'swap')
-    return (
+    iconEl = (
       <SwapIcon
         SwapFrom={icon.SwapFrom}
         SwapTo={icon.SwapTo}
@@ -125,23 +148,32 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
         toBg={icon.swapToBg}
       />
     );
-  if (icon?.type === 'token') return <TokenIcon Token={icon.Token} bgColor={icon.bgColor} />;
-  if (icon?.type === 'icon' && icon.iconName) return <ActionIcon name={icon.iconName} />;
-
-  const inferred = resolveTransactionAssetIcon(transaction);
-  if (inferred)
-    return (
+  else if (icon?.type === 'token')
+    iconEl = <TokenIcon Token={icon.Token} bgColor={icon.bgColor} />;
+  else if (icon?.type === 'icon' && icon.iconName)
+    iconEl = <ActionIcon name={icon.iconName} />;
+  else {
+    const inferred = resolveTransactionAssetIcon(transaction);
+    iconEl = inferred ? (
       <TokenIcon
         Token={inferred.Token}
         bgColor={inferred.bgColor}
         withBorder={inferred.withBorder}
         isSymbol={inferred.isSymbol}
       />
+    ) : (
+      <View className="h-12 w-12 items-center justify-center rounded-full bg-surface">
+        <Icon library="feather" name={DEFAULT_ICONS[type]} size={24} color="#121212" />
+      </View>
     );
+  }
 
   return (
-    <View className="h-12 w-12 items-center justify-center rounded-full bg-surface">
-      <Icon library="feather" name={DEFAULT_ICONS[type]} size={24} color="#121212" />
+    <View style={{ width: ICON_SIZE, height: ICON_SIZE }}>
+      {iconEl}
+      {type === 'withdraw' && withdrawalMethod && (
+        <WithdrawalBadge method={withdrawalMethod} />
+      )}
     </View>
   );
 };

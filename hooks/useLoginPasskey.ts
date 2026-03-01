@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Passkey } from 'react-native-passkey';
 import { router } from 'expo-router';
 import { authService } from '@/api/services';
@@ -18,6 +18,7 @@ import {
   endPasskeyPrompt,
   markPasskeyPromptSuccess,
   suppressAutoPasskeyPrompt,
+  recordAutoFired,
 } from '@/utils/passkeyPromptGuard';
 import { INACTIVITY_LIMIT_MS, PASSCODE_SESSION_MS } from '@/utils/sessionConstants';
 
@@ -37,7 +38,6 @@ export function useLoginPasskey({
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [error, setError] = useState('');
   const { showError, showWarning } = useFeedbackPopup();
-  const autoFiredRef = useRef(false);
 
   const scope = `login-passcode:${useAuthStore.getState().user?.id || safeName(email) || 'unknown'}`;
 
@@ -128,14 +128,14 @@ export function useLoginPasskey({
     [email, isLoading, isPasskeyLoading, onSuccess, scope, showError, showWarning]
   );
 
-  // Auto-trigger once on mount when passkey is set up
+  // Auto-trigger once per JS session per scope when passkey is set up
   useEffect(() => {
-    if (!autoTrigger || autoFiredRef.current || isLoading) return;
-    autoFiredRef.current = true;
-    // Small delay so the screen is fully rendered before the system sheet appears
+    if (!autoTrigger || isLoading) return;
+    if (!canStartPasskeyPrompt(scope, 'auto')) return;
+    recordAutoFired(scope);
     const t = setTimeout(() => handlePasskeyAuth('auto'), 400);
     return () => clearTimeout(t);
-  }, [autoTrigger, handlePasskeyAuth, isLoading]);
+  }, [autoTrigger, handlePasskeyAuth, isLoading, scope]);
 
   return {
     isPasskeyLoading,

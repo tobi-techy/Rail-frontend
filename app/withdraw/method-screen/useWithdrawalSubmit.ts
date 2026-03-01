@@ -13,6 +13,7 @@ interface UseWithdrawalSubmitOptions {
   selectedMethod: ExtendedWithdrawMethod;
   numericAmount: number;
   destinationInput: string;
+  destinationChain?: string;
   isFundFlow: boolean;
   onStartMobileWalletFunding: () => void;
 }
@@ -21,6 +22,7 @@ export function useWithdrawalSubmit({
   selectedMethod,
   numericAmount,
   destinationInput,
+  destinationChain,
   isFundFlow,
   onStartMobileWalletFunding,
 }: UseWithdrawalSubmitOptions) {
@@ -55,7 +57,7 @@ export function useWithdrawalSubmit({
 
       if (selectedMethod === 'crypto') {
         initiateWithdrawal(
-          { amount, destination_address: destination },
+          { amount, destination_address: destination, destination_chain: destinationChain },
           { onSuccess: handleSuccess, onError }
         );
         return;
@@ -67,7 +69,7 @@ export function useWithdrawalSubmit({
           return;
         }
         initiateWithdrawal(
-          { amount, destination_address: destination },
+          { amount, destination_address: destination, destination_chain: destinationChain },
           { onSuccess: handleSuccess, onError }
         );
         return;
@@ -94,6 +96,7 @@ export function useWithdrawalSubmit({
     },
     [
       destinationInput,
+      destinationChain,
       initiateFiatWithdrawal,
       initiateWithdrawal,
       invalidateAll,

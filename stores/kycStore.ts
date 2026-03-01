@@ -4,64 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   COUNTRY_KYC_REQUIREMENTS,
   COUNTRY_TAX_CONFIG,
-  documentTypeRequiresBack,
   INVESTMENT_PURPOSE_OPTIONS,
   type EmploymentStatus,
   type InvestmentPurpose,
-  type KycIdentityDocumentType,
   type KycDisclosures,
   type Country,
   type TaxIdType,
 } from '@/api/types/kyc';
-
-export type CaptureSide = 'front' | 'back';
-
-export type CapturedDocument = {
-  dataUri: string;
-  capturedAt: number;
-};
-
-/** Auto-resolve whether back-of-ID is needed based on selected country + document type */
-export function documentRequiresBack(
-  country: Country,
-  documentType: KycIdentityDocumentType
-): boolean {
-  return documentTypeRequiresBack(country, documentType);
-}
-
-interface KycState {
-  // Details
-  country: Country;
-  taxIdType: TaxIdType;
-  taxId: string;
-  documentType: KycIdentityDocumentType;
-  employmentStatus: EmploymentStatus | null;
-  investmentPurposes: InvestmentPurpose[];
-
-  // Documents
-  frontDoc: CapturedDocument | null;
-  backDoc: CapturedDocument | null;
-
-  // Disclosures
-  disclosures: KycDisclosures;
-  disclosuresConfirmed: boolean;
-
-  // Profile gaps (from backend missing_fields error)
-  missingProfileFields: string[];
-
-  // Actions
-  setCountry: (country: Country) => void;
-  setTaxIdType: (taxIdType: TaxIdType) => void;
-  setTaxId: (taxId: string) => void;
-  setDocumentType: (documentType: KycIdentityDocumentType) => void;
-  setEmploymentStatus: (value: EmploymentStatus | null) => void;
-  toggleInvestmentPurpose: (value: InvestmentPurpose) => void;
-  setDocument: (side: CaptureSide, document: CapturedDocument | null) => void;
-  setDisclosure: (key: keyof KycDisclosures, value: boolean) => void;
-  setDisclosuresConfirmed: (confirmed: boolean) => void;
-  setMissingProfileFields: (fields: string[]) => void;
-  resetKycState: () => void;
-}
 
 const DEFAULT_DISCLOSURES: KycDisclosures = {
   is_control_person: false,
@@ -70,81 +19,95 @@ const DEFAULT_DISCLOSURES: KycDisclosures = {
   immediate_family_exposed: false,
 };
 
+interface KycState {
+  country: Country;
+  taxIdType: TaxIdType;
+  taxId: string;
+  employmentStatus: EmploymentStatus | null;
+  investmentPurposes: InvestmentPurpose[];
+  disclosures: KycDisclosures;
+  disclosuresConfirmed: boolean;
+  missingProfileFields: string[];
+
+  // Sumsub session (non-sensitive — token is short-lived, not PII)
+  sumsubToken: string | null;
+  applicantId: string | null;
+
+  setCountry: (country: Country) => void;
+  setTaxIdType: (taxIdType: TaxIdType) => void;
+  setTaxId: (taxId: string) => void;
+  setEmploymentStatus: (value: EmploymentStatus | null) => void;
+  toggleInvestmentPurpose: (value: InvestmentPurpose) => void;
+  setDisclosure: (key: keyof KycDisclosures, value: boolean) => void;
+  setDisclosuresConfirmed: (confirmed: boolean) => void;
+  setMissingProfileFields: (fields: string[]) => void;
+  setSumsubSession: (token: string, applicantId: string) => void;
+  resetKycState: () => void;
+}
+
 export const useKycStore = create<KycState>()(
   persist(
     (set) => ({
       country: 'USA',
       taxIdType: 'ssn',
       taxId: '',
-      documentType: COUNTRY_KYC_REQUIREMENTS.USA.acceptedDocuments[0].type,
       employmentStatus: null,
       investmentPurposes: [],
-      frontDoc: null,
-      backDoc: null,
       disclosures: DEFAULT_DISCLOSURES,
       disclosuresConfirmed: false,
       missingProfileFields: [],
+      sumsubToken: null,
+      applicantId: null,
 
-      // #10: Reset taxIdType to first valid option when country changes
       setCountry: (country) =>
         set({
           country,
           taxIdType: COUNTRY_TAX_CONFIG[country][0].type,
-          documentType: COUNTRY_KYC_REQUIREMENTS[country].acceptedDocuments[0].type,
           taxId: '',
-          frontDoc: null,
-          backDoc: null,
         }),
 
       setTaxIdType: (taxIdType) => set({ taxIdType }),
       setTaxId: (taxId) => set({ taxId }),
-      setDocumentType: (documentType) => set({ documentType, frontDoc: null, backDoc: null }),
       setEmploymentStatus: (employmentStatus) => set({ employmentStatus }),
+
       toggleInvestmentPurpose: (value) =>
         set((state) => {
-          const hasValue = state.investmentPurposes.includes(value);
-          if (hasValue) {
-            return {
-              investmentPurposes: state.investmentPurposes.filter((item) => item !== value),
-            };
+          if (state.investmentPurposes.includes(value)) {
+            return { investmentPurposes: state.investmentPurposes.filter((v) => v !== value) };
           }
-          const maxSelectable = INVESTMENT_PURPOSE_OPTIONS.length;
-          if (state.investmentPurposes.length >= maxSelectable) return state;
+          if (state.investmentPurposes.length >= INVESTMENT_PURPOSE_OPTIONS.length) return state;
           return { investmentPurposes: [...state.investmentPurposes, value] };
         }),
 
-      setDocument: (side, document) =>
-        set((state) => ({
-          ...state,
-          [side === 'front' ? 'frontDoc' : 'backDoc']: document,
-        })),
-
       setDisclosure: (key, value) =>
-        set((state) => ({
-          disclosures: { ...state.disclosures, [key]: value },
-        })),
+        set((state) => ({ disclosures: { ...state.disclosures, [key]: value } })),
 
       setDisclosuresConfirmed: (disclosuresConfirmed) => set({ disclosuresConfirmed }),
       setMissingProfileFields: (missingProfileFields) => set({ missingProfileFields }),
+      setSumsubSession: (sumsubToken, applicantId) => set({ sumsubToken, applicantId }),
 
       resetKycState: () =>
         set({
           country: 'USA',
           taxIdType: 'ssn',
           taxId: '',
-          documentType: COUNTRY_KYC_REQUIREMENTS.USA.acceptedDocuments[0].type,
           employmentStatus: null,
           investmentPurposes: [],
-          frontDoc: null,
-          backDoc: null,
           disclosures: DEFAULT_DISCLOSURES,
           disclosuresConfirmed: false,
           missingProfileFields: [],
+          sumsubToken: null,
+          applicantId: null,
         }),
     }),
     {
       name: 'kyc-store',
       storage: createJSONStorage(() => AsyncStorage),
+      // Never persist taxId — it's transient PII
+      partialize: (state) => {
+        const { taxId: _taxId, ...rest } = state;
+        return rest;
+      },
     }
   )
 );

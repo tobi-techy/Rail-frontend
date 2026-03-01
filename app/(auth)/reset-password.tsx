@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StatusBar, Platform } from 'react-native';
+import { View, Text, Pressable, Keyboard, StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Button } from '@/components/ui';
 import { InputField, AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
@@ -81,12 +80,7 @@ export default function ResetPassword() {
           backgroundColor="transparent"
           translucent={Platform.OS === 'android'}
         />
-        <KeyboardAwareScrollView
-          className="flex-1"
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          bottomOffset={40}>
-          <View className="flex-1 px-6 pb-6">
+        <Pressable className="flex-1 px-6 pb-6" onPress={Keyboard.dismiss}>
             <StaggeredChild index={0}>
               <View className="mb-8 mt-4">
                 <Text className="font-headline text-auth-title text-black">Reset password</Text>
@@ -156,8 +150,7 @@ export default function ResetPassword() {
                 )}
               </View>
             </StaggeredChild>
-          </View>
-        </KeyboardAwareScrollView>
+        </Pressable>
       </SafeAreaView>
     </AuthGradient>
   );

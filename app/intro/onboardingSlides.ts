@@ -7,7 +7,6 @@ export interface OnboardingSlide {
   title: string;
   subtitle: string;
   description: string;
-  asciiLines: [string, string, string];
   video: VideoSource;
 }
 
@@ -18,11 +17,6 @@ export const onboardingSlides: OnboardingSlide[] = [
     title: 'Start small, build real momentum.',
     subtitle: 'Every dollar gets routed with intention.',
     description: 'Automate deposits, keep it simple, and stay consistent from day one.',
-    asciiLines: [
-      '+--------------------------+',
-      '| init -> save -> invest   |',
-      '+--------------------------+',
-    ],
     video: onBoard1,
   },
   {
@@ -31,11 +25,6 @@ export const onboardingSlides: OnboardingSlide[] = [
     title: 'Move cash in within seconds.',
     subtitle: 'Zero friction funding flow.',
     description: 'Link your bank once and keep the pipeline active without leaving the app.',
-    asciiLines: [
-      '+--------------------------+',
-      '| bank => rail => wallet   |',
-      '+--------------------------+',
-    ],
     video: onBoard2,
   },
   {
@@ -44,11 +33,6 @@ export const onboardingSlides: OnboardingSlide[] = [
     title: 'Invest without the noise.',
     subtitle: 'Clear signals, fewer decisions.',
     description: 'A focused flow that helps you keep buying on schedule and ignore market chaos.',
-    asciiLines: [
-      '+--------------------------+',
-      '| signal > noise > repeat  |',
-      '+--------------------------+',
-    ],
     video: onBoard3,
   },
   {
@@ -57,11 +41,6 @@ export const onboardingSlides: OnboardingSlide[] = [
     title: 'Spend. Save. Loop it forever.',
     subtitle: 'A daily system, not a one-time push.',
     description: 'Track motion, lock habits, and make your money behavior feel automatic.',
-    asciiLines: [
-      '+--------------------------+',
-      '| spend -> save -> repeat  |',
-      '+--------------------------+',
-    ],
     video: onBoard4,
   },
 ];

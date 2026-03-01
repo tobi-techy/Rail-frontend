@@ -2,11 +2,12 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
-  Alert,
   ActivityIndicator,
   Switch,
+  Pressable,
 } from 'react-native';
+import { Passkey } from 'react-native-passkey';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import {
   LogOut,
   KeyRound,
@@ -43,6 +44,7 @@ import gleap from '@/utils/gleap';
 import { formatFxUpdatedAt, migrateLegacyCurrency } from '@/utils/currency';
 import { usePinChange, sanitizePin } from '@/hooks/usePinChange';
 import { useSpendSettings, clampAlloc } from '@/hooks/useSpendSettings';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -78,7 +80,9 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 
 // ── UI Primitives ─────────────────────────────────────────────────────────────
 
-const SettingButton = ({
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+function SettingButton({
   icon,
   label,
   onPress,
@@ -88,16 +92,25 @@ const SettingButton = ({
   label: string;
   onPress?: () => void;
   danger?: boolean;
-}) => (
-  <TouchableOpacity className="mb-md w-[25%] items-center" onPress={onPress}>
-    <View className="h-12 w-12 items-center justify-center">{icon}</View>
-    <Text
-      className={`mt-xs text-center font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}
-      numberOfLines={2}>
-      {label}
-    </Text>
-  </TouchableOpacity>
-);
+}) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <AnimatedPressable
+      style={animStyle}
+      className="mb-md w-[25%] items-center"
+      onPress={onPress}
+      onPressIn={() => { scale.value = withSpring(0.9, { damping: 20, stiffness: 300 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}>
+      <View className="h-12 w-12 items-center justify-center">{icon}</View>
+      <Text
+        className={`mt-xs text-center font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}
+        numberOfLines={2}>
+        {label}
+      </Text>
+    </AnimatedPressable>
+  );
+}
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
   <View className="border-b border-surface py-md">
@@ -115,12 +128,12 @@ const SheetRow = ({
   value?: string;
   onPress?: () => void;
 }) => (
-  <TouchableOpacity
+  <Pressable
     className="flex-row items-center justify-between border-b border-surface py-4"
     onPress={onPress}>
     <Text className="font-body text-base text-text-primary">{label}</Text>
     {value && <Text className="font-body text-base text-text-secondary">{value}</Text>}
-  </TouchableOpacity>
+  </Pressable>
 );
 
 const SheetToggleRow = ({
@@ -149,6 +162,7 @@ const SheetToggleRow = ({
 
 export default function Settings() {
   const navigation = useNavigation();
+  const { showError, showSuccess, showWarning, showInfo } = useFeedbackPopup();
 
   const logout = useAuthStore((s) => s.logout);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
@@ -250,7 +264,7 @@ export default function Settings() {
     } catch (error) {
       const msg = getErrorMessage(error, 'Failed to update Base/Active split.');
       setAllocationFeedback(msg);
-      Alert.alert('Split Update Failed', msg);
+      showError('Split Update Failed', msg);
     }
   };
 
@@ -258,7 +272,7 @@ export default function Settings() {
     setIsLoggingOut(true);
     try {
       await logout();
-      Alert.alert('Success', 'You have been logged out successfully.');
+      showSuccess('Logged Out', 'You have been logged out successfully.');
       closeSheet();
     } catch (error) {
       logger.error('[Settings] Logout error', {
@@ -266,11 +280,11 @@ export default function Settings() {
         action: 'logout-error',
         error: error instanceof Error ? error.message : 'unknown',
       });
-      Alert.alert(
+      showWarning(
         'Logout Issue',
-        'We had trouble logging you out from the server. Your local session has been cleared for security. You may need to log back in.',
-        [{ text: 'OK', onPress: closeSheet }]
+        'We had trouble logging you out from the server. Your local session has been cleared for security.'
       );
+      closeSheet();
     } finally {
       setIsLoggingOut(false);
     }
@@ -281,13 +295,12 @@ export default function Settings() {
     try {
       const result = await deleteAccount('User requested account deletion');
       closeSheet();
-      const fundsMessage =
-        parseFloat(result.funds_swept) > 0
-          ? `\n\n$${result.funds_swept} was transferred to our treasury wallet.`
-          : '';
-      Alert.alert('Account Deleted', `Your account has been permanently deleted.${fundsMessage}`);
+      const fundsMsg = parseFloat(result.funds_swept) > 0
+        ? `$${result.funds_swept} was transferred to our treasury wallet.`
+        : undefined;
+      showSuccess('Account Deleted', fundsMsg ?? 'Your account has been permanently deleted.');
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Failed to delete account. Please try again.');
+      showError('Error', error?.message || 'Failed to delete account. Please try again.');
     } finally {
       setIsDeleting(false);
     }
@@ -300,7 +313,7 @@ export default function Settings() {
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
         <Section title="Spend">
           <SettingButton
-            icon={<ArrowLeftRight size={26} color="#121212" />}
+            icon={<ArrowLeftRight size={22} color="#121212" />}
             label="Base/Active Split"
             onPress={() => {
               setAllocationFeedback(null);
@@ -309,17 +322,17 @@ export default function Settings() {
             }}
           />
           <SettingButton
-            icon={<TrendingUp size={26} color="#121212" />}
+            icon={<TrendingUp size={22} color="#121212" />}
             label="Auto Invest"
             onPress={() => setActiveSheet('autoInvest')}
           />
           <SettingButton
-            icon={<Repeat2 size={26} color="#121212" />}
+            icon={<Repeat2 size={22} color="#121212" />}
             label="Round-ups"
             onPress={() => setActiveSheet('roundups')}
           />
           <SettingButton
-            icon={<Scale size={26} color="#121212" />}
+            icon={<Scale size={22} color="#121212" />}
             label="Limits"
             onPress={() => setActiveSheet('limits')}
           />
@@ -329,48 +342,41 @@ export default function Settings() {
           <SettingButton
             icon={
               isBalanceVisible ? (
-                <Eye size={26} color="#121212" />
+                <Eye size={22} color="#121212" />
               ) : (
-                <EyeOff size={26} color="#121212" />
+                <EyeOff size={22} color="#121212" />
               )
             }
             label="Privacy"
             onPress={() => setActiveSheet('privacy')}
           />
           <SettingButton
-            icon={<Vibrate size={26} color="#121212" />}
+            icon={<Vibrate size={22} color="#121212" />}
             label="Haptics"
             onPress={() => setActiveSheet('haptics')}
           />
           <SettingButton
-            icon={<Lock size={26} color="#121212" />}
+            icon={<Lock size={22} color="#121212" />}
             label="App Lock"
             onPress={() => setActiveSheet('lockOnResume')}
           />
           <SettingButton
-            icon={<Bell size={26} color="#121212" />}
+            icon={<Bell size={22} color="#121212" />}
             label="Notifications"
             onPress={() => router.push('/settings-notifications')}
           />
           <SettingButton
-            icon={<Sun size={26} color="#121212" />}
+            icon={<Sun size={22} color="#121212" />}
             label="Theme"
-            onPress={() =>
-              Alert.alert(
-                'Coming Soon',
-                'Theme switching will be available once dark and light mode are fully implemented.'
-              )
-            }
+            onPress={() => showInfo('Coming Soon', 'Theme switching will be available once dark and light mode are fully implemented.')}
           />
           <SettingButton
-            icon={<Globe size={26} color="#121212" />}
+            icon={<Globe size={22} color="#121212" />}
             label="Language"
-            onPress={() =>
-              Alert.alert('Coming Soon', 'Language selection will be available in a future update.')
-            }
+            onPress={() => showInfo('Coming Soon', 'Language selection will be available in a future update.')}
           />
           <SettingButton
-            icon={<Globe size={26} color="#121212" />}
+            icon={<Globe size={22} color="#121212" />}
             label="Currency"
             onPress={() => setActiveSheet('currency')}
           />
@@ -378,23 +384,25 @@ export default function Settings() {
 
         <Section title="Security">
           <SettingButton
-            icon={<Shield size={26} color="#121212" />}
+            icon={<Shield size={22} color="#121212" />}
             label="PIN"
             onPress={() => setActiveSheet('pin')}
           />
-          <SettingButton
-            icon={<KeyRound size={26} color="#121212" />}
-            label="Passkeys"
-            onPress={() => router.push('/passkey-settings')}
-          />
-          <SettingButton icon={<ShieldCheck size={26} color="#121212" />} label="2-Factor Auth" />
+          {Passkey.isSupported() && (
+            <SettingButton
+              icon={<KeyRound size={22} color="#121212" />}
+              label="Passkeys"
+              onPress={() => router.push('/passkey-settings')}
+            />
+          )}
+          <SettingButton icon={<ShieldCheck size={22} color="#121212" />} label="2-Factor Auth" />
         </Section>
 
         <Section title="More">
-          <SettingButton icon={<Users size={26} color="#121212" />} label="Referrals" />
-          <SettingButton icon={<Scale size={26} color="#121212" />} label="Legal" />
+          <SettingButton icon={<Users size={22} color="#121212" />} label="Referrals" />
+          <SettingButton icon={<Scale size={22} color="#121212" />} label="Legal" />
           <SettingButton
-            icon={<HeadphonesIcon size={26} color="#121212" />}
+            icon={<HeadphonesIcon size={22} color="#121212" />}
             label="Support"
             onPress={() => gleap.open()}
           />
@@ -402,13 +410,13 @@ export default function Settings() {
 
         <Section title="Account">
           <SettingButton
-            icon={<LogOut size={26} color="#F44336" />}
+            icon={<LogOut size={22} color="#F44336" />}
             label="Logout"
             danger
             onPress={() => setActiveSheet('logout')}
           />
           <SettingButton
-            icon={<Trash2 size={26} color="#F44336" />}
+            icon={<Trash2 size={22} color="#F44336" />}
             label="Delete Account"
             danger
             onPress={() => setActiveSheet('delete')}
@@ -532,7 +540,7 @@ export default function Settings() {
       <BottomSheet visible={activeSheet === 'currency'} onClose={closeSheet}>
         <View className="mb-4 flex-row items-center justify-between">
           <Text className="font-subtitle text-xl">Display Currency</Text>
-          <TouchableOpacity
+          <Pressable
             className="h-9 w-9 items-center justify-center rounded-full bg-surface"
             disabled={isCurrencyRatesRefreshing}
             onPress={() => void refreshCurrencyRates({ forceRefresh: true })}
@@ -542,7 +550,7 @@ export default function Settings() {
             ) : (
               <RefreshCw size={16} color="#111827" />
             )}
-          </TouchableOpacity>
+          </Pressable>
         </View>
         <Text className="mb-1 font-body text-sm text-text-secondary">
           Balances are converted instantly using cached FX rates.

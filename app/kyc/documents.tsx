@@ -1,6 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,34 +8,30 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
-import {
-  Camera,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  RotateCcw,
-  ShieldCheck,
-  Trash2,
-  Upload,
-} from 'lucide-react-native';
+import { Check, ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { InputField } from '@/components/atoms/InputField';
-import { CameraOverlay } from '@/components/sheets/CameraOverlay';
 import { Button } from '@/components/ui';
 import {
   COUNTRY_KYC_REQUIREMENTS,
   COUNTRY_LABELS,
   COUNTRY_TAX_CONFIG,
+  EMPLOYMENT_STATUS_OPTIONS,
+  INVESTMENT_PURPOSE_OPTIONS,
   validateTaxId,
+  type KycDisclosures,
 } from '@/api/types/kyc';
-import {
-  documentRequiresBack,
-  useKycStore,
-  type CaptureSide,
-  type CapturedDocument,
-} from '@/stores/kycStore';
+import { useKycStore } from '@/stores/kycStore';
+import { useStartSumsubSession } from '@/api/hooks/useKYC';
+
+const DISCLOSURE_COPY: Record<keyof KycDisclosures, string> = {
+  is_control_person: 'I am a control person of a publicly traded company.',
+  is_affiliated_exchange_or_finra: 'I am affiliated with a stock exchange or FINRA member.',
+  is_politically_exposed: 'I am a politically exposed person (PEP).',
+  immediate_family_exposed: 'An immediate family member is a politically exposed person.',
+};
 
 export default function KycDocumentsScreen() {
   const insets = useSafeAreaInsets();
@@ -44,61 +39,70 @@ export default function KycDocumentsScreen() {
     country,
     taxIdType,
     taxId,
-    documentType,
-    frontDoc,
-    backDoc,
+    employmentStatus,
+    investmentPurposes,
+    disclosures,
+    disclosuresConfirmed,
     setTaxIdType,
     setTaxId,
-    setDocumentType,
-    setDocument,
+    setEmploymentStatus,
+    toggleInvestmentPurpose,
+    setDisclosure,
+    setDisclosuresConfirmed,
+    setSumsubSession,
   } = useKycStore();
 
-  const [captureTarget, setCaptureTarget] = useState<CaptureSide | null>(null);
   const [taxIdError, setTaxIdError] = useState('');
-  const [documentError, setDocumentError] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
-  const requirement = COUNTRY_KYC_REQUIREMENTS[country];
+  const startSession = useStartSumsubSession();
   const taxConfigs = COUNTRY_TAX_CONFIG[country];
-  const activeTaxConfig = taxConfigs.find((item) => item.type === taxIdType) ?? taxConfigs[0];
-  const selectedDocument = requirement.acceptedDocuments.find((item) => item.type === documentType);
-  const needsBack = documentRequiresBack(country, documentType);
+  const activeTaxConfig = taxConfigs.find((c) => c.type === taxIdType) ?? taxConfigs[0];
+  const requirement = COUNTRY_KYC_REQUIREMENTS[country];
+  const requiredDisclosureKeys = requirement.requiredDisclosures;
 
-  const canContinue = useMemo(
-    () => Boolean(taxId.trim()) && Boolean(frontDoc) && (!needsBack || Boolean(backDoc)),
-    [backDoc, frontDoc, needsBack, taxId]
-  );
+  const buildDisclosures = useCallback((): KycDisclosures => {
+    const base: KycDisclosures = {
+      is_control_person: false,
+      is_affiliated_exchange_or_finra: false,
+      is_politically_exposed: false,
+      immediate_family_exposed: false,
+    };
+    requiredDisclosureKeys.forEach((key) => {
+      base[key] = disclosures[key];
+    });
+    return base;
+  }, [disclosures, requiredDisclosureKeys]);
 
-  const handleContinue = () => {
-    const taxValidationError = validateTaxId(country, taxIdType, taxId);
-    if (taxValidationError) {
-      setTaxIdError(taxValidationError);
+  const canContinue =
+    taxId.trim().length > 0 &&
+    Boolean(employmentStatus) &&
+    investmentPurposes.length > 0 &&
+    disclosuresConfirmed &&
+    !startSession.isPending;
+
+  const handleContinue = useCallback(async () => {
+    const taxError = validateTaxId(country, taxIdType, taxId);
+    if (taxError) {
+      setTaxIdError(taxError);
       return;
     }
-
-    if (!frontDoc || (needsBack && !backDoc)) {
-      setDocumentError(
-        needsBack
-          ? 'Upload front and back of your selected document to continue.'
-          : 'Upload your document photo to continue.'
-      );
-      return;
-    }
-
     setTaxIdError('');
-    setDocumentError('');
-    router.push('/kyc/disclosures');
-  };
+    setSubmitError('');
 
-  const openCapture = (side: CaptureSide) => {
-    setDocumentError('');
-    setCaptureTarget(side);
-  };
-
-  const handleCaptureComplete = (document: CapturedDocument) => {
-    if (captureTarget) setDocument(captureTarget, document);
-    setCaptureTarget(null);
-    setDocumentError('');
-  };
+    try {
+      const result = await startSession.mutateAsync({
+        tax_id: taxId,
+        tax_id_type: taxIdType,
+        issuing_country: country,
+        disclosures: buildDisclosures(),
+      });
+      setSumsubSession(result.token, result.applicant_id);
+      router.push('/kyc/sumsub-sdk');
+    } catch {
+      setSubmitError('Could not start verification session. Please try again.');
+    }
+  }, [country, taxId, taxIdType, buildDisclosures, startSession, setSumsubSession]);
 
   return (
     <ErrorBoundary>
@@ -127,49 +131,15 @@ export default function KycDocumentsScreen() {
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 180 }}>
-            <View>
-              <Text className="font-display text-[30px] leading-[34px] text-gray-900">
-                Identity details
-              </Text>
-              <Text className="mt-2 font-body text-[15px] leading-6 text-gray-600">
-                Upload your ID and enter your tax identifier exactly as it appears on official
-                records.
-              </Text>
-            </View>
+            <Text className="font-display text-[30px] leading-[34px] text-gray-900">
+              Identity details
+            </Text>
+            <Text className="mt-2 font-body text-[15px] leading-6 text-gray-600">
+              Enter your tax identifier and complete the required disclosures. Your ID scan happens
+              in the next step.
+            </Text>
 
-            <View className="mt-6">
-              <Text className="mb-2 font-subtitle text-[13px] text-gray-500">Document type</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View className="flex-row gap-2">
-                  {requirement.acceptedDocuments.map((item) => {
-                    const isSelected = item.type === documentType;
-                    return (
-                      <Pressable
-                        key={item.type}
-                        onPress={() => setDocumentType(item.type)}
-                        className={`rounded-full border px-4 py-2.5 ${
-                          isSelected ? 'border-gray-900 bg-gray-900' : 'border-gray-200 bg-white'
-                        }`}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Use ${item.label}`}>
-                        <Text
-                          className={`font-subtitle text-[13px] ${
-                            isSelected ? 'text-white' : 'text-gray-700'
-                          }`}>
-                          {item.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </ScrollView>
-              {!!selectedDocument && (
-                <Text className="mt-2 font-body text-[12px] text-gray-500">
-                  {selectedDocument.description}
-                </Text>
-              )}
-            </View>
-
+            {/* Tax ID type selector */}
             {taxConfigs.length > 1 && (
               <View className="mt-6">
                 <Text className="mb-2 font-subtitle text-[13px] text-gray-500">Tax ID type</Text>
@@ -182,6 +152,7 @@ export default function KycDocumentsScreen() {
                           key={item.type}
                           onPress={() => {
                             setTaxIdType(item.type);
+                            setTaxId('');
                             setTaxIdError('');
                           }}
                           className={`rounded-full border px-4 py-2.5 ${
@@ -203,189 +174,159 @@ export default function KycDocumentsScreen() {
               </View>
             )}
 
+            {/* Tax ID input */}
             <View className="mt-6">
               <InputField
                 label={activeTaxConfig.label}
                 value={taxId}
-                placeholder={activeTaxConfig.placeholder}
-                onChangeText={(value) => {
-                  setTaxId(value);
+                onChangeText={(v) => {
+                  setTaxId(v);
                   if (taxIdError) setTaxIdError('');
                 }}
-                autoCorrect={false}
+                placeholder={activeTaxConfig.placeholder}
                 autoCapitalize="characters"
-                variant="light"
-                error={taxIdError || undefined}
+                error={taxIdError}
+                helperText={activeTaxConfig.helpText}
               />
-              {!taxIdError && !!activeTaxConfig.helpText && (
-                <Text className="mt-2 font-body text-[12px] text-gray-500">
-                  {activeTaxConfig.helpText}
-                </Text>
-              )}
             </View>
 
-            <View className="mt-6">
-              <Text className="mb-2 font-subtitle text-[13px] text-gray-500">Document upload</Text>
-              <DocumentUploadCard
-                label="Front of document"
-                required
-                document={frontDoc}
-                onCapture={() => openCapture('front')}
-                onRemove={() => setDocument('front', null)}
-              />
-              {needsBack && (
-                <DocumentUploadCard
-                  label="Back of document"
-                  required
-                  document={backDoc}
-                  onCapture={() => openCapture('back')}
-                  onRemove={() => setDocument('back', null)}
-                />
-              )}
-              {!needsBack && (
-                <View className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                  <Text className="font-body text-[12px] leading-5 text-emerald-800">
-                    Back photo is not required for {selectedDocument?.label || 'this document type'}
-                    .
+            {/* Employment status */}
+            <View className="mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-4">
+              <Text className="mb-3 font-subtitle text-[14px] text-gray-900">About you</Text>
+              {EMPLOYMENT_STATUS_OPTIONS.map((option, index) => {
+                const selected = employmentStatus === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => setEmploymentStatus(option.value)}
+                    className={`flex-row items-center justify-between py-3 ${
+                      index < EMPLOYMENT_STATUS_OPTIONS.length - 1 ? 'border-b border-gray-100' : ''
+                    }`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Employment status ${option.label}`}>
+                    <Text className="font-body text-[14px] text-gray-800">{option.label}</Text>
+                    <View
+                      className={`size-5 rounded-full border ${
+                        selected ? 'border-gray-900 bg-gray-900' : 'border-gray-300 bg-white'
+                      }`}
+                    />
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Investing goals */}
+            <View className="mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-4">
+              <Text className="mb-3 font-subtitle text-[14px] text-gray-900">Investing goals</Text>
+              <Text className="mb-3 font-body text-[12px] text-gray-500">Select all that apply.</Text>
+              {INVESTMENT_PURPOSE_OPTIONS.map((option, index) => {
+                const selected = investmentPurposes.includes(option.value);
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => toggleInvestmentPurpose(option.value)}
+                    className={`flex-row items-center justify-between py-3 ${
+                      index < INVESTMENT_PURPOSE_OPTIONS.length - 1 ? 'border-b border-gray-100' : ''
+                    }`}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
+                    accessibilityLabel={`Investing goal ${option.label}`}>
+                    <Text className="mr-4 flex-1 font-body text-[14px] text-gray-800">
+                      {option.label}
+                    </Text>
+                    <View
+                      className={`size-5 items-center justify-center rounded ${
+                        selected ? 'bg-gray-900' : 'border border-gray-300 bg-white'
+                      }`}>
+                      {selected ? <Check size={12} color="#FFFFFF" strokeWidth={3} /> : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Regulatory disclosures */}
+            <View className="mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-4">
+              <Text className="mb-2 font-subtitle text-[14px] text-gray-900">
+                Regulatory declarations
+              </Text>
+              <Text className="mb-3 font-body text-[12px] text-gray-500">
+                Required for {COUNTRY_LABELS[country]} account compliance.
+              </Text>
+              {requiredDisclosureKeys.map((key, index) => (
+                <View
+                  key={key}
+                  className={`py-3 ${index < requiredDisclosureKeys.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                  <Text className="font-body text-[13px] leading-5 text-gray-800">
+                    {DISCLOSURE_COPY[key]}
                   </Text>
+                  <View className="mt-2 flex-row gap-2">
+                    {(['No', 'Yes'] as const).map((label) => {
+                      const isYes = label === 'Yes';
+                      const isActive = disclosures[key] === isYes;
+                      return (
+                        <Pressable
+                          key={label}
+                          onPress={() => setDisclosure(key, isYes)}
+                          className={`min-h-[44px] flex-1 items-center justify-center rounded-full border ${
+                            isActive ? 'border-gray-900 bg-gray-900' : 'border-gray-200 bg-white'
+                          }`}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Answer ${label} for ${DISCLOSURE_COPY[key]}`}>
+                          <Text
+                            className={`font-subtitle text-[13px] ${
+                              isActive ? 'text-white' : 'text-gray-700'
+                            }`}>
+                            {label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
                 </View>
-              )}
-              {!!documentError && (
-                <Text className="mt-2 font-body text-[12px] text-red-600">{documentError}</Text>
-              )}
+              ))}
             </View>
 
-            <View className="mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-4">
-              <View className="flex-row items-center gap-2">
-                <ShieldCheck size={18} color="#111827" />
-                <Text className="font-subtitle text-[14px] text-gray-900">
-                  Upload quality checklist
-                </Text>
+            {/* Confirmation checkbox */}
+            <Pressable
+              onPress={() => {
+                setDisclosuresConfirmed(!disclosuresConfirmed);
+                if (submitError) setSubmitError('');
+              }}
+              className="mt-6 flex-row items-start gap-3 rounded-2xl bg-gray-100 px-4 py-4"
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: disclosuresConfirmed }}
+              accessibilityLabel="Confirm KYC declaration">
+              <View
+                className={`mt-0.5 size-5 items-center justify-center rounded border ${
+                  disclosuresConfirmed ? 'border-gray-900 bg-gray-900' : 'border-gray-400 bg-white'
+                }`}>
+                {disclosuresConfirmed ? <Check size={12} color="#FFFFFF" strokeWidth={3} /> : null}
               </View>
-              <View className="mt-3 gap-y-2.5">
-                {requirement.uploadTips.map((tip) => (
-                  <Text key={tip} className="font-body text-[12px] leading-5 text-gray-600">
-                    • {tip}
-                  </Text>
-                ))}
-              </View>
-            </View>
+              <Text className="flex-1 font-body text-[12px] leading-5 text-gray-700">
+                I confirm all submitted information is accurate and belongs to me.
+              </Text>
+            </Pressable>
 
-            <View className="mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-4">
-              <Text className="font-subtitle text-[14px] text-gray-900">Submission preview</Text>
-              <PreviewRow label="Country" value={COUNTRY_LABELS[country]} />
-              <PreviewRow label="Tax ID type" value={activeTaxConfig.label} />
-              <PreviewRow label="Document" value={selectedDocument?.label || 'Not selected'} />
-              <PreviewRow label="Front photo" value={frontDoc ? 'Attached' : 'Missing'} />
-              <PreviewRow
-                label="Back photo"
-                value={needsBack ? (backDoc ? 'Attached' : 'Missing') : 'Not required'}
-                isLast
-              />
-            </View>
+            {!!submitError && (
+              <View className="mt-3 rounded-2xl bg-red-50 px-4 py-3">
+                <Text className="font-body text-[12px] leading-5 text-red-700">{submitError}</Text>
+              </View>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
 
         <View
           className="absolute bottom-0 left-0 right-0 border-t border-gray-100 bg-white px-4 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
-          <Button title="Continue" onPress={handleContinue} disabled={!canContinue} />
+          <Button
+            title="Continue to ID scan"
+            onPress={handleContinue}
+            loading={startSession.isPending}
+            disabled={!canContinue}
+          />
         </View>
       </SafeAreaView>
-
-      <CameraOverlay
-        visible={captureTarget !== null}
-        side={captureTarget || 'front'}
-        onClose={() => setCaptureTarget(null)}
-        onComplete={handleCaptureComplete}
-      />
     </ErrorBoundary>
-  );
-}
-
-function PreviewRow({
-  label,
-  value,
-  isLast = false,
-}: {
-  label: string;
-  value: string;
-  isLast?: boolean;
-}) {
-  return (
-    <View
-      className={`flex-row items-center justify-between py-3 ${isLast ? '' : 'border-b border-gray-100'}`}>
-      <Text className="font-body text-[12px] text-gray-500">{label}</Text>
-      <Text className="max-w-[58%] text-right font-subtitle text-[13px] text-gray-900">
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function DocumentUploadCard({
-  label,
-  required,
-  document,
-  onCapture,
-  onRemove,
-}: {
-  label: string;
-  required: boolean;
-  document: CapturedDocument | null;
-  onCapture: () => void;
-  onRemove: () => void;
-}) {
-  if (document) {
-    return (
-      <View className="mt-3 overflow-hidden rounded-2xl border border-gray-200 bg-white">
-        <Image source={{ uri: document.dataUri }} resizeMode="cover" className="h-40 w-full" />
-        <View className="flex-row items-center justify-between px-4 py-3">
-          <View className="flex-row items-center gap-2">
-            <CheckCircle2 size={18} color="#059669" />
-            <Text className="font-subtitle text-[14px] text-gray-900">{label}</Text>
-          </View>
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={onCapture}
-              className="size-11 items-center justify-center rounded-full bg-gray-100"
-              accessibilityRole="button"
-              accessibilityLabel={`Retake ${label}`}>
-              <RotateCcw size={16} color="#4B5563" />
-            </Pressable>
-            <Pressable
-              onPress={onRemove}
-              className="size-11 items-center justify-center rounded-full bg-red-50"
-              accessibilityRole="button"
-              accessibilityLabel={`Remove ${label}`}>
-              <Trash2 size={16} color="#DC2626" />
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    );
-  }
-
-  return (
-    <Pressable
-      onPress={onCapture}
-      className="mt-3 rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-5"
-      accessibilityRole="button"
-      accessibilityLabel={`Upload ${label}`}>
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center gap-3">
-          <View className="size-11 items-center justify-center rounded-full bg-white">
-            {required ? <Camera size={20} color="#111827" /> : <Upload size={20} color="#111827" />}
-          </View>
-          <View>
-            <Text className="font-subtitle text-[14px] text-gray-900">{label}</Text>
-            <Text className="mt-1 font-body text-[12px] text-gray-500">
-              {required ? 'Required' : 'Optional'} • Tap to capture or upload
-            </Text>
-          </View>
-        </View>
-        <ChevronRight size={18} color="#9CA3AF" />
-      </View>
-    </Pressable>
   );
 }

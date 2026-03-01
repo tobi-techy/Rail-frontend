@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { StatusBar, Text, TouchableOpacity, View } from 'react-native';
+import { StatusBar, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { Pressable } from 'react-native';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { BankIcon, CoinIcon } from '@/assets/svg/filled';
 import { useKycGate } from '@/hooks/useKycGate';
 import { useKYCStatus } from '@/api/hooks';
 import { KYCVerificationSheet } from '@/components/sheets';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 function WithdrawOptionCard({
   title,
@@ -22,17 +26,21 @@ function WithdrawOptionCard({
   icon: React.ReactNode;
   accessibilityLabel: string;
 }) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <TouchableOpacity
+    <AnimatedPressable
+      style={animStyle}
       className="rounded-3xl bg-surface px-5 py-5"
       onPress={onPress}
-      activeOpacity={0.75}
+      onPressIn={() => { scale.value = withSpring(0.97, { damping: 20, stiffness: 300 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}>
       <View className="mb-4 size-12 items-center justify-center rounded-2xl bg-white">{icon}</View>
       <Text className="font-subtitle text-[20px] text-text-primary">{title}</Text>
       <Text className="mt-1 font-body text-[14px] text-text-secondary">{subtitle}</Text>
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }
 
@@ -48,14 +56,13 @@ export default function WithdrawMethodSelectorScreen() {
 
         <View className="flex-1 px-5">
           <View className="flex-row items-center pb-2 pt-1">
-            <TouchableOpacity
+            <Pressable
               className="size-11 items-center justify-center rounded-full bg-surface"
               onPress={() => router.back()}
-              activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Go back">
               <ArrowLeft size={20} color="#111827" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <View className="mt-4">

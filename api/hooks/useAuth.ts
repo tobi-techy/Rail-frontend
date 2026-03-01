@@ -315,3 +315,81 @@ export function useAppleSignIn() {
       },
       });
       }
+
+/**
+ * Google Sign-In mutation (Android)
+ * Requires EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to be set.
+ */
+export function useGoogleSignIn() {
+  const { track, identify } = useAnalytics();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { GoogleSignin, statusCodes } = await import(
+        '@react-native-google-signin/google-signin'
+      );
+
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      });
+
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      const response = await GoogleSignin.signIn();
+
+      if (response.type !== 'success') {
+        throw Object.assign(new Error('Google Sign-In cancelled'), { code: statusCodes.SIGN_IN_CANCELLED });
+      }
+
+      const idToken = response.data?.idToken;
+      if (!idToken) {
+        throw new Error('Google ID token missing');
+      }
+
+      return authService.socialLogin({
+        provider: 'google',
+        idToken,
+        givenName: response.data?.user?.givenName ?? undefined,
+        familyName: response.data?.user?.familyName ?? undefined,
+      });
+    },
+    onSuccess: async (response) => {
+      const nowIso = new Date().toISOString();
+
+      useAuthStore.setState({
+        user: response.user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        isAuthenticated: true,
+        pendingVerificationEmail: null,
+        onboardingStatus: response.user.onboardingStatus || null,
+        lastActivityAt: nowIso,
+        tokenIssuedAt: nowIso,
+        tokenExpiresAt: response.expiresAt,
+      });
+
+      grantPostLoginPasscodeSession();
+      await syncPasscodeStatus();
+
+      track(ANALYTICS_EVENTS.SIGN_IN_COMPLETED, {
+        user_id: response.user.id,
+        email: response.user.email,
+        provider: 'google',
+        onboarding_status: response.user.onboardingStatus,
+      });
+
+      if (response.user.id) {
+        identify(response.user.id, {
+          email: response.user.email,
+          first_name: response.user.firstName,
+          last_name: response.user.lastName,
+          auth_provider: 'google',
+        });
+      }
+
+      invalidateQueries.auth();
+      invalidateQueries.wallet();
+      invalidateQueries.user();
+    },
+  });
+}

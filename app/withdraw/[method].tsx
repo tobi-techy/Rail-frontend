@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, StatusBar, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Platform, StatusBar, Text, Pressable, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Passkey } from 'react-native-passkey';
@@ -93,6 +93,7 @@ export default function WithdrawAmountScreen() {
   const [didTryContinue, setDidTryContinue] = useState(false);
   const [isDetailsSheetVisible, setIsDetailsSheetVisible] = useState(false);
   const [destinationInput, setDestinationInput] = useState(prefilledAssetSymbol);
+  const [destinationChain, setDestinationChain] = useState('SOL-DEVNET');
   const [didTryDestination, setDidTryDestination] = useState(false);
   const [isAuthorizeScreenVisible, setIsAuthorizeScreenVisible] = useState(false);
   const [isSubmissionSheetVisible, setIsSubmissionSheetVisible] = useState(false);
@@ -217,6 +218,7 @@ export default function WithdrawAmountScreen() {
     selectedMethod,
     numericAmount,
     destinationInput,
+    destinationChain,
     isFundFlow,
     onStartMobileWalletFunding: () => {
       setIsAuthorizeScreenVisible(false);
@@ -446,14 +448,13 @@ export default function WithdrawAmountScreen() {
             entering={FadeIn.duration(400)}
             style={headerAnimatedStyle}
             className="flex-row items-center justify-between pb-2 pt-1">
-            <TouchableOpacity
+            <Pressable
               className="size-11 items-center justify-center rounded-full bg-white/20"
               onPress={() => router.back()}
-              activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Close withdraw flow">
               <X size={20} color="#FFFFFF" />
-            </TouchableOpacity>
+            </Pressable>
             <Text className="font-subtitle text-[20px] text-white">{flowTitle}</Text>
             <View className="size-11" />
           </Animated.View>
@@ -491,16 +492,15 @@ export default function WithdrawAmountScreen() {
                     </Text>
                   </Animated.View>
                 )}
-                <TouchableOpacity
+                <Pressable
                   onPress={onMaxPress}
-                  activeOpacity={0.7}
                   className="rounded-full bg-white px-4 py-2"
                   accessibilityRole="button"
                   accessibilityLabel="Set maximum withdrawal amount">
                   <Text className="font-subtitle text-[13px]" style={{ color: BRAND_RED }}>
                     Max
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </Animated.View>
             )}
           </View>
@@ -543,8 +543,11 @@ export default function WithdrawAmountScreen() {
           isFundFlow={isFundFlow}
           isMobileWalletFundingFlow={isMobileWalletFundingFlow}
           isFiatMethod={isFiatMethod}
+          isCryptoMethod={isCryptoDestinationMethod}
           destinationInput={destinationInput}
           onDestinationChange={onDestinationChange}
+          destinationChain={destinationChain}
+          onChainChange={setDestinationChain}
           didTryDestination={didTryDestination}
           destinationError={destinationError}
           fundingError={funding.fundingError}

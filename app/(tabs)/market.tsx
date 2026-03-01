@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import {
   ChevronRight,
@@ -9,7 +10,6 @@ import {
   CircleDollarSign,
   BarChart3,
 } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
 import { InputField } from '@/components/atoms/InputField';
@@ -18,8 +18,11 @@ import { useUIStore } from '@/stores';
 import { sanitizeAssets } from '@/utils/market';
 import { MarketAssetRow } from '@/components/market/MarketAssetRow';
 import { MarketNewsCard } from '@/components/market/MarketNewsCard';
+import { useHaptics } from '@/hooks/useHaptics';
 import { MarketCategoryCard } from '@/components/market/MarketCategoryCard';
 import { useMarketFilters, SORT_OPTIONS, TYPE_OPTIONS } from '@/hooks/useMarketFilters';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 function FilterChip({
   label,
@@ -30,16 +33,22 @@ function FilterChip({
   active: boolean;
   onPress: () => void;
 }) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const { impact } = useHaptics();
   return (
-    <Pressable
-      onPress={onPress}
+    <AnimatedPressable
+      style={animStyle}
+      onPress={() => { impact(); onPress(); }}
+      onPressIn={() => { scale.value = withSpring(0.93, { damping: 20, stiffness: 300 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}
       accessibilityRole="button"
       accessibilityLabel={label}
       className={`mr-2 min-h-[44px] rounded-full px-4 py-3 ${active ? 'bg-black' : 'bg-surface'}`}>
       <Text className={`font-body text-caption ${active ? 'text-white' : 'text-text-primary'}`}>
         {label}
       </Text>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -129,7 +138,7 @@ export default function MarketScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background-main" edges={['top']}>
+    <View className="flex-1 bg-background-main">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}>
@@ -390,6 +399,6 @@ export default function MarketScreen() {
           </View>
         </View>
       </BottomSheet>
-    </SafeAreaView>
+    </View>
   );
 }

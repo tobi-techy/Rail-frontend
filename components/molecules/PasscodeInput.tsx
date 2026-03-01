@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ViewProps } from 'react-native';
 import { Icon } from '../atoms/Icon';
 import { Keypad } from './Keypad';
+import { haptics } from '@/utils/haptics';
 
 export type PasscodeInputStatus = 'empty' | 'default' | 'error' | 'success';
 
@@ -66,11 +67,11 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
   const handleKeyPress = useCallback(
     (key: string) => {
       if (key === 'backspace') {
-        if (passcode.length > 0) setPasscode(passcode.slice(0, -1));
+        if (passcode.length > 0) { haptics.tap(); setPasscode(passcode.slice(0, -1)); }
       } else if (key === 'fingerprint') {
         onFingerprint?.();
       } else if (key.match(/^[0-9]$/)) {
-        if (passcode.length < length) setPasscode(passcode + key);
+        if (passcode.length < length) { haptics.tap(); setPasscode(passcode + key); }
       }
     },
     [passcode, length, setPasscode, onFingerprint]

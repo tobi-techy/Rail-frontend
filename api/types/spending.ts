@@ -91,6 +91,7 @@ export interface SpendingTransaction {
   direction?: 'debit' | 'credit';
   currency: string;
   description: string;
+  destination_address?: string;
   merchant?: {
     name: string;
     logo_url: string | null;

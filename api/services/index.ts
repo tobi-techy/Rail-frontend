@@ -16,6 +16,7 @@ export { allocationService } from './allocation.service';
 export { passkeyService } from './passkey.service';
 export { marketService } from './market.service';
 export { investmentService } from './investment.service';
+export { notificationService } from './notification.service';
 
 // Re-export for convenience
 export { default as auth } from './auth.service';
@@ -30,3 +31,4 @@ export { default as funding } from './funding.service';
 export { default as allocation } from './allocation.service';
 export { default as market } from './market.service';
 export { default as investment } from './investment.service';
+export { default as notification } from './notification.service';

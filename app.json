@@ -46,6 +46,7 @@
       "expo-web-browser",
       "expo-video",
       "expo-apple-authentication",
+      "@react-native-google-signin/google-signin",
       "expo-localization"
     ],
     "experiments": {
@@ -96,7 +97,12 @@
         "backgroundColor": "#FF2E01"
       },
       "package": "com.railmoney.rail",
-      "permissions": ["android.permission.USE_BIOMETRIC", "android.permission.USE_FINGERPRINT"]
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "extra": {
       "router": {},

@@ -2,12 +2,13 @@ import { router } from 'expo-router';
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import {
   View,
-  Text,
   FlatList,
+  StyleSheet,
   useWindowDimensions,
   StatusBar,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Platform,
 } from 'react-native';
 import { AppleLogo } from '../assets/svg';
 import { Button } from '@/components/ui';
@@ -20,46 +21,44 @@ import Animated, {
   Extrapolation,
 } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { useAppleSignIn } from '@/api/hooks/useAuth';
+import { useAppleSignIn, useGoogleSignIn } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { ROUTES } from '@/constants/routes';
 import { getPostAuthRoute } from '@/utils/onboardingFlow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FONT_FAMILIES } from '@/constants/fonts';
 import { onboardingSlides, SLIDE_INTERVAL } from './intro/onboardingSlides';
 import { ActiveVideoSlide } from './intro/ActiveVideoSlide';
 import { SlideContent } from './intro/SlideContent';
 import type { OnboardingSlide } from './intro/onboardingSlides';
+import Svg, { Path, G } from 'react-native-svg';
+
+const GoogleLogo = () => (
+  <Svg width={20} height={20} viewBox="0 0 48 48">
+    <G>
+      <Path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <Path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <Path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <Path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </G>
+  </Svg>
+);
 
 const StaticSlide = memo(function StaticSlide({
-  item,
   width,
   height,
-  topInset,
-  isCompactWidth,
 }: {
   item: OnboardingSlide;
   width: number;
   height: number;
-  topInset: number;
-  isCompactWidth: boolean;
 }) {
   return (
     <View className="flex-1 overflow-hidden bg-black" style={{ width }}>
       <View
         pointerEvents="none"
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width,
-          height,
-          backgroundColor: 'rgba(0,0,0,0.48)',
-        }}
+        style={[
+          StyleSheet.absoluteFillObject,
+          { width, height, backgroundColor: 'rgba(0,0,0,0.55)' },
+        ]}
       />
-      <SlideContent item={item} topInset={topInset} isCompactWidth={isCompactWidth} />
     </View>
   );
 });
@@ -96,9 +95,14 @@ export default function App() {
   const progress = useSharedValue(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { mutate: appleSignIn } = useAppleSignIn();
+  const { mutate: googleSignIn } = useGoogleSignIn();
   const { showError } = useFeedbackPopup();
-  const footerBottom = Math.max(insets.bottom, 16) + 12;
-  const progressBottom = footerBottom + (isCompactWidth ? 182 : 168);
+
+  const footerBottom = Math.max(insets.bottom, 16) + 0.55;
+  // buttons height ~108px (2 × large button + gap), content sits 16px above that
+  const contentBottom = footerBottom + 108 + 16;
+  // progress bar sits 12px above content
+  const progressBottom = contentBottom + 80 + 12;
 
   const clampIndex = useCallback(
     (i: number) => Math.min(onboardingSlides.length - 1, Math.max(0, i)),
@@ -151,24 +155,14 @@ export default function App() {
   const renderItem = useCallback(
     ({ item, index }: { item: OnboardingSlide; index: number }) =>
       index === currentIndex ? (
-        <ActiveVideoSlide
-          item={item}
-          width={width}
-          height={height}
-          topInset={insets.top}
-          isCompactWidth={isCompactWidth}
-        />
+        <ActiveVideoSlide item={item} width={width} height={height} />
       ) : (
-        <StaticSlide
-          item={item}
-          width={width}
-          height={height}
-          topInset={insets.top}
-          isCompactWidth={isCompactWidth}
-        />
+        <StaticSlide item={item} width={width} height={height} />
       ),
-    [currentIndex, height, insets.top, isCompactWidth, width]
+    [currentIndex, height, width]
   );
+
+  const currentSlide = onboardingSlides[currentIndex];
 
   return (
     <ErrorBoundary>
@@ -194,63 +188,50 @@ export default function App() {
           removeClippedSubviews
         />
 
-        <View className="absolute left-4 right-4" style={{ bottom: progressBottom }}>
-          <View className="flex-row" style={{ columnGap: 8 }}>
-            {onboardingSlides.map((slide, index) => (
-              <IndicatorBar
-                key={slide.key}
-                index={index}
-                currentIndex={currentIndex}
-                progress={progress}
-              />
-            ))}
-          </View>
+        {/* Slide text — above buttons */}
+        <View className="absolute left-0 right-0 mb-3" style={{ bottom: contentBottom }}>
+          {currentSlide && <SlideContent item={currentSlide} isCompactWidth={isCompactWidth} />}
         </View>
 
-        <View className="absolute left-4 right-4" style={{ bottom: footerBottom }}>
-          <View className="rounded-3xl border border-white/20 bg-black/70 px-4 py-4">
-            <Text
-              style={{
-                color: '#FFFFFF',
-                fontFamily: FONT_FAMILIES.SF_PRO_ROUNDED.SEMIBOLD,
-                fontSize: 16,
-                lineHeight: 20,
-              }}>
-              Enter RAIL and set your money system in motion.
-            </Text>
-            <View style={{ marginTop: 12, rowGap: 8 }}>
-              <Button
-                title="Continue with Mail"
-                size="large"
-                onPress={() => router.push(ROUTES.AUTH.SIGNUP as never)}
-                variant="orange"
-              />
-              <Button
-                title="Sign Up with Apple"
-                leftIcon={<AppleLogo width={20} height={20} />}
-                size="small"
-                onPress={() => {
-                  appleSignIn(undefined, {
-                    onSuccess: (resp) =>
-                      router.replace(getPostAuthRoute(resp.user?.onboardingStatus) as never),
-                    onError: () =>
-                      showError('Apple Sign-In Failed', 'Please try again or use email sign in.'),
-                  });
-                }}
-                variant="white"
-              />
-            </View>
-            <Text
-              style={{
-                color: '#D1D1D1',
-                fontFamily: FONT_FAMILIES.SF_PRO_ROUNDED.REGULAR,
-                fontSize: 12,
-                lineHeight: 17,
-                marginTop: 10,
-              }}>
-              By continuing, you agree to your account setup and onboarding preferences.
-            </Text>
-          </View>
+        {/* CTA buttons */}
+        <View className="absolute w-full gap-x-2 px-2" style={{ bottom: footerBottom }}>
+          {Platform.OS === 'android' ? (
+            <Button
+              title="Sign Up with Google"
+              leftIcon={<GoogleLogo />}
+              size="large"
+              onPress={() => {
+                googleSignIn(undefined, {
+                  onSuccess: (resp) =>
+                    router.replace(getPostAuthRoute(resp.user?.onboardingStatus) as never),
+                  onError: () =>
+                    showError('Google Sign-In Failed', 'Please try again or use email sign in.'),
+                });
+              }}
+              variant="white"
+            />
+          ) : (
+            <Button
+              title="Sign Up with Apple"
+              leftIcon={<AppleLogo width={20} height={20} />}
+              size="large"
+              onPress={() => {
+                appleSignIn(undefined, {
+                  onSuccess: (resp) =>
+                    router.replace(getPostAuthRoute(resp.user?.onboardingStatus) as never),
+                  onError: () =>
+                    showError('Apple Sign-In Failed', 'Please try again or use email sign in.'),
+                });
+              }}
+              variant="white"
+            />
+          )}
+          <Button
+            title="Signup with with mail"
+            size="large"
+            onPress={() => router.push('/(auth)/signup')}
+            variant="ghost"
+          />
         </View>
       </View>
     </ErrorBoundary>

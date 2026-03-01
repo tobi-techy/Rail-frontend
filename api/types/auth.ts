@@ -108,7 +108,7 @@ export interface DeleteAccountRequest {
 
 // ============= Social Authentication Types =============
 
-export type SocialProvider = 'apple';
+export type SocialProvider = 'apple' | 'google';
 
 export interface SocialLoginRequest {
   provider: SocialProvider;

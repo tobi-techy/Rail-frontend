@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import Animated, { useSharedValue, withSpring, useAnimatedStyle } from 'react-native-reanimated';
-import { Ellipsis, ScanSearch } from 'lucide-react-native';
+import { ScanSearch } from 'lucide-react-native';
 import { Icon } from '@/components/atoms/Icon';
 import { useHaptics } from '@/hooks/useHaptics';
 
@@ -32,16 +32,12 @@ const PAD = 16;
 export function PeriodSelector({
   selected,
   onSelect,
-  onSettings,
 }: {
   selected: Period;
   onSelect: (p: Period) => void;
-  onSettings: () => void;
 }) {
   const { width: sw } = useWindowDimensions();
-  const ELLIPSIS_W = 36;
-  const GAP = 12;
-  const tabsAreaW = sw - PAD * 2 - GAP - ELLIPSIS_W;
+  const tabsAreaW = sw - PAD * 2;
   const tabW = tabsAreaW / PERIODS.length;
   const selectedIdx = PERIODS.indexOf(selected);
 
@@ -53,7 +49,7 @@ export function PeriodSelector({
   const indicatorStyle = useAnimatedStyle(() => ({ transform: [{ translateX: offset.value }] }));
 
   return (
-    <View className="mb-2 mt-4 flex-row items-center gap-3 px-4">
+    <View className="mb-2 mt-4 px-4">
       <View style={{ width: tabsAreaW }}>
         <View className="flex-row">
           {PERIODS.map((p) => (
@@ -78,13 +74,6 @@ export function PeriodSelector({
           />
         </View>
       </View>
-      <Pressable
-        onPress={onSettings}
-        className="h-9 w-9 items-center justify-center"
-        accessibilityRole="button"
-        accessibilityLabel="Display settings">
-        <Ellipsis size={16} color={C.textSub} strokeWidth={1.8} />
-      </Pressable>
     </View>
   );
 }
@@ -168,7 +157,7 @@ export function CategoryRow({
           <Text className="mt-0.5 font-caption text-small text-[#8E8E93]">{percentage}%</Text>
         </View>
       </View>
-      {showSep && <View className="ml-[72px] h-px bg-[#E5E5EA]" />}
+      {showSep && <View className="ml-[72px] h-px bg-gray-100" />}
     </View>
   );
 }
@@ -224,7 +213,7 @@ export function TxRow({
           )}
         </View>
       </View>
-      {showSep && <View className="ml-[72px] h-px bg-[#E5E5EA]" />}
+      {showSep && <View className="ml-[72px] h-px bg-gray-100" />}
     </View>
   );
 }

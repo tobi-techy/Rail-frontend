@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft, Plus, Trash2, KeyRound } from 'lucide-react-native';
+import { Passkey } from 'react-native-passkey';
 import { BottomSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
 import { InputField } from '@/components/atoms/InputField';
 import { usePasskeys, useRegisterPasskey, useDeletePasskey } from '@/api/hooks';
 import type { PasskeyCredential } from '@/api/types';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 
 const formatDate = (iso: string | null) => {
   if (!iso) return 'Never';
@@ -22,11 +24,9 @@ const formatDate = (iso: string | null) => {
 function PasskeyRow({
   credential,
   onDelete,
-  onPressDelete,
 }: {
   credential: PasskeyCredential;
-  onDelete: (id: string, name: string) => void;
-  onPressDelete: () => void;
+  onDelete: () => void;
 }) {
   return (
     <View className="bg-surface-secondary mb-3 flex-row items-center rounded-2xl border border-surface p-4">
@@ -41,23 +41,49 @@ function PasskeyRow({
           Last used {formatDate(credential.lastUsedAt)}
         </Text>
       </View>
-      <TouchableOpacity
-        onPress={() => {
-          onPressDelete();
-          onDelete(credential.id, credential.name || 'Passkey');
-        }}
+      <Pressable
+        onPress={onDelete}
         className="ml-2 h-9 w-9 items-center justify-center rounded-full bg-red-50"
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
         <Trash2 size={16} color="#EF4444" />
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }
 
 export default function PasskeySettingsScreen() {
   const [showRegisterSheet, setShowRegisterSheet] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<PasskeyCredential | null>(null);
   const [passkeyName, setPasskeyName] = useState('');
   const { impact, notification } = useHaptics();
+  const { showError } = useFeedbackPopup();
+
+  if (!Passkey.isSupported()) {
+    return (
+      <SafeAreaView className="flex-1 bg-background-main">
+        <View className="flex-row items-center px-4 py-3">
+          <Pressable
+            onPress={() => router.back()}
+            className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-surface"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <ArrowLeft size={20} color="#070914" />
+          </Pressable>
+          <Text className="flex-1 font-subtitle text-headline-1">Passkeys</Text>
+        </View>
+        <View className="flex-1 items-center justify-center px-8">
+          <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-surface">
+            <KeyRound size={24} color="#9CA3AF" />
+          </View>
+          <Text className="mb-2 text-center font-subtitle text-base text-text-primary">
+            Passkeys not supported
+          </Text>
+          <Text className="text-center font-body text-sm text-text-secondary">
+            Passkeys require iOS 16+ or Android with Digital Asset Links configured.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const { data, isLoading, isError } = usePasskeys();
   const credentials = data ?? [];
@@ -91,28 +117,21 @@ export default function PasskeySettingsScreen() {
       setPasskeyName('');
       notification();
     } catch (err: any) {
-      // User cancelled — no alert needed
       if (err?.name === 'NotAllowedError' || err?.message?.includes('cancel')) return;
-      Alert.alert('Registration Failed', getRegistrationErrorMessage(err));
+      showError('Registration Failed', getRegistrationErrorMessage(err));
     }
   };
 
-  const handleDelete = (id: string, name: string) => {
-    Alert.alert('Remove Passkey', `Remove "${name}"? You won't be able to use it to sign in.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deletePasskey(id);
-            notification();
-          } catch (err: any) {
-            Alert.alert('Error', err?.message || 'Failed to remove passkey.');
-          }
-        },
-      },
-    ]);
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deletePasskey(deleteTarget.id);
+      notification();
+    } catch (err: any) {
+      showError('Error', err?.message || 'Failed to remove passkey.');
+    } finally {
+      setDeleteTarget(null);
+    }
   };
 
   const openRegisterSheet = () => {
@@ -124,19 +143,19 @@ export default function PasskeySettingsScreen() {
     <SafeAreaView className="flex-1 bg-background-main">
       {/* Header */}
       <View className="flex-row items-center px-4 py-3">
-        <TouchableOpacity
+        <Pressable
           onPress={() => router.back()}
           className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-surface"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <ArrowLeft size={20} color="#070914" />
-        </TouchableOpacity>
+        </Pressable>
         <Text className="flex-1 font-subtitle text-headline-1">Passkeys</Text>
-        <TouchableOpacity
+        <Pressable
           onPress={openRegisterSheet}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Plus size={20} color="#070914" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 40 }}>
@@ -181,8 +200,7 @@ export default function PasskeySettingsScreen() {
           <PasskeyRow
             key={cred.id}
             credential={cred}
-            onDelete={handleDelete}
-            onPressDelete={() => impact()}
+            onDelete={() => { impact(); setDeleteTarget(cred); }}
           />
         ))}
 
@@ -196,6 +214,25 @@ export default function PasskeySettingsScreen() {
           />
         )}
       </ScrollView>
+
+      {/* Delete confirm sheet */}
+      <BottomSheet visible={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
+        <Text className="mb-2 font-subtitle text-xl">Remove Passkey</Text>
+        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+          Remove &quot;{deleteTarget?.name ?? 'this passkey'}&quot;? You won&apos;t be able to use it to sign in.
+        </Text>
+        <View className="flex-row gap-3">
+          <Button title="Cancel" variant="ghost" onPress={() => setDeleteTarget(null)} flex />
+          <Button
+            title={isDeleting ? '' : 'Remove'}
+            variant="destructive"
+            onPress={handleDeleteConfirm}
+            disabled={isDeleting}
+            flex>
+            {isDeleting && <ActivityIndicator color="#fff" />}
+          </Button>
+        </View>
+      </BottomSheet>
 
       {/* Register sheet */}
       <BottomSheet visible={showRegisterSheet} onClose={() => setShowRegisterSheet(false)}>

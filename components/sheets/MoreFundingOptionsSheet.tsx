@@ -32,7 +32,7 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
           method,
           flow: mode === 'deposit' ? 'fund' : 'send',
         },
-      } as any);
+      } as never);
     });
   };
 
