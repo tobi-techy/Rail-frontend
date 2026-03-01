@@ -12,7 +12,7 @@ export default function CreatePasscodeScreen() {
 
   const handlePasscodeComplete = (code: string) => {
     useAuthStore.setState({ _pendingPasscode: code });
-    router.push(ROUTES.AUTH.CONFIRM_PASSCODE as any);
+    router.push(ROUTES.AUTH.CONFIRM_PASSCODE as never);
   };
 
   return (

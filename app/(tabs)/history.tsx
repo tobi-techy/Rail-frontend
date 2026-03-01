@@ -1,81 +1,17 @@
 import { useNavigation } from 'expo-router';
 import React, { useLayoutEffect, useState, useMemo } from 'react';
-import { Text, View, ScrollView, RefreshControl } from 'react-native';
+import { Text, View, RefreshControl } from 'react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
-import type {
-  Transaction,
-  TransactionType,
-  TransactionStatus,
-} from '@/components/molecules/TransactionItem';
+import type { Transaction } from '@/components/molecules/TransactionItem';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
-import type { Deposit, Withdrawal } from '@/api/types';
+import type { Withdrawal } from '@/api/types';
+import {
+  normalizeWithdrawals,
+  depositToTransaction,
+  withdrawalToTransaction,
+} from '@/utils/transactionNormalizer';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
-
-type WithdrawalListResponse =
-  | Withdrawal[]
-  | {
-      withdrawals?: Withdrawal[];
-    }
-  | undefined;
-
-const STATUS_MAP: Record<string, TransactionStatus> = {
-  completed: 'completed',
-  confirmed: 'completed',
-  success: 'completed',
-  pending: 'pending',
-  processing: 'pending',
-  initiated: 'pending',
-  awaiting_confirmation: 'pending',
-  alpaca_debited: 'pending',
-  bridge_processing: 'pending',
-  onchain_transfer: 'pending',
-  on_chain_transfer: 'pending',
-  failed: 'failed',
-  rejected: 'failed',
-  cancelled: 'failed',
-  canceled: 'failed',
-  error: 'failed',
-  reversed: 'failed',
-  timeout: 'failed',
-};
-
-const normalizeStatus = (status?: string) => (status || '').toLowerCase().trim();
-
-function depositToTransaction(d: Deposit): Transaction {
-  return {
-    id: d.id,
-    type: 'deposit' as TransactionType,
-    title: 'Deposit',
-    subtitle: d.chain ? `${d.currency} · ${d.chain}` : d.currency,
-    amount: parseFloat(d.amount) || 0,
-    currency: d.currency,
-    status: STATUS_MAP[normalizeStatus(d.status)] ?? 'pending',
-    createdAt: new Date(d.created_at),
-    txHash: d.tx_hash,
-  };
-}
-
-function withdrawalToTransaction(w: Withdrawal): Transaction {
-  return {
-    id: w.id,
-    type: 'withdraw' as TransactionType,
-    title: 'Withdrawal',
-    subtitle: w.destination_chain ? `USD · ${w.destination_chain}` : 'USD',
-    amount: parseFloat(w.amount) || 0,
-    currency: 'USD',
-    status: STATUS_MAP[normalizeStatus(w.status)] ?? 'pending',
-    createdAt: new Date(w.created_at || w.updated_at || new Date().toISOString()),
-    txHash: w.tx_hash,
-  };
-}
-
-function normalizeWithdrawals(data: WithdrawalListResponse): Withdrawal[] {
-  if (!data) return [];
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data.withdrawals)) return data.withdrawals;
-  return [];
-}
 
 export default function History() {
   const navigation = useNavigation();
@@ -93,7 +29,7 @@ export default function History() {
   };
 
   const transactions = useMemo(() => {
-    const withdrawalRows = normalizeWithdrawals(withdrawals.data as WithdrawalListResponse);
+    const withdrawalRows = normalizeWithdrawals(withdrawals.data);
 
     const mapped: Transaction[] = [
       ...(deposits.data?.deposits ?? []).map(depositToTransaction),
@@ -130,20 +66,16 @@ export default function History() {
           </Text>
         </View>
       ) : (
-        <ScrollView
-          className="flex-1 px-md"
-          showsVerticalScrollIndicator={false}
+        <TransactionList
+          transactions={transactions}
+          onTransactionPress={setSelectedTransaction}
+          className="flex-1 px-md pt-md"
+          isLoading={showSkeleton}
+          loadingItems={6}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#000" />
-          }>
-          <TransactionList
-            transactions={transactions}
-            onTransactionPress={setSelectedTransaction}
-            className="pt-md"
-            isLoading={showSkeleton}
-            loadingItems={6}
-          />
-        </ScrollView>
+          }
+        />
       )}
 
       <TransactionDetailSheet

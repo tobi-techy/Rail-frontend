@@ -35,7 +35,7 @@ export default function VerifyEmail() {
 
   useEffect(() => {
     if (!pendingEmail && !isAuthenticated && !isVerifying && !isTransitioning) {
-      router.replace(ROUTES.AUTH.SIGNUP as any);
+      router.replace(ROUTES.AUTH.SIGNUP as never);
       return;
     }
   }, [pendingEmail, isAuthenticated, isVerifying, isTransitioning]);
@@ -62,7 +62,7 @@ export default function VerifyEmail() {
     Keyboard.dismiss();
 
     if (!pendingEmail) {
-      router.replace(ROUTES.AUTH.SIGNUP as any);
+      router.replace(ROUTES.AUTH.SIGNUP as never);
       return;
     }
 
@@ -80,11 +80,11 @@ export default function VerifyEmail() {
 
           if (response.accessToken) {
             const onboardingStatus = response.onboarding_status || response.user?.onboardingStatus;
-            router.replace(getPostAuthRoute(onboardingStatus) as any);
+            router.replace(getPostAuthRoute(onboardingStatus) as never);
             return;
           }
 
-          router.replace(ROUTES.AUTH.SIGNIN as any);
+          router.replace(ROUTES.AUTH.SIGNIN as never);
         },
         onError: (error: any) => {
           setIsTransitioning(false);

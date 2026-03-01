@@ -11,3 +11,4 @@ export * from './TransactionItem';
 export * from './TransactionList';
 export * from './PasscodeInput';
 export { MaskedBalance } from './MaskedBalance';
+export { NotificationBell } from './NotificationBell';

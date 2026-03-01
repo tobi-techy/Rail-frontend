@@ -51,7 +51,7 @@ export default function Phone() {
     updateRegistrationData({ phone: normalizedPhone });
 
     if (!isPasskeySignup) {
-      router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_PASSWORD as any);
+      router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_PASSWORD as never);
       return;
     }
 
@@ -81,7 +81,7 @@ export default function Phone() {
       !payload.address.postalCode
     ) {
       showWarning('Incomplete Profile', 'Please complete all required profile fields.');
-      router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as any);
+      router.replace(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO as never);
       return;
     }
 
@@ -100,7 +100,7 @@ export default function Phone() {
 
         setOnboardingStatus(response.onboarding?.onboardingStatus || 'kyc_pending');
         clearRegistrationData();
-        router.replace(ROUTES.AUTH.CREATE_PASSCODE as any);
+        router.replace(ROUTES.AUTH.CREATE_PASSCODE as never);
       },
       onError: (error: any) => {
         showError('Profile Submission Failed', error?.message || 'Please try again.');

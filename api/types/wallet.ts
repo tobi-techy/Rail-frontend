@@ -3,12 +3,12 @@
 import { PaginationParams, PaginatedResponse } from './common';
 
 // Solana testnet only (simplified configuration)
-export type TestnetChain = 'SOL-DEVNET';
+export type TestnetChain = 'SOL-DEVNET' | 'MATIC-AMOY' | 'AVAX-FUJI';
 
 // Mainnet chains (for future production use)
-export type MainnetChain = 'SOL';
+export type MainnetChain = 'SOL' | 'MATIC' | 'AVAX';
 
-// All supported wallet chains (Solana only)
+// All supported wallet chains
 export type WalletChain = TestnetChain | MainnetChain;
 
 export type WalletStatus = 'creating' | 'live' | 'failed';

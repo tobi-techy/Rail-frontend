@@ -57,6 +57,7 @@ export interface Withdrawal {
 export interface InitiateWithdrawalRequest {
   amount: number;
   destination_address: string;
+  destination_chain?: string;
 }
 
 export interface InitiateFiatWithdrawalRequest {

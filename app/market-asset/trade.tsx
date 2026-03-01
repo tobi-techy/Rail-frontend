@@ -164,7 +164,7 @@ export default function MarketTradeAmountScreen() {
         type: `${side}-order`,
         recipient: symbol,
       },
-    } as any);
+    } as never);
   };
 
   return (

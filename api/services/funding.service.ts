@@ -53,17 +53,19 @@ export const fundingService = {
     return [];
   },
 
-  // Crypto withdrawal (USDC to external Solana wallet)
+  // Crypto withdrawal (USDC to external wallet)
   async initiateWithdrawal(req: InitiateWithdrawalRequest): Promise<InitiateWithdrawalResponse> {
-    const payload = {
+    const payload: Record<string, unknown> = {
       amount: typeof req.amount === 'string' ? parseFloat(req.amount) : req.amount,
       destination_address: req.destination_address,
     };
+    if (req.destination_chain) {
+      payload.destination_chain = req.destination_chain;
+    }
 
     try {
       return await apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals/crypto', payload);
     } catch (error) {
-      // Compatibility fallback for environments that have not mounted /withdrawals/crypto yet.
       if (isNotFoundError(error)) {
         return apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals', payload);
       }

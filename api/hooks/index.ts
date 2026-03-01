@@ -41,3 +41,6 @@ export * from './useMarket';
 
 // Investment hooks
 export * from './useInvestment';
+
+// Notification hooks
+export * from './useNotifications';

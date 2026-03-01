@@ -153,20 +153,27 @@ export function useNetworks() {
  * - 404: Endpoint not implemented
  */
 export function useWalletAddresses(chain?: WalletChain) {
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.wallet.addresses(chain),
     queryFn: () => walletService.getWalletAddresses(chain ? { chain } : undefined),
-    staleTime: 5 * 60 * 1000, // 5 minutes (addresses rarely change)
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchInterval: false, // Disable automatic refetch to prevent auth error spam
+    // Poll every 4s when wallet is being provisioned (404), stop once we have data
+    refetchInterval: (q) => {
+      if (q.state.data) return false;
+      const status = (q.state.error as any)?.status;
+      return status === 404 ? 4000 : false;
+    },
     retry: (failureCount, error: any) => {
-      // Don't retry on 401 (auth error) or 404 (not found)
-      const errorCode = error?.error?.code;
-      if (errorCode === 'HTTP_401' || errorCode === 'HTTP_404') {
-        return false;
-      }
-      // Retry once for other errors
+      const status = error?.status;
+      if (status === 401 || status === 403) return false;
+      // Keep retrying 404 (provisioning in progress) up to 15 times (~1 min)
+      if (status === 404) return failureCount < 15;
       return failureCount < 1;
     },
+    retryDelay: 4000,
   });
+
+  const isProvisioning = !query.data && (query.error as any)?.status === 404;
+  return { ...query, isProvisioning };
 }

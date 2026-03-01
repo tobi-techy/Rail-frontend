@@ -39,7 +39,7 @@ export default function DateOfBirth() {
       return;
     }
     updateRegistrationData({ dob: dob.toISOString() });
-    router.push(ROUTES.AUTH.COMPLETE_PROFILE.ADDRESS as any);
+    router.push(ROUTES.AUTH.COMPLETE_PROFILE.ADDRESS as never);
   };
 
   const onChange = (event: any, selectedDate?: Date) => {

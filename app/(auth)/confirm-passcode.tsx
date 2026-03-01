@@ -18,7 +18,7 @@ export default function ConfirmPasscodeScreen() {
     if (isLoading) return;
 
     if (!originalPasscode) {
-      router.replace(ROUTES.AUTH.CREATE_PASSCODE as any);
+      router.replace(ROUTES.AUTH.CREATE_PASSCODE as never);
       return;
     }
 
@@ -32,7 +32,7 @@ export default function ConfirmPasscodeScreen() {
     try {
       await setPasscode(code);
       useAuthStore.setState({ _pendingPasscode: null });
-      router.replace(ROUTES.TABS as any);
+      router.replace(ROUTES.TABS as never);
     } catch (submitError: any) {
       setError(submitError?.message || 'Failed to create PIN');
       setConfirmPasscode('');

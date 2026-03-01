@@ -1,14 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { CreditCard, Wallet, Mail, Tag } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
 import { Icon } from '../atoms';
-import {
-  Transaction,
-  TransactionType,
-  SvgComponent,
-  resolveTransactionAssetIcon,
-} from '../molecules/TransactionItem';
+import { Transaction, TransactionType, SvgComponent } from '../molecules/TransactionItem';
+import { resolveTransactionAssetIcon } from '@/utils/transactionIcon';
+import { formatAbsAmount } from '@/utils/transactionFormat';
 import { MaskedBalance } from '../molecules/MaskedBalance';
 import { useUIStore } from '@/stores';
 
@@ -30,15 +28,6 @@ const formatDate = (date: Date) =>
   date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
   ' at ' +
   date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
-const formatAmount = (amount: number) => {
-  const abs = Math.abs(amount);
-  const hasDecimals = abs % 1 !== 0;
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: hasDecimals ? 2 : 0,
-    maximumFractionDigits: 2,
-  }).format(abs);
-};
 
 const truncateAddress = (address: string) =>
   address.length > 12 ? `${address.slice(0, 4)}...${address.slice(-4)}` : address;
@@ -84,7 +73,14 @@ const DetailRow = ({
   );
 };
 
-const LARGE_ICON_SIZE = 64;
+const LARGE_ICON_SIZE = 48;
+
+const WITHDRAWAL_BADGE: Record<string, { Icon: React.ComponentType<any>; bg: string }> = {
+  fiat:   { Icon: CreditCard, bg: '#3B82F6' },
+  card:   { Icon: CreditCard, bg: '#3B82F6' },
+  crypto: { Icon: Wallet,     bg: '#8B5CF6' },
+  p2p:    { Icon: Mail,       bg: '#10B981' },
+};
 
 const LargeTokenIcon = ({
   Token,
@@ -111,18 +107,18 @@ const LargeTokenIcon = ({
     }}>
     {Token ? (
       <Token
-        width={isSymbol ? 36 : LARGE_ICON_SIZE + 8}
-        height={isSymbol ? 36 : LARGE_ICON_SIZE + 8}
+        width={isSymbol ? 28 : LARGE_ICON_SIZE + 8}
+        height={isSymbol ? 28 : LARGE_ICON_SIZE + 8}
       />
     ) : (
-      <Icon library="feather" name="dollar-sign" size={32} color="#FFFFFF" />
+      <Icon library="feather" name="dollar-sign" size={24} color="#FFFFFF" />
     )}
   </View>
 );
 
 const LargeActionIcon = ({ name }: { name: string }) => (
-  <View className="h-16 w-16 items-center justify-center rounded-full border-2 border-surface bg-background-main">
-    <Icon library="feather" name={name} size={28} color="#757575" />
+  <View className="h-12 w-12 items-center justify-center rounded-full border-2 border-surface bg-background-main">
+    <Icon library="feather" name={name} size={22} color="#757575" />
   </View>
 );
 
@@ -137,16 +133,16 @@ const LargeSwapIcon = ({
   fromBg?: string;
   toBg?: string;
 }) => (
-  <View className="h-16 w-16">
+  <View className="h-12 w-12">
     <View
-      className="absolute left-0 top-0 h-11 w-11 items-center justify-center rounded-full"
+      className="absolute left-0 top-0 h-9 w-9 items-center justify-center rounded-full"
       style={{ backgroundColor: fromBg || '#000' }}>
-      {SwapFrom && <SwapFrom width={24} height={24} />}
+      {SwapFrom && <SwapFrom width={20} height={20} />}
     </View>
     <View
-      className="absolute bottom-0 right-0 h-11 w-11 items-center justify-center rounded-full border-2 border-white"
+      className="absolute bottom-0 right-0 h-9 w-9 items-center justify-center rounded-full border-2 border-white"
       style={{ backgroundColor: toBg || '#1B84FF' }}>
-      {SwapTo && <SwapTo width={24} height={24} />}
+      {SwapTo && <SwapTo width={20} height={20} />}
     </View>
   </View>
 );
@@ -159,11 +155,13 @@ export function TransactionDetailSheet({
   const { isBalanceVisible } = useUIStore();
   if (!transaction) return null;
 
-  const { icon, type, amount, currency = 'NGN', createdAt, toAddress, txHash, fee } = transaction;
+  const { icon, type, amount, currency = 'NGN', createdAt, toAddress, txHash, fee, withdrawalMethod } = transaction;
 
   const renderIcon = () => {
+    let iconEl: React.ReactElement;
+
     if (icon?.type === 'swap') {
-      return (
+      iconEl = (
         <LargeSwapIcon
           SwapFrom={icon.SwapFrom}
           SwapTo={icon.SwapTo}
@@ -171,41 +169,56 @@ export function TransactionDetailSheet({
           toBg={icon.swapToBg}
         />
       );
-    }
-    if (icon?.type === 'token') {
-      return <LargeTokenIcon Token={icon.Token} bgColor={icon.bgColor} />;
-    }
-    if (icon?.type === 'icon' && icon.iconName) {
-      return <LargeActionIcon name={icon.iconName} />;
-    }
-
-    const inferredAssetIcon = resolveTransactionAssetIcon(transaction);
-    if (inferredAssetIcon) {
-      return (
+    } else if (icon?.type === 'token') {
+      iconEl = <LargeTokenIcon Token={icon.Token} bgColor={icon.bgColor} />;
+    } else if (icon?.type === 'icon' && icon.iconName) {
+      iconEl = <LargeActionIcon name={icon.iconName} />;
+    } else {
+      const inferredAssetIcon = resolveTransactionAssetIcon(transaction);
+      iconEl = inferredAssetIcon ? (
         <LargeTokenIcon
           Token={inferredAssetIcon.Token}
           bgColor={inferredAssetIcon.bgColor}
           withBorder={inferredAssetIcon.withBorder}
           isSymbol={inferredAssetIcon.isSymbol}
         />
+      ) : (
+        <LargeActionIcon name="activity" />
       );
     }
 
-    return <LargeActionIcon name="activity" />;
+    const badge = withdrawalMethod ? (WITHDRAWAL_BADGE[withdrawalMethod] ?? { Icon: Tag, bg: '#6B7280' }) : null;
+
+    return (
+      <View style={{ width: LARGE_ICON_SIZE, height: LARGE_ICON_SIZE }}>
+        {iconEl}
+        {badge && (
+          <View
+            className="absolute -bottom-0.5 -right-0.5 h-5 w-5 items-center justify-center rounded-full border-2 border-white"
+            style={{ backgroundColor: badge.bg }}>
+            <badge.Icon size={10} color="#fff" strokeWidth={2.5} />
+          </View>
+        )}
+      </View>
+    );
   };
 
   return (
     <BottomSheet visible={visible} onClose={onClose}>
       <View className="items-center pb-4">
         {renderIcon()}
-        <Text className="mt-4 font-caption text-body text-text-secondary">{typeLabels[type]}</Text>
+        <View className="mt-3 rounded-full bg-surface px-3 py-1">
+          <Text className="font-caption text-[11px] uppercase tracking-wide text-text-secondary">
+            {typeLabels[type]}
+          </Text>
+        </View>
         <MaskedBalance
-          value={`${formatAmount(amount)} ${currency}`}
+          value={`${formatAbsAmount(amount)} ${currency}`}
           visible={isBalanceVisible}
-          textClass="text-[32px]"
+          textClass="text-[24px]"
           colorClass="text-text-primary"
         />
-        <Text className="mt-1 font-caption text-caption text-text-secondary">
+        <Text className="mt-0.5 font-caption text-[11px] text-text-secondary">
           {formatDate(createdAt)}
         </Text>
       </View>

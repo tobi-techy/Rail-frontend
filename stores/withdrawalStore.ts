@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { walletService } from '../api/services';
 import { logger } from '../lib/logger';
 import type { Token, Network } from '@/lib/domain/wallet/models';
-import { MOCK_TOKENS } from '@/__mocks__/wallet.mock';
 import { ERROR_MESSAGES } from '@/lib/constants/messages';
 
 export type { Token, Network } from '@/lib/domain/wallet/models';
@@ -97,37 +96,20 @@ export interface WithdrawalActions {
   reset: () => void;
 }
 
-const MOCK_RECIPIENTS: Recipient[] = [
-  {
-    id: '1',
-    name: 'Solana Wallet 1',
-    type: 'address',
-    address: '8gVkP2aGZxK4u3Hj9JkMPVz7eQQaQ2W5FnE4cTdR3xYq',
-  },
-  {
-    id: '2',
-    name: 'Solana Wallet 2',
-    type: 'address',
-    address: '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM',
-  },
-];
-
-const MOCK_NETWORKS: Network[] = [{ id: 'solana', name: 'Solana', symbol: 'SOL', icon: 'solana' }];
-
 const initialState: WithdrawalState = {
   recipientAddress: '',
-  selectedToken: MOCK_TOKENS[0],
+  selectedToken: null,
   amount: '',
   transaction: null,
   errors: {},
   isLoading: false,
   step: 'amount',
   showConfirmModal: false,
-  availableRecipients: MOCK_RECIPIENTS,
-  availableTokens: MOCK_TOKENS,
-  availableNetworks: MOCK_NETWORKS,
-  accountName: 'Solana Account',
-  accountAddress: '8gVkP2aGZxK4u3Hj9JkMPVz7eQQaQ2W5FnE4cTdR3xYq',
+  availableRecipients: [],
+  availableTokens: [],
+  availableNetworks: [],
+  accountName: '',
+  accountAddress: '',
 };
 
 export const useWithdrawalStore = create<WithdrawalState & WithdrawalActions>((set, get) => ({
@@ -209,7 +191,12 @@ export const useWithdrawalStore = create<WithdrawalState & WithdrawalActions>((s
     if (!recipientAddress || !selectedToken || !amount) return;
 
     const numAmount = parseFloat(amount);
-    const usdAmount = (numAmount * 1).toFixed(2); // Assuming 1:1 for USDC
+    // usdValue is total balance value; derive per-unit price from balance if available
+    const unitPrice =
+      selectedToken && selectedToken.balance > 0
+        ? selectedToken.usdValue / selectedToken.balance
+        : 1;
+    const usdAmount = (numAmount * unitPrice).toFixed(2);
 
     const transaction: TransactionDetails = {
       fromAccount: accountName,
@@ -325,12 +312,5 @@ export const useWithdrawalStore = create<WithdrawalState & WithdrawalActions>((s
     set({ errors: {} });
   },
 
-  // Reset
-  reset: () => {
-    set({
-      ...initialState,
-      recipientAddress: '',
-      selectedToken: get().selectedToken,
-    });
-  },
+  reset: () => set(initialState),
 }));

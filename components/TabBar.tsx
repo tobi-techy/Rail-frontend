@@ -56,12 +56,13 @@ function TabBarItem({
         scale.value = withSpring(1, { damping: 15 });
       }}
       style={styles.item}>
-      <Animated.View style={animatedStyle}>
+      <Animated.View style={[animatedStyle, styles.iconWrap]}>
         {options.tabBarIcon?.({
           focused: isFocused,
           color: isFocused ? '#FF2E01' : '#ccc',
           size: 28,
         })}
+        <View style={[styles.dot, { opacity: isFocused ? 1 : 0 }]} />
       </Animated.View>
     </Pressable>
   );
@@ -126,6 +127,16 @@ const styles = StyleSheet.create({
   item: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconWrap: {
+    alignItems: 'center',
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#FF2E01',
+    marginTop: 4,
   },
   rightButton: {
     borderRadius: 28,

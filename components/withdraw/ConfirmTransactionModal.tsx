@@ -16,6 +16,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { haptics } from '@/utils/haptics';
 import { TransactionDetails } from '@/stores/withdrawalStore';
 import { layout, moderateScale, responsive } from '@/utils/layout';
 
@@ -248,7 +249,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
             {/* Confirm Button */}
             <View className="px-lg pb-lg pt-md">
               <TouchableOpacity
-                onPress={onConfirm}
+                onPress={() => { haptics.confirm(); onConfirm(); }}
                 disabled={isLoading}
                 activeOpacity={0.8}
                 className="items-center rounded-full bg-black py-md">

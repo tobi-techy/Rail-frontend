@@ -1,6 +1,6 @@
 import type { MarketInstrumentCard, MarketInstrumentQuote } from '@/api/types';
 
-const toNumber = (value: string | number | null | undefined): number => {
+export const toNumber = (value: string | number | null | undefined): number => {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
   const parsed = Number.parseFloat(value ?? '');
   return Number.isFinite(parsed) ? parsed : 0;

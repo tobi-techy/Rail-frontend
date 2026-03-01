@@ -7,13 +7,19 @@ import { useAuthStore } from '../stores/authStore';
 import { authService } from '../api/services';
 import { logger } from '../lib/logger';
 import { isAuthSessionInvalidError } from './authErrorClassifier';
+import {
+  ACCESS_TOKEN_REFRESH_MS,
+  HEALTH_CHECK_INTERVAL_MS,
+  INACTIVITY_LIMIT_MS,
+  MIN_TIMER_MS,
+  PASSCODE_SESSION_MS,
+  REFRESH_BUFFER_MS,
+} from './sessionConstants';
 
 export class SessionManager {
   private static refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private static passcodeSessionTimer: ReturnType<typeof setTimeout> | null = null;
   private static initialized = false;
-  private static readonly SESSION_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000; // 7 days of INACTIVITY triggers logout
-  private static readonly PASSCODE_SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
   /**
    * Check if token is expired
@@ -63,7 +69,7 @@ export class SessionManager {
       const nextExpiry = Math.max(
         currentExpiry,
         responseExpiry,
-        now.getTime() + 7 * 24 * 60 * 60 * 1000
+        now.getTime() + INACTIVITY_LIMIT_MS
       );
 
       useAuthStore.setState({
@@ -73,9 +79,8 @@ export class SessionManager {
         tokenExpiresAt: new Date(nextExpiry).toISOString(),
       });
 
-      // Schedule next access token refresh (5 min before access token expiry = ~55 min)
-      const accessTokenRefreshMs = 55 * 60 * 1000;
-      this.scheduleTokenRefresh(new Date(now.getTime() + accessTokenRefreshMs).toISOString());
+      // Schedule next access token refresh (~55 min)
+      this.scheduleTokenRefresh(new Date(now.getTime() + ACCESS_TOKEN_REFRESH_MS).toISOString());
 
       logger.debug('[SessionManager] Token refreshed successfully', {
         component: 'SessionManager',
@@ -116,9 +121,7 @@ export class SessionManager {
 
     const timeUntilExpiry = this.getTimeUntilExpiry(expiresAt);
 
-    // Refresh 5 minutes (300000ms) before expiry
-    const REFRESH_BUFFER = 5 * 60 * 1000;
-    const refreshTime = Math.max(0, timeUntilExpiry - REFRESH_BUFFER);
+    const refreshTime = Math.max(0, timeUntilExpiry - REFRESH_BUFFER_MS);
 
     logger.debug('[SessionManager] Token refresh scheduled', {
       component: 'SessionManager',
@@ -230,21 +233,18 @@ export class SessionManager {
     const timeUntilExpiry = this.getTimeUntilExpiry(expiresAt);
 
     // SECURITY: Cap timeout to prevent integer overflow or suspicious values
-    const MAX_TIMEOUT = 10 * 60 * 1000; // 10 minutes max (actual passcode session duration)
-    const MIN_TIMEOUT = 1000; // 1 second minimum
-
     let scheduledTimeout = timeUntilExpiry;
-    if (scheduledTimeout > MAX_TIMEOUT) {
+    if (scheduledTimeout > PASSCODE_SESSION_MS) {
       logger.warn('[SessionManager] Expiry time exceeds 10 minute limit', {
         component: 'SessionManager',
         action: 'timeout-clamped',
         requested: scheduledTimeout,
-        clamped: MAX_TIMEOUT,
+        clamped: PASSCODE_SESSION_MS,
       });
-      scheduledTimeout = MAX_TIMEOUT;
+      scheduledTimeout = PASSCODE_SESSION_MS;
     }
 
-    if (scheduledTimeout < MIN_TIMEOUT) {
+    if (scheduledTimeout < MIN_TIMER_MS) {
       // Passcode session is already expired or about to expire
       logger.debug('[SessionManager] Passcode session already expired', {
         component: 'SessionManager',
@@ -295,8 +295,8 @@ export class SessionManager {
       return;
     }
 
-    // Extend session by 10 minutes from now (activity-based timeout)
-    const newExpiresAt = new Date(now + 10 * 60 * 1000).toISOString();
+    // Extend session by PASSCODE_SESSION_MS from now (activity-based timeout)
+    const newExpiresAt = new Date(now + PASSCODE_SESSION_MS).toISOString();
     useAuthStore.setState({
       passcodeSessionExpiresAt: newExpiresAt,
     });
@@ -400,15 +400,6 @@ export class SessionManager {
    * Schedule periodic health check
    */
   private static scheduleHealthCheck(): void {
-    // Check session health every 30 minutes for token expiry only
-    const CHECK_INTERVAL = 30 * 60 * 1000;
-
-    logger.debug('[SessionManager] Health check scheduled', {
-      component: 'SessionManager',
-      action: 'health-check-scheduled',
-      interval: CHECK_INTERVAL,
-    });
-
     setTimeout(() => {
       const { isAuthenticated, accessToken, checkTokenExpiry } = useAuthStore.getState();
 
@@ -442,7 +433,7 @@ export class SessionManager {
       if (this.initialized) {
         this.scheduleHealthCheck();
       }
-    }, CHECK_INTERVAL);
+    }, HEALTH_CHECK_INTERVAL_MS);
   }
 
   /**
