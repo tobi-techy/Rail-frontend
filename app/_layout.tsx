@@ -132,6 +132,14 @@ function AppNavigator() {
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />
+      <Stack.Screen
+        name="notifications"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      />
     </Stack>
   );
 }
