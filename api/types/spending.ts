@@ -91,6 +91,7 @@ export interface SpendingTransaction {
   direction?: 'debit' | 'credit';
   currency: string;
   description: string;
+  destination_address?: string;
   merchant?: {
     name: string;
     logo_url: string | null;
@@ -103,11 +104,16 @@ export interface SpendingTransaction {
   refund_status: string | null;
 }
 
+export interface ChartDataPoint {
+  label: string;
+  value: number;
+}
+
 export interface SpendingStashResponse {
   balance: SpendingBalance;
-  allocation: SpendingAllocation;
   card?: SpendingCard | null;
   spending_summary?: SpendingSummary | null;
+  chart_data: ChartDataPoint[];
   top_categories: SpendingCategory[];
   round_ups?: SpendingRoundUps | null;
   limits: SpendingLimits;

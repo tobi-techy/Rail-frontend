@@ -1,13 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Linking } from 'react-native';
 import { ArrowRight, ExternalLink } from 'lucide-react-native';
 import { TransactionDetails } from '@/stores/withdrawalStore';
+import { useHaptics } from '@/hooks/useHaptics';
 
 interface TransactionSuccessViewProps {
   transaction: TransactionDetails | null;
 }
 
 export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ transaction }) => {
+  const { notification } = useHaptics();
+
+  useEffect(() => {
+    notification();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   if (!transaction) return null;
 
   const handleViewOnExplorer = () => {

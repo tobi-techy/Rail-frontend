@@ -55,7 +55,7 @@ export default function ProfileGapsScreen() {
         </View>
 
         <View className="gap-y-3 pt-6">
-          <Button title="Update profile" onPress={() => router.push('/(tabs)/settings' as any)} />
+          <Button title="Update profile" onPress={() => router.push('/(tabs)/settings' as never)} />
           <Button title="Back to verification" variant="white" onPress={() => router.back()} />
         </View>
       </ScrollView>

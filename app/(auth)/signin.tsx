@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, Keyboard, StatusBar, Platform } from 'react-native';
 import type { TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
@@ -72,7 +71,7 @@ export default function SignIn() {
       {
         onSuccess: (response) => {
           const targetRoute = getPostAuthRoute(response.user?.onboardingStatus);
-          router.replace(targetRoute as any);
+          router.replace(targetRoute as never);
         },
         onError: (error: any) => {
           // Categorize error for better user messaging
@@ -105,13 +104,9 @@ export default function SignIn() {
         backgroundColor="transparent"
         translucent={Platform.OS === 'android'}
       />
-      <KeyboardAwareScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingTop: insets.top + 16,
-          paddingBottom: insets.bottom + 20,
-        }}
-        keyboardShouldPersistTaps="handled">
+      <Pressable
+        style={{ flex: 1, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 20 }}
+        onPress={Keyboard.dismiss}>
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
@@ -170,11 +165,11 @@ export default function SignIn() {
             </StaggeredChild>
           </View>
 
-          <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
+          <StaggeredChild index={4} delay={120} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
               <Button title="Sign In" onPress={handleSignIn} loading={isPending} />
               <TouchableOpacity
-                onPress={() => router.push(ROUTES.AUTH.SIGNUP as any)}
+                onPress={() => router.push(ROUTES.AUTH.SIGNUP as never)}
                 className="mt-4"
                 accessibilityLabel="Sign up"
                 accessibilityHint="Navigate to registration">
@@ -185,7 +180,7 @@ export default function SignIn() {
             </View>
           </StaggeredChild>
         </View>
-      </KeyboardAwareScrollView>
+      </Pressable>
     </AuthGradient>
   );
 }

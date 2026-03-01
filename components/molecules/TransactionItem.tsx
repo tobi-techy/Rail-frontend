@@ -1,14 +1,17 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
-import { SvgProps } from 'react-native-svg';
+import { CreditCard, Wallet, Mail, Tag } from 'lucide-react-native';
 import { Icon, Skeleton } from '../atoms';
-import * as SvgAssets from '@/assets/svg';
 import { useUIStore } from '@/stores';
 import { MaskedBalance } from './MaskedBalance';
+import { resolveTransactionAssetIcon } from '@/utils/transactionIcon';
+import { formatTransactionAmount } from '@/utils/transactionFormat';
+import type { SvgComponent } from '@/utils/transactionIcon';
 
 export type TransactionType = 'send' | 'receive' | 'swap' | 'deposit' | 'withdraw';
 export type TransactionStatus = 'completed' | 'pending' | 'failed';
-export type SvgComponent = React.ComponentType<SvgProps>;
+export type WithdrawalMethod = 'fiat' | 'crypto' | 'card' | 'p2p';
+export type { SvgComponent };
 
 export interface Transaction {
   id: string;
@@ -24,6 +27,7 @@ export interface Transaction {
   txHash?: string;
   toAddress?: string;
   fee?: string;
+  withdrawalMethod?: WithdrawalMethod;
   icon?: {
     type: 'token' | 'icon' | 'swap';
     Token?: SvgComponent;
@@ -39,208 +43,6 @@ export interface Transaction {
 export interface TransactionItemProps extends TouchableOpacityProps {
   transaction: Transaction;
 }
-
-const formatAmount = (amount: number, type: TransactionType, currency = 'NGN') => {
-  const isCredit = type === 'receive' || type === 'deposit';
-  const sign = isCredit ? '+' : '-';
-  const abs = Math.abs(amount);
-  const hasDecimals = abs % 1 !== 0;
-  const num = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: hasDecimals ? 2 : 0,
-    maximumFractionDigits: 2,
-  }).format(abs);
-  return { text: `${sign}${num} ${currency}`, isCredit };
-};
-
-type ResolvedAssetIcon = {
-  Token: SvgComponent;
-  bgColor?: string;
-  withBorder?: boolean;
-  isSymbol?: boolean;
-};
-
-const TOKEN_ICON_BY_SYMBOL: Record<string, SvgComponent> = {
-  USDC: SvgAssets.UsdcIcon,
-  USDT: SvgAssets.UsdtIcon,
-  SOL: SvgAssets.SolanaIcon,
-  SOLANA: SvgAssets.SolanaIcon,
-  BNB: SvgAssets.BnbIcon,
-  MATIC: SvgAssets.MaticIcon,
-  BASE: SvgAssets.BaseIcon,
-  AVAX: SvgAssets.AvalancheIcon,
-  AVALANCHE: SvgAssets.AvalancheIcon,
-  NGN: SvgAssets.NgnIcon,
-  USD: SvgAssets.UsdIcon,
-  GBP: SvgAssets.GbpIcon,
-  EUR: SvgAssets.EurIcon,
-  CAD: SvgAssets.CadIcon,
-  MXN: SvgAssets.MxnIcon,
-};
-
-const FIAT_ICON_BY_SYMBOL: Record<string, SvgComponent> = {
-  USD: SvgAssets.UsdIcon,
-  EUR: SvgAssets.EurIcon,
-  GBP: SvgAssets.GbpIcon,
-  NGN: SvgAssets.NgnIcon,
-  CAD: SvgAssets.CadIcon,
-  MXN: SvgAssets.MxnIcon,
-};
-
-const COMPANY_LOGO_BY_ALIAS: Record<string, SvgComponent> = {
-  adidas: SvgAssets.AdidasLogo,
-  airbnb: SvgAssets.AirbnbLogo,
-  amazon: SvgAssets.AmazonLogo,
-  apple: SvgAssets.AppleLogo,
-  asianpaints: SvgAssets.AsianPaintsLogo,
-  asus: SvgAssets.AsusLogo,
-  audi: SvgAssets.AudiLogo,
-  bitcon: SvgAssets.BitconLogo,
-  bitcoin: SvgAssets.BitconLogo,
-  blinkit: SvgAssets.BlinkitLogo,
-  bmw: SvgAssets.BmwLogo,
-  cocacola: SvgAssets.CocacolaLogo,
-  coca: SvgAssets.CocacolaLogo,
-  discord: SvgAssets.DiscordLogo,
-  facebook: SvgAssets.FacebookLogo,
-  fila: SvgAssets.FilaLogo,
-  flipkart: SvgAssets.FlipkartLogo,
-  ford: SvgAssets.FordLogo,
-  gpay: SvgAssets.GpayLogo,
-  googlepay: SvgAssets.GpayLogo,
-  hdfc: SvgAssets.HdfcLogo,
-  hero: SvgAssets.HeroLogo,
-  honda: SvgAssets.HondaLogo,
-  hp: SvgAssets.HpLogo,
-  ikea: SvgAssets.IkeaLogo,
-  instagram: SvgAssets.InstagramLogo,
-  inter: SvgAssets.InterLogo,
-  kia: SvgAssets.KiaLogo,
-  lenovo: SvgAssets.LenovoLogo,
-  mahindra: SvgAssets.MahindraLogo,
-  mcdonalds: SvgAssets.McdonaldsLogo,
-  mercedes: SvgAssets.MercedesLogo,
-  netflix: SvgAssets.NetflixLogo,
-  nike: SvgAssets.NikeLogo,
-  nokia: SvgAssets.NokiaLogo,
-  oppo: SvgAssets.OppoLogo,
-  paypal: SvgAssets.PaypalLogo,
-  pepsi: SvgAssets.PepsiLogo,
-  puma: SvgAssets.PumaLogo,
-  rbi: SvgAssets.RbiLogo,
-  royalenfield: SvgAssets.RoyalenfieldLogo,
-  samsung: SvgAssets.SamsungLogo,
-  sbi: SvgAssets.SbiLogo,
-  skoda: SvgAssets.SkodaLogo,
-  starbucks: SvgAssets.StarbucksLogo,
-  suzuki: SvgAssets.SuzukiLogo,
-  swiggy: SvgAssets.SwiggyLogo,
-  tata: SvgAssets.TataLogo,
-  tesla: SvgAssets.TeslaLogo,
-  toyata: SvgAssets.ToyataLogo,
-  toyota: SvgAssets.ToyataLogo,
-  tvs: SvgAssets.TvsLogo,
-  visa: SvgAssets.VisaLogo,
-  vivo: SvgAssets.VivoLogo,
-  twitter: SvgAssets.XLogo,
-};
-
-const COMPANY_ALIAS_ENTRIES = Object.entries(COMPANY_LOGO_BY_ALIAS).sort(
-  ([left], [right]) => right.length - left.length
-);
-const COMPACT_ALIAS_MATCH = new Set([
-  'asianpaints',
-  'cocacola',
-  'googlepay',
-  'mcdonalds',
-  'royalenfield',
-]);
-
-const normalizeSymbol = (value?: string) =>
-  value
-    ?.trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '') ?? '';
-
-const tokenizeSymbols = (value?: string) =>
-  (value ?? '')
-    .split(/[\s,./|()\-_:·]+/)
-    .map((token) => normalizeSymbol(token))
-    .filter(Boolean);
-
-const normalizeCompanyValue = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-const resolveSymbolIcon = (symbol?: string): ResolvedAssetIcon | null => {
-  const normalized = normalizeSymbol(symbol);
-  if (!normalized) return null;
-
-  if (FIAT_ICON_BY_SYMBOL[normalized]) {
-    const isNgn = normalized === 'NGN';
-    return {
-      Token: FIAT_ICON_BY_SYMBOL[normalized],
-      bgColor: isNgn ? '#008751' : '#FFFFFF',
-      withBorder: !isNgn,
-      isSymbol: isNgn,
-    };
-  }
-
-  if (TOKEN_ICON_BY_SYMBOL[normalized]) {
-    return {
-      Token: TOKEN_ICON_BY_SYMBOL[normalized],
-      bgColor: 'transparent',
-    };
-  }
-
-  return null;
-};
-
-const resolveSymbolIconFromText = (value?: string): ResolvedAssetIcon | null => {
-  for (const token of tokenizeSymbols(value)) {
-    const icon = resolveSymbolIcon(token);
-    if (icon) return icon;
-  }
-  return null;
-};
-
-const resolveCompanyLogo = (
-  values: (string | undefined)[]
-): { Token: SvgComponent; bgColor: string; withBorder: true } | null => {
-  const joined = values.filter(Boolean).join(' ');
-  if (!joined) return null;
-
-  const compactValue = normalizeCompanyValue(joined);
-  const parts = joined
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter(Boolean);
-
-  for (const [alias, Logo] of COMPANY_ALIAS_ENTRIES) {
-    const isTokenMatch = parts.includes(alias);
-    const isCompactMatch = COMPACT_ALIAS_MATCH.has(alias) && compactValue.includes(alias);
-    const isMatch = isTokenMatch || isCompactMatch;
-    if (isMatch) {
-      return {
-        Token: Logo,
-        bgColor: '#FFFFFF',
-        withBorder: true,
-      };
-    }
-  }
-
-  return null;
-};
-
-export const resolveTransactionAssetIcon = (transaction: Transaction): ResolvedAssetIcon | null => {
-  const fromFields = [
-    resolveSymbolIcon(transaction.assetSymbol),
-    resolveSymbolIcon(transaction.currency),
-    resolveSymbolIconFromText(transaction.title),
-    resolveSymbolIconFromText(transaction.subtitle),
-  ].find(Boolean);
-
-  if (fromFields) return fromFields;
-
-  return resolveCompanyLogo([transaction.merchant, transaction.title, transaction.subtitle]);
-};
 
 const ICON_SIZE = 44;
 
@@ -306,11 +108,39 @@ const SwapIcon = ({
   </View>
 );
 
-const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
-  const { icon, type } = transaction;
+const DEFAULT_ICONS: Record<TransactionType, string> = {
+  send: 'arrow-up-right',
+  receive: 'arrow-down-left',
+  swap: 'repeat',
+  deposit: 'plus',
+  withdraw: 'minus',
+};
 
-  if (icon?.type === 'swap') {
-    return (
+const WITHDRAWAL_BADGE: Record<string, { Icon: React.ComponentType<any>; bg: string }> = {
+  fiat:   { Icon: CreditCard, bg: '#3B82F6' },
+  card:   { Icon: CreditCard, bg: '#3B82F6' },
+  crypto: { Icon: Wallet,     bg: '#8B5CF6' },
+  p2p:    { Icon: Mail,       bg: '#10B981' },
+};
+
+const WithdrawalBadge = ({ method }: { method: string }) => {
+  const badge = WITHDRAWAL_BADGE[method] ?? { Icon: Tag, bg: '#6B7280' };
+  return (
+    <View
+      className="absolute -bottom-0.5 -right-0.5 h-5 w-5 items-center justify-center rounded-full border-2 border-white"
+      style={{ backgroundColor: badge.bg }}>
+      <badge.Icon size={10} color="#fff" strokeWidth={2.5} />
+    </View>
+  );
+};
+
+const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
+  const { icon, type, withdrawalMethod } = transaction;
+
+  let iconEl: React.ReactElement;
+
+  if (icon?.type === 'swap')
+    iconEl = (
       <SwapIcon
         SwapFrom={icon.SwapFrom}
         SwapTo={icon.SwapTo}
@@ -318,45 +148,38 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
         toBg={icon.swapToBg}
       />
     );
-  }
-
-  if (icon?.type === 'token') {
-    return <TokenIcon Token={icon.Token} bgColor={icon.bgColor} />;
-  }
-
-  if (icon?.type === 'icon' && icon.iconName) {
-    return <ActionIcon name={icon.iconName} />;
-  }
-
-  const inferredAssetIcon = resolveTransactionAssetIcon(transaction);
-  if (inferredAssetIcon) {
-    return (
+  else if (icon?.type === 'token')
+    iconEl = <TokenIcon Token={icon.Token} bgColor={icon.bgColor} />;
+  else if (icon?.type === 'icon' && icon.iconName)
+    iconEl = <ActionIcon name={icon.iconName} />;
+  else {
+    const inferred = resolveTransactionAssetIcon(transaction);
+    iconEl = inferred ? (
       <TokenIcon
-        Token={inferredAssetIcon.Token}
-        bgColor={inferredAssetIcon.bgColor}
-        withBorder={inferredAssetIcon.withBorder}
-        isSymbol={inferredAssetIcon.isSymbol}
+        Token={inferred.Token}
+        bgColor={inferred.bgColor}
+        withBorder={inferred.withBorder}
+        isSymbol={inferred.isSymbol}
       />
+    ) : (
+      <View className="h-12 w-12 items-center justify-center rounded-full bg-surface">
+        <Icon library="feather" name={DEFAULT_ICONS[type]} size={24} color="#121212" />
+      </View>
     );
   }
 
-  const defaultIcons: Record<TransactionType, string> = {
-    send: 'arrow-up-right',
-    receive: 'arrow-down-left',
-    swap: 'repeat',
-    deposit: 'plus',
-    withdraw: 'minus',
-  };
-
   return (
-    <View className="h-12 w-12 items-center justify-center rounded-full bg-surface">
-      <Icon library="feather" name={defaultIcons[type]} size={24} color="#121212" />
+    <View style={{ width: ICON_SIZE, height: ICON_SIZE }}>
+      {iconEl}
+      {type === 'withdraw' && withdrawalMethod && (
+        <WithdrawalBadge method={withdrawalMethod} />
+      )}
     </View>
   );
 };
 
 export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, ...props }) => {
-  const { text: amountText, isCredit } = formatAmount(
+  const { text: amountText, isCredit } = formatTransactionAmount(
     transaction.amount,
     transaction.type,
     transaction.currency
@@ -370,7 +193,6 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
       <View className="mr-sm">
         <TransactionIcon transaction={transaction} />
       </View>
-
       <View className="flex-1">
         <Text className="font-subtitle text-[15px] text-text-primary" numberOfLines={1}>
           {transaction.title}
@@ -379,7 +201,6 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
           {transaction.subtitle}
         </Text>
       </View>
-
       <View className="items-end">
         <MaskedBalance
           value={amountText}
@@ -413,12 +234,10 @@ export const TransactionItemSkeleton: React.FC = () => (
     <View className="mr-sm">
       <Skeleton className="h-12 w-12 rounded-full" />
     </View>
-
     <View className="flex-1">
       <Skeleton className="h-4 w-2/5 rounded-sm" />
       <Skeleton className="mt-[6px] h-3 w-3/5 rounded-sm" />
     </View>
-
     <View className="ml-3 items-end">
       <Skeleton className="h-4 w-[92px] rounded-sm" />
       <Skeleton className="mt-[6px] h-3 w-[62px] rounded-sm" />

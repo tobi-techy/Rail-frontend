@@ -216,7 +216,7 @@ export default function MarketExploreScreen() {
                 router.push({
                   pathname: '/market-asset/[symbol]',
                   params: { symbol: asset.symbol },
-                } as any)
+                } as never)
               }
             />
           )}

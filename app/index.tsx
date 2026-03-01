@@ -40,7 +40,7 @@ export default function IndexScreen() {
 
   useEffect(() => {
     if (targetRoute) {
-      router.replace(targetRoute as any);
+      router.replace(targetRoute as never);
     }
   }, [targetRoute]);
 

@@ -22,6 +22,28 @@ export type TaxIdType =
   | 'passport'
   | 'national_id';
 
+export type KycIdentityDocumentType =
+  | 'passport'
+  | 'drivers_license'
+  | 'national_id'
+  | 'residence_permit';
+
+export type EmploymentStatus =
+  | 'employed'
+  | 'self_employed'
+  | 'student'
+  | 'retired'
+  | 'unemployed'
+  | 'other';
+
+export type InvestmentPurpose =
+  | 'build_portfolio'
+  | 'diversification'
+  | 'retirement'
+  | 'first_home'
+  | 'dependants'
+  | 'income_generation';
+
 export type StartSumsubSessionRequest = {
   tax_id: string;
   tax_id_type: TaxIdType;
@@ -120,6 +142,20 @@ export type TaxFieldConfig = {
   validate: (value: string) => boolean;
 };
 
+export type KycIdentityDocumentConfig = {
+  type: KycIdentityDocumentType;
+  label: string;
+  description: string;
+  requiresBack: boolean;
+};
+
+export type CountryKycRequirements = {
+  acceptedDocuments: KycIdentityDocumentConfig[];
+  requiredDisclosures: (keyof KycDisclosures)[];
+  summaryBullets: string[];
+  uploadTips: string[];
+};
+
 const digitsOnly = (s: string) => s.replace(/\D/g, '');
 
 export const COUNTRY_TAX_CONFIG: Record<Country, TaxFieldConfig[]> = {
@@ -209,6 +245,153 @@ export const COUNTRY_HELP_TEXT: Record<Country, string> = {
   GBR: 'Use NINO/UTR if available, or passport/national ID.',
   NGA: 'Use NIN or BVN where possible for fastest review.',
 };
+
+export const EMPLOYMENT_STATUS_OPTIONS: { value: EmploymentStatus; label: string }[] = [
+  { value: 'employed', label: 'Employed' },
+  { value: 'self_employed', label: 'Self-employed' },
+  { value: 'student', label: 'Student' },
+  { value: 'retired', label: 'Retired' },
+  { value: 'unemployed', label: 'Unemployed' },
+  { value: 'other', label: 'Other' },
+];
+
+export const INVESTMENT_PURPOSE_OPTIONS: { value: InvestmentPurpose; label: string }[] = [
+  { value: 'build_portfolio', label: 'Build an investment portfolio' },
+  { value: 'diversification', label: 'Diversify investments' },
+  { value: 'retirement', label: 'Prepare for retirement' },
+  { value: 'first_home', label: 'Save for a first home' },
+  { value: 'dependants', label: 'Support dependants' },
+  { value: 'income_generation', label: 'Generate supplemental income' },
+];
+
+export const COUNTRY_KYC_REQUIREMENTS: Record<Country, CountryKycRequirements> = {
+  USA: {
+    acceptedDocuments: [
+      {
+        type: 'drivers_license',
+        label: "Driver's license",
+        description: 'Front and back photos',
+        requiresBack: true,
+      },
+      {
+        type: 'passport',
+        label: 'Passport',
+        description: 'Photo page only',
+        requiresBack: false,
+      },
+      {
+        type: 'national_id',
+        label: 'State or national ID',
+        description: 'Front and back photos',
+        requiresBack: true,
+      },
+    ],
+    requiredDisclosures: [
+      'is_control_person',
+      'is_affiliated_exchange_or_finra',
+      'is_politically_exposed',
+      'immediate_family_exposed',
+    ],
+    summaryBullets: [
+      'Issuing country and tax identifier',
+      'Government ID photos',
+      'Regulatory disclosures required for U.S. accounts',
+    ],
+    uploadTips: [
+      'Use a dark surface and avoid glare.',
+      'All four corners of the document must be visible.',
+      'Your name and document number must be readable.',
+    ],
+  },
+  GBR: {
+    acceptedDocuments: [
+      {
+        type: 'passport',
+        label: 'Passport',
+        description: 'Photo page only',
+        requiresBack: false,
+      },
+      {
+        type: 'drivers_license',
+        label: 'UK driving licence',
+        description: 'Front and back photos',
+        requiresBack: true,
+      },
+      {
+        type: 'national_id',
+        label: 'National identity card',
+        description: 'Front and back photos',
+        requiresBack: true,
+      },
+      {
+        type: 'residence_permit',
+        label: 'Residence permit',
+        description: 'Front and back photos',
+        requiresBack: true,
+      },
+    ],
+    requiredDisclosures: ['is_politically_exposed', 'immediate_family_exposed'],
+    summaryBullets: [
+      'Issuing country and tax identifier',
+      'Government ID photos',
+      'Political exposure declarations',
+    ],
+    uploadTips: [
+      'Capture your ID in a bright environment.',
+      'Keep text sharp and centered in frame.',
+      'Retake if any corner appears cropped.',
+    ],
+  },
+  NGA: {
+    acceptedDocuments: [
+      {
+        type: 'national_id',
+        label: 'National ID card',
+        description: 'Front and back photos',
+        requiresBack: true,
+      },
+      {
+        type: 'passport',
+        label: 'International passport',
+        description: 'Photo page only',
+        requiresBack: false,
+      },
+      {
+        type: 'drivers_license',
+        label: "Driver's licence",
+        description: 'Front and back photos',
+        requiresBack: true,
+      },
+      {
+        type: 'residence_permit',
+        label: 'Residence permit',
+        description: 'Front and back photos',
+        requiresBack: true,
+      },
+    ],
+    requiredDisclosures: ['is_politically_exposed', 'immediate_family_exposed'],
+    summaryBullets: [
+      'Issuing country and tax identifier',
+      'Government ID photos',
+      'Political exposure declarations',
+    ],
+    uploadTips: [
+      'Do not cover your photo or signature fields.',
+      'Use the original document, not a photocopy.',
+      'Ensure your document number is fully visible.',
+    ],
+  },
+};
+
+export function documentTypeRequiresBack(
+  country: Country,
+  documentType: KycIdentityDocumentType
+): boolean {
+  const selected = COUNTRY_KYC_REQUIREMENTS[country].acceptedDocuments.find(
+    (document) => document.type === documentType
+  );
+  return selected ? selected.requiresBack : true;
+}
 
 export function validateTaxId(country: Country, type: TaxIdType, value: string): string | null {
   const cfg = COUNTRY_TAX_CONFIG[country].find((x) => x.type === type);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { ArrowUpRight } from 'lucide-react-native';
 
@@ -72,6 +72,8 @@ export function FeatureBanner({ kycApproved, onKYCPress }: FeatureBannerProps) {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = Math.min(Math.max(screenWidth * 0.62, 220), 320);
   const snap = cardWidth + 10;
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
 
   const banners: Banner[] = [
     ...(!kycApproved
@@ -116,17 +118,41 @@ export function FeatureBanner({ kycApproved, onKYCPress }: FeatureBannerProps) {
   ];
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      decelerationRate="fast"
-      snapToInterval={snap}
-      snapToAlignment="start"
-      className="mt-5"
-      contentContainerStyle={{ paddingRight: 16 }}>
-      {banners.map((b) => (
-        <BannerCard key={b.id} b={b} cardWidth={cardWidth} />
-      ))}
-    </ScrollView>
+    <View className="mt-5">
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        decelerationRate="fast"
+        snapToInterval={snap}
+        snapToAlignment="start"
+        pagingEnabled={false}
+        disableIntervalMomentum
+        onScroll={(e) => {
+          const idx = Math.round(e.nativeEvent.contentOffset.x / snap);
+          setActiveIndex(Math.max(0, Math.min(idx, banners.length - 1)));
+        }}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingRight: 16 }}>
+        {banners.map((b) => (
+          <BannerCard key={b.id} b={b} cardWidth={cardWidth} />
+        ))}
+      </ScrollView>
+      {banners.length > 1 && (
+        <View className="mt-2 flex-row justify-center gap-1">
+          {banners.map((_, i) => (
+            <View
+              key={i}
+              style={{
+                width: i === activeIndex ? 16 : 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: i === activeIndex ? '#FF2E01' : '#E5E7EB',
+              }}
+            />
+          ))}
+        </View>
+      )}
+    </View>
   );
 }

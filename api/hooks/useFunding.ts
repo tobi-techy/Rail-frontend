@@ -2,16 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fundingService } from '../services';
 import { queryKeys } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
+import { toNumber } from '@/utils/market';
 import type {
   InitiateWithdrawalRequest,
   InitiateFiatWithdrawalRequest,
   StationResponse,
 } from '../types';
-
-const toNumber = (value?: string): number => {
-  const parsed = Number.parseFloat(value ?? '');
-  return Number.isFinite(parsed) ? parsed : 0;
-};
 
 const toMoneyString = (value: number): string => Math.max(0, value).toFixed(2);
 

@@ -9,10 +9,10 @@ export default function SpendingStashLayout() {
           headerShown: false,
           headerTitle: '',
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#fff' },
-          contentStyle: { backgroundColor: '#fff' },
+          headerStyle: { backgroundColor: '#000000' },
           animation: 'fade',
           gestureEnabled: true,
+          contentStyle: { backgroundColor: '#000000' },
         }}
       />
     </ErrorBoundary>

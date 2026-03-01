@@ -1,9 +1,4 @@
 import { Buffer } from 'buffer';
-import {
-  transact,
-  type Web3MobileWallet,
-} from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
-import { SolanaMobileWalletAdapterErrorCode } from '@solana-mobile/mobile-wallet-adapter-protocol';
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -52,12 +47,10 @@ const APP_IDENTITY = {
 };
 
 type FundingDeps = {
-  transactFn: typeof transact;
   getConnection: (endpoint: string) => Pick<Connection, 'getLatestBlockhash'>;
 };
 
 const defaultDeps: FundingDeps = {
-  transactFn: transact,
   getConnection: (endpoint) => new Connection(endpoint, 'confirmed'),
 };
 
@@ -86,7 +79,7 @@ export function normalizeMobileWalletFundingError(error: unknown): NormalizedFun
   );
   const normalizedMessage = rawMessage.toLowerCase();
 
-  if (rawCode.includes(SolanaMobileWalletAdapterErrorCode.ERROR_WALLET_NOT_FOUND)) {
+  if (rawCode.includes('ERROR_WALLET_NOT_FOUND')) {
     return {
       category: 'wallet_missing',
       code: rawCode || 'ERROR_WALLET_NOT_FOUND',
@@ -95,7 +88,7 @@ export function normalizeMobileWalletFundingError(error: unknown): NormalizedFun
   }
 
   if (
-    rawCode.includes(SolanaMobileWalletAdapterErrorCode.ERROR_SESSION_TIMEOUT) ||
+    rawCode.includes('ERROR_SESSION_TIMEOUT') ||
     normalizedMessage.includes('timeout')
   ) {
     return {
@@ -142,7 +135,7 @@ function toPublicKey(address: string): PublicKey {
 }
 
 async function buildAndSendTransfer(
-  wallet: Web3MobileWallet,
+  wallet: import('@solana-mobile/mobile-wallet-adapter-protocol-web3js').Web3MobileWallet,
   input: StartMobileWalletFundingInput,
   deps: FundingDeps
 ): Promise<StartMobileWalletFundingResult> {
@@ -235,7 +228,8 @@ export async function startMobileWalletFunding(
   const mergedDeps: FundingDeps = { ...defaultDeps, ...deps };
 
   try {
-    return await mergedDeps.transactFn(
+    const { transact } = await import('@solana-mobile/mobile-wallet-adapter-protocol-web3js');
+    return await transact(
       async (wallet) => buildAndSendTransfer(wallet, input, mergedDeps),
       { baseUri: resolveWalletBaseUri(input.wallet) }
     );

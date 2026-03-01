@@ -20,36 +20,28 @@ export default function TabLayout() {
           name="index"
           options={{
             title: 'Home',
-            tabBarIcon: ({ color, focused }) => (
-              <Home size={24} color={color} fill={focused ? color : '#999'} />
-            ),
+            tabBarIcon: ({ color }) => <Home size={24} color={color} />,
           }}
         />
-        <Tabs.Screen
+        {/* <Tabs.Screen
           name="market"
           options={{
             title: 'Market',
-            tabBarIcon: ({ color, focused }) => (
-              <TrendingUp size={24} color={color} fill={focused ? color : '#999'} />
-            ),
+            tabBarIcon: ({ color }) => <TrendingUp size={24} color={color} />,
           }}
-        />
+        /> */}
         <Tabs.Screen
           name="history"
           options={{
             title: 'History',
-            tabBarIcon: ({ color, focused }) => (
-              <Clock1 size={24} color={color} fill={focused ? color : '#999'} />
-            ),
+            tabBarIcon: ({ color }) => <Clock1 size={24} color={color} />,
           }}
         />
         <Tabs.Screen
           name="settings"
           options={{
             title: 'Settings',
-            tabBarIcon: ({ color, focused }) => (
-              <Settings size={24} color={color} fill={focused ? color : '#999'} />
-            ),
+            tabBarIcon: ({ color }) => <Settings size={24} color={color} />,
           }}
         />
       </Tabs>

@@ -44,7 +44,7 @@ export const SelectionScreen = ({
       if (shouldContinue === false) return;
     }
 
-    router.push(nextRoute as any);
+    router.push(nextRoute as never);
   };
 
   return (

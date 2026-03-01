@@ -1,33 +1,56 @@
 /**
  * Chain Utilities
- * Helper functions for Solana blockchain operations
+ * Helper functions for multi-chain operations
  */
 
-import type { TestnetChain } from '@/api/types';
+import type { WalletChain } from '@/api/types';
 
-/**
- * Solana testnet configuration
- * Application is configured to use Solana testnet only
- */
-export const SOLANA_TESTNET_CHAIN: TestnetChain = 'SOL-DEVNET';
+export const SOLANA_TESTNET_CHAIN: WalletChain = 'SOL-DEVNET';
 
-/**
- * Get testnet chain (always returns Solana testnet)
- */
-export function getTestnetChain(networkId?: string): TestnetChain {
-  return SOLANA_TESTNET_CHAIN;
+export interface ChainConfig {
+  chain: WalletChain;
+  label: string;
+  shortLabel: string;
+  color: string;
+  warning: string;
 }
 
-/**
- * Check if a chain is a testnet (always true for our Solana configuration)
- */
+export const SUPPORTED_CHAINS: ChainConfig[] = [
+  {
+    chain: 'SOL-DEVNET',
+    label: 'Solana',
+    shortLabel: 'SOL',
+    color: '#9945FF',
+    warning: 'Only send USDC on Solana to this address.',
+  },
+  {
+    chain: 'MATIC-AMOY',
+    label: 'Polygon',
+    shortLabel: 'MATIC',
+    color: '#8247E5',
+    warning: 'Only send USDC on Polygon to this address.',
+  },
+  {
+    chain: 'AVAX-FUJI',
+    label: 'Avalanche',
+    shortLabel: 'AVAX',
+    color: '#E84142',
+    warning: 'Only send USDC on Avalanche C-Chain to this address.',
+  },
+];
+
+export function getChainConfig(chain: WalletChain): ChainConfig {
+  return SUPPORTED_CHAINS.find((c) => c.chain === chain) ?? SUPPORTED_CHAINS[0];
+}
+
+export function getChainDisplayName(chain: WalletChain): string {
+  return getChainConfig(chain).label;
+}
+
 export function isTestnetChain(chain: string): boolean {
-  return chain === 'SOL-DEVNET' || chain.includes('DEVNET');
+  return chain.includes('DEVNET') || chain.includes('AMOY') || chain.includes('FUJI');
 }
 
-/**
- * Get display name for Solana testnet
- */
-export function getChainDisplayName(chain: TestnetChain): string {
-  return 'Solana Devnet';
+export function getTestnetChain(): WalletChain {
+  return SOLANA_TESTNET_CHAIN;
 }

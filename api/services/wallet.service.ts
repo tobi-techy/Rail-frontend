@@ -198,7 +198,7 @@ export const walletService = {
    * Get deposit address for a token
    */
   async getDepositAddress(data: GetDepositAddressRequest): Promise<GetDepositAddressResponse> {
-    const chain = data.network?.toUpperCase().includes('SOL') ? 'SOL-DEVNET' : 'SOL-DEVNET';
+    const chain = data.network || 'SOL-DEVNET';
     const response = await apiClient.post<any>(WALLET_ENDPOINTS.DEPOSIT_ADDRESS, { chain });
     return {
       address: response?.address || '',

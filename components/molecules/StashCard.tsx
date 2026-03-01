@@ -1,9 +1,28 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { useUIStore } from '@/stores';
 import { MaskedBalance } from './MaskedBalance';
 import { useHaptics } from '@/hooks/useHaptics';
+
+function Shimmer({ className }: { className: string }) {
+  const opacity = useSharedValue(0.4);
+  React.useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(withTiming(1, { duration: 700 }), withTiming(0.4, { duration: 700 })),
+      -1
+    );
+  }, [opacity]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return <Animated.View style={style} className={`rounded-lg bg-gray-200 ${className}`} />;
+}
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -24,6 +43,7 @@ interface StashCardProps {
   onPress?: () => void;
   disabled?: boolean;
   testID?: string;
+  isLoading?: boolean;
 }
 
 const BADGE_COLORS: Record<StashCardBadge['color'], { bg: string; text: string; dot: string }> = {
@@ -43,6 +63,7 @@ export const StashCard: React.FC<StashCardProps> = ({
   onPress,
   disabled,
   testID,
+  isLoading,
 }) => {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -54,23 +75,15 @@ export const StashCard: React.FC<StashCardProps> = ({
   return (
     <AnimatedPressable
       style={animStyle}
-      className={`max-w-[50%] rounded-2xl border border-gray-200 bg-transparent px-5 py-5 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
-      onPress={() => {
-        impact();
-        onPress?.();
-      }}
-      onPressIn={() => {
-        scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
-      }}
+      className={`flex-1 rounded-2xl border border-gray-200 bg-transparent px-5 py-5 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
+      onPress={() => { impact(); onPress?.(); }}
+      onPressIn={() => { scale.value = withSpring(0.97, { damping: 20, stiffness: 300 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}
       disabled={disabled}
       testID={testID}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={onPress ? `${title}: ${amount}${amountCents || ''}` : undefined}
       accessibilityState={{ disabled }}>
-      {/* Icon row + badge */}
       <View className="mb-14 flex-row items-start justify-between">
         <View>{icon}</View>
         {badge && badgeColors ? (
@@ -87,19 +100,27 @@ export const StashCard: React.FC<StashCardProps> = ({
         ) : null}
       </View>
 
-      <View className="min-w-0 flex-row items-baseline">
-        <MaskedBalance
-          value={`${amount}${amountCents ?? ''}`}
-          visible={isBalanceVisible}
-          textClass="text-stash"
-          colorClass="text-text-primary"
-        />
-      </View>
-
-      <Text className="mt-1 font-body text-body tracking-wide text-text-tertiary">{title}</Text>
-      {subtitle ? (
-        <Text className="mt-0.5 font-body text-[11px] text-text-tertiary">{subtitle}</Text>
-      ) : null}
+      {isLoading ? (
+        <View className="gap-y-2">
+          <Shimmer className="h-7 w-20" />
+          <Shimmer className="h-3 w-12" />
+        </View>
+      ) : (
+        <>
+          <View className="min-w-0 flex-row items-baseline">
+            <MaskedBalance
+              value={`${amount}${amountCents ?? ''}`}
+              visible={isBalanceVisible}
+              textClass="text-stash"
+              colorClass="text-text-primary"
+            />
+          </View>
+          <Text className="mt-1 font-body text-body tracking-wide text-text-tertiary">{title}</Text>
+          {subtitle ? (
+            <Text className="mt-0.5 font-body text-[11px] text-text-tertiary">{subtitle}</Text>
+          ) : null}
+        </>
+      )}
     </AnimatedPressable>
   );
 };

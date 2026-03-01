@@ -2,7 +2,7 @@ import { ROUTES } from '@/constants/routes';
 
 const PROFILE_REQUIRED_STATUSES = new Set(['started', 'wallets_pending']);
 const KYC_REQUIRED_STATUSES = new Set(['kyc_rejected']);
-const APP_READY_STATUSES = new Set(['completed', 'kyc_approved']);
+const APP_READY_STATUSES = new Set(['completed', 'kyc_approved', 'kyc_pending']);
 
 export const resolveOnboardingStatus = (status?: string | null): string => {
   return typeof status === 'string' ? status.trim().toLowerCase() : '';
