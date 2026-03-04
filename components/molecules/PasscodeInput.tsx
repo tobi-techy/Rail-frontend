@@ -67,11 +67,17 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
   const handleKeyPress = useCallback(
     (key: string) => {
       if (key === 'backspace') {
-        if (passcode.length > 0) { haptics.tap(); setPasscode(passcode.slice(0, -1)); }
+        if (passcode.length > 0) {
+          haptics.tap();
+          setPasscode(passcode.slice(0, -1));
+        }
       } else if (key === 'fingerprint') {
         onFingerprint?.();
       } else if (key.match(/^[0-9]$/)) {
-        if (passcode.length < length) { haptics.tap(); setPasscode(passcode + key); }
+        if (passcode.length < length) {
+          haptics.tap();
+          setPasscode(passcode + key);
+        }
       }
     },
     [passcode, length, setPasscode, onFingerprint]
@@ -82,7 +88,7 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
       {title && (
         <View className="mt-12">
           <Text
-            className={`font-subtitle text-display-lg ${isDark ? 'text-white' : 'text-text-primary'}`}>
+            className={`font-headline text-auth-title leading-[1.1] ${isDark ? 'text-white' : 'text-text-primary'}`}>
             {title}
           </Text>
           {subtitle && (
