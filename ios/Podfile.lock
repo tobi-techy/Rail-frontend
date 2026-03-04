@@ -336,9 +336,14 @@ PODS:
   - hermes-engine (0.81.5):
     - hermes-engine/Pre-built (= 0.81.5)
   - hermes-engine/Pre-built (0.81.5)
+  - IdensicMobileSDK (1.40.2):
+    - IdensicMobileSDK/Default (= 1.40.2)
+  - IdensicMobileSDK/Core (1.40.2)
+  - IdensicMobileSDK/Default (1.40.2):
+    - IdensicMobileSDK/Core
   - jail-monkey (2.8.4):
     - React-Core
-  - PostHog (3.41.2)
+  - PostHog (3.42.0)
   - posthog-react-native-session-replay (1.3.0):
     - hermes-engine
     - PostHog (~> 3.21)
@@ -1712,6 +1717,9 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - react-native-mobilesdk-module (1.40.2):
+    - IdensicMobileSDK (= 1.40.2)
+    - React-Core
   - react-native-netinfo (11.4.1):
     - React-Core
   - react-native-passkey (3.3.2):
@@ -2664,6 +2672,7 @@ DEPENDENCIES:
   - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
   - react-native-gleapsdk (from `../node_modules/react-native-gleapsdk`)
   - react-native-keyboard-controller (from `../node_modules/react-native-keyboard-controller`)
+  - "react-native-mobilesdk-module (from `../node_modules/@sumsub/react-native-mobilesdk-module`)"
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-passkey (from `../node_modules/react-native-passkey`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
@@ -2714,6 +2723,8 @@ DEPENDENCIES:
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
+  https://github.com/SumSubstance/Specs.git:
+    - IdensicMobileSDK
   trunk:
     - AFNetworking
     - AppAuth
@@ -2886,6 +2897,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-gleapsdk"
   react-native-keyboard-controller:
     :path: "../node_modules/react-native-keyboard-controller"
+  react-native-mobilesdk-module:
+    :path: "../node_modules/@sumsub/react-native-mobilesdk-module"
   react-native-netinfo:
     :path: "../node_modules/@react-native-community/netinfo"
   react-native-passkey:
@@ -3032,8 +3045,9 @@ SPEC CHECKSUMS:
   GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   hermes-engine: 9f4dfe93326146a1c99eb535b1cb0b857a3cd172
+  IdensicMobileSDK: 00b13320e1b1e0574e68475bd0fbc7cd30fce26e
   jail-monkey: e057abe7b37f84e1763491eb72113efd334a6de0
-  PostHog: 2a8daf098230d8e631adbc599b785bd966f7639f
+  PostHog: c5bad245fba8629c7ea11e8c8cae05a5c30f8eed
   posthog-react-native-session-replay: cc5a281243db99912bf0edf27a58c81a9c672a3a
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RCTDeprecation: 943572d4be82d480a48f4884f670135ae30bf990
@@ -3072,6 +3086,7 @@ SPEC CHECKSUMS:
   react-native-get-random-values: a603782b2b222a34533c66371614790282dba3f1
   react-native-gleapsdk: 6adc7a242b26d1077356ba1ab3ed8072893864e4
   react-native-keyboard-controller: 1ad78688f744e0ebdf3b04007b91089a254b80f9
+  react-native-mobilesdk-module: 3f7f82852850be13fec4f2ff7307305c9bbdd1bc
   react-native-netinfo: cec9c4e86083cb5b6aba0e0711f563e2fbbff187
   react-native-passkey: 55f5766cd41ab9d86fc4dd33ae5356b0229c77b9
   react-native-safe-area-context: 37e680fc4cace3c0030ee46e8987d24f5d3bdab2
@@ -3123,6 +3138,6 @@ SPEC CHECKSUMS:
   Yoga: 5934998fbeaef7845dbf698f698518695ab4cd1a
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: 758f53dfe34a7a98f79c8b45dfaac58c14c1a742
+PODFILE CHECKSUM: 24a951fcecb76753f493d4fbe0ac6b182e794c3c
 
 COCOAPODS: 1.16.2

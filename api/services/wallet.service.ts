@@ -23,6 +23,7 @@ import type {
   WalletAddressesResponse,
   ApiResponse,
 } from '../types';
+import type { Transaction } from '../types/wallet';
 
 const WALLET_ENDPOINTS = {
   BALANCE: '/v1/balances',
@@ -88,7 +89,7 @@ export const walletService = {
         [];
     const items = rows.map((tx: any) => ({
       id: tx?.id || tx?.withdrawal_id || '',
-      type: 'withdraw',
+      type: (tx?.type as Transaction['type']) || 'withdraw',
       tokenId: 'USDC',
       amount: String(tx?.amount ?? '0'),
       usdAmount: String(tx?.amount ?? '0'),
@@ -116,7 +117,7 @@ export const walletService = {
     const tx = await apiClient.get<any>(WALLET_ENDPOINTS.TRANSACTION_DETAIL.replace(':id', txId));
     return {
       id: tx?.id || tx?.withdrawal_id || txId,
-      type: 'withdraw',
+      type: (tx?.type as Transaction['type']) || 'withdraw',
       tokenId: 'USDC',
       amount: String(tx?.amount ?? '0'),
       usdAmount: String(tx?.amount ?? '0'),
@@ -157,7 +158,7 @@ export const walletService = {
       estimatedTime: '1-2 minutes',
       transaction: {
         id: response?.withdrawal_id || '',
-        type: 'withdraw',
+        type: 'withdraw' as const,
         tokenId: data.tokenId,
         amount: data.amount,
         usdAmount: data.amount,

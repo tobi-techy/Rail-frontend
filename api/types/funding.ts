@@ -63,6 +63,8 @@ export interface InitiateWithdrawalRequest {
 export interface InitiateFiatWithdrawalRequest {
   amount: number;
   currency: 'USD' | 'EUR';
+  account_holder_name: string;
+  account_number: string;
   routing_number: string;
 }
 

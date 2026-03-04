@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Check, ChevronDown, ChevronRight, X } from 'lucide-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -24,6 +24,13 @@ export default function KycCountryScreen() {
   const insets = useSafeAreaInsets();
   const { country, setCountry } = useKycStore();
   const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const params = useLocalSearchParams<{ autoLaunch?: string }>();
+
+  useEffect(() => {
+    if (params.autoLaunch === 'true') {
+      router.replace('/kyc/verification-intro');
+    }
+  }, [params.autoLaunch]);
 
   const currentCountry = useMemo(
     () => COUNTRIES.find((item) => item.code === country) ?? COUNTRIES[0],
@@ -49,9 +56,9 @@ export default function KycCountryScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 160 }}>
           <View className="mb-6">
-            <Text className="font-subtitle text-[13px] text-gray-500">Step 1 of 3</Text>
+            <Text className="font-subtitle text-[13px] text-gray-500">Step 1 of 4</Text>
             <View className="mt-3 h-1.5 overflow-hidden rounded-full bg-gray-200">
-              <View className="h-full w-1/3 rounded-full bg-gray-900" />
+              <View className="h-full w-1/4 rounded-full bg-gray-900" />
             </View>
           </View>
 
@@ -133,7 +140,7 @@ export default function KycCountryScreen() {
         <View
           className="absolute bottom-0 left-0 right-0 border-t border-gray-100 bg-white px-4 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
-          <Button title="Continue" onPress={() => router.push('/kyc/documents')} />
+          <Button title="Continue" onPress={() => router.push('/kyc/tax-id')} />
         </View>
 
         <Modal

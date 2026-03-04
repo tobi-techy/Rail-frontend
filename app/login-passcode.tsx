@@ -73,7 +73,10 @@ export default function LoginPasscodeScreen() {
 
   // Merge passkey error into local error display
   useEffect(() => {
-    if (passkeyError) { haptics.error(); setError(passkeyError); }
+    if (passkeyError) {
+      haptics.error();
+      setError(passkeyError);
+    }
   }, [passkeyError]);
 
   useEffect(() => {
@@ -255,7 +258,9 @@ export default function LoginPasscodeScreen() {
               <Text className="font-body text-caption text-text-secondary">Not {userName}? </Text>
               <TouchableOpacity
                 onPress={() => {
-                  clearAutoFired(`login-passcode:${useAuthStore.getState().user?.id || safeName(user?.email) || 'unknown'}`);
+                  clearAutoFired(
+                    `login-passcode:${useAuthStore.getState().user?.id || safeName(user?.email) || 'anonymous'}`
+                  );
                   useAuthStore.getState().reset();
                   router.replace('/(auth)/signin');
                 }}

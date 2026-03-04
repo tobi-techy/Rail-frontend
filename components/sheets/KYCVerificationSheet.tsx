@@ -10,7 +10,7 @@ import {
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
-import { type KYCStatusResponse, type KycStatus } from '@/api/types/kyc';
+import { type KYCStatusResponse, type KycStatus, isKycInReview } from '@/api/types/kyc';
 import { useKYCStatus, useKycStatusPolling } from '@/api/hooks/useKYC';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -31,7 +31,8 @@ const resolveStatusMode = (status?: KYCStatusResponse): ScreenStatusMode => {
   const value = status?.status ?? 'not_started';
   if (value === 'approved') return 'approved';
   if (value === 'rejected' || value === 'expired') return 'rejected';
-  if (value === 'processing' || (value === 'pending' && status?.has_submitted)) return 'pending';
+  // Only show pending if user has actually submitted; otherwise they may be retrying.
+  if (isKycInReview(status)) return 'pending';
   return 'not_started';
 };
 

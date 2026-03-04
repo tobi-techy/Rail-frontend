@@ -2,7 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { userService } from '@/api/services';
 import { logger } from '@/lib/logger';
 import { ROUTES } from '@/constants/routes';
-import { isKycSubmissionRequired, isProfileCompletionRequired } from '@/utils/onboardingFlow';
+import {
+  isKycSubmissionRequired,
+  isOnboardingAppReady,
+  isProfileCompletionRequired,
+} from '@/utils/onboardingFlow';
 import { isAuthSessionInvalidError } from '@/utils/authErrorClassifier';
 import type { RouteConfig, AuthState } from '@/types/routing.types';
 
@@ -136,8 +140,16 @@ const handleAuthenticatedUser = (
     return ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO;
   }
 
-  // KYC-rejected users can enter the app; KYC collection is in-context via bottom sheets.
-  if (needsKYC && config.inAppGroup) return null;
+  // KYC-required users can stay in the app, on passcode creation, on profile screens (transitioning), or on KYC screens.
+  if (needsKYC) {
+    if (
+      config.inAppGroup ||
+      config.isOnCreatePasscode ||
+      config.isOnConfirmPasscode ||
+      config.isOnCompleteProfile
+    )
+      return null;
+  }
 
   // If on passcode screen and session is valid -> go to dashboard
   if (config.isOnLoginPasscode) {
@@ -149,7 +161,13 @@ const handleAuthenticatedUser = (
 
   // SECURITY: Completed users must present a valid passcode session before app access.
   const shouldRequirePasscode = hasPasscode || userOnboardingStatus === 'completed';
-  if (shouldRequirePasscode && !hasValidPasscodeSession && !config.isOnLoginPasscode) {
+  if (
+    shouldRequirePasscode &&
+    !hasValidPasscodeSession &&
+    !config.isOnLoginPasscode &&
+    !config.isOnCreatePasscode &&
+    !config.isOnConfirmPasscode
+  ) {
     logger.info('[RouteHelpers] Passcode session missing/expired, redirecting to login-passcode', {
       component: 'routeHelpers',
       action: 'passcode-expired-redirect',
@@ -159,7 +177,7 @@ const handleAuthenticatedUser = (
 
   if (isInCriticalAuthFlow(config)) return null;
 
-  if (userOnboardingStatus === 'completed' && config.inAppGroup) return null;
+  if (isOnboardingAppReady(userOnboardingStatus) && config.inAppGroup) return null;
 
   if (!config.inAppGroup) return ROUTES.TABS;
 

@@ -19,10 +19,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { SOLANA_TESTNET_CHAIN } from '@/utils/chains';
 import { parseSolanaPayUrl, type SolanaPayRequest } from '@/utils/solanaPayUrl';
-import {
-  DEFAULT_DEVNET_USDC_MINT,
-  type SupportedFundingWallet,
-} from '@/services/solanaFunding';
+import { DEFAULT_DEVNET_USDC_MINT, type SupportedFundingWallet } from '@/services/solanaFunding';
 
 interface SolanaPayScanSheetProps {
   visible: boolean;
@@ -62,6 +59,8 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
     onClose();
   }, [reset, onClose]);
 
+  const usdcMint = process.env.EXPO_PUBLIC_SOLANA_USDC_MINT ?? DEFAULT_DEVNET_USDC_MINT;
+
   const handleBarcode = useCallback(
     ({ data }: { data: string }) => {
       if (scannedRef.current || step !== 'scan') return;
@@ -69,10 +68,19 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
       if (!parsed) return;
       scannedRef.current = true;
       impact();
+
+      // Reject non-USDC tokens — startMobileWalletFunding only supports USDC
+      if (parsed.splToken && parsed.splToken !== usdcMint) {
+        setError('Only USDC payments are supported. This QR requests a different token.');
+        setRequest(parsed);
+        setStep('pick-wallet');
+        return;
+      }
+
       setRequest(parsed);
       setStep('pick-wallet');
     },
-    [step, impact]
+    [step, impact, usdcMint]
   );
 
   const handleSend = useCallback(
@@ -120,7 +128,6 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
     permission?.status === 'denied' ||
     (permission && !permission.granted && !permission.canAskAgain);
 
-  const usdcMint = process.env.EXPO_PUBLIC_SOLANA_USDC_MINT ?? DEFAULT_DEVNET_USDC_MINT;
   const isUsdc = !request?.splToken || request.splToken === usdcMint;
   const tokenLabel = isUsdc ? 'USDC' : 'tokens';
   const shortRecipient = request
@@ -257,30 +264,33 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
       {isSending ? (
         <View className="items-center py-6">
           <ActivityIndicator color="#000" />
-          <Text className="mt-3 font-body text-sm text-text-secondary">
-            Waiting for wallet…
-          </Text>
+          <Text className="mt-3 font-body text-sm text-text-secondary">Waiting for wallet…</Text>
         </View>
       ) : (
         <View className="gap-3">
           <Text className="mb-1 font-body text-sm text-text-secondary">Pay with</Text>
           <Pressable
             onPress={() => void handleSend('phantom')}
-            disabled={!request?.amount}
+            disabled={!request?.amount || !isUsdc}
             className="flex-row items-center gap-3 rounded-2xl border border-gray-200 px-4 py-4 active:opacity-70">
             <PhantomIcon width={32} height={32} />
             <Text className="font-subtitle text-base text-text-primary">Phantom</Text>
           </Pressable>
           <Pressable
             onPress={() => void handleSend('solflare')}
-            disabled={!request?.amount}
+            disabled={!request?.amount || !isUsdc}
             className="flex-row items-center gap-3 rounded-2xl border border-gray-200 px-4 py-4 active:opacity-70">
             <SolflareIcon width={32} height={32} />
             <Text className="font-subtitle text-base text-text-primary">Solflare</Text>
           </Pressable>
           <Button
             title="Scan again"
-            onPress={() => { scannedRef.current = false; setStep('scan'); setError(''); setWalletMissing(null); }}
+            onPress={() => {
+              scannedRef.current = false;
+              setStep('scan');
+              setError('');
+              setWalletMissing(null);
+            }}
             variant="white"
             size="large"
             className="mt-1 w-full"

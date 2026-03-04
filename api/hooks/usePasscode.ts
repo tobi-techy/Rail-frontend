@@ -101,16 +101,6 @@ export function useVerifyPasscode() {
 
       // For returning users without a valid JWT, use identifier-based passcode login.
       if (!authState.isAuthenticated || !authState.accessToken) {
-        // First attempt refresh-based recovery when a refresh token exists.
-        if (authState.refreshToken) {
-          try {
-            await authState.refreshSession();
-            return retryWithBackoff(() => passcodeService.verifyPasscode(data));
-          } catch {
-            // Fall through to identifier-based passcode login.
-          }
-        }
-
         const email = authState.user?.email;
         const phone = (authState.user as any)?.phone || authState.user?.phoneNumber;
         const refreshToken = authState.refreshToken;

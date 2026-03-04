@@ -148,10 +148,10 @@ export const useWalletStore = create<WalletState & WalletActions>()(
           const errorMessage =
             error?.error?.message || error?.message || ERROR_MESSAGES.WALLET.LOAD_FAILED;
 
-          // Fallback to mock data only in dev
+          // Show error to user in production, fallback to mock data only in dev
           set({
             tokens: __DEV__ ? MOCK_TOKENS : [],
-            error: errorMessage,
+            error: __DEV__ ? null : errorMessage,
             isLoading: false,
           });
           get().calculateTotalBalance();

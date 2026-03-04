@@ -612,15 +612,12 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         onboardingStatus: state.onboardingStatus,
         currentOnboardingStep: state.currentOnboardingStep,
         pendingVerificationEmail: state.pendingVerificationEmail,
-        registrationData: { ...state.registrationData, password: '' },
         isBiometricEnabled: state.isBiometricEnabled,
         passcodeSessionToken: state.passcodeSessionToken,
         passcodeSessionExpiresAt: state.passcodeSessionExpiresAt,
         loginAttempts: state.loginAttempts,
         lockoutUntil: state.lockoutUntil,
         hasAcknowledgedDisclaimer: state.hasAcknowledgedDisclaimer,
-        isLoading: state.isLoading,
-        error: state.error,
       }),
     }
   )

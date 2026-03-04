@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { router } from 'expo-router';
 import { useInitiateFiatWithdrawal, useInitiateWithdrawal } from '@/api/hooks/useFunding';
 import { invalidateQueries, queryClient, queryKeys } from '@/api/queryClient';
+import { p2pService } from '@/api/services/p2p.service';
 import type { ExtendedWithdrawMethod } from './types';
 
 interface SubmitCallbacks {
@@ -16,6 +17,11 @@ interface UseWithdrawalSubmitOptions {
   destinationChain?: string;
   isFundFlow: boolean;
   onStartMobileWalletFunding: () => void;
+  // fiat extras
+  fiatAccountHolderName?: string;
+  fiatAccountNumber?: string;
+  // p2p extras
+  p2pNote?: string;
 }
 
 export function useWithdrawalSubmit({
@@ -25,6 +31,9 @@ export function useWithdrawalSubmit({
   destinationChain,
   isFundFlow,
   onStartMobileWalletFunding,
+  fiatAccountHolderName,
+  fiatAccountNumber,
+  p2pNote,
 }: UseWithdrawalSubmitOptions) {
   const { mutate: initiateWithdrawal, isPending: isSubmittingCrypto } = useInitiateWithdrawal();
   const { mutate: initiateFiatWithdrawal, isPending: isSubmittingFiat } =
@@ -54,6 +63,20 @@ export function useWithdrawalSubmit({
         void invalidateAll();
         onSuccess();
       };
+
+      // ── P2P methods ───────────────────────────────────────────────────────
+      if (
+        selectedMethod === 'p2p' ||
+        selectedMethod === 'railtag' ||
+        selectedMethod === 'email' ||
+        selectedMethod === 'contact'
+      ) {
+        p2pService
+          .send({ identifier: destination, amount: amount.toFixed(2), note: p2pNote })
+          .then(() => handleSuccess())
+          .catch((err: unknown) => onError(err));
+        return;
+      }
 
       if (selectedMethod === 'crypto') {
         initiateWithdrawal(
@@ -90,19 +113,28 @@ export function useWithdrawalSubmit({
 
       // fiat
       initiateFiatWithdrawal(
-        { amount, currency: 'USD', routing_number: destination.replace(/\D/g, '') },
+        {
+          amount,
+          currency: 'USD',
+          account_holder_name: (fiatAccountHolderName ?? '').trim(),
+          account_number: (fiatAccountNumber ?? '').replace(/\D/g, ''),
+          routing_number: destination.replace(/\D/g, ''),
+        },
         { onSuccess: handleSuccess, onError }
       );
     },
     [
       destinationInput,
       destinationChain,
+      fiatAccountHolderName,
+      fiatAccountNumber,
       initiateFiatWithdrawal,
       initiateWithdrawal,
       invalidateAll,
       isFundFlow,
       numericAmount,
       onStartMobileWalletFunding,
+      p2pNote,
       selectedMethod,
     ]
   );

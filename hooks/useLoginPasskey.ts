@@ -39,7 +39,9 @@ export function useLoginPasskey({
   const [error, setError] = useState('');
   const { showError, showWarning } = useFeedbackPopup();
 
-  const scope = `login-passcode:${useAuthStore.getState().user?.id || safeName(email) || 'unknown'}`;
+  const userId = useAuthStore.getState().user?.id;
+  const resolvedEmail = safeName(email);
+  const scope = `login-passcode:${userId || resolvedEmail || 'anonymous'}`;
 
   const handlePasskeyAuth = useCallback(
     async (mode: 'auto' | 'manual' = 'manual') => {

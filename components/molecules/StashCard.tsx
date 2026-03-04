@@ -12,7 +12,7 @@ import { useUIStore } from '@/stores';
 import { MaskedBalance } from './MaskedBalance';
 import { useHaptics } from '@/hooks/useHaptics';
 
-function Shimmer({ className }: { className: string }) {
+function Shimmer({ light, className }: { light?: boolean; className: string }) {
   const opacity = useSharedValue(0.4);
   React.useEffect(() => {
     opacity.value = withRepeat(
@@ -21,14 +21,18 @@ function Shimmer({ className }: { className: string }) {
     );
   }, [opacity]);
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return <Animated.View style={style} className={`rounded-lg bg-gray-200 ${className}`} />;
+  return (
+    <Animated.View
+      style={style}
+      className={`rounded-lg ${light ? 'bg-white/30' : 'bg-gray-200'} ${className}`}
+    />
+  );
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface StashCardBadge {
   label: string;
-  /** 'green' | 'red' | 'gray' */
   color: 'green' | 'red' | 'gray';
 }
 
@@ -39,6 +43,8 @@ interface StashCardProps {
   icon: React.ReactNode;
   badge?: StashCardBadge;
   subtitle?: string;
+  /** Solid background color hex — enables the colored card style */
+  cardColor?: string;
   className?: string;
   onPress?: () => void;
   disabled?: boolean;
@@ -59,6 +65,7 @@ export const StashCard: React.FC<StashCardProps> = ({
   icon,
   badge,
   subtitle,
+  cardColor,
   className,
   onPress,
   disabled,
@@ -70,54 +77,61 @@ export const StashCard: React.FC<StashCardProps> = ({
   const { isBalanceVisible } = useUIStore();
   const { impact } = useHaptics();
 
+  const isColored = !!cardColor;
   const badgeColors = badge ? BADGE_COLORS[badge.color] : null;
 
   return (
     <AnimatedPressable
-      style={animStyle}
-      className={`flex-1 rounded-2xl border border-gray-200 bg-transparent px-5 py-5 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
-      onPress={() => { impact(); onPress?.(); }}
-      onPressIn={() => { scale.value = withSpring(0.97, { damping: 20, stiffness: 300 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}
+      style={[animStyle, isColored ? { backgroundColor: cardColor } : undefined]}
+      className={`flex-1 rounded-3xl ${isColored ? '' : 'border border-gray-200 bg-white'} px-4 py-4 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
+      onPress={() => {
+        impact();
+        onPress?.();
+      }}
+      onPressIn={() => {
+        scale.value = withSpring(0.96, { damping: 20, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+      }}
       disabled={disabled}
       testID={testID}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={onPress ? `${title}: ${amount}${amountCents || ''}` : undefined}
       accessibilityState={{ disabled }}>
-      <View className="mb-14 flex-row items-start justify-between">
+      {/* Top row: icon + dot */}
+      <View className="mb-16 flex-row items-start justify-between">
+        {/* Icon in frosted circle */}
         <View>{icon}</View>
-        {badge && badgeColors ? (
-          <View
-            style={{ backgroundColor: badgeColors.bg }}
-            className="flex-row items-center gap-1 rounded-full px-2 py-[3px]">
-            <View
-              style={{ backgroundColor: badgeColors.dot, width: 6, height: 6, borderRadius: 3 }}
-            />
-            <Text style={{ color: badgeColors.text, fontSize: 11, fontWeight: '600' }}>
-              {badge.label}
-            </Text>
-          </View>
-        ) : null}
       </View>
 
+      {/* Bottom: amount + title */}
       {isLoading ? (
         <View className="gap-y-2">
-          <Shimmer className="h-7 w-20" />
-          <Shimmer className="h-3 w-12" />
+          <Shimmer light={isColored} className="h-6 w-20" />
+          <Shimmer light={isColored} className="h-3 w-12" />
         </View>
       ) : (
         <>
-          <View className="min-w-0 flex-row items-baseline">
-            <MaskedBalance
-              value={`${amount}${amountCents ?? ''}`}
-              visible={isBalanceVisible}
-              textClass="text-stash"
-              colorClass="text-text-primary"
-            />
-          </View>
-          <Text className="mt-1 font-body text-body tracking-wide text-text-tertiary">{title}</Text>
+          <MaskedBalance
+            value={`${amount}${amountCents ?? ''}`}
+            visible={isBalanceVisible}
+            textClass="text-stash"
+            colorClass={isColored ? 'text-white' : 'text-text-primary'}
+          />
+          <Text
+            className="mt-1 font-body text-body tracking-wide"
+            style={{ color: isColored ? 'rgba(255,255,255,0.75)' : undefined }}
+            numberOfLines={1}>
+            {title}
+          </Text>
           {subtitle ? (
-            <Text className="mt-0.5 font-body text-[11px] text-text-tertiary">{subtitle}</Text>
+            <Text
+              className="mt-0.5 font-body text-[11px]"
+              style={{ color: isColored ? 'rgba(255,255,255,0.6)' : undefined }}
+              numberOfLines={1}>
+              {subtitle}
+            </Text>
           ) : null}
         </>
       )}

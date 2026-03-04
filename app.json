@@ -64,7 +64,6 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "2",
       "bundleIdentifier": "com.railmoney.rail",
       "splash": {
         "image": "./assets/app-icon/logo-transparent.png",
@@ -78,6 +77,7 @@
         "NSCameraUsageDescription": "Camera access is required for QR code scanning",
         "NSPhotoLibraryUsageDescription": "Access your photo library to upload profile pictures and payment verification documents",
         "NSLocationWhenInUseUsageDescription": "Your location helps us provide location-based services and improve your experience",
+        "NSContactsUsageDescription": "Access your contacts to send money to friends and family",
         "UIRequiredDeviceCapabilities": ["armv7"],
         "UISupportedInterfaceOrientations": ["UIInterfaceOrientationPortrait"],
         "UIStatusBarStyle": "UIStatusBarStyleDefault"

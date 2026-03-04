@@ -15,6 +15,7 @@
       "extends": "production",
       "distribution": "store",
       "channel": "testflight",
+      "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_ENV": "staging",
         "EXPO_PUBLIC_API_URL": "https://api.userail.money/api"

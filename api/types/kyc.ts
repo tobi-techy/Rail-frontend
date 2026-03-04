@@ -106,10 +106,22 @@ export interface KYCStatusResponse {
   provider_reference?: string | null;
   next_steps?: string[];
   // Legacy fields from Bridge/Alpaca era — kept for backward compat
-  overall_status?: 'pending' | 'approved' | 'rejected' | 'not_started';
+  overall_status?: KycStatus;
+  supported_tax_id_type?: TaxIdType;
   bridge?: KYCProviderStatus;
   alpaca?: KYCProviderStatus;
   capabilities?: KYCCapabilities;
+}
+
+/**
+ * True when the user is genuinely in review after submitting docs.
+ * Some backend states may return pending/processing before a real submission.
+ */
+export function isKycInReview(status?: KYCStatusResponse | null): boolean {
+  if (!status) return false;
+  const current = status.status;
+  if (current !== 'pending' && current !== 'processing') return false;
+  return status.has_submitted === true;
 }
 
 export interface KYCProviderStatus {
@@ -164,80 +176,25 @@ export type CountryKycRequirements = {
 
 const digitsOnly = (s: string) => s.replace(/\D/g, '');
 
-export const COUNTRY_TAX_CONFIG: Record<Country, TaxFieldConfig[]> = {
-  USA: [
-    {
-      type: 'ssn',
-      label: 'Social Security Number (SSN)',
-      placeholder: '123-45-6789',
-      validate: (v) => /^\d{9}$/.test(digitsOnly(v)),
-    },
-    {
-      type: 'itin',
-      label: 'Individual Taxpayer ID (ITIN)',
-      placeholder: '9XX-XX-XXXX',
-      helpText: 'Must start with 9 and contain 9 digits',
-      validate: (v) => /^9\d{8}$/.test(digitsOnly(v)),
-    },
-  ],
-  GBR: [
-    {
-      type: 'nino',
-      label: 'National Insurance Number (NINO)',
-      placeholder: 'QQ 12 34 56 C',
-      validate: (v) => /^[A-CEGHJ-PR-TW-Z]{2}\d{6}[A-D]$/i.test(v.replace(/\s/g, '')),
-    },
-    {
-      type: 'utr',
-      label: 'Unique Taxpayer Reference (UTR)',
-      placeholder: '1234567890',
-      validate: (v) => /^\d{10}$/.test(digitsOnly(v)),
-    },
-    {
-      type: 'passport',
-      label: 'Passport Number',
-      placeholder: 'e.g. 123456789',
-      validate: (v) => v.trim().length >= 6,
-    },
-    {
-      type: 'national_id',
-      label: 'National ID',
-      placeholder: 'National ID number',
-      validate: (v) => v.trim().length >= 5,
-    },
-  ],
-  NGA: [
-    {
-      type: 'nin',
-      label: 'National Identification Number (NIN)',
-      placeholder: '11 digits',
-      validate: (v) => /^\d{11}$/.test(digitsOnly(v)),
-    },
-    {
-      type: 'bvn',
-      label: 'Bank Verification Number (BVN)',
-      placeholder: '11 digits',
-      validate: (v) => /^\d{11}$/.test(digitsOnly(v)),
-    },
-    {
-      type: 'tin',
-      label: 'Tax Identification Number (TIN)',
-      placeholder: 'Tax ID number',
-      validate: (v) => digitsOnly(v).length >= 8,
-    },
-    {
-      type: 'passport',
-      label: 'Passport Number',
-      placeholder: 'Passport number',
-      validate: (v) => v.trim().length >= 6,
-    },
-    {
-      type: 'national_id',
-      label: 'National ID',
-      placeholder: 'National ID number',
-      validate: (v) => v.trim().length >= 5,
-    },
-  ],
+export const COUNTRY_TAX_CONFIG: Record<Country, TaxFieldConfig> = {
+  USA: {
+    type: 'ssn',
+    label: 'Social Security Number (SSN)',
+    placeholder: '123-45-6789',
+    validate: (v) => /^\d{9}$/.test(digitsOnly(v)),
+  },
+  GBR: {
+    type: 'nino',
+    label: 'National Insurance Number (NINO)',
+    placeholder: 'QQ 12 34 56 C',
+    validate: (v) => /^[A-CEGHJ-PR-TW-Z]{2}\d{6}[A-D]$/i.test(v.replace(/\s/g, '')),
+  },
+  NGA: {
+    type: 'nin',
+    label: 'National Identification Number (NIN)',
+    placeholder: '11 digits',
+    validate: (v) => /^\d{11}$/.test(digitsOnly(v)),
+  },
 };
 
 export const COUNTRY_LABELS: Record<Country, string> = {
@@ -247,9 +204,9 @@ export const COUNTRY_LABELS: Record<Country, string> = {
 };
 
 export const COUNTRY_HELP_TEXT: Record<Country, string> = {
-  USA: 'Use SSN or ITIN exactly as registered.',
-  GBR: 'Use NINO/UTR if available, or passport/national ID.',
-  NGA: 'Use NIN or BVN where possible for fastest review.',
+  USA: 'SSN required for U.S. accounts.',
+  GBR: 'National Insurance Number (NINO) required.',
+  NGA: 'National Identification Number (NIN) required.',
 };
 
 export const EMPLOYMENT_STATUS_OPTIONS: { value: EmploymentStatus; label: string }[] = [
@@ -400,8 +357,8 @@ export function documentTypeRequiresBack(
 }
 
 export function validateTaxId(country: Country, type: TaxIdType, value: string): string | null {
-  const cfg = COUNTRY_TAX_CONFIG[country].find((x) => x.type === type);
-  if (!cfg) return 'Unsupported tax ID type for selected country';
+  const cfg = COUNTRY_TAX_CONFIG[country];
+  if (!cfg || cfg.type !== type) return 'Unsupported tax ID type for selected country';
   if (!cfg.validate(value)) return `Invalid ${cfg.label}`;
   return null;
 }

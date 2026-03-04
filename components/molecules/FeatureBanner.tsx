@@ -1,11 +1,13 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { ArrowUpRight } from 'lucide-react-native';
+import { router } from 'expo-router';
 
 import ShieldLockIcon from '@/assets/Icons/shield-lock-5.svg';
 import CreditCardIcon from '@/assets/Icons/credit-card-8.svg';
 import ZapIcon from '@/assets/Icons/waterfall-chart-4.svg';
 import LoyaltyIcon from '@/assets/Icons/loyalty-14.svg';
+import { useKycStore } from '@/stores/kycStore';
 
 type Banner = {
   id: string;
@@ -68,6 +70,34 @@ interface FeatureBannerProps {
   onKYCPress?: () => void;
 }
 
+function getKycProgressScreen(state: ReturnType<typeof useKycStore.getState>): string {
+  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, sumsubToken } = state;
+
+  // If user has SumSub token, they're in the middle of ID verification
+  if (sumsubToken) {
+    return '/kyc/sumsub-sdk';
+  }
+
+  // If user has completed disclosures and submitted, they should be going to SumSub
+  // But if sumsubToken is null (failed to get or session expired), go to disclosures to resubmit
+  if (disclosuresConfirmed && taxId && employmentStatus && investmentPurposes.length > 0) {
+    return '/kyc/disclosures';
+  }
+
+  // If user has started about-you (employment + investment goals), go to disclosures
+  if (employmentStatus && investmentPurposes.length > 0 && taxId) {
+    return '/kyc/disclosures';
+  }
+
+  // If user has started tax-id, go to about-you
+  if (taxId) {
+    return '/kyc/about-you';
+  }
+
+  // Nothing started, go to beginning
+  return '/kyc/tax-id';
+}
+
 export function FeatureBanner({ kycApproved, onKYCPress }: FeatureBannerProps) {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = Math.min(Math.max(screenWidth * 0.62, 220), 320);
@@ -75,17 +105,37 @@ export function FeatureBanner({ kycApproved, onKYCPress }: FeatureBannerProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
+  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, sumsubToken } =
+    useKycStore();
+
+  const hasStartedKyc =
+    taxId.trim().length > 0 ||
+    employmentStatus !== null ||
+    investmentPurposes.length > 0 ||
+    disclosuresConfirmed ||
+    sumsubToken !== null;
+
+  const handleKycPress = () => {
+    if (hasStartedKyc) {
+      const state = useKycStore.getState();
+      const screen = getKycProgressScreen(state);
+      router.push(screen as never);
+    } else {
+      router.push('/kyc');
+    }
+  };
+
   const banners: Banner[] = [
     ...(!kycApproved
       ? [
           {
             id: 'kyc',
             label: 'Required',
-            title: 'Verify your identity',
+            title: hasStartedKyc ? 'Continue verification' : 'Verify your identity',
             bg: '#0D2818',
             iconColor: '#4ADE80',
             Icon: ShieldLockIcon as any,
-            onPress: onKYCPress,
+            onPress: handleKycPress,
           },
         ]
       : []),

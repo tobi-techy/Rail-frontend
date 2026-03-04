@@ -40,6 +40,7 @@ import {
   MAX_INTEGER_DIGITS,
   gentleSpring,
   getMethodCopy,
+  isP2PMethod,
   isWalletFundingMethod,
   resolveFlow,
   resolveMethod,
@@ -54,6 +55,7 @@ import {
   WithdrawDetailsSheet,
   WithdrawSubmissionSheet,
 } from './method-screen/sections';
+import { P2PSendScreen } from './method-screen/P2PSendScreen';
 
 export default function WithdrawAmountScreen() {
   const insets = useSafeAreaInsets();
@@ -65,6 +67,8 @@ export default function WithdrawAmountScreen() {
     typeof params.method === 'string' ? params.method : undefined
   );
   const requestedFlow = resolveFlow(typeof params.flow === 'string' ? params.flow : undefined);
+
+  const isP2P = isP2PMethod(selectedMethod);
   const isFundFlow = requestedFlow === 'fund' && Platform.OS === 'android';
   const methodCopy = useMemo(
     () => getMethodCopy(selectedMethod, isFundFlow),
@@ -95,6 +99,8 @@ export default function WithdrawAmountScreen() {
   const [destinationInput, setDestinationInput] = useState(prefilledAssetSymbol);
   const [destinationChain, setDestinationChain] = useState('SOL-DEVNET');
   const [didTryDestination, setDidTryDestination] = useState(false);
+  const [fiatAccountHolderName, setFiatAccountHolderName] = useState('');
+  const [fiatAccountNumber, setFiatAccountNumber] = useState('');
   const [isAuthorizeScreenVisible, setIsAuthorizeScreenVisible] = useState(false);
   const [isSubmissionSheetVisible, setIsSubmissionSheetVisible] = useState(false);
   const [submitWithActiveSession, setSubmitWithActiveSession] = useState(false);
@@ -162,7 +168,11 @@ export default function WithdrawAmountScreen() {
   );
 
   const canContinue = numericAmount > 0 && !amountError;
-  const canSaveDestination = !destinationError;
+  const canSaveDestination =
+    !destinationError &&
+    (!isFiatMethod ||
+      (fiatAccountHolderName.trim().length >= 2 &&
+        /^\d{4,17}$/.test(fiatAccountNumber.replace(/\D/g, ''))));
 
   // ── Animations ────────────────────────────────────────────────────────────
 
@@ -227,6 +237,8 @@ export default function WithdrawAmountScreen() {
         setIsSubmissionSheetVisible(true);
       });
     },
+    fiatAccountHolderName,
+    fiatAccountNumber,
   });
 
   const passkeyPromptScope = `withdraw-authorize:${safeName(user?.email) || 'unknown'}`;
@@ -438,6 +450,10 @@ export default function WithdrawAmountScreen() {
     );
   }
 
+  if (isP2P) {
+    return <P2PSendScreen />;
+  }
+
   return (
     <ErrorBoundary>
       <SafeAreaView className="flex-1" style={{ backgroundColor: BRAND_RED }} edges={['top']}>
@@ -553,6 +569,10 @@ export default function WithdrawAmountScreen() {
           fundingError={funding.fundingError}
           onSubmit={onSaveDestination}
           isFundingActionLoading={isSubmitting || funding.isLaunchingWallet}
+          fiatAccountHolderName={fiatAccountHolderName}
+          onFiatAccountHolderNameChange={setFiatAccountHolderName}
+          fiatAccountNumber={fiatAccountNumber}
+          onFiatAccountNumberChange={setFiatAccountNumber}
         />
 
         <WithdrawSubmissionSheet

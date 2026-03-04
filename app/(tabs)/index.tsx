@@ -19,12 +19,14 @@ import {
   MessageCircle,
   Landmark,
   Wallet,
+  Users,
+  CreditCard,
+  PiggyBank,
 } from 'lucide-react-native';
 import Avatar, { genConfig } from '@zamplyy/react-native-nice-avatar';
 
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
-import { PhantomIcon, SolflareIcon, SolanaIcon } from '@/assets/svg';
-import { EarnIcon, AllocationIcon } from '@/assets/svg/filled';
+import { PhantomIcon, SolflareIcon, SolanaIcon, VisaWhite } from '@/assets/svg';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { StashCard } from '@/components/molecules/StashCard';
 import { FeatureBanner } from '@/components/molecules/FeatureBanner';
@@ -39,7 +41,8 @@ import {
   type BottomSheetScreen,
 } from '@/components/sheets';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
-import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';import { useStation, useKYCStatus } from '@/api/hooks';
+import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
+import { useStation, useKYCStatus } from '@/api/hooks';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
 import type { Deposit, Withdrawal } from '@/api/types';
 import {
@@ -76,7 +79,6 @@ const splitDollars = (value: string, currency: Currency, rates: FxRates) => {
   return match ? { dollars: match[1], cents: match[2] } : { dollars: formatted, cents: '' };
 };
 
-
 // ── FundingOptionsList ────────────────────────────────────────────────────────
 
 interface FundingAction {
@@ -98,8 +100,12 @@ function FundingRow({ action, isLast }: { action: FundingAction; isLast: boolean
       style={animStyle}
       className={`flex-row items-center justify-between py-3.5${isLast ? '' : ' border-b border-gray-100'}`}
       onPress={action.comingSoon ? undefined : action.onPress}
-      onPressIn={() => { if (!action.comingSoon) scale.value = withSpring(0.97, { damping: 20, stiffness: 300 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}
+      onPressIn={() => {
+        if (!action.comingSoon) scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+      }}
       disabled={action.comingSoon}>
       <View className={`flex-1 flex-row items-center${action.comingSoon ? ' opacity-40' : ''}`}>
         <View className="mr-4 h-11 w-11 items-center justify-center rounded-full bg-gray-100">
@@ -185,7 +191,8 @@ export default function Dashboard() {
     for (let i = 0; i < avatarName.length; i++) {
       hash = (hash * 31 + avatarName.charCodeAt(i)) >>> 0;
     }
-    const pick = <T,>(arr: T[]): T => arr[(hash = (hash * 1664525 + 1013904223) >>> 0, hash % arr.length)];
+    const pick = <T,>(arr: T[]): T =>
+      arr[((hash = (hash * 1664525 + 1013904223) >>> 0), hash % arr.length)];
     return genConfig({
       sex: pick(['man', 'woman'] as const),
       faceColor: pick(['#F9C9B6', '#AC6651', '#FDDBB4', '#D08B5B', '#EDB98A']),
@@ -397,8 +404,22 @@ export default function Dashboard() {
     [sendNav, startWithdrawal]
   );
 
+  const startP2P = useCallback(() => {
+    setShowSendSheet(false);
+    requestAnimationFrame(() =>
+      router.push({ pathname: '/withdraw/[method]', params: { method: 'p2p' } } as never)
+    );
+  }, []);
+
   const sendMoreActions = useMemo<FundingAction[]>(
     () => [
+      {
+        id: 'p2p',
+        label: 'Send to People',
+        sublabel: 'Via RailTag, email, or phone',
+        icon: <Users size={26} color="#FF2E01" />,
+        onPress: startP2P,
+      },
       ...(isAndroid
         ? [
             {
@@ -428,7 +449,7 @@ export default function Dashboard() {
           ]
         : []),
     ],
-    [isAndroid, startWithdrawal]
+    [isAndroid, startP2P, startWithdrawal]
   );
 
   const receiveScreens = useMemo<BottomSheetScreen[]>(
@@ -502,7 +523,8 @@ export default function Dashboard() {
             title="Spend"
             amount={spend.dollars}
             amountCents={spend.cents}
-            icon={<EarnIcon width={36} height={36} />}
+            icon={<CreditCard size={26} color="white" strokeWidth={1.8} />}
+            cardColor="#FF2E01"
             className="flex-1"
             isLoading={isStationPending}
             onPress={() => router.push('/spending-stash')}
@@ -511,10 +533,32 @@ export default function Dashboard() {
             title="Stash"
             amount={stash.dollars}
             amountCents={stash.cents}
-            icon={<AllocationIcon width={36} height={36} />}
+            icon={<PiggyBank size={26} color="white" strokeWidth={1.8} />}
+            cardColor="#00E011"
             className="flex-1"
             isLoading={isStationPending}
           />
+        </View>
+        <View className="mt-5 flex-row gap-3">
+          <StashCard
+            title="Spend"
+            amount={spend.dollars}
+            amountCents={spend.cents}
+            icon={<VisaWhite width={32} height={32} strokeWidth={1.8} />}
+            cardColor="#000"
+            className="max-w-[50%] flex-1"
+            isLoading={isStationPending}
+            // onPress={() => router.push('/spending-stash')}
+          />
+          {/*<StashCard
+            title="Stash"
+            amount={stash.dollars}
+            amountCents={stash.cents}
+            icon={<PiggyBank size={26} color="white" strokeWidth={1.8} />}
+            cardColor="#1A1A2E"
+            className="flex-1"
+            isLoading={isStationPending}
+          />*/}
         </View>
 
         <FeatureBanner kycApproved={kycApproved} onKYCPress={() => setShowKYCSheet(true)} />

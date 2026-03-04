@@ -57,6 +57,10 @@ export default function PasskeySettingsScreen() {
   const [passkeyName, setPasskeyName] = useState('');
   const { impact, notification } = useHaptics();
   const { showError } = useFeedbackPopup();
+  const { data, isLoading, isError } = usePasskeys();
+  const credentials = data ?? [];
+  const { mutateAsync: registerPasskey, isPending: isRegistering } = useRegisterPasskey();
+  const { mutateAsync: deletePasskey, isPending: isDeleting } = useDeletePasskey();
 
   if (!Passkey.isSupported()) {
     return (
@@ -85,11 +89,6 @@ export default function PasskeySettingsScreen() {
     );
   }
 
-  const { data, isLoading, isError } = usePasskeys();
-  const credentials = data ?? [];
-  const { mutateAsync: registerPasskey, isPending: isRegistering } = useRegisterPasskey();
-  const { mutateAsync: deletePasskey, isPending: isDeleting } = useDeletePasskey();
-
   const getRegistrationErrorMessage = (err: any) => {
     const code = String(err?.code || err?.error || '').toUpperCase();
     const message = String(err?.message || '').toLowerCase();
@@ -105,6 +104,30 @@ export default function PasskeySettingsScreen() {
 
     if (code === 'INVALID_SESSION') {
       return `Passkey session expired. Please try registration again.${codeSuffix}`;
+    }
+
+    if (code === 'AUTHENTICATOR_ALREADY_REGISTERED' || message.includes('already registered')) {
+      return `This passkey is already registered.${codeSuffix}`;
+    }
+
+    if (code === 'USER_VERIFICATION_FAILED' || message.includes('verification failed')) {
+      return `Biometric verification failed. Try again or use a different authentication method.${codeSuffix}`;
+    }
+
+    if (code === 'ABORT_ERROR' || message.includes('cancelled') || message.includes('abort')) {
+      return `Passkey registration was cancelled.${codeSuffix}`;
+    }
+
+    if (code === 'TIMEOUT' || message.includes('timeout')) {
+      return `Passkey registration timed out. Please try again.${codeSuffix}`;
+    }
+
+    if (code === 'NOT_SECURE_CONTEXT' || message.includes('secure context')) {
+      return `Passkeys require a secure context. Ensure you're using HTTPS.${codeSuffix}`;
+    }
+
+    if (code === 'BADCONFIGURATION' || message.includes('configuration')) {
+      return `Passkey configuration error. Contact support.${codeSuffix}`;
     }
 
     return `${err?.message || 'Could not register passkey. Try again.'}${codeSuffix}`;
@@ -200,7 +223,10 @@ export default function PasskeySettingsScreen() {
           <PasskeyRow
             key={cred.id}
             credential={cred}
-            onDelete={() => { impact(); setDeleteTarget(cred); }}
+            onDelete={() => {
+              impact();
+              setDeleteTarget(cred);
+            }}
           />
         ))}
 
@@ -219,7 +245,8 @@ export default function PasskeySettingsScreen() {
       <BottomSheet visible={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
         <Text className="mb-2 font-subtitle text-xl">Remove Passkey</Text>
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
-          Remove &quot;{deleteTarget?.name ?? 'this passkey'}&quot;? You won&apos;t be able to use it to sign in.
+          Remove &quot;{deleteTarget?.name ?? 'this passkey'}&quot;? You won&apos;t be able to use
+          it to sign in.
         </Text>
         <View className="flex-row gap-3">
           <Button title="Cancel" variant="ghost" onPress={() => setDeleteTarget(null)} flex />

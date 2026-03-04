@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 export default function ConfirmPasscodeScreen() {
   const originalPasscode = useAuthStore((s) => s._pendingPasscode);
   const setPasscode = useAuthStore((s) => s.setPasscode);
+  const setOnboardingStatus = useAuthStore((s) => s.setOnboardingStatus);
   const [confirmPasscode, setConfirmPasscode] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +33,10 @@ export default function ConfirmPasscodeScreen() {
     try {
       await setPasscode(code);
       useAuthStore.setState({ _pendingPasscode: null });
-      router.replace(ROUTES.TABS as never);
+
+      // Set onboarding status and route to KYC
+      setOnboardingStatus('kyc_pending');
+      router.replace('/kyc?autoLaunch=true');
     } catch (submitError: any) {
       setError(submitError?.message || 'Failed to create PIN');
       setConfirmPasscode('');

@@ -119,7 +119,9 @@ export default function Phone() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-subtitle text-[50px] text-black">Phone Number</Text>
+              <Text className="font-headline-2 text-auth-title leading-[1.1] text-black">
+                Phone Number
+              </Text>
               <Text className="mt-2 font-body text-[14px] text-black/60">
                 Add a phone number (Optional)
               </Text>

@@ -62,8 +62,12 @@ export const useKycStore = create<KycState>()(
       setCountry: (country) =>
         set({
           country,
-          taxIdType: COUNTRY_TAX_CONFIG[country][0].type,
+          taxIdType: COUNTRY_TAX_CONFIG[country].type,
           taxId: '',
+          employmentStatus: null,
+          investmentPurposes: [],
+          disclosures: DEFAULT_DISCLOSURES,
+          disclosuresConfirmed: false,
         }),
 
       setTaxIdType: (taxIdType) => set({ taxIdType }),
@@ -103,9 +107,14 @@ export const useKycStore = create<KycState>()(
     {
       name: 'kyc-store',
       storage: createJSONStorage(() => AsyncStorage),
-      // Never persist taxId — it's transient PII
+      // Never persist taxId or sumsub session tokens — transient PII/sensitive data
       partialize: (state) => {
-        const { taxId: _taxId, ...rest } = state;
+        const {
+          taxId: _taxId,
+          sumsubToken: _sumsubToken,
+          applicantId: _applicantId,
+          ...rest
+        } = state;
         return rest;
       },
     }

@@ -1,5 +1,12 @@
-import React from 'react';
-import { ActivityIndicator, StatusBar, Text, TouchableOpacity, View, Pressable } from 'react-native';
+import React, { useCallback } from 'react';
+import {
+  ActivityIndicator,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+  Pressable,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, CheckCircle2, ShieldAlert, ChevronDown } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -11,6 +18,8 @@ import { Button, Input } from '@/components/ui';
 import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
 import { SUPPORTED_CHAINS } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useKycStore } from '@/stores/kycStore';
+import { isKycInReview } from '@/api/types/kyc';
 import { formatCurrency } from './utils';
 import type { MethodCopy } from './types';
 
@@ -54,6 +63,11 @@ type WithdrawDetailsSheetProps = {
   onChainChange?: (chain: string) => void;
   onSubmit: () => void;
   visible: boolean;
+  // fiat bank details
+  fiatAccountHolderName?: string;
+  onFiatAccountHolderNameChange?: (value: string) => void;
+  fiatAccountNumber?: string;
+  onFiatAccountNumberChange?: (value: string) => void;
 };
 
 type WithdrawSubmissionSheetProps = {
@@ -69,7 +83,6 @@ type WithdrawSubmissionSheetProps = {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
   'SOL-DEVNET': SolanaIcon,
   'MATIC-AMOY': MaticIcon,
@@ -100,10 +113,17 @@ function ChainPill({
           borderColor: selected ? chain.color : 'transparent',
         },
       ]}
-      onPress={() => { selection(); onPress(); }}
-      onPressIn={() => { scale.value = withSpring(0.95, { damping: 20, stiffness: 300 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}
-      className="flex-1 items-center rounded-2xl py-3 px-2"
+      onPress={() => {
+        selection();
+        onPress();
+      }}
+      onPressIn={() => {
+        scale.value = withSpring(0.95, { damping: 20, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+      }}
+      className="flex-1 items-center rounded-2xl px-2 py-3"
       accessibilityRole="button"
       accessibilityLabel={`Select ${chain.label}`}>
       {/* USDC + chain icon stack */}
@@ -126,12 +146,61 @@ function ChainPill({
   );
 }
 
+function getKycProgressScreen(state: ReturnType<typeof useKycStore.getState>): string {
+  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, sumsubToken } = state;
+
+  // If user has SumSub token, they're in the middle of ID verification
+  if (sumsubToken) {
+    return '/kyc/sumsub-sdk';
+  }
+
+  // If user has completed disclosures and submitted, they should be going to SumSub
+  // But if sumsubToken is null (failed to get or session expired), go to disclosures to resubmit
+  if (disclosuresConfirmed && taxId && employmentStatus && investmentPurposes.length > 0) {
+    return '/kyc/disclosures';
+  }
+
+  // If user has started about-you (employment + investment goals), go to disclosures
+  if (employmentStatus && investmentPurposes.length > 0 && taxId) {
+    return '/kyc/disclosures';
+  }
+
+  // If user has started tax-id, go to about-you
+  if (taxId) {
+    return '/kyc/about-you';
+  }
+
+  // Nothing started, go to beginning
+  return '/kyc/tax-id';
+}
+
 export function FiatKycRequiredScreen({
   kycStatus,
-  onStartVerification,
   showKycSheet,
   onCloseKycSheet,
 }: FiatKycRequiredScreenProps) {
+  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, sumsubToken } =
+    useKycStore();
+
+  const hasStartedKyc =
+    taxId.trim().length > 0 ||
+    employmentStatus !== null ||
+    investmentPurposes.length > 0 ||
+    disclosuresConfirmed ||
+    sumsubToken !== null;
+
+  const handleVerificationPress = useCallback(() => {
+    if (hasStartedKyc) {
+      const state = useKycStore.getState();
+      const screen = getKycProgressScreen(state);
+      router.push(screen as never);
+    } else {
+      router.push('/kyc');
+    }
+  }, [hasStartedKyc]);
+
+  const isPending = isKycInReview(kycStatus);
+
   return (
     <ErrorBoundary>
       <>
@@ -144,21 +213,50 @@ export function FiatKycRequiredScreen({
             <Text className="font-subtitle text-lg text-gray-900">Withdraw</Text>
           </View>
           <View className="flex-1 items-center justify-center px-6">
-            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
-              <ShieldAlert size={32} color="#F59E0B" />
-            </View>
-            <Text className="mb-2 font-subtitle text-xl text-gray-900">Verification Required</Text>
-            <Text className="mb-8 text-center font-body text-sm text-gray-500">
-              Complete identity verification to withdraw fiat to a bank account.
-            </Text>
-            <View className="w-full gap-y-3">
-              <Button title="Start Verification" onPress={onStartVerification} />
-              <Button
-                title="Use Crypto Instead"
-                variant="white"
-                onPress={() => router.replace('/withdraw/crypto' as never)}
-              />
-            </View>
+            {isPending ? (
+              <>
+                <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
+                  <ShieldAlert size={32} color="#F59E0B" />
+                </View>
+                <Text className="mb-2 font-subtitle text-xl text-gray-900">
+                  Verification in Progress
+                </Text>
+                <Text className="mb-8 text-center font-body text-sm text-gray-500">
+                  Your identity verification is being processed. This usually takes a few minutes.
+                </Text>
+                <View className="w-full gap-y-3">
+                  <Button title="Check Status" onPress={onCloseKycSheet} />
+                  <Button
+                    title="Use Crypto Instead"
+                    variant="white"
+                    onPress={() => router.replace('/withdraw/crypto' as never)}
+                  />
+                </View>
+              </>
+            ) : (
+              <>
+                <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
+                  <ShieldAlert size={32} color="#F59E0B" />
+                </View>
+                <Text className="mb-2 font-subtitle text-xl text-gray-900">
+                  Verification Required
+                </Text>
+                <Text className="mb-8 text-center font-body text-sm text-gray-500">
+                  Complete identity verification to withdraw fiat to a bank account.
+                </Text>
+                <View className="w-full gap-y-3">
+                  <Button
+                    title={hasStartedKyc ? 'Continue Verification' : 'Start Verification'}
+                    onPress={handleVerificationPress}
+                  />
+                  <Button
+                    title="Use Crypto Instead"
+                    variant="white"
+                    onPress={() => router.replace('/withdraw/crypto' as never)}
+                  />
+                </View>
+              </>
+            )}
           </View>
         </SafeAreaView>
 
@@ -256,6 +354,10 @@ export function WithdrawDetailsSheet({
   onChainChange,
   onSubmit,
   visible,
+  fiatAccountHolderName,
+  onFiatAccountHolderNameChange,
+  fiatAccountNumber,
+  onFiatAccountNumberChange,
 }: WithdrawDetailsSheetProps) {
   return (
     <BottomSheet visible={visible} onClose={onClose} showCloseButton dismissible>
@@ -302,10 +404,38 @@ export function WithdrawDetailsSheet({
           </View>
         )}
 
+        {/* Fiat-only: account holder name + account number */}
+        {isFiatMethod && onFiatAccountHolderNameChange && onFiatAccountNumberChange && (
+          <View className="mt-4 gap-4">
+            <Input
+              label="Account holder name"
+              value={fiatAccountHolderName ?? ''}
+              onChangeText={onFiatAccountHolderNameChange}
+              placeholder="Full name on bank account"
+              autoCapitalize="words"
+              autoCorrect={false}
+              className="h-14 rounded-xl"
+            />
+            <Input
+              label="Account number"
+              value={fiatAccountNumber ?? ''}
+              onChangeText={onFiatAccountNumberChange}
+              placeholder="4–17 digit account number"
+              keyboardType="number-pad"
+              autoCorrect={false}
+              className="h-14 rounded-xl"
+            />
+          </View>
+        )}
+
         <View className="mt-4 rounded-2xl bg-surface px-4 py-3">
           <View className="flex-row items-center justify-between">
             <Text className="font-body text-[13px] text-text-secondary">
-              {isAssetTradeMethod ? 'Order amount' : isFundFlow ? 'Funding amount' : 'Withdrawal amount'}
+              {isAssetTradeMethod
+                ? 'Order amount'
+                : isFundFlow
+                  ? 'Funding amount'
+                  : 'Withdrawal amount'}
             </Text>
             <Text
               className="font-subtitle text-[15px] text-text-primary"
@@ -329,7 +459,8 @@ export function WithdrawDetailsSheet({
             <View className="mt-2 flex-row items-center justify-between">
               <Text className="font-body text-[13px] text-text-secondary">Network</Text>
               <Text className="font-subtitle text-[15px] text-text-primary">
-                {SUPPORTED_CHAINS.find((c) => c.chain === destinationChain)?.label ?? destinationChain}
+                {SUPPORTED_CHAINS.find((c) => c.chain === destinationChain)?.label ??
+                  destinationChain}
               </Text>
             </View>
           )}

@@ -13,13 +13,15 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
 
   useEffect(() => {
     notification();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   if (!transaction) return null;
 
   const handleViewOnExplorer = () => {
-    // Open Solscan or appropriate explorer
-    const explorerUrl = `https://solscan.io/tx/${transaction.txHash}`;
+    const txHash = transaction.txHash;
+    // Validate: Solana tx hashes are base58, 87-88 chars
+    if (!txHash || !/^[1-9A-HJ-NP-Za-km-z]{87,88}$/.test(txHash)) return;
+    const explorerUrl = `https://solscan.io/tx/${txHash}`;
     Linking.openURL(explorerUrl).catch(() => {});
   };
 
