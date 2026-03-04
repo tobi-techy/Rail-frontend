@@ -48,7 +48,11 @@ export function useFreezeCard() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => cardService.freezeCard(id),
-    onSuccess: (_data, id) => {
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: queryKeys.card.list() });
+      const previous = qc.getQueryData<{ cards: CardDetails[]; total: number }>(
+        queryKeys.card.list()
+      );
       qc.setQueryData<{ cards: CardDetails[]; total: number }>(queryKeys.card.list(), (old) => {
         if (!old) return old;
         return {
@@ -56,6 +60,15 @@ export function useFreezeCard() {
           cards: old.cards.map((c) => (c.id === id ? { ...c, status: 'frozen' as const } : c)),
         };
       });
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        qc.setQueryData(queryKeys.card.list(), context.previous);
+      }
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.card.list() });
     },
   });
 }
@@ -64,7 +77,11 @@ export function useUnfreezeCard() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => cardService.unfreezeCard(id),
-    onSuccess: (_data, id) => {
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: queryKeys.card.list() });
+      const previous = qc.getQueryData<{ cards: CardDetails[]; total: number }>(
+        queryKeys.card.list()
+      );
       qc.setQueryData<{ cards: CardDetails[]; total: number }>(queryKeys.card.list(), (old) => {
         if (!old) return old;
         return {
@@ -72,6 +89,15 @@ export function useUnfreezeCard() {
           cards: old.cards.map((c) => (c.id === id ? { ...c, status: 'active' as const } : c)),
         };
       });
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        qc.setQueryData(queryKeys.card.list(), context.previous);
+      }
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.card.list() });
     },
   });
 }

@@ -55,8 +55,12 @@ const CardMainScreen = () => {
   const queryClient = useQueryClient();
   const { isBalanceVisible, toggleBalanceVisibility } = useUIStore();
 
-  const { data: cardsData, isLoading: cardsLoading } = useCards();
-  const { data: txData, isLoading: txLoading } = useCardTransactions({ limit: 50 });
+  const { data: cardsData, isLoading: cardsLoading, isRefetching: cardsRefetching } = useCards();
+  const {
+    data: txData,
+    isLoading: txLoading,
+    isRefetching: txRefetching,
+  } = useCardTransactions({ limit: 50 });
   const { data: spendData } = useSpendingStash();
 
   const activeCard = useMemo(
@@ -74,6 +78,7 @@ const CardMainScreen = () => {
   const transactions = useMemo(() => txData?.transactions?.map(mapCardTransaction) ?? [], [txData]);
 
   const isLoading = cardsLoading || txLoading;
+  const isRefreshing = cardsRefetching || txRefetching;
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -94,7 +99,7 @@ const CardMainScreen = () => {
         className="flex-1"
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={handleRefresh} tintColor="#000" />
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#000" />
         }>
         <View className="px-5">
           {/* Header */}
@@ -140,7 +145,7 @@ const CardMainScreen = () => {
               }}>
               <RailCard
                 brand="VISA"
-                holderName={activeCard ? 'CARDHOLDER' : 'CARDHOLDER'}
+                holderName="CARDHOLDER"
                 last4={activeCard?.last_4 ?? '••••'}
                 exp={activeCard?.expiry ?? '••/••'}
                 currency="USD"
