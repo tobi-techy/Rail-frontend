@@ -158,22 +158,12 @@ export function useWalletAddresses(chain?: WalletChain) {
     queryFn: () => walletService.getWalletAddresses(chain ? { chain } : undefined),
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
-    // Poll every 4s when wallet is being provisioned (404), stop once we have data
-    refetchInterval: (q) => {
-      if (q.state.data) return false;
-      const status = (q.state.error as any)?.status;
-      return status === 404 ? 4000 : false;
-    },
     retry: (failureCount, error: any) => {
       const status = error?.status;
-      if (status === 401 || status === 403) return false;
-      // Keep retrying 404 (provisioning in progress) up to 15 times (~1 min)
-      if (status === 404) return failureCount < 15;
+      if (status === 401 || status === 403 || status === 404) return false;
       return failureCount < 1;
     },
-    retryDelay: 4000,
   });
 
-  const isProvisioning = !query.data && (query.error as any)?.status === 404;
-  return { ...query, isProvisioning };
+  return { ...query, isProvisioning: false };
 }
