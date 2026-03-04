@@ -548,7 +548,7 @@ export default function Dashboard() {
             cardColor="#000"
             className="max-w-[50%] flex-1"
             isLoading={isStationPending}
-            // onPress={() => router.push('/spending-stash')}
+            onPress={() => router.push('/card')}
           />
           {/*<StashCard
             title="Stash"

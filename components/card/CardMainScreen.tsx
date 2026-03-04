@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useCallback, useMemo } from 'react';
 import { Platform, ScrollView, Text, TouchableOpacity, View, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Settings, Plus, ArrowUpRight, Eye, EyeOff } from 'lucide-react-native';
+import { Settings, Plus, ArrowUpRight, Eye, EyeOff, Snowflake } from 'lucide-react-native';
 import { useNavigation, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -11,9 +11,10 @@ import { TransactionItemSkeleton, type Transaction } from '../molecules/Transact
 import { MaskedBalance } from '../molecules/MaskedBalance';
 import { Button } from '../ui/Button';
 import { useUIStore } from '@/stores';
-import { useCards, useCardTransactions } from '@/api/hooks/useCard';
+import { useCards, useCardTransactions, useUnfreezeCard } from '@/api/hooks/useCard';
 import { useSpendingStash } from '@/api/hooks/useSpending';
 import { queryKeys } from '@/api/queryClient';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import type { CardTransaction } from '@/api/types/card';
 
 /** Map backend card transaction → TransactionList item */
@@ -54,6 +55,8 @@ const CardMainScreen = () => {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
   const { isBalanceVisible, toggleBalanceVisibility } = useUIStore();
+  const { showError, showSuccess } = useFeedbackPopup();
+  const unfreezeCard = useUnfreezeCard();
 
   const { data: cardsData, isLoading: cardsLoading, isRefetching: cardsRefetching } = useCards();
   const {
@@ -64,9 +67,13 @@ const CardMainScreen = () => {
   const { data: spendData } = useSpendingStash();
 
   const activeCard = useMemo(
-    () => cardsData?.cards?.find((c) => c.status === 'active') ?? cardsData?.cards?.[0],
+    () =>
+      cardsData?.cards?.find((c) => c.status === 'active' || c.status === 'frozen') ??
+      cardsData?.cards?.[0],
     [cardsData]
   );
+
+  const isFrozen = activeCard?.status === 'frozen';
 
   const balance = useMemo(() => {
     const raw = spendData?.balance?.spending_balance;
@@ -90,8 +97,18 @@ const CardMainScreen = () => {
   }, [queryClient]);
 
   const handleSettings = useCallback(() => {
-    router.push('/card-settings' as never);
+    router.push('/card/settings' as never);
   }, []);
+
+  const handleUnfreeze = useCallback(async () => {
+    if (!activeCard) return;
+    try {
+      await unfreezeCard.mutateAsync(activeCard.id);
+      showSuccess('Card Unfrozen', 'Your card is now active');
+    } catch {
+      showError('Error', 'Failed to unfreeze card');
+    }
+  }, [activeCard, unfreezeCard, showSuccess, showError]);
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -142,6 +159,7 @@ const CardMainScreen = () => {
                 shadowRadius: 20,
                 shadowOffset: { width: 0, height: 10 },
                 elevation: Platform.OS === 'android' ? 8 : 0,
+                opacity: isFrozen ? 0.6 : 1,
               }}>
               <RailCard
                 brand="VISA"
@@ -149,11 +167,32 @@ const CardMainScreen = () => {
                 last4={activeCard?.last_4 ?? '••••'}
                 exp={activeCard?.expiry ?? '••/••'}
                 currency="USD"
-                accentColor="#FF6A00"
+                accentColor={isFrozen ? '#6B7280' : '#FF6A00'}
                 patternIntensity={0.35}
               />
             </View>
+            {isFrozen && (
+              <View className="absolute inset-0 items-center justify-center">
+                <View className="rounded-full bg-blue-500/90 p-3">
+                  <Snowflake size={32} color="#fff" />
+                </View>
+              </View>
+            )}
           </View>
+
+          {/* Frozen Banner */}
+          {isFrozen && (
+            <TouchableOpacity
+              onPress={handleUnfreeze}
+              activeOpacity={0.8}
+              className="mt-4 flex-row items-center justify-between rounded-xl bg-blue-50 px-4 py-3">
+              <View className="flex-row items-center">
+                <Snowflake size={18} color="#3B82F6" />
+                <Text className="ml-2 font-subtitle text-sm text-blue-700">Card is frozen</Text>
+              </View>
+              <Text className="font-subtitle text-sm text-blue-600">Tap to unfreeze</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Action Buttons */}
           <View className="mt-5 flex-row items-center gap-3">

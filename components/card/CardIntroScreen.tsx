@@ -1,10 +1,8 @@
-import React, { useLayoutEffect, useRef, useEffect } from 'react';
-import { Animated, Dimensions, Platform, Text, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { Dimensions, Platform, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check } from 'lucide-react-native';
-import { useNavigation } from 'expo-router';
-
-import { RailCard } from '../cards';
+import Svg, { Path } from 'react-native-svg';
+import { Button } from '../ui/Button';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -12,158 +10,121 @@ interface CardIntroScreenProps {
   onCreateCard: () => void;
 }
 
-const FEATURES = [
-  'Instant virtual card issuance',
-  'Works with Apple Pay & Google Pay',
-  'No hidden fees or charges',
-  'Freeze & unfreeze anytime',
-];
+function SignatureSvg({ color = '#fff', size = 80 }: { color?: string; size?: number }) {
+  return (
+    <Svg width={size} height={size * 0.6} viewBox="0 0 100 60" fill="none">
+      <Path
+        d="M10 45 Q20 20 35 35 Q50 50 55 30 Q60 10 70 25 Q80 40 90 20"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
 
-const CardIntroScreen = ({ onCreateCard }: CardIntroScreenProps) => {
-  const navigation = useNavigation();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(40)).current;
-  const cardScale = useRef(new Animated.Value(0.92)).current;
+function ChipSvg() {
+  return (
+    <View className="h-8 w-10 rounded-md bg-amber-100">
+      <View className="absolute inset-0.5 rounded border border-amber-200/60" />
+      <View className="absolute left-1/2 top-0 h-full w-px -translate-x-0.5 bg-amber-200/60" />
+      <View className="absolute left-0 top-1/2 h-px w-full -translate-y-0.5 bg-amber-200/60" />
+    </View>
+  );
+}
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: false,
-    });
-  }, [navigation]);
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(cardScale, {
-        toValue: 1,
-        tension: 50,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, slideAnim, cardScale]);
-
-  const cardWidth = Math.min(SCREEN_WIDTH * 0.7, 300);
+function CardStack() {
+  const cardWidth = Math.min(SCREEN_WIDTH * 0.7, 280);
+  const cardHeight = cardWidth * 1.58;
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F5F5F5]" edges={['top']}>
-      {/* Header */}
-      <View className="px-6 pt-2">
-        <Text className="font-headline text-headline-1 text-gray-900">Free Debit Card</Text>
-        <Text className="mt-1 font-body text-body text-gray-500">Spend anywhere, instantly</Text>
+    <View className="items-center justify-center" style={{ height: cardHeight + 40 }}>
+      {/* Back card (white) */}
+      <View
+        className="absolute rounded-2xl bg-gray-100"
+        style={{
+          width: cardWidth,
+          height: cardHeight,
+          transform: [{ rotate: '-8deg' }, { translateX: -30 }, { translateY: -10 }],
+          ...Platform.select({
+            ios: {
+              shadowColor: '#000',
+              shadowOpacity: 0.08,
+              shadowRadius: 20,
+              shadowOffset: { width: 0, height: 8 },
+            },
+            android: { elevation: 4 },
+          }),
+        }}>
+        <View className="absolute left-5 top-8">
+          <Text
+            className="font-subtitle text-sm text-gray-400"
+            style={{ transform: [{ rotate: '-90deg' }, { translateX: -30 }, { translateY: -20 }] }}>
+            $yourname
+          </Text>
+        </View>
       </View>
 
-      {/* Card Hero */}
-      <Animated.View
-        className="mt-6 items-center justify-center"
+      {/* Front card (black) */}
+      <View
+        className="rounded-2xl bg-black"
         style={{
-          height: cardWidth * 0.85,
-          transform: [{ scale: cardScale }],
-        }}>
-        {/* Back card (white/light, slightly rotated left) */}
-        <View
-          className="absolute"
-          style={{
-            transform: [{ rotate: '-6deg' }, { translateX: -20 }],
-            opacity: 0.6,
-          }}>
-          <RailCard
-            brand="VISA"
-            holderName="YOUR NAME"
-            last4="••••"
-            exp="••/••"
-            currency="USD"
-            accentColor="#E5E7EB"
-            patternIntensity={0.08}
-            width={cardWidth * 0.88}
-            style={{
-              backgroundColor: '#F9FAFB',
+          width: cardWidth,
+          height: cardHeight,
+          transform: [{ rotate: '4deg' }, { translateX: 20 }],
+          ...Platform.select({
+            ios: {
               shadowColor: '#000',
-              shadowOpacity: 0.06,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 3,
-            }}
-          />
-        </View>
-
-        {/* Front card (black, slightly rotated right) */}
-        <View
-          style={{
-            transform: [{ rotate: '4deg' }, { translateX: 16 }],
-            shadowColor: '#000',
-            shadowOpacity: Platform.OS === 'ios' ? 0.2 : 0,
-            shadowRadius: 24,
-            shadowOffset: { width: 0, height: 16 },
-            elevation: Platform.OS === 'android' ? 10 : 0,
-          }}>
-          <RailCard
-            brand="VISA"
-            holderName="YOUR NAME"
-            last4="2049"
-            exp="09/29"
-            currency="USD"
-            accentColor="#FF6A00"
-            patternIntensity={0.35}
-            width={cardWidth}
-          />
-        </View>
-      </Animated.View>
-
-      {/* Bottom Sheet */}
-      <Animated.View
-        className="mt-auto rounded-t-[28px] bg-white px-6 pb-10 pt-7"
-        style={{
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-          shadowColor: '#000',
-          shadowOpacity: 0.06,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: -4 },
-          elevation: 8,
+              shadowOpacity: 0.25,
+              shadowRadius: 30,
+              shadowOffset: { width: 0, height: 15 },
+            },
+            android: { elevation: 12 },
+          }),
         }}>
-        {/* Drag indicator */}
-        <View className="absolute left-0 right-0 top-3 items-center">
-          <View className="h-1 w-9 rounded-full bg-gray-200" />
+        {/* Username */}
+        <View className="absolute left-5 top-8">
+          <Text
+            className="font-subtitle text-sm text-white"
+            style={{ transform: [{ rotate: '-90deg' }, { translateX: -30 }, { translateY: -20 }] }}>
+            $railuser
+          </Text>
         </View>
 
-        <Text className="font-headline text-headline-2 text-gray-900">Rail Card</Text>
-        <Text className="mt-1.5 font-body text-body leading-relaxed text-gray-500">
-          Get instant access to your money with a free virtual debit card
-        </Text>
-
-        {/* Feature list */}
-        <View className="mt-5 gap-y-3.5">
-          {FEATURES.map((feature) => (
-            <View key={feature} className="flex-row items-center">
-              <View className="mr-3 h-6 w-6 items-center justify-center rounded-full bg-emerald-50">
-                <Check size={14} color="#10B981" strokeWidth={3} />
-              </View>
-              <Text className="flex-1 font-body text-[15px] text-gray-800">{feature}</Text>
-            </View>
-          ))}
+        {/* Signature */}
+        <View className="absolute bottom-24 right-6">
+          <SignatureSvg color="#fff" size={100} />
         </View>
 
-        {/* CTA Button */}
-        <TouchableOpacity
-          onPress={onCreateCard}
-          activeOpacity={0.85}
-          className="mt-7 h-[54px] items-center justify-center rounded-full bg-black">
-          <Text className="font-button text-[17px] text-white">Get Free Card</Text>
-        </TouchableOpacity>
-      </Animated.View>
+        {/* Chip */}
+        <View className="absolute bottom-8 left-6">
+          <ChipSvg />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+export function CardIntroScreen({ onCreateCard }: CardIntroScreenProps) {
+  return (
+    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      {/* Header */}
+      <View className="px-5 pt-2">
+        <Text className="font-headline text-3xl text-gray-900">Free Debit Card</Text>
+        <Text className="mt-1 font-body text-base text-gray-400">With Instant Discounts</Text>
+      </View>
+
+      {/* Card Stack */}
+      <View className="flex-1 items-center justify-center">
+        <CardStack />
+      </View>
+
+      {/* Bottom Buttons */}
+      <View className="flex-row gap-3 px-5 pb-6">
+        <Button title="Learn More" variant="white" size="large" flex onPress={() => {}} />
+        <Button title="Get Card" variant="black" size="large" flex onPress={onCreateCard} />
+      </View>
     </SafeAreaView>
   );
-};
-
-export default CardIntroScreen;
-export { CardIntroScreen };
+}
