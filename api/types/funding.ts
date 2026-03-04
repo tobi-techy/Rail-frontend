@@ -3,10 +3,14 @@
 export interface VirtualAccount {
   id: string;
   user_id: string;
+  bridge_customer_id?: string;
+  bridge_account_id?: string;
   account_number: string;
   routing_number: string;
+  bank_name?: string;
+  beneficiary_name?: string;
   status: 'pending' | 'active' | 'closed' | 'failed';
-  currency: string;
+  currency: 'USD' | 'EUR' | 'GBP';
   created_at: string;
   updated_at: string;
 }

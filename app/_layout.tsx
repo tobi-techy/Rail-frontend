@@ -112,7 +112,6 @@ function AppNavigator() {
         name="virtual-account"
         options={{
           headerShown: false,
-          presentation: 'modal',
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />

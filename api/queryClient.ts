@@ -90,6 +90,10 @@ export const queryKeys = {
     transactions: (params?: unknown) => [...queryKeys.funding.all, 'transactions', params] as const,
     virtualAccount: () => [...queryKeys.funding.all, 'virtual-account'] as const,
   },
+  virtualAccount: {
+    all: ['virtual-account'] as const,
+    list: () => [...queryKeys.virtualAccount.all, 'list'] as const,
+  },
   market: {
     all: ['market'] as const,
     filters: () => [...queryKeys.market.all, 'filters'] as const,
@@ -153,6 +157,7 @@ export const invalidateQueries = {
   allocation: () => queryClient.invalidateQueries({ queryKey: queryKeys.allocation.all }),
   wallet: () => queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all }),
   funding: () => queryClient.invalidateQueries({ queryKey: queryKeys.funding.all }),
+  virtualAccount: () => queryClient.invalidateQueries({ queryKey: queryKeys.virtualAccount.all }),
   market: () => queryClient.invalidateQueries({ queryKey: queryKeys.market.all }),
   news: () => queryClient.invalidateQueries({ queryKey: queryKeys.news.all }),
   investment: () => queryClient.invalidateQueries({ queryKey: queryKeys.investment.all }),

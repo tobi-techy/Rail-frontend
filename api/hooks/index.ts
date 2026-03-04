@@ -47,3 +47,6 @@ export * from './useNotifications';
 
 // Card hooks
 export * from './useCard';
+
+// Virtual Account hooks
+export * from './useVirtualAccount';
