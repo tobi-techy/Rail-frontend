@@ -38,7 +38,6 @@ export default function KycSumsubSdkScreen() {
           }
         },
       })
-      .withAutoCloseOnApprove(0)
       .build();
 
     sdkInstance = builder;

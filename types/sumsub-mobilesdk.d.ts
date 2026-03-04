@@ -14,7 +14,6 @@ declare module '@sumsub/react-native-mobilesdk-module' {
     }): Builder;
     withDebug(flag: boolean): Builder;
     withAnalyticsEnabled(flag: boolean): Builder;
-    withAutoCloseOnApprove(interval: number): Builder;
     build(): SNSMobileSDKInstance;
   }
 
