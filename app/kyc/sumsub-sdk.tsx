@@ -25,18 +25,25 @@ export default function KycSumsubSdkScreen() {
 
     let didSubmit = false;
 
-    SNSMobileSDK.init(sumsubToken, tokenExpirationHandler)
+    let sdkInstance: { dismiss: () => void } | null = null;
+
+    const builder = SNSMobileSDK.init(sumsubToken, tokenExpirationHandler)
       .withLocale('en')
       .withApplicantConf({ applicantId })
       .withHandlers({
         onStatusChanged: (event) => {
-          if (event.newStatus === 'Approved' || event.newStatus === 'Pending') {
+          if (event.newStatus === 'Pending' || event.newStatus === 'Approved') {
             didSubmit = true;
-            router.replace('/kyc/pending');
+            sdkInstance?.dismiss();
           }
         },
       })
-      .build()
+      .withAutoCloseOnApprove(0)
+      .build();
+
+    sdkInstance = builder;
+
+    builder
       .launch()
       .then(() => {
         // SDK closed — only navigate to pending if a submission actually happened
