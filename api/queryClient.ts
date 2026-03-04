@@ -129,6 +129,14 @@ export const queryKeys = {
       [...queryKeys.investment.all, 'transactions', params] as const,
     performance: (period?: string) => [...queryKeys.investment.all, 'performance', period] as const,
   },
+  card: {
+    all: ['card'] as const,
+    list: () => [...queryKeys.card.all, 'list'] as const,
+    detail: (id: string) => [...queryKeys.card.all, 'detail', id] as const,
+    transactions: (params?: unknown) => [...queryKeys.card.all, 'transactions', params] as const,
+    cardTransactions: (id: string, params?: unknown) =>
+      [...queryKeys.card.all, 'card-transactions', id, params] as const,
+  },
   passkeys: {
     all: ['passkeys'] as const,
     list: () => [...queryKeys.passkeys.all, 'list'] as const,

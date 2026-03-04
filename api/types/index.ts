@@ -23,3 +23,4 @@ export * from './allocation';
 export * from './passkey';
 export * from './market';
 export * from './investment';
+export * from './card';

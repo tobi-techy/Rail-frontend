@@ -1,8 +1,9 @@
-import React, { useLayoutEffect, useCallback } from 'react';
+import React, { useLayoutEffect, useCallback, useMemo } from 'react';
 import { Platform, ScrollView, Text, TouchableOpacity, View, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Settings, Plus, ArrowUpRight, Eye, EyeOff } from 'lucide-react-native';
 import { useNavigation, router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { RailCard } from '../cards';
 import { TransactionList } from '../molecules/TransactionList';
@@ -10,54 +11,82 @@ import { TransactionItemSkeleton, type Transaction } from '../molecules/Transact
 import { MaskedBalance } from '../molecules/MaskedBalance';
 import { Button } from '../ui/Button';
 import { useUIStore } from '@/stores';
+import { useCards, useCardTransactions } from '@/api/hooks/useCard';
+import { useSpendingStash } from '@/api/hooks/useSpending';
+import { queryKeys } from '@/api/queryClient';
+import type { CardTransaction } from '@/api/types/card';
 
-interface CardMainScreenProps {
-  card?: {
-    brand?: 'VISA' | 'MASTERCARD';
-    holderName?: string;
-    last4?: string;
-    exp?: string;
-    accentColor?: string;
+/** Map backend card transaction → TransactionList item */
+function mapCardTransaction(tx: CardTransaction): Transaction {
+  const isCredit = tx.type === 'refund' || tx.type === 'reversal';
+  const typeMap: Record<string, Transaction['type']> = {
+    authorization: 'withdraw',
+    capture: 'withdraw',
+    refund: 'receive',
+    reversal: 'receive',
   };
-  balance?: string;
-  transactions?: Transaction[];
-  isLoading?: boolean;
-  onTopUp?: () => void;
-  onWithdraw?: () => void;
-  onSettings?: () => void;
-  onTransactionPress?: (tx: Transaction) => void;
-  onRefresh?: () => void;
-  refreshing?: boolean;
+  const statusMap: Record<string, Transaction['status']> = {
+    pending: 'pending',
+    completed: 'completed',
+    declined: 'failed',
+    reversed: 'completed',
+  };
+
+  return {
+    id: tx.id,
+    type: typeMap[tx.type] ?? 'withdraw',
+    title: tx.merchant_name ?? (isCredit ? 'Refund' : 'Card Payment'),
+    subtitle: tx.merchant_category ?? tx.type,
+    amount: isCredit ? Math.abs(parseFloat(tx.amount)) : -Math.abs(parseFloat(tx.amount)),
+    currency: tx.currency?.toUpperCase() ?? 'USD',
+    merchant: tx.merchant_name ?? undefined,
+    status: statusMap[tx.status] ?? 'pending',
+    createdAt: new Date(tx.created_at),
+    icon: {
+      type: 'icon' as const,
+      iconName: 'credit-card',
+      bgColor: '#F3F4F6',
+    },
+  };
 }
 
-const CardMainScreen = ({
-  card,
-  balance = '$0.00',
-  transactions = [],
-  isLoading = false,
-  onTopUp,
-  onWithdraw,
-  onSettings,
-  onTransactionPress,
-  onRefresh,
-  refreshing = false,
-}: CardMainScreenProps) => {
+const CardMainScreen = () => {
   const navigation = useNavigation();
+  const queryClient = useQueryClient();
   const { isBalanceVisible, toggleBalanceVisibility } = useUIStore();
 
+  const { data: cardsData, isLoading: cardsLoading } = useCards();
+  const { data: txData, isLoading: txLoading } = useCardTransactions({ limit: 50 });
+  const { data: spendData } = useSpendingStash();
+
+  const activeCard = useMemo(
+    () => cardsData?.cards?.find((c) => c.status === 'active') ?? cardsData?.cards?.[0],
+    [cardsData]
+  );
+
+  const balance = useMemo(() => {
+    const raw = spendData?.balance?.spending_balance;
+    if (!raw) return '$0.00';
+    const num = parseFloat(raw);
+    return isNaN(num) ? '$0.00' : `$${num.toFixed(2)}`;
+  }, [spendData]);
+
+  const transactions = useMemo(() => txData?.transactions?.map(mapCardTransaction) ?? [], [txData]);
+
+  const isLoading = cardsLoading || txLoading;
+
   useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: false,
-    });
+    navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
+  const handleRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.card.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.spending.stash() });
+  }, [queryClient]);
+
   const handleSettings = useCallback(() => {
-    if (onSettings) {
-      onSettings();
-    } else {
-      router.push('/card-settings' as never);
-    }
-  }, [onSettings]);
+    router.push('/card-settings' as never);
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -65,9 +94,7 @@ const CardMainScreen = ({
         className="flex-1"
         showsVerticalScrollIndicator={false}
         refreshControl={
-          onRefresh ? (
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
-          ) : undefined
+          <RefreshControl refreshing={false} onRefresh={handleRefresh} tintColor="#000" />
         }>
         <View className="px-5">
           {/* Header */}
@@ -112,12 +139,12 @@ const CardMainScreen = ({
                 elevation: Platform.OS === 'android' ? 8 : 0,
               }}>
               <RailCard
-                brand={card?.brand ?? 'VISA'}
-                holderName={card?.holderName ?? 'CARDHOLDER'}
-                last4={card?.last4 ?? '••••'}
-                exp={card?.exp ?? '••/••'}
+                brand="VISA"
+                holderName={activeCard ? 'CARDHOLDER' : 'CARDHOLDER'}
+                last4={activeCard?.last_4 ?? '••••'}
+                exp={activeCard?.expiry ?? '••/••'}
                 currency="USD"
-                accentColor={card?.accentColor ?? '#FF6A00'}
+                accentColor="#FF6A00"
                 patternIntensity={0.35}
               />
             </View>
@@ -132,7 +159,7 @@ const CardMainScreen = ({
                 size="small"
                 flex
                 leftIcon={<Plus size={18} color="#111" />}
-                onPress={onTopUp}
+                onPress={() => {}}
               />
               <Button
                 title="Withdraw"
@@ -140,7 +167,7 @@ const CardMainScreen = ({
                 size="small"
                 flex
                 leftIcon={<ArrowUpRight size={18} color="#fff" />}
-                onPress={onWithdraw}
+                onPress={() => {}}
               />
             </View>
             <TouchableOpacity
@@ -169,11 +196,7 @@ const CardMainScreen = ({
                 </Text>
               </View>
             ) : (
-              <TransactionList
-                transactions={transactions}
-                onTransactionPress={onTransactionPress}
-                scrollEnabled={false}
-              />
+              <TransactionList transactions={transactions} scrollEnabled={false} />
             )}
           </View>
         </View>

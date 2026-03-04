@@ -44,3 +44,6 @@ export * from './useInvestment';
 
 // Notification hooks
 export * from './useNotifications';
+
+// Card hooks
+export * from './useCard';

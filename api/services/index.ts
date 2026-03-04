@@ -17,6 +17,7 @@ export { passkeyService } from './passkey.service';
 export { marketService } from './market.service';
 export { investmentService } from './investment.service';
 export { notificationService } from './notification.service';
+export { cardService } from './card.service';
 
 // Re-export for convenience
 export { default as auth } from './auth.service';
