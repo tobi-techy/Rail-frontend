@@ -9,27 +9,27 @@
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		91FB420C2100207497383690 /* libPods-RailMoney.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B1A71DE806E8E692CCAFDA3E /* libPods-RailMoney.a */; };
-		9D5B2DCAD72765461CF34243 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA5C935E7262AB112AF66B89 /* ExpoModulesProvider.swift */; };
+		5729F7BB0CCB2DD5F7F426DC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AF8AB956077F4325CE293AD7 /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		CA59494219661AFC54FB5B1C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F81697CDB7A32B8537F47723 /* PrivacyInfo.xcprivacy */; };
+		D2EAD56AB4E503E2529DCFD2 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7586C19C51B8920328EEEA7 /* ExpoModulesProvider.swift */; };
+		E6C8B6F7D2A1976CA8F206A7 /* libPods-RailMoney.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64B29F7EB13FC3DF379A4F18 /* libPods-RailMoney.a */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0D1CFDDE78EB5A46D0948A09 /* Pods-RailMoney.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RailMoney.release.xcconfig"; path = "Target Support Files/Pods-RailMoney/Pods-RailMoney.release.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* RailMoney.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RailMoney.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = RailMoney/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = RailMoney/Info.plist; sourceTree = "<group>"; };
-		40CA37BA4C7554562D600DC9 /* Pods-RailMoney.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RailMoney.debug.xcconfig"; path = "Target Support Files/Pods-RailMoney/Pods-RailMoney.debug.xcconfig"; sourceTree = "<group>"; };
-		50189D985C89660F77338FB9 /* Pods-RailMoney.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RailMoney.release.xcconfig"; path = "Target Support Files/Pods-RailMoney/Pods-RailMoney.release.xcconfig"; sourceTree = "<group>"; };
+		64B29F7EB13FC3DF379A4F18 /* libPods-RailMoney.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RailMoney.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		86260FDA440B916EF7AD7849 /* Pods-RailMoney.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RailMoney.debug.xcconfig"; path = "Target Support Files/Pods-RailMoney/Pods-RailMoney.debug.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = RailMoney/SplashScreen.storyboard; sourceTree = "<group>"; };
-		B1A71DE806E8E692CCAFDA3E /* libPods-RailMoney.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RailMoney.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF8AB956077F4325CE293AD7 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = RailMoney/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		B7586C19C51B8920328EEEA7 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-RailMoney/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		CA5C935E7262AB112AF66B89 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-RailMoney/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = RailMoney/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* RailMoney-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "RailMoney-Bridging-Header.h"; path = "RailMoney/RailMoney-Bridging-Header.h"; sourceTree = "<group>"; };
-		F81697CDB7A32B8537F47723 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = RailMoney/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,21 +37,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				91FB420C2100207497383690 /* libPods-RailMoney.a in Frameworks */,
+				E6C8B6F7D2A1976CA8F206A7 /* libPods-RailMoney.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		054DECDE85A009B980209093 /* RailMoney */ = {
-			isa = PBXGroup;
-			children = (
-				CA5C935E7262AB112AF66B89 /* ExpoModulesProvider.swift */,
-			);
-			name = RailMoney;
-			sourceTree = "<group>";
-		};
 		13B07FAE1A68108700A75B9A /* RailMoney */ = {
 			isa = PBXGroup;
 			children = (
@@ -61,27 +53,26 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				F81697CDB7A32B8537F47723 /* PrivacyInfo.xcprivacy */,
+				AF8AB956077F4325CE293AD7 /* PrivacyInfo.xcprivacy */,
 			);
 			name = RailMoney;
+			sourceTree = "<group>";
+		};
+		1DA6E0BAA7AD2E31D0E2B005 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				9EDB3B83E705E8518C56F868 /* RailMoney */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				B1A71DE806E8E692CCAFDA3E /* libPods-RailMoney.a */,
+				64B29F7EB13FC3DF379A4F18 /* libPods-RailMoney.a */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		2F8D8350B2C516D32F5B15F8 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				40CA37BA4C7554562D600DC9 /* Pods-RailMoney.debug.xcconfig */,
-				50189D985C89660F77338FB9 /* Pods-RailMoney.release.xcconfig */,
-			);
-			path = Pods;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -98,8 +89,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				2F8D8350B2C516D32F5B15F8 /* Pods */,
-				A6C63ECE8843BE1E381C8D73 /* ExpoModulesProviders */,
+				CBED78A2C122C7658C68BB33 /* Pods */,
+				1DA6E0BAA7AD2E31D0E2B005 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -114,12 +105,12 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A6C63ECE8843BE1E381C8D73 /* ExpoModulesProviders */ = {
+		9EDB3B83E705E8518C56F868 /* RailMoney */ = {
 			isa = PBXGroup;
 			children = (
-				054DECDE85A009B980209093 /* RailMoney */,
+				B7586C19C51B8920328EEEA7 /* ExpoModulesProvider.swift */,
 			);
-			name = ExpoModulesProviders;
+			name = RailMoney;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -131,6 +122,15 @@
 			path = RailMoney/Supporting;
 			sourceTree = "<group>";
 		};
+		CBED78A2C122C7658C68BB33 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				86260FDA440B916EF7AD7849 /* Pods-RailMoney.debug.xcconfig */,
+				0D1CFDDE78EB5A46D0948A09 /* Pods-RailMoney.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -139,14 +139,14 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "RailMoney" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				5B3E903D92B8941097C764BC /* [Expo] Configure project */,
+				117F1DA9CA23700D9FC90DAE /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				D962C83322684DBFBCA3F201 /* Upload Debug Symbols to Sentry */,
-				F55F71F10FE7EC22AA07D6CA /* [CP] Embed Pods Frameworks */,
+				ABA503596CDA49A7BB47AA98 /* Upload Debug Symbols to Sentry */,
+				0DAC63D3D79D39981E598014 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -167,6 +167,8 @@
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
 						LastSwiftMigration = 1250;
+						DevelopmentTeam = "A239A6TG6R";
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -196,7 +198,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				CA59494219661AFC54FB5B1C /* PrivacyInfo.xcprivacy in Resources */,
+				5729F7BB0CCB2DD5F7F426DC /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,7 +244,31 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		5B3E903D92B8941097C764BC /* [Expo] Configure project */ = {
+		0DAC63D3D79D39981E598014 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-RailMoney/Pods-RailMoney-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/IdensicMobileSDK/Core/IdensicMobileSDK.framework/IdensicMobileSDK",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/IdensicMobileSDK.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-RailMoney/Pods-RailMoney-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		117F1DA9CA23700D9FC90DAE /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -280,6 +306,7 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoDevice/ExpoDevice_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoLocalization/ExpoLocalization_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoNotifications/ExpoNotifications_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoSystemUI/ExpoSystemUI_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/GTMAppAuth/GTMAppAuth_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/GTMSessionFetcher/GTMSessionFetcher_Core_Privacy.bundle",
@@ -324,6 +351,7 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoDevice_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoLocalization_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoNotifications_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoSystemUI_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GTMAppAuth_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GTMSessionFetcher_Core_Privacy.bundle",
@@ -364,7 +392,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-RailMoney/Pods-RailMoney-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		D962C83322684DBFBCA3F201 /* Upload Debug Symbols to Sentry */ = {
+		ABA503596CDA49A7BB47AA98 /* Upload Debug Symbols to Sentry */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -378,30 +406,6 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh `${NODE_BINARY:-node} --print \"require('path').dirname(require.resolve('@sentry/react-native/package.json')) + '/scripts/sentry-xcode-debug-files.sh'\"`";
 		};
-		F55F71F10FE7EC22AA07D6CA /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-RailMoney/Pods-RailMoney-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/IdensicMobileSDK/Core/IdensicMobileSDK.framework/IdensicMobileSDK",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/IdensicMobileSDK.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-RailMoney/Pods-RailMoney-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -410,7 +414,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				9D5B2DCAD72765461CF34243 /* ExpoModulesProvider.swift in Sources */,
+				D2EAD56AB4E503E2529DCFD2 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -419,22 +423,21 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 40CA37BA4C7554562D600DC9 /* Pods-RailMoney.debug.xcconfig */;
+			baseConfigurationReference = 86260FDA440B916EF7AD7849 /* Pods-RailMoney.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = RailMoney/RailMoney.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = A239A6TG6R;
+				DEVELOPMENT_TEAM = "A239A6TG6R";
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
 				);
 				INFOPLIST_FILE = RailMoney/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Rail Money";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -449,31 +452,27 @@
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.railmoney.rail;
 				PRODUCT_NAME = RailMoney;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "RailMoney/RailMoney-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 50189D985C89660F77338FB9 /* Pods-RailMoney.release.xcconfig */;
+			baseConfigurationReference = 0D1CFDDE78EB5A46D0948A09 /* Pods-RailMoney.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = RailMoney/RailMoney.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = A239A6TG6R;
+				DEVELOPMENT_TEAM = "A239A6TG6R";
 				INFOPLIST_FILE = RailMoney/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Rail Money";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -488,13 +487,10 @@
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.railmoney.rail;
 				PRODUCT_NAME = RailMoney;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "RailMoney/RailMoney-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;

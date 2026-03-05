@@ -50,6 +50,8 @@ interface StashCardProps {
   disabled?: boolean;
   testID?: string;
   isLoading?: boolean;
+  /** Shows 'Get started' text instead of amount when true */
+  getStarted?: boolean;
 }
 
 const BADGE_COLORS: Record<StashCardBadge['color'], { bg: string; text: string; dot: string }> = {
@@ -71,6 +73,7 @@ export const StashCard: React.FC<StashCardProps> = ({
   disabled,
   testID,
   isLoading,
+  getStarted,
 }) => {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -110,6 +113,20 @@ export const StashCard: React.FC<StashCardProps> = ({
         <View className="gap-y-2">
           <Shimmer light={isColored} className="h-6 w-20" />
           <Shimmer light={isColored} className="h-3 w-12" />
+        </View>
+      ) : getStarted ? (
+        <View>
+          <Text
+            className="font-subtitle text-lg text-white"
+            style={{ color: isColored ? 'white' : '#FF2E01' }}>
+            Get started
+          </Text>
+          <Text
+            className="mt-1 font-body text-body tracking-wide"
+            style={{ color: isColored ? 'rgba(255,255,255,0.75)' : undefined }}
+            numberOfLines={1}>
+            {title}
+          </Text>
         </View>
       ) : (
         <>

@@ -48,14 +48,7 @@
       "expo-apple-authentication",
       "@react-native-google-signin/google-signin",
       "expo-localization",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/app-icon/notification-icon.png",
-          "color": "#FF2E01",
-          "sounds": []
-        }
-      ]
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -112,8 +105,7 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE"
-      ],
-      "googleServicesFile": "./google-services.json"
+      ]
     },
     "extra": {
       "router": {},

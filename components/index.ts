@@ -4,6 +4,7 @@ export { InputField } from './atoms/InputField';
 export { Modal } from './atoms/Modal';
 export { ProgressBar } from './atoms/ProgressBar';
 export { CountryPicker } from './atoms/CountryPicker';
+export { StatePicker, hasSubdivisions, getSubdivisionLabel } from './atoms/StatePicker';
 export { PhoneNumberInput } from './atoms/PhoneNumberInput';
 export { Icon } from './atoms/Icon';
 export { Ionicons } from './atoms/SafeIonicons';

@@ -39,10 +39,12 @@ import {
   NavigableBottomSheet,
   useNavigableBottomSheet,
   type BottomSheetScreen,
+  InfoSheet,
 } from '@/components/sheets';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
 import { useStation, useKYCStatus } from '@/api/hooks';
+import { useCards } from '@/api/hooks/useCard';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
 import type { Deposit, Withdrawal } from '@/api/types';
 import {
@@ -153,6 +155,7 @@ export default function Dashboard() {
   const [showSendSheet, setShowSendSheet] = useState(false);
   const [showSolanaPayScan, setShowSolanaPayScan] = useState(false);
   const [showKYCSheet, setShowKYCSheet] = useState(false);
+  const [showMicroLoanSheet, setShowMicroLoanSheet] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   const receiveNav = useNavigableBottomSheet('receive-main');
@@ -161,16 +164,18 @@ export default function Dashboard() {
   // Disclaimer
   const hasAcknowledgedDisclaimer = useAuthStore((s) => s.hasAcknowledgedDisclaimer);
   const setHasAcknowledgedDisclaimer = useAuthStore((s) => s.setHasAcknowledgedDisclaimer);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
 
   useEffect(() => {
-    if (hasAcknowledgedDisclaimer) return;
-    const t = setTimeout(() => setShowDisclaimer(true), 500);
+    if (hasAcknowledgedDisclaimer || !isAuthenticated) return;
+    const t = setTimeout(() => setShowDisclaimer(true), 800);
     return () => clearTimeout(t);
-  }, [hasAcknowledgedDisclaimer]);
+  }, [hasAcknowledgedDisclaimer, isAuthenticated]);
 
   // Data
   const { data: station, refetch, isPending: isStationPending } = useStation();
+  const { data: cardsData } = useCards();
   const deposits = useDeposits(10);
   const withdrawals = useWithdrawals(10);
   const { data: kycStatus } = useKYCStatus();
@@ -287,6 +292,8 @@ export default function Dashboard() {
   }, [deposits.data, withdrawals.data]);
 
   const kycApproved = kycStatus?.status === 'approved';
+
+  const hasCard = Boolean(cardsData?.cards && cardsData.cards.length > 0);
 
   const openKYC = useCallback(() => {
     setShowReceiveSheet(false);
@@ -548,6 +555,7 @@ export default function Dashboard() {
             cardColor="#000"
             className="max-w-[50%] flex-1"
             isLoading={isStationPending}
+            getStarted={!hasCard}
             onPress={() => router.push('/card')}
           />
           <StashCard
@@ -555,13 +563,19 @@ export default function Dashboard() {
             amount={stash.dollars}
             amountCents={stash.cents}
             icon={<PiggyBank size={26} color="white" strokeWidth={1.8} />}
-            cardColor="#1A1A2E"
+            cardColor="#4F46E5"
             className="max-w-[50%] flex-1"
             isLoading={isStationPending}
+            badge={{ label: 'Soon', color: 'gray' }}
+            onPress={() => setShowMicroLoanSheet(true)}
           />
         </View>
 
-        <FeatureBanner kycApproved={kycApproved} onKYCPress={() => setShowKYCSheet(true)} />
+        <FeatureBanner
+          kycApproved={kycApproved}
+          hasCard={hasCard}
+          onKYCPress={() => setShowKYCSheet(true)}
+        />
 
         <View className="py-5">
           {transactions.length === 0 ? (
@@ -623,6 +637,25 @@ export default function Dashboard() {
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
       />
+      <InfoSheet
+        visible={showMicroLoanSheet}
+        onClose={() => setShowMicroLoanSheet(false)}
+        title="Micro Loans"
+        subtitle="Unlock liquidity from your investments"
+        rows={[
+          { label: 'Interest Rate', value: '0.5%' },
+          { label: 'Collateral', value: 'Rail Investments' },
+          { label: 'Max Amount', value: 'Up to 50% of stash' },
+        ]}>
+        <View className="mt-4 rounded-xl bg-gray-50 p-4">
+          <Text className="font-body text-[14px] leading-5 text-text-secondary">
+            Keep your investments working for you while accessing instant liquidity. Use your Rail
+            investment stash as collateral to get a micro loan with just 0.5% interest. Whether you
+            need funds for an emergency or an opportunity, your investments stay invested while you
+            borrow against them.
+          </Text>
+        </View>
+      </InfoSheet>
     </ScrollView>
   );
 }

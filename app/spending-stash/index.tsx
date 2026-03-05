@@ -13,7 +13,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { PieChart } from 'react-native-gifted-charts';
 import { useSpendingStashData } from './useSpendingStashData';
-import { StashCard } from '@/components/molecules';
 import { TransactionList } from '@/components/molecules/TransactionList';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useUIStore } from '@/stores';
@@ -22,7 +21,6 @@ import {
   CATEGORY_PALETTE,
   splitAmt,
   PeriodSelector,
-  StatCard,
   SectionHeader,
   CategoryRow,
   EmptyPeriod,
@@ -52,17 +50,12 @@ export default function SpendingScreen() {
     availableBalance,
     thisMonthSpend,
     totalSpent,
-    dailyAvg,
     trendPct,
     TrendIcon,
     trendColor,
-    transactionCount,
-    monthlyUsedPct,
     periodRangeLabel,
     categories,
     transactions,
-    cardBadge,
-    cardSubtitle,
   } = useSpendingStashData();
 
   const [period, setPeriod] = useState<Period>('6M');
@@ -96,7 +89,10 @@ export default function SpendingScreen() {
       {/* Header */}
       <View className="flex-row items-center px-2 pb-2" style={{ paddingTop: insets.top + 8 }}>
         <Pressable
-          onPress={() => { impact(); router.back(); }}
+          onPress={() => {
+            impact();
+            router.back();
+          }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           className="h-11 w-11 items-center justify-center"
           accessibilityRole="button"
@@ -201,34 +197,6 @@ export default function SpendingScreen() {
         {/* Period selector */}
         <PeriodSelector selected={period} onSelect={handlePeriod} />
 
-        {/* Stats */}
-        <View className="mx-4 mt-6 flex-row gap-3">
-          {isLoading ? (
-            <>
-              <View className="flex-1 rounded-2xl border border-gray-100 px-4 py-4 gap-y-2">
-                <Shimmer className="h-3 w-20" />
-                <Shimmer className="h-7 w-16" />
-              </View>
-              <View className="flex-1 rounded-2xl border border-gray-100 px-4 py-4 gap-y-2">
-                <Shimmer className="h-3 w-20" />
-                <Shimmer className="h-7 w-16" />
-              </View>
-            </>
-          ) : (
-            <>
-              <StatCard
-                label="Daily average"
-                value={isBalanceVisible ? `$${dailyAvg.toFixed(2)}` : '****'}
-              />
-              <StatCard
-                label="Transactions"
-                value={transactionCount.toString()}
-                sub={`${monthlyUsedPct.toFixed(0)}% of limit`}
-              />
-            </>
-          )}
-        </View>
-
         {/* By Category */}
         {categories.length > 0 && (
           <View className="mt-8">
@@ -249,29 +217,6 @@ export default function SpendingScreen() {
             </View>
           </View>
         )}
-
-        {/* Your Card */}
-        <View className="mt-8">
-          <SectionHeader title="Your Card" />
-          <View className="mx-4 flex-row gap-3">
-            <StashCard
-              title="Available"
-              amount={availSplit.dollars}
-              amountCents={availSplit.cents}
-              icon={<CreditCard size={28} color={C.text} strokeWidth={1.5} />}
-              badge={cardBadge}
-              subtitle={cardSubtitle}
-              className="flex-1"
-            />
-            <StashCard
-              title="This month"
-              amount={spentSplit.dollars}
-              amountCents={spentSplit.cents}
-              icon={<TrendIcon size={28} color={trendColor} strokeWidth={1.5} />}
-              className="flex-1"
-            />
-          </View>
-        </View>
 
         {/* Recent transactions */}
         {transactions.length > 0 && (

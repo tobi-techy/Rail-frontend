@@ -68,6 +68,7 @@ function BannerCard({ b, cardWidth }: { b: Banner; cardWidth: number }) {
 interface FeatureBannerProps {
   kycApproved: boolean;
   onKYCPress?: () => void;
+  hasCard?: boolean;
 }
 
 function getKycProgressScreen(state: ReturnType<typeof useKycStore.getState>): string {
@@ -98,7 +99,7 @@ function getKycProgressScreen(state: ReturnType<typeof useKycStore.getState>): s
   return '/kyc/tax-id';
 }
 
-export function FeatureBanner({ kycApproved, onKYCPress }: FeatureBannerProps) {
+export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBannerProps) {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = Math.min(Math.max(screenWidth * 0.62, 220), 320);
   const snap = cardWidth + 10;
@@ -139,15 +140,20 @@ export function FeatureBanner({ kycApproved, onKYCPress }: FeatureBannerProps) {
           },
         ]
       : []),
-    {
-      id: 'card',
-      label: 'Coming soon',
-      title: 'Rail Debit Card',
-      bg: '#0F0F1A',
-      iconColor: '#818CF8',
-      badge: 'Soon',
-      Icon: CreditCardIcon as any,
-    },
+    ...(!hasCard
+      ? [
+          {
+            id: 'card',
+            label: 'Get started',
+            title: 'Rail Debit Card',
+            bg: '#0F0F1A',
+            iconColor: '#818CF8',
+            badge: 'New',
+            Icon: CreditCardIcon as any,
+            onPress: () => router.push('/card'),
+          },
+        ]
+      : []),
     {
       id: 'conductor',
       label: 'Coming soon',
