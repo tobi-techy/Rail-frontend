@@ -52,7 +52,8 @@ export default function Address() {
   };
 
   const handleStateSelect = (subdivision: { code: string; name: string }) => {
-    setFormData((prev) => ({ ...prev, state: subdivision.code }));
+    // Send full state name to backend (Bridge requires full name, not code)
+    setFormData((prev) => ({ ...prev, state: subdivision.name }));
     setErrors((prev) => ({ ...prev, state: '' }));
   };
 
