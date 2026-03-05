@@ -47,7 +47,15 @@
       "expo-video",
       "expo-apple-authentication",
       "@react-native-google-signin/google-signin",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/app-icon/notification-icon.png",
+          "color": "#FF2E01",
+          "sounds": []
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -101,8 +109,11 @@
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT",
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
-      ]
+        "android.permission.RECORD_AUDIO",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "extra": {
       "router": {},

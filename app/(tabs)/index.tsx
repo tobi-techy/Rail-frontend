@@ -550,15 +550,15 @@ export default function Dashboard() {
             isLoading={isStationPending}
             onPress={() => router.push('/card')}
           />
-          {/*<StashCard
-            title="Stash"
+          <StashCard
+            title="Micro Loan"
             amount={stash.dollars}
             amountCents={stash.cents}
             icon={<PiggyBank size={26} color="white" strokeWidth={1.8} />}
             cardColor="#1A1A2E"
-            className="flex-1"
+            className="max-w-[50%] flex-1"
             isLoading={isStationPending}
-          />*/}
+          />
         </View>
 
         <FeatureBanner kycApproved={kycApproved} onKYCPress={() => setShowKYCSheet(true)} />

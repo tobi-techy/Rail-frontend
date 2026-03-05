@@ -145,6 +145,11 @@ export const queryKeys = {
     all: ['passkeys'] as const,
     list: () => [...queryKeys.passkeys.all, 'list'] as const,
   },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (params?: unknown) => [...queryKeys.notifications.all, 'list', params] as const,
+    unreadCount: () => [...queryKeys.notifications.all, 'unread-count'] as const,
+  },
 };
 
 /**
@@ -163,6 +168,7 @@ export const invalidateQueries = {
   investment: () => queryClient.invalidateQueries({ queryKey: queryKeys.investment.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
   passkeys: () => queryClient.invalidateQueries({ queryKey: queryKeys.passkeys.all }),
+  notifications: () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
   all: () => queryClient.invalidateQueries(),
 };
 
