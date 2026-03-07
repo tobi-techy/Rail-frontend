@@ -79,7 +79,7 @@ export interface MarketStatus {
 export function useMarketStatus() {
   return useQuery<MarketStatus>({
     queryKey: ['market', 'status'],
-    queryFn: () => apiClient.get(ENDPOINTS.MARKET.STATUS).then((r) => r.data),
+    queryFn: () => apiClient.get<MarketStatus>(ENDPOINTS.MARKET.STATUS),
     staleTime: 60 * 1000,
     refetchInterval: 60 * 1000, // re-check every minute
   });
