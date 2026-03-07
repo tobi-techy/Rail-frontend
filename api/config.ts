@@ -37,6 +37,9 @@ export const ENDPOINTS = {
     INVESTMENT_TRANSACTIONS: '/v1/account/investment-stash/transactions',
     INVESTMENT_PERFORMANCE: '/v1/account/investment-stash/performance',
   },
+  MARKET: {
+    STATUS: '/v1/market/status',
+  },
   USER: {
     PROFILE: '/v1/users/me',
     UPDATE: '/v1/users/me',
