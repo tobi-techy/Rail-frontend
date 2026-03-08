@@ -18,6 +18,7 @@ import {
   ActivityIndicator,
   Keyboard,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -28,7 +29,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ArrowLeft, CheckCircle2, Search, X } from 'lucide-react-native';
+import { ArrowLeft, AlertTriangle, CheckCircle2, Search, X } from 'lucide-react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -43,9 +44,21 @@ import Animated, {
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BlurView } from 'expo-blur';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { useStation } from '@/api/hooks';
+import { useStation, useVerifyPasscode } from '@/api/hooks';
 import { Button } from '@/components/ui';
 import { Keypad } from '@/components/molecules/Keypad';
+import { PasscodeInput } from '@/components/molecules/PasscodeInput';
+import { useAuthStore } from '@/stores/authStore';
+import { SessionManager } from '@/utils/sessionManager';
+import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
+import {
+  safeName,
+  formatCurrency,
+  formatMaxAmount,
+  normalizeAmount,
+  toDisplayAmount,
+} from './utils';
+import { WithdrawConfirmSheet } from './sections';
 import {
   p2pService,
   type P2PLookupResponse,
@@ -53,7 +66,7 @@ import {
 } from '@/api/services/p2p.service';
 import { BRAND_RED, gentleSpring, springConfig } from './constants';
 import { AnimatedAmount } from './AnimatedAmount';
-import { formatCurrency, formatMaxAmount, normalizeAmount, toDisplayAmount } from './utils';
+import { parseApiError, isPasscodeSessionError } from '@/utils/apiError';
 
 const MAX_DIGITS = 12;
 const P2P_LIMIT = 10_000;
@@ -138,6 +151,7 @@ function P2PSendScreenContent() {
   const insets = useSafeAreaInsets();
   const { data: station } = useStation();
   const balance = Math.max(0, parseFloat(station?.spend_balance ?? '0') || 0);
+  const user = useAuthStore((s) => s.user as { email?: string } | undefined);
 
   // amount state
   const [rawAmount, setRawAmount] = useState('0');
@@ -152,11 +166,126 @@ function P2PSendScreenContent() {
   const [isLooking, setIsLooking] = useState(false);
   const [recents, setRecents] = useState<P2PRecentRecipient[]>([]);
   const [selected, setSelected] = useState<Recipient | null>(null);
+  const [pendingNonUserRecipient, setPendingNonUserRecipient] = useState<Recipient | null>(null);
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [success, setSuccess] = useState(false);
+  // auth gate
+  const [showConfirmSheet, setShowConfirmSheet] = useState(false);
+  const [showAuthScreen, setShowAuthScreen] = useState(false);
+  const [passkeyAvailable, setPasskeyAvailable] = useState(false);
+  const [pinAttempts, setPinAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const [lockoutSecondsRemaining, setLockoutSecondsRemaining] = useState(0);
   const noteRef = useRef<TextInput>(null);
+
+  const { mutate: verifyPasscode, isPending: isPasscodeVerifying } = useVerifyPasscode();
+
+  useEffect(() => {
+    const { Passkey } = require('react-native-passkey');
+    setPasskeyAvailable(Passkey.isSupported() && Boolean(safeName(user?.email)));
+  }, [user?.email]);
+
+  // Lockout countdown
+  useEffect(() => {
+    if (!lockoutUntil) return;
+    const tick = setInterval(() => {
+      const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+      if (remaining <= 0) {
+        setLockoutUntil(null);
+        setLockoutSecondsRemaining(0);
+        setPinAttempts(0);
+      } else {
+        setLockoutSecondsRemaining(remaining);
+      }
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [lockoutUntil]);
+
+  const doSend = useCallback(async () => {
+    if (!selected) return;
+    setIsSubmitting(true);
+    setSubmitError('');
+    try {
+      await p2pService.send({
+        identifier: selected.identifier,
+        amount: numericAmount.toFixed(2),
+        note: note.trim() || undefined,
+      });
+      setSheetOpen(false);
+      setSuccess(true);
+    } catch (e: unknown) {
+      if (isPasscodeSessionError(e)) {
+        setShowAuthScreen(true);
+        passkey.setAuthError('Authorization expired. Please verify your PIN again.');
+        return;
+      }
+      setSubmitError(parseApiError(e, 'Send failed. Please try again.'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [selected, numericAmount, note]);
+
+  const passkeyPromptScope = `p2p-send:${safeName(user?.email) || 'unknown'}:${numericAmount.toFixed(2)}`;
+
+  const passkey = usePasskeyAuthorize({
+    email: user?.email,
+    passkeyPromptScope,
+    autoTrigger: showAuthScreen && passkeyAvailable,
+    onAuthorized: doSend,
+  });
+
+  const onPasscodeAuthorize = useCallback(
+    (code: string) => {
+      if (isPasscodeVerifying || isSubmitting || lockoutUntil) return;
+      passkey.setAuthError('');
+      verifyPasscode(
+        { passcode: code },
+        {
+          onSuccess: (result) => {
+            if (!result.verified) {
+              const next = pinAttempts + 1;
+              setPinAttempts(next);
+              if (next >= 5) {
+                const until = Date.now() + 30_000;
+                setLockoutUntil(until);
+                setLockoutSecondsRemaining(30);
+                passkey.setAuthError('Too many failed attempts. Try again in 30s.');
+              } else {
+                passkey.setAuthError(
+                  `Invalid PIN. ${5 - next} attempt${5 - next !== 1 ? 's' : ''} remaining.`
+                );
+              }
+              passkey.onAuthPasscodeChange('');
+              return;
+            }
+            setPinAttempts(0);
+            setLockoutUntil(null);
+            setShowAuthScreen(false);
+            void doSend();
+          },
+          onError: (err: unknown) => {
+            passkey.setAuthError(parseApiError(err, 'Failed to verify PIN.'));
+            passkey.onAuthPasscodeChange('');
+          },
+        }
+      );
+    },
+    [isPasscodeVerifying, isSubmitting, lockoutUntil, doSend, passkey, pinAttempts, verifyPasscode]
+  );
+
+  const submit = useCallback(() => {
+    if (!selected) return;
+    setShowConfirmSheet(true);
+  }, [selected]);
+
+  const onConfirmSend = useCallback(() => {
+    setShowConfirmSheet(false);
+    passkey.setAuthError('');
+    passkey.onAuthPasscodeChange('');
+    setShowAuthScreen(true);
+  }, [passkey]);
 
   // amount screen animations
   const pillsScale = useSharedValue(0.9);
@@ -177,6 +306,7 @@ function P2PSendScreenContent() {
 
   // sheet slide animation
   const translateY = useSharedValue(800);
+  const keyboardOffset = useSharedValue(0);
   const openSheet = useCallback(() => {
     setSheetOpen(true);
     translateY.value = withSpring(0, SHEET_SPRING);
@@ -188,7 +318,28 @@ function P2PSendScreenContent() {
     setNote('');
     setSubmitError('');
   }, []);
-  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
+  const sheetStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    bottom: 12 + insets.bottom + keyboardOffset.value,
+  }));
+
+  // Lift sheet when keyboard appears
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const KB_SPRING = { damping: 22, stiffness: 280, mass: 0.8 };
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = Keyboard.addListener(showEvent, (e) => {
+      keyboardOffset.value = withSpring(e.endCoordinates.height - insets.bottom, KB_SPRING);
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => {
+      keyboardOffset.value = withSpring(0, KB_SPRING);
+    });
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, [sheetOpen, insets.bottom, keyboardOffset]);
 
   const pan = Gesture.Pan()
     .onUpdate((e) => {
@@ -248,30 +399,81 @@ function P2PSendScreenContent() {
 
   const pickRecipient = useCallback((r: Recipient) => {
     Keyboard.dismiss();
+    if (!r.isUser) {
+      // Show non-user confirmation before proceeding
+      setPendingNonUserRecipient(r);
+      return;
+    }
     setSelected(r);
     setTimeout(() => noteRef.current?.focus(), 300);
   }, []);
 
-  const submit = useCallback(async () => {
-    if (!selected) return;
-    setIsSubmitting(true);
-    setSubmitError('');
-    try {
-      await p2pService.send({
-        identifier: selected.identifier,
-        amount: numericAmount.toFixed(2),
-        note: note.trim() || undefined,
-      });
-      setSheetOpen(false);
-      setSuccess(true);
-    } catch (e: unknown) {
-      setSubmitError(e instanceof Error ? e.message : 'Something went wrong.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [selected, numericAmount, note]);
+  const confirmNonUserRecipient = useCallback(() => {
+    if (!pendingNonUserRecipient) return;
+    setSelected(pendingNonUserRecipient);
+    setPendingNonUserRecipient(null);
+    setTimeout(() => noteRef.current?.focus(), 300);
+  }, [pendingNonUserRecipient]);
 
   // ── Success screen ────────────────────────────────────────────────────────
+  // ── Auth screen ───────────────────────────────────────────────────────────
+  if (showAuthScreen) {
+    return (
+      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+        <StatusBar barStyle="dark-content" backgroundColor="white" />
+        <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
+          <Pressable
+            className="size-11 items-center justify-center rounded-full bg-gray-100"
+            onPress={() => setShowAuthScreen(false)}>
+            <ArrowLeft size={20} color="#111" />
+          </Pressable>
+          <Text className="font-subtitle text-[20px] text-text-primary">Confirm send</Text>
+          <View className="size-11" />
+        </View>
+        <View className="mx-5 mt-2 rounded-2xl bg-surface px-4 py-3">
+          <View className="flex-row items-center justify-between">
+            <Text className="font-body text-[13px] text-text-secondary">Amount</Text>
+            <Text className="font-subtitle text-[15px] text-text-primary">
+              ${formatCurrency(numericAmount)}
+            </Text>
+          </View>
+          <View className="mt-1 flex-row items-center justify-between">
+            <Text className="font-body text-[13px] text-text-secondary">To</Text>
+            <Text className="font-subtitle text-[15px] text-text-primary">{selected?.name}</Text>
+          </View>
+        </View>
+        {!!lockoutUntil && (
+          <View className="mx-5 mt-3 rounded-xl bg-red-50 px-4 py-3">
+            <Text className="font-subtitle text-[13px] text-red-600">
+              Too many failed attempts. Try again in {lockoutSecondsRemaining}s.
+            </Text>
+          </View>
+        )}
+        {!lockoutUntil && pinAttempts > 0 && pinAttempts < 5 && (
+          <View className="mx-5 mt-3 rounded-xl bg-amber-50 px-4 py-3">
+            <Text className="font-body text-[13px] text-amber-700">
+              {5 - pinAttempts} attempt{5 - pinAttempts !== 1 ? 's' : ''} remaining before lockout.
+            </Text>
+          </View>
+        )}
+        <PasscodeInput
+          subtitle="Enter your PIN to confirm this send"
+          length={4}
+          value={passkey.authPasscode}
+          onValueChange={passkey.onAuthPasscodeChange}
+          onComplete={lockoutUntil ? undefined : onPasscodeAuthorize}
+          errorText={passkey.authError}
+          showToggle
+          showFingerprint={passkeyAvailable}
+          onFingerprint={lockoutUntil ? undefined : passkey.onPasskeyAuthorize}
+          autoSubmit
+          variant="light"
+          className="mt-3 flex-1"
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (success) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -394,7 +596,6 @@ function P2PSendScreenContent() {
                     position: 'absolute',
                     left: 12,
                     right: 12,
-                    bottom: 12 + insets.bottom,
                     borderRadius: 32,
                     backgroundColor: '#fff',
                     paddingTop: 12,
@@ -576,7 +777,7 @@ function P2PSendScreenContent() {
                         onChangeText={setNote}
                         maxLength={255}
                         returnKeyType="done"
-                        onSubmitEditing={submit}
+                        blurOnSubmit
                       />
                       {note.length > 0 && (
                         <Pressable
@@ -608,6 +809,52 @@ function P2PSendScreenContent() {
               </Animated.View>
             </GestureDetector>
           </GestureHandlerRootView>
+        </Modal>
+      )}
+
+      {/* ── Transaction confirm sheet ── */}
+      <WithdrawConfirmSheet
+        visible={showConfirmSheet}
+        onClose={() => setShowConfirmSheet(false)}
+        onConfirm={onConfirmSend}
+        numericAmount={numericAmount}
+        isFiatMethod={false}
+        isCryptoMethod={false}
+        isP2PMethod
+        isFundFlow={false}
+        methodTitle="Send to People"
+        recipientName={selected?.name}
+        recipientIdentifier={selected?.identifier}
+        note={note || undefined}
+      />
+
+      {/* ── Non-user confirmation modal ── */}
+      {!!pendingNonUserRecipient && (
+        <Modal visible transparent animationType="fade" statusBarTranslucent>
+          <View
+            style={StyleSheet.absoluteFill}
+            className="items-center justify-center bg-black/50 px-6">
+            <Animated.View
+              entering={FadeInDown.springify().damping(20)}
+              className="w-full rounded-3xl bg-white p-6">
+              <View className="mb-4 size-12 items-center justify-center rounded-full bg-amber-50">
+                <AlertTriangle size={24} color="#F59E0B" />
+              </View>
+              <Text className="font-subtitle text-[20px] text-text-primary">
+                {pendingNonUserRecipient.name} isn&apos;t on Rail yet
+              </Text>
+              <Text className="mt-2 font-body text-[14px] text-text-secondary">
+                They&apos;ll receive an invite to claim your ${formatCurrency(numericAmount)} once
+                they sign up. Are you sure you want to continue?
+              </Text>
+              <Button title="Yes, continue" className="mt-5" onPress={confirmNonUserRecipient} />
+              <Pressable
+                className="mt-3 items-center py-2"
+                onPress={() => setPendingNonUserRecipient(null)}>
+                <Text className="font-body text-[14px] text-text-secondary">Cancel</Text>
+              </Pressable>
+            </Animated.View>
+          </View>
         </Modal>
       )}
     </>

@@ -19,7 +19,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { SOLANA_TESTNET_CHAIN } from '@/utils/chains';
 import { parseSolanaPayUrl, type SolanaPayRequest } from '@/utils/solanaPayUrl';
-import { DEFAULT_DEVNET_USDC_MINT, type SupportedFundingWallet } from '@/services/solanaFunding';
+import { DEFAULT_MAINNET_USDC_MINT, type SupportedFundingWallet } from '@/services/solanaFunding';
 
 interface SolanaPayScanSheetProps {
   visible: boolean;
@@ -29,7 +29,7 @@ interface SolanaPayScanSheetProps {
 
 type Step = 'scan' | 'pick-wallet' | 'sending';
 
-const WALLET_INSTALL_URLS: Record<SupportedFundingWallet, string> = {
+const WALLET_INSTALL_URLS: Partial<Record<SupportedFundingWallet, string>> = {
   phantom: 'https://play.google.com/store/apps/details?id=app.phantom',
   solflare: 'https://play.google.com/store/apps/details?id=com.solflare.mobile',
 };
@@ -59,7 +59,7 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
     onClose();
   }, [reset, onClose]);
 
-  const usdcMint = process.env.EXPO_PUBLIC_SOLANA_USDC_MINT ?? DEFAULT_DEVNET_USDC_MINT;
+  const usdcMint = process.env.EXPO_PUBLIC_SOLANA_USDC_MINT ?? DEFAULT_MAINNET_USDC_MINT;
 
   const handleBarcode = useCallback(
     ({ data }: { data: string }) => {
@@ -250,7 +250,11 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
           <View className="flex-1">
             <Text className="font-body text-sm text-red-600">{error}</Text>
             {walletMissing && (
-              <Pressable onPress={() => void Linking.openURL(WALLET_INSTALL_URLS[walletMissing])}>
+              <Pressable
+                onPress={() => {
+                  const url = WALLET_INSTALL_URLS[walletMissing];
+                  if (url) void Linking.openURL(url);
+                }}>
                 <Text className="mt-1 font-subtitle text-sm text-red-700 underline">
                   Install {walletMissing === 'phantom' ? 'Phantom' : 'Solflare'} →
                 </Text>

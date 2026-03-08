@@ -26,12 +26,14 @@ import {
   formatMaxAmount,
   getAmountError,
   getDestinationError,
+  getFiatAccountNumberError,
   getFlowLabels,
   normalizeAmount,
   sanitizeDestinationInput,
   toDisplayAmount,
 } from '@/app/withdraw/method-screen/utils';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
+import { isPasscodeSessionError, parseApiError } from '@/utils/apiError';
 import { AnimatedAmount } from './method-screen/AnimatedAmount';
 import {
   BRAND_RED,
@@ -49,9 +51,11 @@ import {
 import type { ProfileNamePayload } from './method-screen/types';
 import { useMobileWalletFunding } from './method-screen/useMobileWalletFunding';
 import { useWithdrawalSubmit } from './method-screen/useWithdrawalSubmit';
+import { useMWAWithdrawal } from './method-screen/useMWAWithdrawal';
 import {
   AuthorizeScreen,
   FiatKycRequiredScreen,
+  WithdrawConfirmSheet,
   WithdrawDetailsSheet,
   WithdrawSubmissionSheet,
 } from './method-screen/sections';
@@ -81,6 +85,7 @@ export default function WithdrawAmountScreen() {
   const isCryptoDestinationMethod =
     selectedMethod === 'crypto' || selectedMethod === 'phantom' || selectedMethod === 'solflare';
   const isMobileWalletFundingFlow = isFundFlow && isWalletFundingMethod(selectedMethod);
+  const isMWAWithdrawMethod = selectedMethod === 'mwa-withdraw';
 
   const { data: kycStatus, isLoading: isKycStatusLoading } = useKYCStatus(isFiatMethod);
   const isFiatApproved = kycStatus?.status === 'approved';
@@ -99,13 +104,21 @@ export default function WithdrawAmountScreen() {
   const [destinationInput, setDestinationInput] = useState(prefilledAssetSymbol);
   const [destinationChain, setDestinationChain] = useState('SOL-DEVNET');
   const [didTryDestination, setDidTryDestination] = useState(false);
+  const [didTryFiatAccount, setDidTryFiatAccount] = useState(false);
   const [fiatAccountHolderName, setFiatAccountHolderName] = useState('');
   const [fiatAccountNumber, setFiatAccountNumber] = useState('');
   const [isAuthorizeScreenVisible, setIsAuthorizeScreenVisible] = useState(false);
+  const [isConfirmSheetVisible, setIsConfirmSheetVisible] = useState(false);
   const [isSubmissionSheetVisible, setIsSubmissionSheetVisible] = useState(false);
   const [submitWithActiveSession, setSubmitWithActiveSession] = useState(false);
   const [passkeyAvailable, setPasskeyAvailable] = useState(false);
   const [showKycSheet, setShowKycSheet] = useState(false);
+  // PIN lockout
+  const [pinAttempts, setPinAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const [lockoutSecondsRemaining, setLockoutSecondsRemaining] = useState(0);
+  // session fingerprint — binds auth to a specific amount+method
+  const [authorizedFingerprint, setAuthorizedFingerprint] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAssetTradeMethod || !prefilledAssetSymbol) return;
@@ -168,11 +181,31 @@ export default function WithdrawAmountScreen() {
   );
 
   const canContinue = numericAmount > 0 && !amountError;
+
+  const fiatAccountNumberError = useMemo(
+    () => getFiatAccountNumberError(fiatAccountNumber),
+    [fiatAccountNumber]
+  );
+
   const canSaveDestination =
     !destinationError &&
-    (!isFiatMethod ||
-      (fiatAccountHolderName.trim().length >= 2 &&
-        /^\d{4,17}$/.test(fiatAccountNumber.replace(/\D/g, ''))));
+    (!isFiatMethod || (fiatAccountHolderName.trim().length >= 2 && !fiatAccountNumberError));
+
+  // Lockout countdown
+  useEffect(() => {
+    if (!lockoutUntil) return;
+    const tick = setInterval(() => {
+      const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+      if (remaining <= 0) {
+        setLockoutUntil(null);
+        setLockoutSecondsRemaining(0);
+        setPinAttempts(0);
+      } else {
+        setLockoutSecondsRemaining(remaining);
+      }
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [lockoutUntil]);
 
   // ── Animations ────────────────────────────────────────────────────────────
 
@@ -224,6 +257,12 @@ export default function WithdrawAmountScreen() {
     onTimedOut: openSubmissionSheet,
   });
 
+  const mwaWithdrawal = useMWAWithdrawal({
+    enabled: isMWAWithdrawMethod,
+    numericAmount,
+    onSuccess: openSubmissionSheet,
+  });
+
   const withdrawal = useWithdrawalSubmit({
     selectedMethod,
     numericAmount,
@@ -241,29 +280,30 @@ export default function WithdrawAmountScreen() {
     fiatAccountNumber,
   });
 
-  const passkeyPromptScope = `withdraw-authorize:${safeName(user?.email) || 'unknown'}`;
+  const txFingerprint = `${selectedMethod}:${numericAmount.toFixed(2)}`;
+  const passkeyPromptScope = `withdraw-authorize:${safeName(user?.email) || 'unknown'}:${txFingerprint}`;
 
   const onSubmitAuthorizedWithdrawal = useCallback(() => {
+    if (isMWAWithdrawMethod) {
+      setIsAuthorizeScreenVisible(false);
+      void mwaWithdrawal.startWithdrawal();
+      return;
+    }
     withdrawal.submit({
       onSuccess: openSubmissionSheet,
       onError: (err: unknown) => {
-        const e = err as { code?: string; error?: { code?: string }; message?: string };
-        const marker = String(e?.code || e?.error?.code || e?.message || '').toUpperCase();
-        if (
-          marker.includes('PASSCODE_SESSION_REQUIRED') ||
-          marker.includes('PASSCODE_SESSION_INVALID')
-        ) {
+        if (isPasscodeSessionError(err)) {
           setIsAuthorizeScreenVisible(true);
           passkey.setAuthError('Authorization expired. Confirm with passkey or PIN to continue.');
           return;
         }
         setIsAuthorizeScreenVisible(true);
         passkey.setAuthError(
-          e?.message || `${isFundFlow ? 'Funding' : 'Withdrawal'} failed. Please try again.`
+          parseApiError(err, `${isFundFlow ? 'Funding' : 'Withdrawal'} failed. Please try again.`)
         );
       },
     });
-  }, [withdrawal, openSubmissionSheet, isFundFlow]); // passkey ref resolved below
+  }, [withdrawal, openSubmissionSheet, isFundFlow, isMWAWithdrawMethod, mwaWithdrawal]); // passkey ref resolved below
 
   const passkey = usePasskeyAuthorize({
     email: user?.email,
@@ -279,14 +319,14 @@ export default function WithdrawAmountScreen() {
 
   const hasActivePasscodeSession = useCallback(() => {
     const s = useAuthStore.getState();
-    return (
-      s.isAuthenticated && !!s.passcodeSessionToken && !SessionManager.isPasscodeSessionExpired()
-    );
-  }, []);
+    const sessionValid =
+      s.isAuthenticated && !!s.passcodeSessionToken && !SessionManager.isPasscodeSessionExpired();
+    // Session must have been authorized for the exact same amount+method
+    return sessionValid && authorizedFingerprint === txFingerprint;
+  }, [authorizedFingerprint, txFingerprint]);
 
   const onAmountKeyPress = useCallback(
     (key: string) => {
-      setDidTryContinue(false);
       setRawAmount((current) => {
         if (key === 'backspace')
           return current === '0' ? current : normalizeAmount(current.slice(0, -1));
@@ -306,18 +346,24 @@ export default function WithdrawAmountScreen() {
   );
 
   const onMaxPress = useCallback(() => {
-    setDidTryContinue(false);
     setRawAmount(formatMaxAmount(maxWithdrawable));
   }, [maxWithdrawable]);
 
   const onContinuePress = useCallback(() => {
     setDidTryContinue(true);
     funding.reset();
-    if (canContinue) {
-      setDidTryDestination(false);
-      setIsDetailsSheetVisible(true);
+    mwaWithdrawal.reset();
+    if (!canContinue) return;
+    if (isMWAWithdrawMethod) {
+      passkey.onAuthPasscodeChange('');
+      passkey.setAuthError('');
+      setAuthorizedFingerprint(null);
+      setIsConfirmSheetVisible(true);
+      return;
     }
-  }, [canContinue, funding]);
+    setDidTryDestination(false);
+    setIsDetailsSheetVisible(true);
+  }, [canContinue, funding, isMWAWithdrawMethod, mwaWithdrawal, passkey]);
 
   const onSaveDestination = useCallback(() => {
     if (isMobileWalletFundingFlow) {
@@ -328,16 +374,27 @@ export default function WithdrawAmountScreen() {
       return;
     }
     setDidTryDestination(true);
+    setDidTryFiatAccount(true);
     passkey.setAuthError('');
     if (!canSaveDestination) return;
     setIsDetailsSheetVisible(false);
+    setIsConfirmSheetVisible(true);
+  }, [canSaveDestination, funding, isMobileWalletFundingFlow, passkey]);
+
+  const onConfirmTransaction = useCallback(() => {
+    setIsConfirmSheetVisible(false);
+    if (isMWAWithdrawMethod) {
+      setIsAuthorizeScreenVisible(true);
+      return;
+    }
     passkey.onAuthPasscodeChange('');
     if (hasActivePasscodeSession()) {
       setSubmitWithActiveSession(true);
       return;
     }
+    setAuthorizedFingerprint(null);
     setIsAuthorizeScreenVisible(true);
-  }, [canSaveDestination, funding, hasActivePasscodeSession, isMobileWalletFundingFlow, passkey]);
+  }, [hasActivePasscodeSession, isMWAWithdrawMethod, passkey]);
 
   useEffect(() => {
     if (!submitWithActiveSession) return;
@@ -345,30 +402,55 @@ export default function WithdrawAmountScreen() {
     onSubmitAuthorizedWithdrawal();
   }, [onSubmitAuthorizedWithdrawal, submitWithActiveSession]);
 
+  const MAX_PIN_ATTEMPTS = 5;
+  const LOCKOUT_DURATION_MS = 30_000;
+
   const onPasscodeAuthorize = useCallback(
     (code: string) => {
-      if (isAuthorizing || isSubmitting) return;
+      if (isAuthorizing || isSubmitting || lockoutUntil) return;
       passkey.setAuthError('');
       verifyPasscode(
         { passcode: code },
         {
           onSuccess: (result) => {
             if (!result.verified) {
-              passkey.setAuthError('Invalid PIN. Please try again.');
+              const next = pinAttempts + 1;
+              setPinAttempts(next);
+              if (next >= MAX_PIN_ATTEMPTS) {
+                const until = Date.now() + LOCKOUT_DURATION_MS;
+                setLockoutUntil(until);
+                setLockoutSecondsRemaining(LOCKOUT_DURATION_MS / 1000);
+                passkey.setAuthError('Too many failed attempts. You are temporarily locked out.');
+              } else {
+                passkey.setAuthError(
+                  `Invalid PIN. ${MAX_PIN_ATTEMPTS - next} attempt${MAX_PIN_ATTEMPTS - next !== 1 ? 's' : ''} remaining.`
+                );
+              }
               passkey.onAuthPasscodeChange('');
               return;
             }
+            setPinAttempts(0);
+            setLockoutUntil(null);
+            setAuthorizedFingerprint(txFingerprint);
             onSubmitAuthorizedWithdrawal();
           },
           onError: (err: unknown) => {
-            const e = err as { error?: { message?: string }; message?: string };
-            passkey.setAuthError(e?.error?.message || e?.message || 'Failed to verify PIN.');
+            passkey.setAuthError(parseApiError(err, 'Failed to verify PIN.'));
             passkey.onAuthPasscodeChange('');
           },
         }
       );
     },
-    [isAuthorizing, isSubmitting, onSubmitAuthorizedWithdrawal, passkey, verifyPasscode]
+    [
+      isAuthorizing,
+      isSubmitting,
+      lockoutUntil,
+      onSubmitAuthorizedWithdrawal,
+      passkey,
+      pinAttempts,
+      txFingerprint,
+      verifyPasscode,
+    ]
   );
 
   const onCloseSubmittedSheet = useCallback(() => {
@@ -446,6 +528,18 @@ export default function WithdrawAmountScreen() {
         onValueChange={passkey.onAuthPasscodeChange}
         passkeyAvailable={passkeyAvailable}
         submittingTitle={submittingTitle}
+        summaryAmount={numericAmount}
+        summaryMethod={methodCopy.title}
+        summaryDestination={
+          isFiatMethod
+            ? destinationInput
+              ? `Routing ••••${destinationInput.slice(-4)}`
+              : undefined
+            : destinationInput || undefined
+        }
+        pinAttemptsRemaining={MAX_PIN_ATTEMPTS - pinAttempts}
+        isLockedOut={!!lockoutUntil}
+        lockoutSecondsRemaining={lockoutSecondsRemaining}
       />
     );
   }
@@ -499,7 +593,7 @@ export default function WithdrawAmountScreen() {
                     {balanceLabel}: ${formatCurrency(availableBalance)}
                   </Text>
                 </View>
-                {numericAmount > 0 && (
+                {numericAmount > 0 && isFiatMethod && (
                   <Animated.View
                     entering={FadeIn.springify()}
                     className="flex-row items-center rounded-full bg-white/90 px-3 py-2">
@@ -541,10 +635,24 @@ export default function WithdrawAmountScreen() {
               <Text className="mb-2 font-body text-[13px] text-white/90">{amountError}</Text>
             </Animated.View>
           )}
+          {isMWAWithdrawMethod && !!mwaWithdrawal.error && (
+            <Animated.View entering={FadeIn.duration(200)}>
+              <Text className="mb-2 font-body text-[13px] text-white/90">
+                {mwaWithdrawal.error}
+              </Text>
+            </Animated.View>
+          )}
           <Button
-            title="Continue"
+            title={
+              mwaWithdrawal.isConnecting
+                ? 'Opening wallet...'
+                : mwaWithdrawal.isSubmitting
+                  ? 'Sending...'
+                  : 'Continue'
+            }
             onPress={onContinuePress}
-            disabled={!canContinue}
+            disabled={!canContinue || mwaWithdrawal.isLoading}
+            loading={mwaWithdrawal.isLoading}
             variant="white"
             className="bg-white"
           />
@@ -573,6 +681,25 @@ export default function WithdrawAmountScreen() {
           onFiatAccountHolderNameChange={setFiatAccountHolderName}
           fiatAccountNumber={fiatAccountNumber}
           onFiatAccountNumberChange={setFiatAccountNumber}
+          fiatAccountNumberError={fiatAccountNumberError}
+          didTryFiatAccount={didTryFiatAccount}
+        />
+
+        <WithdrawConfirmSheet
+          visible={isConfirmSheetVisible}
+          onClose={() => setIsConfirmSheetVisible(false)}
+          onConfirm={onConfirmTransaction}
+          numericAmount={numericAmount}
+          isFiatMethod={isFiatMethod}
+          isCryptoMethod={isCryptoDestinationMethod}
+          isP2PMethod={false}
+          isFundFlow={isFundFlow}
+          methodTitle={methodCopy.title}
+          fiatAccountHolderName={fiatAccountHolderName}
+          fiatAccountNumber={fiatAccountNumber}
+          fiatRoutingNumber={destinationInput}
+          destinationAddress={isCryptoDestinationMethod ? destinationInput : undefined}
+          destinationChain={destinationChain}
         />
 
         <WithdrawSubmissionSheet

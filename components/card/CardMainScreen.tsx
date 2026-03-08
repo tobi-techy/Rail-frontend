@@ -76,7 +76,7 @@ const CardMainScreen = () => {
   const isFrozen = activeCard?.status === 'frozen';
 
   const balance = useMemo(() => {
-    const raw = spendData?.balance?.spending_balance;
+    const raw = spendData?.balance?.available;
     if (!raw) return '$0.00';
     const num = parseFloat(raw);
     return isNaN(num) ? '$0.00' : `$${num.toFixed(2)}`;

@@ -8,7 +8,7 @@ import {
   getAssociatedTokenAddressSync,
 } from '@solana/spl-token';
 
-export type SupportedFundingWallet = 'phantom' | 'solflare';
+export type SupportedFundingWallet = 'phantom' | 'solflare' | 'mwa';
 
 export interface StartMobileWalletFundingInput {
   wallet: SupportedFundingWallet;
@@ -37,8 +37,8 @@ export interface NormalizedFundingError {
   message: string;
 }
 
-export const DEFAULT_SOLANA_RPC_URL = 'https://api.devnet.solana.com';
-export const DEFAULT_DEVNET_USDC_MINT = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
+export const DEFAULT_SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
+export const DEFAULT_MAINNET_USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 export const USDC_DECIMALS = 6;
 
 const APP_IDENTITY = {
@@ -54,9 +54,10 @@ const defaultDeps: FundingDeps = {
   getConnection: (endpoint) => new Connection(endpoint, 'confirmed'),
 };
 
-export function resolveWalletBaseUri(wallet: SupportedFundingWallet): string {
+export function resolveWalletBaseUri(wallet: SupportedFundingWallet): string | undefined {
   if (wallet === 'phantom') return 'https://phantom.app/ul/v1';
-  return 'https://solflare.com/ul/v1';
+  if (wallet === 'solflare') return 'https://solflare.com/ul/v1';
+  return undefined; // 'mwa' — system picker, shows Seed Vault on Seeker
 }
 
 export function usdToUsdcBaseUnits(amountUsd: number): bigint {
@@ -87,10 +88,7 @@ export function normalizeMobileWalletFundingError(error: unknown): NormalizedFun
     };
   }
 
-  if (
-    rawCode.includes('ERROR_SESSION_TIMEOUT') ||
-    normalizedMessage.includes('timeout')
-  ) {
+  if (rawCode.includes('ERROR_SESSION_TIMEOUT') || normalizedMessage.includes('timeout')) {
     return {
       category: 'wallet_timeout',
       code: rawCode || 'ERROR_SESSION_TIMEOUT',
@@ -145,7 +143,7 @@ async function buildAndSendTransfer(
   }
 
   const endpoint = process.env.EXPO_PUBLIC_SOLANA_RPC_URL || DEFAULT_SOLANA_RPC_URL;
-  const usdcMintAddress = process.env.EXPO_PUBLIC_SOLANA_USDC_MINT || DEFAULT_DEVNET_USDC_MINT;
+  const usdcMintAddress = process.env.EXPO_PUBLIC_SOLANA_USDC_MINT || DEFAULT_MAINNET_USDC_MINT;
   const connection = deps.getConnection(endpoint);
   const mint = new PublicKey(usdcMintAddress);
   const recipientOwner = new PublicKey(input.recipientOwnerAddress);
@@ -229,9 +227,10 @@ export async function startMobileWalletFunding(
 
   try {
     const { transact } = await import('@solana-mobile/mobile-wallet-adapter-protocol-web3js');
+    const baseUri = resolveWalletBaseUri(input.wallet);
     return await transact(
       async (wallet) => buildAndSendTransfer(wallet, input, mergedDeps),
-      { baseUri: resolveWalletBaseUri(input.wallet) }
+      baseUri ? { baseUri } : undefined
     );
   } catch (error) {
     const normalized = normalizeMobileWalletFundingError(error);
