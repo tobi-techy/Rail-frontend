@@ -17,7 +17,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 
   // Withdrawal
   INSUFFICIENT_FUNDS: 'Insufficient balance for this withdrawal.',
-  INVALID_AMOUNT: 'Invalid amount. Please check the minimum and maximum limits.',
+  INVALID_AMOUNT: 'Minimum withdrawal is $1.00.',
   LIMIT_EXCEEDED: 'Withdrawal limit exceeded. Please try a smaller amount.',
   TRANSFER_FAILED: 'Transfer failed. Please try again.',
   WITHDRAWAL_ERROR: 'Withdrawal could not be processed. Please try again.',

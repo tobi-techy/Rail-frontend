@@ -74,6 +74,7 @@ export const getAmountError = ({
   withdrawalLimit,
 }: AmountErrorInput) => {
   if (numericAmount <= 0) return 'Enter an amount greater than $0.00.';
+  if (numericAmount < 1) return 'Minimum withdrawal is $1.00.';
   if (numericAmount > withdrawalLimit) {
     return `This amount is above your ${limitLabel.toLowerCase()} of $${formatCurrency(withdrawalLimit)}.`;
   }
@@ -105,6 +106,12 @@ export const getDestinationError = ({
     if (digitsOnly.length !== 9) {
       return 'Routing number must be exactly 9 digits.';
     }
+    // ABA checksum: 3*(d0+d3+d6) + 7*(d1+d4+d7) + 1*(d2+d5+d8) must be divisible by 10
+    const d = digitsOnly.split('').map(Number);
+    const checksum = 3 * (d[0] + d[3] + d[6]) + 7 * (d[1] + d[4] + d[7]) + (d[2] + d[5] + d[8]);
+    if (checksum % 10 !== 0) {
+      return 'Routing number is invalid. Please double-check it.';
+    }
   }
 
   if (isAssetTradeMethod) {
@@ -116,8 +123,12 @@ export const getDestinationError = ({
 
   if (isCryptoDestinationMethod) {
     const trimmedAddress = destinationInput.trim();
-    if (trimmedAddress.length < 18) {
-      return 'Wallet address looks too short.';
+    // Basic base58 check for Solana (32-44 chars, no 0/O/I/l)
+    const isSolanaLike = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(trimmedAddress);
+    // Basic hex check for EVM (0x + 40 hex chars)
+    const isEvmLike = /^0x[0-9a-fA-F]{40}$/.test(trimmedAddress);
+    if (!isSolanaLike && !isEvmLike) {
+      return 'Wallet address format is invalid. Check the address and selected network.';
     }
   }
 
@@ -141,6 +152,13 @@ export const sanitizeDestinationInput = ({
   }
 
   return value;
+};
+
+export const getFiatAccountNumberError = (accountNumber: string): string => {
+  const digits = accountNumber.replace(/\D/g, '');
+  if (!digits) return 'Account number is required.';
+  if (digits.length < 4 || digits.length > 17) return 'Account number must be 4–17 digits.';
+  return '';
 };
 
 export const getFlowLabels = ({
