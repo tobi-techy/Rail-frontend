@@ -12,7 +12,8 @@ export function useInvestmentStash() {
     queryKey: queryKeys.investment.stash(),
     queryFn: () => investmentService.getInvestmentStash(),
     enabled: isAuthenticated,
-    staleTime: 30 * 1000,
+    staleTime: 15 * 1000,
+    refetchInterval: 15 * 1000,
     refetchOnWindowFocus: true,
   });
 }
@@ -52,7 +53,8 @@ export function useInvestmentTransactions(params?: InvestmentTransactionsParams)
     queryKey: queryKeys.investment.transactions(safeParams),
     queryFn: () => investmentService.getInvestmentTransactions(safeParams),
     enabled: isAuthenticated,
-    staleTime: 20 * 1000,
+    staleTime: 10 * 1000,
+    refetchInterval: 15 * 1000,
     refetchOnWindowFocus: true,
   });
 }
