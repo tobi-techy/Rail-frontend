@@ -53,8 +53,10 @@ export const cardService = {
   getCardTransactions: (id: string, params?: { limit?: number; offset?: number }) =>
     apiClient.get<CardTransactionListResponse>(ENDPOINTS.CARD_TRANSACTIONS(id), { params }),
 
-  getEphemeralKey: (id: string, nonce: string) =>
-    apiClient.post<EphemeralKeyResponse>(ENDPOINTS.EPHEMERAL_KEY(id), { nonce }),
+  getEphemeralKey: (id: string, clientNonce: string) =>
+    apiClient.post<{ ephemeral_key: string }>(ENDPOINTS.EPHEMERAL_KEY(id), {
+      client_nonce: clientNonce,
+    }),
 
   getPINUrl: (id: string) => apiClient.post<PINUrlResponse>(ENDPOINTS.PIN_URL(id)),
 

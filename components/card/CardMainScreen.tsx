@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { RailCard } from '../cards';
+import { RailCard, RailCardReveal } from '../cards';
 import { TransactionList } from '../molecules/TransactionList';
 import { TransactionItemSkeleton, type Transaction } from '../molecules/TransactionItem';
 import { useUIStore } from '@/stores';
@@ -174,7 +174,8 @@ const CardMainScreen = () => {
                 elevation: Platform.OS === 'android' ? 10 : 0,
                 opacity: isFrozen ? 0.55 : 1,
               }}>
-              <RailCard
+              <RailCardReveal
+                cardId={activeCard?.id ?? ''}
                 brand="VISA"
                 holderName={holderName}
                 last4={activeCard?.last_4 ?? '••••'}
