@@ -85,6 +85,10 @@ export type StartSumsubSessionRequest = {
   tax_id_type: TaxIdType;
   issuing_country: Country;
   disclosures: KycDisclosures;
+  source_of_funds?: string;
+  employment_status?: string;
+  expected_monthly_payments_usd?: string;
+  account_purpose?: string;
 };
 
 export type StartSumsubSessionResponse = {
@@ -103,6 +107,10 @@ export type SubmitKYCRequest = {
   id_document_front: string;
   id_document_back?: string;
   disclosures: KycDisclosures;
+  source_of_funds?: string;
+  employment_status?: string;
+  expected_monthly_payments_usd?: string;
+  account_purpose?: string;
 };
 
 export interface KYCProviderResult {

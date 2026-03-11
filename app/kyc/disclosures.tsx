@@ -66,7 +66,7 @@ export default function KycDisclosuresScreen() {
         disclosures: buildDisclosures(),
       });
       setSumsubSession(result.token, result.applicant_id);
-      router.push('/kyc/sumsub-sdk');
+      router.push('/kyc/source-of-funds');
     } catch {
       setSubmitError('Could not start verification session. Please try again.');
     }

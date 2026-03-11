@@ -24,6 +24,9 @@ interface KycState {
   taxIdType: TaxIdType;
   taxId: string;
   employmentStatus: EmploymentStatus | null;
+  sourceOfFunds: string | null;
+  expectedMonthlyPayments: string | null;
+  accountPurpose: string | null;
   investmentPurposes: InvestmentPurpose[];
   disclosures: KycDisclosures;
   disclosuresConfirmed: boolean;
@@ -37,6 +40,9 @@ interface KycState {
   setTaxIdType: (taxIdType: TaxIdType) => void;
   setTaxId: (taxId: string) => void;
   setEmploymentStatus: (value: EmploymentStatus | null) => void;
+  setSourceOfFunds: (value: string | null) => void;
+  setExpectedMonthlyPayments: (value: string | null) => void;
+  setAccountPurpose: (value: string | null) => void;
   toggleInvestmentPurpose: (value: InvestmentPurpose) => void;
   setDisclosure: (key: keyof KycDisclosures, value: boolean) => void;
   setDisclosuresConfirmed: (confirmed: boolean) => void;
@@ -52,6 +58,9 @@ export const useKycStore = create<KycState>()(
       taxIdType: COUNTRY_TAX_CONFIG['USA'].type,
       taxId: '',
       employmentStatus: null,
+      sourceOfFunds: null,
+      expectedMonthlyPayments: null,
+      accountPurpose: null,
       investmentPurposes: [],
       disclosures: DEFAULT_DISCLOSURES,
       disclosuresConfirmed: false,
@@ -65,6 +74,9 @@ export const useKycStore = create<KycState>()(
           taxIdType: COUNTRY_TAX_CONFIG[country].type,
           taxId: '',
           employmentStatus: null,
+          sourceOfFunds: null,
+          expectedMonthlyPayments: null,
+          accountPurpose: null,
           investmentPurposes: [],
           disclosures: DEFAULT_DISCLOSURES,
           disclosuresConfirmed: false,
@@ -73,6 +85,9 @@ export const useKycStore = create<KycState>()(
       setTaxIdType: (taxIdType) => set({ taxIdType }),
       setTaxId: (taxId) => set({ taxId }),
       setEmploymentStatus: (employmentStatus) => set({ employmentStatus }),
+      setSourceOfFunds: (sourceOfFunds) => set({ sourceOfFunds }),
+      setExpectedMonthlyPayments: (expectedMonthlyPayments) => set({ expectedMonthlyPayments }),
+      setAccountPurpose: (accountPurpose) => set({ accountPurpose }),
 
       toggleInvestmentPurpose: (value) =>
         set((state) => {
@@ -96,6 +111,9 @@ export const useKycStore = create<KycState>()(
           taxIdType: COUNTRY_TAX_CONFIG['USA'].type,
           taxId: '',
           employmentStatus: null,
+          sourceOfFunds: null,
+          expectedMonthlyPayments: null,
+          accountPurpose: null,
           investmentPurposes: [],
           disclosures: DEFAULT_DISCLOSURES,
           disclosuresConfirmed: false,

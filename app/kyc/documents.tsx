@@ -34,6 +34,9 @@ export default function KycDocumentsScreen() {
   const {
     taxId,
     employmentStatus,
+    sourceOfFunds,
+    expectedMonthlyPayments,
+    accountPurpose,
     investmentPurposes,
     disclosures,
     disclosuresConfirmed,
@@ -92,6 +95,10 @@ export default function KycDocumentsScreen() {
         tax_id_type: taxIdType,
         issuing_country: country,
         disclosures: buildDisclosures(),
+        source_of_funds: sourceOfFunds ?? undefined,
+        employment_status: employmentStatus ?? undefined,
+        expected_monthly_payments_usd: expectedMonthlyPayments ?? undefined,
+        account_purpose: accountPurpose ?? undefined,
       });
       setSumsubSession(result.token, result.applicant_id);
       router.push('/kyc/sumsub-sdk');
