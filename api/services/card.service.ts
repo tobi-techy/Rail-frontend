@@ -17,6 +17,7 @@ const ENDPOINTS = {
   EPHEMERAL_KEY: (id: string) => `/v1/cards/${id}/ephemeral-key`,
   PIN_URL: (id: string) => `/v1/cards/${id}/pin-url`,
   STATEMENT: (id: string) => `/v1/cards/${id}/statement`,
+  LIMIT: (id: string) => `/v1/cards/${id}/limit`,
 } as const;
 
 export interface EphemeralKeyResponse {
@@ -62,4 +63,9 @@ export const cardService = {
 
   getStatement: (id: string, params?: { month?: string; year?: string }) =>
     apiClient.get<StatementResponse>(ENDPOINTS.STATEMENT(id), { params }),
+
+  setDailyLimit: (id: string, limitCents: number | null) =>
+    apiClient.put<{ daily_limit_cents: number | null }>(ENDPOINTS.LIMIT(id), {
+      limit_cents: limitCents,
+    }),
 };

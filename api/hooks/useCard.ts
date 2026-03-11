@@ -98,6 +98,14 @@ export function useUnfreezeCard() {
   });
 }
 
+export function useSetDailyLimit(cardId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (limitCents: number | null) => cardService.setDailyLimit(cardId!, limitCents),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.card.list() }),
+  });
+}
+
 export function useCardEphemeralKey(cardId: string | undefined) {
   return useMutation({
     mutationFn: (nonce: string) => cardService.getEphemeralKey(cardId!, nonce),

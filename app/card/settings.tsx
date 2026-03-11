@@ -26,7 +26,13 @@ import {
   MessageSquare,
   ScrollText,
 } from 'lucide-react-native';
-import { useCards, useFreezeCard, useUnfreezeCard, useCardStatement } from '@/api/hooks/useCard';
+import {
+  useCards,
+  useFreezeCard,
+  useUnfreezeCard,
+  useCardStatement,
+  useSetDailyLimit,
+} from '@/api/hooks/useCard';
 import { useRoundupSettings, useUpdateRoundupSettings } from '@/api/hooks/useRoundup';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { RailCard } from '@/components/cards';
@@ -92,6 +98,7 @@ const Section = ({ title, children }: { title: string; children: ReactNode }) =>
 );
 
 const LIMIT_OPTIONS = ['$100', '$250', '$500', '$750', '$1,000', '$1,500', '$2,000', '$5,000'];
+const LIMIT_CENTS = [10000, 25000, 50000, 75000, 100000, 150000, 200000, 500000];
 
 export default function CardSettingsScreen() {
   const { data: cardsData, isLoading } = useCards();
@@ -103,7 +110,12 @@ export default function CardSettingsScreen() {
   const [activeSheet, setActiveSheet] = useState<SheetType>(null);
   const closeSheet = useCallback(() => setActiveSheet(null), []);
 
-  const [limitIndex, setLimitIndex] = useState(2);
+  const [limitIndex, setLimitIndex] = useState(() => {
+    const existing = (activeCard as any)?.daily_limit_cents as number | undefined;
+    if (!existing) return 2;
+    const idx = LIMIT_CENTS.indexOf(existing);
+    return idx >= 0 ? idx : 2;
+  });
 
   const months = useMemo(() => {
     const result: string[] = [];
@@ -136,6 +148,7 @@ export default function CardSettingsScreen() {
 
   // Statement
   const getStatement = useCardStatement(activeCard?.id);
+  const setDailyLimit = useSetDailyLimit(activeCard?.id);
 
   // Freeze/unfreeze — close sheet first, then act
   const handleToggleFreeze = useCallback(() => {
@@ -339,9 +352,15 @@ export default function CardSettingsScreen() {
           <Button
             title={`Set ${LIMIT_OPTIONS[limitIndex]}`}
             variant="black"
+            loading={setDailyLimit.isPending}
             onPress={() => {
-              closeSheet();
-              showSuccess('Limit Updated', `Daily limit set to ${LIMIT_OPTIONS[limitIndex]}`);
+              setDailyLimit.mutate(LIMIT_CENTS[limitIndex], {
+                onSuccess: () => {
+                  closeSheet();
+                  showSuccess('Limit Updated', `Daily limit set to ${LIMIT_OPTIONS[limitIndex]}`);
+                },
+                onError: () => showError('Error', 'Failed to update daily limit'),
+              });
             }}
             flex
           />
