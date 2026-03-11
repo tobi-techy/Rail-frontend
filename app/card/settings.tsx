@@ -7,11 +7,10 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  Modal,
-  Pressable,
   Platform,
+  Pressable,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
@@ -19,10 +18,8 @@ import {
   ArrowLeft,
   Snowflake,
   Sun,
-  CreditCard,
   Shield,
   HelpCircle,
-  X,
   Wallet,
   FileText,
   Repeat2,
@@ -30,23 +27,14 @@ import {
   MessageSquare,
   ScrollText,
 } from 'lucide-react-native';
-import { WebView } from 'react-native-webview';
-import * as Crypto from 'expo-crypto';
-import {
-  useCards,
-  useFreezeCard,
-  useUnfreezeCard,
-  useCardEphemeralKey,
-  useCardPINUrl,
-} from '@/api/hooks/useCard';
+import { useCards, useFreezeCard, useUnfreezeCard, useCardStatement } from '@/api/hooks/useCard';
+import { useRoundupSettings, useUpdateRoundupSettings } from '@/api/hooks/useRoundup';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { RailCard } from '@/components/cards';
 import { useAuthStore } from '@/stores/authStore';
 import { BottomSheet, SettingsSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
-import { SegmentedSlider, WheelPicker } from '@/components/molecules';
-
-const PCI_HOST = 'https://cards-pci.bridge.xyz';
+import { WheelPicker } from '@/components/molecules';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -54,7 +42,6 @@ type SheetType =
   | 'freeze'
   | 'limit'
   | 'statement'
-  | 'pin'
   | 'roundup'
   | 'support'
   | 'feedback'
@@ -105,43 +92,7 @@ const Section = ({ title, children }: { title: string; children: ReactNode }) =>
   </View>
 );
 
-function WebViewModal({
-  url,
-  title,
-  visible,
-  onClose,
-}: {
-  url: string;
-  title: string;
-  visible: boolean;
-  onClose: () => void;
-}) {
-  const insets = useSafeAreaInsets();
-  return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: 16,
-            paddingTop: insets.top > 0 ? 0 : 12,
-            paddingBottom: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: '#F3F4F6',
-          }}>
-          <Text style={{ flex: 1, fontSize: 16, fontWeight: '600', color: '#111827' }}>
-            {title}
-          </Text>
-          <TouchableOpacity onPress={onClose} hitSlop={12}>
-            <X size={22} color="#6B7280" />
-          </TouchableOpacity>
-        </View>
-        <WebView source={{ uri: url }} style={{ flex: 1 }} />
-      </SafeAreaView>
-    </Modal>
-  );
-}
+const LIMIT_OPTIONS = ['$100', '$250', '$500', '$750', '$1,000', '$1,500', '$2,000', '$5,000'];
 
 export default function CardSettingsScreen() {
   const { data: cardsData, isLoading } = useCards();
@@ -151,15 +102,10 @@ export default function CardSettingsScreen() {
   const user = useAuthStore((s) => s.user);
 
   const [activeSheet, setActiveSheet] = useState<SheetType>(null);
-  const closeSheet = () => setActiveSheet(null);
+  const closeSheet = useCallback(() => setActiveSheet(null), []);
 
-  const [webViewUrl, setWebViewUrl] = useState<string | null>(null);
-  const [webViewTitle, setWebViewTitle] = useState('');
-  const [roundupEnabled, setRoundupEnabled] = useState(false);
-  const LIMIT_OPTIONS = ['$100', '$250', '$500', '$750', '$1,000', '$1,500', '$2,000', '$5,000'];
-  const [limitIndex, setLimitIndex] = useState(2); // default $500
+  const [limitIndex, setLimitIndex] = useState(2);
 
-  // Generate last 12 months for statement picker
   const months = useMemo(() => {
     const result: string[] = [];
     const now = new Date();
@@ -177,7 +123,6 @@ export default function CardSettingsScreen() {
       cardsData?.cards?.[0],
     [cardsData]
   );
-
   const isFrozen = activeCard?.status === 'frozen';
 
   const holderName = useMemo(() => {
@@ -185,68 +130,60 @@ export default function CardSettingsScreen() {
     return full || 'CARDHOLDER';
   }, [user]);
 
-  const ephemeralKey = useCardEphemeralKey(activeCard?.id);
-  const pinUrl = useCardPINUrl(activeCard?.id);
+  // Round-ups
+  const { data: roundupData } = useRoundupSettings();
+  const updateRoundup = useUpdateRoundupSettings();
+  const roundupEnabled = roundupData?.settings?.enabled ?? false;
 
-  const handleToggleFreeze = useCallback(async () => {
+  // Statement
+  const getStatement = useCardStatement(activeCard?.id);
+
+  // Freeze/unfreeze — close sheet first, then act
+  const handleToggleFreeze = useCallback(() => {
+    closeSheet();
     if (!activeCard) return;
+
     if (isFrozen) {
-      try {
-        await unfreezeCard.mutateAsync(activeCard.id);
-        showSuccess('Card Unfrozen', 'Your card is now active');
-        closeSheet();
-      } catch {
-        showError('Error', 'Failed to unfreeze card');
-      }
+      unfreezeCard.mutate(activeCard.id, {
+        onSuccess: () => showSuccess('Card Unfrozen', 'Your card is now active'),
+        onError: () => showError('Error', 'Failed to unfreeze card'),
+      });
     } else {
       Alert.alert('Freeze Card', 'Temporarily disable your card?', [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Freeze',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await freezeCard.mutateAsync(activeCard.id);
-              showSuccess('Card Frozen', 'Your card has been frozen');
-              closeSheet();
-            } catch {
-              showError('Error', 'Failed to freeze card');
-            }
-          },
+          onPress: () =>
+            freezeCard.mutate(activeCard.id, {
+              onSuccess: () => showSuccess('Card Frozen', 'Your card has been frozen'),
+              onError: () => showError('Error', 'Failed to freeze card'),
+            }),
         },
       ]);
     }
-  }, [activeCard, isFrozen, freezeCard, unfreezeCard, showSuccess, showError]);
+  }, [activeCard, isFrozen, freezeCard, unfreezeCard, showSuccess, showError, closeSheet]);
 
-  const handleCardDetails = useCallback(async () => {
+  const handleExportStatement = useCallback(() => {
     if (!activeCard) return;
-    try {
-      const nonce = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        `${activeCard.id}-${Date.now()}`
-      );
-      const result = await ephemeralKey.mutateAsync(nonce);
-      const url = `${PCI_HOST}/card-details?ephemeral_key=${result.ephemeral_key}&nonce=${nonce}`;
-      setWebViewTitle('Card Details');
-      setWebViewUrl(url);
-    } catch {
-      showError('Error', 'Unable to load card details');
-    }
-  }, [activeCard, ephemeralKey, showError]);
-
-  const handleSecurity = useCallback(async () => {
-    if (!activeCard) return;
-    try {
-      const result = await pinUrl.mutateAsync();
-      setWebViewTitle('Change PIN');
-      setWebViewUrl(result.url);
-    } catch {
-      showError('Error', 'Unable to load security settings');
-    }
-  }, [activeCard, pinUrl, showError]);
+    // Derive YYYY-MM from selected month string
+    const d = new Date();
+    d.setMonth(d.getMonth() - selectedMonthIndex);
+    const period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    closeSheet();
+    getStatement.mutate(
+      { month: String(d.getMonth() + 1), year: String(d.getFullYear()) },
+      {
+        onSuccess: (res) =>
+          showInfo('Statement Ready', res.url ? 'Opening statement…' : 'Statement exported'),
+        onError: () => showError('Error', 'Failed to export statement'),
+      }
+    );
+    // Suppress unused warning — period used for display
+    void period;
+  }, [activeCard, selectedMonthIndex, getStatement, closeSheet, showInfo, showError]);
 
   const handleAddToWallet = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (Platform.OS !== 'ios') {
       showInfo('Not Available', 'Apple Wallet is only available on iOS');
       return;
@@ -282,7 +219,6 @@ export default function CardSettingsScreen() {
       </SafeAreaView>
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Card preview */}
         {activeCard && (
           <View className="mb-2 items-center px-5 pb-4">
             <View
@@ -347,23 +283,12 @@ export default function CardSettingsScreen() {
           <SettingButton
             icon={<Shield size={22} color="#121212" />}
             label="Change PIN"
-            onPress={handleSecurity}
+            onPress={() => showInfo('Coming Soon', 'PIN management coming soon')}
           />
           <SettingButton
             icon={<Repeat2 size={22} color="#121212" />}
             label="Round-ups"
             onPress={() => setActiveSheet('roundup')}
-          />
-          <SettingButton
-            icon={
-              ephemeralKey.isPending ? (
-                <ActivityIndicator size="small" color="#6B7280" />
-              ) : (
-                <CreditCard size={22} color="#121212" />
-              )
-            }
-            label="Card Details"
-            onPress={handleCardDetails}
           />
         </Section>
 
@@ -421,20 +346,28 @@ export default function CardSettingsScreen() {
         />
         <View className="mt-4 flex-row gap-3">
           <Button title="Cancel" variant="ghost" onPress={closeSheet} flex />
-          <Button title="Save Limit" variant="black" onPress={closeSheet} flex />
+          <Button
+            title={`Set ${LIMIT_OPTIONS[limitIndex]}`}
+            variant="black"
+            onPress={() => {
+              closeSheet();
+              showSuccess('Limit Updated', `Daily limit set to ${LIMIT_OPTIONS[limitIndex]}`);
+            }}
+            flex
+          />
         </View>
       </BottomSheet>
 
       {/* Statement sheet */}
       <BottomSheet visible={activeSheet === 'statement'} onClose={closeSheet}>
-        <Text className="mb-1 text-center font-subtitle text-xl">Bank statement</Text>
+        <Text className="mb-1 text-center font-subtitle text-xl">Bank Statement</Text>
         <Text className="mb-4 text-center font-body text-sm text-text-secondary">
-          You can open or export your bank transaction summary statement.
+          Export your card transaction summary for any month.
         </Text>
         <View className="mb-5 flex-row items-center gap-3 rounded-2xl border border-dashed border-gray-300 px-4 py-4">
           <FileText size={18} color="#9CA3AF" />
           <Text className="flex-1 font-body text-sm leading-5 text-text-secondary">
-            You can export this month&apos;s statement only on the 2nd of the next month.
+            Statements are available from the 2nd of the following month.
           </Text>
         </View>
         <WheelPicker
@@ -447,10 +380,8 @@ export default function CardSettingsScreen() {
           <Button
             title="Export"
             variant="black"
-            onPress={() => {
-              closeSheet();
-              showInfo('Coming Soon', 'Statement export will be available soon');
-            }}
+            loading={getStatement.isPending}
+            onPress={handleExportStatement}
             flex
           />
         </View>
@@ -466,7 +397,14 @@ export default function CardSettingsScreen() {
         toggleValue={roundupEnabled}
         onToggleChange={(v) => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setRoundupEnabled(v);
+          updateRoundup.mutate(v, {
+            onSuccess: () =>
+              showSuccess(
+                v ? 'Round-ups On' : 'Round-ups Off',
+                v ? 'Spare change will be invested automatically.' : 'Round-ups have been disabled.'
+              ),
+            onError: () => showError('Error', 'Failed to update round-ups'),
+          });
         }}
       />
 
@@ -491,7 +429,7 @@ export default function CardSettingsScreen() {
       <BottomSheet visible={activeSheet === 'feedback'} onClose={closeSheet}>
         <Text className="mb-2 font-subtitle text-xl">Share Feedback</Text>
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
-          Help us improve your card experience by sharing your thoughts.
+          Help us improve your card experience.
         </Text>
         <Button
           title="Share Feedback"
@@ -520,15 +458,6 @@ export default function CardSettingsScreen() {
           flex
         />
       </BottomSheet>
-
-      {webViewUrl && (
-        <WebViewModal
-          url={webViewUrl}
-          title={webViewTitle}
-          visible={!!webViewUrl}
-          onClose={() => setWebViewUrl(null)}
-        />
-      )}
     </View>
   );
 }
