@@ -107,7 +107,7 @@ class PushNotificationService {
       });
       console.log('Push token registered with backend');
     } catch (error) {
-      console.error('Failed to register push token:', error);
+      console.warn('Failed to register push token:', error);
     }
   }
 
@@ -138,33 +138,42 @@ class PushNotificationService {
   }
 
   private handleNotificationTap(data: PushNotificationData) {
-    const { type, screen, id } = data;
+    const { type, screen } = data;
 
-    // Navigate based on notification type
     switch (type) {
-      case 'deposit':
       case 'deposit_confirmed':
-        router.push('/spending-stash');
+      case 'deposit':
+        router.push('/(tabs)');
         break;
-      case 'withdrawal':
+      case 'allocation_complete':
+        router.push('/(tabs)');
+        break;
+      case 'allocation_failed':
+        router.push('/notifications');
+        break;
+      case 'investment_complete':
+      case 'milestone':
+        router.push('/investment-stash');
+        break;
+      case 'kyc_approved':
+      case 'kyc_rejected':
+      case 'kyc':
+        router.push('/kyc' as any);
+        break;
       case 'withdrawal_completed':
+      case 'withdrawal_failed':
+      case 'offramp_success':
+      case 'offramp_failure':
         router.push('/spending-stash');
         break;
       case 'card_transaction':
         router.push('/card');
         break;
-      case 'kyc':
-        router.push('/kyc');
-        break;
       case 'security':
         router.push('/(tabs)/settings');
         break;
       default:
-        if (screen) {
-          router.push(screen as never);
-        } else {
-          router.push('/notifications');
-        }
+        router.push(screen ? (screen as any) : '/notifications');
     }
   }
 

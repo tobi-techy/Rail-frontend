@@ -9,27 +9,15 @@ import {
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  ArrowLeft,
-  Bell,
-  CheckCheck,
-  ArrowDownLeft,
-  ArrowUpRight,
-  Users,
-  Shield,
-  TrendingUp,
-  Gift,
-} from 'lucide-react-native';
+import { ArrowLeft, CheckCheck } from 'lucide-react-native';
 
 import { useNotifications, useMarkAsRead, useMarkAllAsRead, useUnreadCount } from '@/api/hooks';
 import type { Notification } from '@/api/types/notification';
 
-// Simple time ago formatter
 const formatTimeAgo = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
   if (seconds < 60) return 'just now';
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
@@ -38,57 +26,6 @@ const formatTimeAgo = (dateString: string): string => {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
   return date.toLocaleDateString();
-};
-
-const getNotificationIcon = (type: string) => {
-  const iconProps = { size: 20, strokeWidth: 1.8 };
-  switch (type) {
-    case 'deposit_confirmed':
-    case 'deposit':
-      return <ArrowDownLeft {...iconProps} color="#10B981" />;
-    case 'withdrawal_completed':
-    case 'withdrawal_success':
-    case 'withdrawal':
-      return <ArrowUpRight {...iconProps} color="#F59E0B" />;
-    case 'withdrawal_failed':
-      return <ArrowUpRight {...iconProps} color="#EF4444" />;
-    case 'p2p_sent':
-    case 'p2p_received':
-      return <Users {...iconProps} color="#8B5CF6" />;
-    case 'security':
-      return <Shield {...iconProps} color="#EF4444" />;
-    case 'milestone':
-    case 'portfolio':
-      return <TrendingUp {...iconProps} color="#3B82F6" />;
-    case 'offramp_success':
-      return <Gift {...iconProps} color="#10B981" />;
-    default:
-      return <Bell {...iconProps} color="#6B7280" />;
-  }
-};
-
-const getNotificationColor = (type: string) => {
-  switch (type) {
-    case 'deposit_confirmed':
-    case 'deposit':
-    case 'offramp_success':
-      return 'bg-emerald-50';
-    case 'withdrawal_completed':
-    case 'withdrawal_success':
-    case 'withdrawal':
-      return 'bg-amber-50';
-    case 'withdrawal_failed':
-    case 'security':
-      return 'bg-red-50';
-    case 'p2p_sent':
-    case 'p2p_received':
-      return 'bg-violet-50';
-    case 'milestone':
-    case 'portfolio':
-      return 'bg-blue-50';
-    default:
-      return 'bg-gray-50';
-  }
 };
 
 function NotificationItem({
@@ -103,35 +40,22 @@ function NotificationItem({
   return (
     <TouchableOpacity
       onPress={onPress}
-      className={`flex-row items-start p-4 border-b border-gray-100 ${
-        !notification.read ? 'bg-blue-50/30' : 'bg-white'
-      }`}
-      activeOpacity={0.7}
-    >
-      <View
-        className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${getNotificationColor(
-          notification.type
-        )}`}
-      >
-        {getNotificationIcon(notification.type)}
-      </View>
-      <View className="flex-1">
-        <View className="flex-row items-center justify-between mb-1">
-          <Text
-            className={`font-medium text-[15px] flex-1 ${
-              !notification.read ? 'text-gray-900' : 'text-gray-700'
-            }`}
-            numberOfLines={1}
-          >
-            {notification.title}
-          </Text>
-          {!notification.read && <View className="w-2 h-2 rounded-full bg-blue-500 ml-2" />}
-        </View>
-        <Text className="text-gray-600 text-[14px] leading-5" numberOfLines={2}>
-          {notification.body}
+      className={`border-b border-gray-100 px-4 py-4 ${!notification.read ? 'bg-blue-50/30' : 'bg-white'}`}
+      activeOpacity={0.7}>
+      <View className="mb-1 flex-row items-start justify-between">
+        <Text
+          className={`mr-3 flex-1 text-[15px] font-medium ${!notification.read ? 'text-gray-900' : 'text-gray-700'}`}
+          numberOfLines={1}>
+          {notification.title}
         </Text>
-        <Text className="text-gray-400 text-[12px] mt-1.5">{timeAgo}</Text>
+        <View className="flex-row items-center gap-1.5">
+          {!notification.read && <View className="h-2 w-2 rounded-full bg-blue-500" />}
+          <Text className="text-[12px] text-gray-400">{timeAgo}</Text>
+        </View>
       </View>
+      <Text className="text-[14px] leading-5 text-gray-500" numberOfLines={2}>
+        {notification.body}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -139,12 +63,9 @@ function NotificationItem({
 function EmptyState() {
   return (
     <View className="flex-1 items-center justify-center py-20">
-      <View className="w-16 h-16 rounded-full bg-gray-100 items-center justify-center mb-4">
-        <Bell size={28} color="#9CA3AF" />
-      </View>
-      <Text className="text-gray-900 font-semibold text-lg mb-1">No notifications yet</Text>
-      <Text className="text-gray-500 text-center px-8">
-        When you receive deposits, withdrawals, or other updates, they&apos;ll appear here.
+      <Text className="mb-1 text-lg font-semibold text-gray-900">No notifications yet</Text>
+      <Text className="px-8 text-center text-gray-500">
+        Deposits, investments, and account updates will appear here.
       </Text>
     </View>
   );
@@ -189,7 +110,7 @@ export default function NotificationsScreen() {
           headerShadowVisible: false,
           headerTitleStyle: { fontWeight: '600', fontSize: 17 },
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+            <TouchableOpacity onPress={() => router.back()} className="-ml-2 p-2">
               <ArrowLeft size={22} color="#111" />
             </TouchableOpacity>
           ),
@@ -198,14 +119,13 @@ export default function NotificationsScreen() {
               <TouchableOpacity
                 onPress={handleMarkAllRead}
                 className="flex-row items-center"
-                disabled={markAllAsRead.isPending}
-              >
+                disabled={markAllAsRead.isPending}>
                 {markAllAsRead.isPending ? (
                   <ActivityIndicator size="small" color="#3B82F6" />
                 ) : (
                   <>
                     <CheckCheck size={18} color="#3B82F6" />
-                    <Text className="text-blue-500 font-medium ml-1 text-[14px]">Read all</Text>
+                    <Text className="ml-1 text-[14px] font-medium text-blue-500">Read all</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -225,8 +145,7 @@ export default function NotificationsScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#3B82F6" />
-          }
-        >
+          }>
           {notifications.map((notification) => (
             <NotificationItem
               key={notification.id}
