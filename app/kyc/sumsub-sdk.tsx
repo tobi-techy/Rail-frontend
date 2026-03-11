@@ -8,9 +8,11 @@ import SNSMobileSDK from '@sumsub/react-native-mobilesdk-module';
 import { useKycStore } from '@/stores/kycStore';
 import { kycService } from '@/api/services';
 import { logger } from '@/lib/logger';
+import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 export default function KycSumsubSdkScreen() {
   const { sumsubToken, applicantId, setSumsubSession } = useKycStore();
+  const { track } = useAnalytics();
 
   const handleClose = useCallback(() => router.back(), []);
 
@@ -32,7 +34,11 @@ export default function KycSumsubSdkScreen() {
       .withApplicantConf({ applicantId })
       .withHandlers({
         onStatusChanged: (event) => {
-          if (event.newStatus === 'Pending' || event.newStatus === 'Approved') {
+          if (event.newStatus === 'Approved') {
+            track(ANALYTICS_EVENTS.KYC_VERIFICATION_COMPLETED, { status: event.newStatus });
+            didSubmit = true;
+            sdkInstance?.dismiss();
+          } else if (event.newStatus === 'Pending') {
             didSubmit = true;
             sdkInstance?.dismiss();
           }
@@ -53,6 +59,9 @@ export default function KycSumsubSdkScreen() {
         }
       })
       .catch((error: unknown) => {
+        track(ANALYTICS_EVENTS.KYC_VERIFICATION_FAILED, {
+          error: error instanceof Error ? error.message : String(error),
+        });
         logger.error('[SumsubSDK] Session failed', {
           component: 'SumsubSDK',
           action: 'session-error',

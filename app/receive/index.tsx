@@ -3,17 +3,22 @@ import { StatusBar, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, FadeInUp } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  FadeInUp,
+} from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { CryptoReceiveSheet } from '@/components/sheets';
 import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
 import { SUPPORTED_CHAINS, type ChainConfig } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import type { WalletChain } from '@/api/types';
+import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
   'SOL-DEVNET': SolanaIcon,
   'MATIC-AMOY': MaticIcon,
@@ -28,10 +33,14 @@ function ChainCard({ config, onPress }: { config: ChainConfig; onPress: () => vo
   return (
     <AnimatedPressable
       style={animStyle}
-      className="flex-row items-center rounded-3xl bg-surface px-5 py-4 gap-4"
+      className="flex-row items-center gap-4 rounded-3xl bg-surface px-5 py-4"
       onPress={onPress}
-      onPressIn={() => { scale.value = withSpring(0.97, { damping: 20, stiffness: 300 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}
+      onPressIn={() => {
+        scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+      }}
       accessibilityRole="button"
       accessibilityLabel={`Receive on ${config.label}`}>
       {/* Chain icon with USDC badge */}
@@ -53,10 +62,7 @@ function ChainCard({ config, onPress }: { config: ChainConfig; onPress: () => vo
         </Text>
       </View>
 
-      <View
-        className="h-2 w-2 rounded-full"
-        style={{ backgroundColor: config.color }}
-      />
+      <View className="h-2 w-2 rounded-full" style={{ backgroundColor: config.color }} />
     </AnimatedPressable>
   );
 }
@@ -64,11 +70,16 @@ function ChainCard({ config, onPress }: { config: ChainConfig; onPress: () => vo
 export default function ReceiveChainSelectScreen() {
   const [selectedChain, setSelectedChain] = useState<WalletChain | null>(null);
   const { selection } = useHaptics();
+  const { track } = useAnalytics();
 
-  const handleChainPress = useCallback((chain: WalletChain) => {
-    selection();
-    setSelectedChain(chain);
-  }, [selection]);
+  const handleChainPress = useCallback(
+    (chain: WalletChain) => {
+      selection();
+      track(ANALYTICS_EVENTS.DEPOSIT_INITIATED, { chain });
+      setSelectedChain(chain);
+    },
+    [selection, track]
+  );
 
   return (
     <ErrorBoundary>

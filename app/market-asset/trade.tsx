@@ -7,6 +7,7 @@ import { useMarketInstrument, useStation } from '@/api/hooks';
 import { Keypad } from '@/components/molecules/Keypad';
 import { Button } from '@/components/ui';
 import { getEffectivePrice } from '@/utils/market';
+import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 type OrderSide = 'buy' | 'sell';
 type KeypadInput =
@@ -155,8 +156,15 @@ export default function MarketTradeAmountScreen() {
     }
   };
 
+  const { track } = useAnalytics();
+
   const onReviewOrder = () => {
     if (!canReview) return;
+    track(ANALYTICS_EVENTS.TRANSFER_INITIATED, {
+      type: `${side}-order`,
+      symbol,
+      amount: numericAmount.toFixed(2),
+    });
     router.push({
       pathname: '/authorize-transaction',
       params: {

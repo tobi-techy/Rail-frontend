@@ -22,8 +22,10 @@ import {
   Users,
   CreditCard,
   PiggyBank,
+  Banknote,
 } from 'lucide-react-native';
-import Avatar, { genConfig } from '@zamplyy/react-native-nice-avatar';
+import Avatar from '@zamplyy/react-native-nice-avatar';
+import { getAvatarConfig } from '@/utils/avatarConfig';
 
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 import { PhantomIcon, SolflareIcon, SolanaIcon, VisaWhite } from '@/assets/svg';
@@ -59,6 +61,7 @@ import { invalidateQueries } from '@/api/queryClient';
 import { convertFromUsd, formatCurrencyAmount, type FxRates } from '@/utils/currency';
 import gleap from '@/utils/gleap';
 import type { Transaction } from '@/components/molecules/TransactionItem';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -146,6 +149,14 @@ function FundingOptionsList({ actions }: { actions: FundingAction[] }) {
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
+  return (
+    <ErrorBoundary>
+      <DashboardScreen />
+    </ErrorBoundary>
+  );
+}
+
+function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const isAndroid = Platform.OS === 'android';
   const navigation = useNavigation();
@@ -190,22 +201,7 @@ export default function Dashboard() {
     () => [userFirstName, userLastName].filter(Boolean).join(' ') || userEmail || 'Rail User',
     [userFirstName, userLastName, userEmail]
   );
-  const avatarConfig = useMemo(() => {
-    // Derive deterministic avatar config from name string
-    let hash = 0;
-    for (let i = 0; i < avatarName.length; i++) {
-      hash = (hash * 31 + avatarName.charCodeAt(i)) >>> 0;
-    }
-    const pick = <T,>(arr: T[]): T =>
-      arr[((hash = (hash * 1664525 + 1013904223) >>> 0), hash % arr.length)];
-    return genConfig({
-      sex: pick(['man', 'woman'] as const),
-      faceColor: pick(['#F9C9B6', '#AC6651', '#FDDBB4', '#D08B5B', '#EDB98A']),
-      hairStyle: pick(['normal', 'thick', 'mohawk', 'womanLong', 'womanShort'] as const),
-      hairColor: pick(['#000', '#FC909F', '#77311D', '#D2EFF3', '#506AF4']),
-      bgColor: pick(['#FFEDEF', '#E0DDFF', '#D2EFF3', '#FFEDEF', '#F4D150']),
-    });
-  }, [avatarName]);
+  const avatarConfig = useMemo(() => getAvatarConfig(avatarName), [avatarName]);
 
   // Reset sheet nav on close
   useEffect(() => {
@@ -272,15 +268,8 @@ export default function Dashboard() {
   const spend = hasData
     ? splitDollars(station?.spend_balance ?? '0', selectedCurrency, currencyRates)
     : { dollars: '---', cents: '' };
-  const stashOnly = hasData
-    ? Math.max(
-        0,
-        (parseFloat(station?.invest_balance ?? '0') || 0) -
-          (parseFloat(station?.broker_cash ?? '0') || 0)
-      )
-    : 0;
   const stash = hasData
-    ? splitDollars(stashOnly.toFixed(2), selectedCurrency, currencyRates)
+    ? splitDollars(station?.invest_balance ?? '0', selectedCurrency, currencyRates)
     : { dollars: '---', cents: '' };
 
   const transactions = useMemo(() => {
@@ -302,7 +291,10 @@ export default function Dashboard() {
   }, []);
 
   const startWithdrawal = useCallback(
-    (method: 'fiat' | 'crypto' | 'phantom' | 'solflare', flow: 'send' | 'fund' = 'send') => {
+    (
+      method: 'fiat' | 'crypto' | 'phantom' | 'solflare' | 'mwa-withdraw' | 'mwa-fund',
+      flow: 'send' | 'fund' = 'send'
+    ) => {
       if (method === 'fiat' && !kycApproved) {
         openKYC();
         return;
@@ -354,6 +346,13 @@ export default function Dashboard() {
     () => [
       ...(isAndroid
         ? [
+            {
+              id: 'mwa-fund',
+              label: 'Seed Vault / MWA',
+              sublabel: 'Fund with any Solana wallet — Seed Vault on Seeker',
+              icon: <SolanaIcon width={28} height={28} />,
+              onPress: () => startWithdrawal('mwa-fund', 'fund'),
+            },
             {
               id: 'phantom',
               label: 'Phantom',
@@ -544,6 +543,7 @@ export default function Dashboard() {
             cardColor="#00E011"
             className="flex-1"
             isLoading={isStationPending}
+            onPress={() => router.push('/investment-stash')}
           />
         </View>
         <View className="mt-5 flex-row gap-3">
@@ -560,12 +560,11 @@ export default function Dashboard() {
           />
           <StashCard
             title="Micro Loan"
-            amount={stash.dollars}
-            amountCents={stash.cents}
-            icon={<PiggyBank size={26} color="white" strokeWidth={1.8} />}
+            amount=""
+            getStarted="Coming soon"
+            icon={<Banknote size={26} color="white" strokeWidth={1.8} />}
             cardColor="#4F46E5"
             className="max-w-[50%] flex-1"
-            isLoading={isStationPending}
             badge={{ label: 'Soon', color: 'gray' }}
             onPress={() => setShowMicroLoanSheet(true)}
           />

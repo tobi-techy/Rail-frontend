@@ -5,6 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChevronLeft } from 'lucide-react-native';
 
 import { Button } from '@/components/ui';
+import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 const STEPS = [
   {
@@ -26,6 +27,7 @@ const STEPS = [
 
 export default function KycVerificationIntroScreen() {
   const insets = useSafeAreaInsets();
+  const { track } = useAnalytics();
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -63,7 +65,13 @@ export default function KycVerificationIntroScreen() {
         </View>
 
         <View className="px-6" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
-          <Button title="Continue" onPress={() => router.replace('/kyc/tax-id')} />
+          <Button
+            title="Continue"
+            onPress={() => {
+              track(ANALYTICS_EVENTS.KYC_VERIFICATION_STARTED);
+              router.replace('/kyc/tax-id');
+            }}
+          />
           <Pressable
             onPress={() => router.replace('/')}
             className="mt-3 py-2"
