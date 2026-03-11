@@ -384,7 +384,8 @@ export default function CardSettingsScreen() {
             ? 'Reactivate your card to resume spending.'
             : 'Temporarily disable your card. No charges will be processed while frozen.'}
         </Text>
-        <View className="gap-3">
+        <View className="flex-row gap-3">
+          <Button title="Cancel" variant="ghost" onPress={closeSheet} flex />
           <Button
             title={isFrozen ? 'Unfreeze Card' : 'Freeze Card'}
             variant={isFrozen ? 'black' : 'destructive'}
@@ -392,7 +393,6 @@ export default function CardSettingsScreen() {
             loading={freezeCard.isPending || unfreezeCard.isPending}
             flex
           />
-          <Button title="Cancel" variant="ghost" onPress={closeSheet} flex />
         </View>
       </BottomSheet>
 
