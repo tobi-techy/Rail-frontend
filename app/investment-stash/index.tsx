@@ -167,9 +167,6 @@ function StatsCard({
       style={{
         marginHorizontal: 16,
         borderRadius: 16,
-        backgroundColor: '#F9FAFB',
-        borderWidth: 1,
-        borderColor: '#F3F4F6',
       }}>
       <StatsRow label="Invested" value={hidden ? mask : investedValue} />
       <View style={{ height: 1, backgroundColor: '#F3F4F6', marginHorizontal: 16 }} />
@@ -581,8 +578,11 @@ export default function InvestmentStashScreen() {
     perfReturn,
     perfReturnPct,
     positions,
+    positionsTotalCount,
+    positionsHasMore,
     distribution,
     transactions,
+    positionsLoading,
     hasMoreTx,
     hasPrevTx,
     currentPage,
@@ -601,6 +601,8 @@ export default function InvestmentStashScreen() {
   const pnlColor = isPositive ? GREEN : RED;
   const chartH = 180;
   const mask = '••••';
+  const previewPositions = positions.slice(0, 6);
+  const showAllHoldings = positionsTotalCount > previewPositions.length || positionsHasMore;
 
   // Sections rendered below the sticky header+hero
   type Section =
@@ -741,24 +743,52 @@ export default function InvestmentStashScreen() {
       case 'holdings':
         return (
           <View style={{ marginTop: 32, paddingHorizontal: 16 }}>
-            <Text
+            <View
               style={{
-                fontSize: 18,
-                fontFamily: 'SF-Pro-Rounded-Semibold',
-                color: '#111827',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
                 marginBottom: 16,
               }}>
-              Holdings
-            </Text>
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontFamily: 'SF-Pro-Rounded-Semibold',
+                  color: '#111827',
+                }}>
+                Holdings
+              </Text>
+              {showAllHoldings && !isLoading && !positionsLoading && (
+                <Pressable
+                  onPress={() => {
+                    impact();
+                    router.push('/investment-stash/holdings');
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="View all holdings"
+                  style={{
+                    borderRadius: 12,
+                    backgroundColor: '#F3F4F6',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                  }}>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontFamily: 'SF-Pro-Rounded-Semibold',
+                      color: '#111827',
+                    }}>
+                    View all
+                  </Text>
+                </Pressable>
+              )}
+            </View>
             <View
               style={{
                 borderRadius: 16,
-                backgroundColor: '#F9FAFB',
-                borderWidth: 1,
-                borderColor: '#F3F4F6',
                 overflow: 'hidden',
               }}>
-              {isLoading ? (
+              {isLoading || positionsLoading ? (
                 [0, 1, 2].map((i) => (
                   <View
                     key={i}
@@ -774,7 +804,7 @@ export default function InvestmentStashScreen() {
                     </View>
                   </View>
                 ))
-              ) : positions.length === 0 ? (
+              ) : previewPositions.length === 0 ? (
                 <View style={{ alignItems: 'center', paddingVertical: 40 }}>
                   <Text
                     style={{
@@ -795,14 +825,17 @@ export default function InvestmentStashScreen() {
                   </Text>
                 </View>
               ) : (
-                positions.map((pos, i) => (
+                previewPositions.map((pos, i) => (
                   <AssetRow
                     key={pos.id}
                     item={pos}
-                    showSep={i < positions.length - 1}
+                    showSep={i < previewPositions.length - 1}
                     onPress={() => {
                       impact();
-                      router.push(`/market-asset/${pos.symbol}`);
+                      router.push({
+                        pathname: `/market-asset/${pos.symbol}` as any,
+                        params: { position: JSON.stringify(pos) },
+                      });
                     }}
                   />
                 ))
@@ -835,9 +868,6 @@ export default function InvestmentStashScreen() {
             <View
               style={{
                 borderRadius: 16,
-                backgroundColor: '#F9FAFB',
-                borderWidth: 1,
-                borderColor: '#F3F4F6',
                 overflow: 'hidden',
                 paddingHorizontal: 4,
               }}>

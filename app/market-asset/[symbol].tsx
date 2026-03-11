@@ -19,6 +19,7 @@ import { Skeleton } from '@/components/atoms';
 import { Button } from '@/components/ui';
 import { useUIStore } from '@/stores';
 import { layout, responsive } from '@/utils/layout';
+import type { InvestmentPositionDetail } from '@/api/types/investment';
 
 type RangeKey = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y';
 
@@ -157,8 +158,49 @@ function DetailHeaderSkeleton() {
   );
 }
 
+function PositionCard({ position: p }: { position: InvestmentPositionDetail }) {
+  const positive = p.unrealized_pnl_percent >= 0;
+  const sign = positive ? '+' : '';
+  const pnlColor = positive ? 'text-success' : 'text-destructive';
+  return (
+    <View className="mx-md mt-md rounded-xl border border-surface bg-surface/40 px-4 py-3">
+      <Text className="mb-2 font-subtitle text-caption text-text-secondary">Your position</Text>
+      <View className="mb-1 flex-row justify-between">
+        <Text className="font-body text-caption text-text-secondary">Market value</Text>
+        <Text className="font-subtitle text-caption text-text-primary">
+          {p.market_value.formatted}
+        </Text>
+      </View>
+      <View className="mb-1 flex-row justify-between">
+        <Text className="font-body text-caption text-text-secondary">Unrealized P&amp;L</Text>
+        <Text className={`font-subtitle text-caption ${pnlColor}`}>
+          {sign}
+          {p.unrealized_pnl.formatted} ({sign}
+          {p.unrealized_pnl_percent.toFixed(2)}%)
+        </Text>
+      </View>
+      <View className="mb-1 flex-row justify-between">
+        <Text className="font-body text-caption text-text-secondary">Avg entry</Text>
+        <Text className="font-subtitle text-caption text-text-primary">
+          {p.avg_entry_price.formatted}
+        </Text>
+      </View>
+      <View className="mb-1 flex-row justify-between">
+        <Text className="font-body text-caption text-text-secondary">Cost basis</Text>
+        <Text className="font-subtitle text-caption text-text-primary">
+          {p.cost_basis.formatted}
+        </Text>
+      </View>
+      <View className="flex-row justify-between">
+        <Text className="font-body text-caption text-text-secondary">Shares</Text>
+        <Text className="font-subtitle text-caption text-text-primary">{p.quantity}</Text>
+      </View>
+    </View>
+  );
+}
+
 export default function MarketAssetDetailScreen() {
-  const params = useLocalSearchParams<{ symbol?: string }>();
+  const params = useLocalSearchParams<{ symbol?: string; position?: string }>();
   const insets = useSafeAreaInsets();
   const currency = useUIStore((s) => s.currency);
   const rates = useUIStore((s) => s.currencyRates);
@@ -167,6 +209,15 @@ export default function MarketAssetDetailScreen() {
     () => (typeof params.symbol === 'string' ? params.symbol.toUpperCase() : ''),
     [params.symbol]
   );
+
+  const position = useMemo<InvestmentPositionDetail | null>(() => {
+    if (!params.position) return null;
+    try {
+      return JSON.parse(params.position as string);
+    } catch {
+      return null;
+    }
+  }, [params.position]);
   const [selectedRange, setSelectedRange] = useState<RangeKey>('3M');
 
   const selectedOption = useMemo(
@@ -349,6 +400,8 @@ export default function MarketAssetDetailScreen() {
                 </View>
               )}
             </View>
+
+            {position && <PositionCard position={position} />}
 
             <View className="mt-md">
               {isChartLoading ? (
