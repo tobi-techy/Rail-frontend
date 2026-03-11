@@ -187,6 +187,10 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
     setLoading(true);
     setError(null);
 
+    // Flip immediately — spinner shows on back while fetching
+    flip.value = withSpring(1, { damping: 14, stiffness: 120 });
+    isFlipped.current = true;
+
     try {
       if (!cardId) throw new Error('No card ID');
 
@@ -218,6 +222,9 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
       const msg = e instanceof Error ? e.message : String(e);
       if (__DEV__) console.error('[CardReveal]', msg);
       setError(msg);
+      // Flip back on error
+      flip.value = withSpring(0, { damping: 14, stiffness: 120 });
+      isFlipped.current = false;
     } finally {
       setLoading(false);
     }
@@ -230,16 +237,6 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
       style={{ width: cardWidth, height: cardHeight }}>
       <Animated.View style={[frontStyle, { width: cardWidth, height: cardHeight }]}>
         <RailCard {...cardProps} width={cardWidth} />
-        {loading && (
-          <View className="absolute inset-0 items-center justify-center rounded-sm bg-black/40">
-            <ActivityIndicator color="#fff" />
-          </View>
-        )}
-        {error && (
-          <View className="absolute inset-0 items-center justify-center rounded-sm bg-black/60 px-4">
-            <Text className="text-center text-xs text-red-400">{error}</Text>
-          </View>
-        )}
       </Animated.View>
 
       <Animated.View style={[backStyle, { width: cardWidth, height: cardHeight }]}>
@@ -255,8 +252,10 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
         ) : (
           <View
             style={{ width: cardWidth, height: cardHeight }}
-            className="overflow-hidden rounded-sm bg-[#070708]"
-          />
+            className="items-center justify-center overflow-hidden rounded-sm bg-[#070708]">
+            {loading && <ActivityIndicator color="#fff" size="large" />}
+            {error && <Text className="px-4 text-center text-xs text-red-400">{error}</Text>}
+          </View>
         )}
       </Animated.View>
     </TouchableOpacity>
