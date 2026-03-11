@@ -10,7 +10,6 @@ import {
   Modal,
   Pressable,
   Platform,
-  Switch,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -29,7 +28,6 @@ import {
   Repeat2,
   Scale,
   MessageSquare,
-  Share2,
   ScrollText,
 } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
@@ -46,6 +44,7 @@ import { RailCard } from '@/components/cards';
 import { useAuthStore } from '@/stores/authStore';
 import { BottomSheet, SettingsSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
+import { SegmentedSlider, WheelPicker } from '@/components/molecules';
 
 const PCI_HOST = 'https://cards-pci.bridge.xyz';
 
@@ -157,7 +156,20 @@ export default function CardSettingsScreen() {
   const [webViewUrl, setWebViewUrl] = useState<string | null>(null);
   const [webViewTitle, setWebViewTitle] = useState('');
   const [roundupEnabled, setRoundupEnabled] = useState(false);
-  const [dailyLimit, setDailyLimit] = useState(500);
+  const LIMIT_OPTIONS = ['$100', '$250', '$500', '$750', '$1,000', '$1,500', '$2,000', '$5,000'];
+  const [limitIndex, setLimitIndex] = useState(2); // default $500
+
+  // Generate last 12 months for statement picker
+  const months = useMemo(() => {
+    const result: string[] = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      result.push(d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
+    }
+    return result;
+  }, []);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(0);
 
   const activeCard = useMemo(
     () =>
@@ -399,26 +411,15 @@ export default function CardSettingsScreen() {
       {/* Daily limit sheet */}
       <BottomSheet visible={activeSheet === 'limit'} onClose={closeSheet}>
         <Text className="mb-2 font-subtitle text-xl">Daily Limit</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-4 font-body text-base leading-6 text-neutral-500">
           Set a daily spending limit on your card.
         </Text>
-        <Text className="mb-6 text-center font-subtitle text-4xl">${dailyLimit}</Text>
-        {[100, 250, 500, 1000, 2000].map((v) => (
-          <TouchableOpacity
-            key={v}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setDailyLimit(v);
-            }}
-            className={`mb-3 flex-row items-center justify-between rounded-2xl border px-5 py-4 ${dailyLimit === v ? 'border-black bg-black' : 'border-surface bg-surface'}`}>
-            <Text
-              className={`font-subtitle text-base ${dailyLimit === v ? 'text-white' : 'text-text-primary'}`}>
-              ${v}
-            </Text>
-            {dailyLimit === v && <Text className="text-white">✓</Text>}
-          </TouchableOpacity>
-        ))}
-        <View className="mt-2 flex-row gap-3">
+        <WheelPicker
+          items={LIMIT_OPTIONS}
+          selectedIndex={limitIndex}
+          onIndexChange={setLimitIndex}
+        />
+        <View className="mt-4 flex-row gap-3">
           <Button title="Cancel" variant="ghost" onPress={closeSheet} flex />
           <Button title="Save Limit" variant="black" onPress={closeSheet} flex />
         </View>
@@ -426,23 +427,33 @@ export default function CardSettingsScreen() {
 
       {/* Statement sheet */}
       <BottomSheet visible={activeSheet === 'statement'} onClose={closeSheet}>
-        <Text className="mb-2 font-subtitle text-xl">Bank Statement</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
-          Download your card statement for any period.
+        <Text className="mb-1 text-center font-subtitle text-xl">Bank statement</Text>
+        <Text className="mb-4 text-center font-body text-sm text-text-secondary">
+          You can open or export your bank transaction summary statement.
         </Text>
-        {['Last 30 days', 'Last 3 months', 'Last 6 months', 'Last year'].map((period) => (
-          <TouchableOpacity
-            key={period}
+        <View className="mb-5 flex-row items-center gap-3 rounded-2xl border border-dashed border-gray-300 px-4 py-4">
+          <FileText size={18} color="#9CA3AF" />
+          <Text className="flex-1 font-body text-sm leading-5 text-text-secondary">
+            You can export this month&apos;s statement only on the 2nd of the next month.
+          </Text>
+        </View>
+        <WheelPicker
+          items={months}
+          selectedIndex={selectedMonthIndex}
+          onIndexChange={setSelectedMonthIndex}
+        />
+        <View className="mt-4 flex-row gap-3">
+          <Button title="Cancel" variant="white" onPress={closeSheet} flex />
+          <Button
+            title="Export"
+            variant="black"
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              showInfo('Coming Soon', 'Statement download will be available soon');
               closeSheet();
+              showInfo('Coming Soon', 'Statement export will be available soon');
             }}
-            className="mb-3 flex-row items-center justify-between rounded-2xl border border-surface bg-surface px-5 py-4">
-            <Text className="font-body text-base text-text-primary">{period}</Text>
-            <FileText size={18} color="#9CA3AF" />
-          </TouchableOpacity>
-        ))}{' '}
+            flex
+          />
+        </View>
       </BottomSheet>
 
       {/* Round-ups sheet */}
