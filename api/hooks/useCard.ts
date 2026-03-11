@@ -63,9 +63,7 @@ export function useFreezeCard() {
       return { previous };
     },
     onError: (_err, _id, context) => {
-      if (context?.previous) {
-        qc.setQueryData(queryKeys.card.list(), context.previous);
-      }
+      if (context?.previous) qc.setQueryData(queryKeys.card.list(), context.previous);
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: queryKeys.card.list() });
@@ -92,12 +90,29 @@ export function useUnfreezeCard() {
       return { previous };
     },
     onError: (_err, _id, context) => {
-      if (context?.previous) {
-        qc.setQueryData(queryKeys.card.list(), context.previous);
-      }
+      if (context?.previous) qc.setQueryData(queryKeys.card.list(), context.previous);
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: queryKeys.card.list() });
     },
+  });
+}
+
+export function useCardEphemeralKey(cardId: string | undefined) {
+  return useMutation({
+    mutationFn: (nonce: string) => cardService.getEphemeralKey(cardId!, nonce),
+  });
+}
+
+export function useCardPINUrl(cardId: string | undefined) {
+  return useMutation({
+    mutationFn: () => cardService.getPINUrl(cardId!),
+  });
+}
+
+export function useCardStatement(cardId: string | undefined) {
+  return useMutation({
+    mutationFn: (params?: { month?: string; year?: string }) =>
+      cardService.getStatement(cardId!, params),
   });
 }

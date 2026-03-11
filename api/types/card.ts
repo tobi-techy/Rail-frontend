@@ -3,6 +3,28 @@ export type CardType = 'virtual' | 'physical';
 export type CardTransactionType = 'authorization' | 'capture' | 'refund' | 'reversal';
 export type CardTransactionStatus = 'pending' | 'completed' | 'declined' | 'reversed';
 
+export interface CardBalanceEntry {
+  amount: string;
+  currency: string;
+}
+
+export interface CardBalances {
+  hold: CardBalanceEntry;
+  available: CardBalanceEntry;
+}
+
+export interface CardFundingInstructions {
+  chain: string;
+  address: string;
+  currency: string;
+}
+
+export interface CardFreezeEntry {
+  initiator: string;
+  reason: string;
+  created_at: string;
+}
+
 export interface CardDetails {
   id: string;
   type: CardType;
@@ -12,6 +34,9 @@ export interface CardDetails {
   card_image_url?: string | null;
   currency: string;
   created_at: string;
+  balances?: CardBalances | null;
+  funding_instructions?: CardFundingInstructions | null;
+  freezes?: CardFreezeEntry[] | null;
 }
 
 export interface CardListResponse {

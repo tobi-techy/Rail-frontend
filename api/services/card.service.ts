@@ -14,7 +14,25 @@ const ENDPOINTS = {
   UNFREEZE: (id: string) => `/v1/cards/${id}/unfreeze`,
   TRANSACTIONS: '/v1/cards/transactions',
   CARD_TRANSACTIONS: (id: string) => `/v1/cards/${id}/transactions`,
+  EPHEMERAL_KEY: (id: string) => `/v1/cards/${id}/ephemeral-key`,
+  PIN_URL: (id: string) => `/v1/cards/${id}/pin-url`,
+  STATEMENT: (id: string) => `/v1/cards/${id}/statement`,
 } as const;
+
+export interface EphemeralKeyResponse {
+  ephemeral_key: string;
+  client_secret: string;
+  nonce: string;
+}
+
+export interface PINUrlResponse {
+  url: string;
+}
+
+export interface StatementResponse {
+  url: string;
+  expires_at: string;
+}
 
 export const cardService = {
   getCards: () => apiClient.get<CardListResponse>(ENDPOINTS.CARDS),
@@ -34,4 +52,12 @@ export const cardService = {
 
   getCardTransactions: (id: string, params?: { limit?: number; offset?: number }) =>
     apiClient.get<CardTransactionListResponse>(ENDPOINTS.CARD_TRANSACTIONS(id), { params }),
+
+  getEphemeralKey: (id: string, nonce: string) =>
+    apiClient.post<EphemeralKeyResponse>(ENDPOINTS.EPHEMERAL_KEY(id), { nonce }),
+
+  getPINUrl: (id: string) => apiClient.post<PINUrlResponse>(ENDPOINTS.PIN_URL(id)),
+
+  getStatement: (id: string, params?: { month?: string; year?: string }) =>
+    apiClient.get<StatementResponse>(ENDPOINTS.STATEMENT(id), { params }),
 };
