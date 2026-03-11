@@ -45,6 +45,7 @@ import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { RailCard } from '@/components/cards';
 import { useAuthStore } from '@/stores/authStore';
 import { BottomSheet, SettingsSheet } from '@/components/sheets';
+import { Button } from '@/components/ui';
 
 const PCI_HOST = 'https://cards-pci.bridge.xyz';
 
@@ -301,16 +302,15 @@ export default function CardSettingsScreen() {
           </View>
         )}
 
-        {/* Add to Apple Wallet */}
         {Platform.OS === 'ios' && (
           <View className="mx-md mb-2">
-            <TouchableOpacity
+            <Button
+              title="Add to Apple Wallet"
+              variant="black"
+              leftIcon={<Wallet size={18} color="#fff" />}
               onPress={handleAddToWallet}
-              activeOpacity={0.8}
-              className="flex-row items-center justify-center gap-3 rounded-2xl bg-black py-4">
-              <Wallet size={20} color="#fff" />
-              <Text className="font-subtitle text-[15px] text-white">Add to Apple Wallet</Text>
-            </TouchableOpacity>
+              flex
+            />
           </View>
         )}
 
@@ -385,22 +385,14 @@ export default function CardSettingsScreen() {
             : 'Temporarily disable your card. No charges will be processed while frozen.'}
         </Text>
         <View className="gap-3">
-          <TouchableOpacity
+          <Button
+            title={isFrozen ? 'Unfreeze Card' : 'Freeze Card'}
+            variant={isFrozen ? 'black' : 'destructive'}
             onPress={handleToggleFreeze}
-            disabled={freezeCard.isPending || unfreezeCard.isPending}
-            activeOpacity={0.8}
-            className={`items-center rounded-2xl py-4 ${isFrozen ? 'bg-black' : 'bg-blue-500'}`}>
-            {freezeCard.isPending || unfreezeCard.isPending ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="font-subtitle text-[15px] text-white">
-                {isFrozen ? 'Unfreeze Card' : 'Freeze Card'}
-              </Text>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity onPress={closeSheet} activeOpacity={0.7} className="items-center py-3">
-            <Text className="font-body text-base text-gray-500">Cancel</Text>
-          </TouchableOpacity>
+            loading={freezeCard.isPending || unfreezeCard.isPending}
+            flex
+          />
+          <Button title="Cancel" variant="ghost" onPress={closeSheet} flex />
         </View>
       </BottomSheet>
 
@@ -426,12 +418,10 @@ export default function CardSettingsScreen() {
             {dailyLimit === v && <Text className="text-white">✓</Text>}
           </TouchableOpacity>
         ))}
-        <TouchableOpacity
-          onPress={closeSheet}
-          activeOpacity={0.8}
-          className="mt-2 items-center rounded-2xl bg-black py-4">
-          <Text className="font-subtitle text-[15px] text-white">Save Limit</Text>
-        </TouchableOpacity>
+        <View className="mt-2 flex-row gap-3">
+          <Button title="Cancel" variant="ghost" onPress={closeSheet} flex />
+          <Button title="Save Limit" variant="black" onPress={closeSheet} flex />
+        </View>
       </BottomSheet>
 
       {/* Statement sheet */}
@@ -452,7 +442,7 @@ export default function CardSettingsScreen() {
             <Text className="font-body text-base text-text-primary">{period}</Text>
             <FileText size={18} color="#9CA3AF" />
           </TouchableOpacity>
-        ))}
+        ))}{' '}
       </BottomSheet>
 
       {/* Round-ups sheet */}
@@ -475,15 +465,15 @@ export default function CardSettingsScreen() {
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
           Having an issue with your card? Our team is here to help.
         </Text>
-        <TouchableOpacity
+        <Button
+          title="Open Support Chat"
+          variant="black"
           onPress={() => {
             closeSheet();
             showInfo('Support', 'Opening support chat…');
           }}
-          activeOpacity={0.8}
-          className="items-center rounded-2xl bg-black py-4">
-          <Text className="font-subtitle text-[15px] text-white">Open Support Chat</Text>
-        </TouchableOpacity>
+          flex
+        />
       </BottomSheet>
 
       {/* Feedback sheet */}
@@ -492,15 +482,15 @@ export default function CardSettingsScreen() {
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
           Help us improve your card experience by sharing your thoughts.
         </Text>
-        <TouchableOpacity
+        <Button
+          title="Share Feedback"
+          variant="black"
           onPress={() => {
             closeSheet();
             showInfo('Thanks!', 'Feedback form coming soon');
           }}
-          activeOpacity={0.8}
-          className="items-center rounded-2xl bg-black py-4">
-          <Text className="font-subtitle text-[15px] text-white">Share Feedback</Text>
-        </TouchableOpacity>
+          flex
+        />
       </BottomSheet>
 
       {/* Terms sheet */}
@@ -509,15 +499,15 @@ export default function CardSettingsScreen() {
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
           Review the terms and conditions for your Rail card.
         </Text>
-        <TouchableOpacity
+        <Button
+          title="View Terms"
+          variant="black"
           onPress={() => {
             closeSheet();
             showInfo('Coming Soon', 'Terms document will be available soon');
           }}
-          activeOpacity={0.8}
-          className="items-center rounded-2xl bg-black py-4">
-          <Text className="font-subtitle text-[15px] text-white">View Terms</Text>
-        </TouchableOpacity>
+          flex
+        />
       </BottomSheet>
 
       {webViewUrl && (
