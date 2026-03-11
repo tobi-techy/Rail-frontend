@@ -1,13 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  RefreshControl,
-  ActivityIndicator,
-  Pressable,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -35,6 +27,7 @@ import { useVirtualAccounts, useCreateVirtualAccount } from '@/api/hooks/useVirt
 import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { Button } from '@/components/ui';
+import { Skeleton } from '@/components/atoms/Skeleton';
 import type { VirtualAccount } from '@/api/types/funding';
 
 import { UsdIcon, EurIcon, GbpIcon, UsdcIcon } from '@/assets/svg';
@@ -396,8 +389,24 @@ export default function VirtualAccountScreen() {
 
   if (isKycLoading || isAccountsLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#000" />
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-row items-center px-5 pb-2 pt-2">
+          <View className="mr-4 h-6 w-6 rounded-full bg-surface" />
+          <Skeleton className="h-5 w-36" />
+        </View>
+        <View className="flex-1 px-5 pt-4">
+          {/* Account card skeleton */}
+          <Skeleton className="mb-4 h-44 w-full rounded-2xl" />
+          <Skeleton className="mb-3 h-4 w-28" />
+          {Array.from({ length: 3 }).map((_, i) => (
+            <View
+              key={i}
+              className="mb-3 flex-row items-center justify-between rounded-xl bg-surface px-4 py-3">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-32" />
+            </View>
+          ))}
+        </View>
       </SafeAreaView>
     );
   }

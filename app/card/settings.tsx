@@ -5,7 +5,6 @@ import {
   View,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
   Platform,
   Pressable,
 } from 'react-native';
@@ -40,6 +39,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { BottomSheet, SettingsSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
 import { WheelPicker } from '@/components/molecules';
+import { Skeleton } from '@/components/atoms/Skeleton';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -196,8 +196,31 @@ export default function CardSettingsScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#000" />
+      <View className="flex-1 bg-background-main">
+        <StatusBar barStyle="dark-content" backgroundColor="white" />
+        <SafeAreaView edges={['top']}>
+          <View className="flex-row items-center px-5 pb-3 pt-1">
+            <View className="mr-4 h-6 w-6 rounded-full bg-surface" />
+            <Skeleton className="h-5 w-32" />
+          </View>
+        </SafeAreaView>
+        <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 100 }}>
+          {/* Card preview skeleton */}
+          <View className="mb-6 items-center pt-2">
+            <Skeleton className="h-48 w-full rounded-2xl" />
+            <Skeleton className="mt-3 h-7 w-24 rounded-full" />
+          </View>
+          {/* Section skeleton */}
+          <Skeleton className="mb-3 h-4 w-16" />
+          <View className="flex-row flex-wrap gap-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <View key={i} className="w-[25%] items-center">
+                <Skeleton className="h-12 w-12 rounded-2xl" />
+                <Skeleton className="mt-2 h-3 w-12" />
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       </View>
     );
   }
