@@ -10,16 +10,12 @@ import {
   Modal,
   Pressable,
   Platform,
+  Switch,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  FadeInDown,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import {
   ArrowLeft,
   Snowflake,
@@ -27,9 +23,14 @@ import {
   CreditCard,
   Shield,
   HelpCircle,
-  ChevronRight,
   X,
   Wallet,
+  FileText,
+  Repeat2,
+  Scale,
+  MessageSquare,
+  Share2,
+  ScrollText,
 } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import * as Crypto from 'expo-crypto';
@@ -43,10 +44,22 @@ import {
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { RailCard } from '@/components/cards';
 import { useAuthStore } from '@/stores/authStore';
+import { BottomSheet, SettingsSheet } from '@/components/sheets';
 
 const PCI_HOST = 'https://cards-pci.bridge.xyz';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+type SheetType =
+  | 'freeze'
+  | 'limit'
+  | 'statement'
+  | 'pin'
+  | 'roundup'
+  | 'support'
+  | 'feedback'
+  | 'terms'
+  | null;
 
 function SettingButton({
   icon,
@@ -64,23 +77,20 @@ function SettingButton({
   return (
     <AnimatedPressable
       style={animStyle}
-      className="mb-5 w-[25%] items-center"
+      className="mb-md w-[25%] items-center"
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress?.();
       }}
       onPressIn={() => {
-        scale.value = withSpring(0.88, { damping: 20, stiffness: 300 });
+        scale.value = withSpring(0.9, { damping: 20, stiffness: 300 });
       }}
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 20, stiffness: 300 });
       }}>
-      <View
-        className={`h-12 w-12 items-center justify-center rounded-full ${danger ? 'bg-red-50' : 'bg-gray-100'}`}>
-        {icon}
-      </View>
+      <View className="h-12 w-12 items-center justify-center">{icon}</View>
       <Text
-        className={`mt-2 text-center font-body text-[12px] ${danger ? 'text-red-500' : 'text-gray-500'}`}
+        className={`mt-xs text-center font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}
         numberOfLines={2}>
         {label}
       </Text>
@@ -88,21 +98,11 @@ function SettingButton({
   );
 }
 
-const Section = ({
-  title,
-  children,
-  index = 0,
-}: {
-  title: string;
-  children: ReactNode;
-  index?: number;
-}) => (
-  <Animated.View entering={FadeInDown.delay(index * 80).springify()} className="mb-2">
-    <Text className="mb-3 px-1 font-subtitle text-[13px] uppercase tracking-widest text-gray-400">
-      {title}
-    </Text>
-    <View className="flex-row flex-wrap">{children}</View>
-  </Animated.View>
+const Section = ({ title, children }: { title: string; children: ReactNode }) => (
+  <View className="border-b border-surface py-md">
+    <Text className="mb-md px-md font-subtitle text-body">{title}</Text>
+    <View className="flex-row flex-wrap px-sm">{children}</View>
+  </View>
 );
 
 function WebViewModal({
@@ -150,8 +150,13 @@ export default function CardSettingsScreen() {
   const { showSuccess, showError, showInfo } = useFeedbackPopup();
   const user = useAuthStore((s) => s.user);
 
+  const [activeSheet, setActiveSheet] = useState<SheetType>(null);
+  const closeSheet = () => setActiveSheet(null);
+
   const [webViewUrl, setWebViewUrl] = useState<string | null>(null);
   const [webViewTitle, setWebViewTitle] = useState('');
+  const [roundupEnabled, setRoundupEnabled] = useState(false);
+  const [dailyLimit, setDailyLimit] = useState(500);
 
   const activeCard = useMemo(
     () =>
@@ -172,11 +177,11 @@ export default function CardSettingsScreen() {
 
   const handleToggleFreeze = useCallback(async () => {
     if (!activeCard) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (isFrozen) {
       try {
         await unfreezeCard.mutateAsync(activeCard.id);
         showSuccess('Card Unfrozen', 'Your card is now active');
+        closeSheet();
       } catch {
         showError('Error', 'Failed to unfreeze card');
       }
@@ -190,6 +195,7 @@ export default function CardSettingsScreen() {
             try {
               await freezeCard.mutateAsync(activeCard.id);
               showSuccess('Card Frozen', 'Your card has been frozen');
+              closeSheet();
             } catch {
               showError('Error', 'Failed to freeze card');
             }
@@ -219,7 +225,7 @@ export default function CardSettingsScreen() {
     if (!activeCard) return;
     try {
       const result = await pinUrl.mutateAsync();
-      setWebViewTitle('Security');
+      setWebViewTitle('Change PIN');
       setWebViewUrl(result.url);
     } catch {
       showError('Error', 'Unable to load security settings');
@@ -244,10 +250,9 @@ export default function CardSettingsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-background-main">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
-      {/* Header */}
       <SafeAreaView edges={['top']}>
         <View className="flex-row items-center px-5 pb-3 pt-1">
           <TouchableOpacity
@@ -259,14 +264,14 @@ export default function CardSettingsScreen() {
             className="mr-4 p-1">
             <ArrowLeft size={24} color="#111" />
           </TouchableOpacity>
-          <Text className="font-subtitle text-lg text-gray-900">Card Settings</Text>
+          <Text className="font-subtitle text-lg text-text-primary">Card Settings</Text>
         </View>
       </SafeAreaView>
 
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Card preview */}
         {activeCard && (
-          <Animated.View entering={FadeInDown.springify()} className="mb-6 items-center">
+          <View className="mb-2 items-center px-5 pb-4">
             <View
               style={{
                 shadowColor: '#000',
@@ -286,8 +291,6 @@ export default function CardSettingsScreen() {
                 patternIntensity={0.35}
               />
             </View>
-
-            {/* Status pill */}
             <View
               className={`mt-3 rounded-full px-4 py-1.5 ${isFrozen ? 'bg-blue-100' : 'bg-green-100'}`}>
               <Text
@@ -295,12 +298,12 @@ export default function CardSettingsScreen() {
                 {isFrozen ? '❄️  Frozen' : '● Active'}
               </Text>
             </View>
-          </Animated.View>
+          </View>
         )}
 
         {/* Add to Apple Wallet */}
         {Platform.OS === 'ios' && (
-          <Animated.View entering={FadeInDown.delay(60).springify()} className="mb-6">
+          <View className="mx-md mb-2">
             <TouchableOpacity
               onPress={handleAddToWallet}
               activeOpacity={0.8}
@@ -308,49 +311,214 @@ export default function CardSettingsScreen() {
               <Wallet size={20} color="#fff" />
               <Text className="font-subtitle text-[15px] text-white">Add to Apple Wallet</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
         )}
 
-        {/* Card section */}
-        <Section title="Card" index={1}>
+        <Section title="Card">
           <SettingButton
             icon={
               isFrozen ? <Sun size={22} color="#F59E0B" /> : <Snowflake size={22} color="#3B82F6" />
             }
-            label={isFrozen ? 'Unfreeze' : 'Freeze'}
-            onPress={handleToggleFreeze}
+            label={isFrozen ? 'Unfreeze' : 'Freeze Card'}
+            onPress={() => setActiveSheet('freeze')}
+          />
+          <SettingButton
+            icon={<Scale size={22} color="#121212" />}
+            label="Daily Limit"
+            onPress={() => setActiveSheet('limit')}
+          />
+          <SettingButton
+            icon={<FileText size={22} color="#121212" />}
+            label="Statement"
+            onPress={() => setActiveSheet('statement')}
+          />
+          <SettingButton
+            icon={<Shield size={22} color="#121212" />}
+            label="Change PIN"
+            onPress={handleSecurity}
+          />
+          <SettingButton
+            icon={<Repeat2 size={22} color="#121212" />}
+            label="Round-ups"
+            onPress={() => setActiveSheet('roundup')}
           />
           <SettingButton
             icon={
               ephemeralKey.isPending ? (
                 <ActivityIndicator size="small" color="#6B7280" />
               ) : (
-                <CreditCard size={22} color="#111" />
+                <CreditCard size={22} color="#121212" />
               )
             }
-            label="Details"
+            label="Card Details"
             onPress={handleCardDetails}
-          />
-          <SettingButton
-            icon={
-              pinUrl.isPending ? (
-                <ActivityIndicator size="small" color="#6B7280" />
-              ) : (
-                <Shield size={22} color="#111" />
-              )
-            }
-            label="Security"
-            onPress={handleSecurity}
-          />
-          <SettingButton
-            icon={<HelpCircle size={22} color="#111" />}
-            label="Support"
-            onPress={() => {}}
           />
         </Section>
 
-        <View className="h-10" />
+        <Section title="About">
+          <SettingButton
+            icon={<HelpCircle size={22} color="#121212" />}
+            label="Support"
+            onPress={() => setActiveSheet('support')}
+          />
+          <SettingButton
+            icon={<MessageSquare size={22} color="#121212" />}
+            label="Feedback"
+            onPress={() => setActiveSheet('feedback')}
+          />
+          <SettingButton
+            icon={<ScrollText size={22} color="#121212" />}
+            label="Terms"
+            onPress={() => setActiveSheet('terms')}
+          />
+        </Section>
       </ScrollView>
+
+      {/* Freeze sheet */}
+      <BottomSheet visible={activeSheet === 'freeze'} onClose={closeSheet}>
+        <Text className="mb-2 font-subtitle text-xl">
+          {isFrozen ? 'Unfreeze Card' : 'Freeze Card'}
+        </Text>
+        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+          {isFrozen
+            ? 'Reactivate your card to resume spending.'
+            : 'Temporarily disable your card. No charges will be processed while frozen.'}
+        </Text>
+        <View className="gap-3">
+          <TouchableOpacity
+            onPress={handleToggleFreeze}
+            disabled={freezeCard.isPending || unfreezeCard.isPending}
+            activeOpacity={0.8}
+            className={`items-center rounded-2xl py-4 ${isFrozen ? 'bg-black' : 'bg-blue-500'}`}>
+            {freezeCard.isPending || unfreezeCard.isPending ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="font-subtitle text-[15px] text-white">
+                {isFrozen ? 'Unfreeze Card' : 'Freeze Card'}
+              </Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={closeSheet} activeOpacity={0.7} className="items-center py-3">
+            <Text className="font-body text-base text-gray-500">Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* Daily limit sheet */}
+      <BottomSheet visible={activeSheet === 'limit'} onClose={closeSheet}>
+        <Text className="mb-2 font-subtitle text-xl">Daily Limit</Text>
+        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+          Set a daily spending limit on your card.
+        </Text>
+        <Text className="mb-6 text-center font-subtitle text-4xl">${dailyLimit}</Text>
+        {[100, 250, 500, 1000, 2000].map((v) => (
+          <TouchableOpacity
+            key={v}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setDailyLimit(v);
+            }}
+            className={`mb-3 flex-row items-center justify-between rounded-2xl border px-5 py-4 ${dailyLimit === v ? 'border-black bg-black' : 'border-surface bg-surface'}`}>
+            <Text
+              className={`font-subtitle text-base ${dailyLimit === v ? 'text-white' : 'text-text-primary'}`}>
+              ${v}
+            </Text>
+            {dailyLimit === v && <Text className="text-white">✓</Text>}
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity
+          onPress={closeSheet}
+          activeOpacity={0.8}
+          className="mt-2 items-center rounded-2xl bg-black py-4">
+          <Text className="font-subtitle text-[15px] text-white">Save Limit</Text>
+        </TouchableOpacity>
+      </BottomSheet>
+
+      {/* Statement sheet */}
+      <BottomSheet visible={activeSheet === 'statement'} onClose={closeSheet}>
+        <Text className="mb-2 font-subtitle text-xl">Bank Statement</Text>
+        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+          Download your card statement for any period.
+        </Text>
+        {['Last 30 days', 'Last 3 months', 'Last 6 months', 'Last year'].map((period) => (
+          <TouchableOpacity
+            key={period}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              showInfo('Coming Soon', 'Statement download will be available soon');
+              closeSheet();
+            }}
+            className="mb-3 flex-row items-center justify-between rounded-2xl border border-surface bg-surface px-5 py-4">
+            <Text className="font-body text-base text-text-primary">{period}</Text>
+            <FileText size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+        ))}
+      </BottomSheet>
+
+      {/* Round-ups sheet */}
+      <SettingsSheet
+        visible={activeSheet === 'roundup'}
+        onClose={closeSheet}
+        title="Round-ups"
+        subtitle="Round up card purchases to the nearest dollar and invest the difference automatically."
+        toggleLabel="Enable Round-ups"
+        toggleValue={roundupEnabled}
+        onToggleChange={(v) => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setRoundupEnabled(v);
+        }}
+      />
+
+      {/* Support sheet */}
+      <BottomSheet visible={activeSheet === 'support'} onClose={closeSheet}>
+        <Text className="mb-2 font-subtitle text-xl">Contact Support</Text>
+        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+          Having an issue with your card? Our team is here to help.
+        </Text>
+        <TouchableOpacity
+          onPress={() => {
+            closeSheet();
+            showInfo('Support', 'Opening support chat…');
+          }}
+          activeOpacity={0.8}
+          className="items-center rounded-2xl bg-black py-4">
+          <Text className="font-subtitle text-[15px] text-white">Open Support Chat</Text>
+        </TouchableOpacity>
+      </BottomSheet>
+
+      {/* Feedback sheet */}
+      <BottomSheet visible={activeSheet === 'feedback'} onClose={closeSheet}>
+        <Text className="mb-2 font-subtitle text-xl">Share Feedback</Text>
+        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+          Help us improve your card experience by sharing your thoughts.
+        </Text>
+        <TouchableOpacity
+          onPress={() => {
+            closeSheet();
+            showInfo('Thanks!', 'Feedback form coming soon');
+          }}
+          activeOpacity={0.8}
+          className="items-center rounded-2xl bg-black py-4">
+          <Text className="font-subtitle text-[15px] text-white">Share Feedback</Text>
+        </TouchableOpacity>
+      </BottomSheet>
+
+      {/* Terms sheet */}
+      <BottomSheet visible={activeSheet === 'terms'} onClose={closeSheet}>
+        <Text className="mb-2 font-subtitle text-xl">Terms & Conditions</Text>
+        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+          Review the terms and conditions for your Rail card.
+        </Text>
+        <TouchableOpacity
+          onPress={() => {
+            closeSheet();
+            showInfo('Coming Soon', 'Terms document will be available soon');
+          }}
+          activeOpacity={0.8}
+          className="items-center rounded-2xl bg-black py-4">
+          <Text className="font-subtitle text-[15px] text-white">View Terms</Text>
+        </TouchableOpacity>
+      </BottomSheet>
 
       {webViewUrl && (
         <WebViewModal
