@@ -16,6 +16,9 @@ const METHOD_ALIASES: Record<string, ExtendedWithdrawMethod> = {
   solflare: 'solflare',
   'fund-phantom': 'phantom',
   'fund-solflare': 'solflare',
+  'fund-mwa': 'mwa-fund',
+  'mwa-fund': 'mwa-fund',
+  'mwa-withdraw': 'mwa-withdraw',
   'asset-buy': 'asset-buy',
   'asset-sell': 'asset-sell',
   'stock-buy': 'asset-buy',
@@ -67,6 +70,24 @@ const METHOD_COPY: Record<ExtendedWithdrawMethod, MethodCopy> = {
     detailHint: 'Use your Solana wallet address from Solflare.',
     detailLabel: 'Solflare wallet address',
     detailPlaceholder: 'Paste Solflare address',
+  },
+  'mwa-withdraw': {
+    title: 'Withdraw to Wallet',
+    subtitle: 'Send USDC to your Solana wallet via MWA',
+    limitLabel: 'Wallet withdrawal limit',
+    detailTitle: 'Withdraw to Wallet',
+    detailHint: 'Your wallet app will open to confirm your address. No signing required.',
+    detailLabel: 'Wallet',
+    detailPlaceholder: '',
+  },
+  'mwa-fund': {
+    title: 'Fund with Wallet',
+    subtitle: 'Send USDC from your Solana wallet into Rail',
+    limitLabel: 'Funding limit',
+    detailTitle: 'Confirm funding details',
+    detailHint: 'Your wallet will open to sign the USDC transfer into Rail.',
+    detailLabel: 'Wallet',
+    detailPlaceholder: '',
   },
   'asset-buy': {
     title: 'Buy asset',
@@ -124,11 +145,15 @@ const METHOD_COPY: Record<ExtendedWithdrawMethod, MethodCopy> = {
   },
 };
 
+// Default limits - these should be fetched from API based on user's KYC tier
+// TODO: Fetch limits from API endpoint /v1/limits or similar
 export const LIMITS: Record<ExtendedWithdrawMethod, number> = {
   fiat: 10_000,
   crypto: 50_000,
   phantom: 50_000,
   solflare: 50_000,
+  'mwa-withdraw': 50_000,
+  'mwa-fund': 50_000,
   'asset-buy': 100_000,
   'asset-sell': 100_000,
   p2p: 10_000,
@@ -136,6 +161,12 @@ export const LIMITS: Record<ExtendedWithdrawMethod, number> = {
   email: 10_000,
   contact: 10_000,
 };
+
+export function getWithdrawalLimit(method: ExtendedWithdrawMethod): number {
+  // In production, this should fetch from API based on user's KYC tier
+  // For now, return hardcoded limit
+  return LIMITS[method] ?? 10_000;
+}
 
 export const resolveMethod = (value?: string): ExtendedWithdrawMethod => {
   if (!value) return 'crypto';
@@ -149,7 +180,8 @@ export const resolveFlow = (value?: string): FundingFlow => {
 
 export const isWalletFundingMethod = (
   method: ExtendedWithdrawMethod
-): method is 'phantom' | 'solflare' => method === 'phantom' || method === 'solflare';
+): method is 'phantom' | 'solflare' | 'mwa-fund' =>
+  method === 'phantom' || method === 'solflare' || method === 'mwa-fund';
 
 export const isP2PMethod = (
   method: ExtendedWithdrawMethod

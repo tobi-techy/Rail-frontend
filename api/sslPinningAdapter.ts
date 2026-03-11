@@ -65,8 +65,8 @@ export async function sslPinningAdapter(config: AxiosRequestConfig): Promise<Axi
       method,
       headers,
       body,
-      pkPinning: true,
-      sslPinning: { certs: CERT_PINS },
+      pkPinning: false,
+      sslPinning: { certs: ['api.userail.money'] },
       timeoutInterval: config.timeout ?? 30000,
     });
 

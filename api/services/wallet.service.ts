@@ -136,10 +136,15 @@ export const walletService = {
    * Create transfer/withdrawal
    */
   async createTransfer(data: CreateTransferRequest): Promise<CreateTransferResponse> {
-    const payload = {
+    const payload: any = {
       amount: parseFloat(data.amount),
       destination_address: data.toAddress,
     };
+
+    // Include network if provided
+    if (data.network) {
+      payload.destination_chain = data.network;
+    }
 
     let response: any;
     try {

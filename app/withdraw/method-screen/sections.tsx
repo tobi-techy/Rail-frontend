@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import {
   ActivityIndicator,
+  Clipboard,
   StatusBar,
   Text,
   TouchableOpacity,
@@ -8,7 +9,16 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, CheckCircle2, ShieldAlert, ChevronDown } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ShieldAlert,
+  Copy,
+  Globe,
+  Fuel,
+  Building2,
+  User,
+} from 'lucide-react-native';
 import { router } from 'expo-router';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -22,6 +32,7 @@ import { useKycStore } from '@/stores/kycStore';
 import { isKycInReview } from '@/api/types/kyc';
 import { formatCurrency } from './utils';
 import type { MethodCopy } from './types';
+import { cn } from '@/utils/cn';
 
 type FiatKycRequiredScreenProps = {
   kycStatus: any;
@@ -42,6 +53,14 @@ type AuthorizeScreenProps = {
   onValueChange: (value: string) => void;
   passkeyAvailable: boolean;
   submittingTitle: string;
+  // transaction summary
+  summaryAmount?: number;
+  summaryMethod?: string;
+  summaryDestination?: string;
+  // lockout
+  pinAttemptsRemaining?: number;
+  isLockedOut?: boolean;
+  lockoutSecondsRemaining?: number;
 };
 
 type WithdrawDetailsSheetProps = {
@@ -68,6 +87,14 @@ type WithdrawDetailsSheetProps = {
   onFiatAccountHolderNameChange?: (value: string) => void;
   fiatAccountNumber?: string;
   onFiatAccountNumberChange?: (value: string) => void;
+  fiatAccountNumberError?: string;
+  didTryFiatAccount?: boolean;
+  category: string;
+  onCategoryChange: (value: string) => void;
+  narration: string;
+  onNarrationChange: (value: string) => void;
+  feeAmount: number;
+  totalAmount: number;
 };
 
 type WithdrawSubmissionSheetProps = {
@@ -81,12 +108,116 @@ type WithdrawSubmissionSheetProps = {
   visible: boolean;
 };
 
+type WithdrawConfirmSheetProps = {
+  visible: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  numericAmount: number;
+  // method context
+  isFiatMethod: boolean;
+  isCryptoMethod: boolean;
+  isP2PMethod: boolean;
+  isFundFlow: boolean;
+  methodTitle: string;
+  // fiat
+  fiatAccountHolderName?: string;
+  fiatAccountNumber?: string;
+  fiatRoutingNumber?: string;
+  // crypto
+  destinationAddress?: string;
+  destinationChain?: string;
+  // p2p
+  recipientName?: string;
+  recipientIdentifier?: string;
+  note?: string;
+  category?: string;
+  narration?: string;
+  feeAmount?: number;
+  totalAmount?: number;
+};
+
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
   'SOL-DEVNET': SolanaIcon,
   'MATIC-AMOY': MaticIcon,
   'AVAX-FUJI': AvalancheIcon,
+};
+
+const WITHDRAWAL_CATEGORIES = [
+  'Transfer',
+  'Bills',
+  'Food',
+  'Shopping',
+  'Travel',
+  'Savings',
+  'Crypto',
+  'Other',
+] as const;
+
+const maskAccountNumber = (value?: string) => {
+  if (!value) return undefined;
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return undefined;
+  return `••••${digits.slice(-4)}`;
+};
+
+const maskAddress = (value?: string) => {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (trimmed.length <= 12) return trimmed;
+  return `${trimmed.slice(0, 6)}...${trimmed.slice(-6)}`;
+};
+
+const resolveFromTo = ({
+  isAssetTradeMethod,
+  isFiatMethod,
+  isCryptoMethod,
+  isFundFlow,
+  isMobileWalletFundingFlow,
+  destinationInput,
+  fiatAccountHolderName,
+  fiatAccountNumber,
+}: {
+  isAssetTradeMethod: boolean;
+  isFiatMethod: boolean;
+  isCryptoMethod: boolean;
+  isFundFlow: boolean;
+  isMobileWalletFundingFlow: boolean;
+  destinationInput: string;
+  fiatAccountHolderName?: string;
+  fiatAccountNumber?: string;
+}) => {
+  const fromLabel = isFundFlow ? 'External wallet' : 'Rail balance';
+
+  if (isAssetTradeMethod) {
+    return {
+      fromLabel,
+      toLabel: destinationInput ? destinationInput.toUpperCase() : 'Selected asset',
+    };
+  }
+
+  if (isFiatMethod) {
+    const maskedAccount = maskAccountNumber(fiatAccountNumber);
+    const accountName = fiatAccountHolderName?.trim() || 'Bank account';
+    return {
+      fromLabel,
+      toLabel: maskedAccount ? `${accountName} ${maskedAccount}` : accountName,
+    };
+  }
+
+  if (isCryptoMethod) {
+    if (isMobileWalletFundingFlow) {
+      return { fromLabel: 'Mobile wallet', toLabel: 'Rail balance' };
+    }
+    const masked = maskAddress(destinationInput);
+    return {
+      fromLabel,
+      toLabel: masked || 'Wallet address',
+    };
+  }
+
+  return { fromLabel, toLabel: destinationInput || 'Destination' };
 };
 
 function ChainPill({
@@ -282,6 +413,12 @@ export function AuthorizeScreen({
   onValueChange,
   passkeyAvailable,
   submittingTitle,
+  summaryAmount,
+  summaryMethod,
+  summaryDestination,
+  pinAttemptsRemaining,
+  isLockedOut,
+  lockoutSecondsRemaining,
 }: AuthorizeScreenProps) {
   return (
     <ErrorBoundary>
@@ -301,6 +438,37 @@ export function AuthorizeScreen({
           <View className="size-11" />
         </View>
 
+        {/* Transaction summary */}
+        {(summaryAmount !== undefined || summaryMethod || summaryDestination) && (
+          <View className="mx-5 mt-2 rounded-2xl bg-surface px-4 py-3">
+            {summaryAmount !== undefined && (
+              <View className="flex-row items-center justify-between">
+                <Text className="font-body text-[13px] text-text-secondary">Amount</Text>
+                <Text className="font-subtitle text-[15px] text-text-primary">
+                  ${formatCurrency(summaryAmount)}
+                </Text>
+              </View>
+            )}
+            {summaryMethod && (
+              <View className="mt-1 flex-row items-center justify-between">
+                <Text className="font-body text-[13px] text-text-secondary">Method</Text>
+                <Text className="font-subtitle text-[15px] text-text-primary">{summaryMethod}</Text>
+              </View>
+            )}
+            {summaryDestination && (
+              <View className="mt-1 flex-row items-center justify-between">
+                <Text className="font-body text-[13px] text-text-secondary">To</Text>
+                <Text
+                  className="ml-8 flex-1 text-right font-subtitle text-[13px] text-text-primary"
+                  numberOfLines={1}
+                  ellipsizeMode="middle">
+                  {summaryDestination}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
         <View className="px-6 pt-4">
           <Text className="font-body text-[14px] text-text-secondary">
             Use passkey or your account PIN to authorize this transaction.
@@ -314,6 +482,23 @@ export function AuthorizeScreen({
               </Text>
             </View>
           )}
+
+          {isLockedOut && lockoutSecondsRemaining !== undefined && (
+            <View className="mt-3 rounded-xl bg-red-50 px-4 py-3">
+              <Text className="font-subtitle text-[13px] text-red-600">
+                Too many failed attempts. Try again in {lockoutSecondsRemaining}s.
+              </Text>
+            </View>
+          )}
+
+          {!isLockedOut && pinAttemptsRemaining !== undefined && pinAttemptsRemaining <= 3 && (
+            <View className="mt-3 rounded-xl bg-amber-50 px-4 py-3">
+              <Text className="font-body text-[13px] text-amber-700">
+                {pinAttemptsRemaining} attempt{pinAttemptsRemaining !== 1 ? 's' : ''} remaining
+                before lockout.
+              </Text>
+            </View>
+          )}
         </View>
 
         <PasscodeInput
@@ -321,11 +506,11 @@ export function AuthorizeScreen({
           length={4}
           value={authPasscode}
           onValueChange={onValueChange}
-          onComplete={onPasscodeAuthorize}
+          onComplete={isLockedOut ? undefined : onPasscodeAuthorize}
           errorText={authError}
           showToggle
           showFingerprint={passkeyAvailable}
-          onFingerprint={onPasskeyAuthorize}
+          onFingerprint={isLockedOut ? undefined : onPasskeyAuthorize}
           autoSubmit
           variant="light"
           className="mt-3 flex-1"
@@ -358,7 +543,26 @@ export function WithdrawDetailsSheet({
   onFiatAccountHolderNameChange,
   fiatAccountNumber,
   onFiatAccountNumberChange,
+  fiatAccountNumberError,
+  didTryFiatAccount,
+  category,
+  onCategoryChange,
+  narration,
+  onNarrationChange,
+  feeAmount,
+  totalAmount,
 }: WithdrawDetailsSheetProps) {
+  const { fromLabel, toLabel } = resolveFromTo({
+    isAssetTradeMethod,
+    isFiatMethod,
+    isCryptoMethod: Boolean(isCryptoMethod),
+    isFundFlow,
+    isMobileWalletFundingFlow,
+    destinationInput,
+    fiatAccountHolderName,
+    fiatAccountNumber,
+  });
+
   return (
     <BottomSheet visible={visible} onClose={onClose} showCloseButton dismissible>
       <View className="pb-1">
@@ -386,27 +590,9 @@ export function WithdrawDetailsSheet({
           </View>
         )}
 
-        {!isMobileWalletFundingFlow && (
-          <View className="mt-5">
-            <Input
-              label={methodCopy.detailLabel}
-              value={destinationInput}
-              onChangeText={onDestinationChange}
-              placeholder={methodCopy.detailPlaceholder}
-              autoCapitalize={isAssetTradeMethod ? 'characters' : 'none'}
-              autoCorrect={false}
-              keyboardType={isFiatMethod ? 'number-pad' : 'default'}
-              className="h-14 rounded-xl"
-              error={
-                didTryDestination || destinationInput.length > 0 ? destinationError : undefined
-              }
-            />
-          </View>
-        )}
-
-        {/* Fiat-only: account holder name + account number */}
-        {isFiatMethod && onFiatAccountHolderNameChange && onFiatAccountNumberChange && (
-          <View className="mt-4 gap-4">
+        {/* Fiat: holder name → account number → routing number */}
+        {isFiatMethod && onFiatAccountHolderNameChange && onFiatAccountNumberChange ? (
+          <View className="mt-5 gap-4">
             <Input
               label="Account holder name"
               value={fiatAccountHolderName ?? ''}
@@ -424,11 +610,77 @@ export function WithdrawDetailsSheet({
               keyboardType="number-pad"
               autoCorrect={false}
               className="h-14 rounded-xl"
+              error={didTryFiatAccount ? fiatAccountNumberError : undefined}
+            />
+            <Input
+              label={methodCopy.detailLabel}
+              value={destinationInput}
+              onChangeText={onDestinationChange}
+              placeholder={methodCopy.detailPlaceholder}
+              keyboardType="number-pad"
+              autoCorrect={false}
+              className="h-14 rounded-xl"
+              error={
+                didTryDestination || destinationInput.length > 0 ? destinationError : undefined
+              }
             />
           </View>
-        )}
+        ) : !isMobileWalletFundingFlow ? (
+          <View className="mt-5">
+            <Input
+              label={methodCopy.detailLabel}
+              value={destinationInput}
+              onChangeText={onDestinationChange}
+              placeholder={methodCopy.detailPlaceholder}
+              autoCapitalize={isAssetTradeMethod ? 'characters' : 'none'}
+              autoCorrect={false}
+              keyboardType="default"
+              className="h-14 rounded-xl"
+              error={
+                didTryDestination || destinationInput.length > 0 ? destinationError : undefined
+              }
+            />
+          </View>
+        ) : null}
 
-        <View className="mt-4 rounded-2xl bg-surface px-4 py-3">
+        <View className="mt-5 gap-4">
+          <View>
+            <Text className="mb-2 font-body text-[13px] text-text-secondary">Category</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {WITHDRAWAL_CATEGORIES.map((item) => (
+                <Pressable
+                  key={item}
+                  onPress={() => onCategoryChange(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select ${item} category`}
+                  className={cn(
+                    'rounded-full border px-3 py-2',
+                    category === item ? 'border-black bg-black' : 'border-gray-200 bg-white'
+                  )}>
+                  <Text
+                    className={cn(
+                      'font-body text-[13px]',
+                      category === item ? 'text-white' : 'text-text-primary'
+                    )}>
+                    {item}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <Input
+            label="Narration"
+            value={narration}
+            onChangeText={onNarrationChange}
+            placeholder="Add a note (optional)"
+            multiline
+            numberOfLines={3}
+            className="rounded-xl"
+          />
+        </View>
+
+        <View className="mt-5 rounded-2xl bg-surface px-4 py-3">
           <View className="flex-row items-center justify-between">
             <Text className="font-body text-[13px] text-text-secondary">
               {isAssetTradeMethod
@@ -441,6 +693,22 @@ export function WithdrawDetailsSheet({
               className="font-subtitle text-[15px] text-text-primary"
               style={{ fontVariant: ['tabular-nums'] }}>
               ${formatCurrency(numericAmount)}
+            </Text>
+          </View>
+          <View className="mt-2 flex-row items-center justify-between">
+            <Text className="font-body text-[13px] text-text-secondary">Fees</Text>
+            <Text
+              className="font-subtitle text-[15px] text-text-primary"
+              style={{ fontVariant: ['tabular-nums'] }}>
+              ${formatCurrency(feeAmount)}
+            </Text>
+          </View>
+          <View className="mt-2 flex-row items-center justify-between">
+            <Text className="font-body text-[13px] text-text-secondary">Total cost</Text>
+            <Text
+              className="font-subtitle text-[15px] text-text-primary"
+              style={{ fontVariant: ['tabular-nums'] }}>
+              ${formatCurrency(totalAmount)}
             </Text>
           </View>
           {isMobileWalletFundingFlow && (
@@ -465,6 +733,18 @@ export function WithdrawDetailsSheet({
             </View>
           )}
           <View className="mt-2 flex-row items-center justify-between">
+            <Text className="font-body text-[13px] text-text-secondary">From</Text>
+            <Text className="font-subtitle text-[15px] text-text-primary">{fromLabel}</Text>
+          </View>
+          <View className="mt-2 flex-row items-center justify-between">
+            <Text className="font-body text-[13px] text-text-secondary">To</Text>
+            <Text
+              className="ml-6 flex-1 text-right font-subtitle text-[15px] text-text-primary"
+              numberOfLines={1}>
+              {toLabel}
+            </Text>
+          </View>
+          <View className="mt-2 flex-row items-center justify-between">
             <Text className="font-body text-[13px] text-text-secondary">Method</Text>
             <Text className="font-subtitle text-[15px] text-text-primary">{methodCopy.title}</Text>
           </View>
@@ -481,6 +761,246 @@ export function WithdrawDetailsSheet({
           disabled={isFundingActionLoading}
           loading={isFundingActionLoading}
         />
+      </View>
+    </BottomSheet>
+  );
+}
+
+export function WithdrawConfirmSheet({
+  visible,
+  onClose,
+  onConfirm,
+  numericAmount,
+  isFiatMethod,
+  isCryptoMethod,
+  isP2PMethod,
+  isFundFlow,
+  methodTitle,
+  fiatAccountHolderName,
+  fiatAccountNumber,
+  fiatRoutingNumber,
+  destinationAddress,
+  destinationChain,
+  recipientName,
+  recipientIdentifier,
+  note,
+  category,
+  narration,
+  feeAmount = 0,
+  totalAmount,
+}: WithdrawConfirmSheetProps) {
+  const chainLabel = destinationChain
+    ? (SUPPORTED_CHAINS.find((c) => c.chain === destinationChain)?.label ?? destinationChain)
+    : undefined;
+
+  const maskedAccount = maskAccountNumber(fiatAccountNumber);
+
+  const maskedRouting = fiatRoutingNumber ? `••••${fiatRoutingNumber.slice(-4)}` : undefined;
+
+  const resolvedTotal = totalAmount ?? numericAmount + feeAmount;
+
+  const { fromLabel, toLabel } = resolveFromTo({
+    isAssetTradeMethod: false,
+    isFiatMethod,
+    isCryptoMethod,
+    isFundFlow,
+    isMobileWalletFundingFlow: false,
+    destinationInput: destinationAddress || '',
+    fiatAccountHolderName,
+    fiatAccountNumber,
+  });
+
+  return (
+    <BottomSheet visible={visible} onClose={onClose} showCloseButton dismissible>
+      <View className="pb-2">
+        {/* Header */}
+        <Text className="text-center font-subtitle text-[22px] text-text-primary">
+          Confirm Transaction
+        </Text>
+        <Text className="mt-1 text-center font-body text-[13px] text-text-secondary">
+          {isCryptoMethod
+            ? 'Review all details carefully. Crypto withdrawals cannot be reversed.'
+            : isP2PMethod
+              ? 'Review the recipient and amount before sending.'
+              : 'Review your bank details and amount before continuing.'}
+        </Text>
+
+        {/* Big amount */}
+        <View className="mt-6 items-center">
+          <Text className="font-subtitle text-[52px] leading-[56px] text-text-primary">
+            <Text style={{ fontVariant: ['tabular-nums'] }}>${formatCurrency(numericAmount)}</Text>
+          </Text>
+          <View className="mt-1 flex-row items-center gap-1">
+            <Building2 size={13} color="#9CA3AF" />
+            <Text className="font-body text-[13px] text-text-secondary">{methodTitle}</Text>
+          </View>
+        </View>
+
+        {/* Details card */}
+        <View className="mt-6 overflow-hidden rounded-2xl bg-surface">
+          {/* Fiat */}
+          {isFiatMethod && (
+            <>
+              <View className="flex-row items-center justify-between px-4 py-3.5">
+                <Text className="font-body text-[14px] text-text-secondary">Account holder</Text>
+                <Text className="font-subtitle text-[14px] text-text-primary">
+                  {fiatAccountHolderName || '—'}
+                </Text>
+              </View>
+              <View className="mx-4 h-px bg-gray-100" />
+              <View className="flex-row items-center justify-between px-4 py-3.5">
+                <Text className="font-body text-[14px] text-text-secondary">Account number</Text>
+                <Text className="font-subtitle text-[14px] text-text-primary">
+                  {maskedAccount || '—'}
+                </Text>
+              </View>
+              <View className="mx-4 h-px bg-gray-100" />
+              <View className="flex-row items-center justify-between px-4 py-3.5">
+                <Text className="font-body text-[14px] text-text-secondary">Routing number</Text>
+                <Text className="font-subtitle text-[14px] text-text-primary">
+                  {maskedRouting || '—'}
+                </Text>
+              </View>
+            </>
+          )}
+
+          {/* Crypto */}
+          {isCryptoMethod && (
+            <>
+              <View className="px-4 py-3.5">
+                <Text className="mb-1 font-body text-[13px] text-text-secondary">
+                  Recipient address
+                </Text>
+                <View className="flex-row items-center justify-between">
+                  <Text
+                    className="flex-1 font-subtitle text-[13px] text-text-primary"
+                    numberOfLines={1}
+                    ellipsizeMode="middle">
+                    {destinationAddress || '—'}
+                  </Text>
+                  {destinationAddress ? (
+                    <Pressable
+                      onPress={() => Clipboard.setString(destinationAddress)}
+                      hitSlop={8}
+                      className="ml-3">
+                      <Copy size={15} color="#9CA3AF" />
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
+              {chainLabel && (
+                <>
+                  <View className="mx-4 h-px bg-gray-100" />
+                  <View className="flex-row items-center justify-between px-4 py-3.5">
+                    <View className="flex-row items-center gap-2">
+                      <Globe size={15} color="#6B7280" />
+                      <Text className="font-body text-[14px] text-text-secondary">Network</Text>
+                    </View>
+                    <Text className="font-subtitle text-[14px] text-text-primary">
+                      {chainLabel}
+                    </Text>
+                  </View>
+                </>
+              )}
+            </>
+          )}
+
+          {/* P2P */}
+          {isP2PMethod && (
+            <>
+              <View className="flex-row items-center justify-between px-4 py-3.5">
+                <View className="flex-row items-center gap-2">
+                  <User size={15} color="#6B7280" />
+                  <Text className="font-body text-[14px] text-text-secondary">Recipient</Text>
+                </View>
+                <View className="items-end">
+                  <Text className="font-subtitle text-[14px] text-text-primary">
+                    {recipientName || recipientIdentifier || '—'}
+                  </Text>
+                  {recipientIdentifier && recipientName && (
+                    <Text className="font-body text-[12px] text-text-secondary">
+                      {recipientIdentifier}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              {note ? (
+                <>
+                  <View className="mx-4 h-px bg-gray-100" />
+                  <View className="flex-row items-center justify-between px-4 py-3.5">
+                    <Text className="font-body text-[14px] text-text-secondary">Note</Text>
+                    <Text
+                      className="ml-8 flex-1 text-right font-body text-[14px] text-text-primary"
+                      numberOfLines={2}>
+                      {note}
+                    </Text>
+                  </View>
+                </>
+              ) : null}
+            </>
+          )}
+
+          {!isP2PMethod && (
+            <>
+              <View className="mx-4 h-px bg-gray-100" />
+              <View className="flex-row items-center justify-between px-4 py-3.5">
+                <Text className="font-body text-[14px] text-text-secondary">From</Text>
+                <Text className="font-subtitle text-[14px] text-text-primary">{fromLabel}</Text>
+              </View>
+              <View className="mx-4 h-px bg-gray-100" />
+              <View className="flex-row items-center justify-between px-4 py-3.5">
+                <Text className="font-body text-[14px] text-text-secondary">To</Text>
+                <Text
+                  className="ml-8 flex-1 text-right font-subtitle text-[14px] text-text-primary"
+                  numberOfLines={1}>
+                  {toLabel}
+                </Text>
+              </View>
+              <View className="mx-4 h-px bg-gray-100" />
+              <View className="flex-row items-center justify-between px-4 py-3.5">
+                <View className="flex-row items-center gap-2">
+                  <Fuel size={15} color="#6B7280" />
+                  <Text className="font-body text-[14px] text-text-secondary">Fees</Text>
+                </View>
+                <Text className="font-subtitle text-[14px] text-text-primary">
+                  ${formatCurrency(feeAmount)}
+                </Text>
+              </View>
+              <View className="mx-4 h-px bg-gray-100" />
+              <View className="flex-row items-center justify-between px-4 py-3.5">
+                <View className="flex-row items-center gap-2">
+                  <Building2 size={15} color="#6B7280" />
+                  <Text className="font-body text-[14px] text-text-secondary">Total cost</Text>
+                </View>
+                <Text className="font-subtitle text-[14px] text-text-primary">
+                  ${formatCurrency(resolvedTotal)}
+                </Text>
+              </View>
+              <View className="mx-4 h-px bg-gray-100" />
+              <View className="flex-row items-center justify-between px-4 py-3.5">
+                <Text className="font-body text-[14px] text-text-secondary">Category</Text>
+                <Text className="font-subtitle text-[14px] text-text-primary">
+                  {category || 'Transfer'}
+                </Text>
+              </View>
+              <View className="mx-4 h-px bg-gray-100" />
+              <View className="flex-row items-center justify-between px-4 py-3.5">
+                <Text className="font-body text-[14px] text-text-secondary">Narration</Text>
+                <Text
+                  className="ml-8 flex-1 text-right font-body text-[14px] text-text-primary"
+                  numberOfLines={2}>
+                  {narration?.trim() || '—'}
+                </Text>
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* Actions */}
+        <View className="mt-6 flex-row gap-3">
+          <Button title="Cancel" variant="white" onPress={onClose} flex />
+          <Button title="Continue" onPress={onConfirm} flex />
+        </View>
       </View>
     </BottomSheet>
   );

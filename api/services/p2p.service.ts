@@ -47,6 +47,16 @@ export interface P2PRecentRecipient {
   sendCount: number;
 }
 
+export interface SetRailTagResponse {
+  railTag: string;
+  message: string;
+}
+
+export interface CheckRailTagResponse {
+  railTag: string;
+  available: boolean;
+}
+
 export const p2pService = {
   async lookup(identifier: string): Promise<P2PLookupResponse> {
     return apiClient.post<P2PLookupResponse>('/v1/p2p/lookup', { identifier });
@@ -59,5 +69,13 @@ export const p2pService = {
   async getRecentRecipients(): Promise<P2PRecentRecipient[]> {
     const res = await apiClient.get<{ recipients: P2PRecentRecipient[] }>('/v1/p2p/recent');
     return res?.recipients ?? [];
+  },
+
+  async setRailTag(railTag: string): Promise<SetRailTagResponse> {
+    return apiClient.post<SetRailTagResponse>('/v1/p2p/railtag', { railTag });
+  },
+
+  async checkRailTag(railTag: string): Promise<CheckRailTagResponse> {
+    return apiClient.post<CheckRailTagResponse>('/v1/p2p/railtag/check', { railTag });
   },
 };

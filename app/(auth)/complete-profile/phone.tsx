@@ -44,10 +44,7 @@ export default function Phone() {
 
   const handleNext = () => {
     const normalizedPhone = phone.trim();
-    const nextRegistrationData = {
-      ...registrationData,
-      phone: normalizedPhone,
-    };
+    const nextRegistrationData = { ...registrationData, phone: normalizedPhone };
     updateRegistrationData({ phone: normalizedPhone });
 
     if (!isPasskeySignup) {
@@ -96,6 +93,7 @@ export default function Phone() {
           lastName: lastName || undefined,
           fullName: fullName || undefined,
           phoneNumber: payload.phone || undefined,
+          country: payload.country || undefined,
         });
 
         setOnboardingStatus(response.onboarding?.onboardingStatus || 'kyc_pending');
@@ -129,7 +127,12 @@ export default function Phone() {
           </StaggeredChild>
 
           <StaggeredChild index={1}>
-            <PhoneNumberInput label="Phone Number" value={phone} onChangeText={setPhone} />
+            <PhoneNumberInput
+              label="Phone Number"
+              value={phone}
+              onChangeText={setPhone}
+              defaultCountry={registrationData.country || 'US'}
+            />
           </StaggeredChild>
 
           <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>

@@ -8,6 +8,7 @@ export const ROUTES = {
     RESET_PASSWORD: '/(auth)/reset-password',
     CREATE_PASSCODE: '/(auth)/create-passcode',
     CONFIRM_PASSCODE: '/(auth)/confirm-passcode',
+    CREATE_RAILTAG: '/(auth)/create-railtag',
     COMPLETE_PROFILE: {
       PERSONAL_INFO: '/(auth)/complete-profile/personal-info',
       DATE_OF_BIRTH: '/(auth)/complete-profile/date-of-birth',
@@ -19,6 +20,7 @@ export const ROUTES = {
   TABS: '/(tabs)',
   SPENDING_STASH: '/spending-stash',
   INVESTMENT_STASH: '/investment-stash',
+  CARD: '/card',
 } as const;
 
 export type AuthRoute = (typeof ROUTES.AUTH)[keyof typeof ROUTES.AUTH];

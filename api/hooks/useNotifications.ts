@@ -7,7 +7,8 @@ import { notificationService } from '../services/notification.service';
 
 export const NOTIFICATION_KEYS = {
   all: ['notifications'] as const,
-  list: (limit: number, offset: number) => [...NOTIFICATION_KEYS.all, 'list', limit, offset] as const,
+  list: (limit: number, offset: number) =>
+    [...NOTIFICATION_KEYS.all, 'list', limit, offset] as const,
   unreadCount: ['notifications', 'unread-count'] as const,
 };
 
@@ -18,7 +19,8 @@ export function useNotifications(limit = 20, offset = 0) {
   return useQuery({
     queryKey: NOTIFICATION_KEYS.list(limit, offset),
     queryFn: () => notificationService.getNotifications(limit, offset),
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
   });
 }
 

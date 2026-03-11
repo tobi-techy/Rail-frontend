@@ -50,8 +50,8 @@ interface StashCardProps {
   disabled?: boolean;
   testID?: string;
   isLoading?: boolean;
-  /** Shows 'Get started' text instead of amount when true */
-  getStarted?: boolean;
+  /** Shows custom text instead of amount. Pass true for 'Get started', or a string for custom label */
+  getStarted?: boolean | string;
 }
 
 const BADGE_COLORS: Record<StashCardBadge['color'], { bg: string; text: string; dot: string }> = {
@@ -119,7 +119,7 @@ export const StashCard: React.FC<StashCardProps> = ({
           <Text
             className="font-subtitle text-lg text-white"
             style={{ color: isColored ? 'white' : '#FF2E01' }}>
-            Get started
+            {typeof getStarted === 'string' ? getStarted : 'Get started'}
           </Text>
           <Text
             className="mt-1 font-body text-body tracking-wide"

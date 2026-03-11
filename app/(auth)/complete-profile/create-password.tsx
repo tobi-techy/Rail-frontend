@@ -107,6 +107,7 @@ export default function CreatePassword() {
           lastName: lastName || undefined,
           fullName: fullName || undefined,
           phoneNumber: payload.phone || undefined,
+          country: payload.country || undefined,
         });
 
         setOnboardingStatus(response.onboarding?.onboardingStatus || 'kyc_pending');

@@ -13,6 +13,13 @@ import {
   type Country,
 } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
+import { useAuthStore } from '@/stores/authStore';
+
+const ISO2_TO_KYC: Record<string, Country> = {
+  US: 'USA',
+  GB: 'GBR',
+  NG: 'NGA',
+};
 
 const COUNTRIES: { code: Country; flag: string }[] = [
   { code: 'USA', flag: '🇺🇸' },
@@ -23,14 +30,25 @@ const COUNTRIES: { code: Country; flag: string }[] = [
 export default function KycCountryScreen() {
   const insets = useSafeAreaInsets();
   const { country, setCountry } = useKycStore();
+  const userCountry = useAuthStore((s) => s.user?.country);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const params = useLocalSearchParams<{ autoLaunch?: string }>();
 
+  // Auto-set KYC country from address step, then redirect if autoLaunch
   useEffect(() => {
-    if (params.autoLaunch === 'true') {
+    let mapped = false;
+    if (userCountry) {
+      const kycCountry = ISO2_TO_KYC[userCountry.toUpperCase()];
+      if (kycCountry) {
+        if (kycCountry !== country) setCountry(kycCountry);
+        mapped = true;
+      }
+    }
+    // Only skip country picker if we successfully mapped the user's country
+    if (params.autoLaunch === 'true' && mapped) {
       router.replace('/kyc/verification-intro');
     }
-  }, [params.autoLaunch]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentCountry = useMemo(
     () => COUNTRIES.find((item) => item.code === country) ?? COUNTRIES[0],

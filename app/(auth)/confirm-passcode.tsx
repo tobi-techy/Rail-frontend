@@ -34,9 +34,8 @@ export default function ConfirmPasscodeScreen() {
       await setPasscode(code);
       useAuthStore.setState({ _pendingPasscode: null });
 
-      // Set onboarding status and route to KYC
       setOnboardingStatus('kyc_pending');
-      router.replace('/kyc?autoLaunch=true');
+      router.replace(ROUTES.AUTH.CREATE_RAILTAG as never);
     } catch (submitError: any) {
       setError(submitError?.message || 'Failed to create PIN');
       setConfirmPasscode('');

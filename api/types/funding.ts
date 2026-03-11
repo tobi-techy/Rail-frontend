@@ -53,23 +53,29 @@ export interface Withdrawal {
   status: string;
   tx_hash?: string;
   error_message?: string;
+  category?: string;
+  narration?: string;
   created_at: string;
   updated_at: string;
   completed_at?: string;
 }
 
 export interface InitiateWithdrawalRequest {
-  amount: number;
+  amount: number | string;
   destination_address: string;
   destination_chain?: string;
+  category?: string;
+  narration?: string;
 }
 
 export interface InitiateFiatWithdrawalRequest {
-  amount: number;
+  amount: number | string;
   currency: 'USD' | 'EUR';
   account_holder_name: string;
   account_number: string;
   routing_number: string;
+  category?: string;
+  narration?: string;
 }
 
 export interface InitiateWithdrawalResponse {
@@ -89,5 +95,7 @@ export interface UnifiedTransaction {
   chain?: string;
   tx_hash?: string;
   destination_address?: string;
+  category?: string;
+  narration?: string;
   created_at: string;
 }

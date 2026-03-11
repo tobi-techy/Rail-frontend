@@ -49,6 +49,7 @@ export interface User extends Omit<ApiUser, 'phone'> {
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
+  country?: string;
 }
 
 export interface RegistrationData {
@@ -94,7 +95,10 @@ interface AuthState {
 interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  deleteAccount: (reason?: string) => Promise<{ funds_swept: string; sweep_tx_hash?: string }>;
+  deleteAccount: (
+    password: string,
+    reason?: string
+  ) => Promise<{ funds_swept: string; sweep_tx_hash?: string }>;
   register: (email: string) => Promise<void>;
   refreshSession: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
@@ -337,10 +341,10 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         );
       },
 
-      deleteAccount: async (reason?) => {
+      deleteAccount: async (password, reason?) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await authService.deleteAccount(reason);
+          const response = await authService.deleteAccount(password, reason);
           set({ ...initialState, hasPasscode: false, hasCompletedOnboarding: false });
           return { funds_swept: response.funds_swept, sweep_tx_hash: response.sweep_tx_hash };
         } catch (error: any) {

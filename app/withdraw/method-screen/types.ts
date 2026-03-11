@@ -6,6 +6,8 @@ export type ExtendedWithdrawMethod =
   | WithdrawMethod
   | 'phantom'
   | 'solflare'
+  | 'mwa-fund'
+  | 'mwa-withdraw'
   | 'asset-buy'
   | 'asset-sell'
   | P2PMethod;

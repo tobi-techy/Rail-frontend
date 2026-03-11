@@ -127,6 +127,16 @@ export interface InvestmentLinks {
   edit_auto_invest: string;
 }
 
+export interface InvestmentRule {
+  strategy_name: string;
+  description: string;
+  stock_allocation: number;
+  bond_allocation: number;
+  risk_level: number; // 1–5
+  risk_label: string;
+  age_used?: number | null;
+}
+
 export interface InvestmentStashResponse {
   balance: InvestmentBalanceInfo;
   performance: InvestmentPerformanceInfo;
@@ -149,6 +159,7 @@ export interface InvestmentStashResponse {
     last_triggered_at?: string | null;
     strategy: string;
   };
+  investment_rule?: InvestmentRule | null;
   summary?: InvestmentSummary;
   holdings_preview: InvestmentPositionDetail[];
   top_performers_preview?: InvestmentPositionDetail[];

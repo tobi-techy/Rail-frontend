@@ -107,6 +107,8 @@ export default function WithdrawAmountScreen() {
   const [didTryFiatAccount, setDidTryFiatAccount] = useState(false);
   const [fiatAccountHolderName, setFiatAccountHolderName] = useState('');
   const [fiatAccountNumber, setFiatAccountNumber] = useState('');
+  const [category, setCategory] = useState('Transfer');
+  const [narration, setNarration] = useState('');
   const [isAuthorizeScreenVisible, setIsAuthorizeScreenVisible] = useState(false);
   const [isConfirmSheetVisible, setIsConfirmSheetVisible] = useState(false);
   const [isSubmissionSheetVisible, setIsSubmissionSheetVisible] = useState(false);
@@ -150,6 +152,11 @@ export default function WithdrawAmountScreen() {
     const n = Number.parseFloat(rawAmount);
     return Number.isFinite(n) ? n : 0;
   }, [rawAmount]);
+  const feeAmount = useMemo(
+    () => (isFiatMethod && numericAmount > 0 ? 1 : 0),
+    [isFiatMethod, numericAmount]
+  );
+  const totalAmount = useMemo(() => numericAmount + feeAmount, [feeAmount, numericAmount]);
 
   const amountError = useMemo(
     () =>
@@ -261,6 +268,8 @@ export default function WithdrawAmountScreen() {
     enabled: isMWAWithdrawMethod,
     numericAmount,
     onSuccess: openSubmissionSheet,
+    category,
+    narration,
   });
 
   const withdrawal = useWithdrawalSubmit({
@@ -278,6 +287,8 @@ export default function WithdrawAmountScreen() {
     },
     fiatAccountHolderName,
     fiatAccountNumber,
+    category,
+    narration,
   });
 
   const txFingerprint = `${selectedMethod}:${numericAmount.toFixed(2)}`;
@@ -598,7 +609,7 @@ export default function WithdrawAmountScreen() {
                     entering={FadeIn.springify()}
                     className="flex-row items-center rounded-full bg-white/90 px-3 py-2">
                     <Text className="font-body text-[13px]" style={{ color: BRAND_RED }}>
-                      Fee: $1.00
+                      Fee: ${formatCurrency(feeAmount)}
                     </Text>
                   </Animated.View>
                 )}
@@ -683,6 +694,12 @@ export default function WithdrawAmountScreen() {
           onFiatAccountNumberChange={setFiatAccountNumber}
           fiatAccountNumberError={fiatAccountNumberError}
           didTryFiatAccount={didTryFiatAccount}
+          category={category}
+          onCategoryChange={setCategory}
+          narration={narration}
+          onNarrationChange={setNarration}
+          feeAmount={feeAmount}
+          totalAmount={totalAmount}
         />
 
         <WithdrawConfirmSheet
@@ -700,6 +717,10 @@ export default function WithdrawAmountScreen() {
           fiatRoutingNumber={destinationInput}
           destinationAddress={isCryptoDestinationMethod ? destinationInput : undefined}
           destinationChain={destinationChain}
+          category={category}
+          narration={narration}
+          feeAmount={feeAmount}
+          totalAmount={totalAmount}
         />
 
         <WithdrawSubmissionSheet

@@ -50,3 +50,6 @@ export * from './useCard';
 
 // Virtual Account hooks
 export * from './useVirtualAccount';
+
+// P2P hooks
+export * from './useP2P';

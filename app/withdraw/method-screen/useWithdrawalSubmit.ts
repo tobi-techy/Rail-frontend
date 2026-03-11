@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { router } from 'expo-router';
 import { useInitiateFiatWithdrawal, useInitiateWithdrawal } from '@/api/hooks/useFunding';
 import { invalidateQueries, queryClient, queryKeys } from '@/api/queryClient';
@@ -22,6 +22,8 @@ interface UseWithdrawalSubmitOptions {
   fiatAccountNumber?: string;
   // p2p extras
   p2pNote?: string;
+  category?: string;
+  narration?: string;
 }
 
 export function useWithdrawalSubmit({
@@ -34,12 +36,42 @@ export function useWithdrawalSubmit({
   fiatAccountHolderName,
   fiatAccountNumber,
   p2pNote,
+  category,
+  narration,
 }: UseWithdrawalSubmitOptions) {
   const { mutate: initiateWithdrawal, isPending: isSubmittingCrypto } = useInitiateWithdrawal();
   const { mutate: initiateFiatWithdrawal, isPending: isSubmittingFiat } =
     useInitiateFiatWithdrawal();
 
   const isSubmitting = isSubmittingCrypto || isSubmittingFiat;
+
+  // Use refs to store latest values to avoid stale closures
+  const optionsRef = useRef({
+    selectedMethod,
+    numericAmount,
+    destinationInput,
+    destinationChain,
+    isFundFlow,
+    onStartMobileWalletFunding,
+    fiatAccountHolderName,
+    fiatAccountNumber,
+    p2pNote,
+    category,
+    narration,
+  });
+  optionsRef.current = {
+    selectedMethod,
+    numericAmount,
+    destinationInput,
+    destinationChain,
+    isFundFlow,
+    onStartMobileWalletFunding,
+    fiatAccountHolderName,
+    fiatAccountNumber,
+    p2pNote,
+    category,
+    narration,
+  };
 
   const invalidateAll = useCallback(
     () =>
@@ -56,8 +88,12 @@ export function useWithdrawalSubmit({
 
   const submit = useCallback(
     ({ onSuccess, onError }: SubmitCallbacks) => {
-      const amount = Number(numericAmount.toFixed(2));
-      const destination = destinationInput.trim();
+      // Use values from ref to get latest state
+      const opts = optionsRef.current;
+      const amount = Number(opts.numericAmount.toFixed(2));
+      const destination = opts.destinationInput.trim();
+      const normalizedCategory = opts.category?.trim();
+      const normalizedNarration = opts.narration?.trim();
 
       const handleSuccess = () => {
         void invalidateAll();
@@ -66,44 +102,56 @@ export function useWithdrawalSubmit({
 
       // ── P2P methods ───────────────────────────────────────────────────────
       if (
-        selectedMethod === 'p2p' ||
-        selectedMethod === 'railtag' ||
-        selectedMethod === 'email' ||
-        selectedMethod === 'contact'
+        opts.selectedMethod === 'p2p' ||
+        opts.selectedMethod === 'railtag' ||
+        opts.selectedMethod === 'email' ||
+        opts.selectedMethod === 'contact'
       ) {
         p2pService
-          .send({ identifier: destination, amount: amount.toFixed(2), note: p2pNote })
+          .send({ identifier: destination, amount: amount.toFixed(2), note: opts.p2pNote })
           .then(() => handleSuccess())
           .catch((err: unknown) => onError(err));
         return;
       }
 
-      if (selectedMethod === 'crypto') {
+      if (opts.selectedMethod === 'crypto') {
         initiateWithdrawal(
-          { amount, destination_address: destination, destination_chain: destinationChain },
+          {
+            amount,
+            destination_address: destination,
+            destination_chain: opts.destinationChain,
+            category: normalizedCategory,
+            narration: normalizedNarration,
+          },
           { onSuccess: handleSuccess, onError }
         );
         return;
       }
 
-      if (selectedMethod === 'phantom' || selectedMethod === 'solflare') {
-        if (isFundFlow) {
-          onStartMobileWalletFunding();
+      if (opts.selectedMethod === 'phantom' || opts.selectedMethod === 'solflare') {
+        if (opts.isFundFlow) {
+          opts.onStartMobileWalletFunding();
           return;
         }
         initiateWithdrawal(
-          { amount, destination_address: destination, destination_chain: destinationChain },
+          {
+            amount,
+            destination_address: destination,
+            destination_chain: opts.destinationChain,
+            category: normalizedCategory,
+            narration: normalizedNarration,
+          },
           { onSuccess: handleSuccess, onError }
         );
         return;
       }
 
-      if (selectedMethod === 'asset-buy' || selectedMethod === 'asset-sell') {
+      if (opts.selectedMethod === 'asset-buy' || opts.selectedMethod === 'asset-sell') {
         router.push({
           pathname: '/market-asset/trade',
           params: {
             symbol: destination.toUpperCase(),
-            side: selectedMethod === 'asset-buy' ? 'buy' : 'sell',
+            side: opts.selectedMethod === 'asset-buy' ? 'buy' : 'sell',
             amount: amount.toFixed(2),
           },
         } as Parameters<typeof router.push>[0]);
@@ -116,27 +164,16 @@ export function useWithdrawalSubmit({
         {
           amount,
           currency: 'USD',
-          account_holder_name: (fiatAccountHolderName ?? '').trim(),
-          account_number: (fiatAccountNumber ?? '').replace(/\D/g, ''),
+          account_holder_name: (opts.fiatAccountHolderName ?? '').trim(),
+          account_number: (opts.fiatAccountNumber ?? '').replace(/\D/g, ''),
           routing_number: destination.replace(/\D/g, ''),
+          category: normalizedCategory,
+          narration: normalizedNarration,
         },
         { onSuccess: handleSuccess, onError }
       );
     },
-    [
-      destinationInput,
-      destinationChain,
-      fiatAccountHolderName,
-      fiatAccountNumber,
-      initiateFiatWithdrawal,
-      initiateWithdrawal,
-      invalidateAll,
-      isFundFlow,
-      numericAmount,
-      onStartMobileWalletFunding,
-      p2pNote,
-      selectedMethod,
-    ]
+    [initiateFiatWithdrawal, initiateWithdrawal, invalidateAll]
   );
 
   return { submit, isSubmitting };

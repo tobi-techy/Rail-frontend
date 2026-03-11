@@ -148,7 +148,8 @@ export function useMobileWalletFunding({
 
         const { startMobileWalletFunding } = await import('@/services/solanaFunding');
         const result = await startMobileWalletFunding({
-          wallet: selectedMethod as 'phantom' | 'solflare',
+          wallet:
+            selectedMethod === 'mwa-fund' ? 'mwa' : (selectedMethod as 'phantom' | 'solflare'),
           amountUsd: amount,
           recipientOwnerAddress,
         });

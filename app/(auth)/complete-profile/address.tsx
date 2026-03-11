@@ -119,6 +119,14 @@ export default function Address() {
             </StaggeredChild>
 
             <View className="gap-y-3">
+              <StaggeredChild index={4}>
+                <CountryPicker
+                  label="Country"
+                  value={formData.countryName}
+                  onSelect={handleCountrySelect}
+                />
+              </StaggeredChild>
+
               <StaggeredChild index={1}>
                 <InputField
                   label="Street Address"
@@ -175,14 +183,6 @@ export default function Address() {
                     />
                   </View>
                 </View>
-              </StaggeredChild>
-
-              <StaggeredChild index={4}>
-                <CountryPicker
-                  label="Country"
-                  value={formData.countryName}
-                  onSelect={handleCountrySelect}
-                />
               </StaggeredChild>
             </View>
 

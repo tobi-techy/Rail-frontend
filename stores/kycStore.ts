@@ -49,7 +49,7 @@ export const useKycStore = create<KycState>()(
   persist(
     (set) => ({
       country: 'USA',
-      taxIdType: 'ssn',
+      taxIdType: COUNTRY_TAX_CONFIG['USA'].type,
       taxId: '',
       employmentStatus: null,
       investmentPurposes: [],
@@ -93,7 +93,7 @@ export const useKycStore = create<KycState>()(
       resetKycState: () =>
         set({
           country: 'USA',
-          taxIdType: 'ssn',
+          taxIdType: COUNTRY_TAX_CONFIG['USA'].type,
           taxId: '',
           employmentStatus: null,
           investmentPurposes: [],

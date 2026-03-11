@@ -6,6 +6,7 @@
 import type { WalletChain } from '@/api/types';
 
 export const SOLANA_TESTNET_CHAIN: WalletChain = 'SOL-DEVNET';
+export const SOLANA_MAINNET_CHAIN: WalletChain = 'SOL';
 
 export interface ChainConfig {
   chain: WalletChain;
@@ -52,5 +53,13 @@ export function isTestnetChain(chain: string): boolean {
 }
 
 export function getTestnetChain(): WalletChain {
+  return SOLANA_TESTNET_CHAIN;
+}
+
+export function getDefaultWithdrawalChain(): WalletChain {
+  return SOLANA_TESTNET_CHAIN;
+}
+
+export function getDefaultReceiveChain(): WalletChain {
   return SOLANA_TESTNET_CHAIN;
 }

@@ -25,6 +25,7 @@ describe('routeHelpers', () => {
     isOnVerifyEmail: false,
     isOnCreatePasscode: false,
     isOnConfirmPasscode: false,
+    isOnCreateRailTag: false,
     isOnCompleteProfile: false,
   };
 

@@ -71,6 +71,7 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname === normalizeRoutePath(ROUTES.AUTH.RESET_PASSWORD) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_PASSCODE) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CONFIRM_PASSCODE) ||
+    pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_RAILTAG) ||
     pathname.startsWith('/complete-profile/'),
   inTabsGroup: segments[0] === '(tabs)',
   inAppGroup:
@@ -84,6 +85,7 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     segments[0] === 'settings-notifications' ||
     segments[0] === 'notifications' ||
     segments[0] === 'kyc' ||
+    segments[0] === 'card' ||
     pathname.startsWith('/spending-stash') ||
     pathname.startsWith('/investment-stash') ||
     pathname.startsWith('/withdraw') ||
@@ -96,12 +98,14 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/authorize-transaction') ||
     pathname.startsWith('/passkey-settings') ||
     pathname.startsWith('/receive') ||
-    pathname.startsWith('/kyc'),
+    pathname.startsWith('/kyc') ||
+    pathname.startsWith('/card'),
   isOnWelcomeScreen: pathname === '/' || pathname === normalizeRoutePath(ROUTES.INTRO),
   isOnLoginPasscode: pathname === '/login-passcode',
   isOnVerifyEmail: pathname === normalizeRoutePath(ROUTES.AUTH.VERIFY_EMAIL),
   isOnCreatePasscode: pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_PASSCODE),
   isOnConfirmPasscode: pathname === normalizeRoutePath(ROUTES.AUTH.CONFIRM_PASSCODE),
+  isOnCreateRailTag: pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_RAILTAG),
   isOnCompleteProfile: pathname.startsWith('/complete-profile/'),
 });
 
@@ -113,7 +117,8 @@ export const isInCriticalAuthFlow = (config: RouteConfig): boolean => {
     config.isOnLoginPasscode ||
     config.isOnVerifyEmail ||
     config.isOnCreatePasscode ||
-    config.isOnConfirmPasscode
+    config.isOnConfirmPasscode ||
+    config.isOnCreateRailTag
   );
 };
 
@@ -134,7 +139,12 @@ const handleAuthenticatedUser = (
   const needsProfile = isProfileCompletionRequired(userOnboardingStatus);
 
   if (needsProfile) {
-    if (config.isOnCompleteProfile || config.isOnCreatePasscode || config.isOnConfirmPasscode) {
+    if (
+      config.isOnCompleteProfile ||
+      config.isOnCreatePasscode ||
+      config.isOnConfirmPasscode ||
+      config.isOnCreateRailTag
+    ) {
       return null;
     }
     return ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO;
@@ -146,6 +156,7 @@ const handleAuthenticatedUser = (
       config.inAppGroup ||
       config.isOnCreatePasscode ||
       config.isOnConfirmPasscode ||
+      config.isOnCreateRailTag ||
       config.isOnCompleteProfile
     )
       return null;
@@ -166,7 +177,8 @@ const handleAuthenticatedUser = (
     !hasValidPasscodeSession &&
     !config.isOnLoginPasscode &&
     !config.isOnCreatePasscode &&
-    !config.isOnConfirmPasscode
+    !config.isOnConfirmPasscode &&
+    !config.isOnCreateRailTag
   ) {
     logger.info('[RouteHelpers] Passcode session missing/expired, redirecting to login-passcode', {
       component: 'routeHelpers',

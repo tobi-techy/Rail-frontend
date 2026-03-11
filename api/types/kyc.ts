@@ -9,7 +9,27 @@ export type KycDisclosures = {
   immediate_family_exposed: boolean;
 };
 
-export type Country = 'USA' | 'GBR' | 'NGA';
+export type Country =
+  | 'USA'
+  | 'GBR'
+  | 'NGA'
+  | 'CAN'
+  | 'AUS'
+  | 'DEU'
+  | 'FRA'
+  | 'IND'
+  | 'GHA'
+  | 'KEN'
+  | 'ZAF'
+  | 'BRA'
+  | 'MEX'
+  | 'SGP'
+  | 'ARE'
+  | 'NLD'
+  | 'ITA'
+  | 'ESP'
+  | 'POL'
+  | 'SWE';
 
 export type TaxIdType =
   | 'ssn'
@@ -20,7 +40,23 @@ export type TaxIdType =
   | 'bvn'
   | 'tin'
   | 'passport'
-  | 'national_id';
+  | 'national_id'
+  | 'sin'
+  | 'tfn'
+  | 'steuer_id'
+  | 'pan'
+  | 'ghana_tin'
+  | 'kra_pin'
+  | 'sa_id'
+  | 'cpf'
+  | 'rfc'
+  | 'nric'
+  | 'emirates_id'
+  | 'bsn'
+  | 'codice_fiscale'
+  | 'nif'
+  | 'pesel'
+  | 'personnummer';
 
 export type KycIdentityDocumentType =
   | 'passport'
@@ -195,18 +231,154 @@ export const COUNTRY_TAX_CONFIG: Record<Country, TaxFieldConfig> = {
     placeholder: '11 digits',
     validate: (v) => /^\d{11}$/.test(digitsOnly(v)),
   },
+  CAN: {
+    type: 'sin',
+    label: 'Social Insurance Number (SIN)',
+    placeholder: '123 456 789',
+    validate: (v) => /^\d{9}$/.test(digitsOnly(v)),
+  },
+  AUS: {
+    type: 'tfn',
+    label: 'Tax File Number (TFN)',
+    placeholder: '123 456 789',
+    validate: (v) => /^\d{8,9}$/.test(digitsOnly(v)),
+  },
+  DEU: {
+    type: 'steuer_id',
+    label: 'Steueridentifikationsnummer (Steuer-ID)',
+    placeholder: '12 345 678 901',
+    validate: (v) => /^\d{11}$/.test(digitsOnly(v)),
+  },
+  FRA: {
+    type: 'tin',
+    label: 'Numéro Fiscal (SPI)',
+    placeholder: '13 digits',
+    validate: (v) => /^\d{13}$/.test(digitsOnly(v)),
+  },
+  IND: {
+    type: 'pan',
+    label: 'Permanent Account Number (PAN)',
+    placeholder: 'ABCDE1234F',
+    validate: (v) => /^[A-Z]{5}\d{4}[A-Z]$/i.test(v.trim()),
+  },
+  GHA: {
+    type: 'ghana_tin',
+    label: 'Ghana TIN',
+    placeholder: 'P000000000',
+    validate: (v) => /^[A-Z]\d{9}$/i.test(v.trim()),
+  },
+  KEN: {
+    type: 'kra_pin',
+    label: 'KRA PIN',
+    placeholder: 'A000000000Z',
+    validate: (v) => /^[A-Z]\d{9}[A-Z]$/i.test(v.trim()),
+  },
+  ZAF: {
+    type: 'sa_id',
+    label: 'South African ID Number',
+    placeholder: '13 digits',
+    validate: (v) => /^\d{13}$/.test(digitsOnly(v)),
+  },
+  BRA: {
+    type: 'cpf',
+    label: 'CPF (Cadastro de Pessoas Físicas)',
+    placeholder: '000.000.000-00',
+    validate: (v) => /^\d{11}$/.test(digitsOnly(v)),
+  },
+  MEX: {
+    type: 'rfc',
+    label: 'RFC (Registro Federal de Contribuyentes)',
+    placeholder: 'ABCD123456EFG',
+    validate: (v) => /^[A-Z]{4}\d{6}[A-Z0-9]{3}$/i.test(v.trim()),
+  },
+  SGP: {
+    type: 'nric',
+    label: 'NRIC / FIN',
+    placeholder: 'S1234567D',
+    validate: (v) => /^[STFGM]\d{7}[A-Z]$/i.test(v.trim()),
+  },
+  ARE: {
+    type: 'emirates_id',
+    label: 'Emirates ID',
+    placeholder: '784-XXXX-XXXXXXX-X',
+    validate: (v) => /^\d{15}$/.test(digitsOnly(v)),
+  },
+  NLD: {
+    type: 'bsn',
+    label: 'Burgerservicenummer (BSN)',
+    placeholder: '9 digits',
+    validate: (v) => /^\d{9}$/.test(digitsOnly(v)),
+  },
+  ITA: {
+    type: 'codice_fiscale',
+    label: 'Codice Fiscale',
+    placeholder: 'RSSMRA85T10A562S',
+    validate: (v) => /^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/i.test(v.trim()),
+  },
+  ESP: {
+    type: 'nif',
+    label: 'NIF / NIE',
+    placeholder: '12345678Z',
+    validate: (v) => /^(\d{8}[A-Z]|[XYZ]\d{7}[A-Z])$/i.test(v.trim()),
+  },
+  POL: {
+    type: 'pesel',
+    label: 'PESEL',
+    placeholder: '11 digits',
+    validate: (v) => /^\d{11}$/.test(digitsOnly(v)),
+  },
+  SWE: {
+    type: 'personnummer',
+    label: 'Personnummer',
+    placeholder: 'YYYYMMDD-XXXX',
+    validate: (v) => /^\d{10,12}$/.test(digitsOnly(v)),
+  },
 };
 
 export const COUNTRY_LABELS: Record<Country, string> = {
   USA: 'United States',
   GBR: 'United Kingdom',
   NGA: 'Nigeria',
+  CAN: 'Canada',
+  AUS: 'Australia',
+  DEU: 'Germany',
+  FRA: 'France',
+  IND: 'India',
+  GHA: 'Ghana',
+  KEN: 'Kenya',
+  ZAF: 'South Africa',
+  BRA: 'Brazil',
+  MEX: 'Mexico',
+  SGP: 'Singapore',
+  ARE: 'United Arab Emirates',
+  NLD: 'Netherlands',
+  ITA: 'Italy',
+  ESP: 'Spain',
+  POL: 'Poland',
+  SWE: 'Sweden',
 };
 
 export const COUNTRY_HELP_TEXT: Record<Country, string> = {
   USA: 'SSN required for U.S. accounts.',
   GBR: 'National Insurance Number (NINO) required.',
   NGA: 'National Identification Number (NIN) required.',
+  CAN: 'Social Insurance Number (SIN) required.',
+  AUS: 'Tax File Number (TFN) required.',
+  DEU: 'Steueridentifikationsnummer required.',
+  FRA: 'Numéro fiscal (SPI) required.',
+  IND: 'Permanent Account Number (PAN) required.',
+  GHA: 'Ghana Revenue Authority TIN required.',
+  KEN: 'KRA PIN required.',
+  ZAF: 'South African ID number required.',
+  BRA: 'CPF required.',
+  MEX: 'RFC required.',
+  SGP: 'NRIC or FIN required.',
+  ARE: 'Emirates ID required.',
+  NLD: 'Burgerservicenummer (BSN) required.',
+  ITA: 'Codice Fiscale required.',
+  ESP: 'NIF or NIE required.',
+  POL: 'PESEL required.',
+  SWE: 'Personnummer required.',
 };
 
 export const EMPLOYMENT_STATUS_OPTIONS: { value: EmploymentStatus; label: string }[] = [
@@ -227,122 +399,237 @@ export const INVESTMENT_PURPOSE_OPTIONS: { value: InvestmentPurpose; label: stri
   { value: 'income_generation', label: 'Generate supplemental income' },
 ];
 
+const STD_TIPS = [
+  'Use a dark surface and avoid glare.',
+  'All four corners of the document must be visible.',
+  'Your name and document number must be readable.',
+];
+
+const STD_BULLETS = [
+  'Issuing country and tax identifier',
+  'Government ID photos',
+  'Political exposure declarations',
+];
+
+const PEP_DISCLOSURES: (keyof KycDisclosures)[] = [
+  'is_politically_exposed',
+  'immediate_family_exposed',
+];
+
+const US_DISCLOSURES: (keyof KycDisclosures)[] = [
+  'is_control_person',
+  'is_affiliated_exchange_or_finra',
+  'is_politically_exposed',
+  'immediate_family_exposed',
+];
+
+const PASSPORT: KycIdentityDocumentConfig = {
+  type: 'passport',
+  label: 'Passport',
+  description: 'Photo page only',
+  requiresBack: false,
+};
+
+const DRIVERS_LICENSE: KycIdentityDocumentConfig = {
+  type: 'drivers_license',
+  label: "Driver's licence",
+  description: 'Front and back photos',
+  requiresBack: true,
+};
+
+const NATIONAL_ID: KycIdentityDocumentConfig = {
+  type: 'national_id',
+  label: 'National ID card',
+  description: 'Front and back photos',
+  requiresBack: true,
+};
+
+const RESIDENCE_PERMIT: KycIdentityDocumentConfig = {
+  type: 'residence_permit',
+  label: 'Residence permit',
+  description: 'Front and back photos',
+  requiresBack: true,
+};
+
 export const COUNTRY_KYC_REQUIREMENTS: Record<Country, CountryKycRequirements> = {
   USA: {
     acceptedDocuments: [
-      {
-        type: 'drivers_license',
-        label: "Driver's license",
-        description: 'Front and back photos',
-        requiresBack: true,
-      },
-      {
-        type: 'passport',
-        label: 'Passport',
-        description: 'Photo page only',
-        requiresBack: false,
-      },
-      {
-        type: 'national_id',
-        label: 'State or national ID',
-        description: 'Front and back photos',
-        requiresBack: true,
-      },
+      { ...DRIVERS_LICENSE, label: "Driver's license" },
+      PASSPORT,
+      { ...NATIONAL_ID, label: 'State or national ID' },
     ],
-    requiredDisclosures: [
-      'is_control_person',
-      'is_affiliated_exchange_or_finra',
-      'is_politically_exposed',
-      'immediate_family_exposed',
-    ],
+    requiredDisclosures: US_DISCLOSURES,
     summaryBullets: [
       'Issuing country and tax identifier',
       'Government ID photos',
       'Regulatory disclosures required for U.S. accounts',
     ],
-    uploadTips: [
-      'Use a dark surface and avoid glare.',
-      'All four corners of the document must be visible.',
-      'Your name and document number must be readable.',
-    ],
+    uploadTips: STD_TIPS,
   },
   GBR: {
     acceptedDocuments: [
-      {
-        type: 'passport',
-        label: 'Passport',
-        description: 'Photo page only',
-        requiresBack: false,
-      },
-      {
-        type: 'drivers_license',
-        label: 'UK driving licence',
-        description: 'Front and back photos',
-        requiresBack: true,
-      },
-      {
-        type: 'national_id',
-        label: 'National identity card',
-        description: 'Front and back photos',
-        requiresBack: true,
-      },
-      {
-        type: 'residence_permit',
-        label: 'Residence permit',
-        description: 'Front and back photos',
-        requiresBack: true,
-      },
+      PASSPORT,
+      { ...DRIVERS_LICENSE, label: 'UK driving licence' },
+      NATIONAL_ID,
+      RESIDENCE_PERMIT,
     ],
-    requiredDisclosures: ['is_politically_exposed', 'immediate_family_exposed'],
-    summaryBullets: [
-      'Issuing country and tax identifier',
-      'Government ID photos',
-      'Political exposure declarations',
-    ],
-    uploadTips: [
-      'Capture your ID in a bright environment.',
-      'Keep text sharp and centered in frame.',
-      'Retake if any corner appears cropped.',
-    ],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
   },
   NGA: {
     acceptedDocuments: [
-      {
-        type: 'national_id',
-        label: 'National ID card',
-        description: 'Front and back photos',
-        requiresBack: true,
-      },
-      {
-        type: 'passport',
-        label: 'International passport',
-        description: 'Photo page only',
-        requiresBack: false,
-      },
-      {
-        type: 'drivers_license',
-        label: "Driver's licence",
-        description: 'Front and back photos',
-        requiresBack: true,
-      },
-      {
-        type: 'residence_permit',
-        label: 'Residence permit',
-        description: 'Front and back photos',
-        requiresBack: true,
-      },
+      NATIONAL_ID,
+      { ...PASSPORT, label: 'International passport' },
+      DRIVERS_LICENSE,
+      RESIDENCE_PERMIT,
     ],
-    requiredDisclosures: ['is_politically_exposed', 'immediate_family_exposed'],
-    summaryBullets: [
-      'Issuing country and tax identifier',
-      'Government ID photos',
-      'Political exposure declarations',
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  CAN: {
+    acceptedDocuments: [PASSPORT, DRIVERS_LICENSE, NATIONAL_ID, RESIDENCE_PERMIT],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  AUS: {
+    acceptedDocuments: [PASSPORT, DRIVERS_LICENSE, NATIONAL_ID],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  DEU: {
+    acceptedDocuments: [
+      PASSPORT,
+      { ...NATIONAL_ID, label: 'Personalausweis (national ID)' },
+      RESIDENCE_PERMIT,
     ],
-    uploadTips: [
-      'Do not cover your photo or signature fields.',
-      'Use the original document, not a photocopy.',
-      'Ensure your document number is fully visible.',
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  FRA: {
+    acceptedDocuments: [
+      PASSPORT,
+      { ...NATIONAL_ID, label: "Carte nationale d'identité" },
+      RESIDENCE_PERMIT,
     ],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  IND: {
+    acceptedDocuments: [PASSPORT, { ...NATIONAL_ID, label: 'Aadhaar card' }, DRIVERS_LICENSE],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  GHA: {
+    acceptedDocuments: [NATIONAL_ID, PASSPORT, DRIVERS_LICENSE],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  KEN: {
+    acceptedDocuments: [NATIONAL_ID, PASSPORT, DRIVERS_LICENSE],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  ZAF: {
+    acceptedDocuments: [
+      { ...NATIONAL_ID, label: 'South African ID card' },
+      PASSPORT,
+      DRIVERS_LICENSE,
+    ],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  BRA: {
+    acceptedDocuments: [
+      PASSPORT,
+      { ...NATIONAL_ID, label: 'RG (Registro Geral)' },
+      DRIVERS_LICENSE,
+    ],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  MEX: {
+    acceptedDocuments: [PASSPORT, { ...NATIONAL_ID, label: 'INE / IFE voter ID' }, DRIVERS_LICENSE],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  SGP: {
+    acceptedDocuments: [{ ...NATIONAL_ID, label: 'NRIC / FIN card' }, PASSPORT, RESIDENCE_PERMIT],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  ARE: {
+    acceptedDocuments: [{ ...NATIONAL_ID, label: 'Emirates ID' }, PASSPORT, RESIDENCE_PERMIT],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  NLD: {
+    acceptedDocuments: [
+      PASSPORT,
+      { ...NATIONAL_ID, label: 'Dutch identity card (ID-kaart)' },
+      DRIVERS_LICENSE,
+      RESIDENCE_PERMIT,
+    ],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  ITA: {
+    acceptedDocuments: [
+      PASSPORT,
+      { ...NATIONAL_ID, label: 'Carta di identità' },
+      DRIVERS_LICENSE,
+      RESIDENCE_PERMIT,
+    ],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  ESP: {
+    acceptedDocuments: [
+      PASSPORT,
+      { ...NATIONAL_ID, label: 'DNI (Documento Nacional de Identidad)' },
+      DRIVERS_LICENSE,
+      RESIDENCE_PERMIT,
+    ],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  POL: {
+    acceptedDocuments: [
+      PASSPORT,
+      { ...NATIONAL_ID, label: 'Dowód osobisty (national ID)' },
+      DRIVERS_LICENSE,
+      RESIDENCE_PERMIT,
+    ],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
+  },
+  SWE: {
+    acceptedDocuments: [
+      PASSPORT,
+      { ...NATIONAL_ID, label: 'Swedish national ID card' },
+      DRIVERS_LICENSE,
+      RESIDENCE_PERMIT,
+    ],
+    requiredDisclosures: PEP_DISCLOSURES,
+    summaryBullets: STD_BULLETS,
+    uploadTips: STD_TIPS,
   },
 };
 

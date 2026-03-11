@@ -14,6 +14,7 @@ import {
   EMPLOYMENT_STATUS_OPTIONS,
   INVESTMENT_PURPOSE_OPTIONS,
   validateTaxId,
+  type Country,
   type KycDisclosures,
 } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
@@ -31,7 +32,6 @@ export default function KycDocumentsScreen() {
   const insets = useSafeAreaInsets();
   const userCountry = useAuthStore((s) => s.registrationData.country);
   const {
-    taxIdType,
     taxId,
     employmentStatus,
     investmentPurposes,
@@ -45,7 +45,8 @@ export default function KycDocumentsScreen() {
     setSumsubSession,
   } = useKycStore();
 
-  const country = (userCountry as 'USA' | 'GBR' | 'NGA') || 'USA';
+  const country = (userCountry as Country) || 'USA';
+  const taxIdType = COUNTRY_TAX_CONFIG[country].type;
 
   const [taxIdError, setTaxIdError] = useState('');
   const [submitError, setSubmitError] = useState('');
