@@ -15,7 +15,6 @@ import { useKycStatusPolling } from '@/api/hooks/useKYC';
 import { useKycStore } from '@/stores/kycStore';
 import { useAuthStore } from '@/stores/authStore';
 import { invalidateQueries } from '@/api/queryClient';
-import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import type { KycStatus } from '@/api/types/kyc';
 
 export default function KycPendingScreen() {
@@ -33,20 +32,8 @@ export default function KycPendingScreen() {
   }, [opacity]);
 
   const handleTerminal = useCallback(
-    async (status: KycStatus) => {
+    (status: KycStatus) => {
       if (status === 'approved') {
-        try {
-          const res = await virtualAccountService.getTOSLink();
-          if (res?.tos_link) {
-            router.replace({
-              pathname: '/kyc/tos',
-              params: { url: encodeURIComponent(res.tos_link) },
-            });
-            return;
-          }
-        } catch {
-          // TOS link unavailable — go straight to app
-        }
         useAuthStore.getState().setOnboardingStatus('completed');
         resetKycState();
         router.replace('/(tabs)');
@@ -99,17 +86,7 @@ export default function KycPendingScreen() {
               Your identity has been confirmed. Rail is ready.
             </Text>
             <Pressable
-              onPress={async () => {
-                try {
-                  const res = await virtualAccountService.getTOSLink();
-                  if (res?.tos_link) {
-                    router.replace({
-                      pathname: '/kyc/tos',
-                      params: { url: encodeURIComponent(res.tos_link) },
-                    });
-                    return;
-                  }
-                } catch {}
+              onPress={() => {
                 resetKycState();
                 router.replace('/(tabs)');
               }}

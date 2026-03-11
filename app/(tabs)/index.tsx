@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Pressable,
   Platform,
+  Linking,
 } from 'react-native';
 import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo } from 'react';
 import { router, useNavigation } from 'expo-router';
@@ -49,6 +50,7 @@ import { useStation, useKYCStatus } from '@/api/hooks';
 import { useCards } from '@/api/hooks/useCard';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
 import type { Deposit, Withdrawal } from '@/api/types';
+import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import {
   normalizeWithdrawals,
   depositToTransaction,
@@ -617,9 +619,13 @@ function DashboardScreen() {
       />
       <InvestmentDisclaimerSheet
         visible={showDisclaimer}
-        onAccept={() => {
+        onAccept={async () => {
           setHasAcknowledgedDisclaimer(true);
           setShowDisclaimer(false);
+          try {
+            const res = await virtualAccountService.getTOSLink();
+            if (res?.tos_link) Linking.openURL(res.tos_link);
+          } catch {}
         }}
       />
       <SolanaPayScanSheet
