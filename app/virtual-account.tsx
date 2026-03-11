@@ -313,12 +313,12 @@ function IntroScreen({ onCreateAccount }: { onCreateAccount: (currency: Currency
         </Animated.View>
       ) : null}
 
-      <View className="relative">
-        <Button title="Create account" onPress={() => {}} disabled variant="black" />
-        <View className="absolute -right-2 -top-2 rounded-full bg-amber-400 px-2.5 py-0.5">
-          <Text className="font-subtitle text-[11px] text-white">Coming soon</Text>
-        </View>
-      </View>
+      <Button
+        title={isPending || awaitingTos ? 'Setting up…' : 'Create account'}
+        onPress={handleCreate}
+        disabled={isPending || awaitingTos}
+        variant="black"
+      />
     </View>
   );
 }
