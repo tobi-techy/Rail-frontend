@@ -1,5 +1,6 @@
 /**
  * RailCardReveal — tap to reveal full card details behind Face ID / Touch ID.
+ * Uses crypto-js for HMAC (crypto.subtle not available in Hermes/React Native).
  * Sensitive data never touches your backend (Bridge PCI endpoint called directly).
  * Tap again to flip back and clear data.
  */
@@ -14,6 +15,8 @@ import Animated, {
 import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
 import * as LocalAuthentication from 'expo-local-authentication';
+import HmacSHA256 from 'crypto-js/hmac-sha256';
+import Base64 from 'crypto-js/enc-base64';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import RailCard, { type RailCardProps } from './RailCard';
@@ -31,18 +34,9 @@ async function generateClientSecret(): Promise<string> {
     .join('');
 }
 
-async function deriveNonce(secret: string, timestamp: number): Promise<string> {
-  const keyData = new TextEncoder().encode(secret);
-  const msgData = new TextEncoder().encode(`nonce:${timestamp}`);
-  const key = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, msgData);
-  return btoa(String.fromCharCode(...new Uint8Array(sig)));
+// crypto-js HMAC-SHA256 — works in Hermes (no crypto.subtle needed)
+function deriveNonce(secret: string, timestamp: number): string {
+  return HmacSHA256(`nonce:${timestamp}`, secret).toString(Base64);
 }
 
 function CardBack({
@@ -170,6 +164,7 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
   const handleTap = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    // Flip back — clear sensitive data
     if (isFlipped.current) {
       flip.value = withSpring(0, { damping: 14, stiffness: 120 });
       isFlipped.current = false;
@@ -187,10 +182,11 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
 
     setLoading(true);
     setError(null);
+
     try {
       const secret = await generateClientSecret();
       const timestamp = Math.floor(Date.now() / 1000);
-      const nonce = await deriveNonce(secret, timestamp);
+      const nonce = deriveNonce(secret, timestamp); // sync, no crypto.subtle
 
       const { ephemeral_key } = await cardService.getEphemeralKey(cardId, nonce);
 
@@ -209,8 +205,9 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
 
       flip.value = withSpring(1, { damping: 14, stiffness: 120 });
       isFlipped.current = true;
-    } catch {
-      setError('Could not reveal card details');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(`Could not reveal card details: ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -229,8 +226,8 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
           </View>
         )}
         {error && (
-          <View className="absolute inset-0 items-center justify-center rounded-sm bg-black/40">
-            <Text className="text-sm text-red-400">{error}</Text>
+          <View className="absolute inset-0 items-center justify-center rounded-sm bg-black/60 px-4">
+            <Text className="text-center text-xs text-red-400">{error}</Text>
           </View>
         )}
       </Animated.View>
