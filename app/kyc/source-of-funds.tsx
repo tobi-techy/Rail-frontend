@@ -24,9 +24,13 @@ const MONTHLY_PAYMENTS = [
 ];
 
 const ACCOUNT_PURPOSE = [
-  { value: 'personal_savings', label: 'Personal savings' },
-  { value: 'investment', label: 'Investment' },
-  { value: 'business', label: 'Business' },
+  { value: 'personal_or_living_expenses', label: 'Personal / living expenses' },
+  { value: 'receive_salary', label: 'Receive salary' },
+  { value: 'investment_purposes', label: 'Investment' },
+  { value: 'receive_payment_for_freelancing', label: 'Freelancing' },
+  { value: 'purchase_goods_and_services', label: 'Purchase goods & services' },
+  { value: 'payments_to_friends_or_family_abroad', label: 'Send money abroad' },
+  { value: 'business_transactions', label: 'Business transactions' },
   { value: 'other', label: 'Other' },
 ];
 
