@@ -3,18 +3,13 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import { useAuthStore } from '@/stores/authStore';
-import { useKycStore } from '@/stores/kycStore';
 
 export default function KycTosScreen() {
   const { url } = useLocalSearchParams<{ url: string }>();
   const [loading, setLoading] = useState(true);
-  const { resetKycState } = useKycStore();
 
   const handleDone = () => {
-    useAuthStore.getState().setOnboardingStatus('completed');
-    resetKycState();
-    router.replace('/(tabs)');
+    router.back();
   };
 
   if (!url) {

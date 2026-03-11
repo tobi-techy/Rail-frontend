@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Pressable,
   Platform,
-  Linking,
 } from 'react-native';
 import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo } from 'react';
 import { router, useNavigation } from 'expo-router';
@@ -624,7 +623,12 @@ function DashboardScreen() {
           setShowDisclaimer(false);
           try {
             const res = await virtualAccountService.getTOSLink();
-            if (res?.tos_link) Linking.openURL(res.tos_link);
+            if (res?.tos_link) {
+              router.push({
+                pathname: '/kyc/tos',
+                params: { url: encodeURIComponent(res.tos_link) },
+              });
+            }
           } catch {}
         }}
       />
