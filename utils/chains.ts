@@ -31,13 +31,6 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
     color: '#8247E5',
     warning: 'Only send USDC on Polygon to this address.',
   },
-  {
-    chain: 'AVAX-FUJI',
-    label: 'Avalanche',
-    shortLabel: 'AVAX',
-    color: '#E84142',
-    warning: 'Only send USDC on Avalanche C-Chain to this address.',
-  },
 ];
 
 export function getChainConfig(chain: WalletChain): ChainConfig {
