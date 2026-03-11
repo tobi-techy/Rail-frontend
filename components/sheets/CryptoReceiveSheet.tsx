@@ -5,7 +5,7 @@ import QRCodeStyled from 'react-native-qrcode-styled';
 import { Copy, Check, RefreshCw } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
 import { Button } from '../ui';
-import { useWalletAddresses } from '@/api/hooks/useWallet';
+import { useDepositAddress } from '@/api/hooks/useWallet';
 import { getChainConfig } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
@@ -29,7 +29,7 @@ export function CryptoReceiveSheet({
   chain = 'SOL-DEVNET',
 }: CryptoReceiveSheetProps) {
   const chainConfig = getChainConfig(chain);
-  const { data: wallet, isLoading, isError, refetch } = useWalletAddresses(chain);
+  const { data: wallet, isLoading, isError, refetch } = useDepositAddress(chain);
   const [copied, setCopied] = useState(false);
   const { notification, selection } = useHaptics();
 

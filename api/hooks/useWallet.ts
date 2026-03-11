@@ -117,6 +117,18 @@ export function useGetDepositAddress() {
 }
 
 /**
+ * Query version — auto-fetches deposit address for a chain, creating the wallet if needed.
+ */
+export function useDepositAddress(chain: string) {
+  return useQuery({
+    queryKey: [...queryKeys.wallet.all, 'deposit-address', chain],
+    queryFn: () => walletService.getDepositAddress({ tokenId: 'usdc', network: chain }),
+    staleTime: 10 * 60 * 1000,
+    retry: 2,
+  });
+}
+
+/**
  * Get token prices
  */
 export function useTokenPrices(tokenIds: string[]) {
@@ -160,10 +172,15 @@ export function useWalletAddresses(chain?: WalletChain) {
     refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {
       const status = error?.status;
-      if (status === 401 || status === 403 || status === 404) return false;
+      if (status === 401 || status === 403) return false;
+      // Retry up to 5x if wallet is being provisioned
+      if (status === 404 && error?.data?.provisioning) return failureCount < 5;
+      if (status === 404) return false;
       return failureCount < 1;
     },
+    retryDelay: (attempt) => Math.min(3000 * (attempt + 1), 15000),
   });
 
-  return { ...query, isProvisioning: false };
+  const isProvisioning = (query.error as any)?.data?.provisioning === true;
+  return { ...query, isProvisioning };
 }
