@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
   StatusBar,
   Text,
@@ -8,10 +8,18 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
-  SafeAreaView,
+  Pressable,
+  Platform,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  FadeInDown,
+} from 'react-native-reanimated';
 import {
   ArrowLeft,
   Snowflake,
@@ -21,6 +29,7 @@ import {
   HelpCircle,
   ChevronRight,
   X,
+  Wallet,
 } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import * as Crypto from 'expo-crypto';
@@ -32,48 +41,69 @@ import {
   useCardPINUrl,
 } from '@/api/hooks/useCard';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { RailCard } from '@/components/cards';
+import { useAuthStore } from '@/stores/authStore';
 
 const PCI_HOST = 'https://cards-pci.bridge.xyz';
 
-function SettingsRow({
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+function SettingButton({
   icon,
-  title,
-  subtitle,
+  label,
   onPress,
   danger,
-  loading,
 }: {
-  icon: React.ReactNode;
-  title: string;
-  subtitle?: string;
-  onPress: () => void;
+  icon: ReactNode;
+  label: string;
+  onPress?: () => void;
   danger?: boolean;
-  loading?: boolean;
 }) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={loading}
-      activeOpacity={0.7}
-      className="flex-row items-center border-b border-gray-100 py-4">
+    <AnimatedPressable
+      style={animStyle}
+      className="mb-5 w-[25%] items-center"
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress?.();
+      }}
+      onPressIn={() => {
+        scale.value = withSpring(0.88, { damping: 20, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+      }}>
       <View
-        className={`mr-3 h-10 w-10 items-center justify-center rounded-full ${danger ? 'bg-red-50' : 'bg-gray-100'}`}>
+        className={`h-12 w-12 items-center justify-center rounded-full ${danger ? 'bg-red-50' : 'bg-gray-100'}`}>
         {icon}
       </View>
-      <View className="flex-1">
-        <Text className={`font-subtitle text-base ${danger ? 'text-red-600' : 'text-gray-900'}`}>
-          {title}
-        </Text>
-        {subtitle && <Text className="mt-0.5 font-body text-sm text-gray-400">{subtitle}</Text>}
-      </View>
-      {loading ? (
-        <ActivityIndicator size="small" color="#9CA3AF" />
-      ) : (
-        <ChevronRight size={20} color="#9CA3AF" />
-      )}
-    </TouchableOpacity>
+      <Text
+        className={`mt-2 text-center font-body text-[12px] ${danger ? 'text-red-500' : 'text-gray-500'}`}
+        numberOfLines={2}>
+        {label}
+      </Text>
+    </AnimatedPressable>
   );
 }
+
+const Section = ({
+  title,
+  children,
+  index = 0,
+}: {
+  title: string;
+  children: ReactNode;
+  index?: number;
+}) => (
+  <Animated.View entering={FadeInDown.delay(index * 80).springify()} className="mb-2">
+    <Text className="mb-3 px-1 font-subtitle text-[13px] uppercase tracking-widest text-gray-400">
+      {title}
+    </Text>
+    <View className="flex-row flex-wrap">{children}</View>
+  </Animated.View>
+);
 
 function WebViewModal({
   url,
@@ -117,7 +147,8 @@ export default function CardSettingsScreen() {
   const { data: cardsData, isLoading } = useCards();
   const freezeCard = useFreezeCard();
   const unfreezeCard = useUnfreezeCard();
-  const { showSuccess, showError } = useFeedbackPopup();
+  const { showSuccess, showError, showInfo } = useFeedbackPopup();
+  const user = useAuthStore((s) => s.user);
 
   const [webViewUrl, setWebViewUrl] = useState<string | null>(null);
   const [webViewTitle, setWebViewTitle] = useState('');
@@ -131,11 +162,17 @@ export default function CardSettingsScreen() {
 
   const isFrozen = activeCard?.status === 'frozen';
 
+  const holderName = useMemo(() => {
+    const full = [user?.firstName, user?.lastName].filter(Boolean).join(' ').toUpperCase();
+    return full || 'CARDHOLDER';
+  }, [user]);
+
   const ephemeralKey = useCardEphemeralKey(activeCard?.id);
   const pinUrl = useCardPINUrl(activeCard?.id);
 
   const handleToggleFreeze = useCallback(async () => {
     if (!activeCard) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (isFrozen) {
       try {
         await unfreezeCard.mutateAsync(activeCard.id);
@@ -144,7 +181,7 @@ export default function CardSettingsScreen() {
         showError('Error', 'Failed to unfreeze card');
       }
     } else {
-      Alert.alert('Freeze Card', 'Are you sure you want to freeze your card?', [
+      Alert.alert('Freeze Card', 'Temporarily disable your card?', [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Freeze',
@@ -189,6 +226,15 @@ export default function CardSettingsScreen() {
     }
   }, [activeCard, pinUrl, showError]);
 
+  const handleAddToWallet = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== 'ios') {
+      showInfo('Not Available', 'Apple Wallet is only available on iOS');
+      return;
+    }
+    showInfo('Coming Soon', 'Apple Wallet integration will be available soon');
+  }, [showInfo]);
+
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -201,87 +247,109 @@ export default function CardSettingsScreen() {
     <View className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
-      <View className="flex-row items-center border-b border-gray-100 px-5 pb-4 pt-2">
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12} className="mr-4 p-1">
-          <ArrowLeft size={24} color="#111" />
-        </TouchableOpacity>
-        <Text className="font-subtitle text-lg text-gray-900">Card Settings</Text>
-      </View>
+      {/* Header */}
+      <SafeAreaView edges={['top']}>
+        <View className="flex-row items-center px-5 pb-3 pt-1">
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            }}
+            hitSlop={12}
+            className="mr-4 p-1">
+            <ArrowLeft size={24} color="#111" />
+          </TouchableOpacity>
+          <Text className="font-subtitle text-lg text-gray-900">Card Settings</Text>
+        </View>
+      </SafeAreaView>
 
-      <ScrollView className="flex-1 px-5 pt-4">
+      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
+        {/* Card preview */}
         {activeCard && (
-          <View className="mb-6 rounded-2xl bg-gray-50 p-4">
-            <View className="flex-row items-center">
-              <View className="mr-3 h-12 w-12 items-center justify-center rounded-xl bg-black">
-                <Text className="text-[8px] font-bold tracking-wider text-white">VISA</Text>
-              </View>
-              <View className="flex-1">
-                <Text className="font-subtitle text-base text-gray-900">
-                  •••• {activeCard.last_4}
-                </Text>
-                <Text className="font-body text-sm text-gray-400">Expires {activeCard.expiry}</Text>
-              </View>
-              <View
-                className={`rounded-full px-3 py-1 ${isFrozen ? 'bg-blue-100' : 'bg-green-100'}`}>
-                <Text
-                  className={`font-body text-xs ${isFrozen ? 'text-blue-700' : 'text-green-700'}`}>
-                  {isFrozen ? 'Frozen' : 'Active'}
-                </Text>
-              </View>
+          <Animated.View entering={FadeInDown.springify()} className="mb-6 items-center">
+            <View
+              style={{
+                shadowColor: '#000',
+                shadowOpacity: Platform.OS === 'ios' ? 0.15 : 0,
+                shadowRadius: 20,
+                shadowOffset: { width: 0, height: 10 },
+                elevation: 8,
+                opacity: isFrozen ? 0.6 : 1,
+              }}>
+              <RailCard
+                brand="VISA"
+                holderName={holderName}
+                last4={activeCard.last_4 ?? '••••'}
+                exp={activeCard.expiry ?? '••/••'}
+                currency="USD"
+                accentColor={isFrozen ? '#6B7280' : '#FF6A00'}
+                patternIntensity={0.35}
+              />
             </View>
-            {activeCard.balances && (
-              <View className="mt-3 flex-row gap-4 border-t border-gray-200 pt-3">
-                <View className="flex-1">
-                  <Text className="font-body text-xs text-gray-400">Available</Text>
-                  <Text className="font-subtitle text-sm text-gray-900">
-                    {activeCard.balances.available.amount} {activeCard.balances.available.currency}
-                  </Text>
-                </View>
-                <View className="flex-1">
-                  <Text className="font-body text-xs text-gray-400">On hold</Text>
-                  <Text className="font-subtitle text-sm text-gray-900">
-                    {activeCard.balances.hold.amount} {activeCard.balances.hold.currency}
-                  </Text>
-                </View>
-              </View>
-            )}
-          </View>
+
+            {/* Status pill */}
+            <View
+              className={`mt-3 rounded-full px-4 py-1.5 ${isFrozen ? 'bg-blue-100' : 'bg-green-100'}`}>
+              <Text
+                className={`font-subtitle text-[13px] ${isFrozen ? 'text-blue-700' : 'text-green-700'}`}>
+                {isFrozen ? '❄️  Frozen' : '● Active'}
+              </Text>
+            </View>
+          </Animated.View>
         )}
 
-        <View>
-          <SettingsRow
+        {/* Add to Apple Wallet */}
+        {Platform.OS === 'ios' && (
+          <Animated.View entering={FadeInDown.delay(60).springify()} className="mb-6">
+            <TouchableOpacity
+              onPress={handleAddToWallet}
+              activeOpacity={0.8}
+              className="flex-row items-center justify-center gap-3 rounded-2xl bg-black py-4">
+              <Wallet size={20} color="#fff" />
+              <Text className="font-subtitle text-[15px] text-white">Add to Apple Wallet</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
+        {/* Card section */}
+        <Section title="Card" index={1}>
+          <SettingButton
             icon={
-              isFrozen ? <Sun size={20} color="#F59E0B" /> : <Snowflake size={20} color="#3B82F6" />
+              isFrozen ? <Sun size={22} color="#F59E0B" /> : <Snowflake size={22} color="#3B82F6" />
             }
-            title={isFrozen ? 'Unfreeze Card' : 'Freeze Card'}
-            subtitle={isFrozen ? 'Reactivate your card' : 'Temporarily disable your card'}
+            label={isFrozen ? 'Unfreeze' : 'Freeze'}
             onPress={handleToggleFreeze}
-            loading={freezeCard.isPending || unfreezeCard.isPending}
           />
-
-          <SettingsRow
-            icon={<CreditCard size={20} color="#6B7280" />}
-            title="Card Details"
-            subtitle="View card number and CVV"
+          <SettingButton
+            icon={
+              ephemeralKey.isPending ? (
+                <ActivityIndicator size="small" color="#6B7280" />
+              ) : (
+                <CreditCard size={22} color="#111" />
+              )
+            }
+            label="Details"
             onPress={handleCardDetails}
-            loading={ephemeralKey.isPending}
           />
-
-          <SettingsRow
-            icon={<Shield size={20} color="#6B7280" />}
-            title="Security"
-            subtitle="PIN, limits, and notifications"
+          <SettingButton
+            icon={
+              pinUrl.isPending ? (
+                <ActivityIndicator size="small" color="#6B7280" />
+              ) : (
+                <Shield size={22} color="#111" />
+              )
+            }
+            label="Security"
             onPress={handleSecurity}
-            loading={pinUrl.isPending}
           />
-
-          <SettingsRow
-            icon={<HelpCircle size={20} color="#6B7280" />}
-            title="Help & Support"
-            subtitle="Report issues or get help"
+          <SettingButton
+            icon={<HelpCircle size={22} color="#111" />}
+            label="Support"
             onPress={() => {}}
           />
-        </View>
+        </Section>
+
+        <View className="h-10" />
       </ScrollView>
 
       {webViewUrl && (

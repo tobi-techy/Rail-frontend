@@ -4,20 +4,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Settings, Plus, ArrowUpRight, Eye, EyeOff, Snowflake } from 'lucide-react-native';
 import { useNavigation, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { RailCard } from '../cards';
 import { TransactionList } from '../molecules/TransactionList';
 import { TransactionItemSkeleton, type Transaction } from '../molecules/TransactionItem';
-import { MaskedBalance } from '../molecules/MaskedBalance';
-import { Button } from '../ui/Button';
 import { useUIStore } from '@/stores';
+import { useAuthStore } from '@/stores/authStore';
 import { useCards, useCardTransactions, useUnfreezeCard } from '@/api/hooks/useCard';
 import { useSpendingStash } from '@/api/hooks/useSpending';
 import { queryKeys } from '@/api/queryClient';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import type { CardTransaction } from '@/api/types/card';
+import { BalanceCard } from '../molecules';
 
-/** Map backend card transaction → TransactionList item */
 function mapCardTransaction(tx: CardTransaction): Transaction {
   const isCredit = tx.type === 'refund' || tx.type === 'reversal';
   const typeMap: Record<string, Transaction['type']> = {
@@ -32,7 +33,6 @@ function mapCardTransaction(tx: CardTransaction): Transaction {
     declined: 'failed',
     reversed: 'completed',
   };
-
   return {
     id: tx.id,
     type: typeMap[tx.type] ?? 'withdraw',
@@ -43,18 +43,42 @@ function mapCardTransaction(tx: CardTransaction): Transaction {
     merchant: tx.merchant_name ?? undefined,
     status: statusMap[tx.status] ?? 'pending',
     createdAt: new Date(tx.created_at),
-    icon: {
-      type: 'icon' as const,
-      iconName: 'credit-card',
-      bgColor: '#F3F4F6',
-    },
+    icon: { type: 'icon' as const, iconName: 'credit-card', bgColor: '#F3F4F6' },
   };
+}
+
+function CircleAction({
+  icon,
+  label,
+  onPress,
+  index = 0,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onPress: () => void;
+  index?: number;
+}) {
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 60).springify()} className="items-center">
+      <TouchableOpacity
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPress();
+        }}
+        activeOpacity={0.7}
+        className="mb-2 h-14 w-14 items-center justify-center rounded-full bg-gray-100">
+        {icon}
+      </TouchableOpacity>
+      <Text className="font-body text-[12px] text-gray-500">{label}</Text>
+    </Animated.View>
+  );
 }
 
 const CardMainScreen = () => {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
-  const { isBalanceVisible, toggleBalanceVisibility } = useUIStore();
+  const { isBalanceVisible } = useUIStore();
+  const user = useAuthStore((s) => s.user);
   const { showError, showSuccess } = useFeedbackPopup();
   const unfreezeCard = useUnfreezeCard();
 
@@ -74,6 +98,11 @@ const CardMainScreen = () => {
   );
 
   const isFrozen = activeCard?.status === 'frozen';
+
+  const holderName = useMemo(() => {
+    const full = [user?.firstName, user?.lastName].filter(Boolean).join(' ').toUpperCase();
+    return full || 'CARDHOLDER';
+  }, [user]);
 
   const balance = useMemo(() => {
     const raw = spendData?.balance?.available;
@@ -97,6 +126,7 @@ const CardMainScreen = () => {
   }, [queryClient]);
 
   const handleSettings = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/card/settings' as never);
   }, []);
 
@@ -120,50 +150,33 @@ const CardMainScreen = () => {
         }>
         <View className="px-5">
           {/* Header */}
-          <View className="flex-row items-center pb-2 pt-1">
-            <View className="mr-2.5 h-8 w-8 items-center justify-center rounded-lg bg-black">
-              <Text className="text-[10px] font-bold tracking-wider text-white">VISA</Text>
-            </View>
+          <View className="flex-row items-center justify-between pb-2 pt-1">
             <Text className="font-headline text-headline-3 text-gray-900">Card</Text>
+            <TouchableOpacity
+              onPress={handleSettings}
+              activeOpacity={0.7}
+              className="h-9 w-9 items-center justify-center rounded-full bg-gray-100">
+              <Settings size={18} color="#374151" strokeWidth={1.8} />
+            </TouchableOpacity>
           </View>
 
           {/* Balance */}
-          <View className="mt-3">
-            <Text className="font-body text-caption text-gray-400">Balance</Text>
-            <View className="mt-1 flex-row items-center">
-              <MaskedBalance
-                value={balance}
-                visible={isBalanceVisible}
-                textClass="text-balance-lg"
-                colorClass="text-text-primary"
-              />
-              <TouchableOpacity
-                onPress={toggleBalanceVisibility}
-                className="ml-2.5"
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                {isBalanceVisible ? (
-                  <Eye size={22} color="#9CA3AF" strokeWidth={1.5} />
-                ) : (
-                  <EyeOff size={22} color="#9CA3AF" strokeWidth={1.5} />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+          <BalanceCard balance={balance} timeframe="Last 30d" isLoading={cardsLoading} />
 
           {/* Card */}
           <View className="mt-5 items-center">
             <View
               style={{
                 shadowColor: '#000',
-                shadowOpacity: Platform.OS === 'ios' ? 0.12 : 0,
-                shadowRadius: 20,
-                shadowOffset: { width: 0, height: 10 },
-                elevation: Platform.OS === 'android' ? 8 : 0,
-                opacity: isFrozen ? 0.6 : 1,
+                shadowOpacity: Platform.OS === 'ios' ? 0.18 : 0,
+                shadowRadius: 24,
+                shadowOffset: { width: 0, height: 12 },
+                elevation: Platform.OS === 'android' ? 10 : 0,
+                opacity: isFrozen ? 0.55 : 1,
               }}>
               <RailCard
                 brand="VISA"
-                holderName="CARDHOLDER"
+                holderName={holderName}
                 last4={activeCard?.last_4 ?? '••••'}
                 exp={activeCard?.expiry ?? '••/••'}
                 currency="USD"
@@ -194,38 +207,43 @@ const CardMainScreen = () => {
             </TouchableOpacity>
           )}
 
-          {/* Action Buttons */}
-          <View className="mt-5 flex-row items-center gap-3">
-            <View className="flex-1 flex-row gap-3">
-              <Button
-                title="Top up"
-                variant="white"
-                size="small"
-                flex
-                leftIcon={<Plus size={18} color="#111" />}
-                onPress={() => {}}
-              />
-              <Button
-                title="Withdraw"
-                variant="black"
-                size="small"
-                flex
-                leftIcon={<ArrowUpRight size={18} color="#fff" />}
-                onPress={() => {}}
-              />
-            </View>
-            <TouchableOpacity
+          {/* Circle Action Buttons */}
+          <View className="mt-6 flex-row justify-around">
+            <CircleAction
+              index={0}
+              icon={<Plus size={22} color="#111" />}
+              label="Top up"
+              onPress={() => {}}
+            />
+            <CircleAction
+              index={1}
+              icon={<ArrowUpRight size={22} color="#111" />}
+              label="Withdraw"
+              onPress={() => {}}
+            />
+            <CircleAction
+              index={2}
+              icon={
+                isBalanceVisible ? (
+                  <Eye size={22} color="#111" />
+                ) : (
+                  <EyeOff size={22} color="#111" />
+                )
+              }
+              label="Hide"
+              onPress={() => {}}
+            />
+            <CircleAction
+              index={3}
+              icon={<Settings size={22} color="#111" />}
+              label="Settings"
               onPress={handleSettings}
-              activeOpacity={0.7}
-              className="h-11 w-11 items-center justify-center rounded-xl bg-gray-100">
-              <Settings size={20} color="#374151" strokeWidth={1.8} />
-            </TouchableOpacity>
+            />
           </View>
 
           {/* Transactions */}
           <View className="mt-7">
             <Text className="mb-3 font-headline text-headline-3 text-gray-900">Transactions</Text>
-
             {isLoading ? (
               <View>
                 {Array.from({ length: 4 }).map((_, i) => (
