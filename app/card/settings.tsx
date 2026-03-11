@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
   Platform,
   Pressable,
 } from 'react-native';
@@ -142,25 +141,16 @@ export default function CardSettingsScreen() {
   const handleToggleFreeze = useCallback(() => {
     closeSheet();
     if (!activeCard) return;
-
     if (isFrozen) {
       unfreezeCard.mutate(activeCard.id, {
         onSuccess: () => showSuccess('Card Unfrozen', 'Your card is now active'),
         onError: () => showError('Error', 'Failed to unfreeze card'),
       });
     } else {
-      Alert.alert('Freeze Card', 'Temporarily disable your card?', [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Freeze',
-          style: 'destructive',
-          onPress: () =>
-            freezeCard.mutate(activeCard.id, {
-              onSuccess: () => showSuccess('Card Frozen', 'Your card has been frozen'),
-              onError: () => showError('Error', 'Failed to freeze card'),
-            }),
-        },
-      ]);
+      freezeCard.mutate(activeCard.id, {
+        onSuccess: () => showSuccess('Card Frozen', 'Your card has been frozen'),
+        onError: () => showError('Error', 'Failed to freeze card'),
+      });
     }
   }, [activeCard, isFrozen, freezeCard, unfreezeCard, showSuccess, showError, closeSheet]);
 
