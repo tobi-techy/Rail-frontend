@@ -15,12 +15,15 @@ import Animated, {
 import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
 import * as LocalAuthentication from 'expo-local-authentication';
-import HmacSHA256 from 'crypto-js/hmac-sha256';
-import Base64 from 'crypto-js/enc-base64';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import RailCard, { type RailCardProps } from './RailCard';
 import { cardService } from '@/api/services/card.service';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const CryptoJS = require('crypto-js') as {
+  HmacSHA256: (message: string, key: string) => { toString: (enc?: unknown) => string };
+  enc: { Base64: unknown };
+};
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BRIDGE_PCI_BASE = __DEV__
@@ -35,8 +38,9 @@ async function generateClientSecret(): Promise<string> {
 }
 
 // crypto-js HMAC-SHA256 — works in Hermes (no crypto.subtle needed)
+// Bridge spec: HMAC-SHA256("nonce:{timestamp}", secret) → base64
 function deriveNonce(secret: string, timestamp: number): string {
-  return HmacSHA256(`nonce:${timestamp}`, secret).toString(Base64);
+  return CryptoJS.HmacSHA256(`nonce:${timestamp}`, secret).toString(CryptoJS.enc.Base64);
 }
 
 function CardBack({
@@ -184,9 +188,11 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
     setError(null);
 
     try {
+      if (!cardId) throw new Error('No card ID');
+
       const secret = await generateClientSecret();
       const timestamp = Math.floor(Date.now() / 1000);
-      const nonce = deriveNonce(secret, timestamp); // sync, no crypto.subtle
+      const nonce = deriveNonce(secret, timestamp);
 
       const { ephemeral_key } = await cardService.getEphemeralKey(cardId, nonce);
 
@@ -194,7 +200,10 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
         `${BRIDGE_PCI_BASE}/v0/card_details/?secret=${encodeURIComponent(secret)}&timestamp=${timestamp}`,
         { headers: { Authorization: `Bearer ${ephemeral_key}` } }
       );
-      if (!pciRes.ok) throw new Error(`Bridge PCI ${pciRes.status}`);
+      if (!pciRes.ok) {
+        const body = await pciRes.text().catch(() => '');
+        throw new Error(`Bridge PCI ${pciRes.status}: ${body}`);
+      }
 
       const data = await pciRes.json();
       setDetails({
@@ -207,7 +216,8 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
       isFlipped.current = true;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      setError(`Could not reveal card details: ${msg}`);
+      if (__DEV__) console.error('[CardReveal]', msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
