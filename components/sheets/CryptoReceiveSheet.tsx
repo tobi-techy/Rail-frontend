@@ -29,7 +29,7 @@ export function CryptoReceiveSheet({
   chain = 'SOL-DEVNET',
 }: CryptoReceiveSheetProps) {
   const chainConfig = getChainConfig(chain);
-  const { data: wallet, isLoading, isError, refetch } = useDepositAddress(chain);
+  const { data: wallet, isLoading, isError, error, refetch } = useDepositAddress(chain);
   const [copied, setCopied] = useState(false);
   const { notification, selection } = useHaptics();
 
@@ -89,6 +89,13 @@ export function CryptoReceiveSheet({
   }
 
   if (isError || (!isLoading && !address)) {
+    const errCode = (error as any)?.data?.code;
+    const errMsg =
+      errCode === 'kyc_required'
+        ? 'Complete identity verification before receiving crypto.'
+        : errCode === 'has_not_accepted_tos'
+          ? 'Accept the Terms of Service to receive crypto.'
+          : 'Please check your connection and try again.';
     return (
       <BottomSheet visible={visible} onClose={onClose}>
         {header}
@@ -96,19 +103,19 @@ export function CryptoReceiveSheet({
           <Text className="mb-2 font-subtitle text-base text-text-primary">
             Unable to load wallet
           </Text>
-          <Text className="mb-5 text-center font-body text-sm text-text-secondary">
-            Please check your connection and try again.
-          </Text>
-          <Pressable
-            onPress={() => {
-              selection();
-              refetch();
-            }}
-            className="flex-row items-center gap-2 rounded-full bg-gray-100 px-5 py-2.5"
-            hitSlop={8}>
-            <RefreshCw size={16} color="#374151" />
-            <Text className="font-subtitle text-sm text-gray-700">Retry</Text>
-          </Pressable>
+          <Text className="mb-5 text-center font-body text-sm text-text-secondary">{errMsg}</Text>
+          {!errCode && (
+            <Pressable
+              onPress={() => {
+                selection();
+                refetch();
+              }}
+              className="flex-row items-center gap-2 rounded-full bg-gray-100 px-5 py-2.5"
+              hitSlop={8}>
+              <RefreshCw size={16} color="#374151" />
+              <Text className="font-subtitle text-sm text-gray-700">Retry</Text>
+            </Pressable>
+          )}
         </View>
       </BottomSheet>
     );
