@@ -14,6 +14,7 @@ import {
   EMPLOYMENT_STATUS_OPTIONS,
   INVESTMENT_PURPOSE_OPTIONS,
   validateTaxId,
+  formatTaxId,
   type Country,
   type KycDisclosures,
 } from '@/api/types/kyc';
@@ -148,7 +149,7 @@ export default function KycDocumentsScreen() {
                 label={taxConfig.label}
                 value={taxId}
                 onChangeText={(v) => {
-                  setTaxId(v);
+                  setTaxId(formatTaxId(country, v));
                   if (taxIdError) setTaxIdError('');
                 }}
                 placeholder={taxConfig.placeholder}

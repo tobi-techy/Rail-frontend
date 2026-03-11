@@ -220,6 +220,17 @@ export type CountryKycRequirements = {
 
 const digitsOnly = (s: string) => s.replace(/\D/g, '');
 
+export function formatTaxId(country: Country, value: string): string {
+  const digits = digitsOnly(value);
+  if (country === 'USA') {
+    // SSN: XXX-XX-XXXX
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5, 9)}`;
+  }
+  return value;
+}
+
 export const COUNTRY_TAX_CONFIG: Record<Country, TaxFieldConfig> = {
   USA: {
     type: 'ssn',
