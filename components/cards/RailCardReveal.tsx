@@ -1,13 +1,7 @@
 /**
- * RailCardReveal
- *
- * Wraps RailCard with a 3-D flip. Tapping the card:
- *  1. Generates a client secret + HMAC nonce (Web Crypto / expo-crypto)
- *  2. POSTs the nonce to our backend → gets ephemeral_key back
- *  3. Calls Bridge PCI endpoint directly with ephemeral_key + secret + timestamp
- *  4. Flips to the back face showing full PAN / CVV / expiry
- *
- * Sensitive data is never stored — cleared when the card flips back.
+ * RailCardReveal — tap to reveal full card details behind Face ID / Touch ID.
+ * Sensitive data never touches your backend (Bridge PCI endpoint called directly).
+ * Tap again to flip back and clear data.
  */
 import React, { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, Text, TouchableOpacity, View } from 'react-native';
@@ -19,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
+import * as LocalAuthentication from 'expo-local-authentication';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import RailCard, { type RailCardProps } from './RailCard';
@@ -29,8 +24,6 @@ const BRIDGE_PCI_BASE = __DEV__
   ? 'https://cards-pci.sandbox.bridge.xyz'
   : 'https://cards-pci.bridge.xyz';
 
-// ─── nonce helpers ────────────────────────────────────────────────────────────
-
 async function generateClientSecret(): Promise<string> {
   const bytes = await Crypto.getRandomBytesAsync(32);
   return Array.from(bytes)
@@ -39,10 +32,8 @@ async function generateClientSecret(): Promise<string> {
 }
 
 async function deriveNonce(secret: string, timestamp: number): Promise<string> {
-  const message = `nonce:${timestamp}`;
   const keyData = new TextEncoder().encode(secret);
-  const msgData = new TextEncoder().encode(message);
-
+  const msgData = new TextEncoder().encode(`nonce:${timestamp}`);
   const key = await crypto.subtle.importKey(
     'raw',
     keyData,
@@ -53,8 +44,6 @@ async function deriveNonce(secret: string, timestamp: number): Promise<string> {
   const sig = await crypto.subtle.sign('HMAC', key, msgData);
   return btoa(String.fromCharCode(...new Uint8Array(sig)));
 }
-
-// ─── back-face card ───────────────────────────────────────────────────────────
 
 function CardBack({
   cardNumber,
@@ -72,7 +61,6 @@ function CardBack({
   height: number;
 }) {
   const formatted = cardNumber.replace(/(.{4})/g, '$1  ').trim();
-
   return (
     <View
       style={{ width, height }}
@@ -115,38 +103,29 @@ function CardBack({
         />
         <Rect x="0" y="0" width="380" height="240" rx="30" fill="#000000" opacity="0.28" />
       </Svg>
-
-      <View className="flex-1 justify-between px-[18px] py-[16px]">
-        {/* PAN */}
-        <View className="mt-auto flex-1 justify-end justify-center pb-1">
-          <Text className="text-[17.5px] font-extrabold tracking-[2px] text-white/90">
-            {formatted}
-          </Text>
-
-          <View className="mt-4 flex-row items-end justify-between">
-            <View className="flex-1 pr-3">
-              <Text className="text-[10px] font-extrabold tracking-[1.6px] text-white/55">
-                CARDHOLDER
-              </Text>
-              <Text numberOfLines={1} className="mt-1 text-[13px] font-extrabold text-white/90">
-                {holderName}
-              </Text>
-            </View>
-
-            <View className="items-end">
-              <Text className="text-[10px] font-extrabold tracking-[1.6px] text-white/55">EXP</Text>
-              <Text className="mt-1 text-[13px] font-extrabold text-white/90">{expiry}</Text>
-            </View>
-
-            <View className="ml-5 items-end">
-              <Text className="text-[10px] font-extrabold tracking-[1.6px] text-white/55">CVV</Text>
-              <Text className="mt-1 text-[13px] font-extrabold text-white/90">{cvv}</Text>
-            </View>
+      <View className="flex-1 justify-end px-[18px] pb-[16px]">
+        <Text className="text-[17.5px] font-extrabold tracking-[2px] text-white/90">
+          {formatted}
+        </Text>
+        <View className="mt-4 flex-row items-end justify-between">
+          <View className="flex-1 pr-3">
+            <Text className="text-[10px] font-extrabold tracking-[1.6px] text-white/55">
+              CARDHOLDER
+            </Text>
+            <Text numberOfLines={1} className="mt-1 text-[13px] font-extrabold text-white/90">
+              {holderName}
+            </Text>
+          </View>
+          <View className="items-end">
+            <Text className="text-[10px] font-extrabold tracking-[1.6px] text-white/55">EXP</Text>
+            <Text className="mt-1 text-[13px] font-extrabold text-white/90">{expiry}</Text>
+          </View>
+          <View className="ml-5 items-end">
+            <Text className="text-[10px] font-extrabold tracking-[1.6px] text-white/55">CVV</Text>
+            <Text className="mt-1 text-[13px] font-extrabold text-white/90">{cvv}</Text>
           </View>
         </View>
       </View>
-
-      {/* specular */}
       <View
         pointerEvents="none"
         className="absolute left-[-90px] top-[-130px] h-[250px] w-[280px] rounded-[220px] bg-white/10"
@@ -156,19 +135,14 @@ function CardBack({
   );
 }
 
-// ─── main component ───────────────────────────────────────────────────────────
-
-export type RailCardRevealProps = RailCardProps & {
-  cardId: string;
-};
+export type RailCardRevealProps = RailCardProps & { cardId: string };
 
 export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealProps) {
   const cardWidth = Math.min(cardProps.width ?? SCREEN_WIDTH - 32, 440);
   const cardHeight = Math.round(cardWidth * 0.65);
 
-  const flip = useSharedValue(0); // 0 = front, 1 = back
+  const flip = useSharedValue(0);
   const isFlipped = useRef(false);
-
   const [loading, setLoading] = useState(false);
   const [details, setDetails] = useState<{ number: string; cvv: string; expiry: string } | null>(
     null
@@ -197,16 +171,22 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (isFlipped.current) {
-      // flip back — clear sensitive data
       flip.value = withSpring(0, { damping: 14, stiffness: 120 });
       isFlipped.current = false;
       setTimeout(() => setDetails(null), 400);
       return;
     }
 
+    // Biometrics only — no passcode fallback
+    const auth = await LocalAuthentication.authenticateAsync({
+      promptMessage: "Confirm it's you to reveal card details",
+      disableDeviceFallback: true,
+      cancelLabel: 'Cancel',
+    });
+    if (!auth.success) return;
+
     setLoading(true);
     setError(null);
-
     try {
       const secret = await generateClientSecret();
       const timestamp = Math.floor(Date.now() / 1000);
@@ -218,7 +198,6 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
         `${BRIDGE_PCI_BASE}/v0/card_details/?secret=${encodeURIComponent(secret)}&timestamp=${timestamp}`,
         { headers: { Authorization: `Bearer ${ephemeral_key}` } }
       );
-
       if (!pciRes.ok) throw new Error(`Bridge PCI ${pciRes.status}`);
 
       const data = await pciRes.json();
@@ -230,22 +209,30 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
 
       flip.value = withSpring(1, { damping: 14, stiffness: 120 });
       isFlipped.current = true;
-    } catch (e: any) {
+    } catch {
       setError('Could not reveal card details');
     } finally {
       setLoading(false);
     }
   }, [cardId, flip]);
 
-  const holderName = cardProps.holderName ?? 'CARDHOLDER';
-
   return (
     <TouchableOpacity
       onPress={handleTap}
-      activeOpacity={0.95}
+      activeOpacity={1}
       style={{ width: cardWidth, height: cardHeight }}>
       <Animated.View style={[frontStyle, { width: cardWidth, height: cardHeight }]}>
         <RailCard {...cardProps} width={cardWidth} />
+        {loading && (
+          <View className="absolute inset-0 items-center justify-center rounded-sm bg-black/40">
+            <ActivityIndicator color="#fff" />
+          </View>
+        )}
+        {error && (
+          <View className="absolute inset-0 items-center justify-center rounded-sm bg-black/40">
+            <Text className="text-sm text-red-400">{error}</Text>
+          </View>
+        )}
       </Animated.View>
 
       <Animated.View style={[backStyle, { width: cardWidth, height: cardHeight }]}>
@@ -254,18 +241,15 @@ export default function RailCardReveal({ cardId, ...cardProps }: RailCardRevealP
             cardNumber={details.number}
             cvv={details.cvv}
             expiry={details.expiry}
-            holderName={holderName}
+            holderName={cardProps.holderName ?? 'CARDHOLDER'}
             width={cardWidth}
             height={cardHeight}
           />
         ) : (
-          // placeholder back while loading
           <View
             style={{ width: cardWidth, height: cardHeight }}
-            className="items-center justify-center overflow-hidden rounded-sm bg-[#070708]">
-            {loading && <ActivityIndicator color="#fff" />}
-            {error && <Text className="text-sm text-red-400">{error}</Text>}
-          </View>
+            className="overflow-hidden rounded-sm bg-[#070708]"
+          />
         )}
       </Animated.View>
     </TouchableOpacity>

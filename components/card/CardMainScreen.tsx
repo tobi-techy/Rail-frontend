@@ -145,6 +145,7 @@ const CardMainScreen = () => {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#000" />
         }>
@@ -161,7 +162,7 @@ const CardMainScreen = () => {
           </View>
 
           {/* Balance */}
-          <BalanceCard balance={balance} timeframe="Last 30d" isLoading={cardsLoading} />
+          <BalanceCard balance={balance} isLoading={cardsLoading} />
 
           {/* Card */}
           <View className="mt-5 items-center">
