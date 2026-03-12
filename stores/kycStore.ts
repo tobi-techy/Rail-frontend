@@ -27,6 +27,9 @@ interface KycState {
   sourceOfFunds: string | null;
   expectedMonthlyPayments: string | null;
   accountPurpose: string | null;
+  accountPurposeOther: string | null;
+  mostRecentOccupation: string | null;
+  actingAsIntermediary: boolean;
   investmentPurposes: InvestmentPurpose[];
   disclosures: KycDisclosures;
   disclosuresConfirmed: boolean;
@@ -43,6 +46,9 @@ interface KycState {
   setSourceOfFunds: (value: string | null) => void;
   setExpectedMonthlyPayments: (value: string | null) => void;
   setAccountPurpose: (value: string | null) => void;
+  setAccountPurposeOther: (value: string | null) => void;
+  setMostRecentOccupation: (value: string | null) => void;
+  setActingAsIntermediary: (value: boolean) => void;
   toggleInvestmentPurpose: (value: InvestmentPurpose) => void;
   setDisclosure: (key: keyof KycDisclosures, value: boolean) => void;
   setDisclosuresConfirmed: (confirmed: boolean) => void;
@@ -61,6 +67,9 @@ export const useKycStore = create<KycState>()(
       sourceOfFunds: null,
       expectedMonthlyPayments: null,
       accountPurpose: null,
+      accountPurposeOther: null,
+      mostRecentOccupation: null,
+      actingAsIntermediary: false,
       investmentPurposes: [],
       disclosures: DEFAULT_DISCLOSURES,
       disclosuresConfirmed: false,
@@ -77,6 +86,9 @@ export const useKycStore = create<KycState>()(
           sourceOfFunds: null,
           expectedMonthlyPayments: null,
           accountPurpose: null,
+          accountPurposeOther: null,
+          mostRecentOccupation: null,
+          actingAsIntermediary: false,
           investmentPurposes: [],
           disclosures: DEFAULT_DISCLOSURES,
           disclosuresConfirmed: false,
@@ -88,6 +100,9 @@ export const useKycStore = create<KycState>()(
       setSourceOfFunds: (sourceOfFunds) => set({ sourceOfFunds }),
       setExpectedMonthlyPayments: (expectedMonthlyPayments) => set({ expectedMonthlyPayments }),
       setAccountPurpose: (accountPurpose) => set({ accountPurpose }),
+      setAccountPurposeOther: (accountPurposeOther) => set({ accountPurposeOther }),
+      setMostRecentOccupation: (mostRecentOccupation) => set({ mostRecentOccupation }),
+      setActingAsIntermediary: (actingAsIntermediary) => set({ actingAsIntermediary }),
 
       toggleInvestmentPurpose: (value) =>
         set((state) => {
@@ -114,6 +129,9 @@ export const useKycStore = create<KycState>()(
           sourceOfFunds: null,
           expectedMonthlyPayments: null,
           accountPurpose: null,
+          accountPurposeOther: null,
+          mostRecentOccupation: null,
+          actingAsIntermediary: false,
           investmentPurposes: [],
           disclosures: DEFAULT_DISCLOSURES,
           disclosuresConfirmed: false,

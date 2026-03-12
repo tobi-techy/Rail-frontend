@@ -89,6 +89,9 @@ export type StartSumsubSessionRequest = {
   employment_status?: string;
   expected_monthly_payments_usd?: string;
   account_purpose?: string;
+  account_purpose_other?: string;
+  most_recent_occupation?: string;
+  acting_as_intermediary?: boolean;
 };
 
 export type StartSumsubSessionResponse = {

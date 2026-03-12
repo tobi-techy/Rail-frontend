@@ -38,6 +38,9 @@ export default function KycDocumentsScreen() {
     sourceOfFunds,
     expectedMonthlyPayments,
     accountPurpose,
+    accountPurposeOther,
+    mostRecentOccupation,
+    actingAsIntermediary,
     investmentPurposes,
     disclosures,
     disclosuresConfirmed,
@@ -100,6 +103,9 @@ export default function KycDocumentsScreen() {
         employment_status: employmentStatus ?? undefined,
         expected_monthly_payments_usd: expectedMonthlyPayments ?? undefined,
         account_purpose: accountPurpose ?? undefined,
+        account_purpose_other: accountPurposeOther ?? undefined,
+        most_recent_occupation: mostRecentOccupation ?? undefined,
+        acting_as_intermediary: actingAsIntermediary || undefined,
       });
       setSumsubSession(result.token, result.applicant_id);
       router.push('/kyc/sumsub-sdk');

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, TextInput, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
@@ -60,18 +60,36 @@ function OptionRow({
 }
 
 export default function SourceOfFundsScreen() {
-  const { setSourceOfFunds, setExpectedMonthlyPayments, setAccountPurpose } = useKycStore();
+  const {
+    setSourceOfFunds,
+    setExpectedMonthlyPayments,
+    setAccountPurpose,
+    setAccountPurposeOther,
+    setMostRecentOccupation,
+    setActingAsIntermediary,
+  } = useKycStore();
 
   const [funds, setFunds] = useState<string | null>(null);
   const [monthly, setMonthly] = useState<string | null>(null);
   const [purpose, setPurpose] = useState<string | null>(null);
+  const [purposeOther, setPurposeOther] = useState('');
+  const [occupation, setOccupation] = useState('');
+  const [intermediary, setIntermediary] = useState(false);
 
-  const canContinue = !!funds && !!monthly && !!purpose;
+  const canContinue =
+    !!funds &&
+    !!monthly &&
+    !!purpose &&
+    (purpose !== 'other' || purposeOther.trim().length > 0) &&
+    occupation.trim().length > 0;
 
   const handleContinue = () => {
     setSourceOfFunds(funds);
     setExpectedMonthlyPayments(monthly);
     setAccountPurpose(purpose);
+    setAccountPurposeOther(purpose === 'other' ? purposeOther.trim() : null);
+    setMostRecentOccupation(occupation.trim());
+    setActingAsIntermediary(intermediary);
     router.push('/kyc/sumsub-sdk');
   };
 
@@ -130,6 +148,42 @@ export default function SourceOfFundsScreen() {
             onPress={() => setPurpose(o.value)}
           />
         ))}
+
+        {purpose === 'other' && (
+          <TextInput
+            className="mb-2 mt-2 rounded-2xl border border-gray-200 px-4 py-3.5 font-body text-[15px] text-gray-900"
+            placeholder="Please describe"
+            placeholderTextColor="#9ca3af"
+            value={purposeOther}
+            onChangeText={setPurposeOther}
+          />
+        )}
+
+        <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-gray-400">
+          Most recent occupation
+        </Text>
+        <TextInput
+          className="mb-2 rounded-2xl border border-gray-200 px-4 py-3.5 font-body text-[15px] text-gray-900"
+          placeholder="e.g. Software Engineer"
+          placeholderTextColor="#9ca3af"
+          value={occupation}
+          onChangeText={setOccupation}
+        />
+
+        <View className="mt-6 flex-row items-center justify-between rounded-2xl border border-gray-200 px-4 py-3.5">
+          <View className="flex-1 pr-4">
+            <Text className="font-body text-[15px] text-gray-900">Acting as intermediary?</Text>
+            <Text className="mt-0.5 font-body text-[13px] text-gray-400">
+              Are you transacting on behalf of another person or entity?
+            </Text>
+          </View>
+          <Switch
+            value={intermediary}
+            onValueChange={setIntermediary}
+            trackColor={{ false: '#e5e7eb', true: '#000' }}
+            thumbColor="#fff"
+          />
+        </View>
       </ScrollView>
 
       <View className="px-5 pb-4 pt-2">
