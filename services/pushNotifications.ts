@@ -174,6 +174,17 @@ class PushNotificationService {
         qc.invalidateQueries({ queryKey: queryKeys.station.all });
         qc.invalidateQueries({ queryKey: queryKeys.wallet.all });
         break;
+      case 'p2p_claimed':
+      case 'p2p_received':
+        qc.invalidateQueries({ queryKey: queryKeys.station.all });
+        qc.invalidateQueries({ queryKey: queryKeys.wallet.all });
+        break;
+      case 'spending_warning':
+      case 'spending_critical':
+      case 'spending_depleted':
+      case 'transaction_declined':
+        qc.invalidateQueries({ queryKey: queryKeys.station.all });
+        break;
     }
     // Always refresh notification bell
     qc.invalidateQueries({ queryKey: queryKeys.notifications.all });
@@ -210,6 +221,16 @@ class PushNotificationService {
         break;
       case 'card_transaction':
         router.push('/card');
+        break;
+      case 'p2p_claimed':
+      case 'p2p_received':
+        router.push('/spending-stash');
+        break;
+      case 'spending_warning':
+      case 'spending_critical':
+      case 'spending_depleted':
+      case 'transaction_declined':
+        router.push('/spending-stash');
         break;
       case 'security':
         router.push('/(tabs)/settings');

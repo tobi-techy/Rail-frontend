@@ -108,6 +108,16 @@ export default function NotificationsScreen() {
         case 'card_transaction':
           router.push('/card' as any);
           break;
+        case 'p2p_claimed':
+        case 'p2p_received':
+          router.push('/spending-stash' as any);
+          break;
+        case 'spending_warning':
+        case 'spending_critical':
+        case 'spending_depleted':
+        case 'transaction_declined':
+          router.push('/spending-stash' as any);
+          break;
         case 'withdrawal_completed':
         case 'withdrawal_failed':
         case 'offramp_success':
