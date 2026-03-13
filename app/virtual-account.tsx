@@ -68,14 +68,16 @@ function CurrencyTab({
   currency,
   selected,
   onPress,
+  disabled,
 }: {
   currency: Currency;
   selected: boolean;
   onPress: () => void;
+  disabled?: boolean;
 }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
       style={{
         flex: 1,
         flexDirection: 'row',
@@ -85,11 +87,13 @@ function CurrencyTab({
         paddingVertical: 10,
         borderRadius: 999,
         backgroundColor: selected ? '#fff' : 'transparent',
+        opacity: disabled ? 0.4 : 1,
       }}>
       {CURRENCY_TAB_ICON[currency]}
       <Text className={`font-subtitle text-[15px] ${selected ? 'text-gray-900' : 'text-gray-400'}`}>
         {currency}
       </Text>
+      {disabled && <Text className="font-caption text-[9px] text-gray-400">soon</Text>}
     </Pressable>
   );
 }
@@ -239,6 +243,7 @@ function IntroScreen({ onCreateAccount }: { onCreateAccount: (currency: Currency
             currency={c}
             selected={currency === c}
             onPress={() => setCurrency(c)}
+            disabled={c === 'EUR'}
           />
         ))}
       </Animated.View>

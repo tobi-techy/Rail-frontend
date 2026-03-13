@@ -455,12 +455,33 @@ export default function Settings() {
               onPress={() => router.push('/passkey-settings')}
             />
           )}
-          <SettingButton icon={<ShieldCheck size={22} color="#121212" />} label="2-Factor Auth" />
+          <SettingButton
+            icon={<ShieldCheck size={22} color="#121212" />}
+            label="2-Factor Auth"
+            onPress={() =>
+              showInfo(
+                'Coming Soon',
+                '2-Factor authentication will be available in a future update.'
+              )
+            }
+          />
         </Section>
 
         <Section title="More">
-          <SettingButton icon={<Users size={22} color="#121212" />} label="Referrals" />
-          <SettingButton icon={<Scale size={22} color="#121212" />} label="Legal" />
+          <SettingButton
+            icon={<Users size={22} color="#121212" />}
+            label="Referrals"
+            onPress={() =>
+              showInfo('Coming Soon', 'Referrals will be available in a future update.')
+            }
+          />
+          <SettingButton
+            icon={<Scale size={22} color="#121212" />}
+            label="Legal"
+            onPress={() =>
+              showInfo('Legal', 'Legal documents will be available in a future update.')
+            }
+          />
           <SettingButton
             icon={<HeadphonesIcon size={22} color="#121212" />}
             label="Support"

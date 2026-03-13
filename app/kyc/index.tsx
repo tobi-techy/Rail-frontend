@@ -82,7 +82,7 @@ export default function KycCountryScreen() {
     if (params.autoLaunch === 'true' && mapped) {
       router.replace('/kyc/verification-intro');
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userCountry, params.autoLaunch, country, setCountry]);
 
   const currentCountry = useMemo(
     () => COUNTRIES.find((item) => item.code === country) ?? COUNTRIES[0],
