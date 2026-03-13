@@ -34,6 +34,19 @@ const ACCOUNT_PURPOSE = [
   { value: 'other', label: 'Other' },
 ];
 
+const OCCUPATIONS = [
+  { value: '152011', label: 'Software / Technology' },
+  { value: '113011', label: 'Management / Executive' },
+  { value: '132011', label: 'Finance / Accounting' },
+  { value: '211011', label: 'Healthcare / Medical' },
+  { value: '251000', label: 'Education / Teaching' },
+  { value: '411011', label: 'Sales / Marketing' },
+  { value: '471011', label: 'Construction / Trades' },
+  { value: '531000', label: 'Transportation / Logistics' },
+  { value: '391000', label: 'Personal Services' },
+  { value: '999999', label: 'Other' },
+];
+
 function OptionRow({
   label,
   selected,
@@ -73,7 +86,7 @@ export default function SourceOfFundsScreen() {
   const [monthly, setMonthly] = useState<string | null>(null);
   const [purpose, setPurpose] = useState<string | null>(null);
   const [purposeOther, setPurposeOther] = useState('');
-  const [occupation, setOccupation] = useState('');
+  const [occupation, setOccupation] = useState<string | null>(null);
   const [intermediary, setIntermediary] = useState(false);
 
   const canContinue =
@@ -81,14 +94,14 @@ export default function SourceOfFundsScreen() {
     !!monthly &&
     !!purpose &&
     (purpose !== 'other' || purposeOther.trim().length > 0) &&
-    occupation.trim().length > 0;
+    !!occupation;
 
   const handleContinue = () => {
     setSourceOfFunds(funds);
     setExpectedMonthlyPayments(monthly);
     setAccountPurpose(purpose);
     setAccountPurposeOther(purpose === 'other' ? purposeOther.trim() : null);
-    setMostRecentOccupation(occupation.trim());
+    setMostRecentOccupation(occupation);
     setActingAsIntermediary(intermediary);
     router.push('/kyc/sumsub-sdk');
   };
@@ -162,13 +175,14 @@ export default function SourceOfFundsScreen() {
         <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-gray-400">
           Most recent occupation
         </Text>
-        <TextInput
-          className="mb-2 rounded-2xl border border-gray-200 px-4 py-3.5 font-body text-[15px] text-gray-900"
-          placeholder="e.g. Software Engineer"
-          placeholderTextColor="#9ca3af"
-          value={occupation}
-          onChangeText={setOccupation}
-        />
+        {OCCUPATIONS.map((o) => (
+          <OptionRow
+            key={o.value}
+            label={o.label}
+            selected={occupation === o.value}
+            onPress={() => setOccupation(o.value)}
+          />
+        ))}
 
         <View className="mt-6 flex-row items-center justify-between rounded-2xl border border-gray-200 px-4 py-3.5">
           <View className="flex-1 pr-4">
