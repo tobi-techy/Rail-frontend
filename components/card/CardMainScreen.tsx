@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useCallback, useMemo } from 'react';
 import { Platform, ScrollView, Text, TouchableOpacity, View, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Settings, Plus, ArrowUpRight, Eye, EyeOff, Snowflake } from 'lucide-react-native';
+import { Settings, Eye, EyeOff, Snowflake } from 'lucide-react-native';
 import { useNavigation, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -13,11 +13,9 @@ import { TransactionItemSkeleton, type Transaction } from '../molecules/Transact
 import { useUIStore } from '@/stores';
 import { useAuthStore } from '@/stores/authStore';
 import { useCards, useCardTransactions, useUnfreezeCard } from '@/api/hooks/useCard';
-import { useSpendingStash } from '@/api/hooks/useSpending';
 import { queryKeys } from '@/api/queryClient';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import type { CardTransaction } from '@/api/types/card';
-import { BalanceCard } from '../molecules';
 
 function mapCardTransaction(tx: CardTransaction): Transaction {
   const isCredit = tx.type === 'refund' || tx.type === 'reversal';
@@ -88,7 +86,6 @@ const CardMainScreen = () => {
     isLoading: txLoading,
     isRefetching: txRefetching,
   } = useCardTransactions({ limit: 50 });
-  const { data: spendData } = useSpendingStash();
 
   const activeCard = useMemo(
     () =>
@@ -103,13 +100,6 @@ const CardMainScreen = () => {
     const full = [user?.firstName, user?.lastName].filter(Boolean).join(' ').toUpperCase();
     return full || 'CARDHOLDER';
   }, [user]);
-
-  const balance = useMemo(() => {
-    const raw = spendData?.balance?.available;
-    if (!raw) return '$0.00';
-    const num = parseFloat(raw);
-    return isNaN(num) ? '$0.00' : `$${num.toFixed(2)}`;
-  }, [spendData]);
 
   const transactions = useMemo(() => txData?.transactions?.map(mapCardTransaction) ?? [], [txData]);
 
@@ -145,10 +135,7 @@ const CardMainScreen = () => {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#000" />
-        }>
+        keyboardShouldPersistTaps="handled">
         <View className="px-5">
           {/* Header */}
           <View className="flex-row items-center justify-between pb-2 pt-1">
@@ -160,9 +147,6 @@ const CardMainScreen = () => {
               <Settings size={18} color="#374151" strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
-
-          {/* Balance */}
-          <BalanceCard balance={balance} isLoading={cardsLoading} />
 
           {/* Card */}
           <View className="mt-5 items-center">
@@ -209,22 +193,10 @@ const CardMainScreen = () => {
             </TouchableOpacity>
           )}
 
-          {/* Circle Action Buttons */}
+          {/* Action Buttons */}
           <View className="mt-6 flex-row justify-around">
             <CircleAction
               index={0}
-              icon={<Plus size={22} color="#111" />}
-              label="Top up"
-              onPress={() => {}}
-            />
-            <CircleAction
-              index={1}
-              icon={<ArrowUpRight size={22} color="#111" />}
-              label="Withdraw"
-              onPress={() => {}}
-            />
-            <CircleAction
-              index={2}
               icon={
                 isBalanceVisible ? (
                   <Eye size={22} color="#111" />
@@ -236,7 +208,7 @@ const CardMainScreen = () => {
               onPress={() => {}}
             />
             <CircleAction
-              index={3}
+              index={1}
               icon={<Settings size={22} color="#111" />}
               label="Settings"
               onPress={handleSettings}
