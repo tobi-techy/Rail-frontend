@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Dimensions, Platform, Text, View, ScrollView } from 'react-native';
+import { Dimensions, Platform, Text, View, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { ChevronLeft } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { Button } from '../ui/Button';
 import { BottomSheet } from '../sheets/BottomSheet';
 
@@ -114,7 +116,15 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       {/* Header */}
-      <View className="px-5 pt-2">
+      <View className="flex-row items-center px-4 pt-2">
+        <Pressable
+          onPress={() => router.back()}
+          className="size-11 items-center justify-center"
+          hitSlop={8}>
+          <ChevronLeft size={24} color="#111827" />
+        </Pressable>
+      </View>
+      <View className="px-5 pt-1">
         <Text className="font-headline text-3xl text-gray-900">Free Debit Card</Text>
         <Text className="mt-1 font-body text-base text-gray-400">With Instant Discounts</Text>
       </View>
