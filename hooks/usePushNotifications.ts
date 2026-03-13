@@ -19,7 +19,7 @@ export function usePushNotifications() {
       isInitialized.current = true;
     }
 
-    pushNotificationService.setupListeners();
+    pushNotificationService.setupListeners(queryClient);
   }, [isAuthenticated]);
 
   const cleanup = useCallback(async () => {

@@ -124,10 +124,13 @@ class PushNotificationService {
     }
   }
 
-  setupListeners() {
+  setupListeners(queryClient?: import('@tanstack/react-query').QueryClient) {
     // Handle notifications received while app is foregrounded
     this.notificationListener = Notifications.addNotificationReceivedListener((notification) => {
-      console.log('Notification received:', notification);
+      const data = notification.request.content.data as PushNotificationData;
+      if (queryClient) {
+        this.invalidateForType(data.type, queryClient);
+      }
     });
 
     // Handle notification taps
@@ -135,6 +138,45 @@ class PushNotificationService {
       const data = response.notification.request.content.data as PushNotificationData;
       this.handleNotificationTap(data);
     });
+  }
+
+  private invalidateForType(
+    type: string | undefined,
+    qc: import('@tanstack/react-query').QueryClient
+  ) {
+    const { queryKeys } = require('@/api/queryClient');
+    switch (type) {
+      case 'deposit_confirmed':
+      case 'allocation_complete':
+      case 'allocation_failed':
+        qc.invalidateQueries({ queryKey: queryKeys.station.all });
+        qc.invalidateQueries({ queryKey: queryKeys.wallet.all });
+        qc.invalidateQueries({ queryKey: queryKeys.funding.all });
+        qc.invalidateQueries({ queryKey: queryKeys.allocation.all });
+        break;
+      case 'investment_complete':
+        qc.invalidateQueries({ queryKey: queryKeys.investment.all });
+        qc.invalidateQueries({ queryKey: queryKeys.station.all });
+        break;
+      case 'withdrawal_completed':
+      case 'withdrawal_failed':
+      case 'offramp_success':
+      case 'offramp_failure':
+        qc.invalidateQueries({ queryKey: queryKeys.station.all });
+        qc.invalidateQueries({ queryKey: queryKeys.wallet.all });
+        qc.invalidateQueries({ queryKey: queryKeys.funding.all });
+        break;
+      case 'kyc_approved':
+      case 'kyc_rejected':
+        qc.invalidateQueries({ queryKey: queryKeys.user.all });
+        break;
+      case 'card_transaction':
+        qc.invalidateQueries({ queryKey: queryKeys.station.all });
+        qc.invalidateQueries({ queryKey: queryKeys.wallet.all });
+        break;
+    }
+    // Always refresh notification bell
+    qc.invalidateQueries({ queryKey: queryKeys.notifications.all });
   }
 
   private handleNotificationTap(data: PushNotificationData) {
