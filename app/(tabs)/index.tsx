@@ -186,7 +186,12 @@ function DashboardScreen() {
   }, [hasAcknowledgedDisclaimer, isAuthenticated]);
 
   // Data
-  const { data: station, refetch, isPending: isStationPending } = useStation();
+  const {
+    data: station,
+    refetch,
+    isPending: isStationPending,
+    isError: isStationError,
+  } = useStation();
   const { data: cardsData } = useCards();
   const deposits = useDeposits(10);
   const withdrawals = useWithdrawals(10);
@@ -285,28 +290,18 @@ function DashboardScreen() {
 
   const hasCard = Boolean(cardsData?.cards && cardsData.cards.length > 0);
 
-  const openKYC = useCallback(() => {
-    setShowReceiveSheet(false);
-    setShowSendSheet(false);
-    setShowKYCSheet(true);
-  }, []);
-
   const startWithdrawal = useCallback(
     (
       method: 'fiat' | 'crypto' | 'phantom' | 'solflare' | 'mwa-withdraw' | 'mwa-fund',
       flow: 'send' | 'fund' = 'send'
     ) => {
-      if (method === 'fiat' && !kycApproved) {
-        openKYC();
-        return;
-      }
       setShowSendSheet(false);
       setShowReceiveSheet(false);
       requestAnimationFrame(() =>
         router.push({ pathname: '/withdraw/[method]', params: { method, flow } } as never)
       );
     },
-    [kycApproved, openKYC]
+    []
   );
 
   // Funding action lists
@@ -319,7 +314,7 @@ function DashboardScreen() {
         icon: <Landmark size={26} color="#6366F1" />,
         onPress: () => {
           setShowReceiveSheet(false);
-          kycApproved ? router.push('/virtual-account' as never) : openKYC();
+          router.push('/virtual-account' as never);
         },
       },
       {
@@ -340,7 +335,7 @@ function DashboardScreen() {
         onPress: () => receiveNav.navigateTo('receive-more'),
       },
     ],
-    [kycApproved, openKYC, receiveNav]
+    [receiveNav]
   );
 
   const receiveMoreActions = useMemo<FundingAction[]>(
@@ -508,17 +503,23 @@ function DashboardScreen() {
           isLoading={isStationPending}
         />
 
+        {isStationError && !isStationPending && (
+          <Text className="mb-2 text-center font-body text-[12px] text-red-400">
+            Unable to load balance — pull to refresh
+          </Text>
+        )}
+
         <View className="mb-2 flex-row gap-3">
           <Button
             title="Receive"
-            onPress={() => setShowReceiveSheet(true)}
+            onPress={() => (kycApproved ? setShowReceiveSheet(true) : setShowKYCSheet(true))}
             leftIcon={<ArrowDownLeft size={20} color="white" />}
             size="small"
             variant="black"
           />
           <Button
             title="Send"
-            onPress={() => setShowSendSheet(true)}
+            onPress={() => (kycApproved ? setShowSendSheet(true) : setShowKYCSheet(true))}
             leftIcon={<ArrowUpRight size={20} color="black" />}
             size="small"
             variant="white"
