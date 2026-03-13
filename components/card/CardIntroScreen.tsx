@@ -1,13 +1,15 @@
-import React from 'react';
-import { Dimensions, Platform, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Dimensions, Platform, Text, View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { Button } from '../ui/Button';
+import { BottomSheet } from '../sheets/BottomSheet';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface CardIntroScreenProps {
   onCreateCard: () => void;
+  loading?: boolean;
 }
 
 function SignatureSvg({ color = '#fff', size = 80 }: { color?: string; size?: number }) {
@@ -106,7 +108,9 @@ function CardStack() {
   );
 }
 
-export function CardIntroScreen({ onCreateCard }: CardIntroScreenProps) {
+export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps) {
+  const [showLearnMore, setShowLearnMore] = useState(false);
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       {/* Header */}
@@ -122,9 +126,65 @@ export function CardIntroScreen({ onCreateCard }: CardIntroScreenProps) {
 
       {/* Bottom Buttons */}
       <View className="flex-row gap-3 px-5 pb-6">
-        <Button title="Learn More" variant="white" size="large" flex onPress={() => {}} />
-        <Button title="Get Card" variant="black" size="large" flex onPress={onCreateCard} />
+        <Button
+          title="Learn More"
+          variant="white"
+          size="large"
+          flex
+          onPress={() => setShowLearnMore(true)}
+        />
+        <Button
+          title="Get Card"
+          variant="black"
+          size="large"
+          flex
+          loading={loading}
+          onPress={onCreateCard}
+        />
       </View>
+
+      <BottomSheet visible={showLearnMore} onClose={() => setShowLearnMore(false)} showCloseButton>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 24, paddingBottom: 40 }}>
+          <Text className="mb-2 font-display text-2xl text-gray-900">Your Rail Card</Text>
+          <Text className="mb-6 font-body text-base leading-6 text-gray-500">
+            A free virtual Visa debit card linked directly to your Rail spend balance.
+          </Text>
+
+          {[
+            {
+              title: 'Instant Issuance',
+              body: 'Your card is ready to use the moment you create it — no waiting, no shipping.',
+            },
+            {
+              title: 'Spend Your Balance',
+              body: 'Every purchase draws from your 70% spend allocation. Your money, always accessible.',
+            },
+            {
+              title: 'Round-Up Investing',
+              body: 'Enable round-ups and every transaction automatically invests your spare change.',
+            },
+            {
+              title: 'Freeze Anytime',
+              body: "Lost your phone? Freeze your card instantly from settings and unfreeze when you're ready.",
+            },
+            {
+              title: 'PCI-Secure Details',
+              body: 'Card numbers are revealed only after Face ID or Touch ID — never stored on device.',
+            },
+            {
+              title: 'Zero Card Fees',
+              body: 'No annual fee, no issuance fee. The card is completely free.',
+            },
+          ].map((item) => (
+            <View key={item.title} className="mb-5">
+              <Text className="mb-1 font-subtitle text-[15px] text-gray-900">{item.title}</Text>
+              <Text className="font-body text-[14px] leading-5 text-gray-500">{item.body}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      </BottomSheet>
     </SafeAreaView>
   );
 }

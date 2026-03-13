@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { StatusBar, ActivityIndicator, View, Text } from 'react-native';
+import React, { useMemo, useCallback } from 'react';
+import { StatusBar, ActivityIndicator, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CardMainScreen } from '@/components/card/CardMainScreen';
 import { CardIntroScreen } from '@/components/card/CardIntroScreen';
@@ -10,7 +10,6 @@ export default function CardScreen() {
   const { data: cardsData, isLoading } = useCards();
   const createCard = useCreateCard();
   const { showError } = useFeedbackPopup();
-  const [isCreating, setIsCreating] = useState(false);
 
   const hasCard = useMemo(
     () => cardsData?.cards?.some((c) => c.status === 'active' || c.status === 'frozen') ?? false,
@@ -18,13 +17,9 @@ export default function CardScreen() {
   );
 
   const handleCreateCard = useCallback(async () => {
-    setIsCreating(true);
     try {
       await createCard.mutateAsync({ type: 'virtual' });
-      // Don't reset isCreating on success — the query invalidation will
-      // update cardsData and hasCard will become true, switching to CardMainScreen.
     } catch (err: any) {
-      setIsCreating(false);
       const code = err?.code || err?.message || '';
       const msg =
         code === 'CARD_EXISTS' || err?.message === 'CARD_EXISTS'
@@ -51,22 +46,15 @@ export default function CardScreen() {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
-        {isCreating ? (
-          <View className="flex-1 items-center justify-center gap-3">
-            <ActivityIndicator size="large" color="#000" />
-            <Text className="font-body text-base text-gray-500">Creating your card…</Text>
-          </View>
-        ) : (
-          <CardIntroScreen onCreateCard={handleCreateCard} />
-        )}
+        <CardIntroScreen onCreateCard={handleCreateCard} loading={createCard.isPending} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <View className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <CardMainScreen />
-    </SafeAreaView>
+    </View>
   );
 }
