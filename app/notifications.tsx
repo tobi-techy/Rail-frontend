@@ -86,9 +86,36 @@ export default function NotificationsScreen() {
       if (!notification.read) {
         markAsRead.mutate(notification.id);
       }
-      // Navigate based on action_url or type if needed
       if (notification.action_url) {
         router.push(notification.action_url as any);
+        return;
+      }
+      // Route by type field in data
+      const type = (notification as any).data?.type ?? (notification as any).type;
+      switch (type) {
+        case 'deposit_confirmed':
+        case 'allocation_complete':
+        case 'allocation_failed':
+          router.push('/(tabs)' as any);
+          break;
+        case 'investment_complete':
+          router.push('/investment-stash' as any);
+          break;
+        case 'kyc_approved':
+        case 'kyc_rejected':
+          router.push('/kyc' as any);
+          break;
+        case 'card_transaction':
+          router.push('/card' as any);
+          break;
+        case 'withdrawal_completed':
+        case 'withdrawal_failed':
+        case 'offramp_success':
+        case 'offramp_failure':
+          router.push('/spending-stash' as any);
+          break;
+        default:
+          break;
       }
     },
     [markAsRead]

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StatusBar, Text, View, Pressable } from 'react-native';
+import { StatusBar, Text, View, Pressable, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft, Wallet } from 'lucide-react-native';
@@ -105,13 +105,15 @@ export default function WithdrawMethodSelectorScreen() {
               accessibilityLabel="Select crypto withdrawal"
             />
 
-            <WithdrawOptionCard
-              title="Withdraw to Wallet"
-              subtitle="Send USDC directly to your Solana wallet via MWA — supports Seed Vault on Seeker"
-              onPress={() => router.push('/withdraw/mwa-withdraw' as never)}
-              icon={<Wallet size={24} color="#111827" />}
-              accessibilityLabel="Select MWA wallet withdrawal"
-            />
+            {Platform.OS === 'android' && (
+              <WithdrawOptionCard
+                title="Withdraw to Wallet"
+                subtitle="Send USDC directly to your Solana wallet via MWA — supports Seed Vault on Seeker"
+                onPress={() => router.push('/withdraw/mwa-withdraw' as never)}
+                icon={<Wallet size={24} color="#111827" />}
+                accessibilityLabel="Select MWA wallet withdrawal"
+              />
+            )}
           </View>
         </View>
 

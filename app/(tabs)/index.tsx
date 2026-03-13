@@ -550,7 +550,7 @@ function DashboardScreen() {
         </View>
         <View className="mt-5 flex-row gap-3">
           <StashCard
-            title="Spend"
+            title="Card"
             amount={spend.dollars}
             amountCents={spend.cents}
             icon={<VisaWhite width={32} height={32} strokeWidth={1.8} />}

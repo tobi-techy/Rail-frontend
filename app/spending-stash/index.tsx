@@ -220,6 +220,15 @@ export default function SpendingScreen() {
   const [period, setPeriod] = React.useState<Period>('6M');
   const mask = (v: string) => (isBalanceVisible ? v : '••••');
 
+  const PERIOD_MONTHS: Record<Period, number> = { '1W': 0, '1M': 1, '6M': 6, '1Y': 12 };
+
+  const filteredChart = useMemo(() => {
+    if (period === '1W') return monthlyChart.slice(-1);
+    const months = PERIOD_MONTHS[period];
+    if (!months || months >= monthlyChart.length) return monthlyChart;
+    return monthlyChart.slice(-months);
+  }, [monthlyChart, period]);
+
   const trendLabel =
     trend === 'up'
       ? `↑ ${Math.abs(trendPct).toFixed(0)}%`
@@ -229,9 +238,9 @@ export default function SpendingScreen() {
   const trendTextColor = trend === 'up' ? '#FF453A' : trend === 'down' ? '#30D158' : '#8E8E93';
 
   const rangeLabel = useMemo(() => {
-    if (!monthlyChart.length) return '';
-    return `${monthlyChart[0].month.slice(0, 3)} – ${monthlyChart[monthlyChart.length - 1].month.slice(0, 3)}`;
-  }, [monthlyChart]);
+    if (!filteredChart.length) return '';
+    return `${filteredChart[0].month.slice(0, 3)} – ${filteredChart[filteredChart.length - 1].month.slice(0, 3)}`;
+  }, [filteredChart]);
 
   return (
     <View className="flex-1 bg-white">
@@ -294,7 +303,7 @@ export default function SpendingScreen() {
           </View>
         ) : (
           <Animated.View entering={FadeIn.duration(300)} className="mb-5">
-            <MonthlyBarChart data={monthlyChart} />
+            <MonthlyBarChart data={filteredChart} />
           </Animated.View>
         )}
 
@@ -330,7 +339,9 @@ export default function SpendingScreen() {
           <View className="mb-4">
             <View className="mb-3.5 flex-row items-center justify-between">
               <Text className="font-headline text-xl text-black">By Category</Text>
-              <Text className="font-body text-sm text-[#0A84FF]">Manage</Text>
+              <Pressable onPress={() => router.push('/card' as never)} accessibilityRole="button">
+                <Text className="font-body text-sm text-[#0A84FF]">Manage</Text>
+              </Pressable>
             </View>
             <View className="overflow-hidden rounded-[20px] bg-gray-50">
               {isLoading

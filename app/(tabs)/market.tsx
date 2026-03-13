@@ -39,9 +39,16 @@ function FilterChip({
   return (
     <AnimatedPressable
       style={animStyle}
-      onPress={() => { impact(); onPress(); }}
-      onPressIn={() => { scale.value = withSpring(0.93, { damping: 20, stiffness: 300 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}
+      onPress={() => {
+        impact();
+        onPress();
+      }}
+      onPressIn={() => {
+        scale.value = withSpring(0.93, { damping: 20, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+      }}
       accessibilityRole="button"
       accessibilityLabel={label}
       className={`mr-2 min-h-[44px] rounded-full px-4 py-3 ${active ? 'bg-black' : 'bg-surface'}`}>
@@ -312,7 +319,7 @@ export default function MarketScreen() {
           <View className="mb-md flex-row items-center justify-between">
             <Text className="font-subtitle text-subtitle text-text-primary">Market news</Text>
             <Text className="font-caption text-caption text-text-secondary">
-              {marketNewsItems.length} stories
+              {marketNewsQuery.isPending ? '' : `${marketNewsItems.length} stories`}
             </Text>
           </View>
 

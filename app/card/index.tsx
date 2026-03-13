@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
-import { StatusBar, ActivityIndicator, View } from 'react-native';
+import { StatusBar, ActivityIndicator, View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CardMainScreen } from '@/components/card/CardMainScreen';
 import { CardIntroScreen } from '@/components/card/CardIntroScreen';
@@ -7,7 +7,7 @@ import { useCards, useCreateCard } from '@/api/hooks/useCard';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 
 export default function CardScreen() {
-  const { data: cardsData, isLoading } = useCards();
+  const { data: cardsData, isLoading, isError, refetch } = useCards();
   const createCard = useCreateCard();
   const { showError } = useFeedbackPopup();
 
@@ -38,6 +38,18 @@ export default function CardScreen() {
       <SafeAreaView className="flex-1 items-center justify-center bg-white" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
         <ActivityIndicator size="small" color="#000" />
+      </SafeAreaView>
+    );
+  }
+
+  if (isError) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-white" edges={['top']}>
+        <StatusBar barStyle="dark-content" backgroundColor="white" />
+        <Text className="mb-4 font-body text-[15px] text-gray-500">Unable to load card</Text>
+        <Pressable onPress={() => refetch()} className="rounded-full bg-black px-5 py-3">
+          <Text className="font-subtitle text-white">Retry</Text>
+        </Pressable>
       </SafeAreaView>
     );
   }

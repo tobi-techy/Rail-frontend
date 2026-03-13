@@ -18,6 +18,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { TransactionItem, TransactionItemSkeleton } from '@/components/molecules/TransactionItem';
 import { MarketClosedBanner } from '@/components/molecules/MarketClosedBanner';
 import { useInvestmentStashData } from './useInvestmentStashData';
+import { invalidateQueries } from '@/api/queryClient';
 import type {
   InvestmentPositionDetail,
   InvestmentDistributionItem,
@@ -593,7 +594,7 @@ export default function InvestmentStashScreen() {
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    await Promise.all([refetch(), invalidateQueries.station()]);
     setRefreshing(false);
   }, [refetch]);
 
