@@ -13,7 +13,13 @@ export const ActiveVideoSlide = memo(function ActiveVideoSlide({ item, width, he
     <View style={{ width, height, backgroundColor: '#000' }}>
       <Image
         source={item.image}
-        style={{ width, height, position: 'absolute', top: 0, left: 0 }}
+        style={{
+          width: width * 0.85,
+          height: height * 0.85,
+          position: 'absolute',
+          top: 0,
+          left: width * 0.075,
+        }}
         resizeMode="cover"
       />
       <View
