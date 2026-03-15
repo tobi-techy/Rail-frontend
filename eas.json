@@ -18,7 +18,7 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_ENV": "staging",
-        "EXPO_PUBLIC_API_URL": "https://api.userail.money/api"
+        "EXPO_PUBLIC_API_URL": "https://api-staging.userail.money/api"
       }
     },
     "production": {
