@@ -168,6 +168,7 @@ const axiosInstance = axios.create({
     'Content-Type': 'application/json',
     Accept: 'application/json',
     'X-Requested-With': 'RailApp',
+    Connection: 'keep-alive',
   },
   ...(SSL_PINNING_ACTIVE ? { adapter: sslPinningAdapter } : {}),
 });
