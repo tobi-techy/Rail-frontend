@@ -80,6 +80,7 @@ export default function SourceOfFundsScreen() {
     taxId,
     taxIdType,
     disclosures,
+    employmentStatus,
     setSourceOfFunds,
     setExpectedMonthlyPayments,
     setAccountPurpose,
@@ -99,6 +100,12 @@ export default function SourceOfFundsScreen() {
   const [occupation, setOccupation] = useState<string | null>(null);
   const [intermediary, setIntermediary] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  // taxId is not persisted (PII) — if lost due to app backgrounding, redirect back
+  if (!taxId) {
+    router.replace('/kyc/tax-id');
+    return null;
+  }
 
   const canContinue =
     !!funds &&
@@ -125,7 +132,7 @@ export default function SourceOfFundsScreen() {
         issuing_country: country,
         disclosures: disclosures as KycDisclosures,
         source_of_funds: funds!,
-        employment_status: occupation!,
+        employment_status: employmentStatus ?? undefined,
         expected_monthly_payments_usd: monthly!,
         account_purpose: purpose!,
         account_purpose_other: purpose === 'other' ? purposeOther.trim() : undefined,
