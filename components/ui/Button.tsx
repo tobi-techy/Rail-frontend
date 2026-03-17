@@ -104,10 +104,16 @@ export const Button = forwardRef<View, ButtonProps>(
           {loading ? (
             <ActivityIndicator color={variant === 'black' ? '#fff' : '#000'} size="small" />
           ) : (
-            <View className="flex-row items-center">
-              {leftIcon && <View className="mr-2">{leftIcon}</View>}
-              <Text className={`font-button  ${textSize} ${textStyles}`}>{title}</Text>
-              {rightIcon && <View className="ml-2">{rightIcon}</View>}
+            <View className="flex-shrink flex-row items-center">
+              {leftIcon && <View className="mr-2 flex-shrink-0">{leftIcon}</View>}
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+                className={`flex-shrink font-button ${textSize} ${textStyles}`}>
+                {title}
+              </Text>
+              {rightIcon && <View className="ml-2 flex-shrink-0">{rightIcon}</View>}
             </View>
           )}
         </Pressable>

@@ -1,37 +1,30 @@
-/**
- * Fonts Configuration - RAIL Design System v2.0.0
- * Single family: SF Pro Rounded — weight creates hierarchy, not font switching.
- */
-
 export const FONT_FAMILIES = {
-  SF_PRO_ROUNDED: {
-    LIGHT: 'SF-Pro-Rounded-Light',
-    REGULAR: 'SF-Pro-Rounded-Regular',
-    MEDIUM: 'SF-Pro-Rounded-Medium',
-    SEMIBOLD: 'SF-Pro-Rounded-Semibold',
-    BOLD: 'SF-Pro-Rounded-Bold',
+  INSTRUMENT_SANS: {
+    REGULAR: 'InstrumentSans-Regular',
+    MEDIUM: 'InstrumentSans-Medium',
+    SEMIBOLD: 'InstrumentSans-SemiBold',
+    BOLD: 'InstrumentSans-Bold',
   },
 } as const;
 
 export const FONT_FILES = {
-  [FONT_FAMILIES.SF_PRO_ROUNDED.LIGHT]: require('../assets/fonts/SF-Pro-Rounded-Light.otf'),
-  [FONT_FAMILIES.SF_PRO_ROUNDED.REGULAR]: require('../assets/fonts/SF-Pro-Rounded-Regular.otf'),
-  [FONT_FAMILIES.SF_PRO_ROUNDED.MEDIUM]: require('../assets/fonts/SF-Pro-Rounded-Medium.otf'),
-  [FONT_FAMILIES.SF_PRO_ROUNDED.SEMIBOLD]: require('../assets/fonts/SF-Pro-Rounded-Semibold.otf'),
-  [FONT_FAMILIES.SF_PRO_ROUNDED.BOLD]: require('../assets/fonts/SF-Pro-Rounded-Bold.otf'),
+  [FONT_FAMILIES.INSTRUMENT_SANS.REGULAR]: require('../assets/fonts/InstrumentSans-Regular.ttf'),
+  [FONT_FAMILIES.INSTRUMENT_SANS.MEDIUM]: require('../assets/fonts/InstrumentSans-Medium.ttf'),
+  [FONT_FAMILIES.INSTRUMENT_SANS.SEMIBOLD]: require('../assets/fonts/InstrumentSans-SemiBold.ttf'),
+  [FONT_FAMILIES.INSTRUMENT_SANS.BOLD]: require('../assets/fonts/InstrumentSans-Bold.ttf'),
 } as const;
 
 export const FONT_PRESETS = {
-  DISPLAY: FONT_FAMILIES.SF_PRO_ROUNDED.BOLD,
-  HEADLINE: FONT_FAMILIES.SF_PRO_ROUNDED.BOLD,
-  HEADLINE2: FONT_FAMILIES.SF_PRO_ROUNDED.SEMIBOLD,
-  SUBTITLE: FONT_FAMILIES.SF_PRO_ROUNDED.MEDIUM,
-  BODY: FONT_FAMILIES.SF_PRO_ROUNDED.REGULAR,
-  CAPTION: FONT_FAMILIES.SF_PRO_ROUNDED.REGULAR,
-  BUTTON: FONT_FAMILIES.SF_PRO_ROUNDED.SEMIBOLD,
-  NUMERIC: FONT_FAMILIES.SF_PRO_ROUNDED.REGULAR,
+  DISPLAY: FONT_FAMILIES.INSTRUMENT_SANS.BOLD,
+  HEADLINE: FONT_FAMILIES.INSTRUMENT_SANS.BOLD,
+  HEADLINE2: FONT_FAMILIES.INSTRUMENT_SANS.SEMIBOLD,
+  SUBTITLE: FONT_FAMILIES.INSTRUMENT_SANS.SEMIBOLD,
+  BODY: FONT_FAMILIES.INSTRUMENT_SANS.REGULAR,
+  CAPTION: FONT_FAMILIES.INSTRUMENT_SANS.REGULAR,
+  BUTTON: FONT_FAMILIES.INSTRUMENT_SANS.SEMIBOLD,
+  NUMERIC: FONT_FAMILIES.INSTRUMENT_SANS.MEDIUM,
 } as const;
 
 export const FontHelpers = {
-  getAllFontNames: () => Object.values(FONT_FAMILIES.SF_PRO_ROUNDED),
+  getAllFontNames: () => Object.values(FONT_FAMILIES.INSTRUMENT_SANS),
 };

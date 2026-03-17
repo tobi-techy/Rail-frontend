@@ -47,16 +47,15 @@ type AuthorizeScreenProps = {
   authPasscode: string;
   isAuthorizing: boolean;
   isSubmitting: boolean;
+  authorizingTitle?: string;
   onClose: () => void;
   onPasscodeAuthorize: (code: string) => void;
-  onPasskeyAuthorize: () => void;
+  onPasskeyPress: () => void;
   onValueChange: (value: string) => void;
-  passkeyAvailable: boolean;
+  showPasskey: boolean;
   submittingTitle: string;
   // transaction summary
   summaryAmount?: number;
-  summaryMethod?: string;
-  summaryDestination?: string;
   // lockout
   pinAttemptsRemaining?: number;
   isLockedOut?: boolean;
@@ -407,25 +406,31 @@ export function AuthorizeScreen({
   authPasscode,
   isAuthorizing,
   isSubmitting,
+  authorizingTitle,
   onClose,
   onPasscodeAuthorize,
-  onPasskeyAuthorize,
+  onPasskeyPress,
   onValueChange,
-  passkeyAvailable,
+  showPasskey,
   submittingTitle,
   summaryAmount,
-  summaryMethod,
-  summaryDestination,
   pinAttemptsRemaining,
   isLockedOut,
   lockoutSecondsRemaining,
 }: AuthorizeScreenProps) {
+  const subtitle =
+    summaryAmount !== undefined
+      ? `Enter your 4-digit PIN to approve $${formatCurrency(summaryAmount)} withdrawal.`
+      : 'Enter your 4-digit PIN to approve this withdrawal.';
+
+  const statusLabel = isSubmitting ? submittingTitle : authorizingTitle || 'Authorizing...';
+
   return (
     <ErrorBoundary>
       <SafeAreaView className="flex-1 bg-white">
         <StatusBar barStyle="dark-content" backgroundColor="white" />
 
-        <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
+        <View className="px-4 pt-2">
           <TouchableOpacity
             className="size-11 items-center justify-center rounded-full bg-gray-100"
             onPress={onClose}
@@ -434,58 +439,19 @@ export function AuthorizeScreen({
             accessibilityLabel="Go back">
             <ArrowLeft size={20} color="#111111" />
           </TouchableOpacity>
-          <Text className="font-subtitle text-[20px] text-text-primary">{authorizeTitle}</Text>
-          <View className="size-11" />
         </View>
 
-        {/* Transaction summary */}
-        {(summaryAmount !== undefined || summaryMethod || summaryDestination) && (
-          <View className="mx-5 mt-2 rounded-2xl bg-surface px-4 py-3">
-            {summaryAmount !== undefined && (
-              <View className="flex-row items-center justify-between">
-                <Text className="font-body text-[13px] text-text-secondary">Amount</Text>
-                <Text className="font-subtitle text-[15px] text-text-primary">
-                  ${formatCurrency(summaryAmount)}
-                </Text>
-              </View>
-            )}
-            {summaryMethod && (
-              <View className="mt-1 flex-row items-center justify-between">
-                <Text className="font-body text-[13px] text-text-secondary">Method</Text>
-                <Text className="font-subtitle text-[15px] text-text-primary">{summaryMethod}</Text>
-              </View>
-            )}
-            {summaryDestination && (
-              <View className="mt-1 flex-row items-center justify-between">
-                <Text className="font-body text-[13px] text-text-secondary">To</Text>
-                <Text
-                  className="ml-8 flex-1 text-right font-subtitle text-[13px] text-text-primary"
-                  numberOfLines={1}
-                  ellipsizeMode="middle">
-                  {summaryDestination}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        <View className="px-6 pt-4">
-          <Text className="font-body text-[14px] text-text-secondary">
-            Use passkey or your account PIN to authorize this transaction.
-          </Text>
-
+        <View className="px-4 pt-2">
           {(isAuthorizing || isSubmitting) && (
-            <View className="mt-3 flex-row items-center gap-2">
+            <View className="mt-2 flex-row items-center gap-2">
               <ActivityIndicator size="small" color="#111111" />
-              <Text className="font-body text-[13px] text-text-secondary">
-                {isSubmitting ? submittingTitle : 'Authorizing...'}
-              </Text>
+              <Text className="font-body text-sm text-text-secondary">{statusLabel}</Text>
             </View>
           )}
 
           {isLockedOut && lockoutSecondsRemaining !== undefined && (
             <View className="mt-3 rounded-xl bg-red-50 px-4 py-3">
-              <Text className="font-subtitle text-[13px] text-red-600">
+              <Text className="font-subtitle text-sm text-red-600">
                 Too many failed attempts. Try again in {lockoutSecondsRemaining}s.
               </Text>
             </View>
@@ -493,7 +459,7 @@ export function AuthorizeScreen({
 
           {!isLockedOut && pinAttemptsRemaining !== undefined && pinAttemptsRemaining <= 3 && (
             <View className="mt-3 rounded-xl bg-amber-50 px-4 py-3">
-              <Text className="font-body text-[13px] text-amber-700">
+              <Text className="font-body text-sm text-amber-700">
                 {pinAttemptsRemaining} attempt{pinAttemptsRemaining !== 1 ? 's' : ''} remaining
                 before lockout.
               </Text>
@@ -502,18 +468,18 @@ export function AuthorizeScreen({
         </View>
 
         <PasscodeInput
-          subtitle="Use passkey or enter your account PIN"
+          title={authorizeTitle}
+          subtitle={subtitle}
           length={4}
           value={authPasscode}
           onValueChange={onValueChange}
           onComplete={isLockedOut ? undefined : onPasscodeAuthorize}
           errorText={authError}
-          showToggle
-          showFingerprint={passkeyAvailable}
-          onFingerprint={isLockedOut ? undefined : onPasskeyAuthorize}
+          showPasskey={showPasskey}
+          onPasskey={isLockedOut ? undefined : onPasskeyPress}
           autoSubmit
           variant="light"
-          className="mt-3 flex-1"
+          className="mt-4 flex-1"
         />
       </SafeAreaView>
     </ErrorBoundary>

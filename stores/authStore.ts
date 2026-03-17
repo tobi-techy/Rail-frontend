@@ -344,7 +344,20 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       deleteAccount: async (password, reason?) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await authService.deleteAccount(password, reason);
+          // Get Apple auth code for token revocation if Apple Sign In is available
+          let appleAuthCode: string | undefined;
+          try {
+            const Apple = await import('expo-apple-authentication');
+            const available = await Apple.default.isAvailableAsync();
+            if (available) {
+              const cred = await Apple.default.signInAsync({ requestedScopes: [] });
+              appleAuthCode = cred.authorizationCode ?? undefined;
+            }
+          } catch {
+            // Not an Apple user or user cancelled — continue with deletion
+          }
+
+          const response = await authService.deleteAccount(password, reason, appleAuthCode);
           set({ ...initialState, hasPasscode: false, hasCompletedOnboarding: false });
           return { funds_swept: response.funds_swept, sweep_tx_hash: response.sweep_tx_hash };
         } catch (error: any) {

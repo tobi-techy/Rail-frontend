@@ -173,8 +173,8 @@ export default function RailCard({
         { width: cardWidth, height: cardHeight, transform },
         style,
       ]}
-      className="rounded-[32px] shadow-[0px_10px_18px_rgba(0,0,0,0.22)]">
-      <View className="flex-1 overflow-hidden rounded-[32px] border border-white/10 bg-[#070708]">
+      className="">
+      <View className="flex-1 overflow-hidden rounded-sm border border-white/10 bg-[#070708]">
         <Svg
           width="100%"
           height="100%"

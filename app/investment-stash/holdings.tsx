@@ -8,15 +8,9 @@ import { useInvestmentPositions } from '@/api/hooks/useInvestment';
 import type { InvestmentPositionDetail } from '@/api/types/investment';
 
 const PAGE_SIZE = 20;
-const GREEN = '#16A34A';
-const RED = '#DC2626';
 
-function Shimmer({ w, h, radius = 8 }: { w: number | `${number}%`; h: number; radius?: number }) {
-  return (
-    <View
-      style={{ width: w as any, height: h, borderRadius: radius, backgroundColor: '#F3F4F6' }}
-    />
-  );
+function Shimmer({ w, h, radius = 'rounded-lg' }: { w: string; h: string; radius?: string }) {
+  return <View className={`${w} ${h} ${radius} bg-gray-100`} />;
 }
 
 function HoldingRow({
@@ -29,7 +23,7 @@ function HoldingRow({
   onPress: () => void;
 }) {
   const pos = item.unrealized_pnl_percent >= 0;
-  const pnlColor = pos ? GREEN : RED;
+  const pnlColor = pos ? 'text-green-600' : 'text-red-600';
   const sign = pos ? '+' : '';
   return (
     <View>
@@ -37,71 +31,34 @@ function HoldingRow({
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={`View ${item.name} details`}
-        style={({ pressed }) => ({
-          opacity: pressed ? 0.7 : 1,
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-        })}>
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            backgroundColor: '#F3F4F6',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            marginRight: 12,
-          }}>
+        className="flex-row items-center px-4 py-3.5 active:opacity-70">
+        <View className="mr-3 h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-gray-100">
           {item.logo_url ? (
-            <Image
-              source={{ uri: item.logo_url }}
-              style={{ width: 44, height: 44 }}
-              resizeMode="cover"
-            />
+            <Image source={{ uri: item.logo_url }} className="h-11 w-11" resizeMode="cover" />
           ) : (
-            <Text style={{ fontSize: 15, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#374151' }}>
-              {item.symbol[0]}
-            </Text>
+            <Text className="font-button text-sm text-gray-700">{item.symbol[0]}</Text>
           )}
         </View>
-        <View style={{ flex: 1, marginRight: 12 }}>
-          <Text
-            style={{ fontSize: 15, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#111827' }}
-            numberOfLines={1}>
+        <View className="mr-3 flex-1">
+          <Text className="font-button text-[15px] text-gray-900" numberOfLines={1}>
             {item.name}
           </Text>
-          <Text
-            style={{
-              fontSize: 12,
-              fontFamily: 'SF-Pro-Rounded-Regular',
-              color: '#9CA3AF',
-              marginTop: 2,
-            }}
-            numberOfLines={1}>
+          <Text className="mt-0.5 font-caption text-xs text-gray-400" numberOfLines={1}>
             {item.symbol} · {item.quantity} shares
           </Text>
         </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={{ fontSize: 15, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#111827' }}>
+        <View className="items-end">
+          <Text className="font-button text-[15px] text-gray-900">
             {item.market_value.formatted}
           </Text>
-          <Text
-            style={{
-              fontSize: 12,
-              fontFamily: 'SF-Pro-Rounded-Regular',
-              color: pnlColor,
-              marginTop: 2,
-            }}>
+          <Text className={`mt-0.5 font-caption text-xs ${pnlColor}`}>
             {sign}
             {item.unrealized_pnl.formatted} ({sign}
             {item.unrealized_pnl_percent.toFixed(2)}%)
           </Text>
         </View>
       </Pressable>
-      {showSep && <View style={{ height: 1, backgroundColor: '#F3F4F6', marginLeft: 72 }} />}
+      {showSep && <View className="ml-[72px] h-px bg-gray-100" />}
     </View>
   );
 }
@@ -129,15 +86,8 @@ export default function InvestmentHoldingsScreen() {
   }, [refetch]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: 16,
-          paddingTop: insets.top + 8,
-          paddingBottom: 4,
-        }}>
+    <View className="flex-1 bg-white">
+      <View className="flex-row items-center px-4 pb-1" style={{ paddingTop: insets.top + 8 }}>
         <Pressable
           onPress={() => {
             impact();
@@ -146,20 +96,12 @@ export default function InvestmentHoldingsScreen() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          style={{
-            width: 44,
-            height: 44,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: 4,
-          }}>
+          className="mr-1 h-11 w-11 items-center justify-center">
           <ChevronLeft size={24} color="#111827" strokeWidth={2} />
         </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 17, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#111827' }}>
-            Holdings
-          </Text>
-          <Text style={{ fontSize: 12, fontFamily: 'SF-Pro-Rounded-Regular', color: '#9CA3AF' }}>
+        <View className="flex-1">
+          <Text className="font-button text-[17px] text-gray-900">Holdings</Text>
+          <Text className="font-caption text-xs text-gray-400">
             {totalCount} asset{totalCount === 1 ? '' : 's'}
           </Text>
         </View>
@@ -172,27 +114,24 @@ export default function InvestmentHoldingsScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         ListEmptyComponent={
           isLoading ? (
-            <View style={{ padding: 16, gap: 12 }}>
+            <View className="gap-3 p-4">
               {[0, 1, 2, 3].map((i) => (
-                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <Shimmer w={44} h={44} radius={22} />
-                  <View style={{ flex: 1, gap: 8 }}>
-                    <Shimmer w="45%" h={14} />
-                    <Shimmer w="30%" h={11} />
+                <View key={i} className="flex-row items-center gap-3">
+                  <Shimmer w="w-11" h="h-11" radius="rounded-full" />
+                  <View className="flex-1 gap-2">
+                    <Shimmer w="w-[45%]" h="h-3.5" />
+                    <Shimmer w="w-[30%]" h="h-3" />
                   </View>
-                  <View style={{ alignItems: 'flex-end', gap: 8 }}>
-                    <Shimmer w={64} h={14} />
-                    <Shimmer w={48} h={11} />
+                  <View className="items-end gap-2">
+                    <Shimmer w="w-16" h="h-3.5" />
+                    <Shimmer w="w-12" h="h-3" />
                   </View>
                 </View>
               ))}
             </View>
           ) : (
-            <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-              <Text
-                style={{ fontSize: 14, fontFamily: 'SF-Pro-Rounded-Regular', color: '#9CA3AF' }}>
-                No holdings yet
-              </Text>
+            <View className="items-center py-12">
+              <Text className="font-caption text-sm text-gray-400">No holdings yet</Text>
             </View>
           )
         }
@@ -204,20 +143,15 @@ export default function InvestmentHoldingsScreen() {
               impact();
               router.push({
                 pathname: `/market-asset/${item.symbol}` as any,
-                params: { position: JSON.stringify(item) },
+                params: { symbol: item.symbol },
               });
             }}
           />
         )}
         ListFooterComponent={
           items.length > 0 ? (
-            <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}>
+            <View className="px-4 pt-4">
+              <View className="flex-row items-center justify-between">
                 <Pressable
                   onPress={() => {
                     impact();
@@ -226,31 +160,11 @@ export default function InvestmentHoldingsScreen() {
                   disabled={!hasPrev || isFetching}
                   accessibilityRole="button"
                   accessibilityLabel="Previous page"
-                  style={{
-                    opacity: hasPrev ? 1 : 0,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 4,
-                    backgroundColor: '#F3F4F6',
-                    borderRadius: 12,
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    minHeight: 44,
-                  }}>
+                  className={`min-h-[44px] flex-row items-center gap-1 rounded-xl bg-gray-100 px-4 py-2.5 ${!hasPrev ? 'opacity-0' : ''}`}>
                   <ChevronLeft size={16} color="#111827" strokeWidth={2} />
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontFamily: 'SF-Pro-Rounded-Semibold',
-                      color: '#111827',
-                    }}>
-                    Prev
-                  </Text>
+                  <Text className="font-button text-[13px] text-gray-900">Prev</Text>
                 </Pressable>
-                <Text
-                  style={{ fontSize: 12, fontFamily: 'SF-Pro-Rounded-Regular', color: '#9CA3AF' }}>
-                  Page {page}
-                </Text>
+                <Text className="font-caption text-xs text-gray-400">Page {page}</Text>
                 <Pressable
                   onPress={() => {
                     impact();
@@ -259,37 +173,13 @@ export default function InvestmentHoldingsScreen() {
                   disabled={!hasMore || isFetching}
                   accessibilityRole="button"
                   accessibilityLabel="Next page"
-                  style={{
-                    opacity: hasMore ? 1 : 0,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 4,
-                    backgroundColor: '#F3F4F6',
-                    borderRadius: 12,
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    minHeight: 44,
-                  }}>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontFamily: 'SF-Pro-Rounded-Semibold',
-                      color: '#111827',
-                    }}>
-                    Next
-                  </Text>
+                  className={`min-h-[44px] flex-row items-center gap-1 rounded-xl bg-gray-100 px-4 py-2.5 ${!hasMore ? 'opacity-0' : ''}`}>
+                  <Text className="font-button text-[13px] text-gray-900">Next</Text>
                   <ChevronRight size={16} color="#111827" strokeWidth={2} />
                 </Pressable>
               </View>
               {isFetching && (
-                <Text
-                  style={{
-                    marginTop: 8,
-                    textAlign: 'center',
-                    fontSize: 12,
-                    fontFamily: 'SF-Pro-Rounded-Regular',
-                    color: '#9CA3AF',
-                  }}>
+                <Text className="mt-2 text-center font-caption text-xs text-gray-400">
                   Loading…
                 </Text>
               )}

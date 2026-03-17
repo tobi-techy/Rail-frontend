@@ -38,6 +38,7 @@ interface KycState {
   // Sumsub session (non-sensitive — token is short-lived, not PII)
   sumsubToken: string | null;
   applicantId: string | null;
+  localSubmissionPendingAt: string | null;
 
   setCountry: (country: Country) => void;
   setTaxIdType: (taxIdType: TaxIdType) => void;
@@ -54,6 +55,7 @@ interface KycState {
   setDisclosuresConfirmed: (confirmed: boolean) => void;
   setMissingProfileFields: (fields: string[]) => void;
   setSumsubSession: (token: string, applicantId: string) => void;
+  setLocalSubmissionPendingAt: (submittedAt: string | null) => void;
   resetKycState: () => void;
 }
 
@@ -76,6 +78,7 @@ export const useKycStore = create<KycState>()(
       missingProfileFields: [],
       sumsubToken: null,
       applicantId: null,
+      localSubmissionPendingAt: null,
 
       setCountry: (country) =>
         set({
@@ -119,6 +122,7 @@ export const useKycStore = create<KycState>()(
       setDisclosuresConfirmed: (disclosuresConfirmed) => set({ disclosuresConfirmed }),
       setMissingProfileFields: (missingProfileFields) => set({ missingProfileFields }),
       setSumsubSession: (sumsubToken, applicantId) => set({ sumsubToken, applicantId }),
+      setLocalSubmissionPendingAt: (localSubmissionPendingAt) => set({ localSubmissionPendingAt }),
 
       resetKycState: () =>
         set({
@@ -138,6 +142,7 @@ export const useKycStore = create<KycState>()(
           missingProfileFields: [],
           sumsubToken: null,
           applicantId: null,
+          localSubmissionPendingAt: null,
         }),
     }),
     {

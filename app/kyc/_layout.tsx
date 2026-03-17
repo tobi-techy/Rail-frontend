@@ -8,6 +8,7 @@ export default function KycLayout() {
       <Stack.Screen name="tax-id" />
       <Stack.Screen name="about-you" />
       <Stack.Screen name="disclosures" />
+      <Stack.Screen name="source-of-funds" />
       <Stack.Screen name="documents" />
       <Stack.Screen
         name="sumsub-sdk"

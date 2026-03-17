@@ -12,7 +12,7 @@ export function useKYCStatus(enabled = true) {
     queryKey: queryKeys.user.kycStatus(),
     queryFn: () => kycService.getKYCStatus(),
     enabled: isAuthenticated && enabled,
-    staleTime: 30 * 1000,
+    staleTime: 0,
   });
 }
 

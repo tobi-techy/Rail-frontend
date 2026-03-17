@@ -18,7 +18,7 @@ import { invalidateQueries } from '@/api/queryClient';
 import type { KycStatus } from '@/api/types/kyc';
 
 export default function KycPendingScreen() {
-  const { resetKycState } = useKycStore();
+  const { resetKycState, localSubmissionPendingAt, setLocalSubmissionPendingAt } = useKycStore();
 
   const opacity = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
@@ -35,12 +35,13 @@ export default function KycPendingScreen() {
     (status: KycStatus) => {
       if (status === 'approved') {
         useAuthStore.getState().setOnboardingStatus('completed');
+        setLocalSubmissionPendingAt(null);
         resetKycState();
         router.replace('/(tabs)');
       }
       // rejected/expired — stay on screen to show the result
     },
-    [resetKycState]
+    [resetKycState, setLocalSubmissionPendingAt]
   );
 
   const { data, isError } = useKycStatusPolling(true, handleTerminal, {
@@ -52,10 +53,16 @@ export default function KycPendingScreen() {
   // If the user landed here without actually submitting (e.g. skipped KYC and came back),
   // don't show the polling spinner — send them back to the submission flow.
   useEffect(() => {
-    if (data && !data.has_submitted && status !== 'approved') {
+    if (data && !data.has_submitted && !localSubmissionPendingAt && status !== 'approved') {
       router.replace('/kyc');
     }
-  }, [data, status]);
+  }, [data, localSubmissionPendingAt, status]);
+
+  useEffect(() => {
+    if (status === 'approved' || status === 'rejected' || status === 'expired') {
+      setLocalSubmissionPendingAt(null);
+    }
+  }, [setLocalSubmissionPendingAt, status]);
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>

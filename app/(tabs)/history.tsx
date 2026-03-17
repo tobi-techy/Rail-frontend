@@ -1,5 +1,5 @@
 import { useNavigation } from 'expo-router';
-import React, { useLayoutEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Text, View, RefreshControl } from 'react-native';
 import { TransactionList } from '@/components/molecules/TransactionList';
 import type { Transaction } from '@/components/molecules/TransactionItem';
@@ -30,7 +30,6 @@ function cardTxToTransaction(tx: any): Transaction {
 }
 
 export default function History() {
-  const navigation = useNavigation();
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   const deposits = useDeposits(50);
@@ -59,20 +58,6 @@ export default function History() {
     return mapped.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }, [deposits.data, withdrawals.data, cardTxQuery.data]);
   const showSkeleton = isLoading && transactions.length === 0;
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <View className="flex-row items-center gap-x-3 pl-md">
-          <Text className="font-subtitle text-headline-1 text-text-primary">Activity</Text>
-        </View>
-      ),
-      headerShown: true,
-      title: '',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerShadowVisible: false,
-    });
-  }, [navigation]);
 
   return (
     <View className="flex-1 bg-background-main">

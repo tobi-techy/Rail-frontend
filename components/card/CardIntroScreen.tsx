@@ -114,7 +114,7 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
   const [showLearnMore, setShowLearnMore] = useState(false);
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <View className="flex-1 bg-white" edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center px-4 pt-2">
         <Pressable
@@ -123,10 +123,10 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
           hitSlop={8}>
           <ChevronLeft size={24} color="#111827" />
         </Pressable>
-      </View>
-      <View className="px-5 pt-1">
-        <Text className="font-headline text-3xl text-gray-900">Free Debit Card</Text>
-        <Text className="mt-1 font-body text-base text-gray-400">With Instant Discounts</Text>
+        <View className="px-5 pt-1">
+          <Text className="font-headline text-3xl text-gray-900">Free Debit Card</Text>
+          <Text className="mt-1 font-body text-base text-gray-400">With Instant Discounts</Text>
+        </View>
       </View>
 
       {/* Card Stack */}
@@ -195,6 +195,6 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
           ))}
         </ScrollView>
       </BottomSheet>
-    </SafeAreaView>
+    </View>
   );
 }

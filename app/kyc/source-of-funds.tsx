@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { useKycStore } from '@/stores/kycStore';
+import { useStartSumsubSession } from '@/api/hooks/useKYC';
+import type { KycDisclosures } from '@/api/types/kyc';
 
 const SOURCE_OF_FUNDS = [
   { value: 'salary', label: 'Salary / Employment' },
@@ -74,13 +76,21 @@ function OptionRow({
 
 export default function SourceOfFundsScreen() {
   const {
+    country,
+    taxId,
+    taxIdType,
+    disclosures,
     setSourceOfFunds,
     setExpectedMonthlyPayments,
     setAccountPurpose,
     setAccountPurposeOther,
     setMostRecentOccupation,
     setActingAsIntermediary,
+    setSumsubSession,
+    setLocalSubmissionPendingAt,
   } = useKycStore();
+
+  const startSession = useStartSumsubSession();
 
   const [funds, setFunds] = useState<string | null>(null);
   const [monthly, setMonthly] = useState<string | null>(null);
@@ -88,22 +98,45 @@ export default function SourceOfFundsScreen() {
   const [purposeOther, setPurposeOther] = useState('');
   const [occupation, setOccupation] = useState<string | null>(null);
   const [intermediary, setIntermediary] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const canContinue =
     !!funds &&
     !!monthly &&
     !!purpose &&
     (purpose !== 'other' || purposeOther.trim().length > 0) &&
-    !!occupation;
+    !!occupation &&
+    !startSession.isPending;
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     setSourceOfFunds(funds);
     setExpectedMonthlyPayments(monthly);
     setAccountPurpose(purpose);
     setAccountPurposeOther(purpose === 'other' ? purposeOther.trim() : null);
     setMostRecentOccupation(occupation);
     setActingAsIntermediary(intermediary);
-    router.push('/kyc/sumsub-sdk');
+    setLocalSubmissionPendingAt(null);
+    setSubmitError('');
+
+    try {
+      const result = await startSession.mutateAsync({
+        tax_id: taxId,
+        tax_id_type: taxIdType,
+        issuing_country: country,
+        disclosures: disclosures as KycDisclosures,
+        source_of_funds: funds!,
+        employment_status: occupation!,
+        expected_monthly_payments_usd: monthly!,
+        account_purpose: purpose!,
+        account_purpose_other: purpose === 'other' ? purposeOther.trim() : undefined,
+        most_recent_occupation: occupation!,
+        acting_as_intermediary: intermediary,
+      });
+      setSumsubSession(result.token, result.applicant_id);
+      router.push('/kyc/sumsub-sdk');
+    } catch {
+      setSubmitError('Could not start verification. Please try again.');
+    }
   };
 
   return (
@@ -115,6 +148,12 @@ export default function SourceOfFundsScreen() {
           accessibilityRole="button">
           <ChevronLeft size={24} color="#111827" />
         </Pressable>
+      </View>
+
+      <View className="px-4 pb-2">
+        <View className="h-1.5 overflow-hidden rounded-full bg-gray-200">
+          <View className="h-full w-full rounded-full bg-gray-900" />
+        </View>
       </View>
 
       <ScrollView
@@ -198,6 +237,12 @@ export default function SourceOfFundsScreen() {
             thumbColor="#fff"
           />
         </View>
+
+        {!!submitError && (
+          <View className="mt-3 rounded-2xl bg-red-50 px-4 py-3">
+            <Text className="font-body text-[12px] leading-5 text-red-700">{submitError}</Text>
+          </View>
+        )}
       </ScrollView>
 
       <View className="px-5 pb-4 pt-2">
@@ -207,7 +252,7 @@ export default function SourceOfFundsScreen() {
           className={`items-center rounded-full py-4 ${canContinue ? 'bg-black' : 'bg-gray-200'}`}>
           <Text
             className={`font-subtitle text-[16px] ${canContinue ? 'text-white' : 'text-gray-400'}`}>
-            Continue
+            {startSession.isPending ? 'Starting verification…' : 'Continue'}
           </Text>
         </Pressable>
       </View>

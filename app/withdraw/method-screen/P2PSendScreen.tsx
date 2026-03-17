@@ -94,7 +94,7 @@ function Avatar({ chars, size = 44 }: { chars: string; size?: number }) {
     <View
       style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#EBEBEB' }}
       className="items-center justify-center">
-      <Text style={{ fontSize: size * 0.38, fontFamily: 'SF-Pro-Rounded-Medium', color: '#111' }}>
+      <Text style={{ fontSize: size * 0.38, fontFamily: 'InstrumentSans-Medium', color: '#111' }}>
         {chars}
       </Text>
     </View>

@@ -1,33 +1,10 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useUIStore } from '@/stores';
 import { MaskedBalance } from './MaskedBalance';
 import { useHaptics } from '@/hooks/useHaptics';
-
-function Shimmer({ light, className }: { light?: boolean; className: string }) {
-  const opacity = useSharedValue(0.4);
-  React.useEffect(() => {
-    opacity.value = withRepeat(
-      withSequence(withTiming(1, { duration: 700 }), withTiming(0.4, { duration: 700 })),
-      -1
-    );
-  }, [opacity]);
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return (
-    <Animated.View
-      style={style}
-      className={`rounded-lg ${light ? 'bg-white/30' : 'bg-gray-200'} ${className}`}
-    />
-  );
-}
+import { Skeleton } from '@/components/atoms/Skeleton';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -111,8 +88,8 @@ export const StashCard: React.FC<StashCardProps> = ({
       {/* Bottom: amount + title */}
       {isLoading ? (
         <View className="gap-y-2">
-          <Shimmer light={isColored} className="h-6 w-20" />
-          <Shimmer light={isColored} className="h-3 w-12" />
+          <Skeleton light={isColored} className="h-6 w-20" />
+          <Skeleton light={isColored} className="h-3 w-12" />
         </View>
       ) : getStarted ? (
         <View>

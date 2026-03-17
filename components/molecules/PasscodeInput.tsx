@@ -19,7 +19,9 @@ export interface PasscodeInputProps extends ViewProps {
   status?: PasscodeInputStatus;
   showToggle?: boolean;
   showFingerprint?: boolean;
+  showPasskey?: boolean;
   onFingerprint?: () => void;
+  onPasskey?: () => void;
   className?: string;
   autoSubmit?: boolean;
   variant?: 'light' | 'dark';
@@ -38,7 +40,9 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
   status,
   showToggle = false,
   showFingerprint = false,
+  showPasskey = false,
   onFingerprint,
+  onPasskey,
   className = '',
   autoSubmit = false,
   variant = 'light',
@@ -73,6 +77,8 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
         }
       } else if (key === 'fingerprint') {
         onFingerprint?.();
+      } else if (key === 'passkey') {
+        onPasskey?.();
       } else if (key.match(/^[0-9]$/)) {
         if (passcode.length < length) {
           haptics.tap();
@@ -84,7 +90,7 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
   );
 
   return (
-    <View className={`flex-1 px-6 ${className}`} {...rest}>
+    <View className={`flex-1 px-4 ${className}`} {...rest}>
       {title && (
         <View className="mt-12">
           <Text
@@ -160,6 +166,8 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
       <Keypad
         onKeyPress={handleKeyPress}
         showFingerprint={showFingerprint}
+        showPasskey={showPasskey}
+        leftKey={showPasskey ? 'passkey' : showFingerprint ? 'fingerprint' : 'empty'}
         variant={variant}
         className="mb-6"
       />

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, StatusBar, Text, Pressable, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, StatusBar, Text, Pressable, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Passkey } from 'react-native-passkey';
@@ -14,7 +14,7 @@ import Animated, {
   FadeIn,
   SlideInUp,
 } from 'react-native-reanimated';
-import { useKYCStatus, useStation, useVerifyPasscode } from '@/api/hooks';
+import { usePasskeys, useRegisterPasskey, useStation, useVerifyPasscode } from '@/api/hooks';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Keypad } from '@/components/molecules/Keypad';
 import { Button } from '@/components/ui';
@@ -34,6 +34,7 @@ import {
 } from '@/app/withdraw/method-screen/utils';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
 import { isPasscodeSessionError, parseApiError } from '@/utils/apiError';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { AnimatedAmount } from './method-screen/AnimatedAmount';
 import {
   BRAND_RED,
@@ -64,7 +65,10 @@ import { P2PSendScreen } from './method-screen/P2PSendScreen';
 export default function WithdrawAmountScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user as ProfileNamePayload | undefined);
+  const { showError, showSuccess } = useFeedbackPopup();
   const { data: station, refetch: refetchStation } = useStation();
+  const { data: passkeys, isLoading: isPasskeysLoading } = usePasskeys();
+  const { mutateAsync: registerPasskey, isPending: isRegisteringPasskey } = useRegisterPasskey();
   const params = useLocalSearchParams<{ method?: string; symbol?: string; flow?: string }>();
 
   const selectedMethod = resolveMethod(
@@ -89,7 +93,6 @@ export default function WithdrawAmountScreen() {
 
   const { data: kycStatus, isLoading: isKycStatusLoading } = useKYCStatus(isFiatMethod);
   const isFiatApproved = kycStatus?.status === 'approved';
-
   const prefilledAssetSymbol = useMemo(() => {
     if (!isAssetTradeMethod) return '';
     return (typeof params.symbol === 'string' ? params.symbol : '')
@@ -113,7 +116,6 @@ export default function WithdrawAmountScreen() {
   const [isConfirmSheetVisible, setIsConfirmSheetVisible] = useState(false);
   const [isSubmissionSheetVisible, setIsSubmissionSheetVisible] = useState(false);
   const [submitWithActiveSession, setSubmitWithActiveSession] = useState(false);
-  const [passkeyAvailable, setPasskeyAvailable] = useState(false);
   const [showKycSheet, setShowKycSheet] = useState(false);
   // PIN lockout
   const [pinAttempts, setPinAttempts] = useState(0);
@@ -127,9 +129,9 @@ export default function WithdrawAmountScreen() {
     setDestinationInput((c) => c || prefilledAssetSymbol);
   }, [isAssetTradeMethod, prefilledAssetSymbol]);
 
-  useEffect(() => {
-    setPasskeyAvailable(Passkey.isSupported() && Boolean(safeName(user?.email)));
-  }, [user?.email]);
+  const passkeySupported = Passkey.isSupported() && Boolean(safeName(user?.email));
+  const hasPasskey = (passkeys?.length ?? 0) > 0;
+  const passkeyAvailable = passkeySupported && hasPasskey;
 
   // ── Derived amounts ───────────────────────────────────────────────────────
 
@@ -323,8 +325,51 @@ export default function WithdrawAmountScreen() {
     onAuthorized: onSubmitAuthorizedWithdrawal,
   });
 
-  const isAuthorizing = isPasscodeVerifying || passkey.isPasskeyLoading;
+  const isAuthorizing = isPasscodeVerifying || passkey.isPasskeyLoading || isRegisteringPasskey;
+  const authorizingTitle = isRegisteringPasskey ? 'Creating passkey...' : undefined;
   const isSubmitting = withdrawal.isSubmitting;
+
+  const handlePasskeyPress = useCallback(() => {
+    if (isAuthorizing || isSubmitting || lockoutUntil) return;
+    if (!passkeySupported) {
+      passkey.setAuthError('Passkey is unavailable. Enter your PIN to continue.');
+      return;
+    }
+    if (!isPasskeysLoading && !hasPasskey) {
+      Alert.alert('Create a passkey?', 'Set up a passkey to approve withdrawals faster.', [
+        { text: 'Not now', style: 'cancel' },
+        {
+          text: 'Create passkey',
+          onPress: async () => {
+            try {
+              await registerPasskey();
+              showSuccess('Passkey ready', 'You can now approve with passkey.');
+              passkey.onPasskeyAuthorize();
+            } catch (err: any) {
+              const message = String(err?.message || '');
+              if (err?.name === 'NotAllowedError' || message.toLowerCase().includes('cancel')) {
+                return;
+              }
+              showError('Passkey setup failed', err?.message || 'Could not create passkey.');
+            }
+          },
+        },
+      ]);
+      return;
+    }
+    passkey.onPasskeyAuthorize();
+  }, [
+    hasPasskey,
+    isAuthorizing,
+    isPasskeysLoading,
+    isSubmitting,
+    lockoutUntil,
+    passkey,
+    passkeySupported,
+    registerPasskey,
+    showError,
+    showSuccess,
+  ]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -531,23 +576,16 @@ export default function WithdrawAmountScreen() {
         authPasscode={passkey.authPasscode}
         isAuthorizing={isAuthorizing}
         isSubmitting={isSubmitting}
+        authorizingTitle={authorizingTitle}
         onClose={() => {
           if (!isAuthorizing && !isSubmitting) setIsAuthorizeScreenVisible(false);
         }}
         onPasscodeAuthorize={onPasscodeAuthorize}
-        onPasskeyAuthorize={passkey.onPasskeyAuthorize}
+        onPasskeyPress={handlePasskeyPress}
         onValueChange={passkey.onAuthPasscodeChange}
-        passkeyAvailable={passkeyAvailable}
+        showPasskey={passkeySupported}
         submittingTitle={submittingTitle}
         summaryAmount={numericAmount}
-        summaryMethod={methodCopy.title}
-        summaryDestination={
-          isFiatMethod
-            ? destinationInput
-              ? `Routing ••••${destinationInput.slice(-4)}`
-              : undefined
-            : destinationInput || undefined
-        }
         pinAttemptsRemaining={MAX_PIN_ATTEMPTS - pinAttempts}
         isLockedOut={!!lockoutUntil}
         lockoutSecondsRemaining={lockoutSecondsRemaining}

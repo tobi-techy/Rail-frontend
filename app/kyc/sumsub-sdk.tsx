@@ -11,7 +11,7 @@ import { logger } from '@/lib/logger';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 export default function KycSumsubSdkScreen() {
-  const { sumsubToken, applicantId, setSumsubSession } = useKycStore();
+  const { sumsubToken, applicantId, setSumsubSession, setLocalSubmissionPendingAt } = useKycStore();
   const { track } = useAnalytics();
   const [resolvedToken, setResolvedToken] = useState<string | null>(sumsubToken);
   const [resolvedApplicantId, setResolvedApplicantId] = useState<string | null>(applicantId);
@@ -64,9 +64,11 @@ export default function KycSumsubSdkScreen() {
           if (event.newStatus === 'Approved') {
             track(ANALYTICS_EVENTS.KYC_VERIFICATION_COMPLETED, { status: event.newStatus });
             didSubmit = true;
+            setLocalSubmissionPendingAt(new Date().toISOString());
             sdkInstance?.dismiss();
           } else if (event.newStatus === 'Pending') {
             didSubmit = true;
+            setLocalSubmissionPendingAt(new Date().toISOString());
             sdkInstance?.dismiss();
           }
           // TemporarilyDeclined = liveness/doc check failed but user can retry within the same
@@ -101,7 +103,7 @@ export default function KycSumsubSdkScreen() {
         });
         router.back();
       });
-  }, [resolvedToken, resolvedApplicantId, setSumsubSession, track]);
+  }, [resolvedToken, resolvedApplicantId, setLocalSubmissionPendingAt, setSumsubSession, track]);
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>

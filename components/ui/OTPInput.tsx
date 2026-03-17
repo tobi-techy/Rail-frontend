@@ -101,7 +101,7 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
             justifyContent: 'center',
           },
           pinCodeTextStyle: {
-            fontFamily: 'SF-Pro-Rounded-Semibold',
+            fontFamily: 'InstrumentSans-SemiBold',
             fontSize: 24,
             color: colors.text,
             textAlign: 'center',
@@ -119,7 +119,7 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
       />
       {error && (
         <Text
-          className={`font-caption mt-2 text-center text-caption ${isDark ? 'text-white/70' : 'text-destructive'}`}
+          className={`mt-2 text-center font-caption text-caption ${isDark ? 'text-white/70' : 'text-destructive'}`}
           accessibilityRole="alert">
           {error}
         </Text>

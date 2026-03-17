@@ -1,14 +1,6 @@
-import {
-  View,
-  Text,
-  ScrollView,
-  RefreshControl,
-  TouchableOpacity,
-  Pressable,
-  Platform,
-} from 'react-native';
-import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo } from 'react';
-import { router, useNavigation } from 'expo-router';
+import { View, Text, ScrollView, RefreshControl, Pressable, Platform } from 'react-native';
+import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { router, useNavigation, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import {
@@ -42,6 +34,7 @@ import {
   useNavigableBottomSheet,
   type BottomSheetScreen,
   InfoSheet,
+  SpendBreakdownSheet,
 } from '@/components/sheets';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
@@ -168,6 +161,7 @@ function DashboardScreen() {
   const [showSolanaPayScan, setShowSolanaPayScan] = useState(false);
   const [showKYCSheet, setShowKYCSheet] = useState(false);
   const [showMicroLoanSheet, setShowMicroLoanSheet] = useState(false);
+  const [showSpendBreakdown, setShowSpendBreakdown] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   const receiveNav = useNavigableBottomSheet('receive-main');
@@ -195,7 +189,15 @@ function DashboardScreen() {
   const { data: cardsData } = useCards();
   const deposits = useDeposits(10);
   const withdrawals = useWithdrawals(10);
-  const { data: kycStatus } = useKYCStatus();
+  const { data: kycStatus, refetch: refetchKYC } = useKYCStatus();
+
+  // Refetch KYC status every time this screen comes into focus
+  // so users who just completed KYC don't see stale gates
+  useFocusEffect(
+    useCallback(() => {
+      void refetchKYC();
+    }, [refetchKYC])
+  );
 
   const userFirstName = useAuthStore((s) => s.user?.firstName);
   const userLastName = useAuthStore((s) => s.user?.lastName);
@@ -234,26 +236,27 @@ function DashboardScreen() {
     }
   }, [refetch, deposits, withdrawals]);
 
+  const focusRefetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     return navigation.addListener('focus', () => {
-      void refetch();
-      void deposits.refetch();
-      void withdrawals.refetch();
-      void invalidateQueries.station();
-      void invalidateQueries.wallet();
+      if (focusRefetchTimer.current) clearTimeout(focusRefetchTimer.current);
+      focusRefetchTimer.current = setTimeout(() => {
+        void refetch();
+        void deposits.refetch();
+        void withdrawals.refetch();
+        void invalidateQueries.station();
+        void invalidateQueries.wallet();
+      }, 300);
     });
   }, [navigation, refetch, deposits, withdrawals]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown: true,
-      title: '',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerShadowVisible: false,
       headerLeft: () => (
         <View className="flex-row items-center gap-x-3 pl-md">
-          <Avatar size={36} {...avatarConfig} />
-          <Text className="font-subtitle text-headline-1">Station</Text>
+          <Pressable onPress={() => router.push('/profile')} hitSlop={8}>
+            <Avatar size={36} {...avatarConfig} />
+          </Pressable>
         </View>
       ),
       headerRight: () => (
@@ -286,7 +289,7 @@ function DashboardScreen() {
     return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 3);
   }, [deposits.data, withdrawals.data]);
 
-  const kycApproved = kycStatus?.status === 'approved';
+  const kycApproved = kycStatus?.status === 'approved' && kycStatus?.verified === true;
 
   const hasCard = Boolean(cardsData?.cards && cardsData.cards.length > 0);
 
@@ -297,9 +300,7 @@ function DashboardScreen() {
     ) => {
       setShowSendSheet(false);
       setShowReceiveSheet(false);
-      requestAnimationFrame(() =>
-        router.push({ pathname: '/withdraw/[method]', params: { method, flow } } as never)
-      );
+      router.push({ pathname: '/withdraw/[method]', params: { method, flow } } as never);
     },
     []
   );
@@ -408,9 +409,7 @@ function DashboardScreen() {
 
   const startP2P = useCallback(() => {
     setShowSendSheet(false);
-    requestAnimationFrame(() =>
-      router.push({ pathname: '/withdraw/[method]', params: { method: 'p2p' } } as never)
-    );
+    router.push({ pathname: '/withdraw/[method]', params: { method: 'p2p' } } as never);
   }, []);
 
   const sendMoreActions = useMemo<FundingAction[]>(
@@ -520,9 +519,9 @@ function DashboardScreen() {
           <Button
             title="Send"
             onPress={() => (kycApproved ? setShowSendSheet(true) : setShowKYCSheet(true))}
-            leftIcon={<ArrowUpRight size={20} color="black" />}
+            leftIcon={<ArrowUpRight size={20} color="white" />}
             size="small"
-            variant="white"
+            variant="black"
           />
         </View>
 
@@ -535,7 +534,7 @@ function DashboardScreen() {
             cardColor="#FF2E01"
             className="flex-1"
             isLoading={isStationPending}
-            onPress={() => router.push('/spending-stash')}
+            onPress={() => setShowSpendBreakdown(true)}
           />
           <StashCard
             title="Stash"
@@ -545,7 +544,7 @@ function DashboardScreen() {
             cardColor="#00E011"
             className="flex-1"
             isLoading={isStationPending}
-            onPress={() => router.push('/investment-stash')}
+            // onPress={() => router.push('/investment-stash')}
           />
         </View>
         <View className="mt-5 flex-row gap-3">
@@ -558,7 +557,7 @@ function DashboardScreen() {
             className="max-w-[50%] flex-1"
             isLoading={isStationPending}
             getStarted={!hasCard}
-            onPress={() => router.push('/card')}
+            onPress={() => (kycApproved ? router.push('/card') : setShowKYCSheet(true))}
           />
           <StashCard
             title="Micro Loan"
@@ -590,12 +589,26 @@ function DashboardScreen() {
               </Text>
             </View>
           ) : (
-            <TransactionList
-              transactions={transactions}
-              title="Recent Activity"
-              onTransactionPress={setSelectedTransaction}
-              scrollEnabled={false}
-            />
+            <>
+              <View className="mb-3 flex-row items-center justify-between">
+                <Text className="font-subtitle text-subtitle text-text-primary">
+                  Recent Activity
+                </Text>
+                <Pressable
+                  onPress={() => router.push('/(tabs)/history' as never)}
+                  accessibilityRole="button"
+                  accessibilityLabel="See all transactions"
+                  className="min-h-[44px] flex-row items-center">
+                  <Text className="font-caption text-caption text-text-secondary">See all</Text>
+                  <ChevronRight size={16} color="#757575" />
+                </Pressable>
+              </View>
+              <TransactionList
+                transactions={transactions}
+                onTransactionPress={setSelectedTransaction}
+                scrollEnabled={false}
+              />
+            </>
           )}
         </View>
       </View>
@@ -611,6 +624,14 @@ function DashboardScreen() {
         onClose={() => setShowSendSheet(false)}
         screens={sendScreens}
         navigation={sendNav}
+      />
+      <SpendBreakdownSheet
+        visible={showSpendBreakdown}
+        onClose={() => setShowSpendBreakdown(false)}
+        onViewDetails={() => {
+          setShowSpendBreakdown(false);
+          router.push('/spending-stash');
+        }}
       />
       <KYCVerificationSheet
         visible={showKYCSheet}

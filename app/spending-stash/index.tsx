@@ -3,41 +3,16 @@ import { View, Text, ScrollView, Pressable, useWindowDimensions } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ChevronLeft, RefreshCw } from 'lucide-react-native';
-import Animated, {
-  FadeIn,
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { Canvas, RoundedRect, Group } from '@shopify/react-native-skia';
 import { useSpendingStashData } from './useSpendingStashData';
 import { Icon } from '@/components/atoms/Icon';
+import { Skeleton } from '@/components/atoms/Skeleton';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useUIStore } from '@/stores';
 import { CATEGORY_PALETTE } from './components';
 
 const ACCENT = '#FF2E01';
-
-// ── Shimmer ───────────────────────────────────────────────────────────────────
-
-function Shimmer({ w, h, radius = 8 }: { w: number | string; h: number; radius?: number }) {
-  const opacity = useSharedValue(0.3);
-  React.useEffect(() => {
-    opacity.value = withRepeat(
-      withSequence(withTiming(0.7, { duration: 800 }), withTiming(0.3, { duration: 800 })),
-      -1
-    );
-  }, [opacity]);
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return (
-    <Animated.View
-      style={[style, { width: w as number, height: h, borderRadius: radius }]}
-      className="bg-gray-100"
-    />
-  );
-}
 
 // ── Period pill selector ──────────────────────────────────────────────────────
 
@@ -252,11 +227,12 @@ export default function SpendingScreen() {
             router.back();
           }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          className="mr-1 h-9 w-9 items-center justify-center"
+          className="mr-3 h-9 w-9 items-center justify-center"
           accessibilityRole="button"
           accessibilityLabel="Go back">
           <ChevronLeft size={24} color="#000000" strokeWidth={2} />
         </Pressable>
+        <Text className="font-subtitle text-[17px] text-black">Spend</Text>
       </View>
 
       <ScrollView
@@ -269,8 +245,8 @@ export default function SpendingScreen() {
           <Text className="font-caption text-[15px] text-black/50">Spent</Text>
           {isLoading ? (
             <View className="mt-2 gap-2.5">
-              <Shimmer w={180} h={56} radius={12} />
-              <Shimmer w={100} h={16} />
+              <Skeleton style={{ width: 180, height: 56, borderRadius: 12 }} />
+              <Skeleton style={{ width: 100, height: 16 }} />
             </View>
           ) : (
             <Animated.View entering={FadeIn.duration(200)}>
@@ -298,7 +274,7 @@ export default function SpendingScreen() {
         {isLoading ? (
           <View className="mb-7 h-[340px] flex-row items-end gap-2">
             {[80, 110, 50, 140, 70, 100].map((h, i) => (
-              <Shimmer key={i} w={28} h={h} radius={14} />
+              <Skeleton key={i} style={{ width: 28, height: h, borderRadius: 14 }} />
             ))}
           </View>
         ) : (
@@ -347,12 +323,12 @@ export default function SpendingScreen() {
               {isLoading
                 ? [0, 1, 2].map((i) => (
                     <View key={i} className="flex-row items-center gap-3.5 p-4">
-                      <Shimmer w={44} h={44} radius={22} />
+                      <Skeleton style={{ width: 44, height: 44, borderRadius: 22 }} />
                       <View className="flex-1 gap-2">
-                        <Shimmer w="55%" h={14} />
-                        <Shimmer w="30%" h={11} />
+                        <Skeleton className="w-[55%]" style={{ height: 14 }} />
+                        <Skeleton className="w-[30%]" style={{ height: 11 }} />
                       </View>
-                      <Shimmer w={60} h={14} />
+                      <Skeleton style={{ width: 60, height: 14 }} />
                     </View>
                   ))
                 : categories

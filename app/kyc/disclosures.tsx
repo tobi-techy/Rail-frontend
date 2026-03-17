@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Check, ChevronLeft } from 'lucide-react-native';
@@ -8,7 +8,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui';
 import { COUNTRY_KYC_REQUIREMENTS, COUNTRY_LABELS, type KycDisclosures } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
-import { useStartSumsubSession } from '@/api/hooks/useKYC';
 
 const DISCLOSURE_COPY: Record<keyof KycDisclosures, string> = {
   is_control_person: 'I am a control person of a publicly traded company.',
@@ -19,20 +18,9 @@ const DISCLOSURE_COPY: Record<keyof KycDisclosures, string> = {
 
 export default function KycDisclosuresScreen() {
   const insets = useSafeAreaInsets();
-  const {
-    country,
-    taxIdType,
-    taxId,
-    disclosures,
-    disclosuresConfirmed,
-    setDisclosure,
-    setDisclosuresConfirmed,
-    setSumsubSession,
-  } = useKycStore();
+  const { country, disclosures, disclosuresConfirmed, setDisclosure, setDisclosuresConfirmed } =
+    useKycStore();
 
-  const [submitError, setSubmitError] = useState('');
-
-  const startSession = useStartSumsubSession();
   const requirement = COUNTRY_KYC_REQUIREMENTS[country];
   const requiredDisclosureKeys = requirement.requiredDisclosures;
 
@@ -53,23 +41,9 @@ export default function KycDisclosuresScreen() {
     (key) => disclosures[key] !== undefined
   );
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     if (!disclosuresConfirmed) return;
-
-    setSubmitError('');
-
-    try {
-      const result = await startSession.mutateAsync({
-        tax_id: taxId,
-        tax_id_type: taxIdType,
-        issuing_country: country,
-        disclosures: buildDisclosures(),
-      });
-      setSumsubSession(result.token, result.applicant_id);
-      router.push('/kyc/source-of-funds');
-    } catch {
-      setSubmitError('Could not start verification session. Please try again.');
-    }
+    router.push('/kyc/source-of-funds');
   };
 
   return (
@@ -142,10 +116,7 @@ export default function KycDisclosuresScreen() {
             </View>
 
             <Pressable
-              onPress={() => {
-                setDisclosuresConfirmed(!disclosuresConfirmed);
-                if (submitError) setSubmitError('');
-              }}
+              onPress={() => setDisclosuresConfirmed(!disclosuresConfirmed)}
               className="mt-6 flex-row items-start gap-3 rounded-2xl bg-gray-100 px-4 py-4"
               accessibilityRole="checkbox"
               accessibilityState={{ checked: disclosuresConfirmed }}
@@ -160,12 +131,6 @@ export default function KycDisclosuresScreen() {
                 I confirm all submitted information is accurate and belongs to me.
               </Text>
             </Pressable>
-
-            {!!submitError && (
-              <View className="mt-3 rounded-2xl bg-red-50 px-4 py-3">
-                <Text className="font-body text-[12px] leading-5 text-red-700">{submitError}</Text>
-              </View>
-            )}
           </ScrollView>
         </KeyboardAvoidingView>
 
@@ -173,10 +138,9 @@ export default function KycDisclosuresScreen() {
           className="absolute bottom-0 left-0 right-0 border-t border-gray-100 bg-white px-4 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           <Button
-            title="Continue to ID scan"
+            title="Continue"
             onPress={handleContinue}
-            loading={startSession.isPending}
-            disabled={!disclosuresConfirmed || !allDisclosuresAnswered || startSession.isPending}
+            disabled={!disclosuresConfirmed || !allDisclosuresAnswered}
           />
         </View>
       </SafeAreaView>

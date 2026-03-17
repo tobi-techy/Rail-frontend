@@ -49,7 +49,7 @@ export function AnimatedAmount({ amount }: AnimatedAmountProps) {
     <Animated.View style={animatedStyle} className="w-full">
       <Text
         style={{
-          fontFamily: 'SF-Pro-Rounded-Bold',
+          fontFamily: 'InstrumentSans-Bold',
           fontSize,
           color: '#FFFFFF',
           textAlign: 'center',

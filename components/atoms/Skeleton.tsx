@@ -15,6 +15,7 @@ interface SkeletonProps extends ViewProps {
   minOpacity?: number;
   maxOpacity?: number;
   duration?: number;
+  light?: boolean;
 }
 
 export const Skeleton: React.FC<SkeletonProps> = ({
@@ -22,6 +23,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   minOpacity = 0.45,
   maxOpacity = 1,
   duration = 700,
+  light = false,
   style,
   ...props
 }) => {
@@ -46,7 +48,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 
   return (
     <Animated.View
-      className={`rounded-md bg-surface ${className ?? ''}`}
+      className={`rounded-md ${light ? 'bg-white/30' : 'bg-surface'} ${className ?? ''}`}
       style={[animatedStyle, style]}
       {...props}
     />

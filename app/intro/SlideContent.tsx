@@ -10,11 +10,11 @@ interface Props {
 
 export const SlideContent = memo(function SlideContent({ item, isCompactWidth }: Props) {
   return (
-    <View className="w-full px-5 mt-24">
+    <View className="mt-24 w-full px-5">
       <Text
         style={{
           color: '#FFFFFF',
-          fontFamily: FONT_FAMILIES.SF_PRO_ROUNDED.BOLD,
+          fontFamily: FONT_FAMILIES.INSTRUMENT_SANS.BOLD,
           fontSize: isCompactWidth ? 32 : 38,
           lineHeight: isCompactWidth ? 38 : 44,
           letterSpacing: -0.8,
@@ -24,7 +24,7 @@ export const SlideContent = memo(function SlideContent({ item, isCompactWidth }:
       <Text
         style={{
           color: 'rgba(255,255,255,0.65)',
-          fontFamily: FONT_FAMILIES.SF_PRO_ROUNDED.REGULAR,
+          fontFamily: FONT_FAMILIES.INSTRUMENT_SANS.REGULAR,
           fontSize: 14,
           lineHeight: 20,
           marginTop: 10,
@@ -35,4 +35,3 @@ export const SlideContent = memo(function SlideContent({ item, isCompactWidth }:
     </View>
   );
 });
-

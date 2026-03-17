@@ -10,22 +10,13 @@ interface Props {
 
 export const ActiveVideoSlide = memo(function ActiveVideoSlide({ item, width, height }: Props) {
   return (
-    <View style={{ width, height, backgroundColor: '#000' }}>
+    <View style={{ width, height }} className="bg-black">
       <Image
         source={item.image}
-        style={{
-          width: width * 0.85,
-          height: height * 0.85,
-          position: 'absolute',
-          top: 0,
-          left: width * 0.075,
-        }}
+        style={{ width, height, position: 'absolute', top: 0, left: 0 }}
         resizeMode="cover"
       />
-      <View
-        pointerEvents="none"
-        style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.45)' }]}
-      />
+      <View pointerEvents="none" style={[StyleSheet.absoluteFillObject]} className="bg-black/40" />
     </View>
   );
 });

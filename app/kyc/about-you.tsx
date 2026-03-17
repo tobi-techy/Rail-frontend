@@ -49,7 +49,7 @@ export default function KycAboutYouScreen() {
 
         <View className="px-4">
           <View className="h-1.5 overflow-hidden rounded-full bg-gray-200">
-            <View className="h-full w-2/4 rounded-full bg-gray-900" />
+            <View className="h-full w-3/4 rounded-full bg-gray-900" />
           </View>
         </View>
 

@@ -8,6 +8,7 @@ import CreditCardIcon from '@/assets/Icons/credit-card-8.svg';
 import ZapIcon from '@/assets/Icons/waterfall-chart-4.svg';
 import LoyaltyIcon from '@/assets/Icons/loyalty-14.svg';
 import { useKycStore } from '@/stores/kycStore';
+import { BottomSheet } from '@/components/sheets';
 
 type Banner = {
   id: string;
@@ -104,6 +105,7 @@ export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBanne
   const cardWidth = Math.min(Math.max(screenWidth * 0.62, 220), 320);
   const snap = cardWidth + 10;
   const [activeIndex, setActiveIndex] = useState(0);
+  const [showConductorSheet, setShowConductorSheet] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, sumsubToken } =
@@ -150,7 +152,7 @@ export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBanne
             iconColor: '#818CF8',
             badge: 'New',
             Icon: CreditCardIcon as any,
-            onPress: () => router.push('/card'),
+            onPress: () => (kycApproved ? router.push('/card') : onKYCPress?.()),
           },
         ]
       : []),
@@ -162,6 +164,7 @@ export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBanne
       iconColor: '#FBBF24',
       badge: 'Soon',
       Icon: ZapIcon as any,
+      onPress: () => setShowConductorSheet(true),
     },
     {
       id: 'rewards',
@@ -209,6 +212,37 @@ export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBanne
           ))}
         </View>
       )}
+
+      <BottomSheet
+        visible={showConductorSheet}
+        onClose={() => setShowConductorSheet(false)}
+        showCloseButton={false}
+        dismissible>
+        <View className="items-center">
+          <View className="h-1 w-10 rounded-full bg-neutral-200" />
+        </View>
+        <View className="mt-4 gap-6">
+          <View className="items-start gap-2">
+            <View className="rounded-full bg-[#FBBF24]/10 px-3 py-1">
+              <Text className="font-subtitle text-[12px] text-[#F59E0B]">Coming soon</Text>
+            </View>
+            <Text className="font-subtitle text-xl text-neutral-900">Conductor</Text>
+            <Text className="font-body text-sm text-neutral-500">
+              Conductor is Rail&apos;s copy-investing feature. Allocate small amounts to follow top
+              investors and Rail mirrors their buy and sell decisions automatically.
+            </Text>
+          </View>
+
+          <View className="gap-2">
+            <Text className="font-subtitle text-base text-neutral-900">How it works</Text>
+            <Text className="font-body text-sm text-neutral-500">1. Pick a conductor.</Text>
+            <Text className="font-body text-sm text-neutral-500">2. Allocate funds.</Text>
+            <Text className="font-body text-sm text-neutral-500">
+              3. Rail follows their trades for you.
+            </Text>
+          </View>
+        </View>
+      </BottomSheet>
     </View>
   );
 }

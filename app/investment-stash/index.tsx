@@ -17,6 +17,7 @@ import { useUIStore } from '@/stores';
 import { useHaptics } from '@/hooks/useHaptics';
 import { TransactionItem, TransactionItemSkeleton } from '@/components/molecules/TransactionItem';
 import { MarketClosedBanner } from '@/components/molecules/MarketClosedBanner';
+import { Skeleton } from '@/components/atoms/Skeleton';
 import { useInvestmentStashData } from './useInvestmentStashData';
 import { invalidateQueries } from '@/api/queryClient';
 import type {
@@ -33,15 +34,6 @@ const GREEN = '#16A34A';
 const RED = '#DC2626';
 const ALLOC_COLORS = ['#6366F1', '#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE'];
 const PERIODS: InvestmentPeriod[] = ['1W', '1M', '3M', '6M', '1Y', 'ALL'];
-
-// ─── Shimmer ──────────────────────────────────────────────────────────────────
-function Shimmer({ w, h, radius = 8 }: { w: number | `${number}%`; h: number; radius?: number }) {
-  return (
-    <View
-      style={{ width: w as any, height: h, borderRadius: radius, backgroundColor: '#F3F4F6' }}
-    />
-  );
-}
 
 // ─── Chart ────────────────────────────────────────────────────────────────────
 function PortfolioChart({
@@ -93,13 +85,7 @@ function PeriodPills({
   onSelect: (p: InvestmentPeriod) => void;
 }) {
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-      }}>
+    <View className="flex-row justify-between px-4 py-3">
       {PERIODS.map((p) => {
         const active = p === selected;
         return (
@@ -108,21 +94,9 @@ function PeriodPills({
             onPress={() => onSelect(p)}
             accessibilityRole="button"
             accessibilityLabel={`${p} period`}
-            style={{
-              minWidth: 44,
-              minHeight: 44,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 22,
-              backgroundColor: active ? '#111827' : 'transparent',
-              paddingHorizontal: 8,
-            }}>
+            className={`min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-2 ${active ? 'bg-gray-900' : 'bg-transparent'}`}>
             <Text
-              style={{
-                fontSize: 13,
-                fontFamily: active ? 'SF-Pro-Rounded-Semibold' : 'SF-Pro-Rounded-Regular',
-                color: active ? '#FFFFFF' : '#9CA3AF',
-              }}>
+              className={`text-[13px] ${active ? 'font-button text-white' : 'font-caption text-text-tertiary'}`}>
               {p}
             </Text>
           </Pressable>
@@ -135,20 +109,9 @@ function PeriodPills({
 // ─── Stats card ───────────────────────────────────────────────────────────────
 function StatsRow({ label, value }: { label: string; value: string }) {
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-      }}>
-      <Text style={{ fontSize: 14, fontFamily: 'SF-Pro-Rounded-Regular', color: '#6B7280' }}>
-        {label}
-      </Text>
-      <Text style={{ fontSize: 14, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#111827' }}>
-        {value}
-      </Text>
+    <View className="flex-row items-center justify-between px-4 py-3.5">
+      <Text className="font-caption text-[14px] text-text-secondary">{label}</Text>
+      <Text className="font-subtitle text-[14px] text-gray-900">{value}</Text>
     </View>
   );
 }
@@ -164,13 +127,9 @@ function StatsCard({
 }) {
   const mask = '••••';
   return (
-    <View
-      style={{
-        marginHorizontal: 16,
-        borderRadius: 16,
-      }}>
+    <View className="mx-4 rounded-2xl">
       <StatsRow label="Invested" value={hidden ? mask : investedValue} />
-      <View style={{ height: 1, backgroundColor: '#F3F4F6', marginHorizontal: 16 }} />
+      <View className="mx-4 h-px bg-gray-100" />
       <StatsRow label="Buying power" value={hidden ? mask : buyingPower} />
     </View>
   );
@@ -195,24 +154,9 @@ function AssetRow({
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={`View ${item.name} details`}
-        style={({ pressed }) => ({
-          opacity: pressed ? 0.7 : 1,
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-        })}>
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            backgroundColor: '#F3F4F6',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            marginRight: 12,
-          }}>
+        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        className="flex-row items-center px-4 py-3.5">
+        <View className="mr-3 h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-gray-100">
           {item.logo_url ? (
             <Image
               source={{ uri: item.logo_url }}
@@ -220,46 +164,29 @@ function AssetRow({
               resizeMode="cover"
             />
           ) : (
-            <Text style={{ fontSize: 15, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#374151' }}>
-              {item.symbol[0]}
-            </Text>
+            <Text className="font-subtitle text-[15px] text-gray-700">{item.symbol[0]}</Text>
           )}
         </View>
-        <View style={{ flex: 1, marginRight: 12 }}>
-          <Text
-            style={{ fontSize: 15, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#111827' }}
-            numberOfLines={1}>
+        <View className="mr-3 flex-1">
+          <Text className="font-subtitle text-[15px] text-gray-900" numberOfLines={1}>
             {item.name}
           </Text>
-          <Text
-            style={{
-              fontSize: 12,
-              fontFamily: 'SF-Pro-Rounded-Regular',
-              color: '#9CA3AF',
-              marginTop: 2,
-            }}
-            numberOfLines={1}>
+          <Text className="mt-0.5 font-caption text-[12px] text-text-tertiary" numberOfLines={1}>
             {item.symbol} · {item.quantity} shares
           </Text>
         </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={{ fontSize: 15, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#111827' }}>
+        <View className="items-end">
+          <Text className="font-subtitle text-[15px] text-gray-900">
             {item.market_value.formatted}
           </Text>
-          <Text
-            style={{
-              fontSize: 12,
-              fontFamily: 'SF-Pro-Rounded-Regular',
-              color: pnlColor,
-              marginTop: 2,
-            }}>
+          <Text className="mt-0.5 font-caption text-[12px]" style={{ color: pnlColor }}>
             {sign}
             {item.unrealized_pnl.formatted} ({sign}
             {item.unrealized_pnl_percent.toFixed(2)}%)
           </Text>
         </View>
       </Pressable>
-      {showSep && <View style={{ height: 1, backgroundColor: '#F3F4F6', marginLeft: 72 }} />}
+      {showSep && <View className="ml-[72px] h-px bg-gray-100" />}
     </View>
   );
 }
@@ -271,19 +198,10 @@ function PendingOrdersBanner({ transactions }: { transactions: InvestmentTradeTr
   return (
     <Animated.View
       entering={FadeIn.duration(200)}
-      style={{
-        marginHorizontal: 16,
-        marginTop: 12,
-        borderRadius: 12,
-        backgroundColor: '#EEF2FF',
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-      }}>
-      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: ACCENT }} />
-      <Text style={{ fontSize: 13, fontFamily: 'SF-Pro-Rounded-Regular', color: ACCENT, flex: 1 }}>
+      className="mx-4 mt-3 flex-row items-center gap-2 rounded-xl px-3.5 py-2.5"
+      style={{ backgroundColor: '#EEF2FF' }}>
+      <View className="h-2 w-2 rounded-full" style={{ backgroundColor: ACCENT }} />
+      <Text className="flex-1 font-caption text-[13px]" style={{ color: ACCENT }}>
         {pending.length} order{pending.length > 1 ? 's' : ''} pending · updating automatically
       </Text>
     </Animated.View>
@@ -358,43 +276,21 @@ function DonutChart({ items }: { items: InvestmentDistributionItem[] }) {
 function AllocationSection({ items }: { items: InvestmentDistributionItem[] }) {
   if (!items.length) return null;
   return (
-    <View style={{ marginTop: 32, paddingHorizontal: 16 }}>
-      <Text
-        style={{
-          fontSize: 18,
-          fontFamily: 'SF-Pro-Rounded-Semibold',
-          color: '#111827',
-          marginBottom: 16,
-        }}>
-        Allocation
-      </Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
-        {/* Donut */}
+    <View className="mt-8 px-4">
+      <Text className="mb-4 font-subtitle text-[18px] text-gray-900">Allocation</Text>
+      <View className="flex-row items-center gap-5">
         <DonutChart items={items} />
-        {/* Legend */}
-        <View style={{ flex: 1, gap: 10 }}>
+        <View className="flex-1 gap-2.5">
           {items.map((item, i) => (
-            <View key={item.symbol} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View key={item.symbol} className="flex-row items-center gap-2">
               <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: ALLOC_COLORS[i % ALLOC_COLORS.length],
-                }}
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: ALLOC_COLORS[i % ALLOC_COLORS.length] }}
               />
-              <Text
-                style={{
-                  flex: 1,
-                  fontSize: 13,
-                  fontFamily: 'SF-Pro-Rounded-Regular',
-                  color: '#374151',
-                }}
-                numberOfLines={1}>
+              <Text className="flex-1 font-caption text-[13px] text-gray-700" numberOfLines={1}>
                 {item.symbol}
               </Text>
-              <Text
-                style={{ fontSize: 13, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#111827' }}>
+              <Text className="font-subtitle text-[13px] text-gray-900">
                 {item.weight_percent.toFixed(1)}%
               </Text>
             </View>
@@ -410,123 +306,50 @@ const RISK_COLORS = ['#EF4444', '#F97316', '#EAB308', '#84CC16', '#22C55E'];
 
 function InvestmentRuleSection({ rule }: { rule: InvestmentRule }) {
   return (
-    <View style={{ marginTop: 32, paddingHorizontal: 16 }}>
-      <Text
-        style={{
-          fontSize: 18,
-          fontFamily: 'SF-Pro-Rounded-Semibold',
-          color: '#111827',
-          marginBottom: 16,
-        }}>
-        Investment rule
-      </Text>
-      <View
-        style={{
-          borderRadius: 16,
-          backgroundColor: '#F9FAFB',
-          borderWidth: 1,
-          borderColor: '#F3F4F6',
-          padding: 16,
-        }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: 16,
-          }}>
-          <View style={{ flex: 1, marginRight: 16 }}>
-            <Text style={{ fontSize: 16, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#111827' }}>
-              {rule.strategy_name}
-            </Text>
+    <View className="mt-8 px-4">
+      <Text className="mb-4 font-subtitle text-[18px] text-gray-900">Investment rule</Text>
+      <View className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+        <View className="mb-4 flex-row items-start justify-between">
+          <View className="mr-4 flex-1">
+            <Text className="font-subtitle text-[16px] text-gray-900">{rule.strategy_name}</Text>
             {rule.age_used !== null && (
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontFamily: 'SF-Pro-Rounded-Regular',
-                  color: '#9CA3AF',
-                  marginTop: 4,
-                }}>
+              <Text className="mt-1 font-caption text-[12px] text-text-tertiary">
                 Based on age {rule.age_used}
               </Text>
             )}
           </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 11, fontFamily: 'SF-Pro-Rounded-Regular', color: '#9CA3AF' }}>
-              Risk level
-            </Text>
-            <Text
-              style={{
-                fontSize: 28,
-                fontFamily: 'SF-Pro-Rounded-Semibold',
-                color: '#111827',
-                lineHeight: 32,
-              }}>
+          <View className="items-end">
+            <Text className="font-caption text-[11px] text-text-tertiary">Risk level</Text>
+            <Text className="font-subtitle text-[28px] leading-8 text-gray-900">
               {rule.risk_level}
-              <Text style={{ fontSize: 13, color: '#9CA3AF' }}>/5</Text>
+              <Text className="text-[13px] text-text-tertiary">/5</Text>
             </Text>
           </View>
         </View>
         {/* Risk bar */}
-        <View
-          style={{
-            height: 8,
-            flexDirection: 'row',
-            borderRadius: 4,
-            overflow: 'hidden',
-            marginBottom: 4,
-          }}>
+        <View className="mb-1 h-2 flex-row overflow-hidden rounded-full">
           {RISK_COLORS.map((c, i) => (
             <View key={i} style={{ flex: 1, backgroundColor: c }} />
           ))}
         </View>
         <View
-          style={{ paddingLeft: `${((rule.risk_level - 1) / 4) * 88}%` as any, marginBottom: 16 }}>
-          <View
-            style={{
-              width: 12,
-              height: 12,
-              borderRadius: 6,
-              backgroundColor: '#111827',
-              borderWidth: 2,
-              borderColor: '#FFFFFF',
-            }}
-          />
+          style={{ paddingLeft: `${((rule.risk_level - 1) / 4) * 88}%` as any }}
+          className="mb-4">
+          <View className="h-3 w-3 rounded-full border-2 border-white bg-gray-900" />
         </View>
-        <Text
-          style={{
-            fontSize: 13,
-            fontFamily: 'SF-Pro-Rounded-Regular',
-            color: '#6B7280',
-            lineHeight: 20,
-            marginBottom: 16,
-          }}>
+        <Text className="mb-4 font-caption text-[13px] leading-5 text-text-secondary">
           {rule.description}
         </Text>
-        {/* Asset mix */}
         {[
           { label: 'Equities', pct: rule.stock_allocation, color: ACCENT },
           { label: 'Bonds', pct: rule.bond_allocation, color: '#94A3B8' },
         ].map(({ label, pct, color }) => (
-          <View key={label} style={{ marginBottom: 12 }}>
-            <View
-              style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-              <Text
-                style={{ fontSize: 13, fontFamily: 'SF-Pro-Rounded-Regular', color: '#374151' }}>
-                {label}
-              </Text>
-              <Text
-                style={{ fontSize: 13, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#111827' }}>
-                {pct.toFixed(0)}%
-              </Text>
+          <View key={label} className="mb-3">
+            <View className="mb-1.5 flex-row justify-between">
+              <Text className="font-caption text-[13px] text-gray-700">{label}</Text>
+              <Text className="font-subtitle text-[13px] text-gray-900">{pct.toFixed(0)}%</Text>
             </View>
-            <View
-              style={{
-                height: 6,
-                borderRadius: 3,
-                backgroundColor: '#E5E7EB',
-                overflow: 'hidden',
-              }}>
+            <View className="h-1.5 overflow-hidden rounded-full bg-gray-200">
               <View
                 style={{
                   width: `${pct}%` as any,
@@ -539,15 +362,9 @@ function InvestmentRuleSection({ rule }: { rule: InvestmentRule }) {
           </View>
         ))}
         <View
-          style={{
-            alignSelf: 'flex-start',
-            borderRadius: 20,
-            paddingHorizontal: 12,
-            paddingVertical: 4,
-            backgroundColor: `${ACCENT}15`,
-            marginTop: 4,
-          }}>
-          <Text style={{ fontSize: 12, fontFamily: 'SF-Pro-Rounded-Semibold', color: ACCENT }}>
+          className="mt-1 self-start rounded-full px-3 py-1"
+          style={{ backgroundColor: `${ACCENT}15` }}>
+          <Text className="font-subtitle text-[12px]" style={{ color: ACCENT }}>
             {rule.risk_label}
           </Text>
         </View>
@@ -640,48 +457,36 @@ export default function InvestmentStashScreen() {
 
       case 'hero':
         return (
-          <View style={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 8 }}>
+          <View className="px-4 pb-2 pt-6">
             {isLoading ? (
-              <View style={{ gap: 8 }}>
-                <Shimmer w={140} h={48} radius={10} />
-                <Shimmer w={180} h={16} />
+              <View className="gap-2">
+                <Skeleton style={{ width: 140, height: 48, borderRadius: 10 }} />
+                <Skeleton style={{ width: 180, height: 16 }} />
               </View>
             ) : (
               <Animated.View entering={FadeIn.duration(200)}>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontFamily: 'SF-Pro-Rounded-Regular',
-                    color: '#9CA3AF',
-                    marginBottom: 4,
-                  }}>
+                <Text className="mb-1 font-caption text-[13px] text-text-tertiary">
                   Portfolio value
                 </Text>
                 <Text
-                  style={{
-                    fontSize: 44,
-                    fontFamily: 'SF-Pro-Rounded-Semibold',
-                    color: '#111827',
-                    letterSpacing: -1.5,
-                    lineHeight: 52,
-                  }}
+                  className="font-subtitle text-gray-900"
+                  style={{ fontSize: 44, letterSpacing: -1.5, lineHeight: 52 }}
                   numberOfLines={1}
                   adjustsFontSizeToFit
                   minimumFontScale={0.6}>
                   {isBalanceVisible ? totalBalance : mask}
                 </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 4 }}>
+                <View className="mt-1.5 flex-row items-center gap-1">
                   {isPositive ? (
                     <TrendingUp size={14} color={pnlColor} strokeWidth={2} />
                   ) : (
                     <TrendingDown size={14} color={pnlColor} strokeWidth={2} />
                   )}
-                  <Text
-                    style={{ fontSize: 14, fontFamily: 'SF-Pro-Rounded-Regular', color: pnlColor }}>
+                  <Text className="font-caption text-[14px]" style={{ color: pnlColor }}>
                     {isBalanceVisible
                       ? `${perfReturn ? perfReturn + ' ' : ''}(${isPositive ? '+' : ''}${perfReturnPct.toFixed(2)}%)`
                       : mask}{' '}
-                    <Text style={{ color: '#9CA3AF' }}>· {period}</Text>
+                    <Text className="text-text-tertiary">· {period}</Text>
                   </Text>
                 </View>
               </Animated.View>
@@ -694,7 +499,7 @@ export default function InvestmentStashScreen() {
 
       case 'chart':
         return (
-          <View style={{ marginTop: 8 }}>
+          <View className="mt-2">
             {perfLoading || isLoading ? (
               <View style={{ height: chartH, backgroundColor: '#F9FAFB' }} />
             ) : chartPoints.length >= 2 ? (
@@ -707,11 +512,8 @@ export default function InvestmentStashScreen() {
                 />
               </Animated.View>
             ) : (
-              <View style={{ height: chartH, alignItems: 'center', justifyContent: 'center' }}>
-                <Text
-                  style={{ fontSize: 13, fontFamily: 'SF-Pro-Rounded-Regular', color: '#D1D5DB' }}>
-                  No chart data yet
-                </Text>
+              <View style={{ height: chartH }} className="items-center justify-center">
+                <Text className="font-caption text-[13px] text-gray-300">No chart data yet</Text>
               </View>
             )}
           </View>
@@ -730,8 +532,8 @@ export default function InvestmentStashScreen() {
 
       case 'stats':
         return isLoading ? (
-          <View style={{ marginHorizontal: 16, gap: 1 }}>
-            <Shimmer w="100%" h={48} radius={16} />
+          <View className="mx-4">
+            <Skeleton style={{ height: 48, borderRadius: 16 }} className="w-full" />
           </View>
         ) : (
           <StatsCard
@@ -743,22 +545,9 @@ export default function InvestmentStashScreen() {
 
       case 'holdings':
         return (
-          <View style={{ marginTop: 32, paddingHorizontal: 16 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 16,
-              }}>
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontFamily: 'SF-Pro-Rounded-Semibold',
-                  color: '#111827',
-                }}>
-                Holdings
-              </Text>
+          <View className="mt-8 px-4">
+            <View className="mb-4 flex-row items-center justify-between">
+              <Text className="font-subtitle text-[18px] text-gray-900">Holdings</Text>
               {showAllHoldings && !isLoading && !positionsLoading && (
                 <Pressable
                   onPress={() => {
@@ -767,61 +556,32 @@ export default function InvestmentStashScreen() {
                   }}
                   accessibilityRole="button"
                   accessibilityLabel="View all holdings"
-                  style={{
-                    borderRadius: 12,
-                    backgroundColor: '#F3F4F6',
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                  }}>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontFamily: 'SF-Pro-Rounded-Semibold',
-                      color: '#111827',
-                    }}>
-                    View all
-                  </Text>
+                  className="rounded-xl bg-gray-100 px-3 py-1.5">
+                  <Text className="font-subtitle text-[12px] text-gray-900">View all</Text>
                 </Pressable>
               )}
             </View>
-            <View
-              style={{
-                borderRadius: 16,
-                overflow: 'hidden',
-              }}>
+            <View className="overflow-hidden rounded-2xl">
               {isLoading || positionsLoading ? (
                 [0, 1, 2].map((i) => (
-                  <View
-                    key={i}
-                    style={{ flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 }}>
-                    <Shimmer w={44} h={44} radius={22} />
-                    <View style={{ flex: 1, gap: 8 }}>
-                      <Shimmer w="45%" h={14} />
-                      <Shimmer w="30%" h={11} />
+                  <View key={i} className="flex-row items-center gap-3 p-4">
+                    <Skeleton style={{ width: 44, height: 44, borderRadius: 22 }} />
+                    <View className="flex-1 gap-2">
+                      <Skeleton className="w-[45%]" style={{ height: 14 }} />
+                      <Skeleton className="w-[30%]" style={{ height: 11 }} />
                     </View>
-                    <View style={{ alignItems: 'flex-end', gap: 8 }}>
-                      <Shimmer w={64} h={14} />
-                      <Shimmer w={48} h={11} />
+                    <View className="items-end gap-2">
+                      <Skeleton style={{ width: 64, height: 14 }} />
+                      <Skeleton style={{ width: 48, height: 11 }} />
                     </View>
                   </View>
                 ))
               ) : previewPositions.length === 0 ? (
-                <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontFamily: 'SF-Pro-Rounded-Regular',
-                      color: '#9CA3AF',
-                    }}>
+                <View className="items-center py-10">
+                  <Text className="font-caption text-[14px] text-text-tertiary">
                     No holdings yet
                   </Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontFamily: 'SF-Pro-Rounded-Regular',
-                      color: '#D1D5DB',
-                      marginTop: 4,
-                    }}>
+                  <Text className="mt-1 font-caption text-[12px] text-gray-300">
                     Auto-invest will place orders soon
                   </Text>
                 </View>
@@ -835,7 +595,7 @@ export default function InvestmentStashScreen() {
                       impact();
                       router.push({
                         pathname: `/market-asset/${pos.symbol}` as any,
-                        params: { position: JSON.stringify(pos) },
+                        params: { symbol: pos.symbol },
                       });
                     }}
                   />
@@ -847,41 +607,21 @@ export default function InvestmentStashScreen() {
 
       case 'transactions':
         return (
-          <View style={{ marginTop: 32, paddingHorizontal: 16 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 16,
-              }}>
-              <Text
-                style={{ fontSize: 18, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#111827' }}>
-                Transactions
-              </Text>
+          <View className="mt-8 px-4">
+            <View className="mb-4 flex-row items-center justify-between">
+              <Text className="font-subtitle text-[18px] text-gray-900">Transactions</Text>
               {(hasPrevTx || hasMoreTx) && (
-                <Text
-                  style={{ fontSize: 12, fontFamily: 'SF-Pro-Rounded-Regular', color: '#9CA3AF' }}>
+                <Text className="font-caption text-[12px] text-text-tertiary">
                   Page {currentPage}
                 </Text>
               )}
             </View>
-            <View
-              style={{
-                borderRadius: 16,
-                overflow: 'hidden',
-                paddingHorizontal: 4,
-              }}>
+            <View className="overflow-hidden rounded-2xl px-1">
               {txLoading ? (
                 [0, 1, 2].map((i) => <TransactionItemSkeleton key={i} />)
               ) : transactions.length === 0 ? (
-                <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontFamily: 'SF-Pro-Rounded-Regular',
-                      color: '#9CA3AF',
-                    }}>
+                <View className="items-center py-10">
+                  <Text className="font-caption text-[14px] text-text-tertiary">
                     No transactions yet
                   </Text>
                 </View>
@@ -890,8 +630,7 @@ export default function InvestmentStashScreen() {
               )}
             </View>
             {(hasPrevTx || hasMoreTx) && (
-              <View
-                style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
+              <View className="mt-3 flex-row justify-between">
                 <Pressable
                   onPress={() => {
                     impact();
@@ -900,26 +639,10 @@ export default function InvestmentStashScreen() {
                   disabled={!hasPrevTx}
                   accessibilityRole="button"
                   accessibilityLabel="Previous page"
-                  style={{
-                    opacity: hasPrevTx ? 1 : 0,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 4,
-                    backgroundColor: '#F3F4F6',
-                    borderRadius: 12,
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    minHeight: 44,
-                  }}>
+                  className="min-h-[44px] flex-row items-center gap-1 rounded-xl bg-gray-100 px-4 py-2.5"
+                  style={{ opacity: hasPrevTx ? 1 : 0 }}>
                   <ChevronLeft size={16} color="#111827" strokeWidth={2} />
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontFamily: 'SF-Pro-Rounded-Semibold',
-                      color: '#111827',
-                    }}>
-                    Prev
-                  </Text>
+                  <Text className="font-subtitle text-[13px] text-gray-900">Prev</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => {
@@ -929,25 +652,9 @@ export default function InvestmentStashScreen() {
                   disabled={!hasMoreTx}
                   accessibilityRole="button"
                   accessibilityLabel="Next page"
-                  style={{
-                    opacity: hasMoreTx ? 1 : 0,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 4,
-                    backgroundColor: '#F3F4F6',
-                    borderRadius: 12,
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    minHeight: 44,
-                  }}>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontFamily: 'SF-Pro-Rounded-Semibold',
-                      color: '#111827',
-                    }}>
-                    Next
-                  </Text>
+                  className="min-h-[44px] flex-row items-center gap-1 rounded-xl bg-gray-100 px-4 py-2.5"
+                  style={{ opacity: hasMoreTx ? 1 : 0 }}>
+                  <Text className="font-subtitle text-[13px] text-gray-900">Next</Text>
                   <ChevronRight size={16} color="#111827" strokeWidth={2} />
                 </Pressable>
               </View>
@@ -959,9 +666,9 @@ export default function InvestmentStashScreen() {
         return isLoading || distribution.length > 0 ? (
           isLoading ? (
             <View style={{ marginTop: 32, paddingHorizontal: 16, gap: 8 }}>
-              <Shimmer w={100} h={20} />
-              <Shimmer w="100%" h={8} radius={4} />
-              <Shimmer w="100%" h={48} radius={16} />
+              <Skeleton style={{ width: 100, height: 20 }} />
+              <Skeleton style={{ height: 8, borderRadius: 4 }} className="w-full" />
+              <Skeleton style={{ height: 48, borderRadius: 16 }} className="w-full" />
             </View>
           ) : (
             <AllocationSection items={distribution} />
@@ -973,8 +680,8 @@ export default function InvestmentStashScreen() {
           <View>
             {isLoading ? (
               <View style={{ marginTop: 32, paddingHorizontal: 16, gap: 8 }}>
-                <Shimmer w={120} h={20} />
-                <Shimmer w="100%" h={160} radius={16} />
+                <Skeleton style={{ width: 120, height: 20 }} />
+                <Skeleton style={{ height: 160, borderRadius: 16 }} className="w-full" />
               </View>
             ) : investmentRule ? (
               <Animated.View entering={FadeIn.duration(200)}>
@@ -985,7 +692,7 @@ export default function InvestmentStashScreen() {
         );
 
       case 'footer':
-        return <View style={{ height: 48 }} />;
+        return <View className="h-12" />;
 
       default:
         return null;
@@ -993,16 +700,9 @@ export default function InvestmentStashScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <View className="flex-1 bg-white">
       {/* Header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: 16,
-          paddingTop: insets.top + 8,
-          paddingBottom: 4,
-        }}>
+      <View className="flex-row items-center px-4 pb-1" style={{ paddingTop: insets.top + 8 }}>
         <Pressable
           onPress={() => {
             impact();
@@ -1011,18 +711,10 @@ export default function InvestmentStashScreen() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          style={{
-            width: 44,
-            height: 44,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: 4,
-          }}>
+          className="mr-1 h-11 w-11 items-center justify-center">
           <ChevronLeft size={24} color="#111827" strokeWidth={2} />
         </Pressable>
-        <Text style={{ fontSize: 17, fontFamily: 'SF-Pro-Rounded-Semibold', color: '#111827' }}>
-          Invest
-        </Text>
+        <Text className="font-subtitle text-[17px] text-gray-900">Invest</Text>
       </View>
 
       <FlatList

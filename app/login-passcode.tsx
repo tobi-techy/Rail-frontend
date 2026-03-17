@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Passkey } from 'react-native-passkey';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { Icon } from '@/components/atoms/Icon';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { useAuthStore } from '@/stores/authStore';
@@ -12,7 +12,6 @@ import { haptics } from '@/utils/haptics';
 import { SessionManager } from '@/utils/sessionManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { useLoginPasskey } from '@/hooks/useLoginPasskey';
 import { safeName } from '@/app/withdraw/method-screen/utils';
 import { clearAutoFired } from '@/utils/passkeyPromptGuard';
 
@@ -41,47 +40,47 @@ export default function LoginPasscodeScreen() {
   const isBiometricEnabled = useAuthStore((s) => s.isBiometricEnabled);
   const profileFetchAttemptedRef = useRef(false);
 
-  const userName =
-    [safeName(user?.firstName), safeName(user?.lastName)].filter(Boolean).join(' ').trim() ||
-    safeName(user?.fullName) ||
-    safeName(user?.firstName) ||
-    'User';
+  const userName = safeName(user?.firstName) || safeName(user?.fullName)?.split(' ')[0] || 'User';
 
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
-  const [passkeyAvailable, setPasskeyAvailable] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
   const [lockoutSecondsRemaining, setLockoutSecondsRemaining] = useState(0);
 
   const { mutate: verifyPasscode, isPending: isLoading } = useVerifyPasscode();
   const { showError, showWarning } = useFeedbackPopup();
 
-  const {
-    isPasskeyLoading,
-    error: passkeyError,
-    setError: setPasskeyError,
-    handlePasskeyAuth,
-  } = useLoginPasskey({
-    email: user?.email,
-    isLoading,
-    autoTrigger: isBiometricEnabled && passkeyAvailable,
-    onSuccess: () => {
+  // Check biometric availability
+  useEffect(() => {
+    (async () => {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      setBiometricAvailable(compatible && enrolled);
+    })();
+  }, []);
+
+  // Auto-trigger biometric on mount if enabled
+  useEffect(() => {
+    if (isBiometricEnabled && biometricAvailable) {
+      handleBiometricAuth();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [biometricAvailable]);
+
+  const handleBiometricAuth = useCallback(async () => {
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Sign in to Rail',
+      fallbackLabel: 'Use PIN',
+      disableDeviceFallback: false,
+    });
+    if (result.success) {
       setLockoutUntil(null);
       router.replace('/(tabs)');
-    },
-  });
-
-  // Merge passkey error into local error display
-  useEffect(() => {
-    if (passkeyError) {
-      haptics.error();
-      setError(passkeyError);
+    } else {
+      setError('Biometric authentication cancelled');
     }
-  }, [passkeyError]);
-
-  useEffect(() => {
-    setPasskeyAvailable(Passkey.isSupported() && Boolean(safeName(user?.email)));
-  }, [user?.email]);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated || safeName(user?.firstName) || profileFetchAttemptedRef.current) return;
@@ -124,14 +123,13 @@ export default function LoginPasscodeScreen() {
 
   const handlePasscodeSubmit = useCallback(
     (code: string) => {
-      if (isLoading || isPasskeyLoading) return;
+      if (isLoading) return;
       if (lockoutSecondsRemaining > 0) {
         haptics.error();
         setError(`PIN is locked. Try again in ${lockoutSecondsRemaining}s.`);
         return;
       }
       setError('');
-      setPasskeyError('');
 
       verifyPasscode(
         { passcode: code },
@@ -145,9 +143,6 @@ export default function LoginPasscodeScreen() {
             }
             if (response.passcodeSessionExpiresAt) {
               SessionManager.schedulePasscodeSessionExpiry(response.passcodeSessionExpiresAt);
-            }
-            if (passkeyAvailable && !isBiometricEnabled) {
-              useAuthStore.getState().enableBiometric();
             }
             setLockoutUntil(null);
             await new Promise((resolve) => setTimeout(resolve, 100));
@@ -196,17 +191,7 @@ export default function LoginPasscodeScreen() {
         }
       );
     },
-    [
-      isBiometricEnabled,
-      isLoading,
-      isPasskeyLoading,
-      lockoutSecondsRemaining,
-      passkeyAvailable,
-      setPasskeyError,
-      showError,
-      showWarning,
-      verifyPasscode,
-    ]
+    [isLoading, lockoutSecondsRemaining, showError, showWarning, verifyPasscode]
   );
 
   return (
@@ -232,7 +217,7 @@ export default function LoginPasscodeScreen() {
           </View>
 
           <PasscodeInput
-            subtitle="Use passkey or enter your account PIN"
+            subtitle="Enter your PIN"
             length={4}
             value={passcode}
             onValueChange={(value) => {
@@ -246,8 +231,8 @@ export default function LoginPasscodeScreen() {
                 : error
             }
             showToggle
-            showFingerprint={passkeyAvailable}
-            onFingerprint={handlePasskeyAuth}
+            showFingerprint={biometricAvailable && isBiometricEnabled}
+            onFingerprint={handleBiometricAuth}
             autoSubmit
             variant="light"
             className="flex-1"
