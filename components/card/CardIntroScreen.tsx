@@ -114,7 +114,7 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
   const [showLearnMore, setShowLearnMore] = useState(false);
 
   return (
-    <View className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center px-4 pt-2">
         <Pressable
@@ -156,45 +156,48 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
       <BottomSheet visible={showLearnMore} onClose={() => setShowLearnMore(false)} showCloseButton>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 24, paddingBottom: 40 }}>
-          <Text className="mb-2 font-display text-2xl text-gray-900">Your Rail Card</Text>
-          <Text className="mb-6 font-body text-base leading-6 text-gray-500">
-            A free virtual Visa debit card linked directly to your Rail spend balance.
-          </Text>
+          contentContainerStyle={{ paddingBottom: 40 }}>
+          <View className="mb-8">
+            <Text className="font-headline text-[26px] leading-[32px] text-gray-900">
+              Rail Debit Card
+            </Text>
+            <Text className="mt-2 font-body text-[14px] text-gray-400">
+              Free virtual Visa — linked to your spend balance.
+            </Text>
+          </View>
 
           {[
             {
               title: 'Instant Issuance',
-              body: 'Your card is ready to use the moment you create it — no waiting, no shipping.',
+              body: 'Ready to use the moment you create it — no waiting, no shipping.',
             },
             {
               title: 'Spend Your Balance',
-              body: 'Every purchase draws from your 70% spend allocation. Your money, always accessible.',
+              body: 'Every purchase draws from your 70% spend allocation.',
             },
             {
               title: 'Round-Up Investing',
-              body: 'Enable round-ups and every transaction automatically invests your spare change.',
+              body: 'Spare change from every transaction auto-invests into your stash.',
             },
             {
               title: 'Freeze Anytime',
-              body: "Lost your phone? Freeze your card instantly from settings and unfreeze when you're ready.",
+              body: 'Freeze or unfreeze your card instantly from settings.',
             },
             {
               title: 'PCI-Secure Details',
-              body: 'Card numbers are revealed only after Face ID or Touch ID — never stored on device.',
+              body: 'Card numbers revealed only after Face ID or Touch ID.',
             },
-            {
-              title: 'Zero Card Fees',
-              body: 'No annual fee, no issuance fee. The card is completely free.',
-            },
-          ].map((item) => (
-            <View key={item.title} className="mb-5">
-              <Text className="mb-1 font-subtitle text-[15px] text-gray-900">{item.title}</Text>
-              <Text className="font-body text-[14px] leading-5 text-gray-500">{item.body}</Text>
+            { title: 'Zero Fees', body: 'No annual fee, no issuance fee. Completely free.' },
+          ].map((item, i) => (
+            <View key={item.title} className={`py-4 ${i < 5 ? 'border-b border-gray-100' : ''}`}>
+              <Text className="font-button text-[15px] text-gray-900">{item.title}</Text>
+              <Text className="mt-1 font-body text-[14px] leading-5 text-gray-400">
+                {item.body}
+              </Text>
             </View>
           ))}
         </ScrollView>
       </BottomSheet>
-    </View>
+    </SafeAreaView>
   );
 }

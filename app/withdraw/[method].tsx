@@ -15,6 +15,7 @@ import Animated, {
   SlideInUp,
 } from 'react-native-reanimated';
 import { usePasskeys, useRegisterPasskey, useStation, useVerifyPasscode } from '@/api/hooks';
+import { useKYCStatus } from '@/api/hooks/useKYC';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Keypad } from '@/components/molecules/Keypad';
 import { Button } from '@/components/ui';
@@ -342,7 +343,7 @@ export default function WithdrawAmountScreen() {
           text: 'Create passkey',
           onPress: async () => {
             try {
-              await registerPasskey();
+              await registerPasskey(undefined);
               showSuccess('Passkey ready', 'You can now approve with passkey.');
               passkey.onPasskeyAuthorize();
             } catch (err: any) {

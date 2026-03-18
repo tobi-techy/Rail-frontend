@@ -231,7 +231,7 @@ export default function LoginPasscodeScreen() {
                 : error
             }
             showToggle
-            showFingerprint={biometricAvailable && isBiometricEnabled}
+            showFingerprint={biometricAvailable}
             onFingerprint={handleBiometricAuth}
             autoSubmit
             variant="light"

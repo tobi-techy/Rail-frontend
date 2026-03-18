@@ -254,7 +254,7 @@ function DashboardScreen() {
     navigation.setOptions({
       headerLeft: () => (
         <View className="flex-row items-center gap-x-3 pl-md">
-          <Pressable onPress={() => router.push('/profile')} hitSlop={8}>
+          <Pressable hitSlop={8}>
             <Avatar size={36} {...avatarConfig} />
           </Pressable>
         </View>
