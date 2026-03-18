@@ -85,8 +85,8 @@ export function VirtualAccountIntroSheet({
           <View className="z-10 h-14 w-14 items-center justify-center rounded-full bg-gray-900">
             <BankIcon width={26} height={26} color="#fff" />
           </View>
-          <View className="-ml-3 h-14 w-14 items-center justify-center rounded-full border-2 border-gray-100 bg-white">
-            <UsdIcon width={32} height={32} />
+          <View className="-ml-3 h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-gray-100 bg-white">
+            <UsdIcon width={40} height={40} />
           </View>
         </View>
       </View>
