@@ -157,7 +157,9 @@ class PersistentRateLimiter {
     this.cache.delete(key);
     try {
       await secureStorage.deleteItem(await this.storageKeyAsync(key));
-    } catch {}
+    } catch (error) {
+      console.warn('Failed to reset rate limiter storage:', error);
+    }
   }
 }
 

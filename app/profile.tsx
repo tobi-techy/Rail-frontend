@@ -79,7 +79,7 @@ const Profile = () => {
             <Text className="font-body-bold text-base font-semibold text-[#000]">
               Recent Activity
             </Text>
-            {station!.recent_activity.slice(0, 5).map((item) => (
+            {station?.recent_activity?.slice(0, 5).map((item) => (
               <View
                 key={item.id}
                 className="flex-row items-center justify-between rounded-xl bg-[#F5F5F5] px-4 py-3">

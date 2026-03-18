@@ -76,6 +76,10 @@ export default function LoginPasscodeScreen() {
     });
     if (result.success) {
       setLockoutUntil(null);
+      // Grant a passcode session so the session guard doesn't bounce back
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      useAuthStore.getState().setPasscodeSession('biometric-granted', expiresAt);
+      SessionManager.schedulePasscodeSessionExpiry(expiresAt);
       router.replace('/(tabs)');
     } else {
       setError('Biometric authentication cancelled');

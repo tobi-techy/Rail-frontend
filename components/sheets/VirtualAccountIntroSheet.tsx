@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { Building2, Zap, ShieldCheck, DollarSign } from 'lucide-react-native';
+import { Building2, Zap, ShieldCheck } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { BottomSheet } from './BottomSheet';
 import { Button } from '@/components/ui';
@@ -86,7 +86,7 @@ export function VirtualAccountIntroSheet({
             <BankIcon width={26} height={26} color="#fff" />
           </View>
           <View className="-ml-3 h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-gray-100 bg-white">
-            <UsdIcon width={40} height={40} />
+            <UsdIcon width={56} height={56} />
           </View>
         </View>
       </View>

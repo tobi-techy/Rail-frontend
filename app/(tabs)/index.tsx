@@ -238,7 +238,7 @@ function DashboardScreen() {
 
   const focusRefetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    return navigation.addListener('focus', () => {
+    const unsubscribe = navigation.addListener('focus', () => {
       if (focusRefetchTimer.current) clearTimeout(focusRefetchTimer.current);
       focusRefetchTimer.current = setTimeout(() => {
         void refetch();
@@ -248,6 +248,10 @@ function DashboardScreen() {
         void invalidateQueries.wallet();
       }, 300);
     });
+    return () => {
+      if (focusRefetchTimer.current) clearTimeout(focusRefetchTimer.current);
+      unsubscribe();
+    };
   }, [navigation, refetch, deposits, withdrawals]);
 
   useLayoutEffect(() => {
@@ -651,7 +655,9 @@ function DashboardScreen() {
                 params: { url: encodeURIComponent(res.tos_link) },
               });
             }
-          } catch {}
+          } catch (error) {
+            console.warn('Failed to fetch TOS link:', error);
+          }
         }}
       />
       <SolanaPayScanSheet

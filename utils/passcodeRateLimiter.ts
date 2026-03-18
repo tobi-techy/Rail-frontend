@@ -50,7 +50,9 @@ class PasscodeRateLimiter {
   private async delete(userId: string): Promise<void> {
     try {
       await secureStorage.deleteItem(`${STORAGE_KEY_PREFIX}${userId}`);
-    } catch {}
+    } catch (error) {
+      logger.warn('[PasscodeRateLimiter] Failed to delete storage', { userId });
+    }
     this.attemptMap.delete(userId);
   }
 
