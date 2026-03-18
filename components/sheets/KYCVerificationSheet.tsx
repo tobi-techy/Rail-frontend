@@ -116,7 +116,7 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
 
   const handleContinue = useCallback(() => {
     onClose();
-    requestAnimationFrame(() => router.push('/kyc/sumsub-sdk'));
+    requestAnimationFrame(() => router.push('/kyc'));
   }, [onClose]);
 
   const handleCheckStatus = useCallback(async () => {
@@ -253,7 +253,6 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
                   loading={isRefetchingStatus}
                   leftIcon={<RefreshCw size={16} color="#111827" />}
                 />
-                <Button title="Close" variant="white" onPress={closeSheet} />
               </View>
             ) : (
               <Button
