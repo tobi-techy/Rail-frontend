@@ -106,7 +106,7 @@ export default function WithdrawAmountScreen() {
   const [didTryContinue, setDidTryContinue] = useState(false);
   const [isDetailsSheetVisible, setIsDetailsSheetVisible] = useState(false);
   const [destinationInput, setDestinationInput] = useState(prefilledAssetSymbol);
-  const [destinationChain, setDestinationChain] = useState('SOL-DEVNET');
+  const [destinationChain, setDestinationChain] = useState('SOL');
   const [didTryDestination, setDidTryDestination] = useState(false);
   const [didTryFiatAccount, setDidTryFiatAccount] = useState(false);
   const [fiatAccountHolderName, setFiatAccountHolderName] = useState('');

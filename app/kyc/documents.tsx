@@ -19,7 +19,7 @@ import {
   type KycDisclosures,
 } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
-import { useStartSumsubSession } from '@/api/hooks/useKYC';
+import { useStartDiditSession } from '@/api/hooks/useKYC';
 import { useAuthStore } from '@/stores/authStore';
 
 const DISCLOSURE_COPY: Record<keyof KycDisclosures, string> = {
@@ -49,7 +49,7 @@ export default function KycDocumentsScreen() {
     toggleInvestmentPurpose,
     setDisclosure,
     setDisclosuresConfirmed,
-    setSumsubSession,
+    setDiditSession,
   } = useKycStore();
 
   const country = (userCountry as Country) || 'USA';
@@ -58,7 +58,7 @@ export default function KycDocumentsScreen() {
   const [taxIdError, setTaxIdError] = useState('');
   const [submitError, setSubmitError] = useState('');
 
-  const startSession = useStartSumsubSession();
+  const startSession = useStartDiditSession();
   const taxConfig = COUNTRY_TAX_CONFIG[country];
   const requirement = COUNTRY_KYC_REQUIREMENTS[country];
   const requiredDisclosureKeys = requirement.requiredDisclosures;
@@ -107,12 +107,12 @@ export default function KycDocumentsScreen() {
         most_recent_occupation: mostRecentOccupation ?? undefined,
         acting_as_intermediary: actingAsIntermediary || undefined,
       });
-      setSumsubSession(result.token, result.applicant_id);
-      router.push('/kyc/sumsub-sdk');
+      setDiditSession(result.session_token, result.session_id);
+      router.push('/kyc/didit-sdk');
     } catch {
       setSubmitError('Could not start verification session. Please try again.');
     }
-  }, [country, taxId, taxIdType, buildDisclosures, startSession, setSumsubSession]);
+  }, [country, taxId, taxIdType, buildDisclosures, startSession, setDiditSession]);
 
   return (
     <ErrorBoundary>

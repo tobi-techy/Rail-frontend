@@ -101,6 +101,29 @@ export type StartSumsubSessionResponse = {
   level_name: string;
 };
 
+// --- Didit Session ---
+
+export type StartDiditSessionRequest = {
+  tax_id: string;
+  tax_id_type: TaxIdType;
+  issuing_country: Country;
+  disclosures: KycDisclosures;
+  source_of_funds?: string;
+  employment_status?: string;
+  expected_monthly_payments_usd?: string;
+  account_purpose?: string;
+  account_purpose_other?: string;
+  most_recent_occupation?: string;
+  acting_as_intermediary?: boolean;
+};
+
+export type StartDiditSessionResponse = {
+  status: 'pending';
+  session_id: string;
+  session_token: string;
+  url?: string;
+};
+
 // --- Direct KYC Submit ---
 
 export type SubmitKYCRequest = {

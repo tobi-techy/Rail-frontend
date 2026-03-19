@@ -41,6 +41,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@didit-protocol/sdk-react-native": "^3.2.6",
     "@expo/ui": "~0.2.0-beta.9",
     "@expo/vector-icons": "^15.0.2",
     "@quidone/react-native-wheel-picker": "^1.6.1",
@@ -57,7 +58,6 @@
     "@solana-mobile/mobile-wallet-adapter-protocol-web3js": "^2.2.5",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
-    "@sumsub/react-native-mobilesdk-module": "^1.40.2",
     "@tanstack/react-query": "^5.90.5",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",

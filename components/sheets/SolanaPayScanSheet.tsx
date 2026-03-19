@@ -17,7 +17,7 @@ import { PhantomIcon, SolflareIcon } from '@/assets/svg';
 import { useWalletAddresses } from '@/api/hooks/useWallet';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { SOLANA_TESTNET_CHAIN } from '@/utils/chains';
+import { SOLANA_MAINNET_CHAIN } from '@/utils/chains';
 import { parseSolanaPayUrl, type SolanaPayRequest } from '@/utils/solanaPayUrl';
 import { DEFAULT_MAINNET_USDC_MINT, type SupportedFundingWallet } from '@/services/solanaFunding';
 
@@ -42,7 +42,7 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
   const scannedRef = useRef(false);
 
   const [permission, requestPermission] = useCameraPermissions();
-  const { data: wallet } = useWalletAddresses(SOLANA_TESTNET_CHAIN);
+  const { data: wallet } = useWalletAddresses(SOLANA_MAINNET_CHAIN);
   const { impact, notification } = useHaptics();
   const { showError } = useFeedbackPopup();
 

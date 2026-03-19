@@ -11,7 +11,7 @@ export default function KycLayout() {
       <Stack.Screen name="source-of-funds" />
       <Stack.Screen name="documents" />
       <Stack.Screen
-        name="sumsub-sdk"
+        name="didit-sdk"
         options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
       />
       <Stack.Screen name="pending" options={{ animation: 'fade', gestureEnabled: false }} />

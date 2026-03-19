@@ -5,6 +5,7 @@
     "": {
       "name": "rail",
       "dependencies": {
+        "@didit-protocol/sdk-react-native": "^3.2.6",
         "@expo/ui": "~0.2.0-beta.9",
         "@expo/vector-icons": "^15.0.2",
         "@quidone/react-native-wheel-picker": "^1.6.1",
@@ -311,6 +312,8 @@
     "@babel/types": ["@babel/types@7.29.0", "", { "dependencies": { "@babel/helper-string-parser": "^7.27.1", "@babel/helper-validator-identifier": "^7.28.5" } }, "sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A=="],
 
     "@bcoe/v8-coverage": ["@bcoe/v8-coverage@0.2.3", "", {}, "sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw=="],
+
+    "@didit-protocol/sdk-react-native": ["@didit-protocol/sdk-react-native@3.2.6", "", { "peerDependencies": { "@expo/config-plugins": ">=7.0.0", "react": "*", "react-native": "*" }, "optionalPeers": ["@expo/config-plugins"] }, "sha512-8AD8LGpMaYXQway2yCQwNw8ceQyLSnCP3NTHi6IuD14o3HLkgFHXkXPcyucoXaYUQ2MUaeRmyoVtPoyQjOG4XQ=="],
 
     "@egjs/hammerjs": ["@egjs/hammerjs@2.0.17", "", { "dependencies": { "@types/hammerjs": "^2.0.36" } }, "sha512-XQsZgjm2EcVUiZQf11UBJQfmZeEmOW8DpI1gsFeln6w0ae0ii4dMQEQ0kjl6DspdWX1aGY1/loyXnP0JS06e/A=="],
 

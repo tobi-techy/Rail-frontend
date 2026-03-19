@@ -98,7 +98,7 @@ export const walletService = {
       timestamp: tx?.created_at || tx?.updated_at || new Date().toISOString(),
       status: tx?.status || 'pending',
       txHash: tx?.tx_hash || undefined,
-      network: tx?.destination_chain || 'SOL-DEVNET',
+      network: tx?.destination_chain || 'SOL',
       fee: undefined,
       confirmations: undefined,
     }));
@@ -126,7 +126,7 @@ export const walletService = {
       timestamp: tx?.created_at || tx?.updated_at || new Date().toISOString(),
       status: tx?.status || 'pending',
       txHash: tx?.tx_hash || undefined,
-      network: tx?.destination_chain || 'SOL-DEVNET',
+      network: tx?.destination_chain || 'SOL',
       fee: undefined,
       confirmations: undefined,
     };
@@ -204,7 +204,7 @@ export const walletService = {
    * Get deposit address for a token
    */
   async getDepositAddress(data: GetDepositAddressRequest): Promise<GetDepositAddressResponse> {
-    const chain = data.network || 'SOL-DEVNET';
+    const chain = data.network || 'SOL';
     const response = await apiClient.post<any>(WALLET_ENDPOINTS.DEPOSIT_ADDRESS, { chain });
     return {
       address: response?.address || '',
@@ -237,13 +237,13 @@ export const walletService = {
     return {
       networks: [
         {
-          id: 'solana-devnet',
-          name: 'Solana Devnet',
+          id: 'solana',
+          name: 'Solana',
           symbol: 'SOL',
           chainId: 0,
           rpcUrl: '',
           explorerUrl: 'https://solscan.io',
-          isTestnet: true,
+          isTestnet: false,
           nativeCurrency: { name: 'Solana', symbol: 'SOL', decimals: 9 },
         },
       ],
@@ -254,7 +254,7 @@ export const walletService = {
    * Get Solana wallet address
    */
   async getWalletAddresses(params?: GetWalletAddressesRequest): Promise<WalletAddressesResponse> {
-    const chain = params?.chain || 'SOL-DEVNET'; // Default to Solana testnet
+    const chain = params?.chain || 'SOL';
     const endpoint = WALLET_ENDPOINTS.ADDRESSES.replace(':chain', chain);
     return apiClient.get<WalletAddressesResponse>(endpoint);
   },

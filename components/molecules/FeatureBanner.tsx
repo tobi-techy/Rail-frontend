@@ -73,15 +73,16 @@ interface FeatureBannerProps {
 }
 
 function getKycProgressScreen(state: ReturnType<typeof useKycStore.getState>): string {
-  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, sumsubToken } = state;
+  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, diditSessionToken } =
+    state;
 
-  // If user has SumSub token, they're in the middle of ID verification
-  if (sumsubToken) {
-    return '/kyc/sumsub-sdk';
+  // If user has a Didit session token, they're in the middle of ID verification
+  if (diditSessionToken) {
+    return '/kyc/didit-sdk';
   }
 
-  // If user has completed disclosures and submitted, they should be going to SumSub
-  // But if sumsubToken is null (failed to get or session expired), go to disclosures to resubmit
+  // If user has completed disclosures and submitted, they should be going to Didit
+  // But if diditSessionToken is null (failed to get or session expired), go to disclosures to resubmit
   if (disclosuresConfirmed && taxId && employmentStatus && investmentPurposes.length > 0) {
     return '/kyc/disclosures';
   }
@@ -108,7 +109,7 @@ export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBanne
   const [showConductorSheet, setShowConductorSheet] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, sumsubToken } =
+  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, diditSessionToken } =
     useKycStore();
 
   const hasStartedKyc =
@@ -116,7 +117,7 @@ export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBanne
     employmentStatus !== null ||
     investmentPurposes.length > 0 ||
     disclosuresConfirmed ||
-    sumsubToken !== null;
+    diditSessionToken !== null;
 
   const handleKycPress = () => {
     if (hasStartedKyc) {

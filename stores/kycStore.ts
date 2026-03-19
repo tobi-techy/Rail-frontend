@@ -35,9 +35,9 @@ interface KycState {
   disclosuresConfirmed: boolean;
   missingProfileFields: string[];
 
-  // Sumsub session (non-sensitive — token is short-lived, not PII)
-  sumsubToken: string | null;
-  applicantId: string | null;
+  // Didit session (non-sensitive — token is short-lived, not PII)
+  diditSessionToken: string | null;
+  diditSessionId: string | null;
   localSubmissionPendingAt: string | null;
 
   setCountry: (country: Country) => void;
@@ -54,7 +54,7 @@ interface KycState {
   setDisclosure: (key: keyof KycDisclosures, value: boolean) => void;
   setDisclosuresConfirmed: (confirmed: boolean) => void;
   setMissingProfileFields: (fields: string[]) => void;
-  setSumsubSession: (token: string, applicantId: string) => void;
+  setDiditSession: (sessionToken: string, sessionId: string) => void;
   setLocalSubmissionPendingAt: (submittedAt: string | null) => void;
   resetKycState: () => void;
 }
@@ -76,8 +76,8 @@ export const useKycStore = create<KycState>()(
       disclosures: DEFAULT_DISCLOSURES,
       disclosuresConfirmed: false,
       missingProfileFields: [],
-      sumsubToken: null,
-      applicantId: null,
+      diditSessionToken: null,
+      diditSessionId: null,
       localSubmissionPendingAt: null,
 
       setCountry: (country) =>
@@ -121,7 +121,8 @@ export const useKycStore = create<KycState>()(
 
       setDisclosuresConfirmed: (disclosuresConfirmed) => set({ disclosuresConfirmed }),
       setMissingProfileFields: (missingProfileFields) => set({ missingProfileFields }),
-      setSumsubSession: (sumsubToken, applicantId) => set({ sumsubToken, applicantId }),
+      setDiditSession: (diditSessionToken, diditSessionId) =>
+        set({ diditSessionToken, diditSessionId }),
       setLocalSubmissionPendingAt: (localSubmissionPendingAt) => set({ localSubmissionPendingAt }),
 
       resetKycState: () =>
@@ -140,20 +141,20 @@ export const useKycStore = create<KycState>()(
           disclosures: DEFAULT_DISCLOSURES,
           disclosuresConfirmed: false,
           missingProfileFields: [],
-          sumsubToken: null,
-          applicantId: null,
+          diditSessionToken: null,
+          diditSessionId: null,
           localSubmissionPendingAt: null,
         }),
     }),
     {
       name: 'kyc-store',
       storage: createJSONStorage(() => AsyncStorage),
-      // Never persist taxId or sumsub session tokens — transient PII/sensitive data
+      // Never persist taxId or didit session tokens — transient PII/sensitive data
       partialize: (state) => {
         const {
           taxId: _taxId,
-          sumsubToken: _sumsubToken,
-          applicantId: _applicantId,
+          diditSessionToken: _diditSessionToken,
+          diditSessionId: _diditSessionId,
           ...rest
         } = state;
         return rest;

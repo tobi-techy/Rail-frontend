@@ -20,6 +20,7 @@ import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
+  SOL: SolanaIcon,
   'SOL-DEVNET': SolanaIcon,
   'MATIC-AMOY': MaticIcon,
   'AVAX-FUJI': AvalancheIcon,
@@ -115,7 +116,7 @@ export default function ReceiveChainSelectScreen() {
 
         <CryptoReceiveSheet
           visible={selectedChain !== null}
-          chain={selectedChain ?? 'SOL-DEVNET'}
+          chain={selectedChain ?? 'SOL'}
           onClose={() => setSelectedChain(null)}
         />
       </SafeAreaView>

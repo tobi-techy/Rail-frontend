@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { useKycStore } from '@/stores/kycStore';
-import { useStartSumsubSession } from '@/api/hooks/useKYC';
+import { useStartDiditSession } from '@/api/hooks/useKYC';
 import type { KycDisclosures } from '@/api/types/kyc';
 
 const SOURCE_OF_FUNDS = [
@@ -87,11 +87,11 @@ export default function SourceOfFundsScreen() {
     setAccountPurposeOther,
     setMostRecentOccupation,
     setActingAsIntermediary,
-    setSumsubSession,
+    setDiditSession,
     setLocalSubmissionPendingAt,
   } = useKycStore();
 
-  const startSession = useStartSumsubSession();
+  const startSession = useStartDiditSession();
 
   const [funds, setFunds] = useState<string | null>(null);
   const [monthly, setMonthly] = useState<string | null>(null);
@@ -139,8 +139,8 @@ export default function SourceOfFundsScreen() {
         most_recent_occupation: occupation!,
         acting_as_intermediary: intermediary,
       });
-      setSumsubSession(result.token, result.applicant_id);
-      router.push('/kyc/sumsub-sdk');
+      setDiditSession(result.session_token, result.session_id);
+      router.push('/kyc/didit-sdk');
     } catch {
       setSubmitError('Could not start verification. Please try again.');
     }

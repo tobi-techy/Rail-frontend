@@ -12,6 +12,7 @@ import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
 import type { WalletChain } from '@/api/types';
 
 const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
+  SOL: SolanaIcon,
   'SOL-DEVNET': SolanaIcon,
   'MATIC-AMOY': MaticIcon,
   'AVAX-FUJI': AvalancheIcon,
@@ -23,11 +24,7 @@ interface CryptoReceiveSheetProps {
   chain?: WalletChain;
 }
 
-export function CryptoReceiveSheet({
-  visible,
-  onClose,
-  chain = 'SOL-DEVNET',
-}: CryptoReceiveSheetProps) {
+export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoReceiveSheetProps) {
   const chainConfig = getChainConfig(chain);
   const { data: wallet, isLoading, isError, error, refetch } = useDepositAddress(chain);
   const [copied, setCopied] = useState(false);
@@ -40,9 +37,9 @@ export function CryptoReceiveSheet({
   const address = wallet?.address ?? '';
 
   const usdcMint =
-    process.env.EXPO_PUBLIC_SOLANA_USDC_MINT ?? '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
+    process.env.EXPO_PUBLIC_SOLANA_USDC_MINT ?? 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
   const qrValue =
-    chain === 'SOL-DEVNET' && address
+    (chain === 'SOL' || chain === 'SOL-DEVNET') && address
       ? `solana:${address}?spl-token=${usdcMint}&label=Rail`
       : address;
 

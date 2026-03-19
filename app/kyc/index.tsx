@@ -14,6 +14,7 @@ import {
 } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useKYCStatus } from '@/api/hooks/useKYC';
 
 const ISO2_TO_KYC: Record<string, Country> = {
   US: 'USA',
@@ -67,6 +68,22 @@ export default function KycCountryScreen() {
   const userCountry = useAuthStore((s) => s.user?.country);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const params = useLocalSearchParams<{ autoLaunch?: string }>();
+  const { data: kycStatus } = useKYCStatus();
+
+  // If KYC already submitted, skip to pending/result screen
+  useEffect(() => {
+    if (!kycStatus) return;
+    if (kycStatus.status === 'approved') {
+      useAuthStore.getState().setOnboardingStatus('completed');
+      router.replace('/(tabs)');
+    } else if (
+      kycStatus.has_submitted &&
+      kycStatus.status !== 'rejected' &&
+      kycStatus.status !== 'expired'
+    ) {
+      router.replace('/kyc/pending');
+    }
+  }, [kycStatus]);
 
   // Auto-set KYC country from address step, then redirect if autoLaunch
   useEffect(() => {

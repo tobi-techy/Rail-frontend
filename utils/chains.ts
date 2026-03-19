@@ -18,18 +18,11 @@ export interface ChainConfig {
 
 export const SUPPORTED_CHAINS: ChainConfig[] = [
   {
-    chain: 'SOL-DEVNET',
+    chain: 'SOL',
     label: 'Solana',
     shortLabel: 'SOL',
     color: '#9945FF',
     warning: 'Only send USDC on Solana to this address.',
-  },
-  {
-    chain: 'MATIC-AMOY',
-    label: 'Polygon',
-    shortLabel: 'MATIC',
-    color: '#8247E5',
-    warning: 'Only send USDC on Polygon to this address.',
   },
 ];
 
@@ -46,13 +39,13 @@ export function isTestnetChain(chain: string): boolean {
 }
 
 export function getTestnetChain(): WalletChain {
-  return SOLANA_TESTNET_CHAIN;
+  return SOLANA_MAINNET_CHAIN;
 }
 
 export function getDefaultWithdrawalChain(): WalletChain {
-  return SOLANA_TESTNET_CHAIN;
+  return SOLANA_MAINNET_CHAIN;
 }
 
 export function getDefaultReceiveChain(): WalletChain {
-  return SOLANA_TESTNET_CHAIN;
+  return SOLANA_MAINNET_CHAIN;
 }

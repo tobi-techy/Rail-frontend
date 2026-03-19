@@ -34,7 +34,7 @@ export async function connectMobileWalletForWithdrawal(): Promise<MWAWithdrawalR
   return transact(async (wallet) => {
     const authorization = await wallet.authorize({
       identity: APP_IDENTITY,
-      chain: 'solana:devnet',
+      chain: 'solana:mainnet',
     });
 
     const account = authorization.accounts?.[0];

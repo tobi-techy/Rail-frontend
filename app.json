@@ -48,7 +48,8 @@
       "expo-apple-authentication",
       "@react-native-google-signin/google-signin",
       "expo-localization",
-      "expo-notifications"
+      "expo-notifications",
+      "@didit-protocol/sdk-react-native"
     ],
     "experiments": {
       "typedRoutes": true,
