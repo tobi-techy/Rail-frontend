@@ -56,11 +56,17 @@ export const fundingService = {
   // Crypto withdrawal (USDC to external wallet)
   async initiateWithdrawal(req: InitiateWithdrawalRequest): Promise<InitiateWithdrawalResponse> {
     const payload: Record<string, unknown> = {
-      amount: typeof req.amount === 'string' ? parseFloat(req.amount) : req.amount,
+      amount: typeof req.amount === 'number' ? req.amount.toFixed(2) : req.amount,
       destination_address: req.destination_address,
     };
     if (req.destination_chain) {
       payload.destination_chain = req.destination_chain;
+    }
+    if (req.category) {
+      payload.category = req.category;
+    }
+    if (req.narration) {
+      payload.narration = req.narration;
     }
 
     try {
@@ -77,7 +83,10 @@ export const fundingService = {
   async initiateFiatWithdrawal(
     req: InitiateFiatWithdrawalRequest
   ): Promise<InitiateWithdrawalResponse> {
-    return apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals/fiat', req);
+    return apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals/fiat', {
+      ...req,
+      amount: typeof req.amount === 'number' ? req.amount.toFixed(2) : req.amount,
+    });
   },
 };
 

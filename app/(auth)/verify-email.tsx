@@ -54,36 +54,22 @@ export default function VerifyEmail() {
     setErrorMessage('');
     setOtp(code);
     Keyboard.dismiss();
+    if (code.length === 6 && pendingEmail && !isVerifying && !isTransitioning) {
+      handleVerifyWithCode(code);
+    }
   };
 
-  const handleVerify = () => {
-    if (isVerifying || isTransitioning) return;
-
-    Keyboard.dismiss();
-
-    if (!pendingEmail) {
-      router.replace(ROUTES.AUTH.SIGNUP as never);
-      return;
-    }
-
-    if (otp.length !== 6) {
-      setErrorMessage('Please enter the 6-digit verification code');
-      showWarning('Incomplete Code', 'Please enter the full 6-digit verification code.');
-      return;
-    }
-
+  const handleVerifyWithCode = (code: string) => {
     verifyCode(
-      { email: pendingEmail, code: otp },
+      { email: pendingEmail!, code },
       {
         onSuccess: (response) => {
           setIsTransitioning(true);
-
           if (response.accessToken) {
             const onboardingStatus = response.onboarding_status || response.user?.onboardingStatus;
             router.replace(getPostAuthRoute(onboardingStatus) as never);
             return;
           }
-
           router.replace(ROUTES.AUTH.SIGNIN as never);
         },
         onError: (error: any) => {
@@ -176,7 +162,11 @@ export default function VerifyEmail() {
               <View className="mt-auto">
                 <StaggeredChild index={3} delay={80}>
                   <View className="mb-6">
-                    <Button title="Verify Email" onPress={handleVerify} loading={isVerifying} />
+                    <Button
+                      title="Verify Email"
+                      onPress={() => handleVerifyWithCode(otp)}
+                      loading={isVerifying}
+                    />
                   </View>
                 </StaggeredChild>
 

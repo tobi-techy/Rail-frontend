@@ -1,12 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Check, ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,10 +14,13 @@ import {
   EMPLOYMENT_STATUS_OPTIONS,
   INVESTMENT_PURPOSE_OPTIONS,
   validateTaxId,
+  formatTaxId,
+  type Country,
   type KycDisclosures,
 } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
-import { useStartSumsubSession } from '@/api/hooks/useKYC';
+import { useStartDiditSession } from '@/api/hooks/useKYC';
+import { useAuthStore } from '@/stores/authStore';
 
 const DISCLOSURE_COPY: Record<keyof KycDisclosures, string> = {
   is_control_person: 'I am a control person of a publicly traded company.',
@@ -35,29 +31,35 @@ const DISCLOSURE_COPY: Record<keyof KycDisclosures, string> = {
 
 export default function KycDocumentsScreen() {
   const insets = useSafeAreaInsets();
+  const userCountry = useAuthStore((s) => s.registrationData.country);
   const {
-    country,
-    taxIdType,
     taxId,
     employmentStatus,
+    sourceOfFunds,
+    expectedMonthlyPayments,
+    accountPurpose,
+    accountPurposeOther,
+    mostRecentOccupation,
+    actingAsIntermediary,
     investmentPurposes,
     disclosures,
     disclosuresConfirmed,
-    setTaxIdType,
     setTaxId,
     setEmploymentStatus,
     toggleInvestmentPurpose,
     setDisclosure,
     setDisclosuresConfirmed,
-    setSumsubSession,
+    setDiditSession,
   } = useKycStore();
+
+  const country = (userCountry as Country) || 'USA';
+  const taxIdType = COUNTRY_TAX_CONFIG[country].type;
 
   const [taxIdError, setTaxIdError] = useState('');
   const [submitError, setSubmitError] = useState('');
 
-  const startSession = useStartSumsubSession();
-  const taxConfigs = COUNTRY_TAX_CONFIG[country];
-  const activeTaxConfig = taxConfigs.find((c) => c.type === taxIdType) ?? taxConfigs[0];
+  const startSession = useStartDiditSession();
+  const taxConfig = COUNTRY_TAX_CONFIG[country];
   const requirement = COUNTRY_KYC_REQUIREMENTS[country];
   const requiredDisclosureKeys = requirement.requiredDisclosures;
 
@@ -79,7 +81,8 @@ export default function KycDocumentsScreen() {
     Boolean(employmentStatus) &&
     investmentPurposes.length > 0 &&
     disclosuresConfirmed &&
-    !startSession.isPending;
+    !startSession.isPending &&
+    !startSession.isError;
 
   const handleContinue = useCallback(async () => {
     const taxError = validateTaxId(country, taxIdType, taxId);
@@ -96,13 +99,20 @@ export default function KycDocumentsScreen() {
         tax_id_type: taxIdType,
         issuing_country: country,
         disclosures: buildDisclosures(),
+        source_of_funds: sourceOfFunds ?? undefined,
+        employment_status: employmentStatus ?? undefined,
+        expected_monthly_payments_usd: expectedMonthlyPayments ?? undefined,
+        account_purpose: accountPurpose ?? undefined,
+        account_purpose_other: accountPurposeOther ?? undefined,
+        most_recent_occupation: mostRecentOccupation ?? undefined,
+        acting_as_intermediary: actingAsIntermediary || undefined,
       });
-      setSumsubSession(result.token, result.applicant_id);
-      router.push('/kyc/sumsub-sdk');
+      setDiditSession(result.session_token, result.session_id);
+      router.push('/kyc/didit-sdk');
     } catch {
       setSubmitError('Could not start verification session. Please try again.');
     }
-  }, [country, taxId, taxIdType, buildDisclosures, startSession, setSumsubSession]);
+  }, [country, taxId, taxIdType, buildDisclosures, startSession, setDiditSession]);
 
   return (
     <ErrorBoundary>
@@ -139,54 +149,19 @@ export default function KycDocumentsScreen() {
               in the next step.
             </Text>
 
-            {/* Tax ID type selector */}
-            {taxConfigs.length > 1 && (
-              <View className="mt-6">
-                <Text className="mb-2 font-subtitle text-[13px] text-gray-500">Tax ID type</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View className="flex-row gap-2">
-                    {taxConfigs.map((item) => {
-                      const isSelected = item.type === taxIdType;
-                      return (
-                        <Pressable
-                          key={item.type}
-                          onPress={() => {
-                            setTaxIdType(item.type);
-                            setTaxId('');
-                            setTaxIdError('');
-                          }}
-                          className={`rounded-full border px-4 py-2.5 ${
-                            isSelected ? 'border-gray-900 bg-gray-900' : 'border-gray-200 bg-white'
-                          }`}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Use ${item.label}`}>
-                          <Text
-                            className={`font-subtitle text-[13px] ${
-                              isSelected ? 'text-white' : 'text-gray-700'
-                            }`}>
-                            {item.label}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </ScrollView>
-              </View>
-            )}
-
             {/* Tax ID input */}
             <View className="mt-6">
               <InputField
-                label={activeTaxConfig.label}
+                label={taxConfig.label}
                 value={taxId}
                 onChangeText={(v) => {
-                  setTaxId(v);
+                  setTaxId(formatTaxId(country, v));
                   if (taxIdError) setTaxIdError('');
                 }}
-                placeholder={activeTaxConfig.placeholder}
+                placeholder={taxConfig.placeholder}
                 autoCapitalize="characters"
                 error={taxIdError}
-                helperText={activeTaxConfig.helpText}
+                helperText={taxConfig.helpText}
               />
             </View>
 
@@ -218,7 +193,9 @@ export default function KycDocumentsScreen() {
             {/* Investing goals */}
             <View className="mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-4">
               <Text className="mb-3 font-subtitle text-[14px] text-gray-900">Investing goals</Text>
-              <Text className="mb-3 font-body text-[12px] text-gray-500">Select all that apply.</Text>
+              <Text className="mb-3 font-body text-[12px] text-gray-500">
+                Select all that apply.
+              </Text>
               {INVESTMENT_PURPOSE_OPTIONS.map((option, index) => {
                 const selected = investmentPurposes.includes(option.value);
                 return (
@@ -226,7 +203,9 @@ export default function KycDocumentsScreen() {
                     key={option.value}
                     onPress={() => toggleInvestmentPurpose(option.value)}
                     className={`flex-row items-center justify-between py-3 ${
-                      index < INVESTMENT_PURPOSE_OPTIONS.length - 1 ? 'border-b border-gray-100' : ''
+                      index < INVESTMENT_PURPOSE_OPTIONS.length - 1
+                        ? 'border-b border-gray-100'
+                        : ''
                     }`}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: selected }}

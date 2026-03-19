@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -16,46 +16,31 @@ export function FloatingBackButton() {
     transform: [{ scale: scale.value }],
   }));
 
-  const handlePress = () => {
-    impact();
-    router.back();
-  };
-
   return (
-    <Animated.View style={[styles.container, { bottom: insets.bottom + 20 }, animatedStyle]}>
+    <Animated.View
+      style={[
+        animatedStyle,
+        { position: 'absolute', left: 20, bottom: insets.bottom + 20, zIndex: 100 },
+      ]}>
       <Pressable
-        onPress={handlePress}
+        onPress={() => {
+          impact();
+          router.back();
+        }}
         onPressIn={() => {
           scale.value = withSpring(0.9, { damping: 15 });
         }}
         onPressOut={() => {
           scale.value = withSpring(1, { damping: 15 });
         }}
-        style={styles.pressable}>
-        <BlurView intensity={80} tint="light" style={styles.blur}>
+        className="overflow-hidden rounded-[28px]">
+        <BlurView
+          intensity={80}
+          tint="light"
+          className="h-14 w-14 items-center justify-center overflow-hidden rounded-[28px]">
           <ChevronLeft size={28} color="#000" />
         </BlurView>
       </Pressable>
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    left: 20,
-    zIndex: 100,
-  },
-  pressable: {
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
-  blur: {
-    width: 56,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
-});

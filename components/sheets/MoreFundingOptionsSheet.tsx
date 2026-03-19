@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
+import { AtSign, Mail, Users, ChevronRight } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
 import { PhantomIcon, SolflareIcon, SolanaIcon } from '@/assets/svg';
 import { BankIcon } from '@/assets/svg/filled';
@@ -9,7 +9,9 @@ import { BankIcon } from '@/assets/svg/filled';
 interface FundingOption {
   id: string;
   label: string;
+  sublabel: string;
   icon: React.ReactNode;
+  iconBg: string;
   onPress: () => void;
   comingSoon?: boolean;
 }
@@ -23,88 +25,146 @@ interface MoreFundingOptionsSheetProps {
 export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingOptionsSheetProps) {
   const showWalletOptions = Platform.OS === 'android' || mode === 'send';
 
-  const openMethodFlow = (method: 'phantom' | 'solflare') => {
+  const openMethodFlow = (method: string) => {
     onClose();
     requestAnimationFrame(() => {
       router.push({
         pathname: '/withdraw/[method]',
-        params: {
-          method,
-          flow: mode === 'deposit' ? 'fund' : 'send',
-        },
+        params: { method, flow: mode === 'deposit' ? 'fund' : 'send' },
       } as never);
     });
   };
 
-  const options: FundingOption[] = [
-    ...(showWalletOptions
+  const p2pOptions: FundingOption[] =
+    mode === 'send'
       ? [
           {
-            id: 'phantom',
-            label: 'Phantom',
-            icon: <PhantomIcon width={28} height={28} />,
-            onPress: () => openMethodFlow('phantom'),
+            id: 'railtag',
+            label: 'RailTag',
+            sublabel: 'Instant send to any @rail user',
+            icon: <AtSign size={20} color="#FF2E01" />,
+            iconBg: '#FFF0ED',
+            onPress: () => openMethodFlow('railtag'),
           },
           {
-            id: 'solflare',
-            label: 'Solflare',
-            icon: <SolflareIcon width={28} height={28} />,
-            onPress: () => openMethodFlow('solflare'),
+            id: 'email',
+            label: 'Email',
+            sublabel: 'Send to anyone by email',
+            icon: <Mail size={20} color="#6366F1" />,
+            iconBg: '#EEF2FF',
+            onPress: () => openMethodFlow('email'),
+          },
+          {
+            id: 'contact',
+            label: 'Contact',
+            sublabel: 'Pick from your phone contacts',
+            icon: <Users size={20} color="#059669" />,
+            iconBg: '#ECFDF5',
+            onPress: () => openMethodFlow('contact'),
           },
         ]
-      : []),
+      : [];
+
+  const walletOptions: FundingOption[] = showWalletOptions
+    ? [
+        {
+          id: 'phantom',
+          label: 'Phantom',
+          sublabel: mode === 'deposit' ? 'Fund from Phantom wallet' : 'Send to Phantom wallet',
+          icon: <PhantomIcon width={20} height={20} />,
+          iconBg: '#F3F0FF',
+          onPress: () => openMethodFlow('phantom'),
+        },
+        {
+          id: 'solflare',
+          label: 'Solflare',
+          sublabel: mode === 'deposit' ? 'Fund from Solflare wallet' : 'Send to Solflare wallet',
+          icon: <SolflareIcon width={20} height={20} />,
+          iconBg: '#FFF7ED',
+          onPress: () => openMethodFlow('solflare'),
+        },
+      ]
+    : [];
+
+  const comingSoonOptions: FundingOption[] = [
     {
       id: 'solana-pay',
       label: 'Solana Pay',
-      icon: <SolanaIcon width={28} height={28} />,
+      sublabel: 'Scan a QR code to pay',
+      icon: <SolanaIcon width={20} height={20} />,
+      iconBg: '#F0FDF4',
       onPress: () => {},
       comingSoon: true,
     },
     {
       id: 'wire',
       label: 'Wire Transfer',
-      icon: <BankIcon width={28} height={28} color="#6366F1" />,
+      sublabel: 'International bank wire',
+      icon: <BankIcon width={20} height={20} color="#6366F1" />,
+      iconBg: '#EEF2FF',
       onPress: () => {},
       comingSoon: true,
     },
   ];
 
+  type Section = { title: string; options: FundingOption[] };
+  const sections: Section[] = [
+    ...(p2pOptions.length ? [{ title: 'Send to people', options: p2pOptions }] : []),
+    ...(walletOptions.length ? [{ title: 'Wallets', options: walletOptions }] : []),
+    { title: 'Coming soon', options: comingSoonOptions },
+  ];
+
   return (
     <BottomSheet visible={visible} onClose={onClose}>
-      <Text className="mb-5 font-subtitle text-xl text-text-primary">
-        {mode === 'deposit' ? 'More deposit options' : 'More send options'}
+      <Text className="mb-6 font-subtitle text-xl text-text-primary">
+        {mode === 'deposit' ? 'More deposit options' : 'Send money'}
       </Text>
 
-      {options.map((option, i) => (
-        <TouchableOpacity
-          key={option.id}
-          className="flex-row items-center justify-between py-4"
-          style={
-            i < options.length - 1
-              ? { borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }
-              : undefined
-          }
-          onPress={option.comingSoon ? undefined : option.onPress}
-          disabled={option.comingSoon}
-          activeOpacity={option.comingSoon ? 1 : 0.6}>
-          <View className="flex-row items-center gap-4">
-            <View
-              className={`h-10 w-10 items-center justify-center rounded-full ${option.comingSoon ? 'bg-gray-100' : 'bg-gray-50'}`}>
-              {option.icon}
-            </View>
-            <Text
-              className={`font-subtitle text-base ${option.comingSoon ? 'text-gray-400' : 'text-text-primary'}`}>
-              {option.label}
-            </Text>
+      {sections.map((section, si) => (
+        <View key={section.title} style={si > 0 ? { marginTop: 24 } : undefined}>
+          <Text className="mb-2 font-body text-[11px] uppercase tracking-widest text-text-secondary">
+            {section.title}
+          </Text>
+          <View className="overflow-hidden rounded-2xl bg-surface">
+            {section.options.map((option, i) => (
+              <TouchableOpacity
+                key={option.id}
+                className="flex-row items-center justify-between px-4 py-3.5"
+                style={
+                  i < section.options.length - 1
+                    ? { borderBottomWidth: 1, borderBottomColor: '#EBEBEB' }
+                    : undefined
+                }
+                onPress={option.comingSoon ? undefined : option.onPress}
+                disabled={option.comingSoon}
+                activeOpacity={0.6}>
+                <View className="flex-row items-center gap-3">
+                  <View
+                    className="h-10 w-10 items-center justify-center rounded-xl"
+                    style={{ backgroundColor: option.iconBg }}>
+                    {option.icon}
+                  </View>
+                  <View>
+                    <Text
+                      className={`font-subtitle text-[15px] ${option.comingSoon ? 'text-gray-400' : 'text-text-primary'}`}>
+                      {option.label}
+                    </Text>
+                    <Text className="font-body text-[12px] text-text-secondary">
+                      {option.sublabel}
+                    </Text>
+                  </View>
+                </View>
+                {option.comingSoon ? (
+                  <View className="rounded-full bg-gray-200 px-2 py-0.5">
+                    <Text className="font-body text-[11px] text-gray-400">Soon</Text>
+                  </View>
+                ) : (
+                  <ChevronRight size={16} color="#C4C4C4" />
+                )}
+              </TouchableOpacity>
+            ))}
           </View>
-          {option.comingSoon ? (
-            <View className="rounded-full bg-gray-100 px-2 py-0.5">
-              <Text className="font-body text-xs text-gray-400">Soon</Text>
-            </View>
-          ) : (
-            <ChevronRight size={18} color="#9CA3AF" />
-          )}
-        </TouchableOpacity>
+        </View>
       ))}
     </BottomSheet>
   );

@@ -13,10 +13,12 @@ import Animated, {
 
 import { useKycStatusPolling } from '@/api/hooks/useKYC';
 import { useKycStore } from '@/stores/kycStore';
+import { useAuthStore } from '@/stores/authStore';
+import { invalidateQueries } from '@/api/queryClient';
 import type { KycStatus } from '@/api/types/kyc';
 
 export default function KycPendingScreen() {
-  const { resetKycState } = useKycStore();
+  const { resetKycState, localSubmissionPendingAt, setLocalSubmissionPendingAt } = useKycStore();
 
   const opacity = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
@@ -32,12 +34,14 @@ export default function KycPendingScreen() {
   const handleTerminal = useCallback(
     (status: KycStatus) => {
       if (status === 'approved') {
+        useAuthStore.getState().setOnboardingStatus('completed');
+        setLocalSubmissionPendingAt(null);
         resetKycState();
-        router.dismissAll();
+        router.replace('/(tabs)');
       }
       // rejected/expired — stay on screen to show the result
     },
-    [resetKycState]
+    [resetKycState, setLocalSubmissionPendingAt]
   );
 
   const { data, isError } = useKycStatusPolling(true, handleTerminal, {
@@ -45,6 +49,20 @@ export default function KycPendingScreen() {
   });
 
   const status = data?.status;
+
+  // If the user landed here without actually submitting (e.g. skipped KYC and came back),
+  // don't show the polling spinner — send them back to the submission flow.
+  useEffect(() => {
+    if (data && !data.has_submitted && !localSubmissionPendingAt && status !== 'approved') {
+      router.replace('/kyc');
+    }
+  }, [data, localSubmissionPendingAt, status]);
+
+  useEffect(() => {
+    if (status === 'approved' || status === 'rejected' || status === 'expired') {
+      setLocalSubmissionPendingAt(null);
+    }
+  }, [setLocalSubmissionPendingAt, status]);
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -77,7 +95,7 @@ export default function KycPendingScreen() {
             <Pressable
               onPress={() => {
                 resetKycState();
-                router.dismissAll();
+                router.replace('/(tabs)');
               }}
               className="mt-8 rounded-full bg-gray-900 px-8 py-4"
               accessibilityRole="button">
@@ -95,7 +113,10 @@ export default function KycPendingScreen() {
                 'We could not verify your identity. Please try again or contact support.'}
             </Text>
             <Pressable
-              onPress={() => router.replace('/kyc/documents')}
+              onPress={() => {
+                invalidateQueries.user();
+                router.replace('/kyc');
+              }}
               className="mt-8 rounded-full bg-gray-900 px-8 py-4"
               accessibilityRole="button">
               <Text className="font-subtitle text-[15px] text-white">Try again</Text>
@@ -114,7 +135,7 @@ export default function KycPendingScreen() {
               when it&apos;s done.
             </Text>
             <Pressable
-              onPress={() => router.dismissAll()}
+              onPress={() => router.replace('/(tabs)')}
               className="mt-8 rounded-full border border-gray-200 px-8 py-4"
               accessibilityRole="button">
               <Text className="font-subtitle text-[15px] text-gray-700">Close</Text>

@@ -1,7 +1,7 @@
 import apiClient from '../client';
 import type {
-  StartSumsubSessionRequest,
-  StartSumsubSessionResponse,
+  StartDiditSessionRequest,
+  StartDiditSessionResponse,
   KYCStatusResponse,
   BridgeKYCLinkResponse,
   SubmitKYCRequest,
@@ -9,20 +9,15 @@ import type {
 } from '../types';
 
 const KYC_ENDPOINTS = {
-  SUMSUB_SESSION: '/v1/kyc/sumsub/session',
-  SUMSUB_TOKEN: '/v1/kyc/sumsub/token',
+  DIDIT_SESSION: '/v1/kyc/didit/session',
   SUBMIT: '/v1/kyc/submit',
   STATUS: '/v1/kyc/status',
   BRIDGE_LINK: '/v1/kyc/bridge/link',
 } as const;
 
 export const kycService = {
-  async startSumsubSession(data: StartSumsubSessionRequest): Promise<StartSumsubSessionResponse> {
-    return apiClient.post<StartSumsubSessionResponse>(KYC_ENDPOINTS.SUMSUB_SESSION, data);
-  },
-
-  async refreshSumsubToken(): Promise<StartSumsubSessionResponse> {
-    return apiClient.get<StartSumsubSessionResponse>(KYC_ENDPOINTS.SUMSUB_TOKEN);
+  async startDiditSession(data: StartDiditSessionRequest): Promise<StartDiditSessionResponse> {
+    return apiClient.post<StartDiditSessionResponse>(KYC_ENDPOINTS.DIDIT_SESSION, data);
   },
 
   async submitKYC(data: SubmitKYCRequest): Promise<SubmitKYCResponse> {

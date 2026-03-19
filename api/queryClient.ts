@@ -32,7 +32,7 @@ export const queryClient = new QueryClient({
         return failureCount < 3;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
       refetchOnReconnect: true,
       refetchOnMount: true,
     },
@@ -90,6 +90,10 @@ export const queryKeys = {
     transactions: (params?: unknown) => [...queryKeys.funding.all, 'transactions', params] as const,
     virtualAccount: () => [...queryKeys.funding.all, 'virtual-account'] as const,
   },
+  virtualAccount: {
+    all: ['virtual-account'] as const,
+    list: () => [...queryKeys.virtualAccount.all, 'list'] as const,
+  },
   market: {
     all: ['market'] as const,
     filters: () => [...queryKeys.market.all, 'filters'] as const,
@@ -129,9 +133,22 @@ export const queryKeys = {
       [...queryKeys.investment.all, 'transactions', params] as const,
     performance: (period?: string) => [...queryKeys.investment.all, 'performance', period] as const,
   },
+  card: {
+    all: ['card'] as const,
+    list: () => [...queryKeys.card.all, 'list'] as const,
+    detail: (id: string) => [...queryKeys.card.all, 'detail', id] as const,
+    transactions: (params?: unknown) => [...queryKeys.card.all, 'transactions', params] as const,
+    cardTransactions: (id: string, params?: unknown) =>
+      [...queryKeys.card.all, 'card-transactions', id, params] as const,
+  },
   passkeys: {
     all: ['passkeys'] as const,
     list: () => [...queryKeys.passkeys.all, 'list'] as const,
+  },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (params?: unknown) => [...queryKeys.notifications.all, 'list', params] as const,
+    unreadCount: () => [...queryKeys.notifications.all, 'unread-count'] as const,
   },
 };
 
@@ -145,11 +162,13 @@ export const invalidateQueries = {
   allocation: () => queryClient.invalidateQueries({ queryKey: queryKeys.allocation.all }),
   wallet: () => queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all }),
   funding: () => queryClient.invalidateQueries({ queryKey: queryKeys.funding.all }),
+  virtualAccount: () => queryClient.invalidateQueries({ queryKey: queryKeys.virtualAccount.all }),
   market: () => queryClient.invalidateQueries({ queryKey: queryKeys.market.all }),
   news: () => queryClient.invalidateQueries({ queryKey: queryKeys.news.all }),
   investment: () => queryClient.invalidateQueries({ queryKey: queryKeys.investment.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
   passkeys: () => queryClient.invalidateQueries({ queryKey: queryKeys.passkeys.all }),
+  notifications: () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
   all: () => queryClient.invalidateQueries(),
 };
 

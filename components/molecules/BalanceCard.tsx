@@ -7,27 +7,11 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withRepeat,
-  withSequence,
   Easing,
 } from 'react-native-reanimated';
+import { Skeleton } from '@/components/atoms/Skeleton';
 import type { Currency } from '@/stores/uiStore';
 import { formatCurrencyAmount, convertFromUsd, type FxRates } from '@/utils/currency';
-
-function Shimmer({ className }: { className: string }) {
-  const opacity = useSharedValue(0.4);
-  React.useEffect(() => {
-    opacity.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 700 }),
-        withTiming(0.4, { duration: 700 })
-      ),
-      -1
-    );
-  }, [opacity]);
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return <Animated.View style={style} className={`rounded-lg bg-gray-200 ${className}`} />;
-}
 
 export interface BalanceCardProps extends ViewProps {
   balance?: string;
@@ -48,7 +32,10 @@ function AnimatedBalance({ value, isVisible }: { value: string; isVisible: boole
   const isFirst = React.useRef(true);
 
   React.useEffect(() => {
-    if (isFirst.current) { isFirst.current = false; return; }
+    if (isFirst.current) {
+      isFirst.current = false;
+      return;
+    }
     opacity.value = 0;
     opacity.value = withTiming(1, { duration: 140, easing: Easing.out(Easing.ease) });
   }, [displayValue, opacity]);
@@ -93,8 +80,8 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
 
         {dataLoading ? (
           <View className="gap-y-2">
-            <Shimmer className="h-9 w-48" />
-            <Shimmer className="h-4 w-24" />
+            <Skeleton className="h-9 w-48" />
+            <Skeleton className="h-4 w-24" />
           </View>
         ) : (
           <>

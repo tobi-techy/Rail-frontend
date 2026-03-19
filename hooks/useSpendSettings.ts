@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/api/client';
+import { useAuthStore } from '@/stores/authStore';
 
 const DEFAULT_BASE_ALLOCATION = 70;
 const MIN_BASE_ALLOCATION = 1;
@@ -10,40 +12,48 @@ export const clampAlloc = (v: number) =>
     ? Math.min(MAX_BASE_ALLOCATION, Math.max(MIN_BASE_ALLOCATION, Math.round(v)))
     : DEFAULT_BASE_ALLOCATION;
 
+interface RoundupSettings {
+  enabled: boolean;
+  multiplier: string;
+  threshold: string;
+  auto_invest_enabled: boolean;
+}
+
 export function useSpendSettings() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const qc = useQueryClient();
+
+  const { data: settings } = useQuery<RoundupSettings>({
+    queryKey: ['roundups', 'settings'],
+    queryFn: () => apiClient.get<RoundupSettings>('/v1/roundups/settings'),
+    enabled: isAuthenticated,
+    staleTime: 60 * 1000,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (patch: Partial<{ enabled: boolean; auto_invest_enabled: boolean }>) =>
+      apiClient.put<RoundupSettings>('/v1/roundups/settings', patch),
+    onSuccess: (data) => {
+      qc.setQueryData(['roundups', 'settings'], data);
+    },
+  });
+
+  // Local UI state — kept in sync with server on load
   const [baseAllocation, setBaseAllocation] = useState(DEFAULT_BASE_ALLOCATION);
-  const [autoInvestEnabled, setAutoInvestEnabled] = useState(false);
-  const [roundupsEnabled, setRoundupsEnabled] = useState(true);
   const [spendingLimit, setSpendingLimit] = useState(500);
 
-  useEffect(() => {
-    AsyncStorage.multiGet([
-      'baseAllocation',
-      'autoInvestEnabled',
-      'roundupsEnabled',
-      'spendingLimit',
-    ]).then((values) => {
-      values.forEach(([key, value]) => {
-        if (value === null) return;
-        if (key === 'baseAllocation') setBaseAllocation(clampAlloc(Number(value)));
-        else if (key === 'autoInvestEnabled') setAutoInvestEnabled(value === 'true');
-        else if (key === 'roundupsEnabled') setRoundupsEnabled(value === 'true');
-        else if (key === 'spendingLimit') setSpendingLimit(Number(value));
-      });
-    });
-  }, []);
+  const roundupsEnabled = settings?.enabled ?? true;
+  const autoInvestEnabled = settings?.auto_invest_enabled ?? false;
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      AsyncStorage.multiSet([
-        ['baseAllocation', String(baseAllocation)],
-        ['autoInvestEnabled', String(autoInvestEnabled)],
-        ['roundupsEnabled', String(roundupsEnabled)],
-        ['spendingLimit', String(spendingLimit)],
-      ]);
-    }, 300);
-    return () => clearTimeout(t);
-  }, [baseAllocation, autoInvestEnabled, roundupsEnabled, spendingLimit]);
+  const setRoundupsEnabled = useCallback(
+    (v: boolean) => updateMutation.mutate({ enabled: v }),
+    [updateMutation]
+  );
+
+  const setAutoInvestEnabled = useCallback(
+    (v: boolean) => updateMutation.mutate({ auto_invest_enabled: v }),
+    [updateMutation]
+  );
 
   return {
     baseAllocation,

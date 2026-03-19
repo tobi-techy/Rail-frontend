@@ -117,6 +117,18 @@ export function useGetDepositAddress() {
 }
 
 /**
+ * Query version — auto-fetches deposit address for a chain, creating the wallet if needed.
+ */
+export function useDepositAddress(chain: string) {
+  return useQuery({
+    queryKey: [...queryKeys.wallet.all, 'deposit-address', chain],
+    queryFn: () => walletService.getDepositAddress({ tokenId: 'usdc', network: chain }),
+    staleTime: 10 * 60 * 1000,
+    retry: 2,
+  });
+}
+
+/**
  * Get token prices
  */
 export function useTokenPrices(tokenIds: string[]) {
@@ -158,22 +170,17 @@ export function useWalletAddresses(chain?: WalletChain) {
     queryFn: () => walletService.getWalletAddresses(chain ? { chain } : undefined),
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
-    // Poll every 4s when wallet is being provisioned (404), stop once we have data
-    refetchInterval: (q) => {
-      if (q.state.data) return false;
-      const status = (q.state.error as any)?.status;
-      return status === 404 ? 4000 : false;
-    },
     retry: (failureCount, error: any) => {
       const status = error?.status;
       if (status === 401 || status === 403) return false;
-      // Keep retrying 404 (provisioning in progress) up to 15 times (~1 min)
-      if (status === 404) return failureCount < 15;
+      // Retry up to 5x if wallet is being provisioned
+      if (status === 404 && error?.data?.provisioning) return failureCount < 5;
+      if (status === 404) return false;
       return failureCount < 1;
     },
-    retryDelay: 4000,
+    retryDelay: (attempt) => Math.min(3000 * (attempt + 1), 15000),
   });
 
-  const isProvisioning = !query.data && (query.error as any)?.status === 404;
+  const isProvisioning = (query.error as any)?.data?.provisioning === true;
   return { ...query, isProvisioning };
 }

@@ -12,13 +12,14 @@ interface Env {
 }
 
 const DEFAULT_REMOTE_API_URL = 'https://api.userail.money/api';
-const PHYSICAL_DEVICE_API_URL = process.env.EXPO_PUBLIC_STAGING_API_URL ?? DEFAULT_REMOTE_API_URL;
+const DEFAULT_STAGING_API_URL = 'https://api-staging.userail.money/api';
+const PHYSICAL_DEVICE_API_URL = process.env.EXPO_PUBLIC_STAGING_API_URL ?? DEFAULT_STAGING_API_URL;
 const SIMULATOR_API_URL =
   Platform.OS === 'android' ? 'http://10.0.2.2:8080/api' : 'http://localhost:8080/api';
 
 const DEFAULT_API_URLS: Record<NonNullable<Env['EXPO_PUBLIC_ENV']>, string> = {
   development: SIMULATOR_API_URL,
-  staging: DEFAULT_REMOTE_API_URL,
+  staging: DEFAULT_STAGING_API_URL,
   production: DEFAULT_REMOTE_API_URL,
 };
 

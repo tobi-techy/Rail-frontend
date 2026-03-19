@@ -112,7 +112,9 @@ export function FeedbackPopupHost() {
   if (!popup || !style) return null;
 
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}>
+    <View
+      pointerEvents="box-none"
+      style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}>
       <Pressable
         onPress={() => hidePopup()}
         style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
@@ -168,13 +170,13 @@ export function FeedbackPopupHost() {
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text
               className="text-[15px] text-black"
-              style={{ fontFamily: 'SF-Pro-Rounded-Semibold' }}>
+              style={{ fontFamily: 'InstrumentSans-SemiBold' }}>
               {popup.title}
             </Text>
             {popup.message ? (
               <Text
                 className="mt-1 text-[13px] text-black/70"
-                style={{ fontFamily: 'SF-Pro-Rounded-Regular' }}>
+                style={{ fontFamily: 'InstrumentSans-Regular' }}>
                 {popup.message}
               </Text>
             ) : null}
@@ -184,12 +186,16 @@ export function FeedbackPopupHost() {
               onPress={() => hidePopup(popup.action?.onPress)}
               hitSlop={6}
               style={{ marginLeft: 10, alignSelf: 'center' }}>
-              <Text style={{ fontFamily: 'SF-Pro-Rounded-Semibold', fontSize: 13, color: '#111827' }}>
+              <Text
+                style={{ fontFamily: 'InstrumentSans-SemiBold', fontSize: 13, color: '#111827' }}>
                 {popup.action.label}
               </Text>
             </Pressable>
           ) : (
-            <Pressable onPress={() => hidePopup()} hitSlop={6} style={{ marginLeft: 10, alignSelf: 'center' }}>
+            <Pressable
+              onPress={() => hidePopup()}
+              hitSlop={6}
+              style={{ marginLeft: 10, alignSelf: 'center' }}>
               <Ionicons name="close" size={16} color="#6B7280" />
             </Pressable>
           )}

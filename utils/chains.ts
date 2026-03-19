@@ -5,7 +5,7 @@
 
 import type { WalletChain } from '@/api/types';
 
-export const SOLANA_TESTNET_CHAIN: WalletChain = 'SOL-DEVNET';
+export const SOLANA_MAINNET_CHAIN: WalletChain = 'SOL';
 
 export interface ChainConfig {
   chain: WalletChain;
@@ -17,25 +17,11 @@ export interface ChainConfig {
 
 export const SUPPORTED_CHAINS: ChainConfig[] = [
   {
-    chain: 'SOL-DEVNET',
+    chain: 'SOL',
     label: 'Solana',
     shortLabel: 'SOL',
     color: '#9945FF',
     warning: 'Only send USDC on Solana to this address.',
-  },
-  {
-    chain: 'MATIC-AMOY',
-    label: 'Polygon',
-    shortLabel: 'MATIC',
-    color: '#8247E5',
-    warning: 'Only send USDC on Polygon to this address.',
-  },
-  {
-    chain: 'AVAX-FUJI',
-    label: 'Avalanche',
-    shortLabel: 'AVAX',
-    color: '#E84142',
-    warning: 'Only send USDC on Avalanche C-Chain to this address.',
   },
 ];
 
@@ -51,6 +37,14 @@ export function isTestnetChain(chain: string): boolean {
   return chain.includes('DEVNET') || chain.includes('AMOY') || chain.includes('FUJI');
 }
 
-export function getTestnetChain(): WalletChain {
-  return SOLANA_TESTNET_CHAIN;
+export function getDefaultChain(): WalletChain {
+  return SOLANA_MAINNET_CHAIN;
+}
+
+export function getDefaultWithdrawalChain(): WalletChain {
+  return SOLANA_MAINNET_CHAIN;
+}
+
+export function getDefaultReceiveChain(): WalletChain {
+  return SOLANA_MAINNET_CHAIN;
 }

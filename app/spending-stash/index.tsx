@@ -1,46 +1,177 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ArrowDownLeft, ArrowUpLeft, ChevronLeft, CreditCard } from 'lucide-react-native';
-import Animated, {
-  FadeIn,
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
-import { PieChart } from 'react-native-gifted-charts';
+import { ChevronLeft, RefreshCw } from 'lucide-react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { Canvas, RoundedRect, Group } from '@shopify/react-native-skia';
 import { useSpendingStashData } from './useSpendingStashData';
-import { StashCard } from '@/components/molecules';
-import { TransactionList } from '@/components/molecules/TransactionList';
+import { Icon } from '@/components/atoms/Icon';
+import { Skeleton } from '@/components/atoms/Skeleton';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useUIStore } from '@/stores';
-import {
-  C,
-  CATEGORY_PALETTE,
-  splitAmt,
-  PeriodSelector,
-  StatCard,
-  SectionHeader,
-  CategoryRow,
-  EmptyPeriod,
-  type Period,
-} from './components';
-import { Button } from '@/components/ui';
+import { CATEGORY_PALETTE } from './components';
 
-function Shimmer({ className }: { className: string }) {
-  const opacity = useSharedValue(0.4);
-  React.useEffect(() => {
-    opacity.value = withRepeat(
-      withSequence(withTiming(1, { duration: 700 }), withTiming(0.4, { duration: 700 })),
-      -1
-    );
-  }, [opacity]);
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return <Animated.View style={style} className={`rounded-lg bg-gray-200 ${className}`} />;
+const ACCENT = '#FF2E01';
+
+// ── Period pill selector ──────────────────────────────────────────────────────
+
+const PERIODS = ['1W', '1M', '6M', '1Y'] as const;
+type Period = (typeof PERIODS)[number];
+
+function PeriodSelector({
+  selected,
+  onSelect,
+}: {
+  selected: Period;
+  onSelect: (p: Period) => void;
+}) {
+  return (
+    <View className="flex-row gap-0.5 self-start rounded-[20px] bg-gray-50 p-1">
+      {PERIODS.map((p) => {
+        const active = p === selected;
+        return (
+          <Pressable
+            key={p}
+            onPress={() => onSelect(p)}
+            className={`rounded-2xl px-[18px] py-2 ${active ? 'bg-gray-100' : 'bg-transparent'}`}
+            accessibilityRole="button">
+            <Text
+              className={`text-sm ${active ? 'font-button text-black' : 'font-caption text-black/50'}`}>
+              {p}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
 }
+
+// ── Stacked bar chart ─────────────────────────────────────────────────────────
+
+type ChartBar = { month: string; card: number; p2p: number; withdrawals: number; total: number };
+
+function MonthlyBarChart({ data }: { data: ChartBar[] }) {
+  const { width: sw } = useWindowDimensions();
+  const chartH = 340;
+  const n = data.length || 1;
+  const barW = 28;
+  const totalBarsW = barW * n;
+  const gap = n > 1 ? (sw - 64 - totalBarsW) / (n - 1) : 0;
+  const maxVal = Math.max(...data.map((d) => d.total), 1);
+
+  return (
+    <View>
+      <Canvas style={{ width: sw - 64, height: chartH }}>
+        <Group>
+          {data.map((bar, i) => {
+            const x = i * (barW + gap);
+            const r = barW / 2;
+            const cardH = Math.max((bar.card / maxVal) * (chartH - 4), bar.card > 0 ? 4 : 0);
+            const p2pH = Math.max((bar.p2p / maxVal) * (chartH - 4), bar.p2p > 0 ? 4 : 0);
+            const wdH = Math.max(
+              (bar.withdrawals / maxVal) * (chartH - 4),
+              bar.withdrawals > 0 ? 4 : 0
+            );
+
+            const wdY = chartH - wdH;
+            const p2pY = wdY - p2pH;
+            const cardY = p2pY - cardH;
+
+            if (bar.total === 0) {
+              return (
+                <RoundedRect
+                  key={bar.month}
+                  x={x}
+                  y={chartH - 6}
+                  width={barW}
+                  height={6}
+                  r={r}
+                  color="#E5E7EB"
+                />
+              );
+            }
+            return (
+              <Group key={bar.month}>
+                {wdH > 0 && (
+                  <RoundedRect x={x} y={wdY} width={barW} height={wdH} r={r} color="#118AB2" />
+                )}
+                {p2pH > 0 && (
+                  <RoundedRect x={x} y={p2pY} width={barW} height={p2pH} r={r} color="#06D6A0" />
+                )}
+                {cardH > 0 && (
+                  <RoundedRect x={x} y={cardY} width={barW} height={cardH} r={r} color={ACCENT} />
+                )}
+              </Group>
+            );
+          })}
+        </Group>
+      </Canvas>
+
+      {/* Month labels */}
+      <View className="mt-2.5 flex-row">
+        {data.map((bar, i) => (
+          <View
+            key={bar.month}
+            style={{ width: barW + (i < data.length - 1 ? gap : 0) }}
+            className="items-center">
+            <Text className="font-caption text-[11px] text-black/50">{bar.month.slice(0, 3)}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Legend */}
+      <View className="mt-3.5 flex-row gap-4">
+        {[
+          { color: ACCENT, label: 'Card' },
+          { color: '#06D6A0', label: 'P2P' },
+          { color: '#118AB2', label: 'Withdrawals' },
+        ].map(({ color, label }) => (
+          <View key={label} className="flex-row items-center gap-1.5">
+            <View style={{ backgroundColor: color }} className="h-2 w-2 rounded-full" />
+            <Text className="font-caption text-xs text-black/50">{label}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ── Category row ──────────────────────────────────────────────────────────────
+
+function CategoryRow({
+  title,
+  amount,
+  percentage,
+  iconName,
+  color,
+  showSep,
+}: {
+  title: string;
+  amount: number;
+  percentage: number;
+  iconName: string;
+  color: string;
+  showSep: boolean;
+}) {
+  return (
+    <View>
+      <View className="flex-row items-center px-4 py-4">
+        <View className="mr-3.5 h-11 w-11 items-center justify-center rounded-full bg-gray-100">
+          <Icon name={iconName} size={20} color={color} strokeWidth={1.5} />
+        </View>
+        <View className="flex-1">
+          <Text className="font-button text-base text-black">{title}</Text>
+          <Text className="mt-0.5 font-caption text-[13px] text-black/50">{percentage}%</Text>
+        </View>
+        <Text className="font-button text-base text-black">-${amount.toFixed(2)}</Text>
+      </View>
+      {showSep && <View className="ml-[74px] h-px bg-gray-100" />}
+    </View>
+  );
+}
+
+// ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function SpendingScreen() {
   const insets = useSafeAreaInsets();
@@ -51,237 +182,203 @@ export default function SpendingScreen() {
     isLoading,
     availableBalance,
     thisMonthSpend,
-    totalSpent,
+    lastMonthSpend,
     dailyAvg,
+    trend,
     trendPct,
-    TrendIcon,
-    trendColor,
     transactionCount,
-    monthlyUsedPct,
-    periodRangeLabel,
     categories,
-    transactions,
-    cardBadge,
-    cardSubtitle,
+    monthlyChart,
+    roundUps,
   } = useSpendingStashData();
 
-  const [period, setPeriod] = useState<Period>('6M');
+  const [period, setPeriod] = React.useState<Period>('6M');
+  const mask = (v: string) => (isBalanceVisible ? v : '••••');
 
-  const handlePeriod = useCallback(
-    (p: Period) => {
-      selection();
-      setPeriod(p);
-    },
-    [selection]
-  );
+  const PERIOD_MONTHS: Record<Period, number> = { '1W': 0, '1M': 1, '6M': 6, '1Y': 12 };
 
-  const hasSpend = totalSpent > 0;
-  const spentDisplay = isBalanceVisible ? `$${totalSpent.toFixed(2)}` : '****';
+  const filteredChart = useMemo(() => {
+    if (period === '1W') return monthlyChart.slice(-1);
+    const months = PERIOD_MONTHS[period];
+    if (!months || months >= monthlyChart.length) return monthlyChart;
+    return monthlyChart.slice(-months);
+  }, [monthlyChart, period]);
 
-  const pieData = useMemo(() => {
-    const segs = categories.slice(0, 5);
-    return segs.length > 0
-      ? segs.map((cat, i) => ({
-          value: Math.abs(cat.amount),
-          color: CATEGORY_PALETTE[i % CATEGORY_PALETTE.length],
-        }))
-      : [{ value: 1, color: C.accent }];
-  }, [categories]);
+  const trendLabel =
+    trend === 'up'
+      ? `↑ ${Math.abs(trendPct).toFixed(0)}%`
+      : trend === 'down'
+        ? `↓ ${Math.abs(trendPct).toFixed(0)}%`
+        : '— stable';
+  const trendTextColor = trend === 'up' ? '#FF453A' : trend === 'down' ? '#30D158' : '#8E8E93';
 
-  const availSplit = splitAmt(availableBalance);
-  const spentSplit = splitAmt(thisMonthSpend);
+  const rangeLabel = useMemo(() => {
+    if (!filteredChart.length) return '';
+    return `${filteredChart[0].month.slice(0, 3)} – ${filteredChart[filteredChart.length - 1].month.slice(0, 3)}`;
+  }, [filteredChart]);
 
   return (
     <View className="flex-1 bg-white">
       {/* Header */}
-      <View className="flex-row items-center px-2 pb-2" style={{ paddingTop: insets.top + 8 }}>
+      <View className="flex-row items-center px-4 pb-1" style={{ paddingTop: insets.top + 8 }}>
         <Pressable
-          onPress={() => { impact(); router.back(); }}
+          onPress={() => {
+            impact();
+            router.back();
+          }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          className="h-11 w-11 items-center justify-center"
+          className="mr-3 h-9 w-9 items-center justify-center"
           accessibilityRole="button"
           accessibilityLabel="Go back">
-          <ChevronLeft size={24} color={C.text} strokeWidth={2} />
+          <ChevronLeft size={24} color="#000000" strokeWidth={2} />
         </Pressable>
-        <Text className="font-headline text-headline-1 text-text-primary">Spending</Text>
+        <Text className="font-subtitle text-[17px] text-black">Spend</Text>
       </View>
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 48 }}
         showsVerticalScrollIndicator={false}
         bounces>
-        {/* Hero */}
-        <View className="px-4 pb-2 pt-4">
-          <Text className="font-caption text-caption text-[#8E8E93]">Total Spent</Text>
+        {/* ── Hero ── */}
+        <View className="mb-7 mt-2">
+          <Text className="font-caption text-[15px] text-black/50">Spent</Text>
           {isLoading ? (
-            <View className="mt-2 gap-y-2">
-              <Shimmer className="h-14 w-48" />
-              <Shimmer className="h-4 w-28" />
+            <View className="mt-2 gap-2.5">
+              <Skeleton style={{ width: 180, height: 56, borderRadius: 12 }} />
+              <Skeleton style={{ width: 100, height: 16 }} />
             </View>
           ) : (
-            <>
+            <Animated.View entering={FadeIn.duration(200)}>
               <Text
-                className="mt-0.5 font-headline text-[52px] leading-[60px] text-text-primary"
-                style={{ letterSpacing: -1.5 }}
+                className="mt-0.5 font-display text-black"
+                style={{ fontSize: 56, letterSpacing: -2, lineHeight: 64 }}
                 numberOfLines={1}
                 adjustsFontSizeToFit
-                minimumFontScale={0.6}>
-                {spentDisplay}
+                minimumFontScale={0.5}>
+                {mask(`$${thisMonthSpend.toFixed(2)}`)}
               </Text>
-              <View className="mt-1 flex-row items-center gap-2">
-                <Text className="font-caption text-caption text-[#8E8E93]">{periodRangeLabel}</Text>
-                {hasSpend && (
-                  <View
-                    className="flex-row items-center gap-1 rounded-full px-2 py-[3px]"
-                    style={{ backgroundColor: `${trendColor}18` }}>
-                    <TrendIcon size={11} color={trendColor} strokeWidth={2.5} />
-                    <Text className="font-button text-[11px]" style={{ color: trendColor }}>
-                      {Math.abs(trendPct).toFixed(0)}%
-                    </Text>
-                  </View>
+              <View className="mt-1.5 flex-row items-center gap-3">
+                <Text className="font-caption text-sm text-black/50">{rangeLabel}</Text>
+                {trend !== 'stable' && (
+                  <Text className="font-button text-[13px]" style={{ color: trendTextColor }}>
+                    {trendLabel}
+                  </Text>
                 )}
               </View>
-            </>
+            </Animated.View>
           )}
         </View>
 
-        <View className="mb-2 ml-4 flex-row gap-3">
-          <Button
-            title="Fund"
-            leftIcon={<ArrowDownLeft size={20} color="white" />}
-            size="small"
-            variant="black"
-          />
-          <Button
-            title="Send"
-            leftIcon={<ArrowUpLeft size={20} color="#000" />}
-            size="small"
-            variant="white"
-          />
-        </View>
-
-        {/* Donut chart */}
+        {/* ── Chart ── */}
         {isLoading ? (
-          <View className="items-center py-6">
-            <View className="h-[280px] w-[280px] items-center justify-center rounded-full border-[28px] border-gray-100">
-              <View className="items-center">
-                <Shimmer className="h-7 w-24 rounded-lg" />
-                <Shimmer className="mt-2 h-3 w-16 rounded" />
-              </View>
-            </View>
+          <View className="mb-7 h-[340px] flex-row items-end gap-2">
+            {[80, 110, 50, 140, 70, 100].map((h, i) => (
+              <Skeleton key={i} style={{ width: 28, height: h, borderRadius: 14 }} />
+            ))}
           </View>
-        ) : !hasSpend ? (
-          <EmptyPeriod />
         ) : (
-          <Animated.View entering={FadeIn.duration(200)} className="items-center py-6">
-            <PieChart
-              donut
-              data={pieData}
-              radius={140}
-              innerRadius={110}
-              isAnimated
-              animationDuration={500}
-              centerLabelComponent={() => (
-                <View className="items-center px-2">
-                  <Text
-                    className="font-headline text-[26px] text-text-primary"
-                    style={{ letterSpacing: -0.5 }}>
-                    {spentDisplay}
-                  </Text>
-                  <Text className="mt-0.5 font-caption text-[11px] text-[#8E8E93]">
-                    {periodRangeLabel}
-                  </Text>
-                </View>
-              )}
-            />
+          <Animated.View entering={FadeIn.duration(300)} className="mb-5">
+            <MonthlyBarChart data={filteredChart} />
           </Animated.View>
         )}
 
-        {/* Period selector */}
-        <PeriodSelector selected={period} onSelect={handlePeriod} />
-
-        {/* Stats */}
-        <View className="mx-4 mt-6 flex-row gap-3">
-          {isLoading ? (
-            <>
-              <View className="flex-1 rounded-2xl border border-gray-100 px-4 py-4 gap-y-2">
-                <Shimmer className="h-3 w-20" />
-                <Shimmer className="h-7 w-16" />
-              </View>
-              <View className="flex-1 rounded-2xl border border-gray-100 px-4 py-4 gap-y-2">
-                <Shimmer className="h-3 w-20" />
-                <Shimmer className="h-7 w-16" />
-              </View>
-            </>
-          ) : (
-            <>
-              <StatCard
-                label="Daily average"
-                value={isBalanceVisible ? `$${dailyAvg.toFixed(2)}` : '****'}
-              />
-              <StatCard
-                label="Transactions"
-                value={transactionCount.toString()}
-                sub={`${monthlyUsedPct.toFixed(0)}% of limit`}
-              />
-            </>
-          )}
+        {/* ── Period selector ── */}
+        <View className="mb-8">
+          <PeriodSelector
+            selected={period}
+            onSelect={(p) => {
+              selection();
+              setPeriod(p);
+            }}
+          />
         </View>
 
-        {/* By Category */}
-        {categories.length > 0 && (
-          <View className="mt-8">
-            <SectionHeader title="By Category" action="Manage" />
-            <View className="mx-4 overflow-hidden rounded-2xl border border-gray-100">
-              {categories.slice(0, 5).map((cat, i, arr) => (
-                <CategoryRow
-                  key={cat.id}
-                  title={cat.title}
-                  transactionCount={cat.transactionCount}
-                  amount={cat.amount}
-                  percentage={cat.percentage}
-                  iconName={cat.iconName ?? 'layers-3'}
-                  color={CATEGORY_PALETTE[i % CATEGORY_PALETTE.length]}
-                  showSep={i < Math.min(arr.length, 5) - 1}
-                />
-              ))}
+        {/* ── Stat row ── */}
+        {!isLoading && (
+          <View className="mb-8 flex-row gap-2.5">
+            {[
+              { label: 'Daily avg', value: mask(`$${dailyAvg.toFixed(2)}`) },
+              { label: 'Last month', value: mask(`$${lastMonthSpend.toFixed(2)}`) },
+              { label: 'Transactions', value: String(transactionCount) },
+            ].map(({ label, value }) => (
+              <View key={label} className="flex-1 rounded-2xl bg-gray-50 p-3.5">
+                <Text className="font-caption text-[11px] text-black/50">{label}</Text>
+                <Text className="mt-1.5 font-button text-[17px] text-black">{value}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* ── By Category ── */}
+        {(isLoading || categories.length > 0) && (
+          <View className="mb-4">
+            <View className="mb-3.5 flex-row items-center justify-between">
+              <Text className="font-headline text-xl text-black">By Category</Text>
+              <Pressable onPress={() => router.push('/card' as never)} accessibilityRole="button">
+                <Text className="font-body text-sm text-[#0A84FF]">Manage</Text>
+              </Pressable>
+            </View>
+            <View className="overflow-hidden rounded-[20px] bg-gray-50">
+              {isLoading
+                ? [0, 1, 2].map((i) => (
+                    <View key={i} className="flex-row items-center gap-3.5 p-4">
+                      <Skeleton style={{ width: 44, height: 44, borderRadius: 22 }} />
+                      <View className="flex-1 gap-2">
+                        <Skeleton className="w-[55%]" style={{ height: 14 }} />
+                        <Skeleton className="w-[30%]" style={{ height: 11 }} />
+                      </View>
+                      <Skeleton style={{ width: 60, height: 14 }} />
+                    </View>
+                  ))
+                : categories
+                    .slice(0, 5)
+                    .map((cat, i, arr) => (
+                      <CategoryRow
+                        key={cat.id}
+                        title={cat.title}
+                        amount={cat.amount}
+                        percentage={cat.percentage}
+                        iconName={cat.iconName}
+                        color={CATEGORY_PALETTE[i % CATEGORY_PALETTE.length]}
+                        showSep={i < Math.min(arr.length, 5) - 1}
+                      />
+                    ))}
             </View>
           </View>
         )}
 
-        {/* Your Card */}
-        <View className="mt-8">
-          <SectionHeader title="Your Card" />
-          <View className="mx-4 flex-row gap-3">
-            <StashCard
-              title="Available"
-              amount={availSplit.dollars}
-              amountCents={availSplit.cents}
-              icon={<CreditCard size={28} color={C.text} strokeWidth={1.5} />}
-              badge={cardBadge}
-              subtitle={cardSubtitle}
-              className="flex-1"
-            />
-            <StashCard
-              title="This month"
-              amount={spentSplit.dollars}
-              amountCents={spentSplit.cents}
-              icon={<TrendIcon size={28} color={trendColor} strokeWidth={1.5} />}
-              className="flex-1"
-            />
-          </View>
-        </View>
+        {/* ── Round-ups ── */}
+        {!isLoading && roundUps?.is_enabled && (
+          <Animated.View entering={FadeIn.duration(300)}>
+            <View className="flex-row items-center gap-3.5 rounded-[20px] bg-gray-50 p-4">
+              <View
+                className="h-11 w-11 items-center justify-center rounded-full"
+                style={{ backgroundColor: `${ACCENT}22` }}>
+                <RefreshCw size={20} color={ACCENT} strokeWidth={1.5} />
+              </View>
+              <View className="flex-1">
+                <Text className="font-button text-base text-black">Round-ups</Text>
+                <Text className="mt-0.5 font-caption text-[13px] text-black/50">
+                  {roundUps.transaction_count} transactions
+                </Text>
+              </View>
+              <Text className="font-button text-[17px] text-black">
+                {mask(`$${parseFloat(roundUps.total_accumulated).toFixed(2)}`)}
+              </Text>
+            </View>
+          </Animated.View>
+        )}
 
-        {/* Recent transactions */}
-        {transactions.length > 0 && (
-          <View className="mt-8">
-            <SectionHeader title="Recent" />
-            <TransactionList
-              transactions={transactions.slice(0, 8)}
-              className="mx-4"
-              scrollEnabled={false}
-            />
+        {/* ── Available ── */}
+        {!isLoading && (
+          <View className="mt-7 items-center">
+            <Text className="font-caption text-[13px] text-black/50">Available to spend</Text>
+            <Text
+              className="mt-1 font-headline text-2xl text-black"
+              style={{ letterSpacing: -0.5 }}>
+              {mask(`$${availableBalance.toFixed(2)}`)}
+            </Text>
           </View>
         )}
       </ScrollView>

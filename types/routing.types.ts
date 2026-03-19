@@ -11,6 +11,7 @@ export interface RouteConfig {
   isOnVerifyEmail: boolean;
   isOnCreatePasscode: boolean;
   isOnConfirmPasscode: boolean;
+  isOnCreateRailTag: boolean;
   isOnCompleteProfile: boolean;
 }
 

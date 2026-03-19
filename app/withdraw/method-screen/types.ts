@@ -1,11 +1,16 @@
 export type WithdrawMethod = 'fiat' | 'crypto';
 
+export type P2PMethod = 'p2p' | 'railtag' | 'email' | 'contact';
+
 export type ExtendedWithdrawMethod =
   | WithdrawMethod
   | 'phantom'
   | 'solflare'
+  | 'mwa-fund'
+  | 'mwa-withdraw'
   | 'asset-buy'
-  | 'asset-sell';
+  | 'asset-sell'
+  | P2PMethod;
 
 export type FundingFlow = 'send' | 'fund';
 

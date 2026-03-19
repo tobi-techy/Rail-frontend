@@ -1,18 +1,15 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View } from 'react-native';
 
 interface AuthGradientProps {
-  style?: ViewStyle;
+  style?: object;
   children?: React.ReactNode;
 }
 
 export function AuthGradient({ style, children }: AuthGradientProps) {
-  return <View style={[styles.container, style]}>{children}</View>;
+  return (
+    <View className="flex-1 bg-white" style={style}>
+      {children}
+    </View>
+  );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-});

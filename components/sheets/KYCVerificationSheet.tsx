@@ -10,9 +10,10 @@ import {
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
-import { type KYCStatusResponse, type KycStatus } from '@/api/types/kyc';
+import { type KYCStatusResponse, type KycStatus, isKycInReview } from '@/api/types/kyc';
 import { useKYCStatus, useKycStatusPolling } from '@/api/hooks/useKYC';
 import { useAuthStore } from '@/stores/authStore';
+import { useKycStore } from '@/stores/kycStore';
 import {
   NavigableBottomSheet,
   type BottomSheetScreen,
@@ -27,11 +28,16 @@ interface KYCVerificationSheetProps {
 
 type ScreenStatusMode = 'not_started' | 'pending' | 'approved' | 'rejected';
 
-const resolveStatusMode = (status?: KYCStatusResponse): ScreenStatusMode => {
+const resolveStatusMode = (
+  status: KYCStatusResponse | undefined,
+  hasLocalPendingSubmission: boolean
+): ScreenStatusMode => {
   const value = status?.status ?? 'not_started';
   if (value === 'approved') return 'approved';
   if (value === 'rejected' || value === 'expired') return 'rejected';
-  if (value === 'processing' || (value === 'pending' && status?.has_submitted)) return 'pending';
+  // Only show pending if user has actually submitted; otherwise they may be retrying.
+  if (isKycInReview(status)) return 'pending';
+  if (hasLocalPendingSubmission) return 'pending';
   return 'not_started';
 };
 
@@ -40,6 +46,8 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
   const contentMaxHeight = Math.max(280, Math.min(460, screenHeight * 0.56));
 
   const user = useAuthStore((state) => state.user);
+  const localSubmissionPendingAt = useKycStore((state) => state.localSubmissionPendingAt);
+  const hasLocalPendingSubmission = Boolean(localSubmissionPendingAt);
   const firstName = useMemo(() => {
     if (user?.firstName && user.firstName.trim()) return user.firstName.trim();
     if (user?.fullName && user.fullName.trim()) return user.fullName.trim().split(' ')[0];
@@ -49,7 +57,7 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
   // #7: Use polling with timeout recovery when pending
   const [pollingTimedOut, setPollingTimedOut] = useState(false);
   const [pollResetKey, setPollResetKey] = useState(0);
-  const isPending = resolveStatusMode(kycStatus) === 'pending';
+  const isPending = resolveStatusMode(kycStatus, hasLocalPendingSubmission) === 'pending';
 
   const handleTerminal = useCallback((status: KycStatus) => {
     setPollingTimedOut(false);
@@ -72,7 +80,7 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
   const { data: staticStatus } = useKYCStatus(visible && !isPending);
 
   const status = polledStatus ?? staticStatus ?? kycStatus;
-  const statusMode = resolveStatusMode(status);
+  const statusMode = resolveStatusMode(status, hasLocalPendingSubmission);
 
   const navigation = useNavigableBottomSheet('intro');
   const { reset: resetNavigation } = navigation;
@@ -106,14 +114,19 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
     requestAnimationFrame(() => router.push('/kyc'));
   }, [onClose]);
 
+  const handleContinue = useCallback(() => {
+    onClose();
+    requestAnimationFrame(() => router.push('/kyc'));
+  }, [onClose]);
+
   const handleCheckStatus = useCallback(async () => {
     setPollingTimedOut(false);
     setPollResetKey((k) => k + 1);
     const result = await refetchKycStatus();
-    const nextMode = resolveStatusMode(result.data ?? status);
+    const nextMode = resolveStatusMode(result.data ?? status, hasLocalPendingSubmission);
     if (nextMode === 'approved') resetNavigation('approved');
     else if (nextMode === 'rejected') resetNavigation('intro');
-  }, [refetchKycStatus, status, resetNavigation]);
+  }, [hasLocalPendingSubmission, refetchKycStatus, status, resetNavigation]);
 
   const handleRetry = useCallback(() => {
     onClose();
@@ -135,7 +148,7 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
     statusMode === 'approved'
       ? 'Your identity is now verified.'
       : statusMode === 'pending'
-        ? 'This usually takes a few minutes. You can close this and come back later.'
+        ? "We received your documents and are reviewing them. If your liveness check didn't complete, you can continue where you left off."
         : statusMode === 'rejected'
           ? status?.rejection_reason ||
             'Your last submission was not approved. You can retry now with clear ID photos.'
@@ -232,13 +245,14 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
               <Button title="Close" onPress={closeSheet} />
             ) : statusMode === 'pending' ? (
               <View className="gap-y-3">
+                <Button title="Continue verification" onPress={handleContinue} />
                 <Button
                   title="Refresh status"
+                  variant="white"
                   onPress={handleCheckStatus}
                   loading={isRefetchingStatus}
-                  leftIcon={<RefreshCw size={16} color="#FFF" />}
+                  leftIcon={<RefreshCw size={16} color="#111827" />}
                 />
-                <Button title="Close" variant="white" onPress={closeSheet} />
               </View>
             ) : (
               <Button

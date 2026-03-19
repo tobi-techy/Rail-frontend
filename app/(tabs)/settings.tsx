@@ -18,12 +18,15 @@ import {
   Vibrate,
   Lock,
   Bell,
-  Sun,
   Globe,
   RefreshCw,
+  ChevronRight,
+  Fingerprint,
 } from 'lucide-react-native';
-import { useNavigation, router } from 'expo-router';
-import { useLayoutEffect, useState, useEffect, type ReactNode } from 'react';
+import { router } from 'expo-router';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import Avatar from '@zamplyy/react-native-nice-avatar';
+import { getAvatarConfig } from '@/utils/avatarConfig';
 
 import { BottomSheet, SettingsSheet } from '@/components/sheets';
 import { SegmentedSlider } from '@/components/molecules';
@@ -38,6 +41,7 @@ import { formatFxUpdatedAt, migrateLegacyCurrency } from '@/utils/currency';
 import { usePinChange, sanitizePin } from '@/hooks/usePinChange';
 import { useSpendSettings, clampAlloc } from '@/hooks/useSpendSettings';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { useBiometric } from '@/hooks/useBiometric';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -58,6 +62,7 @@ type SheetType =
   | 'haptics'
   | 'lockOnResume'
   | 'currency'
+  | 'biometric'
   | null;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -80,18 +85,24 @@ function SettingButton({
   label,
   onPress,
   danger,
+  right,
 }: {
   icon: ReactNode;
   label: string;
   onPress?: () => void;
   danger?: boolean;
+  right?: ReactNode;
 }) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
     <AnimatedPressable
       style={animStyle}
-      className="mb-md w-[25%] items-center"
+      className={
+        right
+          ? 'mb-md w-full flex-row items-center justify-between px-1'
+          : 'mb-md w-[25%] items-center'
+      }
       onPress={onPress}
       onPressIn={() => {
         scale.value = withSpring(0.9, { damping: 20, stiffness: 300 });
@@ -99,12 +110,27 @@ function SettingButton({
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 20, stiffness: 300 });
       }}>
-      <View className="h-12 w-12 items-center justify-center">{icon}</View>
-      <Text
-        className={`mt-xs text-center font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}
-        numberOfLines={2}>
-        {label}
-      </Text>
+      {right ? (
+        <>
+          <View className="flex-row items-center gap-3">
+            <View className="h-12 w-12 items-center justify-center">{icon}</View>
+            <Text
+              className={`font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}>
+              {label}
+            </Text>
+          </View>
+          {right}
+        </>
+      ) : (
+        <>
+          <View className="h-12 w-12 items-center justify-center">{icon}</View>
+          <Text
+            className={`mt-xs text-center font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}
+            numberOfLines={2}>
+            {label}
+          </Text>
+        </>
+      )}
     </AnimatedPressable>
   );
 }
@@ -155,14 +181,75 @@ const SheetToggleRow = ({
   </View>
 );
 
-// ── Settings ──────────────────────────────────────────────────────────────────
+// ── Profile Card ──────────────────────────────────────────────────────────────
+
+function ProfileCard({
+  firstName,
+  lastName,
+  email,
+}: {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+}) {
+  const avatarName = useMemo(
+    () => [firstName, lastName].filter(Boolean).join(' ') || email || 'Rail User',
+    [firstName, lastName, email]
+  );
+  const avatarConfig = useMemo(() => getAvatarConfig(avatarName), [avatarName]);
+
+  const displayName =
+    firstName || lastName ? [firstName, lastName].filter(Boolean).join(' ') : 'Rail User';
+
+  return (
+    <Pressable
+      onPress={() => router.push('/profile-edit' as never)}
+      className="mx-md mb-2 mt-md flex-row items-center justify-between rounded-2xl border border-surface bg-white px-4 py-4">
+      <View className="flex-row items-center gap-3">
+        <Avatar size={52} {...avatarConfig} />
+        <View>
+          <Text className="font-subtitle text-[17px] text-text-primary" numberOfLines={1}>
+            {displayName}
+          </Text>
+          {email ? (
+            <Text
+              className="mt-0.5 font-caption text-caption text-text-secondary"
+              numberOfLines={1}>
+              {email}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+      <View className="flex-row items-center gap-1.5 rounded-full border border-surface bg-surface px-3 py-1.5">
+        <Text className="font-button text-[13px] text-text-primary">Edit</Text>
+        <ChevronRight size={13} color="#121212" strokeWidth={2.5} />
+      </View>
+    </Pressable>
+  );
+}
 
 export default function Settings() {
-  const navigation = useNavigation();
   const { showError, showSuccess, showWarning, showInfo } = useFeedbackPopup();
+  const {
+    isAvailable: biometricHardwareAvailable,
+    enableBiometric,
+    disableBiometric,
+  } = useBiometric();
+  const isBiometricEnabled = useAuthStore((s) => s.isBiometricEnabled);
+
+  const handleToggleBiometric = async () => {
+    if (isBiometricEnabled) {
+      await disableBiometric();
+      showSuccess('Biometrics Off', 'Biometric login has been disabled.');
+    } else {
+      const ok = await enableBiometric();
+      if (ok) showSuccess('Biometrics On', 'You can now sign in with Face ID or fingerprint.');
+    }
+  };
 
   const logout = useAuthStore((s) => s.logout);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
+  const user = useAuthStore((s) => s.user);
 
   const {
     isBalanceVisible,
@@ -180,7 +267,10 @@ export default function Settings() {
   const selectedCurrency = migrateLegacyCurrency(currency);
 
   const [activeSheet, setActiveSheet] = useState<SheetType>(null);
-  const closeSheet = () => setActiveSheet(null);
+  const closeSheet = () => {
+    setActiveSheet(null);
+    setDeletePassword('');
+  };
 
   const {
     baseAllocation,
@@ -215,6 +305,7 @@ export default function Settings() {
   // Account state
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
 
   // API hooks
   const { refetch: refetchAllocationBalances } = useAllocationBalances();
@@ -229,20 +320,6 @@ export default function Settings() {
   useEffect(() => {
     if (currency !== selectedCurrency) setCurrency(selectedCurrency);
   }, [currency, selectedCurrency, setCurrency]);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: true,
-      title: '',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerShadowVisible: false,
-      headerLeft: () => (
-        <View className="flex-row items-center gap-x-3 pl-[14px]">
-          <Text className="font-subtitle text-headline-1">Settings</Text>
-        </View>
-      ),
-    });
-  }, [navigation]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -288,9 +365,10 @@ export default function Settings() {
   };
 
   const handleDeleteAccount = async () => {
+    if (!deletePassword) return;
     setIsDeleting(true);
     try {
-      const result = await deleteAccount('User requested account deletion');
+      const result = await deleteAccount(deletePassword, 'User requested account deletion');
       closeSheet();
       const fundsMsg =
         parseFloat(result.funds_swept) > 0
@@ -309,6 +387,7 @@ export default function Settings() {
   return (
     <View className="flex-1 bg-background-main">
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
+        <ProfileCard firstName={user?.firstName} lastName={user?.lastName} email={user?.email} />
         <Section title="Spend">
           <SettingButton
             icon={<ArrowLeftRight size={22} color="#121212" />}
@@ -364,23 +443,6 @@ export default function Settings() {
             onPress={() => router.push('/settings-notifications')}
           />
           <SettingButton
-            icon={<Sun size={22} color="#121212" />}
-            label="Theme"
-            onPress={() =>
-              showInfo(
-                'Coming Soon',
-                'Theme switching will be available once dark and light mode are fully implemented.'
-              )
-            }
-          />
-          <SettingButton
-            icon={<Globe size={22} color="#121212" />}
-            label="Language"
-            onPress={() =>
-              showInfo('Coming Soon', 'Language selection will be available in a future update.')
-            }
-          />
-          <SettingButton
             icon={<Globe size={22} color="#121212" />}
             label="Currency"
             onPress={() => setActiveSheet('currency')}
@@ -393,6 +455,13 @@ export default function Settings() {
             label="PIN"
             onPress={() => setActiveSheet('pin')}
           />
+          {biometricHardwareAvailable && (
+            <SettingButton
+              icon={<Fingerprint size={22} color="#121212" />}
+              label="Biometrics"
+              onPress={() => setActiveSheet('biometric')}
+            />
+          )}
           {Passkey.isSupported() && (
             <SettingButton
               icon={<KeyRound size={22} color="#121212" />}
@@ -400,12 +469,33 @@ export default function Settings() {
               onPress={() => router.push('/passkey-settings')}
             />
           )}
-          <SettingButton icon={<ShieldCheck size={22} color="#121212" />} label="2-Factor Auth" />
+          <SettingButton
+            icon={<ShieldCheck size={22} color="#121212" />}
+            label="2-Factor Auth"
+            onPress={() =>
+              showInfo(
+                'Coming Soon',
+                '2-Factor authentication will be available in a future update.'
+              )
+            }
+          />
         </Section>
 
         <Section title="More">
-          <SettingButton icon={<Users size={22} color="#121212" />} label="Referrals" />
-          <SettingButton icon={<Scale size={22} color="#121212" />} label="Legal" />
+          <SettingButton
+            icon={<Users size={22} color="#121212" />}
+            label="Referrals"
+            onPress={() =>
+              showInfo('Coming Soon', 'Referrals will be available in a future update.')
+            }
+          />
+          <SettingButton
+            icon={<Scale size={22} color="#121212" />}
+            label="Legal"
+            onPress={() =>
+              showInfo('Legal', 'Legal documents will be available in a future update.')
+            }
+          />
           <SettingButton
             icon={<HeadphonesIcon size={22} color="#121212" />}
             label="Support"
@@ -542,6 +632,19 @@ export default function Settings() {
         />
       </BottomSheet>
 
+      <BottomSheet visible={activeSheet === 'biometric'} onClose={closeSheet}>
+        <Text className="mb-1 font-subtitle text-xl">Biometrics</Text>
+        <Text className="mb-5 font-caption text-caption text-text-secondary">
+          Use Face ID or fingerprint to sign in instantly.
+        </Text>
+        <SheetToggleRow
+          label="Enable Biometric Login"
+          subtitle="Sign in with Face ID or fingerprint instead of your PIN"
+          value={isBiometricEnabled}
+          onChange={handleToggleBiometric}
+        />
+      </BottomSheet>
+
       <BottomSheet visible={activeSheet === 'currency'} onClose={closeSheet}>
         <View className="mb-4 flex-row items-center justify-between">
           <Text className="font-subtitle text-xl">Display Currency</Text>
@@ -664,17 +767,25 @@ export default function Settings() {
           Deleting your account will permanently remove it from the device. If you continue, you
           will not be able to recover, access or perform any other action with this account in Rail.
         </Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-4 font-body text-base leading-6 text-neutral-500">
           Any remaining funds in your account will be transferred to our company treasury before
           deletion.
         </Text>
+        <Input
+          label="Confirm Password"
+          value={deletePassword}
+          onChangeText={setDeletePassword}
+          secureTextEntry
+          placeholder="Enter your password"
+          className="mb-6"
+        />
         <View className="flex-row gap-3">
           <Button title="Cancel" variant="ghost" onPress={closeSheet} disabled={isDeleting} flex />
           <Button
             title={isDeleting ? '' : 'Delete Account'}
             variant="orange"
             onPress={handleDeleteAccount}
-            disabled={isDeleting}
+            disabled={isDeleting || !deletePassword}
             flex>
             {isDeleting && <ActivityIndicator color="#fff" />}
           </Button>

@@ -81,75 +81,73 @@ export default function ResetPassword() {
           translucent={Platform.OS === 'android'}
         />
         <Pressable className="flex-1 px-6 pb-6" onPress={Keyboard.dismiss}>
-            <StaggeredChild index={0}>
-              <View className="mb-8 mt-4">
-                <Text className="font-headline text-auth-title text-black">Reset password</Text>
-                <Text className="mt-2 font-body text-base text-black/60">
-                  Enter a new password to secure your account.
+          <StaggeredChild index={0}>
+            <View className="mb-8 mt-4">
+              <Text className="font-headline-2 text-auth-title leading-[1.1] text-black">
+                Reset password
+              </Text>
+              <Text className="mt-2 font-body text-base text-black/60">
+                Enter a new password to secure your account.
+              </Text>
+            </View>
+          </StaggeredChild>
+
+          {!token ? (
+            <StaggeredChild index={1}>
+              <View className="rounded-2xl bg-black/5 p-4">
+                <Text className="font-body text-caption text-black/70">
+                  This reset link is invalid or missing a token. Please request a new password reset
+                  email.
                 </Text>
               </View>
             </StaggeredChild>
-
-            {!token ? (
+          ) : (
+            <View className="gap-y-2">
               <StaggeredChild index={1}>
-                <View className="rounded-2xl bg-black/5 p-4">
-                  <Text className="font-body text-caption text-black/70">
-                    This reset link is invalid or missing a token. Please request a new password
-                    reset email.
-                  </Text>
-                </View>
+                <InputField
+                  label="New Password"
+                  placeholder="At least 8 characters"
+                  value={password}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    if (passwordError) setPasswordError('');
+                  }}
+                  type="password"
+                  error={passwordError}
+                  isPasswordVisible={showPassword}
+                  onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
+                />
               </StaggeredChild>
-            ) : (
-              <View className="gap-y-2">
-                <StaggeredChild index={1}>
-                  <InputField
-                    label="New Password"
-                    placeholder="At least 8 characters"
-                    value={password}
-                    onChangeText={(value) => {
-                      setPassword(value);
-                      if (passwordError) setPasswordError('');
-                    }}
-                    type="password"
-                    error={passwordError}
-                    isPasswordVisible={showPassword}
-                    onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
-                  />
-                </StaggeredChild>
-                <StaggeredChild index={2}>
-                  <InputField
-                    label="Confirm Password"
-                    placeholder="Re-enter password"
-                    value={confirmPassword}
-                    onChangeText={(value) => {
-                      setConfirmPassword(value);
-                      if (confirmPasswordError) setConfirmPasswordError('');
-                    }}
-                    type="password"
-                    error={confirmPasswordError}
-                    isPasswordVisible={showConfirmPassword}
-                    onTogglePasswordVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
-                  />
-                </StaggeredChild>
-              </View>
-            )}
+              <StaggeredChild index={2}>
+                <InputField
+                  label="Confirm Password"
+                  placeholder="Re-enter password"
+                  value={confirmPassword}
+                  onChangeText={(value) => {
+                    setConfirmPassword(value);
+                    if (confirmPasswordError) setConfirmPasswordError('');
+                  }}
+                  type="password"
+                  error={confirmPasswordError}
+                  isPasswordVisible={showConfirmPassword}
+                  onTogglePasswordVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
+                />
+              </StaggeredChild>
+            </View>
+          )}
 
-            <StaggeredChild index={3} delay={80} style={{ marginTop: 'auto' }}>
-              <View className="pt-8">
-                {token ? (
-                  <Button
-                    title="Update Password"
-                    onPress={handleResetPassword}
-                    loading={isPending}
-                  />
-                ) : (
-                  <Button
-                    title="Request new reset link"
-                    onPress={() => router.replace(ROUTES.AUTH.FORGOT_PASSWORD as never)}
-                  />
-                )}
-              </View>
-            </StaggeredChild>
+          <StaggeredChild index={3} delay={80} style={{ marginTop: 'auto' }}>
+            <View className="pt-8">
+              {token ? (
+                <Button title="Update Password" onPress={handleResetPassword} loading={isPending} />
+              ) : (
+                <Button
+                  title="Request new reset link"
+                  onPress={() => router.replace(ROUTES.AUTH.FORGOT_PASSWORD as never)}
+                />
+              )}
+            </View>
+          </StaggeredChild>
         </Pressable>
       </SafeAreaView>
     </AuthGradient>

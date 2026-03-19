@@ -9,7 +9,6 @@ const ITEM_WIDTH = 56;
 interface Props {
   selectedIndex: number;
   onSelect: (index: number) => void;
-  /** Indices that have data (non-zero spend) */
   activeIndices?: number[];
 }
 
@@ -37,38 +36,23 @@ function MonthDot({
         scale.value = withSpring(1, { damping: 12, stiffness: 300 });
       }}
       activeOpacity={1}
-      style={{ width: ITEM_WIDTH, alignItems: 'center', paddingVertical: 8 }}>
-      <Animated.View style={animStyle}>
+      style={{ width: ITEM_WIDTH }}
+      className="items-center py-2">
+      <Animated.View style={animStyle} className="items-center">
         <View
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 14,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: isSelected ? '#000' : 'transparent',
-            borderWidth: isSelected ? 0 : hasData ? 1.5 : 1,
-            borderColor: isSelected ? 'transparent' : hasData ? '#000' : '#E5E5E5',
-          }}>
-          {hasData && !isSelected && (
-            <View
-              style={{
-                width: 5,
-                height: 5,
-                borderRadius: 3,
-                backgroundColor: '#000',
-              }}
-            />
-          )}
+          className={`h-7 w-7 items-center justify-center rounded-full ${
+            isSelected
+              ? 'bg-black'
+              : hasData
+                ? 'border-[1.5px] border-black'
+                : 'border border-gray-200'
+          }`}>
+          {hasData && !isSelected && <View className="h-[5px] w-[5px] rounded-full bg-black" />}
         </View>
         <Text
-          style={{
-            fontFamily: isSelected ? 'SF-Pro-Rounded-Semibold' : 'SF-Pro-Rounded-Regular',
-            fontSize: 11,
-            color: isSelected ? '#000' : '#9CA3AF',
-            marginTop: 5,
-            textAlign: 'center',
-          }}>
+          className={`mt-[5px] text-center text-[11px] ${
+            isSelected ? 'font-button text-black' : 'font-caption text-gray-400'
+          }`}>
           {label}
         </Text>
       </Animated.View>
@@ -85,7 +69,6 @@ export function MonthScrubber({ selectedIndex, onSelect, activeIndices = [] }: P
     (index: number) => {
       selection();
       onSelect(index);
-      // Scroll to keep selected item centered
       const screenWidth = Dimensions.get('window').width;
       const offset = index * ITEM_WIDTH - screenWidth / 2 + ITEM_WIDTH / 2;
       scrollRef.current?.scrollTo({ x: Math.max(0, offset), animated: true });

@@ -24,24 +24,38 @@ interface KycState {
   taxIdType: TaxIdType;
   taxId: string;
   employmentStatus: EmploymentStatus | null;
+  sourceOfFunds: string | null;
+  expectedMonthlyPayments: string | null;
+  accountPurpose: string | null;
+  accountPurposeOther: string | null;
+  mostRecentOccupation: string | null;
+  actingAsIntermediary: boolean;
   investmentPurposes: InvestmentPurpose[];
   disclosures: KycDisclosures;
   disclosuresConfirmed: boolean;
   missingProfileFields: string[];
 
-  // Sumsub session (non-sensitive — token is short-lived, not PII)
-  sumsubToken: string | null;
-  applicantId: string | null;
+  // Didit session (non-sensitive — token is short-lived, not PII)
+  diditSessionToken: string | null;
+  diditSessionId: string | null;
+  localSubmissionPendingAt: string | null;
 
   setCountry: (country: Country) => void;
   setTaxIdType: (taxIdType: TaxIdType) => void;
   setTaxId: (taxId: string) => void;
   setEmploymentStatus: (value: EmploymentStatus | null) => void;
+  setSourceOfFunds: (value: string | null) => void;
+  setExpectedMonthlyPayments: (value: string | null) => void;
+  setAccountPurpose: (value: string | null) => void;
+  setAccountPurposeOther: (value: string | null) => void;
+  setMostRecentOccupation: (value: string | null) => void;
+  setActingAsIntermediary: (value: boolean) => void;
   toggleInvestmentPurpose: (value: InvestmentPurpose) => void;
   setDisclosure: (key: keyof KycDisclosures, value: boolean) => void;
   setDisclosuresConfirmed: (confirmed: boolean) => void;
   setMissingProfileFields: (fields: string[]) => void;
-  setSumsubSession: (token: string, applicantId: string) => void;
+  setDiditSession: (sessionToken: string, sessionId: string) => void;
+  setLocalSubmissionPendingAt: (submittedAt: string | null) => void;
   resetKycState: () => void;
 }
 
@@ -49,26 +63,49 @@ export const useKycStore = create<KycState>()(
   persist(
     (set) => ({
       country: 'USA',
-      taxIdType: 'ssn',
+      taxIdType: COUNTRY_TAX_CONFIG['USA'].type,
       taxId: '',
       employmentStatus: null,
+      sourceOfFunds: null,
+      expectedMonthlyPayments: null,
+      accountPurpose: null,
+      accountPurposeOther: null,
+      mostRecentOccupation: null,
+      actingAsIntermediary: false,
       investmentPurposes: [],
       disclosures: DEFAULT_DISCLOSURES,
       disclosuresConfirmed: false,
       missingProfileFields: [],
-      sumsubToken: null,
-      applicantId: null,
+      diditSessionToken: null,
+      diditSessionId: null,
+      localSubmissionPendingAt: null,
 
       setCountry: (country) =>
         set({
           country,
-          taxIdType: COUNTRY_TAX_CONFIG[country][0].type,
+          taxIdType: COUNTRY_TAX_CONFIG[country].type,
           taxId: '',
+          employmentStatus: null,
+          sourceOfFunds: null,
+          expectedMonthlyPayments: null,
+          accountPurpose: null,
+          accountPurposeOther: null,
+          mostRecentOccupation: null,
+          actingAsIntermediary: false,
+          investmentPurposes: [],
+          disclosures: DEFAULT_DISCLOSURES,
+          disclosuresConfirmed: false,
         }),
 
       setTaxIdType: (taxIdType) => set({ taxIdType }),
       setTaxId: (taxId) => set({ taxId }),
       setEmploymentStatus: (employmentStatus) => set({ employmentStatus }),
+      setSourceOfFunds: (sourceOfFunds) => set({ sourceOfFunds }),
+      setExpectedMonthlyPayments: (expectedMonthlyPayments) => set({ expectedMonthlyPayments }),
+      setAccountPurpose: (accountPurpose) => set({ accountPurpose }),
+      setAccountPurposeOther: (accountPurposeOther) => set({ accountPurposeOther }),
+      setMostRecentOccupation: (mostRecentOccupation) => set({ mostRecentOccupation }),
+      setActingAsIntermediary: (actingAsIntermediary) => set({ actingAsIntermediary }),
 
       toggleInvestmentPurpose: (value) =>
         set((state) => {
@@ -84,28 +121,42 @@ export const useKycStore = create<KycState>()(
 
       setDisclosuresConfirmed: (disclosuresConfirmed) => set({ disclosuresConfirmed }),
       setMissingProfileFields: (missingProfileFields) => set({ missingProfileFields }),
-      setSumsubSession: (sumsubToken, applicantId) => set({ sumsubToken, applicantId }),
+      setDiditSession: (diditSessionToken, diditSessionId) =>
+        set({ diditSessionToken, diditSessionId }),
+      setLocalSubmissionPendingAt: (localSubmissionPendingAt) => set({ localSubmissionPendingAt }),
 
       resetKycState: () =>
         set({
           country: 'USA',
-          taxIdType: 'ssn',
+          taxIdType: COUNTRY_TAX_CONFIG['USA'].type,
           taxId: '',
           employmentStatus: null,
+          sourceOfFunds: null,
+          expectedMonthlyPayments: null,
+          accountPurpose: null,
+          accountPurposeOther: null,
+          mostRecentOccupation: null,
+          actingAsIntermediary: false,
           investmentPurposes: [],
           disclosures: DEFAULT_DISCLOSURES,
           disclosuresConfirmed: false,
           missingProfileFields: [],
-          sumsubToken: null,
-          applicantId: null,
+          diditSessionToken: null,
+          diditSessionId: null,
+          localSubmissionPendingAt: null,
         }),
     }),
     {
       name: 'kyc-store',
       storage: createJSONStorage(() => AsyncStorage),
-      // Never persist taxId — it's transient PII
+      // Never persist taxId or didit session tokens — transient PII/sensitive data
       partialize: (state) => {
-        const { taxId: _taxId, ...rest } = state;
+        const {
+          taxId: _taxId,
+          diditSessionToken: _diditSessionToken,
+          diditSessionId: _diditSessionId,
+          ...rest
+        } = state;
         return rest;
       },
     }

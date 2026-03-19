@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ViewProps } from 'react-native';
-import { Delete, Fingerprint, Trash } from 'lucide-react-native';
+import { Delete, Fingerprint, KeyRound, Trash } from 'lucide-react-native';
 import { useKeypadFeedback } from '@/hooks/useKeypadFeedback';
 
 const BACKSPACE_KEY = 'backspace';
 const FINGERPRINT_KEY = 'fingerprint';
+const PASSKEY_KEY = 'passkey';
 const DECIMAL_KEY = 'decimal';
 
 type KeypadDigit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
@@ -15,12 +16,18 @@ const BASE_KEYPAD_LAYOUT = [
   ['7', '8', '9'],
 ] as const;
 
-type KeypadKey = KeypadDigit | typeof BACKSPACE_KEY | typeof FINGERPRINT_KEY | typeof DECIMAL_KEY;
+type KeypadKey =
+  | KeypadDigit
+  | typeof BACKSPACE_KEY
+  | typeof FINGERPRINT_KEY
+  | typeof PASSKEY_KEY
+  | typeof DECIMAL_KEY;
 
 export interface KeypadProps extends ViewProps {
   onKeyPress: (key: KeypadKey) => void;
   showFingerprint?: boolean;
-  leftKey?: 'empty' | 'fingerprint' | 'decimal';
+  showPasskey?: boolean;
+  leftKey?: 'empty' | 'fingerprint' | 'decimal' | 'passkey';
   backspaceIcon?: 'trash' | 'delete';
   disabled?: boolean;
   className?: string;
@@ -30,6 +37,7 @@ export interface KeypadProps extends ViewProps {
 export const Keypad: React.FC<KeypadProps> = ({
   onKeyPress,
   showFingerprint = false,
+  showPasskey = false,
   leftKey = 'fingerprint',
   backspaceIcon = 'trash',
   disabled = false,
@@ -50,11 +58,15 @@ export const Keypad: React.FC<KeypadProps> = ({
   const resolvedLeftKey: KeypadKey | null =
     leftKey === 'decimal'
       ? DECIMAL_KEY
-      : leftKey === 'empty'
-        ? null
-        : showFingerprint
-          ? FINGERPRINT_KEY
-          : null;
+      : leftKey === 'passkey'
+        ? showPasskey
+          ? PASSKEY_KEY
+          : null
+        : leftKey === 'empty'
+          ? null
+          : showFingerprint
+            ? FINGERPRINT_KEY
+            : null;
 
   const keypadLayout: (KeypadKey | null)[][] = [
     ...BASE_KEYPAD_LAYOUT.map((row) => [...row]),
@@ -77,6 +89,7 @@ export const Keypad: React.FC<KeypadProps> = ({
             const isBackspace = key === BACKSPACE_KEY;
             const isFingerprint = key === FINGERPRINT_KEY;
             const isDecimal = key === DECIMAL_KEY;
+            const isPasskey = key === PASSKEY_KEY;
 
             return (
               <TouchableOpacity
@@ -91,9 +104,11 @@ export const Keypad: React.FC<KeypadProps> = ({
                     ? 'Delete digit'
                     : isFingerprint
                       ? 'Use biometrics'
-                      : isDecimal
-                        ? 'Decimal point'
-                        : `Digit ${key}`
+                      : isPasskey
+                        ? 'Use passkey'
+                        : isDecimal
+                          ? 'Decimal point'
+                          : `Digit ${key}`
                 }>
                 {isBackspace ? (
                   backspaceIcon === 'delete' ? (
@@ -103,6 +118,8 @@ export const Keypad: React.FC<KeypadProps> = ({
                   )
                 ) : isFingerprint ? (
                   <Fingerprint size={24} color={iconColor} />
+                ) : isPasskey ? (
+                  <KeyRound size={24} color={iconColor} />
                 ) : isDecimal ? (
                   <Text
                     className={`font-subtitle text-headline-2 ${isDark ? 'text-white' : 'text-text-primary'}`}>

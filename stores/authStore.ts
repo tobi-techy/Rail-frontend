@@ -49,6 +49,7 @@ export interface User extends Omit<ApiUser, 'phone'> {
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
+  country?: string;
 }
 
 export interface RegistrationData {
@@ -94,7 +95,10 @@ interface AuthState {
 interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  deleteAccount: (reason?: string) => Promise<{ funds_swept: string; sweep_tx_hash?: string }>;
+  deleteAccount: (
+    password: string,
+    reason?: string
+  ) => Promise<{ funds_swept: string; sweep_tx_hash?: string }>;
   register: (email: string) => Promise<void>;
   refreshSession: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
@@ -337,10 +341,23 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         );
       },
 
-      deleteAccount: async (reason?) => {
+      deleteAccount: async (password, reason?) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await authService.deleteAccount(reason);
+          // Get Apple auth code for token revocation if Apple Sign In is available
+          let appleAuthCode: string | undefined;
+          try {
+            const Apple = await import('expo-apple-authentication');
+            const available = await Apple.default.isAvailableAsync();
+            if (available) {
+              const cred = await Apple.default.signInAsync({ requestedScopes: [] });
+              appleAuthCode = cred.authorizationCode ?? undefined;
+            }
+          } catch {
+            // Not an Apple user or user cancelled — continue with deletion
+          }
+
+          const response = await authService.deleteAccount(password, reason, appleAuthCode);
           set({ ...initialState, hasPasscode: false, hasCompletedOnboarding: false });
           return { funds_swept: response.funds_swept, sweep_tx_hash: response.sweep_tx_hash };
         } catch (error: any) {
@@ -612,15 +629,12 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         onboardingStatus: state.onboardingStatus,
         currentOnboardingStep: state.currentOnboardingStep,
         pendingVerificationEmail: state.pendingVerificationEmail,
-        registrationData: { ...state.registrationData, password: '' },
         isBiometricEnabled: state.isBiometricEnabled,
         passcodeSessionToken: state.passcodeSessionToken,
         passcodeSessionExpiresAt: state.passcodeSessionExpiresAt,
         loginAttempts: state.loginAttempts,
         lockoutUntil: state.lockoutUntil,
         hasAcknowledgedDisclaimer: state.hasAcknowledgedDisclaimer,
-        isLoading: state.isLoading,
-        error: state.error,
       }),
     }
   )

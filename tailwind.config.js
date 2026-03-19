@@ -21,11 +21,12 @@ module.exports = {
         text: {
           primary: '#000000',
           secondary: '#757575',
-          tertiary: '#9CA3AF',
+          tertiary: '#6B7280',
           inverse: '#FFFFFF',
         },
         success: '#00C853',
-        destructive: '#FF2E01',
+        destructive: '#EF4444',
+        error: '#EF4444',
         overlay: 'rgba(0, 0, 0, 0.7)',
         // Dark mode palette (foundation — not wired to screens yet)
         dark: {
@@ -38,14 +39,14 @@ module.exports = {
         },
       },
       fontFamily: {
-        display: ['SF-Pro-Rounded-Bold'],
-        headline: ['SF-Pro-Rounded-Bold'],
-        'headline-2': ['SF-Pro-Rounded-Semibold'],
-        subtitle: ['SF-Pro-Rounded-Bold'],
-        body: ['SF-Pro-Rounded-Medium'],
-        caption: ['SF-Pro-Rounded-Regular'],
-        button: ['SF-Pro-Rounded-Semibold'],
-        numeric: ['SF-Pro-Rounded-Regular'],
+        display: ['InstrumentSans-Bold'],
+        headline: ['InstrumentSans-Bold'],
+        'headline-2': ['InstrumentSans-SemiBold'],
+        subtitle: ['InstrumentSans-SemiBold'],
+        body: ['InstrumentSans-Regular'],
+        caption: ['InstrumentSans-Regular'],
+        button: ['InstrumentSans-SemiBold'],
+        numeric: ['InstrumentSans-Medium'],
       },
       fontSize: {
         'display-lg': ['48px', { lineHeight: '1.1' }],

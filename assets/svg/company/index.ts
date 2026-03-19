@@ -50,3 +50,4 @@ export { default as TvsLogo } from './Logo=tvs.svg';
 export { default as VisaLogo } from './Logo=visa.svg';
 export { default as VivoLogo } from './Logo=vivo.svg';
 export { default as XLogo } from './Logo=x.svg';
+export { default as VisaWhite } from './visa-white.svg';

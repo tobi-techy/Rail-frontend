@@ -16,6 +16,9 @@ const METHOD_ALIASES: Record<string, ExtendedWithdrawMethod> = {
   solflare: 'solflare',
   'fund-phantom': 'phantom',
   'fund-solflare': 'solflare',
+  'fund-mwa': 'mwa-fund',
+  'mwa-fund': 'mwa-fund',
+  'mwa-withdraw': 'mwa-withdraw',
   'asset-buy': 'asset-buy',
   'asset-sell': 'asset-sell',
   'stock-buy': 'asset-buy',
@@ -24,6 +27,11 @@ const METHOD_ALIASES: Record<string, ExtendedWithdrawMethod> = {
   'sell-stock': 'asset-sell',
   buy: 'asset-buy',
   sell: 'asset-sell',
+  p2p: 'p2p',
+  railtag: 'railtag',
+  email: 'email',
+  contact: 'contact',
+  send: 'p2p',
 };
 
 const METHOD_COPY: Record<ExtendedWithdrawMethod, MethodCopy> = {
@@ -31,8 +39,8 @@ const METHOD_COPY: Record<ExtendedWithdrawMethod, MethodCopy> = {
     title: 'Withdraw to Bank',
     subtitle: 'Send USD to a linked US bank account',
     limitLabel: 'Fiat withdrawal limit',
-    detailTitle: 'Add bank routing number',
-    detailHint: 'We use this routing number to deliver your fiat withdrawal.',
+    detailTitle: 'Enter bank details',
+    detailHint: 'We use your bank details to deliver your fiat withdrawal.',
     detailLabel: 'Routing number',
     detailPlaceholder: '9-digit routing number',
   },
@@ -63,6 +71,24 @@ const METHOD_COPY: Record<ExtendedWithdrawMethod, MethodCopy> = {
     detailLabel: 'Solflare wallet address',
     detailPlaceholder: 'Paste Solflare address',
   },
+  'mwa-withdraw': {
+    title: 'Withdraw to Wallet',
+    subtitle: 'Send USDC to your Solana wallet via MWA',
+    limitLabel: 'Wallet withdrawal limit',
+    detailTitle: 'Withdraw to Wallet',
+    detailHint: 'Your wallet app will open to confirm your address. No signing required.',
+    detailLabel: 'Wallet',
+    detailPlaceholder: '',
+  },
+  'mwa-fund': {
+    title: 'Fund with Wallet',
+    subtitle: 'Send USDC from your Solana wallet into Rail',
+    limitLabel: 'Funding limit',
+    detailTitle: 'Confirm funding details',
+    detailHint: 'Your wallet will open to sign the USDC transfer into Rail.',
+    detailLabel: 'Wallet',
+    detailPlaceholder: '',
+  },
   'asset-buy': {
     title: 'Buy asset',
     subtitle: 'Set amount and symbol for an asset buy',
@@ -81,16 +107,66 @@ const METHOD_COPY: Record<ExtendedWithdrawMethod, MethodCopy> = {
     detailLabel: 'Asset symbol',
     detailPlaceholder: 'AAPL',
   },
+  p2p: {
+    title: 'Send to someone',
+    subtitle: 'Send money via RailTag, email, or phone',
+    limitLabel: 'P2P send limit',
+    detailTitle: 'Who are you sending to?',
+    detailHint: 'Enter a RailTag, email, or phone number.',
+    detailLabel: 'Recipient',
+    detailPlaceholder: '@railtag, email, or phone',
+  },
+  railtag: {
+    title: 'Send via RailTag',
+    subtitle: 'Instant send to any Rail user by their @tag',
+    limitLabel: 'P2P send limit',
+    detailTitle: 'Enter RailTag',
+    detailHint: 'RailTags start with @. Funds arrive instantly.',
+    detailLabel: 'RailTag',
+    detailPlaceholder: '@username',
+  },
+  email: {
+    title: 'Send via Email',
+    subtitle: 'Send money to anyone by email address',
+    limitLabel: 'P2P send limit',
+    detailTitle: 'Enter email address',
+    detailHint: "If they're not on Rail yet, they'll get an invite to claim.",
+    detailLabel: 'Email',
+    detailPlaceholder: 'name@example.com',
+  },
+  contact: {
+    title: 'Send to Contact',
+    subtitle: 'Pick someone from your contacts',
+    limitLabel: 'P2P send limit',
+    detailTitle: 'Search contacts',
+    detailHint: 'Send to anyone in your phone contacts.',
+    detailLabel: 'Contact',
+    detailPlaceholder: 'Search name or number',
+  },
 };
 
+// Default limits - these should be fetched from API based on user's KYC tier
+// TODO: Fetch limits from API endpoint /v1/limits or similar
 export const LIMITS: Record<ExtendedWithdrawMethod, number> = {
   fiat: 10_000,
   crypto: 50_000,
   phantom: 50_000,
   solflare: 50_000,
+  'mwa-withdraw': 50_000,
+  'mwa-fund': 50_000,
   'asset-buy': 100_000,
   'asset-sell': 100_000,
+  p2p: 10_000,
+  railtag: 10_000,
+  email: 10_000,
+  contact: 10_000,
 };
+
+export function getWithdrawalLimit(method: ExtendedWithdrawMethod): number {
+  // In production, this should fetch from API based on user's KYC tier
+  // For now, return hardcoded limit
+  return LIMITS[method] ?? 10_000;
+}
 
 export const resolveMethod = (value?: string): ExtendedWithdrawMethod => {
   if (!value) return 'crypto';
@@ -104,7 +180,13 @@ export const resolveFlow = (value?: string): FundingFlow => {
 
 export const isWalletFundingMethod = (
   method: ExtendedWithdrawMethod
-): method is 'phantom' | 'solflare' => method === 'phantom' || method === 'solflare';
+): method is 'phantom' | 'solflare' | 'mwa-fund' =>
+  method === 'phantom' || method === 'solflare' || method === 'mwa-fund';
+
+export const isP2PMethod = (
+  method: ExtendedWithdrawMethod
+): method is 'p2p' | 'railtag' | 'email' | 'contact' =>
+  method === 'p2p' || method === 'railtag' || method === 'email' || method === 'contact';
 
 export const getMethodCopy = (method: ExtendedWithdrawMethod, isFundFlow: boolean): MethodCopy => {
   const base = METHOD_COPY[method];

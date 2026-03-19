@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -43,11 +43,13 @@ function TabBarItem({
     }
   };
 
+  const label = options.title ?? route.name;
+
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityState={isFocused ? { selected: true } : {}}
-      accessibilityLabel={options.tabBarAccessibilityLabel}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isFocused }}
+      accessibilityLabel={label}
       onPress={onPress}
       onPressIn={() => {
         scale.value = withSpring(0.85, { damping: 15 });
@@ -55,35 +57,37 @@ function TabBarItem({
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 15 });
       }}
-      style={styles.item}>
-      <Animated.View style={[animatedStyle, styles.iconWrap]}>
+      className="items-center justify-center">
+      <Animated.View style={animatedStyle} className="items-center gap-[3px]">
         {options.tabBarIcon?.({
           focused: isFocused,
-          color: isFocused ? '#FF2E01' : '#ccc',
-          size: 28,
+          color: isFocused ? '#FF2E01' : '#9CA3AF',
+          size: 24,
         })}
-        <View style={[styles.dot, { opacity: isFocused ? 1 : 0 }]} />
+        <Text
+          className="font-body tracking-[0.2px]"
+          style={{ fontSize: 10, color: isFocused ? '#FF2E01' : '#9CA3AF' }}>
+          {label}
+        </Text>
       </Animated.View>
     </Pressable>
   );
 }
 
-export function TabBar({
-  state,
-  descriptors,
-  navigation,
-  rightIcon,
-  onRightIconPress,
-  rightIconAccessibilityLabel,
-}: TabBarProps) {
+export function TabBar({ state, descriptors, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
-  const { impact } = useHaptics();
 
   return (
-    <View style={[styles.wrapper, { paddingBottom: insets.bottom + 1 }]} pointerEvents="box-none">
-      <View style={styles.row}>
-        <View style={styles.container}>
-          <BlurView intensity={9} tint="default" style={styles.blur}>
+    <View
+      className="absolute bottom-0 left-0 right-0 items-center"
+      style={{ paddingBottom: insets.bottom + 1 }}
+      pointerEvents="box-none">
+      <View className="flex-row items-center justify-center">
+        <View className="overflow-hidden rounded-[40px]">
+          <BlurView
+            intensity={9}
+            tint="default"
+            className="flex-row items-center gap-7 px-6 pb-2.5 pt-3">
             {state.routes.map((route, index) => (
               <TabBarItem
                 key={route.key}
@@ -99,55 +103,3 @@ export function TabBar({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  container: {
-    borderRadius: 40,
-    overflow: 'hidden',
-  },
-  blur: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 32,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-  },
-  item: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconWrap: {
-    alignItems: 'center',
-  },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#FF2E01',
-    marginTop: 4,
-  },
-  rightButton: {
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
-  rightButtonBlur: {
-    width: 56,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
-});

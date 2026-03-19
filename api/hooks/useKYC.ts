@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { kycService } from '../services';
 import { queryKeys } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
-import type { StartSumsubSessionRequest, KycStatus, SubmitKYCRequest } from '../types';
+import type { StartDiditSessionRequest, KycStatus, SubmitKYCRequest } from '../types';
 
 export function useKYCStatus(enabled = true) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -12,15 +12,15 @@ export function useKYCStatus(enabled = true) {
     queryKey: queryKeys.user.kycStatus(),
     queryFn: () => kycService.getKYCStatus(),
     enabled: isAuthenticated && enabled,
-    staleTime: 30 * 1000,
+    staleTime: 0,
   });
 }
 
-export function useStartSumsubSession() {
+export function useStartDiditSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: StartSumsubSessionRequest) => kycService.startSumsubSession(data),
+    mutationFn: (data: StartDiditSessionRequest) => kycService.startDiditSession(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.kycStatus() });
     },

@@ -40,12 +40,14 @@ async function refreshPostWithdrawalQueries(queryClient: ReturnType<typeof useQu
     queryClient.invalidateQueries({ queryKey: queryKeys.station.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.allocation.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.investment.all }),
   ]);
 
   await Promise.all([
     queryClient.refetchQueries({ queryKey: queryKeys.station.home(), type: 'active' }),
     queryClient.refetchQueries({ queryKey: queryKeys.funding.all, type: 'active' }),
     queryClient.refetchQueries({ queryKey: queryKeys.wallet.all, type: 'active' }),
+    queryClient.refetchQueries({ queryKey: queryKeys.investment.all, type: 'active' }),
   ]);
 }
 
@@ -56,6 +58,7 @@ export function useDeposits(limit = 20, offset = 0) {
     queryFn: () => fundingService.getDeposits(limit, offset),
     enabled: isAuthenticated,
     staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 }
 
@@ -66,6 +69,7 @@ export function useWithdrawals(limit = 20, offset = 0) {
     queryFn: () => fundingService.getWithdrawals(limit, offset),
     enabled: isAuthenticated,
     staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 }
 

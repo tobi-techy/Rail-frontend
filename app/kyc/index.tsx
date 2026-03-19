@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Check, ChevronDown, ChevronRight, X } from 'lucide-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,17 +13,93 @@ import {
   type Country,
 } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
+import { useAuthStore } from '@/stores/authStore';
+import { useKYCStatus } from '@/api/hooks/useKYC';
+
+const ISO2_TO_KYC: Record<string, Country> = {
+  US: 'USA',
+  GB: 'GBR',
+  NG: 'NGA',
+  CA: 'CAN',
+  AU: 'AUS',
+  DE: 'DEU',
+  FR: 'FRA',
+  IN: 'IND',
+  GH: 'GHA',
+  KE: 'KEN',
+  ZA: 'ZAF',
+  BR: 'BRA',
+  MX: 'MEX',
+  SG: 'SGP',
+  AE: 'ARE',
+  NL: 'NLD',
+  IT: 'ITA',
+  ES: 'ESP',
+  PL: 'POL',
+  SE: 'SWE',
+};
 
 const COUNTRIES: { code: Country; flag: string }[] = [
   { code: 'USA', flag: '🇺🇸' },
   { code: 'GBR', flag: '🇬🇧' },
   { code: 'NGA', flag: '🇳🇬' },
+  { code: 'CAN', flag: '🇨🇦' },
+  { code: 'AUS', flag: '🇦🇺' },
+  { code: 'DEU', flag: '🇩🇪' },
+  { code: 'FRA', flag: '🇫🇷' },
+  { code: 'IND', flag: '🇮🇳' },
+  { code: 'GHA', flag: '🇬🇭' },
+  { code: 'KEN', flag: '🇰🇪' },
+  { code: 'ZAF', flag: '🇿🇦' },
+  { code: 'BRA', flag: '🇧🇷' },
+  { code: 'MEX', flag: '🇲🇽' },
+  { code: 'SGP', flag: '🇸🇬' },
+  { code: 'ARE', flag: '🇦🇪' },
+  { code: 'NLD', flag: '🇳🇱' },
+  { code: 'ITA', flag: '🇮🇹' },
+  { code: 'ESP', flag: '🇪🇸' },
+  { code: 'POL', flag: '🇵🇱' },
+  { code: 'SWE', flag: '🇸🇪' },
 ];
 
 export default function KycCountryScreen() {
   const insets = useSafeAreaInsets();
   const { country, setCountry } = useKycStore();
+  const userCountry = useAuthStore((s) => s.user?.country);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const params = useLocalSearchParams<{ autoLaunch?: string }>();
+  const { data: kycStatus } = useKYCStatus();
+
+  // If KYC already submitted, skip to pending/result screen
+  useEffect(() => {
+    if (!kycStatus) return;
+    if (kycStatus.status === 'approved') {
+      useAuthStore.getState().setOnboardingStatus('completed');
+      router.replace('/(tabs)');
+    } else if (
+      kycStatus.has_submitted &&
+      kycStatus.status !== 'rejected' &&
+      kycStatus.status !== 'expired'
+    ) {
+      router.replace('/kyc/pending');
+    }
+  }, [kycStatus]);
+
+  // Auto-set KYC country from address step, then redirect if autoLaunch
+  useEffect(() => {
+    let mapped = false;
+    if (userCountry) {
+      const kycCountry = ISO2_TO_KYC[userCountry.toUpperCase()];
+      if (kycCountry) {
+        if (kycCountry !== country) setCountry(kycCountry);
+        mapped = true;
+      }
+    }
+    // Only skip country picker if we successfully mapped the user's country
+    if (params.autoLaunch === 'true' && mapped) {
+      router.replace('/kyc/verification-intro');
+    }
+  }, [userCountry, params.autoLaunch, country, setCountry]);
 
   const currentCountry = useMemo(
     () => COUNTRIES.find((item) => item.code === country) ?? COUNTRIES[0],
@@ -49,9 +125,9 @@ export default function KycCountryScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 160 }}>
           <View className="mb-6">
-            <Text className="font-subtitle text-[13px] text-gray-500">Step 1 of 3</Text>
+            <Text className="font-subtitle text-[13px] text-gray-500">Step 1 of 4</Text>
             <View className="mt-3 h-1.5 overflow-hidden rounded-full bg-gray-200">
-              <View className="h-full w-1/3 rounded-full bg-gray-900" />
+              <View className="h-full w-1/4 rounded-full bg-gray-900" />
             </View>
           </View>
 
@@ -133,7 +209,7 @@ export default function KycCountryScreen() {
         <View
           className="absolute bottom-0 left-0 right-0 border-t border-gray-100 bg-white px-4 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
-          <Button title="Continue" onPress={() => router.push('/kyc/documents')} />
+          <Button title="Continue" onPress={() => router.push('/kyc/tax-id')} />
         </View>
 
         <Modal

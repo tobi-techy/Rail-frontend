@@ -32,7 +32,7 @@ export function parseSolanaPayUrl(raw: string): SolanaPayRequest | null {
 
   return {
     recipient,
-    amount: amount !== null && Number.isFinite(amount) && amount > 0 ? amount : undefined,
+    amount: amount !== undefined && Number.isFinite(amount) && amount > 0 ? amount : undefined,
     splToken,
     label: params.get('label') ?? undefined,
     message: params.get('message') ?? undefined,

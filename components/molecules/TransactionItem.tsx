@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { CreditCard, Wallet, Mail, Tag } from 'lucide-react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { Icon, Skeleton } from '../atoms';
 import { useUIStore } from '@/stores';
 import { MaskedBalance } from './MaskedBalance';
@@ -40,8 +41,9 @@ export interface Transaction {
   };
 }
 
-export interface TransactionItemProps extends TouchableOpacityProps {
+export interface TransactionItemProps {
   transaction: Transaction;
+  onPress?: () => void;
 }
 
 const ICON_SIZE = 44;
@@ -117,10 +119,10 @@ const DEFAULT_ICONS: Record<TransactionType, string> = {
 };
 
 const WITHDRAWAL_BADGE: Record<string, { Icon: React.ComponentType<any>; bg: string }> = {
-  fiat:   { Icon: CreditCard, bg: '#3B82F6' },
-  card:   { Icon: CreditCard, bg: '#3B82F6' },
-  crypto: { Icon: Wallet,     bg: '#8B5CF6' },
-  p2p:    { Icon: Mail,       bg: '#10B981' },
+  fiat: { Icon: CreditCard, bg: '#3B82F6' },
+  card: { Icon: CreditCard, bg: '#3B82F6' },
+  crypto: { Icon: Wallet, bg: '#8B5CF6' },
+  p2p: { Icon: Mail, bg: '#10B981' },
 };
 
 const WithdrawalBadge = ({ method }: { method: string }) => {
@@ -148,10 +150,8 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
         toBg={icon.swapToBg}
       />
     );
-  else if (icon?.type === 'token')
-    iconEl = <TokenIcon Token={icon.Token} bgColor={icon.bgColor} />;
-  else if (icon?.type === 'icon' && icon.iconName)
-    iconEl = <ActionIcon name={icon.iconName} />;
+  else if (icon?.type === 'token') iconEl = <TokenIcon Token={icon.Token} bgColor={icon.bgColor} />;
+  else if (icon?.type === 'icon' && icon.iconName) iconEl = <ActionIcon name={icon.iconName} />;
   else {
     const inferred = resolveTransactionAssetIcon(transaction);
     iconEl = inferred ? (
@@ -171,14 +171,14 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
   return (
     <View style={{ width: ICON_SIZE, height: ICON_SIZE }}>
       {iconEl}
-      {type === 'withdraw' && withdrawalMethod && (
-        <WithdrawalBadge method={withdrawalMethod} />
-      )}
+      {type === 'withdraw' && withdrawalMethod && <WithdrawalBadge method={withdrawalMethod} />}
     </View>
   );
 };
 
-export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, ...props }) => {
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, onPress }) => {
   const { text: amountText, isCredit } = formatTransactionAmount(
     transaction.amount,
     transaction.type,
@@ -187,9 +187,22 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
   const isPending = transaction.status === 'pending';
   const isFailed = transaction.status === 'failed';
   const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <TouchableOpacity className="flex-row items-center py-[10px]" activeOpacity={0.7} {...props}>
+    <AnimatedPressable
+      style={animStyle}
+      className="flex-row items-center py-[10px]"
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={`${transaction.title}, ${amountText}`}>
       <View className="mr-sm">
         <TransactionIcon transaction={transaction} />
       </View>
@@ -225,7 +238,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, .
           <Text className="mt-[2px] font-caption text-[12px] text-destructive">Failed</Text>
         )}
       </View>
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 };
 

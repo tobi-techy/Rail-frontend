@@ -3,7 +3,15 @@ import { View, Text, StatusBar, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
-import { InputField, CountryPicker, AuthGradient, StaggeredChild } from '@/components';
+import {
+  InputField,
+  CountryPicker,
+  AuthGradient,
+  StaggeredChild,
+  StatePicker,
+  hasSubdivisions,
+  getSubdivisionLabel,
+} from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
@@ -34,11 +42,28 @@ export default function Address() {
     }
   };
 
+  const handleCountrySelect = (country: { code: string; name: string }) => {
+    setFormData((prev) => ({
+      ...prev,
+      countryName: country.name,
+      countryCode: country.code,
+      state: '', // Reset state when country changes
+    }));
+  };
+
+  const handleStateSelect = (subdivision: { code: string; name: string }) => {
+    // Send full state name to backend (Bridge requires full name, not code)
+    setFormData((prev) => ({ ...prev, state: subdivision.name }));
+    setErrors((prev) => ({ ...prev, state: '' }));
+  };
+
   const handleNext = () => {
     const nextErrors = {
       street: formData.street.trim() ? '' : 'Street address is required',
       city: formData.city.trim() ? '' : 'City is required',
-      state: formData.state.trim() ? '' : 'State is required',
+      state: formData.state.trim()
+        ? ''
+        : `${getSubdivisionLabel(formData.countryCode)} is required`,
       postalCode: formData.postalCode.trim() ? '' : 'Postal code is required',
     };
 
@@ -65,6 +90,9 @@ export default function Address() {
     router.push(ROUTES.AUTH.COMPLETE_PROFILE.PHONE as never);
   };
 
+  const showStatePicker = hasSubdivisions(formData.countryCode);
+  const stateLabel = getSubdivisionLabel(formData.countryCode);
+
   return (
     <AuthGradient>
       <SafeAreaView className="flex-1" edges={['top']}>
@@ -80,17 +108,29 @@ export default function Address() {
           showsVerticalScrollIndicator={false}>
           <View className="flex-1 px-6 pt-4">
             <StaggeredChild index={0}>
-              <View className="mb-8 mt-4">
-                <Text className="font-subtitle text-[50px] text-black">Address</Text>
-                <Text className="mt-2 font-body text-[14px] text-black/60">Where do you live?</Text>
+              <View className="mb-6 mt-4">
+                <Text className="font-headline-2 text-auth-title leading-[1.1] text-black">
+                  Your details
+                </Text>
+                <Text className="mt-2 font-body text-[14px] text-black/60">
+                  Enter your full <Text className="font-semibold">residential</Text> address.
+                </Text>
               </View>
             </StaggeredChild>
 
-            <View className="gap-y-2">
+            <View className="gap-y-3">
+              <StaggeredChild index={4}>
+                <CountryPicker
+                  label="Country"
+                  value={formData.countryName}
+                  onSelect={handleCountrySelect}
+                />
+              </StaggeredChild>
+
               <StaggeredChild index={1}>
                 <InputField
                   label="Street Address"
-                  placeholder="123 Main St"
+                  placeholder="123 Main St, Apt 4B"
                   value={formData.street}
                   onChangeText={(value) => updateField('street', value)}
                   error={errors.street}
@@ -99,62 +139,56 @@ export default function Address() {
               </StaggeredChild>
 
               <StaggeredChild index={2}>
-                <View className="flex-row gap-x-3">
-                  <View className="flex-1">
-                    <InputField
-                      label="City"
-                      placeholder="City"
-                      value={formData.city}
-                      onChangeText={(value) => updateField('city', value)}
-                      error={errors.city}
-                      autoCapitalize="words"
-                    />
-                  </View>
-                  <View className="w-28">
-                    <InputField
-                      label="State"
-                      placeholder="State"
-                      value={formData.state}
-                      onChangeText={(value) => updateField('state', value)}
-                      error={errors.state}
-                      autoCapitalize="characters"
-                    />
-                  </View>
-                </View>
+                <InputField
+                  label="City"
+                  placeholder="City"
+                  value={formData.city}
+                  onChangeText={(value) => updateField('city', value)}
+                  error={errors.city}
+                  autoCapitalize="words"
+                />
               </StaggeredChild>
 
               <StaggeredChild index={3}>
                 <View className="flex-row gap-x-3">
-                  <View className="w-32">
+                  <View className="flex-1">
+                    {showStatePicker ? (
+                      <StatePicker
+                        label={stateLabel}
+                        value={formData.state}
+                        onSelect={handleStateSelect}
+                        error={errors.state}
+                        countryCode={formData.countryCode}
+                      />
+                    ) : (
+                      <InputField
+                        label={stateLabel}
+                        placeholder={stateLabel}
+                        value={formData.state}
+                        onChangeText={(value) => updateField('state', value)}
+                        error={errors.state}
+                        autoCapitalize="words"
+                      />
+                    )}
+                  </View>
+                  <View className="w-28">
                     <InputField
                       label="Postal Code"
                       placeholder="Zip"
                       value={formData.postalCode}
                       onChangeText={(value) => updateField('postalCode', value)}
                       error={errors.postalCode}
-                      keyboardType="number-pad"
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <CountryPicker
-                      label="Country"
-                      value={formData.countryName}
-                      onSelect={(country) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          countryName: country.name,
-                          countryCode: country.code,
-                        }))
-                      }
+                      keyboardType="default"
+                      autoCapitalize="characters"
                     />
                   </View>
                 </View>
               </StaggeredChild>
             </View>
 
-            <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
-              <View className="pb-4 pt-8">
-                <Button title="Next" onPress={handleNext} />
+            <StaggeredChild index={5} delay={80} style={{ marginTop: 'auto' }}>
+              <View className="pb-4 pt-6">
+                <Button title="Continue" onPress={handleNext} />
               </View>
             </StaggeredChild>
           </View>

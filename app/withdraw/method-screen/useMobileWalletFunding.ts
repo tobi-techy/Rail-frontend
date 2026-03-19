@@ -4,7 +4,7 @@ import { useDeposits } from '@/api/hooks/useFunding';
 import { useWalletAddresses } from '@/api/hooks/useWallet';
 import { invalidateQueries, queryClient, queryKeys } from '@/api/queryClient';
 import { ANALYTICS_EVENTS, useAnalytics } from '@/utils/analytics';
-import { SOLANA_TESTNET_CHAIN } from '@/utils/chains';
+import { SOLANA_MAINNET_CHAIN } from '@/utils/chains';
 import type { Deposit } from '@/api/types';
 import { FUNDING_POLL_INTERVAL_MS, FUNDING_POLL_TIMEOUT_MS } from './constants';
 import type { ExtendedWithdrawMethod as WithdrawMethod } from './types';
@@ -27,7 +27,7 @@ export function useMobileWalletFunding({
   onTimedOut,
 }: UseMobileWalletFundingOptions) {
   const { track } = useAnalytics();
-  const { refetch: refetchWalletAddress } = useWalletAddresses(SOLANA_TESTNET_CHAIN);
+  const { refetch: refetchWalletAddress } = useWalletAddresses(SOLANA_MAINNET_CHAIN);
   const deposits = useDeposits(30, 0);
 
   const [fundingError, setFundingError] = useState('');
@@ -148,7 +148,8 @@ export function useMobileWalletFunding({
 
         const { startMobileWalletFunding } = await import('@/services/solanaFunding');
         const result = await startMobileWalletFunding({
-          wallet: selectedMethod as 'phantom' | 'solflare',
+          wallet:
+            selectedMethod === 'mwa-fund' ? 'mwa' : (selectedMethod as 'phantom' | 'solflare'),
           amountUsd: amount,
           recipientOwnerAddress,
         });

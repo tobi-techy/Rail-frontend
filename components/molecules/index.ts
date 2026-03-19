@@ -1,6 +1,7 @@
 // Molecular components
 export * from './BarChart';
 export * from './SegmentedSlider';
+export * from './WheelPicker';
 export * from './BalanceCard';
 export * from './CategoryCard';
 export * from './FormField';

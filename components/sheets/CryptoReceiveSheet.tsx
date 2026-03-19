@@ -5,14 +5,14 @@ import QRCodeStyled from 'react-native-qrcode-styled';
 import { Copy, Check, RefreshCw } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
 import { Button } from '../ui';
-import { useWalletAddresses } from '@/api/hooks/useWallet';
+import { useDepositAddress } from '@/api/hooks/useWallet';
 import { getChainConfig } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
 import type { WalletChain } from '@/api/types';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
+  SOL: SolanaIcon,
   'SOL-DEVNET': SolanaIcon,
   'MATIC-AMOY': MaticIcon,
   'AVAX-FUJI': AvalancheIcon,
@@ -24,9 +24,9 @@ interface CryptoReceiveSheetProps {
   chain?: WalletChain;
 }
 
-export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL-DEVNET' }: CryptoReceiveSheetProps) {
+export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoReceiveSheetProps) {
   const chainConfig = getChainConfig(chain);
-  const { data: wallet, isLoading, isError, isProvisioning, refetch } = useWalletAddresses(chain);
+  const { data: wallet, isLoading, isError, error, refetch } = useDepositAddress(chain);
   const [copied, setCopied] = useState(false);
   const { notification, selection } = useHaptics();
 
@@ -35,14 +35,13 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL-DEVNET' }: C
   }, [visible]);
 
   const address = wallet?.address ?? '';
-  const isLive = wallet?.status === 'live';
-  const isCreating = wallet?.status === 'creating';
 
   const usdcMint =
-    process.env.EXPO_PUBLIC_SOLANA_USDC_MINT ?? '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
-  const qrValue = chain === 'SOL-DEVNET' && address
-    ? `solana:${address}?spl-token=${usdcMint}&label=Rail`
-    : address;
+    process.env.EXPO_PUBLIC_SOLANA_USDC_MINT ?? 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+  const qrValue =
+    (chain === 'SOL' || chain === 'SOL-DEVNET') && address
+      ? `solana:${address}?spl-token=${usdcMint}&label=Rail`
+      : address;
 
   const handleCopy = useCallback(async () => {
     if (!address) return;
@@ -68,12 +67,8 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL-DEVNET' }: C
         </View>
       </View>
       <View>
-        <Text className="font-subtitle text-[20px] text-text-primary">
-          Receive USDC
-        </Text>
-        <Text className="font-body text-[13px] text-text-secondary">
-          on {chainConfig.label}
-        </Text>
+        <Text className="font-subtitle text-[20px] text-text-primary">Receive USDC</Text>
+        <Text className="font-body text-[13px] text-text-secondary">on {chainConfig.label}</Text>
       </View>
     </View>
   );
@@ -90,37 +85,34 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL-DEVNET' }: C
     );
   }
 
-  if (isProvisioning || isCreating) {
-    return (
-      <BottomSheet visible={visible} onClose={onClose}>
-        {header}
-        <View className="items-center justify-center py-12">
-          <ActivityIndicator size="small" color="#000" />
-          <Text className="mt-3 font-subtitle text-base text-text-primary">Setting up your wallet</Text>
-          <Text className="mt-1 text-center font-body text-sm text-text-secondary">
-            This usually takes a few seconds…
-          </Text>
-        </View>
-      </BottomSheet>
-    );
-  }
-
   if (isError || (!isLoading && !address)) {
+    const errCode = (error as any)?.data?.code;
+    const errMsg =
+      errCode === 'kyc_required'
+        ? 'Complete identity verification before receiving crypto.'
+        : errCode === 'has_not_accepted_tos'
+          ? 'Accept the Terms of Service to receive crypto.'
+          : 'Please check your connection and try again.';
     return (
       <BottomSheet visible={visible} onClose={onClose}>
         {header}
         <View className="items-center justify-center py-12">
-          <Text className="mb-2 font-subtitle text-base text-text-primary">Unable to load wallet</Text>
-          <Text className="mb-5 text-center font-body text-sm text-text-secondary">
-            Please check your connection and try again.
+          <Text className="mb-2 font-subtitle text-base text-text-primary">
+            Unable to load wallet
           </Text>
-          <Pressable
-            onPress={() => { selection(); refetch(); }}
-            className="flex-row items-center gap-2 rounded-full bg-gray-100 px-5 py-2.5"
-            hitSlop={8}>
-            <RefreshCw size={16} color="#374151" />
-            <Text className="font-subtitle text-sm text-gray-700">Retry</Text>
-          </Pressable>
+          <Text className="mb-5 text-center font-body text-sm text-text-secondary">{errMsg}</Text>
+          {!errCode && (
+            <Pressable
+              onPress={() => {
+                selection();
+                refetch();
+              }}
+              className="flex-row items-center gap-2 rounded-full bg-gray-100 px-5 py-2.5"
+              hitSlop={8}>
+              <RefreshCw size={16} color="#374151" />
+              <Text className="font-subtitle text-sm text-gray-700">Retry</Text>
+            </Pressable>
+          )}
         </View>
       </BottomSheet>
     );
@@ -134,7 +126,11 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL-DEVNET' }: C
         {/* QR Code */}
         <View
           className="mb-5 rounded-2xl p-4"
-          style={{ backgroundColor: chainConfig.color + '08', borderWidth: 1, borderColor: chainConfig.color + '20' }}>
+          style={{
+            backgroundColor: chainConfig.color + '08',
+            borderWidth: 1,
+            borderColor: chainConfig.color + '20',
+          }}>
           <QRCodeStyled
             data={qrValue}
             style={{ backgroundColor: 'white' }}
@@ -157,7 +153,8 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL-DEVNET' }: C
 
         {/* Warning */}
         <Text className="mb-5 text-center font-caption text-xs text-text-secondary">
-          ⓘ {chainConfig.warning}{'\n'}NFTs and other tokens are not supported.
+          ⓘ {chainConfig.warning}
+          {'\n'}NFTs and other tokens are not supported.
         </Text>
 
         <Button

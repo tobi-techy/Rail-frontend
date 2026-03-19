@@ -19,7 +19,9 @@ export interface PasscodeInputProps extends ViewProps {
   status?: PasscodeInputStatus;
   showToggle?: boolean;
   showFingerprint?: boolean;
+  showPasskey?: boolean;
   onFingerprint?: () => void;
+  onPasskey?: () => void;
   className?: string;
   autoSubmit?: boolean;
   variant?: 'light' | 'dark';
@@ -38,7 +40,9 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
   status,
   showToggle = false,
   showFingerprint = false,
+  showPasskey = false,
   onFingerprint,
+  onPasskey,
   className = '',
   autoSubmit = false,
   variant = 'light',
@@ -67,22 +71,30 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
   const handleKeyPress = useCallback(
     (key: string) => {
       if (key === 'backspace') {
-        if (passcode.length > 0) { haptics.tap(); setPasscode(passcode.slice(0, -1)); }
+        if (passcode.length > 0) {
+          haptics.tap();
+          setPasscode(passcode.slice(0, -1));
+        }
       } else if (key === 'fingerprint') {
         onFingerprint?.();
+      } else if (key === 'passkey') {
+        onPasskey?.();
       } else if (key.match(/^[0-9]$/)) {
-        if (passcode.length < length) { haptics.tap(); setPasscode(passcode + key); }
+        if (passcode.length < length) {
+          haptics.tap();
+          setPasscode(passcode + key);
+        }
       }
     },
     [passcode, length, setPasscode, onFingerprint]
   );
 
   return (
-    <View className={`flex-1 px-6 ${className}`} {...rest}>
+    <View className={`flex-1 px-4 ${className}`} {...rest}>
       {title && (
         <View className="mt-12">
           <Text
-            className={`font-subtitle text-display-lg ${isDark ? 'text-white' : 'text-text-primary'}`}>
+            className={`font-headline text-auth-title leading-[1.1] ${isDark ? 'text-white' : 'text-text-primary'}`}>
             {title}
           </Text>
           {subtitle && (
@@ -154,6 +166,8 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
       <Keypad
         onKeyPress={handleKeyPress}
         showFingerprint={showFingerprint}
+        showPasskey={showPasskey}
+        leftKey={showPasskey ? 'passkey' : showFingerprint ? 'fingerprint' : 'empty'}
         variant={variant}
         className="mb-6"
       />

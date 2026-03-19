@@ -1,5 +1,11 @@
+/**
+ * @deprecated This storage implementation is kept for test coverage only.
+ * Production code uses the createSecureStorage defined inline in stores/authStore.ts,
+ * which includes retry logic. Do not use this in new code.
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { secureStorage } from '../../utils/secureStorage';
+import { logger } from '../../lib/logger';
 
 const SECURE_KEYS = ['accessToken', 'refreshToken', 'passcodeSessionToken'] as const;
 const SECURE_VALUE_PLACEHOLDER = '__secure__';
@@ -65,8 +71,13 @@ export const createSecureStorage = () => ({
         }
       }
       await AsyncStorage.setItem(name, JSON.stringify(toStore));
-    } catch {
-      // Silent fail
+    } catch (error) {
+      logger.error('[SecureStorage] setItem failed — tokens may not be persisted', {
+        component: 'SecureStorage',
+        action: 'setItem-error',
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
   },
 

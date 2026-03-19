@@ -23,6 +23,7 @@ import type {
   WalletAddressesResponse,
   ApiResponse,
 } from '../types';
+import type { Transaction } from '../types/wallet';
 
 const WALLET_ENDPOINTS = {
   BALANCE: '/v1/balances',
@@ -88,7 +89,7 @@ export const walletService = {
         [];
     const items = rows.map((tx: any) => ({
       id: tx?.id || tx?.withdrawal_id || '',
-      type: 'withdraw',
+      type: (tx?.type as Transaction['type']) || 'withdraw',
       tokenId: 'USDC',
       amount: String(tx?.amount ?? '0'),
       usdAmount: String(tx?.amount ?? '0'),
@@ -97,7 +98,7 @@ export const walletService = {
       timestamp: tx?.created_at || tx?.updated_at || new Date().toISOString(),
       status: tx?.status || 'pending',
       txHash: tx?.tx_hash || undefined,
-      network: tx?.destination_chain || 'SOL-DEVNET',
+      network: tx?.destination_chain || 'SOL',
       fee: undefined,
       confirmations: undefined,
     }));
@@ -116,7 +117,7 @@ export const walletService = {
     const tx = await apiClient.get<any>(WALLET_ENDPOINTS.TRANSACTION_DETAIL.replace(':id', txId));
     return {
       id: tx?.id || tx?.withdrawal_id || txId,
-      type: 'withdraw',
+      type: (tx?.type as Transaction['type']) || 'withdraw',
       tokenId: 'USDC',
       amount: String(tx?.amount ?? '0'),
       usdAmount: String(tx?.amount ?? '0'),
@@ -125,7 +126,7 @@ export const walletService = {
       timestamp: tx?.created_at || tx?.updated_at || new Date().toISOString(),
       status: tx?.status || 'pending',
       txHash: tx?.tx_hash || undefined,
-      network: tx?.destination_chain || 'SOL-DEVNET',
+      network: tx?.destination_chain || 'SOL',
       fee: undefined,
       confirmations: undefined,
     };
@@ -135,10 +136,15 @@ export const walletService = {
    * Create transfer/withdrawal
    */
   async createTransfer(data: CreateTransferRequest): Promise<CreateTransferResponse> {
-    const payload = {
+    const payload: any = {
       amount: parseFloat(data.amount),
       destination_address: data.toAddress,
     };
+
+    // Include network if provided
+    if (data.network) {
+      payload.destination_chain = data.network;
+    }
 
     let response: any;
     try {
@@ -157,7 +163,7 @@ export const walletService = {
       estimatedTime: '1-2 minutes',
       transaction: {
         id: response?.withdrawal_id || '',
-        type: 'withdraw',
+        type: 'withdraw' as const,
         tokenId: data.tokenId,
         amount: data.amount,
         usdAmount: data.amount,
@@ -198,7 +204,7 @@ export const walletService = {
    * Get deposit address for a token
    */
   async getDepositAddress(data: GetDepositAddressRequest): Promise<GetDepositAddressResponse> {
-    const chain = data.network || 'SOL-DEVNET';
+    const chain = data.network || 'SOL';
     const response = await apiClient.post<any>(WALLET_ENDPOINTS.DEPOSIT_ADDRESS, { chain });
     return {
       address: response?.address || '',
@@ -231,13 +237,13 @@ export const walletService = {
     return {
       networks: [
         {
-          id: 'solana-devnet',
-          name: 'Solana Devnet',
+          id: 'solana',
+          name: 'Solana',
           symbol: 'SOL',
           chainId: 0,
           rpcUrl: '',
           explorerUrl: 'https://solscan.io',
-          isTestnet: true,
+          isTestnet: false,
           nativeCurrency: { name: 'Solana', symbol: 'SOL', decimals: 9 },
         },
       ],
@@ -248,7 +254,7 @@ export const walletService = {
    * Get Solana wallet address
    */
   async getWalletAddresses(params?: GetWalletAddressesRequest): Promise<WalletAddressesResponse> {
-    const chain = params?.chain || 'SOL-DEVNET'; // Default to Solana testnet
+    const chain = params?.chain || 'SOL';
     const endpoint = WALLET_ENDPOINTS.ADDRESSES.replace(':chain', chain);
     return apiClient.get<WalletAddressesResponse>(endpoint);
   },

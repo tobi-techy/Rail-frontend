@@ -2,7 +2,7 @@ import { env } from '../utils/env';
 
 export const API_CONFIG = {
   baseURL: env.EXPO_PUBLIC_API_URL,
-  timeout: 45000,
+  timeout: 15000,
   retries: 3,
   retryDelay: 1000,
 } as const;
@@ -36,6 +36,9 @@ export const ENDPOINTS = {
     INVESTMENT_DISTRIBUTION: '/v1/account/investment-stash/distribution',
     INVESTMENT_TRANSACTIONS: '/v1/account/investment-stash/transactions',
     INVESTMENT_PERFORMANCE: '/v1/account/investment-stash/performance',
+  },
+  MARKET: {
+    STATUS: '/v1/market/status',
   },
   USER: {
     PROFILE: '/v1/users/me',

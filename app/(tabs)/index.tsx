@@ -1,14 +1,6 @@
-import {
-  View,
-  Text,
-  ScrollView,
-  RefreshControl,
-  TouchableOpacity,
-  Pressable,
-  Platform,
-} from 'react-native';
-import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo } from 'react';
-import { router, useNavigation } from 'expo-router';
+import { View, Text, ScrollView, RefreshControl, Pressable, Platform } from 'react-native';
+import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { router, useNavigation, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import {
@@ -19,12 +11,16 @@ import {
   MessageCircle,
   Landmark,
   Wallet,
+  Users,
+  CreditCard,
+  PiggyBank,
+  Banknote,
 } from 'lucide-react-native';
-import Avatar, { genConfig } from '@zamplyy/react-native-nice-avatar';
+import Avatar from '@zamplyy/react-native-nice-avatar';
+import { getAvatarConfig } from '@/utils/avatarConfig';
 
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
-import { PhantomIcon, SolflareIcon, SolanaIcon } from '@/assets/svg';
-import { EarnIcon, AllocationIcon } from '@/assets/svg/filled';
+import { PhantomIcon, SolflareIcon, SolanaIcon, VisaWhite } from '@/assets/svg';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { StashCard } from '@/components/molecules/StashCard';
 import { FeatureBanner } from '@/components/molecules/FeatureBanner';
@@ -37,11 +33,16 @@ import {
   NavigableBottomSheet,
   useNavigableBottomSheet,
   type BottomSheetScreen,
+  InfoSheet,
+  SpendBreakdownSheet,
 } from '@/components/sheets';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
-import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';import { useStation, useKYCStatus } from '@/api/hooks';
+import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
+import { useStation, useKYCStatus } from '@/api/hooks';
+import { useCards } from '@/api/hooks/useCard';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
 import type { Deposit, Withdrawal } from '@/api/types';
+import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import {
   normalizeWithdrawals,
   depositToTransaction,
@@ -54,6 +55,7 @@ import { invalidateQueries } from '@/api/queryClient';
 import { convertFromUsd, formatCurrencyAmount, type FxRates } from '@/utils/currency';
 import gleap from '@/utils/gleap';
 import type { Transaction } from '@/components/molecules/TransactionItem';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -76,7 +78,6 @@ const splitDollars = (value: string, currency: Currency, rates: FxRates) => {
   return match ? { dollars: match[1], cents: match[2] } : { dollars: formatted, cents: '' };
 };
 
-
 // ── FundingOptionsList ────────────────────────────────────────────────────────
 
 interface FundingAction {
@@ -98,8 +99,12 @@ function FundingRow({ action, isLast }: { action: FundingAction; isLast: boolean
       style={animStyle}
       className={`flex-row items-center justify-between py-3.5${isLast ? '' : ' border-b border-gray-100'}`}
       onPress={action.comingSoon ? undefined : action.onPress}
-      onPressIn={() => { if (!action.comingSoon) scale.value = withSpring(0.97, { damping: 20, stiffness: 300 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}
+      onPressIn={() => {
+        if (!action.comingSoon) scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+      }}
       disabled={action.comingSoon}>
       <View className={`flex-1 flex-row items-center${action.comingSoon ? ' opacity-40' : ''}`}>
         <View className="mr-4 h-11 w-11 items-center justify-center rounded-full bg-gray-100">
@@ -138,6 +143,14 @@ function FundingOptionsList({ actions }: { actions: FundingAction[] }) {
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
+  return (
+    <ErrorBoundary>
+      <DashboardScreen />
+    </ErrorBoundary>
+  );
+}
+
+function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const isAndroid = Platform.OS === 'android';
   const navigation = useNavigation();
@@ -147,6 +160,8 @@ export default function Dashboard() {
   const [showSendSheet, setShowSendSheet] = useState(false);
   const [showSolanaPayScan, setShowSolanaPayScan] = useState(false);
   const [showKYCSheet, setShowKYCSheet] = useState(false);
+  const [showMicroLoanSheet, setShowMicroLoanSheet] = useState(false);
+  const [showSpendBreakdown, setShowSpendBreakdown] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   const receiveNav = useNavigableBottomSheet('receive-main');
@@ -155,19 +170,34 @@ export default function Dashboard() {
   // Disclaimer
   const hasAcknowledgedDisclaimer = useAuthStore((s) => s.hasAcknowledgedDisclaimer);
   const setHasAcknowledgedDisclaimer = useAuthStore((s) => s.setHasAcknowledgedDisclaimer);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
 
   useEffect(() => {
-    if (hasAcknowledgedDisclaimer) return;
-    const t = setTimeout(() => setShowDisclaimer(true), 500);
+    if (hasAcknowledgedDisclaimer || !isAuthenticated) return;
+    const t = setTimeout(() => setShowDisclaimer(true), 800);
     return () => clearTimeout(t);
-  }, [hasAcknowledgedDisclaimer]);
+  }, [hasAcknowledgedDisclaimer, isAuthenticated]);
 
   // Data
-  const { data: station, refetch, isPending: isStationPending } = useStation();
+  const {
+    data: station,
+    refetch,
+    isPending: isStationPending,
+    isError: isStationError,
+  } = useStation();
+  const { data: cardsData } = useCards();
   const deposits = useDeposits(10);
   const withdrawals = useWithdrawals(10);
-  const { data: kycStatus } = useKYCStatus();
+  const { data: kycStatus, refetch: refetchKYC } = useKYCStatus();
+
+  // Refetch KYC status every time this screen comes into focus
+  // so users who just completed KYC don't see stale gates
+  useFocusEffect(
+    useCallback(() => {
+      void refetchKYC();
+    }, [refetchKYC])
+  );
 
   const userFirstName = useAuthStore((s) => s.user?.firstName);
   const userLastName = useAuthStore((s) => s.user?.lastName);
@@ -179,21 +209,7 @@ export default function Dashboard() {
     () => [userFirstName, userLastName].filter(Boolean).join(' ') || userEmail || 'Rail User',
     [userFirstName, userLastName, userEmail]
   );
-  const avatarConfig = useMemo(() => {
-    // Derive deterministic avatar config from name string
-    let hash = 0;
-    for (let i = 0; i < avatarName.length; i++) {
-      hash = (hash * 31 + avatarName.charCodeAt(i)) >>> 0;
-    }
-    const pick = <T,>(arr: T[]): T => arr[(hash = (hash * 1664525 + 1013904223) >>> 0, hash % arr.length)];
-    return genConfig({
-      sex: pick(['man', 'woman'] as const),
-      faceColor: pick(['#F9C9B6', '#AC6651', '#FDDBB4', '#D08B5B', '#EDB98A']),
-      hairStyle: pick(['normal', 'thick', 'mohawk', 'womanLong', 'womanShort'] as const),
-      hairColor: pick(['#000', '#FC909F', '#77311D', '#D2EFF3', '#506AF4']),
-      bgColor: pick(['#FFEDEF', '#E0DDFF', '#D2EFF3', '#FFEDEF', '#F4D150']),
-    });
-  }, [avatarName]);
+  const avatarConfig = useMemo(() => getAvatarConfig(avatarName), [avatarName]);
 
   // Reset sheet nav on close
   useEffect(() => {
@@ -220,26 +236,31 @@ export default function Dashboard() {
     }
   }, [refetch, deposits, withdrawals]);
 
+  const focusRefetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    return navigation.addListener('focus', () => {
-      void refetch();
-      void deposits.refetch();
-      void withdrawals.refetch();
-      void invalidateQueries.station();
-      void invalidateQueries.wallet();
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (focusRefetchTimer.current) clearTimeout(focusRefetchTimer.current);
+      focusRefetchTimer.current = setTimeout(() => {
+        void refetch();
+        void deposits.refetch();
+        void withdrawals.refetch();
+        void invalidateQueries.station();
+        void invalidateQueries.wallet();
+      }, 300);
     });
+    return () => {
+      if (focusRefetchTimer.current) clearTimeout(focusRefetchTimer.current);
+      unsubscribe();
+    };
   }, [navigation, refetch, deposits, withdrawals]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown: true,
-      title: '',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerShadowVisible: false,
       headerLeft: () => (
         <View className="flex-row items-center gap-x-3 pl-md">
-          <Avatar size={36} {...avatarConfig} />
-          <Text className="font-subtitle text-headline-1">Station</Text>
+          <Pressable hitSlop={8}>
+            <Avatar size={36} {...avatarConfig} />
+          </Pressable>
         </View>
       ),
       headerRight: () => (
@@ -260,15 +281,8 @@ export default function Dashboard() {
   const spend = hasData
     ? splitDollars(station?.spend_balance ?? '0', selectedCurrency, currencyRates)
     : { dollars: '---', cents: '' };
-  const stashOnly = hasData
-    ? Math.max(
-        0,
-        (parseFloat(station?.invest_balance ?? '0') || 0) -
-          (parseFloat(station?.broker_cash ?? '0') || 0)
-      )
-    : 0;
   const stash = hasData
-    ? splitDollars(stashOnly.toFixed(2), selectedCurrency, currencyRates)
+    ? splitDollars(station?.invest_balance ?? '0', selectedCurrency, currencyRates)
     : { dollars: '---', cents: '' };
 
   const transactions = useMemo(() => {
@@ -279,27 +293,20 @@ export default function Dashboard() {
     return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 3);
   }, [deposits.data, withdrawals.data]);
 
-  const kycApproved = kycStatus?.status === 'approved';
+  const kycApproved = kycStatus?.status === 'approved' && kycStatus?.verified === true;
 
-  const openKYC = useCallback(() => {
-    setShowReceiveSheet(false);
-    setShowSendSheet(false);
-    setShowKYCSheet(true);
-  }, []);
+  const hasCard = Boolean(cardsData?.cards && cardsData.cards.length > 0);
 
   const startWithdrawal = useCallback(
-    (method: 'fiat' | 'crypto' | 'phantom' | 'solflare', flow: 'send' | 'fund' = 'send') => {
-      if (method === 'fiat' && !kycApproved) {
-        openKYC();
-        return;
-      }
+    (
+      method: 'fiat' | 'crypto' | 'phantom' | 'solflare' | 'mwa-withdraw' | 'mwa-fund',
+      flow: 'send' | 'fund' = 'send'
+    ) => {
       setShowSendSheet(false);
       setShowReceiveSheet(false);
-      requestAnimationFrame(() =>
-        router.push({ pathname: '/withdraw/[method]', params: { method, flow } } as never)
-      );
+      router.push({ pathname: '/withdraw/[method]', params: { method, flow } } as never);
     },
-    [kycApproved, openKYC]
+    []
   );
 
   // Funding action lists
@@ -312,7 +319,7 @@ export default function Dashboard() {
         icon: <Landmark size={26} color="#6366F1" />,
         onPress: () => {
           setShowReceiveSheet(false);
-          kycApproved ? router.push('/virtual-account' as never) : openKYC();
+          router.push('/virtual-account' as never);
         },
       },
       {
@@ -333,13 +340,20 @@ export default function Dashboard() {
         onPress: () => receiveNav.navigateTo('receive-more'),
       },
     ],
-    [kycApproved, openKYC, receiveNav]
+    [receiveNav]
   );
 
   const receiveMoreActions = useMemo<FundingAction[]>(
     () => [
       ...(isAndroid
         ? [
+            {
+              id: 'mwa-fund',
+              label: 'Seed Vault / MWA',
+              sublabel: 'Fund with any Solana wallet — Seed Vault on Seeker',
+              icon: <SolanaIcon width={28} height={28} />,
+              onPress: () => startWithdrawal('mwa-fund', 'fund'),
+            },
             {
               id: 'phantom',
               label: 'Phantom',
@@ -397,8 +411,20 @@ export default function Dashboard() {
     [sendNav, startWithdrawal]
   );
 
+  const startP2P = useCallback(() => {
+    setShowSendSheet(false);
+    router.push({ pathname: '/withdraw/[method]', params: { method: 'p2p' } } as never);
+  }, []);
+
   const sendMoreActions = useMemo<FundingAction[]>(
     () => [
+      {
+        id: 'p2p',
+        label: 'Send to People',
+        sublabel: 'Via RailTag, email, or phone',
+        icon: <Users size={26} color="#FF2E01" />,
+        onPress: startP2P,
+      },
       ...(isAndroid
         ? [
             {
@@ -428,7 +454,7 @@ export default function Dashboard() {
           ]
         : []),
     ],
-    [isAndroid, startWithdrawal]
+    [isAndroid, startP2P, startWithdrawal]
   );
 
   const receiveScreens = useMemo<BottomSheetScreen[]>(
@@ -480,20 +506,26 @@ export default function Dashboard() {
           isLoading={isStationPending}
         />
 
+        {isStationError && !isStationPending && (
+          <Text className="mb-2 text-center font-body text-[12px] text-red-400">
+            Unable to load balance — pull to refresh
+          </Text>
+        )}
+
         <View className="mb-2 flex-row gap-3">
           <Button
             title="Receive"
-            onPress={() => setShowReceiveSheet(true)}
+            onPress={() => (kycApproved ? setShowReceiveSheet(true) : setShowKYCSheet(true))}
             leftIcon={<ArrowDownLeft size={20} color="white" />}
             size="small"
             variant="black"
           />
           <Button
             title="Send"
-            onPress={() => setShowSendSheet(true)}
-            leftIcon={<ArrowUpRight size={20} color="black" />}
+            onPress={() => (kycApproved ? setShowSendSheet(true) : setShowKYCSheet(true))}
+            leftIcon={<ArrowUpRight size={20} color="white" />}
             size="small"
-            variant="white"
+            variant="black"
           />
         </View>
 
@@ -502,22 +534,52 @@ export default function Dashboard() {
             title="Spend"
             amount={spend.dollars}
             amountCents={spend.cents}
-            icon={<EarnIcon width={36} height={36} />}
+            icon={<CreditCard size={26} color="white" strokeWidth={1.8} />}
+            cardColor="#FF2E01"
             className="flex-1"
             isLoading={isStationPending}
-            onPress={() => router.push('/spending-stash')}
+            onPress={() => setShowSpendBreakdown(true)}
           />
           <StashCard
             title="Stash"
             amount={stash.dollars}
             amountCents={stash.cents}
-            icon={<AllocationIcon width={36} height={36} />}
+            icon={<PiggyBank size={26} color="white" strokeWidth={1.8} />}
+            cardColor="#00E011"
             className="flex-1"
             isLoading={isStationPending}
+            // onPress={() => router.push('/investment-stash')}
+          />
+        </View>
+        <View className="mt-5 flex-row gap-3">
+          <StashCard
+            title="Card"
+            amount={spend.dollars}
+            amountCents={spend.cents}
+            icon={<VisaWhite width={32} height={32} strokeWidth={1.8} />}
+            cardColor="#000"
+            className="max-w-[50%] flex-1"
+            isLoading={isStationPending}
+            getStarted={!hasCard}
+            onPress={() => (kycApproved ? router.push('/card') : setShowKYCSheet(true))}
+          />
+          <StashCard
+            title="Micro Loan"
+            amount=""
+            getStarted="Coming soon"
+            icon={<Banknote size={26} color="white" strokeWidth={1.8} />}
+            cardColor="#4F46E5"
+            className="max-w-[50%] flex-1"
+            badge={{ label: 'Soon', color: 'gray' }}
+            onPress={() => setShowMicroLoanSheet(true)}
           />
         </View>
 
-        <FeatureBanner kycApproved={kycApproved} onKYCPress={() => setShowKYCSheet(true)} />
+        <FeatureBanner
+          kycApproved={kycApproved}
+          hasCard={hasCard}
+          onKYCPress={() => setShowKYCSheet(true)}
+        />
 
         <View className="py-5">
           {transactions.length === 0 ? (
@@ -531,12 +593,26 @@ export default function Dashboard() {
               </Text>
             </View>
           ) : (
-            <TransactionList
-              transactions={transactions}
-              title="Recent Activity"
-              onTransactionPress={setSelectedTransaction}
-              scrollEnabled={false}
-            />
+            <>
+              <View className="mb-3 flex-row items-center justify-between">
+                <Text className="font-subtitle text-subtitle text-text-primary">
+                  Recent Activity
+                </Text>
+                <Pressable
+                  onPress={() => router.push('/(tabs)/history' as never)}
+                  accessibilityRole="button"
+                  accessibilityLabel="See all transactions"
+                  className="min-h-[44px] flex-row items-center">
+                  <Text className="font-caption text-caption text-text-secondary">See all</Text>
+                  <ChevronRight size={16} color="#757575" />
+                </Pressable>
+              </View>
+              <TransactionList
+                transactions={transactions}
+                onTransactionPress={setSelectedTransaction}
+                scrollEnabled={false}
+              />
+            </>
           )}
         </View>
       </View>
@@ -553,6 +629,14 @@ export default function Dashboard() {
         screens={sendScreens}
         navigation={sendNav}
       />
+      <SpendBreakdownSheet
+        visible={showSpendBreakdown}
+        onClose={() => setShowSpendBreakdown(false)}
+        onViewDetails={() => {
+          setShowSpendBreakdown(false);
+          router.push('/spending-stash');
+        }}
+      />
       <KYCVerificationSheet
         visible={showKYCSheet}
         onClose={() => setShowKYCSheet(false)}
@@ -560,9 +644,20 @@ export default function Dashboard() {
       />
       <InvestmentDisclaimerSheet
         visible={showDisclaimer}
-        onAccept={() => {
+        onAccept={async () => {
           setHasAcknowledgedDisclaimer(true);
           setShowDisclaimer(false);
+          try {
+            const res = await virtualAccountService.getTOSLink();
+            if (res?.tos_link) {
+              router.push({
+                pathname: '/kyc/tos',
+                params: { url: encodeURIComponent(res.tos_link) },
+              });
+            }
+          } catch (error) {
+            console.warn('Failed to fetch TOS link:', error);
+          }
         }}
       />
       <SolanaPayScanSheet
@@ -579,6 +674,25 @@ export default function Dashboard() {
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
       />
+      <InfoSheet
+        visible={showMicroLoanSheet}
+        onClose={() => setShowMicroLoanSheet(false)}
+        title="Micro Loans"
+        subtitle="Unlock liquidity from your investments"
+        rows={[
+          { label: 'Interest Rate', value: '0.5%' },
+          { label: 'Collateral', value: 'Rail Investments' },
+          { label: 'Max Amount', value: 'Up to 50% of stash' },
+        ]}>
+        <View className="mt-4 rounded-xl bg-gray-50 p-4">
+          <Text className="font-body text-[14px] leading-5 text-text-secondary">
+            Keep your investments working for you while accessing instant liquidity. Use your Rail
+            investment stash as collateral to get a micro loan with just 0.5% interest. Whether you
+            need funds for an emergency or an opportunity, your investments stay invested while you
+            borrow against them.
+          </Text>
+        </View>
+      </InfoSheet>
     </ScrollView>
   );
 }

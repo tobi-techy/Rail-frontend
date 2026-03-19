@@ -42,36 +42,56 @@ export function useProtectedRoute() {
     const state = useAuthStore.getState();
     if (!state.isAuthenticated || !state.accessToken) return;
 
-    try {
-      const currentUserResponse = await authService.getCurrentUser();
+    // Fetch user profile and passcode status in parallel
+    const [userResult, passcodeResult] = await Promise.allSettled([
+      authService.getCurrentUser(),
+      passcodeService.getStatus(),
+    ]);
+
+    if (userResult.status === 'fulfilled') {
+      const currentUserResponse = userResult.value;
       const backendUser = currentUserResponse?.user ?? currentUserResponse;
       const backendOnboardingStatus =
         currentUserResponse?.onboarding?.onboardingStatus ?? backendUser?.onboardingStatus;
 
       if (backendUser) {
+        const localStatus = state.onboardingStatus;
+        const LOCAL_ADVANCED = new Set(['kyc_pending', 'kyc_approved', 'completed']);
+        const resolvedStatus =
+          localStatus &&
+          LOCAL_ADVANCED.has(localStatus) &&
+          !LOCAL_ADVANCED.has(backendOnboardingStatus ?? '')
+            ? localStatus
+            : (backendOnboardingStatus ?? state.onboardingStatus);
+
         useAuthStore.setState({
           user: backendUser,
-          onboardingStatus: backendOnboardingStatus ?? state.onboardingStatus,
+          onboardingStatus: resolvedStatus,
         });
       }
-    } catch (error) {
+    } else {
       logger.warn('[Auth] Failed to refresh user profile state', {
         component: 'useProtectedRoute',
         action: 'refresh-user-profile',
-        error: error instanceof Error ? error.message : String(error),
+        error:
+          userResult.reason instanceof Error
+            ? userResult.reason.message
+            : String(userResult.reason),
       });
     }
 
-    try {
-      const passcodeStatus = await passcodeService.getStatus();
+    if (passcodeResult.status === 'fulfilled') {
       useAuthStore.setState({
-        hasPasscode: Boolean(passcodeStatus.enabled),
+        hasPasscode: Boolean(passcodeResult.value.enabled),
       });
-    } catch (error) {
+    } else {
       logger.warn('[Auth] Failed to refresh passcode status', {
         component: 'useProtectedRoute',
         action: 'refresh-passcode-status',
-        error: error instanceof Error ? error.message : String(error),
+        error:
+          passcodeResult.reason instanceof Error
+            ? passcodeResult.reason.message
+            : String(passcodeResult.reason),
       });
     }
   }, []);

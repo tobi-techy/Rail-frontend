@@ -1,11 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { ArrowUpRight } from 'lucide-react-native';
+import { router } from 'expo-router';
 
 import ShieldLockIcon from '@/assets/Icons/shield-lock-5.svg';
 import CreditCardIcon from '@/assets/Icons/credit-card-8.svg';
 import ZapIcon from '@/assets/Icons/waterfall-chart-4.svg';
 import LoyaltyIcon from '@/assets/Icons/loyalty-14.svg';
+import { useKycStore } from '@/stores/kycStore';
+import { BottomSheet } from '@/components/sheets';
 
 type Banner = {
   id: string;
@@ -66,14 +69,65 @@ function BannerCard({ b, cardWidth }: { b: Banner; cardWidth: number }) {
 interface FeatureBannerProps {
   kycApproved: boolean;
   onKYCPress?: () => void;
+  hasCard?: boolean;
 }
 
-export function FeatureBanner({ kycApproved, onKYCPress }: FeatureBannerProps) {
+function getKycProgressScreen(state: ReturnType<typeof useKycStore.getState>): string {
+  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, diditSessionToken } =
+    state;
+
+  // If user has a Didit session token, they're in the middle of ID verification
+  if (diditSessionToken) {
+    return '/kyc/didit-sdk';
+  }
+
+  // If user has completed disclosures and submitted, they should be going to Didit
+  // But if diditSessionToken is null (failed to get or session expired), go to disclosures to resubmit
+  if (disclosuresConfirmed && taxId && employmentStatus && investmentPurposes.length > 0) {
+    return '/kyc/disclosures';
+  }
+
+  // If user has started about-you (employment + investment goals), go to disclosures
+  if (employmentStatus && investmentPurposes.length > 0 && taxId) {
+    return '/kyc/disclosures';
+  }
+
+  // If user has started tax-id, go to about-you
+  if (taxId) {
+    return '/kyc/about-you';
+  }
+
+  // Nothing started, go to beginning
+  return '/kyc/tax-id';
+}
+
+export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBannerProps) {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = Math.min(Math.max(screenWidth * 0.62, 220), 320);
   const snap = cardWidth + 10;
   const [activeIndex, setActiveIndex] = useState(0);
+  const [showConductorSheet, setShowConductorSheet] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, diditSessionToken } =
+    useKycStore();
+
+  const hasStartedKyc =
+    taxId.trim().length > 0 ||
+    employmentStatus !== null ||
+    investmentPurposes.length > 0 ||
+    disclosuresConfirmed ||
+    diditSessionToken !== null;
+
+  const handleKycPress = () => {
+    if (hasStartedKyc) {
+      const state = useKycStore.getState();
+      const screen = getKycProgressScreen(state);
+      router.push(screen as never);
+    } else {
+      router.push('/kyc');
+    }
+  };
 
   const banners: Banner[] = [
     ...(!kycApproved
@@ -81,23 +135,28 @@ export function FeatureBanner({ kycApproved, onKYCPress }: FeatureBannerProps) {
           {
             id: 'kyc',
             label: 'Required',
-            title: 'Verify your identity',
+            title: hasStartedKyc ? 'Continue verification' : 'Verify your identity',
             bg: '#0D2818',
             iconColor: '#4ADE80',
             Icon: ShieldLockIcon as any,
-            onPress: onKYCPress,
+            onPress: handleKycPress,
           },
         ]
       : []),
-    {
-      id: 'card',
-      label: 'Coming soon',
-      title: 'Rail Debit Card',
-      bg: '#0F0F1A',
-      iconColor: '#818CF8',
-      badge: 'Soon',
-      Icon: CreditCardIcon as any,
-    },
+    ...(!hasCard
+      ? [
+          {
+            id: 'card',
+            label: 'Get started',
+            title: 'Rail Debit Card',
+            bg: '#0F0F1A',
+            iconColor: '#818CF8',
+            badge: 'New',
+            Icon: CreditCardIcon as any,
+            onPress: () => (kycApproved ? router.push('/card') : onKYCPress?.()),
+          },
+        ]
+      : []),
     {
       id: 'conductor',
       label: 'Coming soon',
@@ -106,6 +165,7 @@ export function FeatureBanner({ kycApproved, onKYCPress }: FeatureBannerProps) {
       iconColor: '#FBBF24',
       badge: 'Soon',
       Icon: ZapIcon as any,
+      onPress: () => setShowConductorSheet(true),
     },
     {
       id: 'rewards',
@@ -153,6 +213,37 @@ export function FeatureBanner({ kycApproved, onKYCPress }: FeatureBannerProps) {
           ))}
         </View>
       )}
+
+      <BottomSheet
+        visible={showConductorSheet}
+        onClose={() => setShowConductorSheet(false)}
+        showCloseButton={false}
+        dismissible>
+        <View className="items-center">
+          <View className="h-1 w-10 rounded-full bg-neutral-200" />
+        </View>
+        <View className="mt-4 gap-6">
+          <View className="items-start gap-2">
+            <View className="rounded-full bg-[#FBBF24]/10 px-3 py-1">
+              <Text className="font-subtitle text-[12px] text-[#F59E0B]">Coming soon</Text>
+            </View>
+            <Text className="font-subtitle text-xl text-neutral-900">Conductor</Text>
+            <Text className="font-body text-sm text-neutral-500">
+              Conductor is Rail&apos;s copy-investing feature. Allocate small amounts to follow top
+              investors and Rail mirrors their buy and sell decisions automatically.
+            </Text>
+          </View>
+
+          <View className="gap-2">
+            <Text className="font-subtitle text-base text-neutral-900">How it works</Text>
+            <Text className="font-body text-sm text-neutral-500">1. Pick a conductor.</Text>
+            <Text className="font-body text-sm text-neutral-500">2. Allocate funds.</Text>
+            <Text className="font-body text-sm text-neutral-500">
+              3. Rail follows their trades for you.
+            </Text>
+          </View>
+        </View>
+      </BottomSheet>
     </View>
   );
 }
