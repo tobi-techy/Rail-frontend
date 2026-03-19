@@ -5,7 +5,6 @@
 
 import type { WalletChain } from '@/api/types';
 
-export const SOLANA_TESTNET_CHAIN: WalletChain = 'SOL-DEVNET';
 export const SOLANA_MAINNET_CHAIN: WalletChain = 'SOL';
 
 export interface ChainConfig {
@@ -38,7 +37,7 @@ export function isTestnetChain(chain: string): boolean {
   return chain.includes('DEVNET') || chain.includes('AMOY') || chain.includes('FUJI');
 }
 
-export function getTestnetChain(): WalletChain {
+export function getDefaultChain(): WalletChain {
   return SOLANA_MAINNET_CHAIN;
 }
 

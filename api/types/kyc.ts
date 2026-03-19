@@ -1,7 +1,5 @@
 // ============= KYC Types =============
 
-// --- Sumsub Session ---
-
 export type KycDisclosures = {
   is_control_person: boolean;
   is_affiliated_exchange_or_finra: boolean;
@@ -79,27 +77,6 @@ export type InvestmentPurpose =
   | 'first_home'
   | 'dependants'
   | 'income_generation';
-
-export type StartSumsubSessionRequest = {
-  tax_id: string;
-  tax_id_type: TaxIdType;
-  issuing_country: Country;
-  disclosures: KycDisclosures;
-  source_of_funds?: string;
-  employment_status?: string;
-  expected_monthly_payments_usd?: string;
-  account_purpose?: string;
-  account_purpose_other?: string;
-  most_recent_occupation?: string;
-  acting_as_intermediary?: boolean;
-};
-
-export type StartSumsubSessionResponse = {
-  status: 'pending';
-  applicant_id: string;
-  token: string;
-  level_name: string;
-};
 
 // --- Didit Session ---
 
