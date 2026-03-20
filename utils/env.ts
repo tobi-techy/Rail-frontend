@@ -87,7 +87,7 @@ function resolveApiUrl(rawApiUrl: string): string {
 }
 
 function validateEnv(): Env {
-  const fallbackEnv: NonNullable<Env['EXPO_PUBLIC_ENV']> = __DEV__ ? 'development' : 'staging';
+  const fallbackEnv: NonNullable<Env['EXPO_PUBLIC_ENV']> = __DEV__ ? 'development' : 'production';
   const runtimeEnv =
     (process.env.EXPO_PUBLIC_ENV as Env['EXPO_PUBLIC_ENV']) || fallbackEnv || 'development';
 
