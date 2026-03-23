@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, ViewProps, TouchableOpacity } from 'react-native';
-import { Eye, EyeOff } from 'lucide-react-native';
 import { useUIStore } from '@/stores';
 import { sanitizeNumber } from '@/utils/sanitizeInput';
 import Animated, {
@@ -12,6 +11,8 @@ import Animated, {
 import { Skeleton } from '@/components/atoms/Skeleton';
 import type { Currency } from '@/stores/uiStore';
 import { formatCurrencyAmount, convertFromUsd, type FxRates } from '@/utils/currency';
+import { EyeIcon, ViewOffIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export interface BalanceCardProps extends ViewProps {
   balance?: string;
@@ -94,9 +95,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 accessibilityLabel={isBalanceVisible ? 'Hide balance' : 'Show balance'}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 {isBalanceVisible ? (
-                  <Eye size={24} color="#757575" strokeWidth={0.9} />
+                  <HugeiconsIcon icon={EyeIcon} size={24} color="#757575" strokeWidth={0.9} />
                 ) : (
-                  <EyeOff size={24} color="#757575" strokeWidth={0.9} />
+                  <HugeiconsIcon icon={ViewOffIcon} size={24} color="#757575" strokeWidth={0.9} />
                 )}
               </TouchableOpacity>
             </View>

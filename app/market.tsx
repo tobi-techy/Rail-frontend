@@ -2,14 +2,6 @@ import React, { useMemo } from 'react';
 import { Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
-import {
-  ChevronRight,
-  Filter,
-  TrendingUp,
-  X,
-  CircleDollarSign,
-  BarChart3,
-} from 'lucide-react-native';
 import { BottomSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
 import { InputField } from '@/components/atoms/InputField';
@@ -21,6 +13,8 @@ import { MarketNewsCard } from '@/components/market/MarketNewsCard';
 import { useHaptics } from '@/hooks/useHaptics';
 import { MarketCategoryCard } from '@/components/market/MarketCategoryCard';
 import { useMarketFilters, SORT_OPTIONS, TYPE_OPTIONS } from '@/hooks/useMarketFilters';
+import { ArrowRight01Icon, BarChartIcon, Cancel01Icon, ChartUpIcon, DollarCircleIcon, FilterIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -172,7 +166,7 @@ export default function MarketScreen() {
                       className="min-h-[44px] min-w-[44px] items-center justify-center"
                       accessibilityRole="button"
                       accessibilityLabel="Clear search">
-                      <X size={16} color="#757575" />
+                      <HugeiconsIcon icon={Cancel01Icon} size={16} color="#757575" />
                     </TouchableOpacity>
                   ) : undefined
                 }
@@ -183,7 +177,7 @@ export default function MarketScreen() {
               className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black"
               accessibilityRole="button"
               accessibilityLabel="Open market filters">
-              <Filter size={18} color="#FFFFFF" />
+              <HugeiconsIcon icon={FilterIcon} size={18} color="#FFFFFF" />
             </Pressable>
           </View>
 
@@ -203,7 +197,7 @@ export default function MarketScreen() {
               accessibilityLabel="See all market categories"
               className="min-h-[44px] flex-row items-center">
               <Text className="mr-1 font-caption text-caption text-text-secondary">See all</Text>
-              <ChevronRight size={16} color="#757575" />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#757575" />
             </Pressable>
           </View>
 
@@ -214,7 +208,7 @@ export default function MarketScreen() {
             <MarketCategoryCard
               title="Stocks"
               subtitle={stockCount ? `${stockCount} instruments` : 'Popular equities'}
-              Icon={CircleDollarSign}
+              Icon={DollarCircleIcon}
               onPress={() =>
                 router.push({
                   pathname: '/market-explore',
@@ -225,7 +219,7 @@ export default function MarketScreen() {
             <MarketCategoryCard
               title="ETFs"
               subtitle={etfCount ? `${etfCount} instruments` : 'Index and thematic ETFs'}
-              Icon={BarChart3}
+              Icon={BarChartIcon}
               onPress={() =>
                 router.push({
                   pathname: '/market-explore',
@@ -236,7 +230,7 @@ export default function MarketScreen() {
             <MarketCategoryCard
               title="Top movers"
               subtitle="Strongest daily change"
-              Icon={TrendingUp}
+              Icon={ChartUpIcon}
               onPress={() =>
                 router.push({
                   pathname: '/market-explore',
@@ -256,7 +250,7 @@ export default function MarketScreen() {
               accessibilityLabel="See more assets"
               className="min-h-[44px] flex-row items-center">
               <Text className="mr-1 font-caption text-caption text-text-secondary">See more</Text>
-              <ChevronRight size={16} color="#757575" />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#757575" />
             </Pressable>
           </View>
 

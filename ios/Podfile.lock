@@ -2466,6 +2466,28 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - RNVectorIcons (10.3.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - RNWorklets (0.5.1):
     - hermes-engine
     - RCTRequired
@@ -2695,6 +2717,7 @@ DEPENDENCIES:
   - "RNSentry (from `../node_modules/@sentry/react-native`)"
   - RNSslPinning (from `../node_modules/react-native-ssl-pinning`)
   - RNSVG (from `../node_modules/react-native-svg`)
+  - RNVectorIcons (from `../node_modules/react-native-vector-icons`)
   - RNWorklets (from `../node_modules/react-native-worklets`)
   - "SdkReactNative (from `../node_modules/@didit-protocol/sdk-react-native`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
@@ -2966,6 +2989,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-ssl-pinning"
   RNSVG:
     :path: "../node_modules/react-native-svg"
+  RNVectorIcons:
+    :path: "../node_modules/react-native-vector-icons"
   RNWorklets:
     :path: "../node_modules/react-native-worklets"
   SdkReactNative:
@@ -3109,6 +3134,7 @@ SPEC CHECKSUMS:
   RNSentry: 41979b419908128847ef662cc130a400b7576fa9
   RNSslPinning: 19ba950a15324b874ae11be2135ae11e0fb5f702
   RNSVG: 31d6639663c249b7d5abc9728dde2041eb2a3c34
+  RNVectorIcons: 4351544f100d4f12cac156a7c13399e60bab3e26
   RNWorklets: 76fce72926e28e304afb44f0da23b2d24f2c1fa0
   SdkReactNative: fd5b14d97471134b873a33d1b5e3cca46af01c70
   Sentry: b3ec44d01708fce73f99b544beb57e890eca4406

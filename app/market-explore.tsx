@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Filter, X } from 'lucide-react-native';
 import { BottomSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
 import { InputField } from '@/components/atoms/InputField';
@@ -11,6 +10,8 @@ import type { MarketExploreQueryParams, MarketInstrumentType } from '@/api/types
 import { useUIStore } from '@/stores';
 import { sanitizeAssets } from '@/utils/market';
 import { MarketAssetRow } from '@/components/market/MarketAssetRow';
+import { ArrowLeft01Icon, Cancel01Icon, FilterIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 type TypeFilter = 'all' | MarketInstrumentType;
 type SortFilter = 'symbol' | 'top_movers' | 'top_traded';
@@ -146,7 +147,7 @@ export default function MarketExploreScreen() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
           className="mr-2 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-surface">
-          <ArrowLeft size={18} color="#111111" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color="#111111" />
         </Pressable>
         <Text className="font-subtitle text-subtitle text-text-primary">Explore assets</Text>
       </View>
@@ -174,7 +175,7 @@ export default function MarketExploreScreen() {
                     className="min-h-[44px] min-w-[44px] items-center justify-center"
                     accessibilityRole="button"
                     accessibilityLabel="Clear search">
-                    <X size={16} color="#757575" />
+                    <HugeiconsIcon icon={Cancel01Icon} size={16} color="#757575" />
                   </TouchableOpacity>
                 ) : undefined
               }
@@ -186,7 +187,7 @@ export default function MarketExploreScreen() {
             className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black"
             accessibilityRole="button"
             accessibilityLabel="Open market filters">
-            <Filter size={18} color="#FFFFFF" />
+            <HugeiconsIcon icon={FilterIcon} size={18} color="#FFFFFF" />
           </Pressable>
         </View>
 

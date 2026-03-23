@@ -3,11 +3,13 @@ import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as Haptics from 'expo-haptics';
 import { Icon } from '@/components/atoms/Icon';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { useAuthStore } from '@/stores/authStore';
 import { useVerifyPasscode } from '@/api/hooks';
 import { userService } from '@/api/services';
+import { useHaptics } from '@/hooks/useHaptics';
 import { haptics } from '@/utils/haptics';
 import { SessionManager } from '@/utils/sessionManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -34,6 +36,7 @@ const extractProfileName = (profile: ProfileNamePayload) => {
 };
 
 export default function LoginPasscodeScreen() {
+  const { impact } = useHaptics();
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const updateUser = useAuthStore((s) => s.updateUser);
@@ -205,7 +208,7 @@ export default function LoginPasscodeScreen() {
         <View className="flex-1">
           <View className="mt-2 flex-row items-center justify-end px-6">
             <TouchableOpacity
-              onPress={() => router.push('/(auth)/forgot-password')}
+              onPress={() => { impact(Haptics.ImpactFeedbackStyle.Light); router.push('/(auth)/forgot-password'); }}
               className="flex-row items-center gap-x-2 rounded-full bg-gray-100 px-4 py-2.5"
               activeOpacity={0.7}>
               <Icon name="message-circle" size={18} color="#374151" strokeWidth={2} />
@@ -247,6 +250,7 @@ export default function LoginPasscodeScreen() {
               <Text className="font-body text-caption text-text-secondary">Not {userName}? </Text>
               <TouchableOpacity
                 onPress={() => {
+                  impact(Haptics.ImpactFeedbackStyle.Light);
                   clearAutoFired(
                     `login-passcode:${useAuthStore.getState().user?.id || safeName(user?.email) || 'anonymous'}`
                   );
@@ -257,7 +261,7 @@ export default function LoginPasscodeScreen() {
                 <Text className="font-button text-caption text-primary">Switch Account</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => router.push('/(auth)/signin')} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => { impact(Haptics.ImpactFeedbackStyle.Light); router.push('/(auth)/signin'); }} activeOpacity={0.7}>
               <Text className="font-body text-caption text-text-secondary">Sign in with email</Text>
             </TouchableOpacity>
           </View>

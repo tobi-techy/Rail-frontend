@@ -1,7 +1,6 @@
 import { View, Text, Pressable, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Fingerprint } from 'lucide-react-native';
 import { Passkey } from 'react-native-passkey';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { useVerifyPasscode } from '@/api/hooks';
@@ -9,6 +8,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
 import { useCallback } from 'react';
 import { useHaptics } from '@/hooks/useHaptics';
+import { ArrowLeft01Icon, FingerPrintIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export default function AuthorizeTransactionScreen() {
   const params = useLocalSearchParams();
@@ -82,7 +83,7 @@ export default function AuthorizeTransactionScreen() {
           <Pressable
             onPress={() => router.back()}
             className="h-12 w-12 items-center justify-center rounded-full bg-[#F3F4F6]">
-            <ArrowLeft size={24} color="#070914" strokeWidth={2} />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#070914" strokeWidth={2} />
           </Pressable>
         </View>
 
@@ -109,7 +110,7 @@ export default function AuthorizeTransactionScreen() {
               {isPasskeyLoading ? (
                 <ActivityIndicator size="small" color="#070914" />
               ) : (
-                <Fingerprint size={22} color="#070914" />
+                <HugeiconsIcon icon={FingerPrintIcon} size={22} color="#070914" />
               )}
               <Text className="font-subtitle text-base text-[#070914]">
                 {isPasskeyLoading ? 'Verifying…' : 'Use Passkey'}

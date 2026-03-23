@@ -1,19 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import {
-  AlertTriangle,
-  Camera,
-  CheckCircle2,
-  Clock3,
-  FileText,
-  RefreshCw,
-} from 'lucide-react-native';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { type KYCStatusResponse, type KycStatus, isKycInReview } from '@/api/types/kyc';
 import { useKYCStatus, useKycStatusPolling } from '@/api/hooks/useKYC';
 import { useAuthStore } from '@/stores/authStore';
 import { useKycStore } from '@/stores/kycStore';
+import { Alert02Icon, Camera01Icon, CheckmarkCircle02Icon, Clock01Icon, File01Icon, RefreshIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 import {
   NavigableBottomSheet,
   type BottomSheetScreen,
@@ -174,11 +168,11 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
                           : '#FEF2F2',
                   }}>
                   {statusMode === 'approved' ? (
-                    <CheckCircle2 size={30} color="#10B981" />
+                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={30} color="#10B981" />
                   ) : statusMode === 'pending' ? (
-                    <Clock3 size={30} color="#F59E0B" />
+                    <HugeiconsIcon icon={Clock01Icon} size={30} color="#F59E0B" />
                   ) : (
-                    <AlertTriangle size={30} color="#EF4444" />
+                    <HugeiconsIcon icon={Alert02Icon} size={30} color="#EF4444" />
                   )}
                 </View>
               )}
@@ -203,7 +197,7 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
             {statusMode === 'not_started' && (
               <View className="mb-6 rounded-3xl border border-gray-200 bg-white">
                 <View className="flex-row items-center gap-4 border-b border-gray-100 p-5">
-                  <FileText size={24} color="#111827" />
+                  <HugeiconsIcon icon={File01Icon} size={24} color="#111827" />
                   <View className="flex-1">
                     <Text className="font-subtitle text-[15px] text-gray-900">Your photo ID</Text>
                     <Text className="mt-1 font-body text-[13px] leading-5 text-gray-500">
@@ -212,7 +206,7 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
                   </View>
                 </View>
                 <View className="flex-row items-center gap-4 p-5">
-                  <Camera size={24} color="#111827" />
+                  <HugeiconsIcon icon={Camera01Icon} size={24} color="#111827" />
                   <View className="flex-1">
                     <Text className="font-subtitle text-[15px] text-gray-900">
                       A quick scan of your face
@@ -251,7 +245,7 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
                   variant="white"
                   onPress={handleCheckStatus}
                   loading={isRefetchingStatus}
-                  leftIcon={<RefreshCw size={16} color="#111827" />}
+                  leftIcon={<HugeiconsIcon icon={RefreshIcon} size={16} color="#111827" />}
                 />
               </View>
             ) : (

@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { ChevronRight, Lock } from 'lucide-react-native';
 import type { PaymentMethod } from '@/constants/depositOptions';
+import { ArrowRight01Icon, LockIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 interface PaymentMethodSelectorProps {
   methods: PaymentMethod[];
@@ -77,7 +78,7 @@ export function PaymentMethodSelector({
                       <Text className="font-button text-[10px] text-pink-600">{method.badge}</Text>
                     </View>
                   )}
-                  {isDisabled && <Lock size={14} color="#999" />}
+                  {isDisabled && <HugeiconsIcon icon={LockIcon} size={14} color="#999" />}
                 </View>
                 <Text className="mt-1 font-caption text-[12px] text-text-secondary">
                   {method.description}
@@ -87,7 +88,7 @@ export function PaymentMethodSelector({
 
             {/* Chevron */}
             <View className="ml-2">
-              <ChevronRight size={20} color={isDisabled ? '#CCC' : '#9CA3AF'} />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={20} color={isDisabled ? '#CCC' : '#9CA3AF'} />
             </View>
           </TouchableOpacity>
         );

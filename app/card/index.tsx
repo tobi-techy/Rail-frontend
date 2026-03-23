@@ -35,10 +35,10 @@ export default function CardScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white" edges={['top']}>
+      <View className="flex-1 items-center justify-center bg-white" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
         <ActivityIndicator size="small" color="#000" />
-      </SafeAreaView>
+      </View>
     );
   }
 

@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
-import { ArrowUpRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 import ShieldLockIcon from '@/assets/Icons/shield-lock-5.svg';
@@ -9,6 +8,8 @@ import ZapIcon from '@/assets/Icons/waterfall-chart-4.svg';
 import LoyaltyIcon from '@/assets/Icons/loyalty-14.svg';
 import { useKycStore } from '@/stores/kycStore';
 import { BottomSheet } from '@/components/sheets';
+import { ArrowUpRight01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 type Banner = {
   id: string;
@@ -59,7 +60,7 @@ function BannerCard({ b, cardWidth }: { b: Banner; cardWidth: number }) {
         <View
           style={{ backgroundColor: b.iconColor + '22' }}
           className="h-7 w-7 items-center justify-center rounded-full">
-          <ArrowUpRight size={14} color={b.iconColor} strokeWidth={2.5} />
+          <HugeiconsIcon icon={ArrowUpRight01Icon} size={14} color={b.iconColor} strokeWidth={2.5} />
         </View>
       </View>
     </TouchableOpacity>

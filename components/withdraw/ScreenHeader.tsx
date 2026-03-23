@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowLeft, X } from 'lucide-react-native';
+import { ArrowLeft01Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 interface WithdrawScreenHeaderProps {
   title: string;
@@ -45,7 +46,7 @@ export const WithdrawScreenHeader: React.FC<WithdrawScreenHeaderProps> = ({
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Go back">
-          <ArrowLeft size={18} color="#111827" strokeWidth={2} />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color="#111827" strokeWidth={2} />
         </TouchableOpacity>
       ) : (
         <View className="w-11" />
@@ -63,7 +64,7 @@ export const WithdrawScreenHeader: React.FC<WithdrawScreenHeaderProps> = ({
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Close">
-          <X size={18} color="#111827" strokeWidth={2} />
+          <HugeiconsIcon icon={Cancel01Icon} size={18} color="#111827" strokeWidth={2} />
         </TouchableOpacity>
       ) : (
         <View className="w-11" />

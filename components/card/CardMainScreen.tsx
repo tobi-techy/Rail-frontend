@@ -1,7 +1,6 @@
 import React, { useLayoutEffect, useCallback, useMemo } from 'react';
 import { Platform, ScrollView, Text, TouchableOpacity, View, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Settings, Eye, EyeOff, Snowflake } from 'lucide-react-native';
 import { useNavigation, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -16,6 +15,8 @@ import { useCards, useCardTransactions, useUnfreezeCard } from '@/api/hooks/useC
 import { queryKeys } from '@/api/queryClient';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import type { CardTransaction } from '@/api/types/card';
+import { EyeIcon, Settings01Icon, SnowIcon, ViewOffIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 function mapCardTransaction(tx: CardTransaction): Transaction {
   const isCredit = tx.type === 'refund' || tx.type === 'reversal';
@@ -144,7 +145,7 @@ const CardMainScreen = () => {
               onPress={handleSettings}
               activeOpacity={0.7}
               className="h-9 w-9 items-center justify-center rounded-full bg-gray-100">
-              <Settings size={18} color="#374151" strokeWidth={1.8} />
+              <HugeiconsIcon icon={Settings01Icon} size={18} color="#374151" strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
 
@@ -173,7 +174,7 @@ const CardMainScreen = () => {
             {isFrozen && (
               <View className="absolute inset-0 items-center justify-center">
                 <View className="rounded-full bg-blue-500/90 p-3">
-                  <Snowflake size={32} color="#fff" />
+                  <HugeiconsIcon icon={SnowIcon} size={32} color="#fff" />
                 </View>
               </View>
             )}
@@ -186,7 +187,7 @@ const CardMainScreen = () => {
               activeOpacity={0.8}
               className="mt-4 flex-row items-center justify-between rounded-xl bg-blue-50 px-4 py-3">
               <View className="flex-row items-center">
-                <Snowflake size={18} color="#3B82F6" />
+                <HugeiconsIcon icon={SnowIcon} size={18} color="#3B82F6" />
                 <Text className="ml-2 font-subtitle text-sm text-blue-700">Card is frozen</Text>
               </View>
               <Text className="font-subtitle text-sm text-blue-600">Tap to unfreeze</Text>
@@ -199,9 +200,9 @@ const CardMainScreen = () => {
               index={0}
               icon={
                 isBalanceVisible ? (
-                  <Eye size={22} color="#111" />
+                  <HugeiconsIcon icon={EyeIcon} size={22} color="#111" />
                 ) : (
-                  <EyeOff size={22} color="#111" />
+                  <HugeiconsIcon icon={ViewOffIcon} size={22} color="#111" />
                 )
               }
               label="Hide"
@@ -209,8 +210,8 @@ const CardMainScreen = () => {
             />
             <CircleAction
               index={1}
-              icon={<Settings size={22} color="#111" />}
-              label="Settings"
+              icon={<HugeiconsIcon icon={Settings01Icon} size={22} color="#111" />}
+              label="Settings01Icon"
               onPress={handleSettings}
             />
           </View>

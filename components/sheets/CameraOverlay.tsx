@@ -1,5 +1,5 @@
 /**
- * Camera Overlay Component
+ * Camera01Icon Overlay Component
  * Captures ID document photos via camera or gallery with auto-compression fallback.
  */
 
@@ -16,10 +16,11 @@ import {
   View,
 } from 'react-native';
 import { CameraView, type CameraType, useCameraPermissions } from 'expo-camera';
-import { Camera, RefreshCw, X, Zap, Image as ImageIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { SlideInUp } from 'react-native-reanimated';
 import { logger } from '@/lib/logger';
+import { Camera01Icon, Cancel01Icon, Image01Icon, RefreshIcon, ZapIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 type CaptureSide = 'front' | 'back';
 export type KycDocumentType = 'drivers_license' | 'id_card' | 'residence_permit' | 'passport';
@@ -94,13 +95,13 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
         // Only retry if this wasn't the lowest quality
         if (quality === QUALITY_STEPS[QUALITY_STEPS.length - 1]) {
           setCaptureError(
-            'Image is too large even after compression. Please pick a smaller image.'
+            'Image01Icon is too large even after compression. Please pick a smaller image.'
           );
           return;
         }
         // Otherwise loop continues with lower quality — but gallery picker re-opens.
         // Since we can't re-compress without expo-image-manipulator, just fail gracefully.
-        setCaptureError('Image exceeds 10MB. Please pick a smaller or lower-resolution image.');
+        setCaptureError('Image01Icon exceeds 10MB. Please pick a smaller or lower-resolution image.');
         return;
       }
     } catch (e) {
@@ -137,7 +138,7 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
       }
 
       setCaptureError(
-        'Image is still too large after compression. Try moving further from the document.'
+        'Image01Icon is still too large after compression. Try moving further from the document.'
       );
     } catch (error) {
       logger.error('[CameraOverlay] Capture error', { error });
@@ -182,13 +183,13 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
               />
             ) : (
               <View className="flex-1 items-center justify-center px-6">
-                <Camera size={42} color="#FFFFFF" />
+                <HugeiconsIcon icon={Camera01Icon} size={42} color="#FFFFFF" />
                 <Text className="mt-4 text-center font-subtitle text-[22px] text-white">
-                  {permissionDenied ? 'Camera access denied' : 'Camera permission needed'}
+                  {permissionDenied ? 'Camera01Icon access denied' : 'Camera01Icon permission needed'}
                 </Text>
                 <Text className="mt-2 text-center font-body text-[14px] leading-6 text-gray-300">
                   {permissionDenied
-                    ? 'Camera permission was denied. Please enable it in Settings to continue.'
+                    ? 'Camera01Icon permission was denied. Please enable it in Settings to continue.'
                     : 'Allow camera access so you can capture your document securely in-app.'}
                 </Text>
                 <View className="mt-6 w-full gap-y-3">
@@ -222,14 +223,14 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
                 className="size-11 items-center justify-center rounded-full bg-black/50"
                 accessibilityRole="button"
                 accessibilityLabel="Close camera">
-                <X size={20} color="#FFFFFF" />
+                <HugeiconsIcon icon={Cancel01Icon} size={20} color="#FFFFFF" />
               </Pressable>
               <Pressable
                 onPress={() => setFlashEnabled((v) => !v)}
                 className="size-11 items-center justify-center rounded-full bg-black/50"
                 accessibilityRole="button"
                 accessibilityLabel="Toggle flash">
-                <Zap size={20} color={flashEnabled ? '#F59E0B' : '#FFFFFF'} />
+                <HugeiconsIcon icon={ZapIcon} size={20} color={flashEnabled ? '#F59E0B' : '#FFFFFF'} />
               </Pressable>
             </View>
 
@@ -280,7 +281,7 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
                     accessibilityRole="button"
                     accessibilityLabel="Upload from gallery"
                     className="p-2">
-                    <ImageIcon size={24} color="#4B5563" />
+                    <HugeiconsIcon icon={Image01Icon} size={24} color="#4B5563" />
                   </Pressable>
                 </View>
               </Animated.View>
@@ -297,14 +298,14 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
                 className="p-1"
                 accessibilityRole="button"
                 accessibilityLabel="Retake photo">
-                <RefreshCw size={24} color="#000" />
+                <HugeiconsIcon icon={RefreshIcon} size={24} color="#000" />
               </Pressable>
               <Pressable
                 onPress={onClose}
                 className="p-1"
                 accessibilityRole="button"
                 accessibilityLabel="Close camera">
-                <X size={24} color="#000" />
+                <HugeiconsIcon icon={Cancel01Icon} size={24} color="#000" />
               </Pressable>
             </View>
 
@@ -312,7 +313,7 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
               <View className="h-full w-full overflow-hidden rounded-2xl bg-black">
                 <Image
                   source={{ uri: capturedUri }}
-                  className="h-full w-full"
+                  style={{ width: '100%', height: '100%' }}
                   resizeMode="contain"
                 />
               </View>

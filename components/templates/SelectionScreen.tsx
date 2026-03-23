@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { Check } from 'lucide-react-native';
 import { AuthScreen } from './AuthScreen';
 import { StaggeredChild } from '@/components';
+import { CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export interface SelectionOption {
   id: string;
@@ -69,7 +70,7 @@ export const SelectionScreen = ({
               </View>
               {selected === option.id && (
                 <View className="h-6 w-6 items-center justify-center rounded-full bg-black">
-                  <Check size={14} color="#fff" strokeWidth={3} />
+                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} color="#fff" strokeWidth={3} />
                 </View>
               )}
             </Pressable>

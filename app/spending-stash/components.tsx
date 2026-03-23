@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import Animated, { useSharedValue, withSpring, useAnimatedStyle } from 'react-native-reanimated';
-import { ScanSearch } from 'lucide-react-native';
 import { Icon } from '@/components/atoms/Icon';
 import { useHaptics } from '@/hooks/useHaptics';
+import { ScanEyeIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export const C = {
   text: '#000000',
@@ -223,7 +224,7 @@ export function TxRow({
 export function EmptyPeriod() {
   return (
     <View className="items-center px-4 py-10">
-      <ScanSearch size={44} color={C.textSub} strokeWidth={1} />
+      <HugeiconsIcon icon={ScanEyeIcon} size={44} color={C.textSub} strokeWidth={1} />
       <Text className="mt-4 text-center font-button text-[17px] text-text-primary">
         Nothing spent during this time
       </Text>

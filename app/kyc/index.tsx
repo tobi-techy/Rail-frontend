@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Check, ChevronDown, ChevronRight, X } from 'lucide-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -15,6 +14,8 @@ import {
 import { useKycStore } from '@/stores/kycStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useKYCStatus } from '@/api/hooks/useKYC';
+import { ArrowDown01Icon, ArrowRight01Icon, Cancel01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const ISO2_TO_KYC: Record<string, Country> = {
   US: 'USA',
@@ -67,8 +68,20 @@ export default function KycCountryScreen() {
   const { country, setCountry } = useKycStore();
   const userCountry = useAuthStore((s) => s.user?.country);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const params = useLocalSearchParams<{ autoLaunch?: string }>();
   const { data: kycStatus } = useKYCStatus();
+
+  // Filter countries based on search query
+  const filteredCountries = useMemo(() => {
+    if (!searchQuery.trim()) return COUNTRIES;
+    const query = searchQuery.toLowerCase().trim();
+    return COUNTRIES.filter(
+      (item) =>
+        COUNTRY_LABELS[item.code].toLowerCase().includes(query) ||
+        item.code.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
 
   // If KYC already submitted, skip to pending/result screen
   useEffect(() => {
@@ -117,7 +130,7 @@ export default function KycCountryScreen() {
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Close verification">
-            <X size={22} color="#111827" />
+            <HugeiconsIcon icon={Cancel01Icon} size={22} color="#111827" />
           </Pressable>
         </View>
 
@@ -158,7 +171,7 @@ export default function KycCountryScreen() {
                   </Text>
                 </View>
               </View>
-              <ChevronDown size={20} color="#6B7280" />
+              <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#6B7280" />
             </Pressable>
           </View>
 
@@ -170,7 +183,7 @@ export default function KycCountryScreen() {
               {requirements.summaryBullets.map((item) => (
                 <View key={item} className="flex-row items-start gap-2">
                   <View className="mt-0.5 size-5 items-center justify-center rounded-full bg-gray-900">
-                    <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#FFFFFF" strokeWidth={3} />
                   </View>
                   <Text className="flex-1 font-body text-[14px] leading-5 text-gray-700">
                     {item}
@@ -196,7 +209,7 @@ export default function KycCountryScreen() {
                     {document.description}
                   </Text>
                 </View>
-                <ChevronRight size={18} color="#9CA3AF" />
+                <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#9CA3AF" />
               </View>
             ))}
           </View>
@@ -216,22 +229,56 @@ export default function KycCountryScreen() {
           visible={showCountryPicker}
           animationType="slide"
           presentationStyle="pageSheet"
-          onRequestClose={() => setShowCountryPicker(false)}>
+          onRequestClose={() => {
+            setShowCountryPicker(false);
+            setSearchQuery('');
+          }}>
           <SafeAreaView className="flex-1 bg-white" edges={['top']}>
             <View className="flex-row items-center justify-between border-b border-gray-100 px-4 py-4">
               <Text className="font-subtitle text-[18px] text-gray-900">
                 Select issuing country
               </Text>
               <Pressable
-                onPress={() => setShowCountryPicker(false)}
+                onPress={() => {
+                  setShowCountryPicker(false);
+                  setSearchQuery('');
+                }}
                 className="size-11 items-center justify-center"
                 accessibilityRole="button"
                 accessibilityLabel="Close country picker">
-                <X size={22} color="#111827" />
+                <HugeiconsIcon icon={Cancel01Icon} size={22} color="#111827" />
               </Pressable>
             </View>
+            
+            {/* Search input */}
+            <View className="border-b border-gray-100 px-4 pb-4">
+              <View className="flex-row items-center rounded-full border border-gray-200 bg-gray-50 px-4 py-3">
+                <Text className="mr-2 text-lg">🔍</Text>
+                <TextInput
+                  className="flex-1 font-body text-[15px] text-gray-900"
+                  placeholder="Search countries..."
+                  placeholderTextColor="#9CA3AF"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="search"
+                />
+                {searchQuery.length > 0 && (
+                  <Pressable onPress={() => setSearchQuery('')}>
+                    <Text className="text-gray-400">✕</Text>
+                  </Pressable>
+                )}
+              </View>
+              {searchQuery.length > 0 && filteredCountries.length === 0 && (
+                <Text className="mt-2 font-body text-[14px] text-gray-500">
+                  No countries found. Contact support for additional options.
+                </Text>
+              )}
+            </View>
+            
             <ScrollView showsVerticalScrollIndicator={false}>
-              {COUNTRIES.map((item) => {
+              {filteredCountries.map((item) => {
                 const selected = item.code === country;
                 return (
                   <Pressable
@@ -239,6 +286,7 @@ export default function KycCountryScreen() {
                     onPress={() => {
                       setCountry(item.code);
                       setShowCountryPicker(false);
+                      setSearchQuery('');
                     }}
                     className={`flex-row items-center justify-between border-b border-gray-100 px-4 py-4 ${
                       selected ? 'bg-gray-50' : 'bg-white'
@@ -258,7 +306,7 @@ export default function KycCountryScreen() {
                     </View>
                     {selected ? (
                       <View className="size-6 items-center justify-center rounded-full bg-gray-900">
-                        <Check size={14} color="#FFFFFF" strokeWidth={3} />
+                        <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} color="#FFFFFF" strokeWidth={3} />
                       </View>
                     ) : (
                       <View className="size-6 rounded-full border border-gray-300" />

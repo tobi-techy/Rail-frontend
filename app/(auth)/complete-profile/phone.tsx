@@ -142,6 +142,53 @@ export default function Phone() {
                 onPress={handleNext}
                 loading={isPending}
               />
+              <Pressable
+                onPress={() => {
+                  updateRegistrationData({ phone: '' });
+                  if (!isPasskeySignup) {
+                    router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_PASSWORD as never);
+                  } else {
+                    const payload: OnboardingCompleteRequest = {
+                      firstName: registrationData.firstName,
+                      lastName: registrationData.lastName,
+                      dateOfBirth: registrationData.dob,
+                      country: registrationData.country,
+                      address: {
+                        street: registrationData.street,
+                        city: registrationData.city,
+                        state: registrationData.state,
+                        postalCode: registrationData.postalCode,
+                        country: registrationData.country,
+                      },
+                      phone: undefined,
+                    };
+                    completeOnboarding(payload, {
+                      onSuccess: (response) => {
+                        const firstName = payload.firstName.trim();
+                        const lastName = payload.lastName.trim();
+                        const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+                        updateUser({
+                          firstName: firstName || undefined,
+                          lastName: lastName || undefined,
+                          fullName: fullName || undefined,
+                          phoneNumber: undefined,
+                          country: payload.country || undefined,
+                        });
+                        setOnboardingStatus(response.onboarding?.onboardingStatus || 'kyc_pending');
+                        clearRegistrationData();
+                        router.replace(ROUTES.AUTH.CREATE_PASSCODE as never);
+                      },
+                      onError: (error: any) => {
+                        showError('Profile Submission Failed', error?.message || 'Please try again.');
+                      },
+                    });
+                  }
+                }}
+                className="mt-3 py-2"
+                accessibilityRole="button"
+                accessibilityLabel="Skip phone number">
+                <Text className="text-center font-body text-[14px] text-black/60">Skip for now</Text>
+              </Pressable>
             </View>
           </StaggeredChild>
         </View>

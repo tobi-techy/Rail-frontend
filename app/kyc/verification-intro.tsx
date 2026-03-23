@@ -2,10 +2,11 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft } from 'lucide-react-native';
 
 import { Button } from '@/components/ui';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
+import { ArrowLeft01Icon, BankIcon, CreditCardIcon, ChartUpIcon, ArrowDownLeft01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const STEPS = [
   {
@@ -25,6 +26,13 @@ const STEPS = [
   },
 ];
 
+const FEATURES_UNLOCKED = [
+  { icon: CreditCardIcon, title: 'Fiat deposits', description: 'Add money from your bank account' },
+  { icon: CreditCardIcon, title: 'Get a Rail Card', description: 'Spend your crypto anywhere' },
+  { icon: ChartUpIcon, title: 'Invest', description: 'Trade stocks, ETFs, and crypto' },
+  { icon: ArrowDownLeft01Icon, title: 'Withdraw to bank', description: 'Cash out to your local bank' },
+];
+
 export default function KycVerificationIntroScreen() {
   const insets = useSafeAreaInsets();
   const { track } = useAnalytics();
@@ -38,16 +46,38 @@ export default function KycVerificationIntroScreen() {
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Go back">
-            <ChevronLeft size={22} color="#111827" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#111827" />
           </Pressable>
         </View>
 
         <View className="flex-1 px-6 pt-12">
           <Text className="font-display text-[32px] leading-[36px] text-gray-900">
-            Let&apos;s get started
+            Verify your identity
+          </Text>
+          <Text className="mt-3 font-body text-[15px] leading-6 text-gray-600">
+            Complete verification to unlock all features
           </Text>
 
-          <View className="mt-10 gap-y-8">
+          {/* Features that get unlocked */}
+          <View className="mt-8 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
+            <Text className="mb-4 font-subtitle text-[13px] text-gray-500">What you&apos;ll unlock</Text>
+            <View className="gap-y-3">
+              {FEATURES_UNLOCKED.map((feature) => (
+                <View key={feature.title} className="flex-row items-center gap-x-3">
+                  <View className="size-8 items-center justify-center rounded-full bg-gray-900">
+                    <HugeiconsIcon icon={feature.icon} size={16} color="#FFFFFF" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="font-subtitle text-[14px] text-gray-900">{feature.title}</Text>
+                    <Text className="font-body text-[12px] text-gray-500">{feature.description}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <Text className="mt-8 font-subtitle text-[18px] text-gray-900">How it works</Text>
+          <View className="mt-4 gap-y-6">
             {STEPS.map((step) => (
               <View key={step.number} className="flex-row items-start gap-x-4">
                 <View className="size-8 items-center justify-center rounded-full bg-gray-900">

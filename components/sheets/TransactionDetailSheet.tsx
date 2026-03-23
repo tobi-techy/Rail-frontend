@@ -1,14 +1,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { CreditCard, Wallet, Mail, Tag } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
-import { Icon } from '../atoms';
 import { Transaction, TransactionType, SvgComponent } from '../molecules/TransactionItem';
 import { resolveTransactionAssetIcon } from '@/utils/transactionIcon';
 import { formatAbsAmount } from '@/utils/transactionFormat';
 import { MaskedBalance } from '../molecules/MaskedBalance';
 import { useUIStore } from '@/stores';
+import { ArrowDownLeft01Icon, ArrowUpRight01Icon, Copy01Icon, CreditCardIcon, DollarCircleIcon, Mail01Icon, MinusSignIcon, PlusSignIcon, RepeatIcon, Tag01Icon, Wallet01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 interface TransactionDetailSheetProps {
   visible: boolean;
@@ -65,7 +65,7 @@ const DetailRow = ({
         </Text>
         {copyable && (
           <TouchableOpacity onPress={handleCopy} className="ml-2 p-1" hitSlop={8}>
-            <Icon library="feather" name="copy" size={16} color="#757575" />
+            <HugeiconsIcon icon={Copy01Icon} size={16} color="#757575" />
           </TouchableOpacity>
         )}
       </View>
@@ -75,11 +75,11 @@ const DetailRow = ({
 
 const LARGE_ICON_SIZE = 48;
 
-const WITHDRAWAL_BADGE: Record<string, { Icon: React.ComponentType<any>; bg: string }> = {
-  fiat:   { Icon: CreditCard, bg: '#3B82F6' },
-  card:   { Icon: CreditCard, bg: '#3B82F6' },
-  crypto: { Icon: Wallet,     bg: '#8B5CF6' },
-  p2p:    { Icon: Mail,       bg: '#10B981' },
+const WITHDRAWAL_BADGE: Record<string, { icon: any; bg: string }> = {
+  fiat:   { icon: CreditCardIcon, bg: '#3B82F6' },
+  card:   { icon: CreditCardIcon, bg: '#3B82F6' },
+  crypto: { icon: Wallet01Icon,     bg: '#8B5CF6' },
+  p2p:    { icon: Mail01Icon,       bg: '#10B981' },
 };
 
 const LargeTokenIcon = ({
@@ -111,14 +111,22 @@ const LargeTokenIcon = ({
         height={isSymbol ? 28 : LARGE_ICON_SIZE + 8}
       />
     ) : (
-      <Icon library="feather" name="dollar-sign" size={24} color="#FFFFFF" />
+      <HugeiconsIcon icon={DollarCircleIcon} size={24} color="#FFFFFF" />
     )}
   </View>
 );
 
+const LARGE_ACTION_ICON_MAP: Record<string, any> = {
+  'arrow-up-right': ArrowUpRight01Icon,
+  'arrow-down-left': ArrowDownLeft01Icon,
+  'repeat': RepeatIcon,
+  'plus': PlusSignIcon,
+  'minus': MinusSignIcon,
+};
+
 const LargeActionIcon = ({ name }: { name: string }) => (
   <View className="h-12 w-12 items-center justify-center rounded-full border-2 border-surface bg-background-main">
-    <Icon library="feather" name={name} size={22} color="#757575" />
+    <HugeiconsIcon icon={LARGE_ACTION_ICON_MAP[name] ?? ArrowUpRight01Icon} size={22} color="#757575" />
   </View>
 );
 
@@ -187,7 +195,7 @@ export function TransactionDetailSheet({
       );
     }
 
-    const badge = withdrawalMethod ? (WITHDRAWAL_BADGE[withdrawalMethod] ?? { Icon: Tag, bg: '#6B7280' }) : null;
+    const badge = withdrawalMethod ? (WITHDRAWAL_BADGE[withdrawalMethod] ?? { Icon: Tag01Icon, bg: '#6B7280' }) : null;
 
     return (
       <View style={{ width: LARGE_ICON_SIZE, height: LARGE_ICON_SIZE }}>
@@ -196,7 +204,7 @@ export function TransactionDetailSheet({
           <View
             className="absolute -bottom-0.5 -right-0.5 h-5 w-5 items-center justify-center rounded-full border-2 border-white"
             style={{ backgroundColor: badge.bg }}>
-            <badge.Icon size={10} color="#fff" strokeWidth={2.5} />
+            <HugeiconsIcon icon={badge.icon} size={10} color="#fff" strokeWidth={2.5} />
           </View>
         )}
       </View>

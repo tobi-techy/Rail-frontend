@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ChevronLeft, RefreshCw } from 'lucide-react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { Canvas, RoundedRect, Group } from '@shopify/react-native-skia';
 import { useSpendingStashData } from './useSpendingStashData';
@@ -11,6 +10,8 @@ import { Skeleton } from '@/components/atoms/Skeleton';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useUIStore } from '@/stores';
 import { CATEGORY_PALETTE } from './components';
+import { ArrowLeft01Icon, RefreshIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const ACCENT = '#FF2E01';
 
@@ -230,7 +231,7 @@ export default function SpendingScreen() {
           className="mr-3 h-9 w-9 items-center justify-center"
           accessibilityRole="button"
           accessibilityLabel="Go back">
-          <ChevronLeft size={24} color="#000000" strokeWidth={2} />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#000000" strokeWidth={2} />
         </Pressable>
         <Text className="font-subtitle text-[17px] text-black">Spend</Text>
       </View>
@@ -355,7 +356,7 @@ export default function SpendingScreen() {
               <View
                 className="h-11 w-11 items-center justify-center rounded-full"
                 style={{ backgroundColor: `${ACCENT}22` }}>
-                <RefreshCw size={20} color={ACCENT} strokeWidth={1.5} />
+                <HugeiconsIcon icon={RefreshIcon} size={20} color={ACCENT} strokeWidth={1.5} />
               </View>
               <View className="flex-1">
                 <Text className="font-button text-base text-black">Round-ups</Text>

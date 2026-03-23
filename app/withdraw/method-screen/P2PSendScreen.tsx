@@ -4,12 +4,12 @@
  * Flow:
  *   1. Red amount keypad (full screen) — user enters amount, taps Continue
  *   2. BottomSheet slides up over the red screen:
- *        - "Send $X to" headline
+ *        - "Send $Cancel01Icon to" headline
  *        - Unified search bar (RailTag / email / phone — all in one)
  *        - Recents list
  *        - Contacts section header
  *      → tap a recipient → note input appears inline in same sheet
- *        - "Send $X to [Avatar] Name for ___"
+ *        - "Send $Cancel01Icon to [Avatar] Name for ___"
  *        - Continue / Send button
  *   3. Success overlay
  */
@@ -29,7 +29,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ArrowLeft, AlertTriangle, CheckCircle2, Search, X } from 'lucide-react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -67,6 +66,8 @@ import {
 import { BRAND_RED, gentleSpring, springConfig } from './constants';
 import { AnimatedAmount } from './AnimatedAmount';
 import { parseApiError, isPasscodeSessionError } from '@/utils/apiError';
+import { Alert02Icon, ArrowLeft01Icon, Cancel01Icon, CheckmarkCircle02Icon, Search01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const MAX_DIGITS = 12;
 const P2P_LIMIT = 10_000;
@@ -425,7 +426,7 @@ function P2PSendScreenContent() {
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-gray-100"
             onPress={() => setShowAuthScreen(false)}>
-            <ArrowLeft size={20} color="#111" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111" />
           </Pressable>
           <Text className="font-subtitle text-[20px] text-text-primary">Confirm send</Text>
           <View className="size-11" />
@@ -482,7 +483,7 @@ function P2PSendScreenContent() {
           entering={FadeInDown.springify().damping(18)}
           className="flex-1 items-center justify-center px-8">
           <View className="mb-6 size-20 items-center justify-center rounded-full bg-green-50">
-            <CheckCircle2 size={36} color="#10B981" />
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={36} color="#10B981" />
           </View>
           <Text className="text-center font-subtitle text-[32px] leading-[38px] text-text-primary">
             ${formatCurrency(numericAmount)}
@@ -520,7 +521,7 @@ function P2PSendScreenContent() {
             <Pressable
               className="size-11 items-center justify-center rounded-full bg-white/20"
               onPress={() => router.back()}>
-              <ArrowLeft size={20} color="#fff" />
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#fff" />
             </Pressable>
             <Text className="font-subtitle text-[17px] text-white">Send to People</Text>
             <View className="size-11" />
@@ -624,15 +625,15 @@ function P2PSendScreenContent() {
                         className="mt-1 size-9 items-center justify-center rounded-full bg-surface"
                         onPress={closeSheet}
                         hitSlop={8}>
-                        <X size={16} color="#6B7280" />
+                        <HugeiconsIcon icon={Cancel01Icon} size={16} color="#6B7280" />
                       </Pressable>
                     </View>
 
-                    {/* Search bar */}
+                    {/* Search01Icon bar */}
                     <View
                       className="mx-6 mb-4 flex-row items-center gap-3 rounded-2xl bg-surface px-4"
                       style={{ height: 50 }}>
-                      <Search size={17} color="#9CA3AF" />
+                      <HugeiconsIcon icon={Search01Icon} size={17} color="#9CA3AF" />
                       <TextInput
                         className="flex-1 font-body text-[15px] text-text-primary"
                         placeholder="Name, @railtag, email, phone…"
@@ -653,7 +654,7 @@ function P2PSendScreenContent() {
                             setLookupResult(null);
                           }}
                           hitSlop={8}>
-                          <X size={15} color="#9CA3AF" />
+                          <HugeiconsIcon icon={Cancel01Icon} size={15} color="#9CA3AF" />
                         </Pressable>
                       ) : null}
                     </View>
@@ -728,7 +729,7 @@ function P2PSendScreenContent() {
                             Contacts
                           </Text>
                           <Text className="font-body text-[13px] text-text-secondary">
-                            Search above to find someone by name, @railtag, or email.
+                            Search01Icon above to find someone by name, @railtag, or email.
                           </Text>
                         </Animated.View>
                       )}
@@ -747,10 +748,10 @@ function P2PSendScreenContent() {
                         setNote('');
                         setSubmitError('');
                       }}>
-                      <ArrowLeft size={16} color="#111" />
+                      <HugeiconsIcon icon={ArrowLeft01Icon} size={16} color="#111" />
                     </Pressable>
 
-                    {/* "Send $X to [Avatar] Name for" */}
+                    {/* "Send $Cancel01Icon to [Avatar] Name for" */}
                     <View className="mb-5">
                       <Text className="font-subtitle text-[26px] leading-[32px] text-text-primary">
                         Send{' '}
@@ -838,7 +839,7 @@ function P2PSendScreenContent() {
               entering={FadeInDown.springify().damping(20)}
               className="w-full rounded-3xl bg-white p-6">
               <View className="mb-4 size-12 items-center justify-center rounded-full bg-amber-50">
-                <AlertTriangle size={24} color="#F59E0B" />
+                <HugeiconsIcon icon={Alert02Icon} size={24} color="#F59E0B" />
               </View>
               <Text className="font-subtitle text-[20px] text-text-primary">
                 {pendingNonUserRecipient.name} isn&apos;t on Rail yet

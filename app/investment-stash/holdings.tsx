@@ -2,10 +2,11 @@ import React from 'react';
 import { FlatList, Image, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useInvestmentPositions } from '@/api/hooks/useInvestment';
 import type { InvestmentPositionDetail } from '@/api/types/investment';
+import { ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const PAGE_SIZE = 20;
 
@@ -97,7 +98,7 @@ export default function InvestmentHoldingsScreen() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
           className="mr-1 h-11 w-11 items-center justify-center">
-          <ChevronLeft size={24} color="#111827" strokeWidth={2} />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#111827" strokeWidth={2} />
         </Pressable>
         <View className="flex-1">
           <Text className="font-button text-[17px] text-gray-900">Holdings</Text>
@@ -161,7 +162,7 @@ export default function InvestmentHoldingsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Previous page"
                   className={`min-h-[44px] flex-row items-center gap-1 rounded-xl bg-gray-100 px-4 py-2.5 ${!hasPrev ? 'opacity-0' : ''}`}>
-                  <ChevronLeft size={16} color="#111827" strokeWidth={2} />
+                  <HugeiconsIcon icon={ArrowLeft01Icon} size={16} color="#111827" strokeWidth={2} />
                   <Text className="font-button text-[13px] text-gray-900">Prev</Text>
                 </Pressable>
                 <Text className="font-caption text-xs text-gray-400">Page {page}</Text>
@@ -175,7 +176,7 @@ export default function InvestmentHoldingsScreen() {
                   accessibilityLabel="Next page"
                   className={`min-h-[44px] flex-row items-center gap-1 rounded-xl bg-gray-100 px-4 py-2.5 ${!hasMore ? 'opacity-0' : ''}`}>
                   <Text className="font-button text-[13px] text-gray-900">Next</Text>
-                  <ChevronRight size={16} color="#111827" strokeWidth={2} />
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#111827" strokeWidth={2} />
                 </Pressable>
               </View>
               {isFetching && (

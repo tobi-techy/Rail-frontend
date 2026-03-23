@@ -1,7 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Check, ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -21,6 +20,8 @@ import {
 import { useKycStore } from '@/stores/kycStore';
 import { useStartDiditSession } from '@/api/hooks/useKYC';
 import { useAuthStore } from '@/stores/authStore';
+import { ArrowLeft01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const DISCLOSURE_COPY: Record<keyof KycDisclosures, string> = {
   is_control_person: 'I am a control person of a publicly traded company.',
@@ -79,7 +80,6 @@ export default function KycDocumentsScreen() {
   const canContinue =
     taxId.trim().length > 0 &&
     Boolean(employmentStatus) &&
-    investmentPurposes.length > 0 &&
     disclosuresConfirmed &&
     !startSession.isPending &&
     !startSession.isError;
@@ -108,7 +108,11 @@ export default function KycDocumentsScreen() {
         acting_as_intermediary: actingAsIntermediary || undefined,
       });
       setDiditSession(result.session_token, result.session_id);
-      router.push('/kyc/didit-sdk');
+      if (result.status === 'existing_session') {
+        router.replace('/kyc/pending');
+      } else {
+        router.push('/kyc/didit-sdk');
+      }
     } catch {
       setSubmitError('Could not start verification session. Please try again.');
     }
@@ -123,7 +127,7 @@ export default function KycDocumentsScreen() {
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Go back">
-            <ChevronLeft size={22} color="#111827" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#111827" />
           </Pressable>
           <Text className="font-subtitle text-[13px] text-gray-500">Step 2 of 3</Text>
           <View className="size-11" />
@@ -217,7 +221,7 @@ export default function KycDocumentsScreen() {
                       className={`size-5 items-center justify-center rounded ${
                         selected ? 'bg-gray-900' : 'border border-gray-300 bg-white'
                       }`}>
-                      {selected ? <Check size={12} color="#FFFFFF" strokeWidth={3} /> : null}
+                      {selected ? <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#FFFFFF" strokeWidth={3} /> : null}
                     </View>
                   </Pressable>
                 );
@@ -280,7 +284,7 @@ export default function KycDocumentsScreen() {
                 className={`mt-0.5 size-5 items-center justify-center rounded border ${
                   disclosuresConfirmed ? 'border-gray-900 bg-gray-900' : 'border-gray-400 bg-white'
                 }`}>
-                {disclosuresConfirmed ? <Check size={12} color="#FFFFFF" strokeWidth={3} /> : null}
+                {disclosuresConfirmed ? <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#FFFFFF" strokeWidth={3} /> : null}
               </View>
               <Text className="flex-1 font-body text-[12px] leading-5 text-gray-700">
                 I confirm all submitted information is accurate and belongs to me.

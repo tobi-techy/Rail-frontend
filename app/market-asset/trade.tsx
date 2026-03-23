@@ -2,12 +2,13 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Image, Pressable, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft } from 'lucide-react-native';
 import { useMarketInstrument, useStation } from '@/api/hooks';
 import { Keypad } from '@/components/molecules/Keypad';
 import { Button } from '@/components/ui';
 import { getEffectivePrice } from '@/utils/market';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
+import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 type OrderSide = 'buy' | 'sell';
 type KeypadInput =
@@ -185,7 +186,7 @@ export default function MarketTradeAmountScreen() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
           className="mr-2 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/10">
-          <ArrowLeft size={20} color="#FFFFFF" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#FFFFFF" />
         </Pressable>
         <Text className="font-subtitle text-subtitle text-white">Order type: Market</Text>
       </View>

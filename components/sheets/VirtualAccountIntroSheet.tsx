@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { Building2, Zap, ShieldCheck } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { BottomSheet } from './BottomSheet';
 import { Button } from '@/components/ui';
@@ -9,28 +8,31 @@ import { useCreateVirtualAccount } from '@/api/hooks/useVirtualAccount';
 import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import { BankIcon } from '@/assets/svg/filled';
 import { UsdIcon } from '@/assets/svg';
+import { Building04Icon, ShieldKeyIcon, ZapIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 interface VirtualAccountIntroSheetProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  currency?: 'USD' | 'EUR' | 'GBP';
 }
 
 const FEATURES = [
   {
-    icon: <Building2 size={20} color="#3B82F6" />,
+    icon: <HugeiconsIcon icon={Building04Icon} size={20} color="#3B82F6" />,
     bg: '#EFF6FF',
     title: 'Your own bank account',
     desc: 'A dedicated USD account in your name, ready for ACH and wire transfers.',
   },
   {
-    icon: <Zap size={20} color="#F59E0B" />,
+    icon: <HugeiconsIcon icon={ZapIcon} size={20} color="#F59E0B" />,
     bg: '#FFFBEB',
     title: 'Instant conversion',
     desc: 'Deposits auto-convert to USDC and split 70/30 into spend and invest.',
   },
   {
-    icon: <ShieldCheck size={20} color="#10B981" />,
+    icon: <HugeiconsIcon icon={ShieldKeyIcon} size={20} color="#10B981" />,
     bg: '#ECFDF5',
     title: 'Secured by Bridge',
     desc: 'Bank-grade infrastructure with FDIC-eligible custody partners.',
@@ -41,6 +43,7 @@ export function VirtualAccountIntroSheet({
   visible,
   onClose,
   onSuccess,
+  currency = 'USD',
 }: VirtualAccountIntroSheetProps) {
   const [awaitingTos, setAwaitingTos] = useState(false);
   const { mutate: create, isPending, error, reset } = useCreateVirtualAccount();
@@ -54,7 +57,7 @@ export function VirtualAccountIntroSheet({
   };
 
   const handleCreate = () => {
-    create('USD', {
+    create(currency, {
       onSuccess,
       onError: async (err) => {
         if (isTosError(err)) {
@@ -66,7 +69,7 @@ export function VirtualAccountIntroSheet({
             await WebBrowser.openAuthSessionAsync(url);
             setAwaitingTos(false);
             reset();
-            create('USD', { onSuccess });
+            create(currency, { onSuccess });
           } catch {
             setAwaitingTos(false);
           }
@@ -93,7 +96,7 @@ export function VirtualAccountIntroSheet({
 
       {/* Title */}
       <Text className="mb-2 text-center font-subtitle text-[22px] leading-7 text-gray-900">
-        Get a virtual USD account
+        Get a virtual {currency} account
       </Text>
       <Text className="mb-8 text-center font-body text-[15px] leading-[22px] text-gray-400">
         Receive bank transfers directly into Rail.{'\n'}Your money starts working immediately.
@@ -146,7 +149,7 @@ export function VirtualAccountIntroSheet({
 
       {/* CTA */}
       <Button
-        title={loading ? 'Setting up…' : 'Create USD Account'}
+        title={loading ? 'Setting up…' : `Create ${currency} Account`}
         onPress={handleCreate}
         disabled={loading}
         variant="black"

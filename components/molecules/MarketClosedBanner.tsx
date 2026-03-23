@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import { Clock } from 'lucide-react-native';
 import { useMarketStatus } from '@/api/hooks/useInvestment';
+import { Clock01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export function MarketClosedBanner() {
   const { data: market } = useMarketStatus();
@@ -41,7 +42,7 @@ export function MarketClosedBanner() {
 
   return (
     <View className="mx-4 mb-3 flex-row items-center gap-x-2 px-1 py-1">
-      <Clock size={13} color="#78716C" />
+      <HugeiconsIcon icon={Clock01Icon} size={13} color="#78716C" />
       <Text className="font-body text-[12px] text-stone-500">
         Market closed · Opens {market.next_open_et}
       </Text>

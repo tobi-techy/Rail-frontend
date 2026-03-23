@@ -9,16 +9,6 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  ArrowLeft,
-  CheckCircle2,
-  ShieldAlert,
-  Copy,
-  Globe,
-  Fuel,
-  Building2,
-  User,
-} from 'lucide-react-native';
 import { router } from 'expo-router';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -33,6 +23,8 @@ import { isKycInReview } from '@/api/types/kyc';
 import { formatCurrency } from './utils';
 import type { MethodCopy } from './types';
 import { cn } from '@/utils/cn';
+import { ArrowLeft01Icon, Building04Icon, CheckmarkCircle02Icon, Copy01Icon, FuelIcon, InternetIcon, ShieldEnergyIcon, UserIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 type FiatKycRequiredScreenProps = {
   kycStatus: any;
@@ -340,7 +332,7 @@ export function FiatKycRequiredScreen({
           <StatusBar barStyle="dark-content" backgroundColor="white" />
           <View className="flex-row items-center px-5 pb-4 pt-2">
             <TouchableOpacity onPress={() => router.back()} hitSlop={12} className="mr-4 p-1">
-              <ArrowLeft size={24} color="#111" />
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#111" />
             </TouchableOpacity>
             <Text className="font-subtitle text-lg text-gray-900">Withdraw</Text>
           </View>
@@ -348,7 +340,7 @@ export function FiatKycRequiredScreen({
             {isPending ? (
               <>
                 <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
-                  <ShieldAlert size={32} color="#F59E0B" />
+                  <HugeiconsIcon icon={ShieldEnergyIcon} size={32} color="#F59E0B" />
                 </View>
                 <Text className="mb-2 font-subtitle text-xl text-gray-900">
                   Verification in Progress
@@ -368,7 +360,7 @@ export function FiatKycRequiredScreen({
             ) : (
               <>
                 <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
-                  <ShieldAlert size={32} color="#F59E0B" />
+                  <HugeiconsIcon icon={ShieldEnergyIcon} size={32} color="#F59E0B" />
                 </View>
                 <Text className="mb-2 font-subtitle text-xl text-gray-900">
                   Verification Required
@@ -439,7 +431,7 @@ export function AuthorizeScreen({
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Go back">
-            <ArrowLeft size={20} color="#111111" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111111" />
           </TouchableOpacity>
         </View>
 
@@ -799,7 +791,7 @@ export function WithdrawConfirmSheet({
             <Text style={{ fontVariant: ['tabular-nums'] }}>${formatCurrency(numericAmount)}</Text>
           </Text>
           <View className="mt-1 flex-row items-center gap-1">
-            <Building2 size={13} color="#9CA3AF" />
+            <HugeiconsIcon icon={Building04Icon} size={13} color="#9CA3AF" />
             <Text className="font-body text-[13px] text-text-secondary">{methodTitle}</Text>
           </View>
         </View>
@@ -851,7 +843,7 @@ export function WithdrawConfirmSheet({
                       onPress={() => Clipboard.setString(destinationAddress)}
                       hitSlop={8}
                       className="ml-3">
-                      <Copy size={15} color="#9CA3AF" />
+                      <HugeiconsIcon icon={Copy01Icon} size={15} color="#9CA3AF" />
                     </Pressable>
                   ) : null}
                 </View>
@@ -861,7 +853,7 @@ export function WithdrawConfirmSheet({
                   <View className="mx-4 h-px bg-gray-100" />
                   <View className="flex-row items-center justify-between px-4 py-3.5">
                     <View className="flex-row items-center gap-2">
-                      <Globe size={15} color="#6B7280" />
+                      <HugeiconsIcon icon={InternetIcon} size={15} color="#6B7280" />
                       <Text className="font-body text-[14px] text-text-secondary">Network</Text>
                     </View>
                     <Text className="font-subtitle text-[14px] text-text-primary">
@@ -878,7 +870,7 @@ export function WithdrawConfirmSheet({
             <>
               <View className="flex-row items-center justify-between px-4 py-3.5">
                 <View className="flex-row items-center gap-2">
-                  <User size={15} color="#6B7280" />
+                  <HugeiconsIcon icon={UserIcon} size={15} color="#6B7280" />
                   <Text className="font-body text-[14px] text-text-secondary">Recipient</Text>
                 </View>
                 <View className="items-end">
@@ -927,7 +919,7 @@ export function WithdrawConfirmSheet({
               <View className="mx-4 h-px bg-gray-100" />
               <View className="flex-row items-center justify-between px-4 py-3.5">
                 <View className="flex-row items-center gap-2">
-                  <Fuel size={15} color="#6B7280" />
+                  <HugeiconsIcon icon={FuelIcon} size={15} color="#6B7280" />
                   <Text className="font-body text-[14px] text-text-secondary">Fees</Text>
                 </View>
                 <Text className="font-subtitle text-[14px] text-text-primary">
@@ -937,7 +929,7 @@ export function WithdrawConfirmSheet({
               <View className="mx-4 h-px bg-gray-100" />
               <View className="flex-row items-center justify-between px-4 py-3.5">
                 <View className="flex-row items-center gap-2">
-                  <Building2 size={15} color="#6B7280" />
+                  <HugeiconsIcon icon={Building04Icon} size={15} color="#6B7280" />
                   <Text className="font-body text-[14px] text-text-secondary">Total cost</Text>
                 </View>
                 <Text className="font-subtitle text-[14px] text-text-primary">
@@ -993,7 +985,7 @@ export function WithdrawSubmissionSheet({
           </View>
         ) : (
           <View className="size-16 items-center justify-center rounded-full bg-green-100">
-            <CheckCircle2 size={28} color="#10B981" />
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={28} color="#10B981" />
           </View>
         )}
         <Text className="mt-5 text-center font-subtitle text-[30px] leading-[36px] text-text-primary">

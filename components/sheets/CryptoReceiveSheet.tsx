@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Pressable } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import QRCodeStyled from 'react-native-qrcode-styled';
-import { Copy, Check, RefreshCw } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
 import { Button } from '../ui';
 import { useDepositAddress } from '@/api/hooks/useWallet';
@@ -10,6 +9,8 @@ import { getChainConfig } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
 import type { WalletChain } from '@/api/types';
+import { CheckmarkCircle01Icon, Copy01Icon, RefreshIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
   SOL: SolanaIcon,
@@ -109,7 +110,7 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
               }}
               className="flex-row items-center gap-2 rounded-full bg-gray-100 px-5 py-2.5"
               hitSlop={8}>
-              <RefreshCw size={16} color="#374151" />
+              <HugeiconsIcon icon={RefreshIcon} size={16} color="#374151" />
               <Text className="font-subtitle text-sm text-gray-700">Retry</Text>
             </Pressable>
           )}
@@ -160,7 +161,13 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
         <Button
           title={copied ? 'Copied!' : 'Copy address'}
           onPress={handleCopy}
-          leftIcon={copied ? <Check size={18} color="#16a34a" /> : <Copy size={18} color="#000" />}
+          leftIcon={
+            copied ? (
+              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={18} color="#16a34a" />
+            ) : (
+              <HugeiconsIcon icon={Copy01Icon} size={18} color="#000" />
+            )
+          }
           variant="white"
           size="large"
           className="w-full"

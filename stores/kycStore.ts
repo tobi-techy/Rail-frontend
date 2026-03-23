@@ -51,6 +51,7 @@ interface KycState {
   setMostRecentOccupation: (value: string | null) => void;
   setActingAsIntermediary: (value: boolean) => void;
   toggleInvestmentPurpose: (value: InvestmentPurpose) => void;
+  clearInvestmentPurpose: () => void;
   setDisclosure: (key: keyof KycDisclosures, value: boolean) => void;
   setDisclosuresConfirmed: (confirmed: boolean) => void;
   setMissingProfileFields: (fields: string[]) => void;
@@ -115,6 +116,8 @@ export const useKycStore = create<KycState>()(
           if (state.investmentPurposes.length >= INVESTMENT_PURPOSE_OPTIONS.length) return state;
           return { investmentPurposes: [...state.investmentPurposes, value] };
         }),
+
+      clearInvestmentPurposes: () => set({ investmentPurposes: [] }),
 
       setDisclosure: (key, value) =>
         set((state) => ({ disclosures: { ...state.disclosures, [key]: value } })),

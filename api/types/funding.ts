@@ -8,7 +8,10 @@ export interface VirtualAccount {
   account_number: string;
   routing_number: string;
   bank_name?: string;
+  bank_address?: string;
   beneficiary_name?: string;
+  beneficiary_address?: string;
+  payment_rails?: string[];
   status: 'pending' | 'active' | 'closed' | 'failed';
   currency: 'USD' | 'EUR' | 'GBP';
   created_at: string;

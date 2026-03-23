@@ -10,7 +10,6 @@ import {
   View,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { X, ScanLine, AlertCircle } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
 import { Button } from '../ui';
 import { PhantomIcon, SolflareIcon } from '@/assets/svg';
@@ -20,6 +19,8 @@ import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { SOLANA_MAINNET_CHAIN } from '@/utils/chains';
 import { parseSolanaPayUrl, type SolanaPayRequest } from '@/utils/solanaPayUrl';
 import { DEFAULT_MAINNET_USDC_MINT, type SupportedFundingWallet } from '@/services/solanaFunding';
+import { AlertCircleIcon, Cancel01Icon, ScanIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 interface SolanaPayScanSheetProps {
   visible: boolean;
@@ -152,7 +153,7 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
             />
           ) : (
             <View className="flex-1 items-center justify-center px-8">
-              <ScanLine size={48} color="#fff" />
+              <HugeiconsIcon icon={ScanIcon} size={48} color="#fff" />
               <Text className="mt-4 text-center font-subtitle text-xl text-white">
                 {permissionDenied ? 'Camera access denied' : 'Camera permission needed'}
               </Text>
@@ -189,7 +190,7 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
               className="size-11 items-center justify-center rounded-full bg-black/50"
               accessibilityRole="button"
               accessibilityLabel="Close scanner">
-              <X size={20} color="#fff" />
+              <HugeiconsIcon icon={Cancel01Icon} size={20} color="#fff" />
             </Pressable>
           </View>
 
@@ -229,7 +230,7 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
           </>
         ) : (
           <View className="flex-row items-center gap-2">
-            <AlertCircle size={18} color="#F59E0B" />
+            <HugeiconsIcon icon={AlertCircleIcon} size={18} color="#F59E0B" />
             <Text className="font-body text-sm text-amber-600">No amount specified</Text>
           </View>
         )}
@@ -246,7 +247,7 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
 
       {!!error && (
         <View className="mb-4 flex-row items-start gap-2 rounded-xl bg-red-50 px-4 py-3">
-          <AlertCircle size={16} color="#EF4444" style={{ marginTop: 1 }} />
+          <HugeiconsIcon icon={AlertCircleIcon} size={16} color="#EF4444" style={{ marginTop: 1 }} />
           <View className="flex-1">
             <Text className="font-body text-sm text-red-600">{error}</Text>
             {walletMissing && (

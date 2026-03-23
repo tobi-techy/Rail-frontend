@@ -1,19 +1,27 @@
 import React, { useCallback } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Check, ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui';
 import { COUNTRY_KYC_REQUIREMENTS, COUNTRY_LABELS, type KycDisclosures } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
+import { ArrowLeft01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const DISCLOSURE_COPY: Record<keyof KycDisclosures, string> = {
   is_control_person: 'I am a control person of a publicly traded company.',
   is_affiliated_exchange_or_finra: 'I am affiliated with a stock exchange or FINRA member.',
   is_politically_exposed: 'I am a politically exposed person (PEP).',
   immediate_family_exposed: 'An immediate family member is a politically exposed person.',
+};
+
+const DISCLOSURE_HELP: Record<keyof KycDisclosures, string> = {
+  is_control_person: 'A control person is someone who has significant influence over a publicly traded company (e.g., CEO, CFO, major shareholder).',
+  is_affiliated_exchange_or_finra: 'Select "Yes" if you work for a stock exchange, FINRA member firm, or are a registered broker.',
+  is_politically_exposed: 'A PEP is someone entrusted with prominent public functions (e.g., government officials, politicians, judges).',
+  immediate_family_exposed: 'Select "Yes" if any immediate family member (spouse, parent, sibling, child) is a PEP.',
 };
 
 export default function KycDisclosuresScreen() {
@@ -55,7 +63,7 @@ export default function KycDisclosuresScreen() {
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Go back">
-            <ChevronLeft size={22} color="#111827" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#111827" />
           </Pressable>
           <Text className="font-subtitle text-[13px] text-gray-500">Step 4 of 4</Text>
           <View className="size-11" />
@@ -87,6 +95,9 @@ export default function KycDisclosuresScreen() {
                   className={`py-4 ${index < requiredDisclosureKeys.length - 1 ? 'border-b border-gray-100' : ''}`}>
                   <Text className="font-body text-[14px] leading-5 text-gray-800">
                     {DISCLOSURE_COPY[key]}
+                  </Text>
+                  <Text className="mt-2 font-caption text-[12px] leading-4 text-gray-500">
+                    {DISCLOSURE_HELP[key]}
                   </Text>
                   <View className="mt-3 flex-row gap-2">
                     {(['No', 'Yes'] as const).map((label) => {
@@ -125,7 +136,7 @@ export default function KycDisclosuresScreen() {
                 className={`mt-0.5 size-5 items-center justify-center rounded border ${
                   disclosuresConfirmed ? 'border-gray-900 bg-gray-900' : 'border-gray-400 bg-white'
                 }`}>
-                {disclosuresConfirmed && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+                {disclosuresConfirmed && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#FFFFFF" strokeWidth={3} />}
               </View>
               <Text className="flex-1 font-body text-[13px] leading-5 text-gray-700">
                 I confirm all submitted information is accurate and belongs to me.

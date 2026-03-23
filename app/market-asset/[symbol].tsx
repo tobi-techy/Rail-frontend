@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Bell } from 'lucide-react-native';
 import { LineGraph, type GraphPoint } from 'react-native-graph';
 import { useMarketBars, useMarketInstrument } from '@/api/hooks';
 import type { Currency } from '@/stores/uiStore';
@@ -20,6 +19,8 @@ import { Button } from '@/components/ui';
 import { useUIStore } from '@/stores';
 import { layout, responsive } from '@/utils/layout';
 import type { InvestmentPositionDetail } from '@/api/types/investment';
+import { ArrowLeft01Icon, Notification03Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 type RangeKey = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y';
 
@@ -286,7 +287,7 @@ export default function MarketAssetDetailScreen() {
               accessibilityRole="button"
               accessibilityLabel="Go back"
               className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-surface">
-              <ArrowLeft size={20} color="#111111" />
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111111" />
             </Pressable>
 
             <View className="mx-2 flex-1">
@@ -327,7 +328,7 @@ export default function MarketAssetDetailScreen() {
               accessibilityRole="button"
               accessibilityLabel="Market alerts"
               className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-surface">
-              <Bell size={19} color="#111111" />
+              <HugeiconsIcon icon={Notification03Icon} size={19} color="#111111" />
             </Pressable>
           </View>
         </View>

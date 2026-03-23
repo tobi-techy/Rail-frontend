@@ -3,19 +3,6 @@ import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo, useR
 import { router, useNavigation, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  LayoutGrid,
-  ChevronRight,
-  MessageCircle,
-  Landmark,
-  Wallet,
-  Users,
-  CreditCard,
-  PiggyBank,
-  Banknote,
-} from 'lucide-react-native';
 import Avatar from '@zamplyy/react-native-nice-avatar';
 import { getAvatarConfig } from '@/utils/avatarConfig';
 
@@ -56,6 +43,20 @@ import { convertFromUsd, formatCurrencyAmount, type FxRates } from '@/utils/curr
 import gleap from '@/utils/gleap';
 import type { Transaction } from '@/components/molecules/TransactionItem';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import {
+  ArrowDownLeft01Icon,
+  ArrowRight01Icon,
+  ArrowUpRight01Icon,
+  BankIcon,
+  Money01Icon,
+  CreditCardIcon,
+  LayoutGridIcon,
+  Message01Icon,
+  SavingsIcon,
+  UserGroupIcon,
+  Wallet01Icon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -124,7 +125,7 @@ function FundingRow({ action, isLast }: { action: FundingAction; isLast: boolean
           <Text className="font-caption text-[11px] text-gray-400">Soon</Text>
         </View>
       ) : (
-        <ChevronRight size={20} color="#9CA3AF" />
+        <HugeiconsIcon icon={ArrowRight01Icon} size={20} color="#9CA3AF" />
       )}
     </AnimatedPressable>
   );
@@ -266,7 +267,7 @@ function DashboardScreen() {
       headerRight: () => (
         <View className="flex-row items-center gap-x-4 pr-md">
           <Pressable onPress={() => gleap.open()} hitSlop={8}>
-            <MessageCircle size={22} color="#111" strokeWidth={1.8} />
+            <HugeiconsIcon icon={Message01Icon} size={22} color="#111" strokeWidth={1.8} />
           </Pressable>
           <NotificationBell />
         </View>
@@ -294,6 +295,7 @@ function DashboardScreen() {
   }, [deposits.data, withdrawals.data]);
 
   const kycApproved = kycStatus?.status === 'approved' && kycStatus?.verified === true;
+  const bridgeActive = kycStatus?.bridge?.status === 'active';
 
   const hasCard = Boolean(cardsData?.cards && cardsData.cards.length > 0);
 
@@ -316,7 +318,7 @@ function DashboardScreen() {
         id: 'fiat',
         label: 'Fiat',
         sublabel: 'Receive assets via US bank account',
-        icon: <Landmark size={26} color="#6366F1" />,
+        icon: <HugeiconsIcon icon={BankIcon} size={26} color="#6366F1" />,
         onPress: () => {
           setShowReceiveSheet(false);
           router.push('/virtual-account' as never);
@@ -326,7 +328,7 @@ function DashboardScreen() {
         id: 'crypto',
         label: 'Crypto',
         sublabel: 'Receive assets via wallet address',
-        icon: <Wallet size={26} color="#6366F1" />,
+        icon: <HugeiconsIcon icon={Wallet01Icon} size={26} color="#6366F1" />,
         onPress: () => {
           setShowReceiveSheet(false);
           router.push('/receive' as never);
@@ -336,7 +338,7 @@ function DashboardScreen() {
         id: 'more',
         label: 'More Options',
         sublabel: 'Pick from several other options to fund account',
-        icon: <LayoutGrid width={28} height={28} color="#6366F1" />,
+        icon: <HugeiconsIcon icon={LayoutGridIcon} width={28} height={28} color="#6366F1" />,
         onPress: () => receiveNav.navigateTo('receive-more'),
       },
     ],
@@ -390,21 +392,21 @@ function DashboardScreen() {
         id: 'fiat',
         label: 'Fiat',
         sublabel: 'Send to US bank account',
-        icon: <Landmark size={26} color="#6366F1" />,
+        icon: <HugeiconsIcon icon={BankIcon} size={26} color="#6366F1" />,
         onPress: () => startWithdrawal('fiat'),
       },
       {
         id: 'crypto',
         label: 'To Wallet',
         sublabel: 'Send to wallet address',
-        icon: <Wallet size={26} color="#6366F1" />,
+        icon: <HugeiconsIcon icon={Wallet01Icon} size={26} color="#6366F1" />,
         onPress: () => startWithdrawal('crypto'),
       },
       {
         id: 'more',
         label: 'More Options',
         sublabel: 'Pick from several other options to send funds out',
-        icon: <LayoutGrid width={28} height={28} color="#6366F1" />,
+        icon: <HugeiconsIcon icon={LayoutGridIcon} width={28} height={28} color="#6366F1" />,
         onPress: () => sendNav.navigateTo('send-more'),
       },
     ],
@@ -422,7 +424,7 @@ function DashboardScreen() {
         id: 'p2p',
         label: 'Send to People',
         sublabel: 'Via RailTag, email, or phone',
-        icon: <Users size={26} color="#FF2E01" />,
+        icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#FF2E01" />,
         onPress: startP2P,
       },
       ...(isAndroid
@@ -515,15 +517,15 @@ function DashboardScreen() {
         <View className="mb-2 flex-row gap-3">
           <Button
             title="Receive"
-            onPress={() => (kycApproved ? setShowReceiveSheet(true) : setShowKYCSheet(true))}
-            leftIcon={<ArrowDownLeft size={20} color="white" />}
+            onPress={() => (bridgeActive ? setShowReceiveSheet(true) : setShowKYCSheet(true))}
+            leftIcon={<HugeiconsIcon icon={ArrowDownLeft01Icon} size={20} color="white" />}
             size="small"
             variant="black"
           />
           <Button
             title="Send"
-            onPress={() => (kycApproved ? setShowSendSheet(true) : setShowKYCSheet(true))}
-            leftIcon={<ArrowUpRight size={20} color="white" />}
+            onPress={() => (bridgeActive ? setShowSendSheet(true) : setShowKYCSheet(true))}
+            leftIcon={<HugeiconsIcon icon={ArrowUpRight01Icon} size={20} color="white" />}
             size="small"
             variant="black"
           />
@@ -534,7 +536,7 @@ function DashboardScreen() {
             title="Spend"
             amount={spend.dollars}
             amountCents={spend.cents}
-            icon={<CreditCard size={26} color="white" strokeWidth={1.8} />}
+            icon={<HugeiconsIcon icon={CreditCardIcon} size={26} color="white" strokeWidth={1.8} />}
             cardColor="#FF2E01"
             className="flex-1"
             isLoading={isStationPending}
@@ -544,7 +546,7 @@ function DashboardScreen() {
             title="Stash"
             amount={stash.dollars}
             amountCents={stash.cents}
-            icon={<PiggyBank size={26} color="white" strokeWidth={1.8} />}
+            icon={<HugeiconsIcon icon={SavingsIcon} size={26} color="white" strokeWidth={1.8} />}
             cardColor="#00E011"
             className="flex-1"
             isLoading={isStationPending}
@@ -567,7 +569,7 @@ function DashboardScreen() {
             title="Micro Loan"
             amount=""
             getStarted="Coming soon"
-            icon={<Banknote size={26} color="white" strokeWidth={1.8} />}
+            icon={<HugeiconsIcon icon={Money01Icon} size={26} color="white" strokeWidth={1.8} />}
             cardColor="#4F46E5"
             className="max-w-[50%] flex-1"
             badge={{ label: 'Soon', color: 'gray' }}
@@ -604,7 +606,7 @@ function DashboardScreen() {
                   accessibilityLabel="See all transactions"
                   className="min-h-[44px] flex-row items-center">
                   <Text className="font-caption text-caption text-text-secondary">See all</Text>
-                  <ChevronRight size={16} color="#757575" />
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#757575" />
                 </Pressable>
               </View>
               <TransactionList

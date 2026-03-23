@@ -9,7 +9,8 @@ import Animated, {
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { X, ChevronLeft } from 'lucide-react-native';
+import { ArrowLeft01Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
 
@@ -156,7 +157,7 @@ export function NavigableBottomSheet({
                   hitSlop={12}
                   accessibilityLabel="Back"
                   accessibilityRole="button">
-                  <ChevronLeft size={24} color="#1F2937" />
+                  <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#1F2937" />
                 </Pressable>
               ) : (
                 <View className="w-6" />
@@ -180,7 +181,7 @@ export function NavigableBottomSheet({
                   hitSlop={12}
                   accessibilityLabel="Close"
                   accessibilityRole="button">
-                  <X size={24} color="#757575" />
+                  <HugeiconsIcon icon={Cancel01Icon} size={24} color="#757575" />
                 </Pressable>
               ) : (
                 <View className="w-6" />

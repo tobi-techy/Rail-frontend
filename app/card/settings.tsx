@@ -13,19 +13,6 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import {
-  ArrowLeft,
-  Snowflake,
-  Sun,
-  Shield,
-  HelpCircle,
-  Wallet,
-  FileText,
-  Repeat2,
-  Scale,
-  MessageSquare,
-  ScrollText,
-} from 'lucide-react-native';
-import {
   useCards,
   useFreezeCard,
   useUnfreezeCard,
@@ -40,6 +27,8 @@ import { BottomSheet, SettingsSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
 import { WheelPicker } from '@/components/molecules';
 import { Skeleton } from '@/components/atoms/Skeleton';
+import { ArrowLeft01Icon, File01Icon, HelpCircleIcon, Message01Icon, RepeatIcon, BalanceScaleIcon, Scroll01Icon, Shield01Icon, SnowIcon, Sun01Icon, Wallet01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -188,10 +177,10 @@ export default function CardSettingsScreen() {
 
   const handleAddToWallet = useCallback(() => {
     if (Platform.OS !== 'ios') {
-      showInfo('Not Available', 'Apple Wallet is only available on iOS');
+      showInfo('Not Available', 'Apple Wallet01Icon is only available on iOS');
       return;
     }
-    showInfo('Coming Soon', 'Apple Wallet integration will be available soon');
+    showInfo('Coming Soon', 'Apple Wallet01Icon integration will be available soon');
   }, [showInfo]);
 
   if (isLoading) {
@@ -238,7 +227,7 @@ export default function CardSettingsScreen() {
             }}
             hitSlop={12}
             className="mr-4 p-1">
-            <ArrowLeft size={24} color="#111" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#111" />
           </TouchableOpacity>
           <Text className="font-subtitle text-lg text-text-primary">Card Settings</Text>
         </View>
@@ -279,9 +268,9 @@ export default function CardSettingsScreen() {
         {Platform.OS === 'ios' && (
           <View className="mx-md mb-2">
             <Button
-              title="Add to Apple Wallet"
+              title="Add to Apple Wallet01Icon"
               variant="black"
-              leftIcon={<Wallet size={18} color="#fff" />}
+              leftIcon={<HugeiconsIcon icon={Wallet01Icon} size={18} color="#fff" />}
               onPress={handleAddToWallet}
               flex
             />
@@ -291,28 +280,28 @@ export default function CardSettingsScreen() {
         <Section title="Card">
           <SettingButton
             icon={
-              isFrozen ? <Sun size={22} color="#F59E0B" /> : <Snowflake size={22} color="#3B82F6" />
+              isFrozen ? <HugeiconsIcon icon={Sun01Icon} size={22} color="#F59E0B" /> : <HugeiconsIcon icon={SnowIcon} size={22} color="#3B82F6" />
             }
             label={isFrozen ? 'Unfreeze' : 'Freeze Card'}
             onPress={() => setActiveSheet('freeze')}
           />
           <SettingButton
-            icon={<Scale size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={BalanceScaleIcon} size={22} color="#121212" />}
             label="Daily Limit"
             onPress={() => setActiveSheet('limit')}
           />
           <SettingButton
-            icon={<FileText size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={File01Icon} size={22} color="#121212" />}
             label="Statement"
             onPress={() => setActiveSheet('statement')}
           />
           <SettingButton
-            icon={<Shield size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={Shield01Icon} size={22} color="#121212" />}
             label="Change PIN"
             onPress={() => showInfo('Coming Soon', 'PIN management coming soon')}
           />
           <SettingButton
-            icon={<Repeat2 size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={RepeatIcon} size={22} color="#121212" />}
             label="Round-ups"
             onPress={() => setActiveSheet('roundup')}
           />
@@ -320,17 +309,17 @@ export default function CardSettingsScreen() {
 
         <Section title="About">
           <SettingButton
-            icon={<HelpCircle size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={HelpCircleIcon} size={22} color="#121212" />}
             label="Support"
             onPress={() => setActiveSheet('support')}
           />
           <SettingButton
-            icon={<MessageSquare size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={Message01Icon} size={22} color="#121212" />}
             label="Feedback"
             onPress={() => setActiveSheet('feedback')}
           />
           <SettingButton
-            icon={<ScrollText size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={Scroll01Icon} size={22} color="#121212" />}
             label="Terms"
             onPress={() => setActiveSheet('terms')}
           />
@@ -397,7 +386,7 @@ export default function CardSettingsScreen() {
           Export your card transaction summary for any month.
         </Text>
         <View className="mb-5 flex-row items-center gap-3 rounded-2xl border border-dashed border-gray-300 px-4 py-4">
-          <FileText size={18} color="#9CA3AF" />
+          <HugeiconsIcon icon={File01Icon} size={18} color="#9CA3AF" />
           <Text className="flex-1 font-body text-sm leading-5 text-text-secondary">
             Statements are available from the 2nd of the following month.
           </Text>

@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft } from 'lucide-react-native';
 import { useKycStore } from '@/stores/kycStore';
 import { useStartDiditSession } from '@/api/hooks/useKYC';
 import type { KycDisclosures } from '@/api/types/kyc';
+import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const SOURCE_OF_FUNDS = [
   { value: 'salary', label: 'Salary / Employment' },
@@ -140,7 +141,11 @@ export default function SourceOfFundsScreen() {
         acting_as_intermediary: intermediary,
       });
       setDiditSession(result.session_token, result.session_id);
-      router.push('/kyc/didit-sdk');
+      if (result.status === 'existing_session') {
+        router.replace('/kyc/pending');
+      } else {
+        router.push('/kyc/didit-sdk');
+      }
     } catch {
       setSubmitError('Could not start verification. Please try again.');
     }
@@ -153,7 +158,7 @@ export default function SourceOfFundsScreen() {
           onPress={() => router.back()}
           className="size-11 items-center justify-center"
           accessibilityRole="button">
-          <ChevronLeft size={24} color="#111827" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#111827" />
         </Pressable>
       </View>
 
@@ -168,9 +173,15 @@ export default function SourceOfFundsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}>
         <Text className="mb-1 font-display text-[28px] text-gray-900">About your funds</Text>
-        <Text className="mb-8 font-body text-[15px] leading-6 text-gray-500">
-          Required by our financial partner to activate your account.
+        <Text className="mb-6 font-body text-[15px] leading-6 text-gray-500">
+          This helps our financial partner verify your account and comply with regulations.
         </Text>
+
+        <View className="mb-6 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
+          <Text className="font-body text-[13px] leading-5 text-blue-800">
+            💡 Your information is securely encrypted and only used for account verification.
+          </Text>
+        </View>
 
         <Text className="mb-3 font-subtitle text-[13px] uppercase tracking-wide text-gray-400">
           Source of funds

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { ChevronDown, ChevronLeft, Check } from 'lucide-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -9,16 +8,19 @@ import { BottomSheet } from '@/components/sheets/BottomSheet';
 import { Button } from '@/components/ui';
 import { EMPLOYMENT_STATUS_OPTIONS, INVESTMENT_PURPOSE_OPTIONS } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
+import { ArrowDown01Icon, ArrowLeft01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export default function KycAboutYouScreen() {
   const insets = useSafeAreaInsets();
-  const { employmentStatus, investmentPurposes, setEmploymentStatus, toggleInvestmentPurpose } =
+  const { employmentStatus, investmentPurposes, setEmploymentStatus, toggleInvestmentPurpose, clearInvestmentPurposes } =
     useKycStore();
 
   const [showEmployment, setShowEmployment] = useState(false);
   const [showPurpose, setShowPurpose] = useState(false);
 
-  const canContinue = employmentStatus && investmentPurposes.length > 0;
+  // Employment is required, but investment goals are optional
+  const canContinue = Boolean(employmentStatus);
 
   const employmentLabel =
     EMPLOYMENT_STATUS_OPTIONS.find((o) => o.value === employmentStatus)?.label ??
@@ -30,7 +32,7 @@ export default function KycAboutYouScreen() {
           .map((v) => INVESTMENT_PURPOSE_OPTIONS.find((o) => o.value === v)?.label)
           .filter(Boolean)
           .join(', ')
-      : 'Select investment goals';
+      : 'Select investment goals (optional)';
 
   return (
     <ErrorBoundary>
@@ -41,7 +43,7 @@ export default function KycAboutYouScreen() {
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Go back">
-            <ChevronLeft size={22} color="#111827" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#111827" />
           </Pressable>
           <Text className="font-subtitle text-[13px] text-gray-500">Step 3 of 4</Text>
           <View className="size-11" />
@@ -78,13 +80,16 @@ export default function KycAboutYouScreen() {
                 numberOfLines={1}>
                 {employmentLabel}
               </Text>
-              <ChevronDown size={20} color="#9CA3AF" />
+              <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#9CA3AF" />
             </Pressable>
           </View>
 
-          {/* Investment Purpose */}
+          {/* Investment Purpose - Now Optional */}
           <View className="mt-6">
-            <Text className="mb-2 font-subtitle text-[14px] text-gray-900">Purpose of account</Text>
+            <View className="flex-row items-center justify-between">
+              <Text className="mb-2 font-subtitle text-[14px] text-gray-900">Purpose of account</Text>
+              <Text className="font-caption text-[12px] text-gray-400">Optional</Text>
+            </View>
             <Pressable
               onPress={() => setShowPurpose(true)}
               className="flex-row items-center justify-between rounded-2xl border border-gray-200 px-4 py-4"
@@ -97,8 +102,15 @@ export default function KycAboutYouScreen() {
                 numberOfLines={1}>
                 {purposeLabel}
               </Text>
-              <ChevronDown size={20} color="#9CA3AF" />
+              <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#9CA3AF" />
             </Pressable>
+            {investmentPurposes.length > 0 && (
+              <Pressable
+                onPress={() => clearInvestmentPurposes()}
+                className="mt-2 flex-row items-center gap-x-1">
+                <Text className="font-caption text-[12px] text-gray-500">Clear selection</Text>
+              </Pressable>
+            )}
           </View>
         </ScrollView>
 
@@ -110,6 +122,16 @@ export default function KycAboutYouScreen() {
             onPress={() => router.push('/kyc/disclosures')}
             disabled={!canContinue}
           />
+          <Pressable
+            onPress={() => {
+              clearInvestmentPurposes();
+              router.push('/kyc/disclosures');
+            }}
+            className="mt-2 py-2"
+            accessibilityRole="button"
+            accessibilityLabel="Skip investment goals">
+            <Text className="text-center font-body text-[14px] text-gray-500">Skip investment goals</Text>
+          </Pressable>
         </View>
 
         {/* Employment Bottom Sheet */}
@@ -132,7 +154,7 @@ export default function KycAboutYouScreen() {
                 }`}
                 accessibilityRole="button">
                 <Text className="font-body text-[16px] text-gray-900">{option.label}</Text>
-                {selected && <Check size={20} color="#111827" strokeWidth={2.5} />}
+                {selected && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} color="#111827" strokeWidth={2.5} />}
               </Pressable>
             );
           })}
@@ -147,7 +169,7 @@ export default function KycAboutYouScreen() {
           onClose={() => setShowPurpose(false)}
           showCloseButton={false}>
           <Text className="mb-1 font-display text-[22px] text-gray-900">Purpose of account</Text>
-          <Text className="mb-4 font-body text-[13px] text-gray-500">Select all that apply</Text>
+          <Text className="mb-4 font-body text-[13px] text-gray-500">Select all that apply (optional)</Text>
           {INVESTMENT_PURPOSE_OPTIONS.map((option, index) => {
             const selected = investmentPurposes.includes(option.value);
             return (
@@ -164,7 +186,7 @@ export default function KycAboutYouScreen() {
                   className={`size-6 items-center justify-center rounded ${
                     selected ? 'bg-gray-900' : 'border border-gray-300'
                   }`}>
-                  {selected && <Check size={14} color="#FFFFFF" strokeWidth={3} />}
+                  {selected && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} color="#FFFFFF" strokeWidth={3} />}
                 </View>
               </Pressable>
             );

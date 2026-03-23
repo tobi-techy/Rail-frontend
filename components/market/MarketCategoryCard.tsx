@@ -1,6 +1,9 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
-import type { LucideIcon } from 'lucide-react-native';
+import { HugeiconsIcon } from '@hugeicons/react-native';
+import type { HugeiconsProps } from '@hugeicons/react-native';
+
+export type HugeIconType = HugeiconsProps['icon'];
 
 export function MarketCategoryCard({
   title,
@@ -10,7 +13,7 @@ export function MarketCategoryCard({
 }: {
   title: string;
   subtitle: string;
-  Icon: LucideIcon;
+  Icon: HugeIconType;
   onPress: () => void;
 }) {
   return (
@@ -20,7 +23,7 @@ export function MarketCategoryCard({
       accessibilityLabel={`Open ${title} category`}
       className="mr-3 w-[152px] rounded-md border border-surface bg-white p-md">
       <View className="mb-3 h-10 w-10 items-center justify-center rounded-full bg-surface">
-        <Icon size={20} color="#000000" />
+        <HugeiconsIcon icon={Icon} size={20} color="#000000" />
       </View>
       <Text className="font-subtitle text-body text-text-primary">{title}</Text>
       <Text className="mt-1 font-caption text-caption text-text-secondary">{subtitle}</Text>

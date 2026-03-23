@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 import { useSpendingStash } from '@/api/hooks/useSpending';
 import { toNumber } from '@/utils/market';
+import { ChartDownIcon, ChartUpIcon, MinusSignIcon } from '@hugeicons/core-free-icons';
 
 const CATEGORY_ICON_MAP: Record<string, string> = {
   food: 'utensils-crossed',
@@ -52,7 +52,7 @@ export function useSpendingStashData() {
 
   const monthlyChart = useMemo(() => data?.monthly_chart ?? [], [data?.monthly_chart]);
 
-  const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
+  const TrendIcon = trend === 'up' ? ChartUpIcon : trend === 'down' ? ChartDownIcon : MinusSignIcon;
   const trendColor = trend === 'up' ? '#B91C1C' : trend === 'down' ? '#15803D' : '#6B7280';
 
   return {

@@ -1,7 +1,6 @@
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
 import { useState, useMemo } from 'react';
 import Avatar from '@zamplyy/react-native-nice-avatar';
 import { getAvatarConfig } from '@/utils/avatarConfig';
@@ -10,6 +9,8 @@ import { Input, Button } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { useUpdateProfile } from '@/api/hooks/useUser';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export default function ProfileEdit() {
   const insets = useSafeAreaInsets();
@@ -55,7 +56,7 @@ export default function ProfileEdit() {
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           className="h-9 w-9 items-center justify-center rounded-full bg-surface">
-          <ChevronLeft size={20} color="#121212" strokeWidth={2} />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#121212" strokeWidth={2} />
         </Pressable>
         <Text className="font-subtitle text-body text-text-primary">Edit Profile</Text>
         <View className="w-9" />

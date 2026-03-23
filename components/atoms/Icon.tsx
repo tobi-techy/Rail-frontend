@@ -1,88 +1,52 @@
 import React from 'react';
-import { View, ViewProps, Text } from 'react-native';
-import * as Lucide from 'lucide-react-native';
-import { Ionicons, Feather, MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import { View, ViewProps } from 'react-native';
+import { HugeiconsIcon } from '@hugeicons/react-native';
+import type { HugeiconsProps } from '@hugeicons/react-native';
+import * as Icons from '@hugeicons/core-free-icons';
 
-export type IconLibrary = 'lucide' | 'ionicons' | 'feather' | 'material' | 'fontawesome';
+export type HugeIconType = HugeiconsProps['icon'];
 
 export interface IconProps extends Omit<ViewProps, 'children'> {
-  name: string;
-  library?: IconLibrary;
+  icon?: HugeIconType;
+  name?: string;
   size?: number;
   color?: string;
   className?: string;
   testID?: string;
   strokeWidth?: number;
-  fill?: string;
 }
 
-const FallbackIcon = ({ size = 24, color = '#000', style, ...props }: any) => {
-  return React.createElement(
-    Text,
-    {
-      style: [
-        {
-          fontSize: size,
-          color,
-          fontFamily: 'System',
-        },
-        style,
-      ],
-      ...props,
-    },
-    '●'
-  );
-};
-
-function kebabToPascal(input: string) {
-  return input
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join('');
-}
-
-function resolveLucideComponent(name: string) {
-  const pascalName = kebabToPascal(name);
-  const component = (Lucide as any)[pascalName];
-  return component || (Lucide as any).Circle || FallbackIcon;
+// Kebab-case string -> hugeicons icon lookup
+function resolveIconByName(name: string): HugeIconType {
+  // Convert kebab-case to PascalCase + "Icon" suffix
+  const pascal =
+    name
+      .split(/[-_\s]+/)
+      .filter(Boolean)
+      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+      .join('') + 'Icon';
+  return (Icons as any)[pascal] ?? Icons.HelpCircleIcon;
 }
 
 export const Icon: React.FC<IconProps> = ({
+  icon,
   name,
-  library = 'lucide',
   size = 24,
   color = '#000000',
   className,
   testID,
   style,
-  strokeWidth = 0.8,
-  fill = 'none',
+  strokeWidth = 1.5,
   ...props
 }) => {
-  const LucideIcon = resolveLucideComponent(name);
-  const vectorLibraries = {
-    ionicons: Ionicons,
-    feather: Feather,
-    material: MaterialIcons,
-    fontawesome: FontAwesome,
-  } as const;
-
-  const VectorIcon = library !== 'lucide' ? vectorLibraries[library] : null;
-
+  const resolvedIcon = icon ?? (name ? resolveIconByName(name) : Icons.HelpCircleIcon);
   return (
     <View
       style={[{ alignItems: 'center', justifyContent: 'center' }, style]}
       className={className}
       testID={testID}
       {...props}>
-      {library === 'lucide' ? (
-        <LucideIcon size={size} color={color} strokeWidth={strokeWidth} fill={fill} />
-      ) : VectorIcon ? (
-        <VectorIcon name={name as any} size={size} color={color} />
-      ) : (
-        <FallbackIcon size={size} color={color} />
-      )}
+      <HugeiconsIcon icon={resolvedIcon} size={size} color={color} strokeWidth={strokeWidth} />
     </View>
   );
 };

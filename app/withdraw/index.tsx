@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { StatusBar, Text, View, Pressable, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ArrowLeft, Wallet } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { BankIcon, CoinIcon } from '@/assets/svg/filled';
@@ -10,6 +9,8 @@ import { useKycGate } from '@/hooks/useKycGate';
 import { useKYCStatus } from '@/api/hooks';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 import { KYCVerificationSheet } from '@/components/sheets';
+import { ArrowLeft01Icon, Wallet01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -66,7 +67,7 @@ export default function WithdrawMethodSelectorScreen() {
               onPress={() => router.back()}
               accessibilityRole="button"
               accessibilityLabel="Go back">
-              <ArrowLeft size={20} color="#111827" />
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
             </Pressable>
           </View>
 
@@ -107,10 +108,10 @@ export default function WithdrawMethodSelectorScreen() {
 
             {Platform.OS === 'android' && (
               <WithdrawOptionCard
-                title="Withdraw to Wallet"
+                title="Withdraw to Wallet01Icon"
                 subtitle="Send USDC directly to your Solana wallet via MWA — supports Seed Vault on Seeker"
                 onPress={() => router.push('/withdraw/mwa-withdraw' as never)}
-                icon={<Wallet size={24} color="#111827" />}
+                icon={<HugeiconsIcon icon={Wallet01Icon} size={24} color="#111827" />}
                 accessibilityLabel="Select MWA wallet withdrawal"
               />
             )}

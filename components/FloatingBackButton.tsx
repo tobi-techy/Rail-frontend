@@ -1,11 +1,12 @@
 import React from 'react';
 import { Pressable } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useHaptics } from '@/hooks/useHaptics';
+import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export function FloatingBackButton() {
   const insets = useSafeAreaInsets();
@@ -38,7 +39,7 @@ export function FloatingBackButton() {
           intensity={80}
           tint="light"
           className="h-14 w-14 items-center justify-center overflow-hidden rounded-[28px]">
-          <ChevronLeft size={28} color="#000" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={28} color="#000" />
         </BlurView>
       </Pressable>
     </Animated.View>

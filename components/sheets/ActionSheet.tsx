@@ -1,32 +1,36 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { ChevronRight, LucideIcon } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
+import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
+import type { HugeiconsProps } from '@hugeicons/react-native';
+
+type HugeIconType = HugeiconsProps['icon'];
 
 interface ActionItem {
   id: string;
   label: string;
   sublabel?: string;
-  icon: LucideIcon | React.ReactNode;
+  icon: HugeIconType | React.ReactNode;
   iconColor?: string;
   iconBgColor?: string;
   onPress: () => void;
-  badge?: string; // e.g., "New", "Instant"
+  badge?: string;
 }
 
 interface ActionSheetProps {
   visible: boolean;
   onClose: () => void;
   illustration?: React.ReactNode;
-  icon?: LucideIcon;
+  icon?: HugeIconType;
   iconColor?: string;
   title: string;
   subtitle?: string;
   actions: ActionItem[];
 }
 
-const isLucideIcon = (icon: LucideIcon | React.ReactNode): icon is LucideIcon =>
-  typeof icon === 'function';
+const isHugeIcon = (icon: HugeIconType | React.ReactNode): icon is HugeIconType =>
+  Array.isArray(icon);
 
 export function ActionSheet({
   visible,
@@ -48,7 +52,9 @@ export function ActionSheet({
       {/* Header */}
       <View className="mb-6">
         {illustration && <View className="mb-3">{illustration}</View>}
-        {!illustration && HeaderIcon && <HeaderIcon size={32} color={iconColor} className="mb-2" />}
+        {!illustration && HeaderIcon && (
+          <HugeiconsIcon icon={HeaderIcon} size={32} color={iconColor} />
+        )}
         <Text className="font-subtitle text-xl text-text-primary">{title}</Text>
         {subtitle && (
           <Text className="mt-1 font-caption text-sm leading-5 text-gray-500">{subtitle}</Text>
@@ -75,8 +81,12 @@ export function ActionSheet({
                   style={{ backgroundColor: action.iconBgColor ?? '#F5F5F5' }}>
                   {isElement
                     ? Icon
-                    : isLucideIcon(Icon) && (
-                        <Icon size={22} color={action.iconColor ?? '#1B84FF'} />
+                    : isHugeIcon(Icon) && (
+                        <HugeiconsIcon
+                          icon={Icon}
+                          size={22}
+                          color={action.iconColor ?? '#1B84FF'}
+                        />
                       )}
                 </View>
                 <View className="flex-1">
@@ -95,7 +105,7 @@ export function ActionSheet({
                 </View>
               )}
 
-              <ChevronRight size={20} color="#9CA3AF" />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={20} color="#9CA3AF" />
             </TouchableOpacity>
           );
         })}

@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { CheckCircle2, Clock, XCircle } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -16,12 +15,15 @@ import { useKycStore } from '@/stores/kycStore';
 import { useAuthStore } from '@/stores/authStore';
 import { invalidateQueries } from '@/api/queryClient';
 import type { KycStatus } from '@/api/types/kyc';
+import { CancelCircleIcon, CheckmarkCircle02Icon, Clock01Icon, RefreshIcon, MessageIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export default function KycPendingScreen() {
   const { resetKycState, localSubmissionPendingAt, setLocalSubmissionPendingAt } = useKycStore();
 
   const opacity = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const [hasTimedOut, setHasTimedOut] = React.useState(false);
 
   useEffect(() => {
     opacity.value = withRepeat(
@@ -30,6 +32,17 @@ export default function KycPendingScreen() {
       true
     );
   }, [opacity]);
+
+  // Timeout handler - show user options after 10 minutes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (status === 'pending' || status === 'processing') {
+        setHasTimedOut(true);
+      }
+    }, 10 * 60 * 1000); // 10 minutes
+
+    return () => clearTimeout(timeoutId);
+  }, [status]);
 
   const handleTerminal = useCallback(
     (status: KycStatus) => {
@@ -43,6 +56,16 @@ export default function KycPendingScreen() {
     },
     [resetKycState, setLocalSubmissionPendingAt]
   );
+
+  const handleRetry = useCallback(() => {
+    setHasTimedOut(false);
+    invalidateQueries.user();
+    router.replace('/kyc');
+  }, []);
+
+  const handleContactSupport = useCallback(() => {
+    Linking.openURL('mailto:support@userail.money?subject=KYC%20Verification%20Issue');
+  }, []);
 
   const { data, isError } = useKycStatusPolling(true, handleTerminal, {
     timeoutMs: 10 * 60 * 1000,
@@ -61,15 +84,32 @@ export default function KycPendingScreen() {
   useEffect(() => {
     if (status === 'approved' || status === 'rejected' || status === 'expired') {
       setLocalSubmissionPendingAt(null);
+      setHasTimedOut(false);
     }
   }, [setLocalSubmissionPendingAt, status]);
+
+  // Get user-friendly rejection reason
+  const getRejectionMessage = () => {
+    if (data?.rejection_reason) {
+      return data.rejection_reason;
+    }
+    return 'We could not verify your identity. The information provided may not have matched your ID document. Please try again with accurate information.';
+  };
+
+  // Show specific guidance on timeout
+  const getTimeoutMessage = () => {
+    if (hasTimedOut) {
+      return "Verification is taking longer than expected. Your documents may need additional review. You can try again or contact support for assistance.";
+    }
+    return "This usually takes a few minutes. You can close this screen — we&apos;ll notify you when it&apos;s done.";
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="flex-1 items-center justify-center px-8">
         {isError ? (
           <>
-            <XCircle size={56} color="#EF4444" />
+            <HugeiconsIcon icon={CancelCircleIcon} size={56} color="#EF4444" />
             <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
               Connection error
             </Text>
@@ -85,7 +125,7 @@ export default function KycPendingScreen() {
           </>
         ) : status === 'approved' ? (
           <>
-            <CheckCircle2 size={56} color="#16A34A" />
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={56} color="#16A34A" />
             <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
               You&apos;re verified
             </Text>
@@ -104,35 +144,74 @@ export default function KycPendingScreen() {
           </>
         ) : status === 'rejected' || status === 'expired' ? (
           <>
-            <XCircle size={56} color="#DC2626" />
+            <HugeiconsIcon icon={CancelCircleIcon} size={56} color="#DC2626" />
             <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
               Verification unsuccessful
             </Text>
             <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
-              {data?.rejection_reason ??
-                'We could not verify your identity. Please try again or contact support.'}
+              {getRejectionMessage()}
             </Text>
-            <Pressable
-              onPress={() => {
-                invalidateQueries.user();
-                router.replace('/kyc');
-              }}
-              className="mt-8 rounded-full bg-gray-900 px-8 py-4"
-              accessibilityRole="button">
-              <Text className="font-subtitle text-[15px] text-white">Try again</Text>
-            </Pressable>
+            <View className="mt-6 w-full gap-y-3">
+              <Pressable
+                onPress={handleRetry}
+                className="flex-row items-center justify-center gap-x-2 rounded-full bg-gray-900 px-8 py-4"
+                accessibilityRole="button">
+                <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />
+                <Text className="font-subtitle text-[15px] text-white">Try Again</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleContactSupport}
+                className="flex-row items-center justify-center gap-x-2 rounded-full border border-gray-200 px-8 py-4"
+                accessibilityRole="button">
+                <HugeiconsIcon icon={MessageIcon} size={18} color="#374151" />
+                <Text className="font-subtitle text-[15px] text-gray-700">Contact Support</Text>
+              </Pressable>
+            </View>
+          </>
+        ) : hasTimedOut ? (
+          // Timeout state - show retry and support options
+          <>
+            <HugeiconsIcon icon={Clock01Icon} size={56} color="#F59E0B" />
+            <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
+              Taking longer than expected
+            </Text>
+            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
+              {getTimeoutMessage()}
+            </Text>
+            <View className="mt-6 w-full gap-y-3">
+              <Pressable
+                onPress={handleRetry}
+                className="flex-row items-center justify-center gap-x-2 rounded-full bg-gray-900 px-8 py-4"
+                accessibilityRole="button">
+                <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />
+                <Text className="font-subtitle text-[15px] text-white">Start New Verification</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleContactSupport}
+                className="flex-row items-center justify-center gap-x-2 rounded-full border border-gray-200 px-8 py-4"
+                accessibilityRole="button">
+                <HugeiconsIcon icon={MessageIcon} size={18} color="#374151" />
+                <Text className="font-subtitle text-[15px] text-gray-700">Contact Support</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.replace('/(tabs)')}
+                className="mt-2 py-2"
+                accessibilityRole="button">
+                <Text className="text-center font-body text-[14px] text-gray-500">Continue to app</Text>
+              </Pressable>
+            </View>
           </>
         ) : (
+          // Still processing
           <>
             <Animated.View style={animatedStyle}>
-              <Clock size={56} color="#111827" />
+              <HugeiconsIcon icon={Clock01Icon} size={56} color="#111827" />
             </Animated.View>
             <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
               Verifying your identity
             </Text>
             <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
-              This usually takes a few minutes. You can close this screen — we&apos;ll notify you
-              when it&apos;s done.
+              {getTimeoutMessage()}
             </Text>
             <Pressable
               onPress={() => router.replace('/(tabs)')}

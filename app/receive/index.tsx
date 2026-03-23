@@ -2,7 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { StatusBar, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,6 +15,8 @@ import { SUPPORTED_CHAINS, type ChainConfig } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import type { WalletChain } from '@/api/types';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
+import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -94,7 +95,7 @@ export default function ReceiveChainSelectScreen() {
               onPress={() => router.back()}
               accessibilityRole="button"
               accessibilityLabel="Go back">
-              <ArrowLeft size={20} color="#111827" />
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
             </Pressable>
           </View>
 

@@ -2,8 +2,9 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ArrowLeft, BellRing, Mail } from 'lucide-react-native';
 import { useUIStore } from '@/stores';
+import { ArrowLeft01Icon, BellDotIcon, Mail01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 function NotificationRow({
   icon,
@@ -45,7 +46,7 @@ export default function SettingsNotificationsScreen() {
           onPress={() => router.back()}
           className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-surface"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <ArrowLeft size={20} color="#070914" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#070914" />
         </TouchableOpacity>
         <Text className="font-subtitle text-headline-1">Notifications</Text>
       </View>
@@ -56,14 +57,14 @@ export default function SettingsNotificationsScreen() {
         </Text>
 
         <NotificationRow
-          icon={<BellRing size={18} color="#111827" />}
+          icon={<HugeiconsIcon icon={BellDotIcon} size={18} color="#111827" />}
           title="Push Notifications"
           subtitle="Alerts for account activity and transaction updates."
           value={pushNotificationsEnabled}
           onChange={setPushNotificationsEnabled}
         />
         <NotificationRow
-          icon={<Mail size={18} color="#111827" />}
+          icon={<HugeiconsIcon icon={Mail01Icon} size={18} color="#111827" />}
           title="Email Notifications"
           subtitle="Product and account updates sent to your inbox."
           value={emailNotificationsEnabled}

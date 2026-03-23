@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -9,6 +8,8 @@ import { InputField } from '@/components/atoms/InputField';
 import { Button } from '@/components/ui';
 import { COUNTRY_TAX_CONFIG, validateTaxId } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
+import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export default function KycTaxIdScreen() {
   const insets = useSafeAreaInsets();
@@ -41,7 +42,7 @@ export default function KycTaxIdScreen() {
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Go back">
-            <ChevronLeft size={22} color="#111827" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#111827" />
           </Pressable>
           <Text className="font-subtitle text-[13px] text-gray-500">Step 2 of 4</Text>
           <View className="size-11" />

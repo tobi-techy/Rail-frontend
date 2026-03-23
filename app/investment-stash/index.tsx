@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp } from 'lucide-react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { useUIStore } from '@/stores';
@@ -20,6 +19,8 @@ import { MarketClosedBanner } from '@/components/molecules/MarketClosedBanner';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import { useInvestmentStashData } from './useInvestmentStashData';
 import { invalidateQueries } from '@/api/queryClient';
+import { ArrowLeft01Icon, ArrowRight01Icon, ChartDownIcon, ChartUpIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 import type {
   InvestmentPositionDetail,
   InvestmentDistributionItem,
@@ -478,9 +479,9 @@ export default function InvestmentStashScreen() {
                 </Text>
                 <View className="mt-1.5 flex-row items-center gap-1">
                   {isPositive ? (
-                    <TrendingUp size={14} color={pnlColor} strokeWidth={2} />
+                    <HugeiconsIcon icon={ChartUpIcon} size={14} color={pnlColor} strokeWidth={2} />
                   ) : (
-                    <TrendingDown size={14} color={pnlColor} strokeWidth={2} />
+                    <HugeiconsIcon icon={ChartDownIcon} size={14} color={pnlColor} strokeWidth={2} />
                   )}
                   <Text className="font-caption text-[14px]" style={{ color: pnlColor }}>
                     {isBalanceVisible
@@ -641,7 +642,7 @@ export default function InvestmentStashScreen() {
                   accessibilityLabel="Previous page"
                   className="min-h-[44px] flex-row items-center gap-1 rounded-xl bg-gray-100 px-4 py-2.5"
                   style={{ opacity: hasPrevTx ? 1 : 0 }}>
-                  <ChevronLeft size={16} color="#111827" strokeWidth={2} />
+                  <HugeiconsIcon icon={ArrowLeft01Icon} size={16} color="#111827" strokeWidth={2} />
                   <Text className="font-subtitle text-[13px] text-gray-900">Prev</Text>
                 </Pressable>
                 <Pressable
@@ -655,7 +656,7 @@ export default function InvestmentStashScreen() {
                   className="min-h-[44px] flex-row items-center gap-1 rounded-xl bg-gray-100 px-4 py-2.5"
                   style={{ opacity: hasMoreTx ? 1 : 0 }}>
                   <Text className="font-subtitle text-[13px] text-gray-900">Next</Text>
-                  <ChevronRight size={16} color="#111827" strokeWidth={2} />
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#111827" strokeWidth={2} />
                 </Pressable>
               </View>
             )}
@@ -712,7 +713,7 @@ export default function InvestmentStashScreen() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
           className="mr-1 h-11 w-11 items-center justify-center">
-          <ChevronLeft size={24} color="#111827" strokeWidth={2} />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#111827" strokeWidth={2} />
         </Pressable>
         <Text className="font-subtitle text-[17px] text-gray-900">Invest</Text>
       </View>

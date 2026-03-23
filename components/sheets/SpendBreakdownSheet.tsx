@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { ChevronRight } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import { Icon } from '@/components/atoms/Icon';
@@ -11,6 +10,8 @@ import { toNumber } from '@/utils/market';
 import { useUIStore } from '@/stores';
 import { cn } from '@/utils/cn';
 import type { Currency } from '@/stores/uiStore';
+import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 interface SpendBreakdownSheetProps {
   visible: boolean;
@@ -187,7 +188,7 @@ export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBr
                     onPress={onViewDetails}
                     className="min-h-[44px] flex-row items-center gap-2">
                     <Text className="font-body text-sm text-[#5B8FF9]">View more details</Text>
-                    <ChevronRight size={20} color="#5B8FF9" />
+                    <HugeiconsIcon icon={ArrowRight01Icon} size={20} color="#5B8FF9" />
                   </Pressable>
                 ) : null}
               </View>

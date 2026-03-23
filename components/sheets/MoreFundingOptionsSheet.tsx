@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { AtSign, Mail, Users, ChevronRight } from 'lucide-react-native';
 import { BottomSheet } from './BottomSheet';
 import { PhantomIcon, SolflareIcon, SolanaIcon } from '@/assets/svg';
 import { BankIcon } from '@/assets/svg/filled';
+import { ArrowRight01Icon, Mail01Icon, MailAtSign01Icon, UserGroupIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 interface FundingOption {
   id: string;
@@ -42,7 +43,7 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
             id: 'railtag',
             label: 'RailTag',
             sublabel: 'Instant send to any @rail user',
-            icon: <AtSign size={20} color="#FF2E01" />,
+            icon: <HugeiconsIcon icon={MailAtSign01Icon} size={20} color="#FF2E01" />,
             iconBg: '#FFF0ED',
             onPress: () => openMethodFlow('railtag'),
           },
@@ -50,7 +51,7 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
             id: 'email',
             label: 'Email',
             sublabel: 'Send to anyone by email',
-            icon: <Mail size={20} color="#6366F1" />,
+            icon: <HugeiconsIcon icon={Mail01Icon} size={20} color="#6366F1" />,
             iconBg: '#EEF2FF',
             onPress: () => openMethodFlow('email'),
           },
@@ -58,7 +59,7 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
             id: 'contact',
             label: 'Contact',
             sublabel: 'Pick from your phone contacts',
-            icon: <Users size={20} color="#059669" />,
+            icon: <HugeiconsIcon icon={UserGroupIcon} size={20} color="#059669" />,
             iconBg: '#ECFDF5',
             onPress: () => openMethodFlow('contact'),
           },
@@ -159,7 +160,7 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
                     <Text className="font-body text-[11px] text-gray-400">Soon</Text>
                   </View>
                 ) : (
-                  <ChevronRight size={16} color="#C4C4C4" />
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#C4C4C4" />
                 )}
               </TouchableOpacity>
             ))}

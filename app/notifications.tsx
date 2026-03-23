@@ -9,10 +9,11 @@ import {
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, CheckCheck } from 'lucide-react-native';
 
 import { useNotifications, useMarkAsRead, useMarkAllAsRead, useUnreadCount } from '@/api/hooks';
 import type { Notification } from '@/api/types/notification';
+import { ArrowLeft01Icon, CheckUnread01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const formatTimeAgo = (dateString: string): string => {
   const date = new Date(dateString);
@@ -148,7 +149,7 @@ export default function NotificationsScreen() {
           headerTitleStyle: { fontWeight: '600', fontSize: 17 },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} className="-ml-2 p-2">
-              <ArrowLeft size={22} color="#111" />
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#111" />
             </TouchableOpacity>
           ),
           headerRight: () =>
@@ -161,7 +162,7 @@ export default function NotificationsScreen() {
                   <ActivityIndicator size="small" color="#3B82F6" />
                 ) : (
                   <>
-                    <CheckCheck size={18} color="#3B82F6" />
+                    <HugeiconsIcon icon={CheckUnread01Icon} size={18} color="#3B82F6" />
                     <Text className="ml-1 text-[14px] font-medium text-blue-500">Read all</Text>
                   </>
                 )}

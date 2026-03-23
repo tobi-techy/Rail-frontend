@@ -635,6 +635,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         loginAttempts: state.loginAttempts,
         lockoutUntil: state.lockoutUntil,
         hasAcknowledgedDisclaimer: state.hasAcknowledgedDisclaimer,
+        // Persist registrationData to allow resume of profile completion
+        registrationData: state.registrationData,
       }),
     }
   )

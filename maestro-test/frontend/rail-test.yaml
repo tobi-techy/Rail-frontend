@@ -1,0 +1,113 @@
+appId: com.railmoney.rail
+---
+# ── Fresh launch → Intro/Onboarding ──────────────────────────────────────────
+- launchApp:
+    clearState: true
+
+# Onboarding slides should be visible
+- assertVisible: "continue with mail"
+
+# ── Sign-Up flow ──────────────────────────────────────────────────────────────
+- tapOn: "continue with mail"
+- assertVisible: "Enter your email"
+
+# Validation: empty submit
+- tapOn: "Continue"
+- assertVisible: "Email is required"
+
+# Validation: bad email
+- tapOn: "Enter your email"
+- inputText: "notanemail"
+- tapOn: "Continue"
+- assertVisible: "Please enter a valid email"
+
+# Valid email
+- eraseText: 20
+- inputText: "test@railmoney.com"
+- tapOn: "Continue"
+
+# Should navigate to email verification
+- assertVisible:
+    text: "Verification"
+    optional: true
+
+# ── Navigate to Sign-In ──────────────────────────────────────────────────────
+- launchApp:
+    clearState: true
+- assertVisible: "Sign In"
+- tapOn: "Sign In"
+- assertVisible: "Welcome Back"
+
+# Validation: empty submit
+- tapOn: "Sign In"
+- assertVisible: "Email is required"
+
+# Validation: missing password
+- tapOn: "Enter your email"
+- inputText: "test@railmoney.com"
+- tapOn: "Sign In"
+- assertVisible: "Password is required"
+
+# Validation: invalid email format
+- eraseText: 20
+- tapOn: "Enter your email"
+- inputText: "bademail"
+- tapOn: "Enter your password"
+- inputText: "password123"
+- tapOn: "Sign In"
+- assertVisible: "Please enter a valid email"
+
+# Validation: short password
+- eraseText: 20
+- tapOn: "Enter your email"
+- inputText: "test@railmoney.com"
+- tapOn: "Enter your password"
+- eraseText: 20
+- inputText: "short"
+- tapOn: "Sign In"
+- assertVisible: "Password must be at least 8 characters"
+
+# Valid sign-in attempt (will hit API — success depends on backend)
+- tapOn: "Enter your password"
+- eraseText: 20
+- inputText: "ValidPass123!"
+- tapOn: "Sign In"
+
+# ── Passcode screen (if user has passcode set) ───────────────────────────────
+- assertVisible:
+    text: "Sign in to Rail"
+    optional: true
+
+# ── Home / Station tab ────────────────────────────────────────────────────────
+- assertVisible:
+    text: "Station"
+    optional: true
+
+# Tab navigation
+- tapOn:
+    text: "Activity"
+    optional: true
+- assertVisible:
+    text: "Activity"
+    optional: true
+
+- tapOn:
+    text: "Settings"
+    optional: true
+- assertVisible:
+    text: "Settings"
+    optional: true
+
+# Back to home
+- tapOn:
+    text: "Station"
+    optional: true
+
+# ── Forgot Password flow ─────────────────────────────────────────────────────
+- launchApp:
+    clearState: true
+- tapOn: "Sign In"
+- tapOn: "Forgot Password?"
+- assertVisible:
+    text: "Forgot"
+    optional: true

@@ -1,28 +1,6 @@
 import { View, Text, ScrollView, ActivityIndicator, Switch, Pressable } from 'react-native';
 import { Passkey } from 'react-native-passkey';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import {
-  LogOut,
-  KeyRound,
-  Shield,
-  Users,
-  Scale,
-  HeadphonesIcon,
-  Trash2,
-  ShieldCheck,
-  TrendingUp,
-  Repeat2,
-  ArrowLeftRight,
-  Eye,
-  EyeOff,
-  Vibrate,
-  Lock,
-  Bell,
-  Globe,
-  RefreshCw,
-  ChevronRight,
-  Fingerprint,
-} from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import Avatar from '@zamplyy/react-native-nice-avatar';
@@ -42,6 +20,31 @@ import { usePinChange, sanitizePin } from '@/hooks/usePinChange';
 import { useSpendSettings, clampAlloc } from '@/hooks/useSpendSettings';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { useBiometric } from '@/hooks/useBiometric';
+import {
+  ArrowLeftRightIcon,
+  ArrowRight01Icon,
+  ChartUpIcon,
+  Delete02Icon,
+  EyeIcon,
+  FingerPrintIcon,
+  HeadphonesIcon,
+  InternetIcon,
+  Key01Icon,
+  LockIcon,
+  Logout01Icon,
+  Notification03Icon,
+  RefreshIcon,
+  RepeatIcon,
+  BalanceScaleIcon,
+  Shield01Icon,
+  ShieldKeyIcon,
+  SmartPhone01Icon,
+  UserGroupIcon,
+  ViewOffIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
+import { useHaptics } from '@/hooks/useHaptics';
+import * as Haptics from 'expo-haptics';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -95,6 +98,7 @@ function SettingButton({
 }) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const { impact } = useHaptics();
   return (
     <AnimatedPressable
       style={animStyle}
@@ -105,6 +109,7 @@ function SettingButton({
       }
       onPress={onPress}
       onPressIn={() => {
+        impact(Haptics.ImpactFeedbackStyle.Light);
         scale.value = withSpring(0.9, { damping: 20, stiffness: 300 });
       }}
       onPressOut={() => {
@@ -150,14 +155,20 @@ const SheetRow = ({
   label: string;
   value?: string;
   onPress?: () => void;
-}) => (
-  <Pressable
-    className="flex-row items-center justify-between border-b border-surface py-4"
-    onPress={onPress}>
-    <Text className="font-body text-base text-text-primary">{label}</Text>
-    {value && <Text className="font-body text-base text-text-secondary">{value}</Text>}
-  </Pressable>
-);
+}) => {
+  const { impact } = useHaptics();
+  return (
+    <Pressable
+      className="flex-row items-center justify-between border-b border-surface py-4"
+      onPress={() => {
+        impact(Haptics.ImpactFeedbackStyle.Light);
+        onPress?.();
+      }}>
+      <Text className="font-body text-base text-text-primary">{label}</Text>
+      {value && <Text className="font-body text-base text-text-secondary">{value}</Text>}
+    </Pressable>
+  );
+};
 
 const SheetToggleRow = ({
   label,
@@ -197,13 +208,17 @@ function ProfileCard({
     [firstName, lastName, email]
   );
   const avatarConfig = useMemo(() => getAvatarConfig(avatarName), [avatarName]);
+  const { impact } = useHaptics();
 
   const displayName =
     firstName || lastName ? [firstName, lastName].filter(Boolean).join(' ') : 'Rail User';
 
   return (
     <Pressable
-      onPress={() => router.push('/profile-edit' as never)}
+      onPress={() => {
+        impact(Haptics.ImpactFeedbackStyle.Light);
+        router.push('/profile-edit' as never);
+      }}
       className="mx-md mb-2 mt-md flex-row items-center justify-between rounded-2xl border border-surface bg-white px-4 py-4">
       <View className="flex-row items-center gap-3">
         <Avatar size={52} {...avatarConfig} />
@@ -222,13 +237,14 @@ function ProfileCard({
       </View>
       <View className="flex-row items-center gap-1.5 rounded-full border border-surface bg-surface px-3 py-1.5">
         <Text className="font-button text-[13px] text-text-primary">Edit</Text>
-        <ChevronRight size={13} color="#121212" strokeWidth={2.5} />
+        <HugeiconsIcon icon={ArrowRight01Icon} size={13} color="#121212" strokeWidth={2.5} />
       </View>
     </Pressable>
   );
 }
 
 export default function Settings() {
+  const { impact } = useHaptics();
   const { showError, showSuccess, showWarning, showInfo } = useFeedbackPopup();
   const {
     isAvailable: biometricHardwareAvailable,
@@ -386,11 +402,14 @@ export default function Settings() {
 
   return (
     <View className="flex-1 bg-background-main">
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        className="flex-1"
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}>
         <ProfileCard firstName={user?.firstName} lastName={user?.lastName} email={user?.email} />
         <Section title="Spend">
           <SettingButton
-            icon={<ArrowLeftRight size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={ArrowLeftRightIcon} size={22} color="#121212" />}
             label="Base/Active Split"
             onPress={() => {
               setAllocationFeedback(null);
@@ -399,17 +418,17 @@ export default function Settings() {
             }}
           />
           <SettingButton
-            icon={<TrendingUp size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={ChartUpIcon} size={22} color="#121212" />}
             label="Auto Invest"
             onPress={() => setActiveSheet('autoInvest')}
           />
           <SettingButton
-            icon={<Repeat2 size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={RepeatIcon} size={22} color="#121212" />}
             label="Round-ups"
             onPress={() => setActiveSheet('roundups')}
           />
           <SettingButton
-            icon={<Scale size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={BalanceScaleIcon} size={22} color="#121212" />}
             label="Limits"
             onPress={() => setActiveSheet('limits')}
           />
@@ -419,31 +438,31 @@ export default function Settings() {
           <SettingButton
             icon={
               isBalanceVisible ? (
-                <Eye size={22} color="#121212" />
+                <HugeiconsIcon icon={EyeIcon} size={22} color="#121212" />
               ) : (
-                <EyeOff size={22} color="#121212" />
+                <HugeiconsIcon icon={ViewOffIcon} size={22} color="#121212" />
               )
             }
             label="Privacy"
             onPress={() => setActiveSheet('privacy')}
           />
           <SettingButton
-            icon={<Vibrate size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={SmartPhone01Icon} size={22} color="#121212" />}
             label="Haptics"
             onPress={() => setActiveSheet('haptics')}
           />
           <SettingButton
-            icon={<Lock size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={LockIcon} size={22} color="#121212" />}
             label="App Lock"
             onPress={() => setActiveSheet('lockOnResume')}
           />
           <SettingButton
-            icon={<Bell size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={Notification03Icon} size={22} color="#121212" />}
             label="Notifications"
             onPress={() => router.push('/settings-notifications')}
           />
           <SettingButton
-            icon={<Globe size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={InternetIcon} size={22} color="#121212" />}
             label="Currency"
             onPress={() => setActiveSheet('currency')}
           />
@@ -451,26 +470,26 @@ export default function Settings() {
 
         <Section title="Security">
           <SettingButton
-            icon={<Shield size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={Shield01Icon} size={22} color="#121212" />}
             label="PIN"
             onPress={() => setActiveSheet('pin')}
           />
           {biometricHardwareAvailable && (
             <SettingButton
-              icon={<Fingerprint size={22} color="#121212" />}
+              icon={<HugeiconsIcon icon={FingerPrintIcon} size={22} color="#121212" />}
               label="Biometrics"
               onPress={() => setActiveSheet('biometric')}
             />
           )}
           {Passkey.isSupported() && (
             <SettingButton
-              icon={<KeyRound size={22} color="#121212" />}
+              icon={<HugeiconsIcon icon={Key01Icon} size={22} color="#121212" />}
               label="Passkeys"
               onPress={() => router.push('/passkey-settings')}
             />
           )}
           <SettingButton
-            icon={<ShieldCheck size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={ShieldKeyIcon} size={22} color="#121212" />}
             label="2-Factor Auth"
             onPress={() =>
               showInfo(
@@ -483,21 +502,21 @@ export default function Settings() {
 
         <Section title="More">
           <SettingButton
-            icon={<Users size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={UserGroupIcon} size={22} color="#121212" />}
             label="Referrals"
             onPress={() =>
               showInfo('Coming Soon', 'Referrals will be available in a future update.')
             }
           />
           <SettingButton
-            icon={<Scale size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={BalanceScaleIcon} size={22} color="#121212" />}
             label="Legal"
             onPress={() =>
               showInfo('Legal', 'Legal documents will be available in a future update.')
             }
           />
           <SettingButton
-            icon={<HeadphonesIcon size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={HeadphonesIcon} size={22} color="#121212" />}
             label="Support"
             onPress={() => gleap.open()}
           />
@@ -505,13 +524,13 @@ export default function Settings() {
 
         <Section title="Account">
           <SettingButton
-            icon={<LogOut size={22} color="#F44336" />}
+            icon={<HugeiconsIcon icon={Logout01Icon} size={22} color="#F44336" />}
             label="Logout"
             danger
             onPress={() => setActiveSheet('logout')}
           />
           <SettingButton
-            icon={<Trash2 size={22} color="#F44336" />}
+            icon={<HugeiconsIcon icon={Delete02Icon} size={22} color="#F44336" />}
             label="Delete Account"
             danger
             onPress={() => setActiveSheet('delete')}
@@ -623,7 +642,7 @@ export default function Settings() {
       </BottomSheet>
 
       <BottomSheet visible={activeSheet === 'lockOnResume'} onClose={closeSheet}>
-        <Text className="mb-4 font-subtitle text-xl">App Lock</Text>
+        <Text className="mb-4 font-subtitle text-xl">App LockIcon</Text>
         <SheetToggleRow
           label="Require Authentication on Resume"
           subtitle="Require device authentication when returning to the app"
@@ -656,7 +675,7 @@ export default function Settings() {
             {isCurrencyRatesRefreshing ? (
               <ActivityIndicator size="small" color="#111827" />
             ) : (
-              <RefreshCw size={16} color="#111827" />
+              <HugeiconsIcon icon={RefreshIcon} size={16} color="#111827" />
             )}
           </Pressable>
         </View>
@@ -760,7 +779,7 @@ export default function Settings() {
         <Text className="mb-6 font-subtitle text-xl text-text-primary">Delete Account</Text>
         <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-10">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-red-100">
-            <Trash2 size={32} color="#EF4444" />
+            <HugeiconsIcon icon={Delete02Icon} size={32} color="#EF4444" />
           </View>
         </View>
         <Text className="mb-4 font-body text-base leading-6 text-neutral-500">

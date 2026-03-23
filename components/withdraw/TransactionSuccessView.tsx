@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Linking } from 'react-native';
-import { ArrowRight, ExternalLink } from 'lucide-react-native';
 import { TransactionDetails } from '@/stores/withdrawalStore';
 import { useHaptics } from '@/hooks/useHaptics';
+import { ArrowRight01Icon, LinkSquare01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 interface TransactionSuccessViewProps {
   transaction: TransactionDetails | null;
@@ -36,7 +37,7 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
         accessibilityLabel="View transaction on Solscan"
         accessibilityHint="Opens in browser">
         <Text className="font-body-medium mr-1 text-[12px] text-[#8B5CF6]">View on Solscan</Text>
-        <ExternalLink size={12} color="#8B5CF6" strokeWidth={2} />
+        <HugeiconsIcon icon={LinkSquare01Icon} size={12} color="#8B5CF6" strokeWidth={2} />
       </TouchableOpacity>
 
       {/* Amount & Status */}
@@ -62,7 +63,7 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
         </View>
         <View className="mx-4 flex-row items-center">
           <View className="h-0.5 w-8 bg-[#E5E7EB]" />
-          <ArrowRight size={16} color="#6B7280" className="mx-1" />
+          <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#6B7280" className="mx-1" />
           <View className="h-0.5 w-8 bg-[#E5E7EB]" />
         </View>
         <View className="h-12 w-12 items-center justify-center rounded-full bg-[#8B5CF6]">
@@ -135,7 +136,7 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
             <Text className="font-body-medium ml-2 text-[12px] text-[#0B1120]">
               {transaction.fromNetwork.name}
             </Text>
-            <ArrowRight size={14} color="#6B7280" strokeWidth={2} style={{ marginHorizontal: 8 }} />
+            <HugeiconsIcon icon={ArrowRight01Icon} size={14} color="#6B7280" strokeWidth={2} style={{ marginHorizontal: 8 }} />
             <View className="h-7 w-7 items-center justify-center rounded-full bg-[#627EEA]">
               <Text className="font-body-bold text-[11px] text-white">E</Text>
             </View>

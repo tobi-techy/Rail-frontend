@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ViewProps } from 'react-native';
-import { Delete, Fingerprint, KeyRound, Trash } from 'lucide-react-native';
 import { useKeypadFeedback } from '@/hooks/useKeypadFeedback';
+import { Delete01Icon, FingerPrintIcon, Key01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const BACKSPACE_KEY = 'backspace';
 const FINGERPRINT_KEY = 'fingerprint';
@@ -101,7 +102,7 @@ export const Keypad: React.FC<KeypadProps> = ({
                 accessibilityRole="button"
                 accessibilityLabel={
                   isBackspace
-                    ? 'Delete digit'
+                    ? 'Delete01Icon digit'
                     : isFingerprint
                       ? 'Use biometrics'
                       : isPasskey
@@ -112,14 +113,14 @@ export const Keypad: React.FC<KeypadProps> = ({
                 }>
                 {isBackspace ? (
                   backspaceIcon === 'delete' ? (
-                    <Delete size={24} color={iconColor} />
+                    <HugeiconsIcon icon={Delete01Icon} size={24} color={iconColor} />
                   ) : (
-                    <Trash size={24} color={iconColor} />
+                    <HugeiconsIcon icon={Delete01Icon} size={24} color={iconColor} />
                   )
                 ) : isFingerprint ? (
-                  <Fingerprint size={24} color={iconColor} />
+                  <HugeiconsIcon icon={FingerPrintIcon} size={24} color={iconColor} />
                 ) : isPasskey ? (
-                  <KeyRound size={24} color={iconColor} />
+                  <HugeiconsIcon icon={Key01Icon} size={24} color={iconColor} />
                 ) : isDecimal ? (
                   <Text
                     className={`font-subtitle text-headline-2 ${isDark ? 'text-white' : 'text-text-primary'}`}>

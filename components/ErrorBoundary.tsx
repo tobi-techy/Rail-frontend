@@ -1,10 +1,11 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AlertTriangle } from 'lucide-react-native';
 import { logger } from '../lib/logger';
 import { safeError } from '../utils/logSanitizer';
 import { Sentry } from '../lib/sentry';
+import { Alert02Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -105,7 +106,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <View style={styles.content}>
             {/* Icon — top left, Klarna-style */}
             <View style={styles.iconWrap}>
-              <AlertTriangle size={64} color="#0A0A0A" strokeWidth={1.5} />
+              <HugeiconsIcon icon={Alert02Icon} size={64} color="#0A0A0A" strokeWidth={1.5} />
             </View>
 
             <Text style={styles.title}>Something went wrong.</Text>

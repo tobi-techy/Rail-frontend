@@ -1,6 +1,5 @@
 import type { ComponentType } from 'react';
 import type { SvgProps } from 'react-native-svg';
-import type { LucideIcon } from 'lucide-react-native';
 
 import SolanaLogo from '@/assets/svg/solana.svg';
 import Usdc from '@/assets/svg/usdc.svg';
@@ -12,7 +11,7 @@ export interface PaymentMethod {
   id: string;
   name: string;
   description: string;
-  icon?: LucideIcon | SvgComponent;
+  icon?: SvgComponent;
   iconColor?: string;
   backgroundColor?: string;
   badge?: string;

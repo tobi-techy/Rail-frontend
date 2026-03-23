@@ -7,7 +7,6 @@ import {
   ScrollView,
   useWindowDimensions,
 } from 'react-native';
-import { ArrowRight, ChevronRight } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -19,6 +18,8 @@ import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { haptics } from '@/utils/haptics';
 import { TransactionDetails } from '@/stores/withdrawalStore';
 import { layout, moderateScale, responsive } from '@/utils/layout';
+import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const ANIMATION_DURATION = 200;
 const SPRING_CONFIG = { damping: 20, stiffness: 200 };
@@ -196,7 +197,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
                     <Text className="ml-2 font-body text-small text-text-primary">
                       {transaction.fromNetwork.name}
                     </Text>
-                    <ArrowRight
+                    <HugeiconsIcon icon={ArrowRight01Icon}
                       size={14}
                       color={MUTED}
                       strokeWidth={2}
@@ -240,7 +241,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
                         {transaction.bridgeProvider.name}
                       </Text>
                     </View>
-                    <ChevronRight size={14} color={MUTED} strokeWidth={2} />
+                    <HugeiconsIcon icon={ArrowRight01Icon} size={14} color={MUTED} strokeWidth={2} />
                   </View>
                 </View>
               </View>

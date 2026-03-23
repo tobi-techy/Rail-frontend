@@ -3,7 +3,6 @@ import { ActivityIndicator, Alert, Platform, StatusBar, Text, Pressable, View } 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Passkey } from 'react-native-passkey';
-import { X } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -62,6 +61,8 @@ import {
   WithdrawSubmissionSheet,
 } from './method-screen/sections';
 import { P2PSendScreen } from './method-screen/P2PSendScreen';
+import { Cancel01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export default function WithdrawAmountScreen() {
   const insets = useSafeAreaInsets();
@@ -613,7 +614,7 @@ export default function WithdrawAmountScreen() {
               onPress={() => router.back()}
               accessibilityRole="button"
               accessibilityLabel="Close withdraw flow">
-              <X size={20} color="#FFFFFF" />
+              <HugeiconsIcon icon={Cancel01Icon} size={20} color="#FFFFFF" />
             </Pressable>
             <Text className="font-subtitle text-[20px] text-white">{flowTitle}</Text>
             <View className="size-11" />

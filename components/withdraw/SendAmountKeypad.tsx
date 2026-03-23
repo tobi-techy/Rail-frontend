@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { ChevronDown, XIcon } from 'lucide-react-native';
 import { Token } from '@/stores/withdrawalStore';
 import { InputField } from '../atoms/InputField';
 import { useKeypadFeedback } from '@/hooks/useKeypadFeedback';
+import { ArrowDown01Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 interface SendAmountKeypadProps {
   recipientAddress: string;
@@ -108,7 +109,7 @@ export const SendAmountKeypad: React.FC<SendAmountKeypadProps> = ({
             {selectedToken?.priceChange || 0}%
           </Text>
         </View>
-        <ChevronDown size={20} color="#6B7280" strokeWidth={2} className="ml-2" />
+        <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#6B7280" strokeWidth={2} className="ml-2" />
       </TouchableOpacity>
 
       {/* Amount Display */}
@@ -135,7 +136,7 @@ export const SendAmountKeypad: React.FC<SendAmountKeypadProps> = ({
                 }`}
                 activeOpacity={0.7}>
                 {button === 'delete' ? (
-                  <XIcon size={24} color="#0B1120" strokeWidth={2} />
+                  <HugeiconsIcon icon={Cancel01Icon} size={24} color="#0B1120" strokeWidth={2} />
                 ) : (
                   <Text className="font-body-bold text-[24px] text-[#0B1120]">{button}</Text>
                 )}
