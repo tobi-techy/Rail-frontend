@@ -160,6 +160,9 @@ const handleAuthenticatedUser = (
       config.isOnCompleteProfile
     )
       return null;
+    // User needs KYC but isn't in the app group (e.g. fresh app open at /)
+    // Route them to /kyc instead of falling through to TABS
+    return '/kyc';
   }
 
   // If on passcode screen and session is valid -> go to dashboard
