@@ -1,78 +1,76 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, Pressable, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  FadeInDown,
-} from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
 import { useKYCStatus } from '@/api/hooks';
 import { useVirtualAccounts } from '@/api/hooks/useVirtualAccount';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { useHaptics } from '@/hooks/useHaptics';
 import { Button } from '@/components/ui';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import type { VirtualAccount } from '@/api/types/funding';
-
 import { UsdIcon, EurIcon, GbpIcon } from '@/assets/svg';
 import { VirtualAccountIntroSheet } from '@/components/sheets/VirtualAccountIntroSheet';
 import {
   ArrowLeft01Icon,
   Building04Icon,
+  CheckmarkCircle02Icon,
   Copy01Icon,
   ArrowDown01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
 type Currency = 'USD' | 'EUR' | 'GBP';
-
 const CURRENCIES: Currency[] = ['USD', 'EUR', 'GBP'];
-
 const CURRENCY_FLAG: Record<Currency, React.ComponentType<any>> = {
   USD: UsdIcon,
   EUR: EurIcon,
   GBP: GbpIcon,
 };
-
 const CURRENCY_LABEL: Record<Currency, string> = {
   USD: 'US Dollar',
   EUR: 'Euro',
   GBP: 'British Pound',
 };
 
-// ─── Detail row with copy ───────────────────────────────────────────────────
-function DetailRow({ label, value }: { label: string; value: string }) {
+// ─── Copy row ───────────────────────────────────────────────────────────────
+function CopyRow({ label, value }: { label: string; value: string }) {
   const { showInfo } = useFeedbackPopup();
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const { selection } = useHaptics();
+  const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
-    scale.value = withSpring(0.95, {}, () => {
-      scale.value = withSpring(1);
-    });
+    selection();
     await Clipboard.setStringAsync(value);
-    showInfo('Copied', `${label} copied to clipboard`);
-  }, [value, label, showInfo, scale]);
+    setCopied(true);
+    showInfo('Copied', `${label} copied`);
+    setTimeout(() => setCopied(false), 1500);
+  }, [value, label, selection, showInfo]);
 
   return (
-    <Animated.View style={animStyle}>
-      <TouchableOpacity
-        onPress={handleCopy}
-        activeOpacity={0.7}
-        className="flex-row items-center justify-between py-3.5">
-        <View className="flex-1 pr-4">
-          <Text className="mb-0.5 font-body text-[12px] text-gray-400">{label}</Text>
-          <Text className="font-subtitle text-[15px] text-gray-900">{value}</Text>
-        </View>
-        <HugeiconsIcon icon={Copy01Icon} size={16} color="#9CA3AF" />
-      </TouchableOpacity>
-    </Animated.View>
+    <Pressable
+      onPress={handleCopy}
+      className="flex-row items-center justify-between px-5 py-4 active:bg-gray-50"
+      accessibilityRole="button"
+      accessibilityLabel={`Copy ${label}`}>
+      <View className="flex-1 pr-4">
+        <Text className="font-body text-[13px] text-text-secondary">{label}</Text>
+        <Text className="mt-1 font-subtitle text-[16px] tracking-wide text-text-primary" selectable>
+          {value}
+        </Text>
+      </View>
+      {copied ? (
+        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} color="#10B981" />
+      ) : (
+        <HugeiconsIcon icon={Copy01Icon} size={18} color="#9CA3AF" />
+      )}
+    </Pressable>
   );
 }
 
-// ─── Currency picker in header ──────────────────────────────────────────────
+// ─── Currency picker ────────────────────────────────────────────────────────
 function CurrencyPicker({
   selected,
   onSelect,
@@ -81,51 +79,56 @@ function CurrencyPicker({
   onSelect: (c: Currency) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const { selection } = useHaptics();
   const Flag = CURRENCY_FLAG[selected];
 
   return (
-    <View className="relative">
-      <TouchableOpacity
-        onPress={() => setOpen(!open)}
-        className="flex-row items-center gap-2 rounded-full bg-gray-50 px-3 py-1.5">
-        <View className="h-6 w-6 overflow-hidden rounded-full">
+    <View className="relative z-50">
+      <Pressable
+        onPress={() => {
+          selection();
+          setOpen(!open);
+        }}
+        className="flex-row items-center gap-2 rounded-full bg-gray-50 px-3 py-2">
+        <View className="size-6 overflow-hidden rounded-full">
           <Flag width={24} height={24} />
         </View>
-        <Text className="font-subtitle text-[15px] text-gray-900">{selected}</Text>
+        <Text className="font-subtitle text-[14px] text-text-primary">{selected}</Text>
         <HugeiconsIcon icon={ArrowDown01Icon} size={14} color="#6B7280" />
-      </TouchableOpacity>
+      </Pressable>
 
       {open && (
         <Animated.View
           entering={FadeInDown.duration(150)}
-          className="absolute right-0 top-11 z-50 min-w-[180px] rounded-2xl bg-white py-2 shadow-lg"
+          className="absolute right-0 top-12 min-w-[180px] rounded-2xl bg-white py-2"
           style={{
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.08,
+            shadowRadius: 24,
             elevation: 8,
           }}>
           {CURRENCIES.map((c) => {
             const CFlag = CURRENCY_FLAG[c];
             return (
-              <TouchableOpacity
+              <Pressable
                 key={c}
                 onPress={() => {
+                  selection();
                   onSelect(c);
                   setOpen(false);
                 }}
                 className={`flex-row items-center gap-3 px-4 py-3 ${selected === c ? 'bg-gray-50' : ''}`}>
-                <View className="h-7 w-7 overflow-hidden rounded-full">
+                <View className="size-7 overflow-hidden rounded-full">
                   <CFlag width={28} height={28} />
                 </View>
                 <View>
-                  <Text className="font-subtitle text-[14px] text-gray-900">{c}</Text>
-                  <Text className="font-body text-[12px] text-gray-400">
+                  <Text className="font-subtitle text-[14px] text-text-primary">{c}</Text>
+                  <Text className="font-body text-[12px] text-text-secondary">
                     {CURRENCY_LABEL[c]}
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </Animated.View>
@@ -134,70 +137,66 @@ function CurrencyPicker({
   );
 }
 
-// ─── Account details card ───────────────────────────────────────────────────
-function AccountDetails({ account }: { account: VirtualAccount }) {
+// ─── Account card ───────────────────────────────────────────────────────────
+function AccountCard({ account }: { account: VirtualAccount }) {
   const Flag = CURRENCY_FLAG[account.currency as Currency];
   const rails = account.payment_rails?.length
-    ? account.payment_rails.map((r) => r.replace(/_/g, ' ').toUpperCase()).join(', ')
+    ? account.payment_rails.map((r) => r.replace(/_/g, ' ').toUpperCase()).join(' · ')
     : null;
 
   return (
-    <Animated.View entering={FadeInDown.springify()} className="flex-1 px-5">
-      {/* Bank header */}
-      <View className="mb-2 flex-row items-center py-4">
-        <View className="mr-3 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm">
-          {Flag ? <Flag width={48} height={48} /> : <HugeiconsIcon icon={Building04Icon} size={22} color="#9CA3AF" />}
+    <Animated.View entering={FadeInDown.duration(350)} className="flex-1">
+      {/* Bank identity */}
+      <View className="items-center px-5 pb-6 pt-8">
+        <View className="mb-4 size-16 items-center justify-center overflow-hidden rounded-full bg-gray-50">
+          {Flag ? (
+            <Flag width={48} height={48} />
+          ) : (
+            <HugeiconsIcon icon={Building04Icon} size={28} color="#9CA3AF" />
+          )}
         </View>
-        <View className="flex-1">
-          <Text className="font-subtitle text-[17px] text-gray-900">
-            {account.bank_name || 'Bank Account'}
+        <Text className="font-subtitle text-[18px] text-text-primary">
+          {account.bank_name || 'Bank Account'}
+        </Text>
+        {account.bank_address ? (
+          <Text className="mt-1 font-body text-[13px] text-text-secondary" numberOfLines={1}>
+            {account.bank_address}
           </Text>
-          {account.bank_address ? (
-            <Text className="mt-0.5 font-body text-[12px] text-gray-400" numberOfLines={1}>
-              {account.bank_address}
-            </Text>
-          ) : null}
-        </View>
-        <View className="rounded-full bg-green-100 px-3 py-1">
-          <Text className="font-body text-[12px] text-green-700">Active</Text>
+        ) : null}
+        <View className="mt-3 rounded-full bg-emerald-50 px-3 py-1">
+          <Text className="font-subtitle text-[12px] text-emerald-600">Active</Text>
         </View>
       </View>
 
-      {/* Divider */}
-      <View className="h-px bg-gray-100" />
-
       {/* Details */}
-      <View className="rounded-2xl">
-        <DetailRow label="Account Number" value={account.account_number || '—'} />
-        <View className="h-px bg-gray-50" />
+      <View className="mx-5 overflow-hidden rounded-2xl bg-gray-50">
+        <CopyRow label="Account Number" value={account.account_number || '—'} />
         {account.routing_number ? (
           <>
-            <DetailRow label="Routing Number" value={account.routing_number} />
-            <View className="h-px bg-gray-50" />
+            <View className="mx-5 h-px bg-gray-100" />
+            <CopyRow label="Routing Number" value={account.routing_number} />
           </>
         ) : null}
-        <DetailRow
-          label="Beneficiary"
-          value={account.beneficiary_name || '—'}
-        />
+        <View className="mx-5 h-px bg-gray-100" />
+        <CopyRow label="Beneficiary Name" value={account.beneficiary_name || '—'} />
         {account.beneficiary_address ? (
           <>
-            <View className="h-px bg-gray-50" />
-            <DetailRow label="Beneficiary Address" value={account.beneficiary_address} />
+            <View className="mx-5 h-px bg-gray-100" />
+            <CopyRow label="Beneficiary Address" value={account.beneficiary_address} />
           </>
         ) : null}
         {rails ? (
           <>
-            <View className="h-px bg-gray-50" />
-            <DetailRow label="Payment Methods" value={rails} />
+            <View className="mx-5 h-px bg-gray-100" />
+            <CopyRow label="Payment Rails" value={rails} />
           </>
         ) : null}
       </View>
 
-      {/* Info banner */}
-      <View className="mt-4 flex-row rounded-2xl bg-blue-50 px-4 py-3">
-        <HugeiconsIcon icon={Building04Icon} size={18} color="#3B82F6" />
-        <Text className="ml-3 flex-1 font-body text-[13px] leading-[19px] text-blue-700">
+      {/* Info */}
+      <View className="mx-5 mt-4 flex-row items-start gap-3 rounded-2xl bg-blue-50 px-4 py-3.5">
+        <HugeiconsIcon icon={Building04Icon} size={16} color="#3B82F6" style={{ marginTop: 2 }} />
+        <Text className="flex-1 font-body text-[13px] leading-[19px] text-blue-700">
           Deposits typically arrive within 1–3 business days. Wire transfers may arrive same day.
         </Text>
       </View>
@@ -205,47 +204,38 @@ function AccountDetails({ account }: { account: VirtualAccount }) {
   );
 }
 
-// ─── Empty state for a currency ─────────────────────────────────────────────
-function NoAccountForCurrency({
-  currency,
-  onSetup,
-}: {
-  currency: Currency;
-  onSetup: () => void;
-}) {
+// ─── Empty state ────────────────────────────────────────────────────────────
+function EmptyState({ currency, onSetup }: { currency: Currency; onSetup: () => void }) {
   const Flag = CURRENCY_FLAG[currency];
   return (
     <View className="flex-1 items-center justify-center px-8">
-      <View className="mb-4 h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-50">
-        <Flag width={40} height={40} />
+      <View className="mb-5 size-20 items-center justify-center overflow-hidden rounded-full bg-gray-50">
+        <Flag width={48} height={48} />
       </View>
-      <Text className="mb-2 text-center font-subtitle text-lg text-gray-900">
+      <Text className="mb-2 text-center font-subtitle text-[20px] text-text-primary">
         No {currency} account yet
       </Text>
-      <Text className="mb-6 text-center font-body text-[14px] leading-5 text-gray-400">
-        Create a virtual {CURRENCY_LABEL[currency]} account to start receiving deposits.
+      <Text className="mb-8 text-center font-body text-[14px] leading-5 text-text-secondary">
+        Create a virtual {CURRENCY_LABEL[currency]} account to receive deposits.
       </Text>
-      <Button title={`Create ${currency} Account`} onPress={onSetup} variant="black" />
+      <Button title={`Create ${currency} Account`} onPress={onSetup} />
     </View>
   );
 }
 
-// ─── Root ───────────────────────────────────────────────────────────────────
+// ─── Screen ─────────────────────────────────────────────────────────────────
 export default function VirtualAccountScreen() {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
   const [showIntro, setShowIntro] = useState(false);
   const { data: kycStatus, isLoading: isKycLoading } = useKYCStatus();
   const isApproved = kycStatus?.status === 'approved';
-
   const {
     data: accountsData,
     refetch,
     isRefetching,
     isLoading: isAccountsLoading,
   } = useVirtualAccounts(isApproved);
-
   const accounts = useMemo(() => accountsData?.virtual_accounts ?? [], [accountsData]);
-
   const selectedAccount = useMemo(
     () => accounts.find((a) => a.currency === selectedCurrency),
     [accounts, selectedCurrency]
@@ -254,17 +244,21 @@ export default function VirtualAccountScreen() {
   if (isKycLoading || isAccountsLoading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <View className="flex-row items-center justify-between px-5 pb-2 pt-2">
-          <View className="flex-row items-center">
-            <View className="mr-4 h-6 w-6 rounded-full bg-surface" />
-            <Skeleton className="h-5 w-36" />
+        <View className="flex-row items-center justify-between px-5 pb-2 pt-3">
+          <View className="flex-row items-center gap-4">
+            <View className="size-6 rounded-full bg-gray-100" />
+            <Skeleton className="h-5 w-32" />
           </View>
-          <Skeleton className="h-8 w-20 rounded-full" />
+          <Skeleton className="h-9 w-20 rounded-full" />
         </View>
-        <View className="flex-1 px-5 pt-4">
-          <Skeleton className="mb-4 h-16 w-full rounded-2xl" />
+        <View className="items-center pt-10">
+          <Skeleton className="mb-4 size-16 rounded-full" />
+          <Skeleton className="mb-2 h-5 w-40" />
+          <Skeleton className="h-4 w-28" />
+        </View>
+        <View className="mt-8 px-5">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="mb-3 h-14 w-full rounded-xl" />
+            <Skeleton key={i} className="mb-1 h-16 w-full" />
           ))}
         </View>
       </SafeAreaView>
@@ -273,13 +267,16 @@ export default function VirtualAccountScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-5 pb-2 pt-2">
-        <View className="flex-row items-center">
-          <TouchableOpacity onPress={() => router.back()} hitSlop={12} className="mr-4 p-1">
+      <View className="flex-row items-center justify-between px-5 pb-2 pt-3">
+        <View className="flex-row items-center gap-4">
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Go back">
             <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#111" />
-          </TouchableOpacity>
-          <Text className="font-subtitle text-lg text-gray-900">Bank Account</Text>
+          </Pressable>
+          <Text className="font-subtitle text-[18px] text-text-primary">Bank Account</Text>
         </View>
         <CurrencyPicker selected={selectedCurrency} onSelect={setSelectedCurrency} />
       </View>
@@ -291,14 +288,11 @@ export default function VirtualAccountScreen() {
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#000" />
           }>
-          <AccountDetails account={selectedAccount} />
+          <AccountCard account={selectedAccount} />
           <View className="h-8" />
         </ScrollView>
       ) : (
-        <NoAccountForCurrency
-          currency={selectedCurrency}
-          onSetup={() => setShowIntro(true)}
-        />
+        <EmptyState currency={selectedCurrency} onSetup={() => setShowIntro(true)} />
       )}
 
       <VirtualAccountIntroSheet

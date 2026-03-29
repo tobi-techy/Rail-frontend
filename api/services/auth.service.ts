@@ -20,6 +20,8 @@ import type {
   ResendCodeResponse,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  VerifyResetCodeRequest,
+  VerifyResetCodeResponse,
   SocialLoginRequest,
   SocialLoginResponse,
   WebAuthnLoginBeginRequest,
@@ -36,6 +38,7 @@ const AUTH_ENDPOINTS = {
   VERIFY: '/v1/auth/verify',
   RESEND_CODE: '/v1/auth/resend-code',
   FORGOT_PASSWORD: '/v1/auth/forgot-password',
+  VERIFY_RESET_CODE: '/v1/auth/verify-reset-code',
   RESET_PASSWORD: '/v1/auth/reset-password',
   SOCIAL_LOGIN: '/v1/auth/social/login',
   WEBAUTHN_LOGIN_BEGIN: '/v1/auth/webauthn/login/begin',
@@ -200,6 +203,13 @@ export const authService = {
     }
 
     return apiClient.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, data);
+  },
+
+  /**
+   * Verify 6-digit reset code and get a short-lived reset token
+   */
+  async verifyResetCode(data: VerifyResetCodeRequest): Promise<VerifyResetCodeResponse> {
+    return apiClient.post<VerifyResetCodeResponse>(AUTH_ENDPOINTS.VERIFY_RESET_CODE, data);
   },
 
   /**

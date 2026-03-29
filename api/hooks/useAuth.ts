@@ -16,6 +16,7 @@ import type {
   ResendCodeRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  VerifyResetCodeRequest,
 } from '../types';
 
 const TOKEN_EXPIRY_DAYS = 7;
@@ -51,11 +52,11 @@ const grantPostLoginPasscodeSession = () => {
  * Login mutation
  */
 export function useLogin() {
-   const { track, identify } = useAnalytics();
+  const { track, identify } = useAnalytics();
 
-   return useMutation({
-     mutationFn: (data: LoginRequest) => authService.login(data),
-     onSuccess: async (response) => {
+  return useMutation({
+    mutationFn: (data: LoginRequest) => authService.login(data),
+    onSuccess: async (response) => {
       const nowIso = new Date().toISOString();
 
       // Update auth store with response data
@@ -188,30 +189,30 @@ export function useResendCode() {
  * Logout mutation
  */
 export function useLogout() {
-   const queryClient = useQueryClient();
-   const { track } = useAnalytics();
+  const queryClient = useQueryClient();
+  const { track } = useAnalytics();
 
-   return useMutation({
-     mutationFn: () => authService.logout(),
-     onSuccess: () => {
-       // Track logout event
-       track(ANALYTICS_EVENTS.SIGN_OUT, {
-         timestamp: new Date().toISOString(),
-       });
+  return useMutation({
+    mutationFn: () => authService.logout(),
+    onSuccess: () => {
+      // Track logout event
+      track(ANALYTICS_EVENTS.SIGN_OUT, {
+        timestamp: new Date().toISOString(),
+      });
 
-       // Clear auth store
-       useAuthStore.getState().reset();
+      // Clear auth store
+      useAuthStore.getState().reset();
 
-       // Clear all cached data
-       queryClient.clear();
-     },
-     onError: (error) => {
-       track(ANALYTICS_EVENTS.ERROR_OCCURRED, {
-         component: 'useLogout',
-         error: error instanceof Error ? error.message : 'Logout failed',
-       });
-     },
-   });
+      // Clear all cached data
+      queryClient.clear();
+    },
+    onError: (error) => {
+      track(ANALYTICS_EVENTS.ERROR_OCCURRED, {
+        component: 'useLogout',
+        error: error instanceof Error ? error.message : 'Logout failed',
+      });
+    },
+  });
 }
 
 /**
@@ -220,6 +221,15 @@ export function useLogout() {
 export function useForgotPassword() {
   return useMutation({
     mutationFn: (data: ForgotPasswordRequest) => authService.forgotPassword(data),
+  });
+}
+
+/**
+ * Verify reset code mutation
+ */
+export function useVerifyResetCode() {
+  return useMutation({
+    mutationFn: (data: VerifyResetCodeRequest) => authService.verifyResetCode(data),
   });
 }
 
@@ -250,9 +260,9 @@ export function useCurrentUser() {
  * Apple Sign-In mutation
  */
 export function useAppleSignIn() {
-   const { track, identify } = useAnalytics();
+  const { track, identify } = useAnalytics();
 
-   return useMutation({
+  return useMutation({
     mutationFn: async () => {
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -312,9 +322,9 @@ export function useAppleSignIn() {
       invalidateQueries.auth();
       invalidateQueries.wallet();
       invalidateQueries.user();
-      },
-      });
-      }
+    },
+  });
+}
 
 /**
  * Google Sign-In mutation (Android)
@@ -325,9 +335,8 @@ export function useGoogleSignIn() {
 
   return useMutation({
     mutationFn: async () => {
-      const { GoogleSignin, statusCodes } = await import(
-        '@react-native-google-signin/google-signin'
-      );
+      const { GoogleSignin, statusCodes } =
+        await import('@react-native-google-signin/google-signin');
 
       GoogleSignin.configure({
         webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -338,7 +347,9 @@ export function useGoogleSignIn() {
       const response = await GoogleSignin.signIn();
 
       if (response.type !== 'success') {
-        throw Object.assign(new Error('Google Sign-In cancelled'), { code: statusCodes.SIGN_IN_CANCELLED });
+        throw Object.assign(new Error('Google Sign-In cancelled'), {
+          code: statusCodes.SIGN_IN_CANCELLED,
+        });
       }
 
       const idToken = response.data?.idToken;

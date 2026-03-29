@@ -28,7 +28,6 @@ import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
 import { useStation, useKYCStatus } from '@/api/hooks';
 import { useCards } from '@/api/hooks/useCard';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
-import type { Deposit, Withdrawal } from '@/api/types';
 import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import {
   normalizeWithdrawals,
@@ -257,13 +256,6 @@ function DashboardScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerLeft: () => (
-        <View className="flex-row items-center gap-x-3 pl-md">
-          <Pressable hitSlop={8}>
-            <Avatar size={36} {...avatarConfig} />
-          </Pressable>
-        </View>
-      ),
       headerRight: () => (
         <View className="flex-row items-center gap-x-4 pr-md">
           <Pressable onPress={() => gleap.open()} hitSlop={8}>

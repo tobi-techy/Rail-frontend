@@ -3,6 +3,8 @@ import { View } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { SessionManager } from '@/utils/sessionManager';
+import { ROUTES } from '@/constants/routes';
+import { getPostAuthRoute, isProfileCompletionRequired } from '@/utils/onboardingFlow';
 
 /**
  * Root index — waits for store hydration, then routes:
@@ -16,6 +18,9 @@ export default function IndexScreen() {
   const hasPasscode = useAuthStore((s) => s.hasPasscode);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const accessToken = useAuthStore((s) => s.accessToken);
+  const onboardingStatus = useAuthStore(
+    (s) => s.onboardingStatus || s.user?.onboardingStatus || null
+  );
 
   useEffect(() => {
     if (!hydrated) {
@@ -30,13 +35,19 @@ export default function IndexScreen() {
 
   const targetRoute = !hydrated
     ? null
-    : hasValidAuthSession && (!hasPasscode || hasValidPasscodeSession)
-      ? '/(tabs)'
-      : user && hasPasscode
-        ? '/login-passcode'
-        : user && !hasPasscode
-          ? '/(auth)/signin'
-          : '/intro';
+    : hasValidAuthSession && isProfileCompletionRequired(onboardingStatus)
+      ? ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO
+      : hasValidAuthSession && !hasPasscode
+        ? ROUTES.AUTH.CREATE_PASSCODE
+        : hasValidAuthSession && hasValidPasscodeSession
+          ? getPostAuthRoute(onboardingStatus)
+          : hasValidAuthSession && hasPasscode
+            ? '/login-passcode'
+            : user && hasPasscode
+              ? '/login-passcode'
+              : user && !hasPasscode
+                ? '/(auth)/signin'
+                : '/intro';
 
   useEffect(() => {
     if (targetRoute) {

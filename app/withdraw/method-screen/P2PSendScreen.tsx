@@ -14,34 +14,26 @@
  *   3. Success overlay
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Keyboard,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, StatusBar, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
-  SlideInUp,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
-  runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
-import { BlurView } from 'expo-blur';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+  BottomSheetView,
+  BottomSheetTextInput,
+} from '@gorhom/bottom-sheet';
+import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useStation, useVerifyPasscode } from '@/api/hooks';
 import { Button } from '@/components/ui';
@@ -66,12 +58,18 @@ import {
 import { BRAND_RED, gentleSpring, springConfig } from './constants';
 import { AnimatedAmount } from './AnimatedAmount';
 import { parseApiError, isPasscodeSessionError } from '@/utils/apiError';
-import { Alert02Icon, ArrowLeft01Icon, Cancel01Icon, CheckmarkCircle02Icon, Search01Icon } from '@hugeicons/core-free-icons';
+import {
+  Alert02Icon,
+  ArrowLeft01Icon,
+  Cancel01Icon,
+  CheckmarkCircle02Icon,
+  Search01Icon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
-const MAX_DIGITS = 12;
+const MAX_DIGITS = 9;
 const P2P_LIMIT = 10_000;
-const SHEET_SPRING = { damping: 30, stiffness: 400, mass: 0.8 };
+const SCREEN_HEIGHT_80 = Math.round(require('react-native').Dimensions.get('window').height * 0.8);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -158,10 +156,11 @@ function P2PSendScreenContent() {
   const [rawAmount, setRawAmount] = useState('0');
   const numericAmount = parseFloat(rawAmount) || 0;
   const maxSend = Math.min(P2P_LIMIT, balance);
-  const amountOk = numericAmount > 0 && numericAmount <= maxSend;
+  const amountOk = numericAmount > 0; // && numericAmount <= maxSend;
 
   // sheet state
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const recipientSheetRef = useRef<BottomSheetModal>(null);
+  const nonUserSheetRef = useRef<BottomSheetModal>(null);
   const [query, setQuery] = useState('');
   const [lookupResult, setLookupResult] = useState<P2PLookupResponse | null>(null);
   const [isLooking, setIsLooking] = useState(false);
@@ -179,7 +178,7 @@ function P2PSendScreenContent() {
   const [pinAttempts, setPinAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
   const [lockoutSecondsRemaining, setLockoutSecondsRemaining] = useState(0);
-  const noteRef = useRef<TextInput>(null);
+  const noteRef = useRef<any>(null);
 
   const { mutate: verifyPasscode, isPending: isPasscodeVerifying } = useVerifyPasscode();
 
@@ -214,7 +213,7 @@ function P2PSendScreenContent() {
         amount: numericAmount.toFixed(2),
         note: note.trim() || undefined,
       });
-      setSheetOpen(false);
+      recipientSheetRef.current?.dismiss();
       setSuccess(true);
     } catch (e: unknown) {
       if (isPasscodeSessionError(e)) {
@@ -305,51 +304,30 @@ function P2PSendScreenContent() {
     opacity: pillsOpacity.value,
   }));
 
-  // sheet slide animation
-  const translateY = useSharedValue(800);
-  const keyboardOffset = useSharedValue(0);
+  // sheet open/close
   const openSheet = useCallback(() => {
-    setSheetOpen(true);
-    translateY.value = withSpring(0, SHEET_SPRING);
+    recipientSheetRef.current?.present();
   }, []);
   const closeSheet = useCallback(() => {
-    translateY.value = withSpring(800, SHEET_SPRING, () => runOnJS(setSheetOpen)(false));
+    recipientSheetRef.current?.dismiss();
     setSelected(null);
     setQuery('');
     setNote('');
     setSubmitError('');
   }, []);
-  const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    bottom: 12 + insets.bottom + keyboardOffset.value,
-  }));
 
-  // Lift sheet when keyboard appears
-  useEffect(() => {
-    if (!sheetOpen) return;
-    const KB_SPRING = { damping: 22, stiffness: 280, mass: 0.8 };
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const onShow = Keyboard.addListener(showEvent, (e) => {
-      keyboardOffset.value = withSpring(e.endCoordinates.height - insets.bottom, KB_SPRING);
-    });
-    const onHide = Keyboard.addListener(hideEvent, () => {
-      keyboardOffset.value = withSpring(0, KB_SPRING);
-    });
-    return () => {
-      onShow.remove();
-      onHide.remove();
-    };
-  }, [sheetOpen, insets.bottom, keyboardOffset]);
-
-  const pan = Gesture.Pan()
-    .onUpdate((e) => {
-      if (e.translationY > 0) translateY.value = e.translationY;
-    })
-    .onEnd((e) => {
-      if (e.translationY > 100 || e.velocityY > 800) runOnJS(closeSheet)();
-      else translateY.value = withSpring(0, SHEET_SPRING);
-    });
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
 
   // load recents
   useEffect(() => {
@@ -391,7 +369,7 @@ function P2PSendScreenContent() {
         }
         const next = (cur === '0' ? key : `${cur}${key}`).replace(/^0+(?=\d)/, '') || '0';
         if (next.length > MAX_DIGITS) return cur;
-        if (parseFloat(next) > maxSend) return formatMaxAmount(maxSend);
+        if (maxSend > 0 && parseFloat(next) > maxSend) return formatMaxAmount(maxSend);
         return next;
       });
     },
@@ -401,8 +379,8 @@ function P2PSendScreenContent() {
   const pickRecipient = useCallback((r: Recipient) => {
     Keyboard.dismiss();
     if (!r.isUser) {
-      // Show non-user confirmation before proceeding
       setPendingNonUserRecipient(r);
+      nonUserSheetRef.current?.present();
       return;
     }
     setSelected(r);
@@ -411,6 +389,7 @@ function P2PSendScreenContent() {
 
   const confirmNonUserRecipient = useCallback(() => {
     if (!pendingNonUserRecipient) return;
+    nonUserSheetRef.current?.dismiss();
     setSelected(pendingNonUserRecipient);
     setPendingNonUserRecipient(null);
     setTimeout(() => noteRef.current?.focus(), 300);
@@ -431,18 +410,7 @@ function P2PSendScreenContent() {
           <Text className="font-subtitle text-[20px] text-text-primary">Confirm send</Text>
           <View className="size-11" />
         </View>
-        <View className="mx-5 mt-2 rounded-2xl bg-surface px-4 py-3">
-          <View className="flex-row items-center justify-between">
-            <Text className="font-body text-[13px] text-text-secondary">Amount</Text>
-            <Text className="font-subtitle text-[15px] text-text-primary">
-              ${formatCurrency(numericAmount)}
-            </Text>
-          </View>
-          <View className="mt-1 flex-row items-center justify-between">
-            <Text className="font-body text-[13px] text-text-secondary">To</Text>
-            <Text className="font-subtitle text-[15px] text-text-primary">{selected?.name}</Text>
-          </View>
-        </View>
+
         {!!lockoutUntil && (
           <View className="mx-5 mt-3 rounded-xl bg-red-50 px-4 py-3">
             <Text className="font-subtitle text-[13px] text-red-600">
@@ -573,245 +541,206 @@ function P2PSendScreenContent() {
       </SafeAreaView>
 
       {/* ── Recipient / Note sheet ── */}
-      {sheetOpen && (
-        <Modal
-          visible
-          transparent
-          animationType="fade"
-          statusBarTranslucent
-          onRequestClose={closeSheet}>
-          <GestureHandlerRootView style={StyleSheet.absoluteFill}>
-            {/* Blurred backdrop showing red screen behind */}
-            <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill}>
-              <Pressable
-                style={StyleSheet.absoluteFill}
-                onPress={selected ? undefined : closeSheet}
-              />
-            </BlurView>
-
-            <GestureDetector gesture={pan}>
-              <Animated.View
-                style={[
-                  sheetStyle,
-                  {
-                    position: 'absolute',
-                    left: 12,
-                    right: 12,
-                    borderRadius: 32,
-                    backgroundColor: '#fff',
-                    paddingTop: 12,
-                    maxHeight: '88%',
-                    overflow: 'hidden',
-                  },
-                ]}>
-                {/* Drag handle */}
-                <View className="mb-3 items-center">
-                  <View className="h-1 w-10 rounded-full bg-gray-200" />
+      <BottomSheetModal
+        ref={recipientSheetRef}
+        enableDynamicSizing
+        maxDynamicContentSize={SCREEN_HEIGHT_80}
+        enablePanDownToClose
+        onDismiss={() => {
+          setSelected(null);
+          setQuery('');
+          setNote('');
+          setSubmitError('');
+        }}
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{
+          backgroundColor: '#fff',
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+        }}
+        handleIndicatorStyle={{ backgroundColor: '#D1D5DB', width: 36 }}
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize">
+        <BottomSheetScrollView
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          {!selected ? (
+            <View>
+              <View className="flex-row items-start justify-between px-6 pb-4">
+                <View className="flex-1 pr-4">
+                  <Text className="font-subtitle text-[28px] leading-[34px] text-text-primary">
+                    Send <Text style={{ color: BRAND_RED }}>${formatCurrency(numericAmount)}</Text>{' '}
+                    <Text className="text-text-secondary">to</Text>
+                  </Text>
                 </View>
+                <Pressable
+                  className="mt-1 size-9 items-center justify-center rounded-full bg-surface"
+                  onPress={closeSheet}
+                  hitSlop={8}>
+                  <HugeiconsIcon icon={Cancel01Icon} size={16} color="#6B7280" />
+                </Pressable>
+              </View>
 
-                {/* ── No recipient selected: search ── */}
-                {!selected ? (
-                  <Animated.View entering={FadeIn.duration(200)} className="flex-1">
-                    {/* Header row */}
-                    <View className="flex-row items-start justify-between px-6 pb-4">
-                      <View className="flex-1 pr-4">
-                        <Text className="font-subtitle text-[28px] leading-[34px] text-text-primary">
-                          Send{' '}
-                          <Text style={{ color: BRAND_RED }}>${formatCurrency(numericAmount)}</Text>{' '}
-                          <Text className="text-text-secondary">to</Text>
-                        </Text>
-                      </View>
-                      <Pressable
-                        className="mt-1 size-9 items-center justify-center rounded-full bg-surface"
-                        onPress={closeSheet}
-                        hitSlop={8}>
-                        <HugeiconsIcon icon={Cancel01Icon} size={16} color="#6B7280" />
-                      </Pressable>
-                    </View>
+              <View
+                className="mx-6 mb-4 flex-row items-center gap-3 rounded-2xl bg-surface px-4"
+                style={{ height: 50 }}>
+                <HugeiconsIcon icon={Search01Icon} size={17} color="#9CA3AF" />
+                <BottomSheetTextInput
+                  style={{
+                    flex: 1,
+                    fontFamily: 'InstrumentSans-Regular',
+                    fontSize: 15,
+                    color: '#111',
+                  }}
+                  placeholder="Name, @railtag, email, phone…"
+                  placeholderTextColor="#9CA3AF"
+                  value={query}
+                  onChangeText={setQuery}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="search"
+                />
+                {isLooking ? (
+                  <ActivityIndicator size="small" color="#9CA3AF" />
+                ) : query.length > 0 ? (
+                  <Pressable
+                    onPress={() => {
+                      setQuery('');
+                      setLookupResult(null);
+                    }}
+                    hitSlop={8}>
+                    <HugeiconsIcon icon={Cancel01Icon} size={15} color="#9CA3AF" />
+                  </Pressable>
+                ) : null}
+              </View>
 
-                    {/* Search01Icon bar */}
-                    <View
-                      className="mx-6 mb-4 flex-row items-center gap-3 rounded-2xl bg-surface px-4"
-                      style={{ height: 50 }}>
-                      <HugeiconsIcon icon={Search01Icon} size={17} color="#9CA3AF" />
-                      <TextInput
-                        className="flex-1 font-body text-[15px] text-text-primary"
-                        placeholder="Name, @railtag, email, phone…"
-                        placeholderTextColor="#9CA3AF"
-                        value={query}
-                        onChangeText={setQuery}
-                        autoFocus
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        returnKeyType="search"
+              <View className="px-6">
+                {query.length >= 2 && lookupResult?.canSend && (
+                  <>
+                    {lookupResult.found && lookupResult.user ? (
+                      <RecipientRow
+                        name={displayName(lookupResult.user)}
+                        sub={lookupResult.user.railTag}
+                        chars={initials(lookupResult.user)}
+                        onPress={() =>
+                          pickRecipient({
+                            identifier: query.trim(),
+                            name: displayName(lookupResult.user),
+                            chars: initials(lookupResult.user),
+                            isUser: true,
+                          })
+                        }
                       />
-                      {isLooking ? (
-                        <ActivityIndicator size="small" color="#9CA3AF" />
-                      ) : query.length > 0 ? (
-                        <Pressable
-                          onPress={() => {
-                            setQuery('');
-                            setLookupResult(null);
-                          }}
-                          hitSlop={8}>
-                          <HugeiconsIcon icon={Cancel01Icon} size={15} color="#9CA3AF" />
-                        </Pressable>
-                      ) : null}
-                    </View>
-
-                    <ScrollView
-                      className="flex-1 px-6"
-                      keyboardShouldPersistTaps="handled"
-                      showsVerticalScrollIndicator={false}>
-                      {/* Lookup results */}
-                      {query.length >= 2 && lookupResult?.canSend && (
-                        <Animated.View entering={FadeInDown.duration(220)}>
-                          {lookupResult.found && lookupResult.user ? (
-                            <RecipientRow
-                              name={displayName(lookupResult.user)}
-                              sub={lookupResult.user.railTag}
-                              chars={initials(lookupResult.user)}
-                              onPress={() =>
-                                pickRecipient({
-                                  identifier: query.trim(),
-                                  name: displayName(lookupResult.user),
-                                  chars: initials(lookupResult.user),
-                                  isUser: true,
-                                })
-                              }
-                            />
-                          ) : (
-                            <RecipientRow
-                              name={query.trim()}
-                              sub={
-                                lookupResult.message ?? "Not on Rail yet — they'll get an invite"
-                              }
-                              chars={(query.trim()[0] ?? '?').toUpperCase()}
-                              onPress={() =>
-                                pickRecipient({
-                                  identifier: query.trim(),
-                                  name: query.trim(),
-                                  chars: (query.trim()[0] ?? '?').toUpperCase(),
-                                  isUser: false,
-                                })
-                              }
-                            />
-                          )}
-                        </Animated.View>
-                      )}
-
-                      {/* Recents */}
-                      {!query && recents.length > 0 && (
-                        <Animated.View entering={FadeInDown.delay(60).duration(300)}>
-                          {recents.map((r) => (
-                            <RecipientRow
-                              key={r.recipientId}
-                              name={displayName(r)}
-                              sub={r.railTag}
-                              chars={initials(r)}
-                              onPress={() =>
-                                pickRecipient({
-                                  identifier: r.railTag ?? r.recipientId,
-                                  name: displayName(r),
-                                  chars: initials(r),
-                                  isUser: true,
-                                })
-                              }
-                            />
-                          ))}
-                        </Animated.View>
-                      )}
-
-                      {/* Contacts section header */}
-                      {!query && (
-                        <Animated.View entering={FadeInDown.delay(120).duration(300)}>
-                          <Text className="mb-1 mt-4 font-subtitle text-[17px] text-text-primary">
-                            Contacts
-                          </Text>
-                          <Text className="font-body text-[13px] text-text-secondary">
-                            Search01Icon above to find someone by name, @railtag, or email.
-                          </Text>
-                        </Animated.View>
-                      )}
-
-                      <View style={{ height: 32 }} />
-                    </ScrollView>
-                  </Animated.View>
-                ) : (
-                  /* ── Recipient selected: note input ── */
-                  <Animated.View entering={FadeInDown.duration(280)} className="px-6 pb-4">
-                    {/* Back + headline */}
-                    <Pressable
-                      className="mb-4 size-9 items-center justify-center rounded-full bg-surface"
-                      onPress={() => {
-                        setSelected(null);
-                        setNote('');
-                        setSubmitError('');
-                      }}>
-                      <HugeiconsIcon icon={ArrowLeft01Icon} size={16} color="#111" />
-                    </Pressable>
-
-                    {/* "Send $Cancel01Icon to [Avatar] Name for" */}
-                    <View className="mb-5">
-                      <Text className="font-subtitle text-[26px] leading-[32px] text-text-primary">
-                        Send{' '}
-                        <Text style={{ color: BRAND_RED }}>${formatCurrency(numericAmount)}</Text>
-                        {'\n'}to
-                      </Text>
-                      <View className="mt-1 flex-row items-center gap-2">
-                        <Avatar chars={selected.chars} size={28} />
-                        <Text className="font-subtitle text-[26px] text-text-primary">
-                          {selected.name.split(' ')[0]}
-                        </Text>
-                        <Text className="font-subtitle text-[26px] text-text-secondary">for</Text>
-                      </View>
-                    </View>
-
-                    {/* Note input — inline Cash App style */}
-                    <View className="mb-5 flex-row items-center border-b border-gray-200 pb-3">
-                      <TextInput
-                        ref={noteRef}
-                        className="flex-1 font-body text-[17px] text-text-primary"
-                        placeholder="What's it for?"
-                        placeholderTextColor="#9CA3AF"
-                        value={note}
-                        onChangeText={setNote}
-                        maxLength={255}
-                        returnKeyType="done"
-                        blurOnSubmit
+                    ) : (
+                      <RecipientRow
+                        name={query.trim()}
+                        sub={lookupResult.message ?? "Not on Rail yet — they'll get an invite"}
+                        chars={(query.trim()[0] ?? '?').toUpperCase()}
+                        onPress={() =>
+                          pickRecipient({
+                            identifier: query.trim(),
+                            name: query.trim(),
+                            chars: (query.trim()[0] ?? '?').toUpperCase(),
+                            isUser: false,
+                          })
+                        }
                       />
-                      {note.length > 0 && (
-                        <Pressable
-                          onPress={submit}
-                          className="ml-3 items-center justify-center rounded-full px-4 py-2"
-                          style={{ backgroundColor: BRAND_RED }}>
-                          <Text className="font-subtitle text-[14px] text-white">Send</Text>
-                        </Pressable>
-                      )}
-                    </View>
-
-                    {submitError ? (
-                      <Animated.View entering={FadeIn.duration(200)} className="mb-3">
-                        <Text className="font-body text-[13px] text-red-500">{submitError}</Text>
-                      </Animated.View>
-                    ) : null}
-
-                    <Button
-                      title={isSubmitting ? 'Sending…' : `Send $${formatCurrency(numericAmount)}`}
-                      onPress={submit}
-                      disabled={isSubmitting}
-                      loading={isSubmitting}
-                    />
-                    <Pressable className="mt-3 items-center py-2" onPress={submit}>
-                      <Text className="font-body text-[14px] text-text-secondary">Skip note</Text>
-                    </Pressable>
-                  </Animated.View>
+                    )}
+                  </>
                 )}
-              </Animated.View>
-            </GestureDetector>
-          </GestureHandlerRootView>
-        </Modal>
-      )}
+
+                {!query &&
+                  recents.length > 0 &&
+                  recents.map((r) => (
+                    <RecipientRow
+                      key={r.recipientId}
+                      name={displayName(r)}
+                      sub={r.railTag}
+                      chars={initials(r)}
+                      onPress={() =>
+                        pickRecipient({
+                          identifier: r.railTag ?? r.recipientId,
+                          name: displayName(r),
+                          chars: initials(r),
+                          isUser: true,
+                        })
+                      }
+                    />
+                  ))}
+
+                {!query && (
+                  <View className="mt-4">
+                    <Text className="mb-1 font-subtitle text-[17px] text-text-primary">
+                      Contacts
+                    </Text>
+                    <Text className="font-body text-[13px] text-text-secondary">
+                      Search above to find someone by name, @railtag, or email.
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View style={{ height: 32 }} />
+            </View>
+          ) : (
+            <View className="px-6 pb-4">
+              <Pressable
+                className="mb-4 size-9 items-center justify-center rounded-full bg-surface"
+                onPress={() => {
+                  setSelected(null);
+                  setNote('');
+                  setSubmitError('');
+                }}>
+                <HugeiconsIcon icon={ArrowLeft01Icon} size={16} color="#111" />
+              </Pressable>
+
+              <View className="mb-5">
+                <Text className="font-subtitle text-[26px] leading-[32px] text-text-primary">
+                  Send <Text style={{ color: BRAND_RED }}>${formatCurrency(numericAmount)}</Text>
+                  {'\n'}to
+                  <Text style={{ color: BRAND_RED }} className="capitalize">
+                    {' '}
+                    {selected.name.split(' ')[0]}{' '}
+                  </Text>
+                  for
+                </Text>
+              </View>
+
+              <View className="mb-5 flex-row items-center border-b border-gray-200 pb-3">
+                <BottomSheetTextInput
+                  ref={noteRef}
+                  style={{
+                    flex: 1,
+                    fontFamily: 'InstrumentSans-Regular',
+                    fontSize: 17,
+                    color: '#111',
+                  }}
+                  placeholder="What's it for?"
+                  placeholderTextColor="#9CA3AF"
+                  value={note}
+                  onChangeText={setNote}
+                  maxLength={255}
+                  returnKeyType="done"
+                  // blurOnSubmit
+                />
+                {note.length > 0 && (
+                  <Pressable
+                    disabled={isSubmitting}
+                    onPress={submit}
+                    className="ml-3 items-center justify-center rounded-full px-4 py-2"
+                    style={{ backgroundColor: BRAND_RED }}>
+                    <Text className="font-subtitle text-[14px] text-white">Send</Text>
+                  </Pressable>
+                )}
+              </View>
+              <Pressable className="mt-3 items-center py-2" onPress={submit}>
+                <Text className="font-body text-[14px] text-text-secondary">Skip note</Text>
+              </Pressable>
+            </View>
+          )}
+        </BottomSheetScrollView>
+      </BottomSheetModal>
 
       {/* ── Transaction confirm sheet ── */}
       <WithdrawConfirmSheet
@@ -829,35 +758,39 @@ function P2PSendScreenContent() {
         note={note || undefined}
       />
 
-      {/* ── Non-user confirmation modal ── */}
-      {!!pendingNonUserRecipient && (
-        <Modal visible transparent animationType="fade" statusBarTranslucent>
-          <View
-            style={StyleSheet.absoluteFill}
-            className="items-center justify-center bg-black/50 px-6">
-            <Animated.View
-              entering={FadeInDown.springify().damping(20)}
-              className="w-full rounded-3xl bg-white p-6">
-              <View className="mb-4 size-12 items-center justify-center rounded-full bg-amber-50">
-                <HugeiconsIcon icon={Alert02Icon} size={24} color="#F59E0B" />
-              </View>
-              <Text className="font-subtitle text-[20px] text-text-primary">
-                {pendingNonUserRecipient.name} isn&apos;t on Rail yet
-              </Text>
-              <Text className="mt-2 font-body text-[14px] text-text-secondary">
-                They&apos;ll receive an invite to claim your ${formatCurrency(numericAmount)} once
-                they sign up. Are you sure you want to continue?
-              </Text>
-              <Button title="Yes, continue" className="mt-5" onPress={confirmNonUserRecipient} />
-              <Pressable
-                className="mt-3 items-center py-2"
-                onPress={() => setPendingNonUserRecipient(null)}>
-                <Text className="font-body text-[14px] text-text-secondary">Cancel</Text>
-              </Pressable>
-            </Animated.View>
+      {/* ── Non-user confirmation sheet ── */}
+      <BottomSheetModal
+        ref={nonUserSheetRef}
+        enableDynamicSizing
+        enablePanDownToClose
+        onDismiss={() => setPendingNonUserRecipient(null)}
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{
+          backgroundColor: '#fff',
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+        }}
+        handleIndicatorStyle={{ backgroundColor: '#D1D5DB', width: 36 }}>
+        <BottomSheetView
+          style={{ paddingHorizontal: 24, paddingBottom: Math.max(insets.bottom, 16) }}>
+          <View className="mb-4 size-12 items-center justify-center rounded-full bg-amber-50">
+            <HugeiconsIcon icon={Alert02Icon} size={24} color="#F59E0B" />
           </View>
-        </Modal>
-      )}
+          <Text className="font-subtitle text-[20px] text-text-primary">
+            {pendingNonUserRecipient?.name} isn&apos;t on Rail yet
+          </Text>
+          <Text className="mt-2 font-body text-[14px] text-text-secondary">
+            They&apos;ll receive an invite to claim your ${formatCurrency(numericAmount)} once they
+            sign up. Are you sure you want to continue?
+          </Text>
+          <Button title="Yes, continue" className="mt-5" onPress={confirmNonUserRecipient} />
+          <Pressable
+            className="mt-3 items-center py-2"
+            onPress={() => nonUserSheetRef.current?.dismiss()}>
+            <Text className="font-body text-[14px] text-text-secondary">Cancel</Text>
+          </Pressable>
+        </BottomSheetView>
+      </BottomSheetModal>
     </>
   );
 }

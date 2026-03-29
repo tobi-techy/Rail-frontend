@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKycStore } from '@/stores/kycStore';
 import { useStartDiditSession } from '@/api/hooks/useKYC';
+import type { TransformedApiError } from '@/api/types';
 import type { KycDisclosures } from '@/api/types/kyc';
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
@@ -90,6 +91,7 @@ export default function SourceOfFundsScreen() {
     setActingAsIntermediary,
     setDiditSession,
     setLocalSubmissionPendingAt,
+    setMissingProfileFields,
   } = useKycStore();
 
   const startSession = useStartDiditSession();
@@ -146,7 +148,18 @@ export default function SourceOfFundsScreen() {
       } else {
         router.push('/kyc/didit-sdk');
       }
-    } catch {
+    } catch (error) {
+      const apiError = error as TransformedApiError;
+      const missingFields = Array.isArray(apiError?.details?.missing_fields)
+        ? (apiError.details.missing_fields as string[])
+        : [];
+
+      if (missingFields.length > 0) {
+        setMissingProfileFields(missingFields);
+        router.replace('/kyc/profile-gaps');
+        return;
+      }
+
       setSubmitError('Could not start verification. Please try again.');
     }
   };

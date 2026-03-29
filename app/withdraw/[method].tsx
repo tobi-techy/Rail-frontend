@@ -396,7 +396,8 @@ export default function WithdrawAmountScreen() {
         }
         const next = (current === '0' ? key : `${current}${key}`).replace(/^0+(?=\d)/, '') || '0';
         if (next.length > MAX_INTEGER_DIGITS) return current;
-        if (Number.parseFloat(next) > maxWithdrawable) return formatMaxAmount(maxWithdrawable);
+        if (maxWithdrawable > 0 && Number.parseFloat(next) > maxWithdrawable)
+          return formatMaxAmount(maxWithdrawable);
         return next;
       });
     },
@@ -626,13 +627,13 @@ export default function WithdrawAmountScreen() {
               <AnimatedAmount amount={displayAmount} />
             </View>
 
-            {numericAmount > 0 && (
+            {/*{numericAmount > 0 && (
               <Animated.View entering={FadeIn.duration(300)}>
                 <Text className="mt-2 text-center font-body text-[13px] text-white/90">
                   {amountError || 'Looks good. You can continue.'}
                 </Text>
               </Animated.View>
-            )}
+            )}*/}
 
             {!isFundFlow && (
               <Animated.View
@@ -681,11 +682,6 @@ export default function WithdrawAmountScreen() {
           entering={SlideInUp.delay(200).duration(500)}
           className="border-t border-white/20 px-5 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
-          {didTryContinue && !!amountError && (
-            <Animated.View entering={FadeIn.duration(200)}>
-              <Text className="mb-2 font-body text-[13px] text-white/90">{amountError}</Text>
-            </Animated.View>
-          )}
           {isMWAWithdrawMethod && !!mwaWithdrawal.error && (
             <Animated.View entering={FadeIn.duration(200)}>
               <Text className="mb-2 font-body text-[13px] text-white/90">
@@ -702,7 +698,7 @@ export default function WithdrawAmountScreen() {
                   : 'Continue'
             }
             onPress={onContinuePress}
-            disabled={!canContinue || mwaWithdrawal.isLoading}
+            // disabled={!canContinue || mwaWithdrawal.isLoading}
             loading={mwaWithdrawal.isLoading}
             variant="white"
             className="bg-white"

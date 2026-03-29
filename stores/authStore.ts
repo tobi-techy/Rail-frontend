@@ -44,12 +44,17 @@ const sessionExpiry = (from = Date.now()) => new Date(from + SESSION_DURATION_MS
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export interface User extends Omit<ApiUser, 'phone'> {
+export interface User extends ApiUser {
   fullName?: string;
-  firstName?: string;
-  lastName?: string;
+  phone?: string | null;
   phoneNumber?: string;
   country?: string;
+  dateOfBirth?: string;
+  addressStreet?: string;
+  addressCity?: string;
+  addressState?: string;
+  addressPostalCode?: string;
+  addressCountry?: string;
 }
 
 export interface RegistrationData {

@@ -5,6 +5,7 @@ import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import * as SplashScreen from 'expo-splash-screen';
 import { initSentry } from '@/lib/sentry';
 import { initGlobalErrorHandlers, logger } from '@/lib/logger';
@@ -235,30 +236,32 @@ export default function Layout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ErrorBoundary>
-        <StatusBar barStyle="dark-content" />
-        <KeyboardProvider>
-          <QueryClientProvider client={queryClient}>
-            <SafeAreaProvider style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-              <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-                <PostHogProvider
-                  apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
-                  options={{
-                    host: 'https://us.i.posthog.com',
-                    enableSessionReplay: true,
-                    sessionReplayConfig: { maskAllTextInputs: true, maskAllImages: false },
-                  }}>
-                  <PostHogSurveyProvider>
-                    <AppReadyTracker />
-                    <AppNavigator />
-                    <FeedbackPopupHost />
-                  </PostHogSurveyProvider>
-                </PostHogProvider>
-              </View>
-            </SafeAreaProvider>
-          </QueryClientProvider>
-        </KeyboardProvider>
-      </ErrorBoundary>
+      <BottomSheetModalProvider>
+        <ErrorBoundary>
+          <StatusBar barStyle="dark-content" />
+          <KeyboardProvider>
+            <QueryClientProvider client={queryClient}>
+              <SafeAreaProvider style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+                <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+                  <PostHogProvider
+                    apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
+                    options={{
+                      host: 'https://us.i.posthog.com',
+                      enableSessionReplay: true,
+                      sessionReplayConfig: { maskAllTextInputs: true, maskAllImages: false },
+                    }}>
+                    <PostHogSurveyProvider>
+                      <AppReadyTracker />
+                      <AppNavigator />
+                      <FeedbackPopupHost />
+                    </PostHogSurveyProvider>
+                  </PostHogProvider>
+                </View>
+              </SafeAreaProvider>
+            </QueryClientProvider>
+          </KeyboardProvider>
+        </ErrorBoundary>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }

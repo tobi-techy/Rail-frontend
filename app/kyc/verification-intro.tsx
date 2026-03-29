@@ -5,7 +5,13 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Button } from '@/components/ui';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
-import { ArrowLeft01Icon, BankIcon, CreditCardIcon, ChartUpIcon, ArrowDownLeft01Icon } from '@hugeicons/core-free-icons';
+import {
+  ArrowLeft01Icon,
+  BankIcon,
+  CreditCardIcon,
+  ChartUpIcon,
+  ArrowDownLeft01Icon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const STEPS = [
@@ -30,7 +36,11 @@ const FEATURES_UNLOCKED = [
   { icon: CreditCardIcon, title: 'Fiat deposits', description: 'Add money from your bank account' },
   { icon: CreditCardIcon, title: 'Get a Rail Card', description: 'Spend your crypto anywhere' },
   { icon: ChartUpIcon, title: 'Invest', description: 'Trade stocks, ETFs, and crypto' },
-  { icon: ArrowDownLeft01Icon, title: 'Withdraw to bank', description: 'Cash out to your local bank' },
+  {
+    icon: ArrowDownLeft01Icon,
+    title: 'Withdraw to bank',
+    description: 'Cash out to your local bank',
+  },
 ];
 
 export default function KycVerificationIntroScreen() {
@@ -58,24 +68,6 @@ export default function KycVerificationIntroScreen() {
             Complete verification to unlock all features
           </Text>
 
-          {/* Features that get unlocked */}
-          <View className="mt-8 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
-            <Text className="mb-4 font-subtitle text-[13px] text-gray-500">What you&apos;ll unlock</Text>
-            <View className="gap-y-3">
-              {FEATURES_UNLOCKED.map((feature) => (
-                <View key={feature.title} className="flex-row items-center gap-x-3">
-                  <View className="size-8 items-center justify-center rounded-full bg-gray-900">
-                    <HugeiconsIcon icon={feature.icon} size={16} color="#FFFFFF" />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="font-subtitle text-[14px] text-gray-900">{feature.title}</Text>
-                    <Text className="font-body text-[12px] text-gray-500">{feature.description}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-
           <Text className="mt-8 font-subtitle text-[18px] text-gray-900">How it works</Text>
           <View className="mt-4 gap-y-6">
             {STEPS.map((step) => (
@@ -102,13 +94,6 @@ export default function KycVerificationIntroScreen() {
               router.replace('/kyc/tax-id');
             }}
           />
-          <Pressable
-            onPress={() => router.replace('/')}
-            className="mt-3 py-2"
-            accessibilityRole="button"
-            accessibilityLabel="Verify later">
-            <Text className="text-center font-body text-[14px] text-gray-500">Verify later</Text>
-          </Pressable>
         </View>
       </View>
     </SafeAreaView>

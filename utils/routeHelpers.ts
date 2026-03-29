@@ -68,7 +68,6 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname === normalizeRoutePath(ROUTES.AUTH.SIGNIN) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.VERIFY_EMAIL) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.FORGOT_PASSWORD) ||
-    pathname === normalizeRoutePath(ROUTES.AUTH.RESET_PASSWORD) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_PASSCODE) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CONFIRM_PASSCODE) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_RAILTAG) ||
@@ -137,6 +136,7 @@ const handleAuthenticatedUser = (
   const userOnboardingStatus = onboardingStatus || user?.onboardingStatus;
   const needsKYC = isKycSubmissionRequired(userOnboardingStatus);
   const needsProfile = isProfileCompletionRequired(userOnboardingStatus);
+  const needsPasscodeSetup = !hasPasscode && !needsProfile && Boolean(userOnboardingStatus);
 
   if (needsProfile) {
     if (
@@ -148,6 +148,13 @@ const handleAuthenticatedUser = (
       return null;
     }
     return ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO;
+  }
+
+  if (needsPasscodeSetup) {
+    if (config.isOnCreatePasscode || config.isOnConfirmPasscode || config.isOnCreateRailTag) {
+      return null;
+    }
+    return ROUTES.AUTH.CREATE_PASSCODE;
   }
 
   // KYC-required users can stay in the app, on passcode creation, on profile screens (transitioning), or on KYC screens.
@@ -174,7 +181,7 @@ const handleAuthenticatedUser = (
   }
 
   // SECURITY: Completed users must present a valid passcode session before app access.
-  const shouldRequirePasscode = hasPasscode || userOnboardingStatus === 'completed';
+  const shouldRequirePasscode = hasPasscode;
   if (
     shouldRequirePasscode &&
     !hasValidPasscodeSession &&
@@ -229,7 +236,7 @@ const handleStoredCredentials = (
   // CRITICAL FIX: User has passcode and stored credentials but not authenticated
   // This happens when app backgrounded and passcode session expired
   // OLD USERS: After closing the app, they must enter passcode to re-auth, not signin
-  if (user && (hasPasscode || resolvedOnboardingStatus === 'completed')) {
+  if (user && hasPasscode) {
     logger.info(
       '[RouteHelpers] User has stored credentials with passcode, routing to passcode login',
       {

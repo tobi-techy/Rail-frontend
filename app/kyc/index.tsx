@@ -14,7 +14,12 @@ import {
 import { useKycStore } from '@/stores/kycStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useKYCStatus } from '@/api/hooks/useKYC';
-import { ArrowDown01Icon, ArrowRight01Icon, Cancel01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
+import {
+  ArrowDown01Icon,
+  ArrowRight01Icon,
+  Cancel01Icon,
+  CheckmarkCircle01Icon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const ISO2_TO_KYC: Record<string, Country> = {
@@ -127,7 +132,7 @@ export default function KycCountryScreen() {
           <View className="size-11" />
           <Pressable
             className="size-11 items-center justify-center"
-            onPress={() => router.back()}
+            onPress={() => router.navigate('/(tabs)')}
             accessibilityRole="button"
             accessibilityLabel="Close verification">
             <HugeiconsIcon icon={Cancel01Icon} size={22} color="#111827" />
@@ -173,24 +178,6 @@ export default function KycCountryScreen() {
               </View>
               <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#6B7280" />
             </Pressable>
-          </View>
-
-          <View className="mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-4">
-            <Text className="font-subtitle text-[14px] text-gray-900">
-              What we&apos;ll submit for {COUNTRY_LABELS[country]}
-            </Text>
-            <View className="mt-3 gap-y-3">
-              {requirements.summaryBullets.map((item) => (
-                <View key={item} className="flex-row items-start gap-2">
-                  <View className="mt-0.5 size-5 items-center justify-center rounded-full bg-gray-900">
-                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#FFFFFF" strokeWidth={3} />
-                  </View>
-                  <Text className="flex-1 font-body text-[14px] leading-5 text-gray-700">
-                    {item}
-                  </Text>
-                </View>
-              ))}
-            </View>
           </View>
 
           <View className="mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-4">
@@ -249,7 +236,7 @@ export default function KycCountryScreen() {
                 <HugeiconsIcon icon={Cancel01Icon} size={22} color="#111827" />
               </Pressable>
             </View>
-            
+
             {/* Search input */}
             <View className="border-b border-gray-100 px-4 pb-4">
               <View className="flex-row items-center rounded-full border border-gray-200 bg-gray-50 px-4 py-3">
@@ -276,7 +263,7 @@ export default function KycCountryScreen() {
                 </Text>
               )}
             </View>
-            
+
             <ScrollView showsVerticalScrollIndicator={false}>
               {filteredCountries.map((item) => {
                 const selected = item.code === country;
@@ -299,14 +286,16 @@ export default function KycCountryScreen() {
                         <Text className="font-subtitle text-[15px] text-gray-900">
                           {COUNTRY_LABELS[item.code]}
                         </Text>
-                        <Text className="mt-1 font-body text-[12px] text-gray-500">
-                          {COUNTRY_HELP_TEXT[item.code]}
-                        </Text>
                       </View>
                     </View>
                     {selected ? (
                       <View className="size-6 items-center justify-center rounded-full bg-gray-900">
-                        <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} color="#FFFFFF" strokeWidth={3} />
+                        <HugeiconsIcon
+                          icon={CheckmarkCircle01Icon}
+                          size={14}
+                          color="#FFFFFF"
+                          strokeWidth={3}
+                        />
                       </View>
                     ) : (
                       <View className="size-6 rounded-full border border-gray-300" />

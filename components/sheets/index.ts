@@ -1,4 +1,5 @@
 export { BottomSheet } from './BottomSheet';
+export { GorhomBottomSheet } from './GorhomBottomSheet';
 export { ActionSheet } from './ActionSheet';
 export { CryptoReceiveSheet } from './CryptoReceiveSheet';
 export { InfoSheet } from './InfoSheet';

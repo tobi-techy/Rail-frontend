@@ -7,7 +7,7 @@ export const gentleSpring = { damping: 20, stiffness: 150, mass: 1 };
 export const FUNDING_POLL_INTERVAL_MS = 2_000;
 export const FUNDING_POLL_TIMEOUT_MS = 90_000;
 export const FALLBACK_AVAILABLE_BALANCE = 0;
-export const MAX_INTEGER_DIGITS = 12;
+export const MAX_INTEGER_DIGITS = 9;
 
 const METHOD_ALIASES: Record<string, ExtendedWithdrawMethod> = {
   fiat: 'fiat',

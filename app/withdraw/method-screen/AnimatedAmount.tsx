@@ -3,32 +3,32 @@ import { Text } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSequence,
-  withSpring,
   withTiming,
+  Easing,
 } from 'react-native-reanimated';
 import { layout, moderateScale, responsive } from '@/utils/layout';
 
-type AnimatedAmountProps = {
-  amount: string;
-};
+type AnimatedAmountProps = { amount: string };
 
 export function AnimatedAmount({ amount }: AnimatedAmountProps) {
-  const scale = useSharedValue(1);
-  const prevAmountRef = useRef(amount);
+  const translateY = useSharedValue(0);
+  const opacity = useSharedValue(1);
+  const prevLen = useRef(amount.length);
 
   useEffect(() => {
-    if (prevAmountRef.current !== amount) {
-      scale.value = withSequence(
-        withTiming(1.03, { duration: 80 }),
-        withSpring(1, { damping: 12, stiffness: 300, mass: 0.5 })
-      );
-      prevAmountRef.current = amount;
+    const grew = amount.length > prevLen.current;
+    prevLen.current = amount.length;
+    if (grew) {
+      translateY.value = 14;
+      opacity.value = 0.4;
+      translateY.value = withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) });
+      opacity.value = withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) });
     }
-  }, [amount, scale]);
+  }, [amount]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
   }));
 
   const displayText = `$${amount}`;
@@ -39,14 +39,14 @@ export function AnimatedAmount({ amount }: AnimatedAmountProps) {
       : len <= 7
         ? responsive({ default: 79, tall: 74, android: 68 })
         : len <= 10
-          ? responsive({ default: 58, tall: 54, android: 50 })
+          ? responsive({ default: 58, tall: 60, android: 50 })
           : len <= 14
-            ? responsive({ default: 40, tall: 38, android: 36 })
+            ? responsive({ default: 50, tall: 50, android: 42 })
             : responsive({ default: 42, tall: 39, android: 37 });
   const fontSize = moderateScale(baseSize, layout.isSeekerDevice ? 0.35 : 0.45);
 
   return (
-    <Animated.View style={animatedStyle} className="w-full">
+    <Animated.View style={[style, { width: '100%' }]}>
       <Text
         style={{
           fontFamily: 'InstrumentSans-Bold',

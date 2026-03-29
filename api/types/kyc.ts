@@ -95,7 +95,7 @@ export type StartDiditSessionRequest = {
 };
 
 export type StartDiditSessionResponse = {
-  status: 'pending';
+  status: 'pending' | 'existing_session';
   session_id: string;
   session_token: string;
   url?: string;

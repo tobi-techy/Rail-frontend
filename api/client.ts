@@ -53,6 +53,7 @@ const AUTH_ENDPOINTS = [
   '/v1/auth/verify',
   '/v1/auth/resend-code',
   '/v1/auth/forgot-password',
+  '/v1/auth/verify-reset-code',
   '/v1/auth/reset-password',
   '/v1/auth/refresh',
   '/v1/auth/social/login',

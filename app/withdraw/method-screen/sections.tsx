@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import {
   ActivityIndicator,
   Clipboard,
@@ -8,12 +8,14 @@ import {
   View,
   Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
-import { BottomSheet, KYCVerificationSheet } from '@/components/sheets';
+import { GorhomBottomSheet, KYCVerificationSheet } from '@/components/sheets';
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { Button, Input } from '@/components/ui';
 import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
 import { SUPPORTED_CHAINS } from '@/utils/chains';
@@ -23,7 +25,26 @@ import { isKycInReview } from '@/api/types/kyc';
 import { formatCurrency } from './utils';
 import type { MethodCopy } from './types';
 import { cn } from '@/utils/cn';
-import { ArrowLeft01Icon, Building04Icon, CheckmarkCircle02Icon, Copy01Icon, FuelIcon, InternetIcon, ShieldEnergyIcon, UserIcon } from '@hugeicons/core-free-icons';
+import {
+  ArrowDown01Icon,
+  ArrowLeft01Icon,
+  Building04Icon,
+  CheckmarkCircle02Icon,
+  Copy01Icon,
+  CreditCardIcon,
+  FuelIcon,
+  GiftIcon,
+  InternetIcon,
+  MoneyReceiveSquareIcon,
+  MoreIcon,
+  Coffee01Icon,
+  ShieldEnergyIcon,
+  ShoppingBag01Icon,
+  Airplane01Icon,
+  UserIcon,
+  UserMultiple02Icon,
+  Wallet01Icon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
 type FiatKycRequiredScreenProps = {
@@ -137,14 +158,16 @@ const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
 };
 
 const WITHDRAWAL_CATEGORIES = [
-  'Transfer',
-  'Bills',
-  'Food',
-  'Shopping',
-  'Travel',
-  'Savings',
-  'Crypto',
-  'Other',
+  { label: 'Transfer', icon: MoneyReceiveSquareIcon, color: '#3B82F6' },
+  { label: 'Bills', icon: CreditCardIcon, color: '#EF4444' },
+  { label: 'Food', icon: Coffee01Icon, color: '#F97316' },
+  { label: 'Shopping', icon: ShoppingBag01Icon, color: '#8B5CF6' },
+  { label: 'Travel', icon: Airplane01Icon, color: '#06B6D4' },
+  { label: 'Savings', icon: Wallet01Icon, color: '#10B981' },
+  { label: 'Crypto', icon: InternetIcon, color: '#6366F1' },
+  { label: 'Friends', icon: UserMultiple02Icon, color: '#EC4899' },
+  { label: 'Gifts', icon: GiftIcon, color: '#F59E0B' },
+  { label: 'Other', icon: MoreIcon, color: '#6B7280' },
 ] as const;
 
 const maskAccountNumber = (value?: string) => {
@@ -296,6 +319,96 @@ function getKycProgressScreen(state: ReturnType<typeof useKycStore.getState>): s
 
   // Nothing started, go to beginning
   return '/kyc/tax-id';
+}
+
+function CategoryPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const pickerRef = useRef<BottomSheetModal>(null);
+  const insets = useSafeAreaInsets();
+
+  const selected = WITHDRAWAL_CATEGORIES.find((c) => c.label === value) ?? WITHDRAWAL_CATEGORIES[0];
+
+  const open = useCallback(() => pickerRef.current?.present(), []);
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.4}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
+  return (
+    <>
+      <Pressable
+        onPress={open}
+        className="h-14 flex-row items-center justify-between rounded-xl border border-gray-200 bg-white px-4"
+        accessibilityRole="button"
+        accessibilityLabel={`Category: ${value}`}>
+        <View className="flex-row items-center gap-3">
+          <View
+            className="size-8 items-center justify-center rounded-full"
+            style={{ backgroundColor: selected.color + '18' }}>
+            <HugeiconsIcon icon={selected.icon} size={16} color={selected.color} />
+          </View>
+          <Text className="font-body text-[15px] text-text-primary">{value}</Text>
+        </View>
+        <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#9CA3AF" />
+      </Pressable>
+
+      <BottomSheetModal
+        ref={pickerRef}
+        enableDynamicSizing
+        enablePanDownToClose
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{
+          backgroundColor: '#FFF',
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+        }}
+        handleIndicatorStyle={{ backgroundColor: '#D1D5DB', width: 36 }}>
+        <BottomSheetView style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
+          <Text className="px-6 pb-3 pt-1 font-subtitle text-[18px] text-text-primary">
+            Select category
+          </Text>
+          {WITHDRAWAL_CATEGORIES.map((item) => {
+            const isSelected = value === item.label;
+            return (
+              <Pressable
+                key={item.label}
+                onPress={() => {
+                  onChange(item.label);
+                  pickerRef.current?.dismiss();
+                }}
+                className="flex-row items-center gap-4 px-6 py-3.5 active:bg-gray-50"
+                accessibilityRole="button"
+                accessibilityLabel={`Select ${item.label}`}>
+                <View
+                  className="size-10 items-center justify-center rounded-full"
+                  style={{ backgroundColor: item.color + '18' }}>
+                  <HugeiconsIcon icon={item.icon} size={20} color={item.color} />
+                </View>
+                <Text
+                  className={cn(
+                    'flex-1 text-[15px]',
+                    isSelected ? 'font-subtitle text-text-primary' : 'font-body text-text-secondary'
+                  )}>
+                  {item.label}
+                </Text>
+                {isSelected && (
+                  <HugeiconsIcon icon={CheckmarkCircle02Icon} size={20} color="#111" />
+                )}
+              </Pressable>
+            );
+          })}
+        </BottomSheetView>
+      </BottomSheetModal>
+    </>
+  );
 }
 
 export function FiatKycRequiredScreen({
@@ -524,7 +637,7 @@ export function WithdrawDetailsSheet({
   });
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} showCloseButton dismissible>
+    <GorhomBottomSheet visible={visible} onClose={onClose} showCloseButton dismissible>
       <View className="pb-1">
         <Text className="pr-10 font-subtitle text-[22px] text-text-primary">
           {methodCopy.detailTitle}
@@ -532,23 +645,6 @@ export function WithdrawDetailsSheet({
         <Text className="mt-2 font-body text-[14px] text-text-secondary">
           {methodCopy.detailHint}
         </Text>
-
-        {/* Chain picker — only for crypto withdrawal */}
-        {isCryptoMethod && !isMobileWalletFundingFlow && onChainChange && (
-          <View className="mt-5">
-            <Text className="mb-2 font-body text-[13px] text-text-secondary">Network</Text>
-            <View className="flex-row gap-2">
-              {SUPPORTED_CHAINS.map((c) => (
-                <ChainPill
-                  key={c.chain}
-                  chain={c}
-                  selected={destinationChain === c.chain}
-                  onPress={() => onChainChange(c.chain)}
-                />
-              ))}
-            </View>
-          </View>
-        )}
 
         {/* Fiat: holder name → account number → routing number */}
         {isFiatMethod && onFiatAccountHolderNameChange && onFiatAccountNumberChange ? (
@@ -606,27 +702,7 @@ export function WithdrawDetailsSheet({
         <View className="mt-5 gap-4">
           <View>
             <Text className="mb-2 font-body text-[13px] text-text-secondary">Category</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {WITHDRAWAL_CATEGORIES.map((item) => (
-                <Pressable
-                  key={item}
-                  onPress={() => onCategoryChange(item)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Select ${item} category`}
-                  className={cn(
-                    'rounded-full border px-3 py-2',
-                    category === item ? 'border-black bg-black' : 'border-gray-200 bg-white'
-                  )}>
-                  <Text
-                    className={cn(
-                      'font-body text-[13px]',
-                      category === item ? 'text-white' : 'text-text-primary'
-                    )}>
-                    {item}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            <CategoryPicker value={category} onChange={onCategoryChange} />
           </View>
 
           <Input
@@ -722,7 +798,7 @@ export function WithdrawDetailsSheet({
           loading={isFundingActionLoading}
         />
       </View>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }
 
@@ -771,7 +847,7 @@ export function WithdrawConfirmSheet({
   });
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} showCloseButton dismissible>
+    <GorhomBottomSheet visible={visible} onClose={onClose} showCloseButton dismissible>
       <View className="pb-2">
         {/* Header */}
         <Text className="text-center font-subtitle text-[22px] text-text-primary">
@@ -962,7 +1038,7 @@ export function WithdrawConfirmSheet({
           <Button title="Continue" onPress={onConfirm} flex />
         </View>
       </View>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }
 
@@ -977,7 +1053,7 @@ export function WithdrawSubmissionSheet({
   visible,
 }: WithdrawSubmissionSheetProps) {
   return (
-    <BottomSheet visible={visible} onClose={onClose} showCloseButton={false} dismissible>
+    <GorhomBottomSheet visible={visible} onClose={onClose} showCloseButton={false} dismissible>
       <View className="items-center pb-1">
         {isFundingWaitingState ? (
           <View className="size-16 items-center justify-center rounded-full bg-blue-100">
@@ -1022,6 +1098,6 @@ export function WithdrawSubmissionSheet({
           onPress={onClose}
         />
       </View>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

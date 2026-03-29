@@ -51,7 +51,7 @@ interface KycState {
   setMostRecentOccupation: (value: string | null) => void;
   setActingAsIntermediary: (value: boolean) => void;
   toggleInvestmentPurpose: (value: InvestmentPurpose) => void;
-  clearInvestmentPurpose: () => void;
+  clearInvestmentPurposes: () => void;
   setDisclosure: (key: keyof KycDisclosures, value: boolean) => void;
   setDisclosuresConfirmed: (confirmed: boolean) => void;
   setMissingProfileFields: (fields: string[]) => void;

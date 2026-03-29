@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StatusBar, Platform } from 'react-native';
+import { View, Text, StatusBar, Platform, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
@@ -92,6 +92,7 @@ export default function Phone() {
           firstName: firstName || undefined,
           lastName: lastName || undefined,
           fullName: fullName || undefined,
+          phone: payload.phone || undefined,
           phoneNumber: payload.phone || undefined,
           country: payload.country || undefined,
         });
@@ -171,6 +172,7 @@ export default function Phone() {
                           firstName: firstName || undefined,
                           lastName: lastName || undefined,
                           fullName: fullName || undefined,
+                          phone: undefined,
                           phoneNumber: undefined,
                           country: payload.country || undefined,
                         });
@@ -179,7 +181,10 @@ export default function Phone() {
                         router.replace(ROUTES.AUTH.CREATE_PASSCODE as never);
                       },
                       onError: (error: any) => {
-                        showError('Profile Submission Failed', error?.message || 'Please try again.');
+                        showError(
+                          'Profile Submission Failed',
+                          error?.message || 'Please try again.'
+                        );
                       },
                     });
                   }
@@ -187,7 +192,9 @@ export default function Phone() {
                 className="mt-3 py-2"
                 accessibilityRole="button"
                 accessibilityLabel="Skip phone number">
-                <Text className="text-center font-body text-[14px] text-black/60">Skip for now</Text>
+                <Text className="text-center font-body text-[14px] text-black/60">
+                  Skip for now
+                </Text>
               </Pressable>
             </View>
           </StaggeredChild>

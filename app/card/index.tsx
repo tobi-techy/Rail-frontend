@@ -44,22 +44,22 @@ export default function CardScreen() {
 
   if (isError) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white" edges={['top']}>
+      <View className="flex-1 items-center justify-center bg-white" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
         <Text className="mb-4 font-body text-[15px] text-gray-500">Unable to load card</Text>
         <Pressable onPress={() => refetch()} className="rounded-full bg-black px-5 py-3">
           <Text className="font-subtitle text-white">Retry</Text>
         </Pressable>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!hasCard) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <View className="flex-1 bg-white" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
         <CardIntroScreen onCreateCard={handleCreateCard} loading={createCard.isPending} />
-      </SafeAreaView>
+      </View>
     );
   }
 

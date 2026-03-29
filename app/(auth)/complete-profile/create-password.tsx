@@ -15,6 +15,25 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const E164_REGEX = /^\+[1-9]\d{7,14}$/;
 
+const normalizePhone = (
+  rawPhone: string | undefined,
+  country: string | undefined
+): string | undefined => {
+  if (!rawPhone?.trim()) return undefined;
+  const compact = rawPhone.replace(/[^\d+]/g, '');
+  if (compact.startsWith('+')) {
+    const normalized = `+${compact.slice(1).replace(/\D/g, '')}`;
+    return E164_REGEX.test(normalized) ? normalized : undefined;
+  }
+  const digits = rawPhone.replace(/\D/g, '');
+  if ((country === 'US' || country === 'CA') && digits.length === 10) {
+    return `+1${digits}`;
+  }
+  return undefined;
+};
+
+const isPasskeySignupMethod = (value?: string) => value === 'passkey';
+
 // Zod password schema - matching backend requirement of min 12 chars
 const passwordSchema = z
   .string()
@@ -45,7 +64,10 @@ export default function CreatePassword() {
   const isPasskeySignup = isPasskeySignupMethod(registrationData.authMethod);
 
   const isPasswordValid = useMemo(() => passwordSchema.safeParse(password).success, [password]);
-  const doPasswordsMatch = useMemo(() => password === confirmPassword || confirmPassword === '', [password, confirmPassword]);
+  const doPasswordsMatch = useMemo(
+    () => password === confirmPassword || confirmPassword === '',
+    [password, confirmPassword]
+  );
 
   const submitProfile = (passwordValue?: string) => {
     updateRegistrationData({ password: passwordValue || '' });
@@ -91,6 +113,7 @@ export default function CreatePassword() {
           firstName: firstName || undefined,
           lastName: lastName || undefined,
           fullName: fullName || undefined,
+          phone: payload.phone || undefined,
           phoneNumber: payload.phone || undefined,
           country: payload.country || undefined,
         });
@@ -102,7 +125,10 @@ export default function CreatePassword() {
       onError: (error: any) => {
         const errorMessage = error?.message || 'Please try again.';
         // Show error with retry option - the error toast will appear and user can try again
-        showError('Profile Submission Failed', `${errorMessage}\n\nPlease check your information and try again.`);
+        showError(
+          'Profile Submission Failed',
+          `${errorMessage}\n\nPlease check your information and try again.`
+        );
       },
     });
   };
@@ -181,7 +207,14 @@ export default function CreatePassword() {
                       className={`size-5 items-center justify-center rounded-full ${
                         passed ? 'bg-black' : 'border border-gray-300 bg-white'
                       }`}>
-                      {passed && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#FFFFFF" strokeWidth={3} />}
+                      {passed && (
+                        <HugeiconsIcon
+                          icon={CheckmarkCircle01Icon}
+                          size={12}
+                          color="#FFFFFF"
+                          strokeWidth={3}
+                        />
+                      )}
                     </View>
                     <Text
                       className={`font-body text-[13px] ${

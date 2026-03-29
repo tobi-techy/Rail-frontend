@@ -74,6 +74,13 @@ export interface User {
   firstName?: string;
   lastName?: string;
   fullName?: string;
+  dateOfBirth?: string;
+  country?: string;
+  addressStreet?: string;
+  addressCity?: string;
+  addressState?: string;
+  addressPostalCode?: string;
+  addressCountry?: string;
   emailVerified: boolean;
   phoneVerified: boolean;
   kycStatus: 'pending' | 'processing' | 'approved' | 'rejected' | 'expired';
@@ -94,6 +101,15 @@ export interface ForgotPasswordRequest {
 export interface ResetPasswordRequest {
   token: string;
   password: string;
+}
+
+export interface VerifyResetCodeRequest {
+  email: string;
+  code: string;
+}
+
+export interface VerifyResetCodeResponse {
+  reset_token: string;
 }
 
 export interface ChangePasswordRequest {

@@ -15,7 +15,13 @@ import { useKycStore } from '@/stores/kycStore';
 import { useAuthStore } from '@/stores/authStore';
 import { invalidateQueries } from '@/api/queryClient';
 import type { KycStatus } from '@/api/types/kyc';
-import { CancelCircleIcon, CheckmarkCircle02Icon, Clock01Icon, RefreshIcon, MessageIcon } from '@hugeicons/core-free-icons';
+import {
+  CancelCircleIcon,
+  CheckmarkCircle02Icon,
+  Clock01Icon,
+  RefreshIcon,
+  MessageIcon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export default function KycPendingScreen() {
@@ -32,17 +38,6 @@ export default function KycPendingScreen() {
       true
     );
   }, [opacity]);
-
-  // Timeout handler - show user options after 10 minutes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (status === 'pending' || status === 'processing') {
-        setHasTimedOut(true);
-      }
-    }, 10 * 60 * 1000); // 10 minutes
-
-    return () => clearTimeout(timeoutId);
-  }, [status]);
 
   const handleTerminal = useCallback(
     (status: KycStatus) => {
@@ -82,6 +77,19 @@ export default function KycPendingScreen() {
   }, [data, localSubmissionPendingAt, status]);
 
   useEffect(() => {
+    const timeoutId = setTimeout(
+      () => {
+        if (status === 'pending' || status === 'processing') {
+          setHasTimedOut(true);
+        }
+      },
+      10 * 60 * 1000
+    );
+
+    return () => clearTimeout(timeoutId);
+  }, [status]);
+
+  useEffect(() => {
     if (status === 'approved' || status === 'rejected' || status === 'expired') {
       setLocalSubmissionPendingAt(null);
       setHasTimedOut(false);
@@ -99,9 +107,9 @@ export default function KycPendingScreen() {
   // Show specific guidance on timeout
   const getTimeoutMessage = () => {
     if (hasTimedOut) {
-      return "Verification is taking longer than expected. Your documents may need additional review. You can try again or contact support for assistance.";
+      return 'Verification is taking longer than expected. Your documents may need additional review. You can try again or contact support for assistance.';
     }
-    return "This usually takes a few minutes. You can close this screen — we&apos;ll notify you when it&apos;s done.";
+    return 'This usually takes a few minutes. You can close this screen — we&apos;ll notify you when it&apos;s done.';
   };
 
   return (
@@ -197,7 +205,9 @@ export default function KycPendingScreen() {
                 onPress={() => router.replace('/(tabs)')}
                 className="mt-2 py-2"
                 accessibilityRole="button">
-                <Text className="text-center font-body text-[14px] text-gray-500">Continue to app</Text>
+                <Text className="text-center font-body text-[14px] text-gray-500">
+                  Continue to app
+                </Text>
               </Pressable>
             </View>
           </>
