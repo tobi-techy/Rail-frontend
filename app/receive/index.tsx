@@ -10,8 +10,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { CryptoReceiveSheet } from '@/components/sheets';
-import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
-import { SUPPORTED_CHAINS, type ChainConfig } from '@/utils/chains';
+import { SolanaIcon, MaticIcon, CeloIcon, UsdcIcon } from '@/assets/svg';
+import { SUPPORTED_CHAINS, isEVMChain, type ChainConfig } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import type { WalletChain } from '@/api/types';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
@@ -23,14 +23,18 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
   SOL: SolanaIcon,
   'SOL-DEVNET': SolanaIcon,
+  MATIC: MaticIcon,
   'MATIC-AMOY': MaticIcon,
-  'AVAX-FUJI': AvalancheIcon,
+  CELO: CeloIcon,
+  'CELO-ALFAJORES': CeloIcon,
 };
 
 function ChainCard({ config, onPress }: { config: ChainConfig; onPress: () => void }) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const Icon = CHAIN_ICONS[config.chain];
+  const tokenLabel = 'USDC';
+  const TokenBadge = UsdcIcon;
 
   return (
     <AnimatedPressable
@@ -45,7 +49,7 @@ function ChainCard({ config, onPress }: { config: ChainConfig; onPress: () => vo
       }}
       accessibilityRole="button"
       accessibilityLabel={`Receive on ${config.label}`}>
-      {/* Chain icon with USDC badge */}
+      {/* Chain icon with token badge */}
       <View className="relative size-14 items-center justify-center">
         <View
           className="size-14 items-center justify-center rounded-full"
@@ -53,14 +57,21 @@ function ChainCard({ config, onPress }: { config: ChainConfig; onPress: () => vo
           {Icon && <Icon width={32} height={32} />}
         </View>
         <View className="absolute -bottom-1 -right-1 size-6 items-center justify-center rounded-full bg-white shadow-sm">
-          <UsdcIcon width={18} height={18} />
+          <TokenBadge width={18} height={18} />
         </View>
       </View>
 
       <View className="flex-1">
-        <Text className="font-subtitle text-[18px] text-text-primary">{config.label}</Text>
+        <View className="flex-row items-center gap-2">
+          <Text className="font-subtitle text-[18px] text-text-primary">{config.label}</Text>
+          {isEVMChain(config.chain) && (
+            <View className="rounded-md bg-gray-100 px-1.5 py-0.5">
+              <Text className="font-caption text-[10px] text-text-secondary">EVM</Text>
+            </View>
+          )}
+        </View>
         <Text className="mt-0.5 font-body text-[13px] text-text-secondary">
-          USDC · {config.shortLabel}
+          {tokenLabel} · {config.shortLabel}
         </Text>
       </View>
 

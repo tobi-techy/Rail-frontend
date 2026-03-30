@@ -5,18 +5,19 @@ import QRCodeStyled from 'react-native-qrcode-styled';
 import { BottomSheet } from './BottomSheet';
 import { Button } from '../ui';
 import { useDepositAddress } from '@/api/hooks/useWallet';
-import { getChainConfig } from '@/utils/chains';
+import { getChainConfig, isEVMChain, isSolanaChain } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
-import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
+import { SolanaIcon, MaticIcon, CeloIcon, UsdcIcon, BaseIcon, AvalancheIcon } from '@/assets/svg';
 import type { WalletChain } from '@/api/types';
 import { CheckmarkCircle01Icon, Copy01Icon, RefreshIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
   SOL: SolanaIcon,
-  'SOL-DEVNET': SolanaIcon,
-  'MATIC-AMOY': MaticIcon,
-  'AVAX-FUJI': AvalancheIcon,
+  MATIC: MaticIcon,
+  CELO: CeloIcon,
+  BASE: BaseIcon,
+  AVAX: AvalancheIcon,
 };
 
 interface CryptoReceiveSheetProps {
@@ -30,6 +31,8 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
   const { data: wallet, isLoading, isError, error, refetch } = useDepositAddress(chain);
   const [copied, setCopied] = useState(false);
   const { notification, selection } = useHaptics();
+  const tokenLabel = chainConfig.token;
+  const TokenBadge = UsdcIcon;
 
   useEffect(() => {
     if (!visible) setCopied(false);
@@ -37,12 +40,11 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
 
   const address = wallet?.address ?? '';
 
+  const isSolana = isSolanaChain(chain);
   const usdcMint =
     process.env.EXPO_PUBLIC_SOLANA_USDC_MINT ?? 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
   const qrValue =
-    (chain === 'SOL' || chain === 'SOL-DEVNET') && address
-      ? `solana:${address}?spl-token=${usdcMint}&label=Rail`
-      : address;
+    isSolana && address ? `solana:${address}?spl-token=${usdcMint}&label=Rail` : address;
 
   const handleCopy = useCallback(async () => {
     if (!address) return;
@@ -64,11 +66,11 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
           {ChainIcon && <ChainIcon width={28} height={28} />}
         </View>
         <View className="absolute -bottom-1 -right-1 size-5 items-center justify-center rounded-full bg-white shadow-sm">
-          <UsdcIcon width={14} height={14} />
+          <TokenBadge width={14} height={14} />
         </View>
       </View>
       <View>
-        <Text className="font-subtitle text-[20px] text-text-primary">Receive USDC</Text>
+        <Text className="font-subtitle text-[20px] text-text-primary">Receive {tokenLabel}</Text>
         <Text className="font-body text-[13px] text-text-secondary">on {chainConfig.label}</Text>
       </View>
     </View>
@@ -157,6 +159,12 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
           ⓘ {chainConfig.warning}
           {'\n'}NFTs and other tokens are not supported.
         </Text>
+
+        {isEVMChain(chain) && (
+          <Text className="mb-4 text-center font-caption text-xs text-text-secondary">
+            This address is shared across EVM networks (Polygon, Celo, Base, Avalanche).
+          </Text>
+        )}
 
         <Button
           title={copied ? 'Copied!' : 'Copy address'}

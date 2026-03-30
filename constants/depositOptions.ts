@@ -2,6 +2,10 @@ import type { ComponentType } from 'react';
 import type { SvgProps } from 'react-native-svg';
 
 import SolanaLogo from '@/assets/svg/solana.svg';
+import CeloLogo from '@/assets/svg/celo.svg';
+import MaticLogo from '@/assets/svg/matic.svg';
+import BaseLogo from '@/assets/svg/base.svg';
+import AvalancheLogo from '@/assets/svg/avalanche.svg';
 import Usdc from '@/assets/svg/usdc.svg';
 import Usdt from '@/assets/svg/usdt.svg';
 
@@ -48,11 +52,11 @@ export type StablecoinOption = {
   networks: DepositNetwork[];
 };
 
-// Solana network definition (only supported network)
+// Network definitions
 const SOLANA_NETWORK: DepositNetwork = {
   id: 'solana',
   name: 'Solana',
-  subtitle: 'Solana Devnet',
+  subtitle: 'Solana Mainnet',
   ticker: 'SOL',
   chainColor: '#0E0E5C',
   textColor: '#F8FAFC',
@@ -60,12 +64,84 @@ const SOLANA_NETWORK: DepositNetwork = {
   icon: SolanaLogo,
 };
 
+const CELO_NETWORK: DepositNetwork = {
+  id: 'celo',
+  name: 'Celo',
+  subtitle: 'Celo Network',
+  ticker: 'CELO',
+  chainColor: '#35D07F',
+  textColor: '#F8FAFC',
+  address: 'CELO_DEPOSIT_ADDRESS_PLACEHOLDER',
+  icon: CeloLogo,
+  highlights: [
+    {
+      id: 'evm',
+      message: 'This address is shared across EVM networks (Polygon, Celo, Base, Avalanche).',
+    },
+    { id: 'celo-only', message: 'This address only accepts USDC on the Celo network.' },
+  ],
+};
+
+const POLYGON_NETWORK: DepositNetwork = {
+  id: 'polygon',
+  name: 'Polygon',
+  subtitle: 'Polygon Network',
+  ticker: 'MATIC',
+  chainColor: '#8247E5',
+  textColor: '#F8FAFC',
+  address: 'POLYGON_DEPOSIT_ADDRESS_PLACEHOLDER',
+  icon: MaticLogo,
+  highlights: [
+    {
+      id: 'evm',
+      message: 'This address is shared across EVM networks (Polygon, Celo, Base, Avalanche).',
+    },
+    { id: 'polygon-only', message: 'This address only accepts USDC on the Polygon network.' },
+  ],
+};
+
+const BASE_NETWORK: DepositNetwork = {
+  id: 'base',
+  name: 'Base',
+  subtitle: 'Base Network',
+  ticker: 'ETH',
+  chainColor: '#0052FF',
+  textColor: '#F8FAFC',
+  address: 'BASE_DEPOSIT_ADDRESS_PLACEHOLDER',
+  icon: BaseLogo,
+  highlights: [
+    {
+      id: 'evm',
+      message: 'This address is shared across EVM networks (Polygon, Celo, Base, Avalanche).',
+    },
+    { id: 'base-only', message: 'This address only accepts USDC on the Base network.' },
+  ],
+};
+
+const AVALANCHE_NETWORK: DepositNetwork = {
+  id: 'avalanche',
+  name: 'Avalanche',
+  subtitle: 'Avalanche Network',
+  ticker: 'AVAX',
+  chainColor: '#E84142',
+  textColor: '#F8FAFC',
+  address: 'AVALANCHE_DEPOSIT_ADDRESS_PLACEHOLDER',
+  icon: AvalancheLogo,
+  highlights: [
+    {
+      id: 'evm',
+      message: 'This address is shared across EVM networks (Polygon, Celo, Base, Avalanche).',
+    },
+    { id: 'avalanche-only', message: 'This address only accepts USDC on the Avalanche network.' },
+  ],
+};
+
 export const STABLECOIN_OPTIONS: StablecoinOption[] = [
   {
     id: 'usdc',
     symbol: 'USDC',
     name: 'USD Coin',
-    description: 'Deposit USD Coin on Solana',
+    description: 'Deposit USD Coin on supported networks',
     backgroundColor: '#1C4ED8',
     textColor: '#F1F5F9',
     icon: Usdc,
@@ -83,13 +159,17 @@ export const STABLECOIN_OPTIONS: StablecoinOption[] = [
           },
         ],
       },
+      CELO_NETWORK,
+      POLYGON_NETWORK,
+      BASE_NETWORK,
+      AVALANCHE_NETWORK,
     ],
   },
   {
     id: 'usdt',
     symbol: 'USDT',
     name: 'Tether USD',
-    description: 'Deposit Tether USD on Solana',
+    description: 'Deposit Tether USD on supported networks',
     backgroundColor: '#047857',
     textColor: '#ECFDF5',
     icon: Usdt,
@@ -195,6 +275,38 @@ export const CRYPTO_DEPOSIT_METHODS: PaymentMethod[] = [
     isAvailable: true,
   },
   {
+    id: 'usdc-celo',
+    name: 'USDC (Celo)',
+    description: 'USD Coin on Celo network',
+    iconColor: '#35D07F',
+    backgroundColor: '#ECFDF5',
+    isAvailable: true,
+  },
+  {
+    id: 'usdc-polygon',
+    name: 'USDC (Polygon)',
+    description: 'USD Coin on Polygon network',
+    iconColor: '#8247E5',
+    backgroundColor: '#F9F5FF',
+    isAvailable: true,
+  },
+  {
+    id: 'usdc-base',
+    name: 'USDC (Base)',
+    description: 'USD Coin on Base network',
+    iconColor: '#0052FF',
+    backgroundColor: '#EFF6FF',
+    isAvailable: true,
+  },
+  {
+    id: 'usdc-avalanche',
+    name: 'USDC (Avalanche)',
+    description: 'USD Coin on Avalanche network',
+    iconColor: '#E84142',
+    backgroundColor: '#FEF2F2',
+    isAvailable: true,
+  },
+  {
     id: 'usdt-solana',
     name: 'USDT (Solana)',
     description: 'Tether USD on Solana network',
@@ -209,33 +321,6 @@ export const CRYPTO_DEPOSIT_METHODS: PaymentMethod[] = [
     iconColor: '#9945FF',
     backgroundColor: '#FAF5FF',
     isAvailable: true,
-  },
-  {
-    id: 'usdc-ethereum',
-    name: 'USDC (Ethereum)',
-    description: 'USD Coin on Ethereum network',
-    iconColor: '#627EEA',
-    backgroundColor: '#F8FBFF',
-    isAvailable: false, // Coming soon
-    badge: 'Coming soon',
-  },
-  {
-    id: 'usdt-ethereum',
-    name: 'USDT (Ethereum)',
-    description: 'Tether USD on Ethereum network',
-    iconColor: '#26A17B',
-    backgroundColor: '#F0FDF4',
-    isAvailable: false,
-    badge: 'Coming soon',
-  },
-  {
-    id: 'usdc-polygon',
-    name: 'USDC (Polygon)',
-    description: 'USD Coin on Polygon network',
-    iconColor: '#8247E5',
-    backgroundColor: '#F9F5FF',
-    isAvailable: false,
-    badge: 'Coming soon',
   },
 ];
 

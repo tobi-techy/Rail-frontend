@@ -181,11 +181,25 @@ export const walletService = {
    * Validate wallet address
    */
   async validateAddress(data: ValidateAddressRequest): Promise<ValidateAddressResponse> {
-    const isValid = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test((data.address || '').trim());
+    const address = (data.address || '').trim();
+    const network = data.network?.toUpperCase() || 'SOL';
+
+    let isValid = false;
+
+    // Validate based on network type
+    if (network === 'SOL' || network === 'SOL-DEVNET') {
+      // Solana address validation (base58, 32-44 characters)
+      isValid = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
+    } else {
+      // EVM chains (MATIC, CELO, BASE, AVAX, ETH) - Ethereum-style addresses
+      // 0x prefix + 40 hex characters (with optional checksum)
+      isValid = /^0x[a-fA-F0-9]{40}$/.test(address);
+    }
+
     return {
       valid: isValid,
       addressType: 'wallet',
-      resolvedAddress: isValid ? data.address.trim() : undefined,
+      resolvedAddress: isValid ? address : undefined,
     };
   },
 
@@ -245,6 +259,56 @@ export const walletService = {
           explorerUrl: 'https://solscan.io',
           isTestnet: false,
           nativeCurrency: { name: 'Solana', symbol: 'SOL', decimals: 9 },
+        },
+        {
+          id: 'polygon',
+          name: 'Polygon',
+          symbol: 'MATIC',
+          chainId: 137,
+          rpcUrl: '',
+          explorerUrl: 'https://polygonscan.com',
+          isTestnet: false,
+          nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+        },
+        {
+          id: 'celo',
+          name: 'Celo',
+          symbol: 'CELO',
+          chainId: 42220,
+          rpcUrl: '',
+          explorerUrl: 'https://celoscan.io',
+          isTestnet: false,
+          nativeCurrency: { name: 'Celo', symbol: 'CELO', decimals: 18 },
+        },
+        {
+          id: 'tron',
+          name: 'Tron',
+          symbol: 'TRX',
+          chainId: -1, // Tron uses a different chain ID system
+          rpcUrl: '',
+          explorerUrl: 'https://tronscan.org',
+          isTestnet: false,
+          nativeCurrency: { name: 'Tron', symbol: 'TRX', decimals: 6 },
+        },
+        {
+          id: 'base',
+          name: 'Base',
+          symbol: 'ETH',
+          chainId: 8453,
+          rpcUrl: '',
+          explorerUrl: 'https://basescan.org',
+          isTestnet: false,
+          nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
+        },
+        {
+          id: 'avalanche',
+          name: 'Avalanche',
+          symbol: 'AVAX',
+          chainId: 43114,
+          rpcUrl: '',
+          explorerUrl: 'https://snowscan.io',
+          isTestnet: false,
+          nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
         },
       ],
     };

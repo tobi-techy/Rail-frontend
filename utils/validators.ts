@@ -91,7 +91,11 @@ export function validatePhoneNumber(phone: string): ValidationResult {
 /**
  * Amount validation
  */
-export function validateAmount(amount: string | number, min: number = 0, max?: number): ValidationResult {
+export function validateAmount(
+  amount: string | number,
+  min: number = 0,
+  max?: number
+): ValidationResult {
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
 
   if (isNaN(numAmount)) {
@@ -131,12 +135,15 @@ export function validateName(name: string): ValidationResult {
 /**
  * Wallet address validation (basic)
  */
-export function validateWalletAddress(address: string, network: 'ethereum' | 'solana' = 'ethereum'): ValidationResult {
+export function validateWalletAddress(
+  address: string,
+  network: 'ethereum' | 'solana' | 'evm' = 'ethereum'
+): ValidationResult {
   if (!address) {
     return { isValid: false, error: 'Wallet address is required' };
   }
 
-  if (network === 'ethereum') {
+  if (network === 'ethereum' || network === 'evm') {
     // Ethereum address validation (0x + 40 hex characters)
     if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
       return { isValid: false, error: 'Invalid Ethereum address' };

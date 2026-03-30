@@ -17,7 +17,7 @@ import { GorhomBottomSheet, KYCVerificationSheet } from '@/components/sheets';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { Button, Input } from '@/components/ui';
-import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
+import { SolanaIcon, MaticIcon, CeloIcon, UsdcIcon } from '@/assets/svg';
 import { SUPPORTED_CHAINS } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useKycStore } from '@/stores/kycStore';
@@ -152,9 +152,8 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
   SOL: SolanaIcon,
-  'SOL-DEVNET': SolanaIcon,
-  'MATIC-AMOY': MaticIcon,
-  'AVAX-FUJI': AvalancheIcon,
+  MATIC: MaticIcon,
+  CELO: CeloIcon,
 };
 
 const WITHDRAWAL_CATEGORIES = [
@@ -751,7 +750,7 @@ export function WithdrawDetailsSheet({
             <>
               <View className="mt-2 flex-row items-center justify-between">
                 <Text className="font-body text-[13px] text-text-secondary">Network</Text>
-                <Text className="font-subtitle text-[15px] text-text-primary">Solana Devnet</Text>
+                <Text className="font-subtitle text-[15px] text-text-primary">Solana</Text>
               </View>
               <View className="mt-2 flex-row items-center justify-between">
                 <Text className="font-body text-[13px] text-text-secondary">Asset</Text>
