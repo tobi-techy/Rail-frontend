@@ -20,7 +20,7 @@ import {
   NavigableBottomSheet,
   useNavigableBottomSheet,
   type BottomSheetScreen,
-  InfoSheet,
+  BottomSheet,
   SpendBreakdownSheet,
 } from '@/components/sheets';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
@@ -90,6 +90,24 @@ interface FundingAction {
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+const CreditSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <View className="mb-6">
+    <Text className="mb-2 font-button text-[15px] text-black">{title}</Text>
+    {typeof children === 'string' ? (
+      <Text className="font-body text-[14px] leading-[22px] text-black/70">{children}</Text>
+    ) : (
+      children
+    )}
+  </View>
+);
+
+const CreditBullet = ({ children }: { children: React.ReactNode }) => (
+  <View className="mb-2 flex-row">
+    <Text className="mr-3 font-body text-[14px] text-black/40">•</Text>
+    <Text className="flex-1 font-body text-[14px] leading-[22px] text-black/70">{children}</Text>
+  </View>
+);
 
 function FundingRow({ action, isLast }: { action: FundingAction; isLast: boolean }) {
   const scale = useSharedValue(1);
@@ -669,44 +687,93 @@ function DashboardScreen() {
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
       />
-      <InfoSheet
+      <BottomSheet
         visible={showMicroLoanSheet}
         onClose={() => setShowMicroLoanSheet(false)}
-        title="Rail Credit"
-        subtitle="Spend beyond your balance, repay automatically"
-        rows={[
-          { label: 'How it works', value: 'Auto-advance on inflow' },
-          { label: 'Repayment', value: 'Automatic from next deposit' },
-          { label: 'Applications', value: 'None needed' },
-        ]}>
-        <View className="mt-4 rounded-xl bg-gray-50 p-4">
-          <Text className="font-body text-[14px] leading-5 text-text-secondary">
-            Rail detects your income and automatically gives you a safe credit advance. Spend beyond
-            your balance when you need to — your next deposit repays it automatically. No
-            applications, no billing cycles, no stress. Credit that feels like part of your normal
-            money.
-          </Text>
+        showCloseButton>
+        <View>
+          <View className="mb-6">
+            <Text className="text-center font-subtitle text-[24px] text-black">Rail Credit</Text>
+            <Text className="mt-2 text-center font-body text-[14px] leading-[20px] text-black/50">
+              Spend beyond your balance. Repay automatically.
+            </Text>
+          </View>
+          <ScrollView
+            className="max-h-[55vh]"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            contentContainerStyle={{ paddingBottom: 8 }}>
+            <CreditSection title="How It Works">
+              Money comes in — Rail detects your inflow and automatically gives you a safe credit
+              advance based on your cashflow. Spend beyond your balance when you need to. Your next
+              deposit repays it automatically. No applications, no billing cycles, no stress.
+            </CreditSection>
+            <CreditSection title="What You Get">
+              <CreditBullet>Credit that feels like part of your normal money</CreditBullet>
+              <CreditBullet>Automatic repayment from your next deposit</CreditBullet>
+              <CreditBullet>Safe limit based on your actual income — not promises</CreditBullet>
+              <CreditBullet>No applications, no forms, no waiting</CreditBullet>
+              <CreditBullet>
+                Build credit behavior while building wealth simultaneously
+              </CreditBullet>
+            </CreditSection>
+            <CreditSection title="Your Safe Credit Limit">
+              Your limit is calculated from your average net inflow, income stability, past
+              repayment behavior, and how much Rail can safely lend. New users start with a
+              conservative limit that grows as you use Rail consistently.
+            </CreditSection>
+            <View className="mb-4 rounded-2xl bg-black/[0.03] p-4">
+              <Text className="font-body text-[13px] leading-[20px] text-black/60">
+                Rail Credit is designed for short-term liquidity — not long-term debt. Advances are
+                automatically repaid from your next deposit. Only spend what you can repay.
+              </Text>
+            </View>
+          </ScrollView>
         </View>
-      </InfoSheet>
-      <InfoSheet
+      </BottomSheet>
+      <BottomSheet
         visible={showCardComingSheet}
         onClose={() => setShowCardComingSheet(false)}
-        title="Rail Card"
-        subtitle="Spend your crypto anywhere"
-        rows={[
-          { label: 'Network', value: 'Visa' },
-          { label: 'Currency', value: 'USD (from USDC)' },
-          { label: 'Status', value: 'Coming soon' },
-        ]}>
-        <View className="mt-4 rounded-xl bg-gray-50 p-4">
-          <Text className="font-body text-[14px] leading-5 text-text-secondary">
-            A virtual Visa debit card powered by your Rail spend balance. Use it online or add it to
-            Apple Pay and Google Pay. Spend your USDC anywhere Visa is accepted — your balance
-            converts instantly at checkout. Round-ups from every purchase automatically go to your
-            stash.
-          </Text>
+        showCloseButton>
+        <View>
+          <View className="mb-6">
+            <Text className="text-center font-subtitle text-[24px] text-black">Rail Card</Text>
+            <Text className="mt-2 text-center font-body text-[14px] leading-[20px] text-black/50">
+              Your USDC balance. Anywhere Visa is accepted.
+            </Text>
+          </View>
+          <ScrollView
+            className="max-h-[55vh]"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            contentContainerStyle={{ paddingBottom: 8 }}>
+            <CreditSection title="What It Is">
+              A virtual Visa debit card powered directly by your Rail spend balance. No bank account
+              needed. No currency conversion delays. Your USDC converts instantly at checkout —
+              spend it like regular money, anywhere in the world.
+            </CreditSection>
+            <CreditSection title="What You Get">
+              <CreditBullet>Virtual Visa card — works online and in-app instantly</CreditBullet>
+              <CreditBullet>Apple Pay and Google Pay support</CreditBullet>
+              <CreditBullet>Round-ups on every purchase go straight to your stash</CreditBullet>
+              <CreditBullet>Real-time transaction notifications</CreditBullet>
+              <CreditBullet>Freeze and unfreeze from the app in one tap</CreditBullet>
+              <CreditBullet>Daily spending limits you control</CreditBullet>
+            </CreditSection>
+            <CreditSection title="How Round-Ups Work">
+              Every card purchase rounds up to the nearest dollar. The difference goes automatically
+              to your stash — earning yield while you spend. Small amounts, compounded over time,
+              add up.
+            </CreditSection>
+            <View className="mb-4 rounded-2xl bg-black/[0.03] p-4">
+              <Text className="font-body text-[13px] leading-[20px] text-black/60">
+                Rail Card is coming soon. You&apos;ll be notified when it&apos;s available for your
+                account. KYC verification is required to activate the card.
+              </Text>
+            </View>
+          </ScrollView>
         </View>
-      </InfoSheet>
+      </BottomSheet>
     </ScrollView>
   );
 }
