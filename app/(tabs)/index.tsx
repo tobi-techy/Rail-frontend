@@ -162,6 +162,7 @@ function DashboardScreen() {
   const [showKYCSheet, setShowKYCSheet] = useState(false);
   const [showMicroLoanSheet, setShowMicroLoanSheet] = useState(false);
   const [showSpendBreakdown, setShowSpendBreakdown] = useState(false);
+  const [showCardComingSheet, setShowCardComingSheet] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   const receiveNav = useNavigableBottomSheet('receive-main');
@@ -555,10 +556,10 @@ function DashboardScreen() {
             className="max-w-[50%] flex-1"
             isLoading={isStationPending}
             getStarted={!hasCard}
-            onPress={() => (kycApproved ? router.push('/card') : setShowKYCSheet(true))}
+            onPress={() => setShowCardComingSheet(true)}
           />
           <StashCard
-            title="Micro Loan"
+            title="Credit"
             amount=""
             getStarted="Coming soon"
             icon={<HugeiconsIcon icon={Money01Icon} size={26} color="white" strokeWidth={1.8} />}
@@ -671,19 +672,38 @@ function DashboardScreen() {
       <InfoSheet
         visible={showMicroLoanSheet}
         onClose={() => setShowMicroLoanSheet(false)}
-        title="Micro Loans"
-        subtitle="Unlock liquidity from your investments"
+        title="Rail Credit"
+        subtitle="Spend beyond your balance, repay automatically"
         rows={[
-          { label: 'Interest Rate', value: '0.5%' },
-          { label: 'Collateral', value: 'Rail Investments' },
-          { label: 'Max Amount', value: 'Up to 50% of stash' },
+          { label: 'How it works', value: 'Auto-advance on inflow' },
+          { label: 'Repayment', value: 'Automatic from next deposit' },
+          { label: 'Applications', value: 'None needed' },
         ]}>
         <View className="mt-4 rounded-xl bg-gray-50 p-4">
           <Text className="font-body text-[14px] leading-5 text-text-secondary">
-            Keep your investments working for you while accessing instant liquidity. Use your Rail
-            investment stash as collateral to get a micro loan with just 0.5% interest. Whether you
-            need funds for an emergency or an opportunity, your investments stay invested while you
-            borrow against them.
+            Rail detects your income and automatically gives you a safe credit advance. Spend beyond
+            your balance when you need to — your next deposit repays it automatically. No
+            applications, no billing cycles, no stress. Credit that feels like part of your normal
+            money.
+          </Text>
+        </View>
+      </InfoSheet>
+      <InfoSheet
+        visible={showCardComingSheet}
+        onClose={() => setShowCardComingSheet(false)}
+        title="Rail Card"
+        subtitle="Spend your crypto anywhere"
+        rows={[
+          { label: 'Network', value: 'Visa' },
+          { label: 'Currency', value: 'USD (from USDC)' },
+          { label: 'Status', value: 'Coming soon' },
+        ]}>
+        <View className="mt-4 rounded-xl bg-gray-50 p-4">
+          <Text className="font-body text-[14px] leading-5 text-text-secondary">
+            A virtual Visa debit card powered by your Rail spend balance. Use it online or add it to
+            Apple Pay and Google Pay. Spend your USDC anywhere Visa is accepted — your balance
+            converts instantly at checkout. Round-ups from every purchase automatically go to your
+            stash.
           </Text>
         </View>
       </InfoSheet>
