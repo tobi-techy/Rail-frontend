@@ -71,7 +71,15 @@ export default function AuthorizeTransactionScreen() {
         }
       );
     },
-    [verifyPasscode, isLoading, isPasskeyLoading, setAuthError, onAuthPasscodeChange, notification, impact]
+    [
+      verifyPasscode,
+      isLoading,
+      isPasskeyLoading,
+      setAuthError,
+      onAuthPasscodeChange,
+      notification,
+      impact,
+    ]
   );
 
   return (
@@ -79,69 +87,118 @@ export default function AuthorizeTransactionScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
       <View className="flex-1">
+        {/* Back button */}
         <View className="mt-2 px-6">
           <Pressable
             onPress={() => router.back()}
-            className="h-12 w-12 items-center justify-center rounded-full bg-[#F3F4F6]">
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#070914" strokeWidth={2} />
+            className="h-10 w-10 items-center justify-center rounded-full bg-[#F3F4F6]">
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#070914" strokeWidth={2} />
           </Pressable>
         </View>
 
-        <View className="mt-12 px-6">
-          <Text className="font-heading text-[36px] leading-[42px] text-[#070914]">
+        {/* Title */}
+        <View className="mt-6 px-6">
+          <Text className="font-heading text-[32px] leading-[38px] text-[#070914]">
             Authorize{'\n'}transaction
           </Text>
-          {amount ? (
-            <Text className="mt-2 font-body text-base text-[#6B7280]">
-              Confirm {type ? String(type).toLowerCase() : 'transaction'}
-              {amount ? ` of $${amount}` : ''}
-              {recipient ? ` to ${recipient}` : ''}
-            </Text>
-          ) : null}
         </View>
 
-        <View className="mt-8 px-6">
-        {isBiometricEnabled && Passkey.isSupported() && (
-          <>
+        {/* Subtitle */}
+        <View className="mt-4 px-6">
+          <Text className="font-body text-[15px] text-[#6B7280]">Enter Your Account Pin</Text>
+        </View>
+
+        {/* PIN boxes + eye toggle */}
+        <View className="mt-5 flex-row items-center justify-between px-6">
+          <View className="flex-row gap-x-3">
+            {[0, 1, 2, 3].map((i) => {
+              const filled = i < authPasscode.length;
+              return (
+                <View
+                  key={i}
+                  className="h-[56px] w-[56px] items-center justify-center rounded-xl bg-[#F3F4F6]">
+                  {filled && <View className="h-3 w-3 rounded-full bg-[#070914]" />}
+                </View>
+              );
+            })}
+          </View>
+          {isBiometricEnabled && Passkey.isSupported() && (
             <Pressable
               onPress={onPasskeyAuthorize}
               disabled={isPasskeyLoading || isLoading}
-              className="flex-row items-center justify-center gap-3 rounded-2xl border border-[#E5E7EB] bg-[#F9FAFB] py-4">
+              className="h-12 w-12 items-center justify-center rounded-full bg-[#EEF2FF]">
               {isPasskeyLoading ? (
                 <ActivityIndicator size="small" color="#070914" />
               ) : (
-                <HugeiconsIcon icon={FingerPrintIcon} size={22} color="#070914" />
+                <HugeiconsIcon icon={FingerPrintIcon} size={22} color="#6366F1" />
               )}
-              <Text className="font-subtitle text-base text-[#070914]">
-                {isPasskeyLoading ? 'Verifying…' : 'Use Passkey'}
-              </Text>
             </Pressable>
-
-            <View className="my-6 flex-row items-center gap-3">
-              <View className="h-px flex-1 bg-[#E5E7EB]" />
-              <Text className="font-caption text-sm text-[#9CA3AF]">or enter PIN</Text>
-              <View className="h-px flex-1 bg-[#E5E7EB]" />
-            </View>
-          </>
-        )}
+          )}
         </View>
 
-        <PasscodeInput
-          subtitle="Enter your account PIN"
-          length={4}
-          value={authPasscode}
-          onValueChange={onAuthPasscodeChange}
-          onComplete={handlePasscodeSubmit}
-          errorText={authError}
-          showToggle
-          autoSubmit
-          className="mt-10 flex-1"
-        />
+        {/* Error */}
+        {authError ? (
+          <View className="mt-3 px-6">
+            <Text className="font-body text-[13px] text-red-500">{authError}</Text>
+          </View>
+        ) : null}
 
-        <View className="mb-8 items-center px-6">
-          <Pressable
-            onPress={() => router.push('/(auth)/forgot-password')}>
-            <Text className="font-body-semibold text-[16px] text-[#3B82F6]">Forgot PIN?</Text>
+        {/* Spacer */}
+        <View className="flex-1" />
+
+        {/* Number pad */}
+        <View className="px-6 pb-2">
+          {[
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+          ].map((row, ri) => (
+            <View key={ri} className="mb-2 flex-row justify-between">
+              {row.map((n) => (
+                <Pressable
+                  key={n}
+                  onPress={() => {
+                    if (authPasscode.length < 4) {
+                      const next = authPasscode + String(n);
+                      onAuthPasscodeChange(next);
+                      if (next.length === 4) handlePasscodeSubmit(next);
+                    }
+                  }}
+                  className="h-[64px] flex-1 items-center justify-center">
+                  <Text className="font-subtitle text-[28px] text-[#070914]">{n}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ))}
+          <View className="mb-2 flex-row justify-between">
+            <View className="h-[64px] flex-1" />
+            <Pressable
+              onPress={() => {
+                if (authPasscode.length < 4) {
+                  const next = authPasscode + '0';
+                  onAuthPasscodeChange(next);
+                  if (next.length === 4) handlePasscodeSubmit(next);
+                }
+              }}
+              className="h-[64px] flex-1 items-center justify-center">
+              <Text className="font-subtitle text-[28px] text-[#070914]">0</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                if (authPasscode.length > 0) {
+                  onAuthPasscodeChange(authPasscode.slice(0, -1));
+                }
+              }}
+              className="h-[64px] flex-1 items-center justify-center">
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#070914" strokeWidth={2} />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Forgot PIN */}
+        <View className="mb-6 items-center">
+          <Pressable onPress={() => router.push('/(auth)/forgot-password')}>
+            <Text className="font-body text-[15px] text-[#3B82F6] underline">Forgot PIN?</Text>
           </Pressable>
         </View>
       </View>
