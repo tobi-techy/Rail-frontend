@@ -148,7 +148,7 @@ function AccountDetails({ account }: { account: VirtualAccount }) {
       `Account Number: ${account.account_number || '—'}`,
       account.routing_number ? `Routing Number: ${account.routing_number}` : '',
       account.bank_name ? `Bank: ${account.bank_name}` : '',
-      account.beneficiary_address ? `Address: ${account.beneficiary_address}` : '',
+      account.bank_address ? `Address: ${account.bank_address}` : '',
       rails ? `Payment Rails: ${rails}` : '',
     ]
       .filter(Boolean)
@@ -184,10 +184,10 @@ function AccountDetails({ account }: { account: VirtualAccount }) {
             </>
           ) : null}
 
-          {account.beneficiary_address ? (
+          {account.bank_address ? (
             <>
               <View className="h-px bg-[#E5E7EB]" />
-              <DetailRow label="Address" value={account.beneficiary_address} />
+              <DetailRow label="Address" value={account.bank_address} />
             </>
           ) : null}
 
