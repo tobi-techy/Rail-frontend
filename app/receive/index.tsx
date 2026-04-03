@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { StatusBar, Text, View, Pressable } from 'react-native';
+import { StatusBar, Text, View, Pressable, Image, ImageSourcePropType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, {
@@ -10,7 +10,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { CryptoReceiveSheet } from '@/components/sheets';
-import { SolanaIcon, MaticIcon, CeloIcon, UsdcIcon } from '@/assets/svg';
+import { SolanaIcon, MaticIcon, UsdcIcon } from '@/assets/svg';
+import AvalancheIcon from '@/assets/svg/avalanche.svg';
 import { SUPPORTED_CHAINS, isEVMChain, type ChainConfig } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import type { WalletChain } from '@/api/types';
@@ -20,19 +21,26 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
+const CeloIconImg = require('@/assets/svg/celo.webp') as ImageSourcePropType;
+const BaseIconImg = require('@/assets/svg/base.jpeg') as ImageSourcePropType;
+
+const CHAIN_ICONS: Record<string, React.ComponentType<any> | ImageSourcePropType> = {
   SOL: SolanaIcon,
   'SOL-DEVNET': SolanaIcon,
   MATIC: MaticIcon,
   'MATIC-AMOY': MaticIcon,
-  CELO: CeloIcon,
-  'CELO-ALFAJORES': CeloIcon,
+  CELO: CeloIconImg,
+  'CELO-ALFAJORES': CeloIconImg,
+  BASE: BaseIconImg,
+  'BASE-SEPOLIA': BaseIconImg,
+  AVAX: AvalancheIcon,
 };
 
 function ChainCard({ config, onPress }: { config: ChainConfig; onPress: () => void }) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const Icon = CHAIN_ICONS[config.chain];
+  const iconValue = CHAIN_ICONS[config.chain];
+  const isImageIcon = config.chain === 'CELO' || config.chain === 'BASE';
   const tokenLabel = 'USDC';
   const TokenBadge = UsdcIcon;
 
@@ -54,7 +62,15 @@ function ChainCard({ config, onPress }: { config: ChainConfig; onPress: () => vo
         <View
           className="size-14 items-center justify-center rounded-full"
           style={{ backgroundColor: config.color + '18' }}>
-          {Icon && <Icon width={32} height={32} />}
+          {isImageIcon ? (
+            <Image
+              source={iconValue as ImageSourcePropType}
+              style={{ width: 32, height: 32, borderRadius: 16 }}
+            />
+          ) : // @ts-ignore - SVG component
+          iconValue ? (
+            React.createElement(iconValue as React.ComponentType<any>, { width: 32, height: 32 })
+          ) : null}
         </View>
         <View className="absolute -bottom-1 -right-1 size-6 items-center justify-center rounded-full bg-white shadow-sm">
           <TokenBadge width={18} height={18} />
