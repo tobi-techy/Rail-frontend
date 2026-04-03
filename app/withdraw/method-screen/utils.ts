@@ -12,6 +12,7 @@ type DestinationErrorInput = {
   isCryptoDestinationMethod: boolean;
   isFiatMethod: boolean;
   isMobileWalletFundingFlow: boolean;
+  destinationChain?: string;
 };
 
 type DestinationSanitizeInput = {
@@ -90,6 +91,7 @@ export const getDestinationError = ({
   isCryptoDestinationMethod,
   isFiatMethod,
   isMobileWalletFundingFlow,
+  destinationChain,
 }: DestinationErrorInput) => {
   if (isMobileWalletFundingFlow) {
     return '';
@@ -127,11 +129,17 @@ export const getDestinationError = ({
     const isSolanaLike = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(trimmedAddress);
     // Basic hex check for EVM (0x + 40 hex chars)
     const isEvmLike = /^0x[0-9a-fA-F]{40}$/.test(trimmedAddress);
-    if (isEvmLike) {
-      return 'Only Solana (SOL) addresses are supported for withdrawals. EVM addresses (Polygon, Ethereum, etc.) are not yet supported.';
+    const isEvmChain = ['MATIC', 'CELO', 'BASE', 'AVAX'].includes(destinationChain ?? '');
+    const isSolChain = !isEvmChain;
+
+    if (isSolChain && isEvmLike) {
+      return 'Please enter a Solana address for this network.';
     }
-    if (!isSolanaLike) {
-      return 'Enter a valid Solana wallet address.';
+    if (isEvmChain && isSolanaLike) {
+      return 'Please enter an EVM address (starting with 0x) for this network.';
+    }
+    if (!isSolanaLike && !isEvmLike) {
+      return 'Enter a valid wallet address.';
     }
   }
 

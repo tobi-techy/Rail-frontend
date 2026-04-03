@@ -160,7 +160,7 @@ export function DestinationSheet({
           <View className="mb-5">
             <Text className="mb-3 font-body text-[13px] text-text-secondary">Select network</Text>
             <View className="flex-row gap-2">
-              {SUPPORTED_CHAINS.slice(0, 4).map((chain) => (
+              {SUPPORTED_CHAINS.map((chain) => (
                 <ChainPill
                   key={chain.chain}
                   chain={chain}
