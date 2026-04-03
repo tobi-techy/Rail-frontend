@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Pressable } from 'react-native';
+import { View, Text, ActivityIndicator, Pressable, Image, ImageSourcePropType } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import QRCodeStyled from 'react-native-qrcode-styled';
 import { BottomSheet } from './BottomSheet';
@@ -7,16 +7,19 @@ import { Button } from '../ui';
 import { useDepositAddress } from '@/api/hooks/useWallet';
 import { getChainConfig, isEVMChain, isSolanaChain } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
-import { SolanaIcon, MaticIcon, CeloIcon, UsdcIcon, BaseIcon, AvalancheIcon } from '@/assets/svg';
+import { SolanaIcon, MaticIcon, UsdcIcon, AvalancheIcon } from '@/assets/svg';
 import type { WalletChain } from '@/api/types';
 import { CheckmarkCircle01Icon, Copy01Icon, RefreshIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
-const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
+const CeloIconImg = require('@/assets/svg/celo.webp') as ImageSourcePropType;
+const BaseIconImg = require('@/assets/svg/base.jpeg') as ImageSourcePropType;
+
+const CHAIN_ICONS: Record<string, React.ComponentType<any> | ImageSourcePropType> = {
   SOL: SolanaIcon,
   MATIC: MaticIcon,
-  CELO: CeloIcon,
-  BASE: BaseIcon,
+  CELO: CeloIconImg,
+  BASE: BaseIconImg,
   AVAX: AvalancheIcon,
 };
 
@@ -54,7 +57,8 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
     setTimeout(() => setCopied(false), 2000);
   }, [address, notification]);
 
-  const ChainIcon = CHAIN_ICONS[chain];
+  const iconValue = CHAIN_ICONS[chain];
+  const isImageIcon = chain === 'CELO' || chain === 'BASE';
 
   const header = (
     <View className="mb-5 flex-row items-center gap-3">
@@ -63,7 +67,15 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
         <View
           className="size-12 items-center justify-center rounded-full"
           style={{ backgroundColor: chainConfig.color + '18' }}>
-          {ChainIcon && <ChainIcon width={28} height={28} />}
+          {isImageIcon ? (
+            <Image
+              source={iconValue as ImageSourcePropType}
+              style={{ width: 28, height: 28, borderRadius: 14 }}
+            />
+          ) : // @ts-ignore - SVG component
+          iconValue ? (
+            React.createElement(iconValue as React.ComponentType<any>, { width: 28, height: 28 })
+          ) : null}
         </View>
         <View className="absolute -bottom-1 -right-1 size-5 items-center justify-center rounded-full bg-white shadow-sm">
           <TokenBadge width={14} height={14} />

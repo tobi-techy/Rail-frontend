@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   View,
   Pressable,
+  Image,
+  ImageSourcePropType,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -17,7 +19,8 @@ import { GorhomBottomSheet, KYCVerificationSheet } from '@/components/sheets';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { Button, Input } from '@/components/ui';
-import { SolanaIcon, MaticIcon, CeloIcon, UsdcIcon } from '@/assets/svg';
+import { SolanaIcon, MaticIcon, UsdcIcon } from '@/assets/svg';
+import AvalancheIcon from '@/assets/svg/avalanche.svg';
 import { SUPPORTED_CHAINS } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useKycStore } from '@/stores/kycStore';
@@ -150,10 +153,15 @@ type WithdrawConfirmSheetProps = {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
+const CeloIconImg = require('@/assets/svg/celo.webp') as ImageSourcePropType;
+const BaseIconImg = require('@/assets/svg/base.jpeg') as ImageSourcePropType;
+
+const CHAIN_ICONS: Record<string, React.ComponentType<any> | ImageSourcePropType> = {
   SOL: SolanaIcon,
   MATIC: MaticIcon,
-  CELO: CeloIcon,
+  CELO: CeloIconImg,
+  BASE: BaseIconImg,
+  AVAX: AvalancheIcon,
 };
 
 const WITHDRAWAL_CATEGORIES = [
@@ -245,7 +253,8 @@ function ChainPill({
 }) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const Icon = CHAIN_ICONS[chain.chain];
+  const iconValue = CHAIN_ICONS[chain.chain];
+  const isImageIcon = chain.chain === 'CELO' || chain.chain === 'BASE';
   const { selection } = useHaptics();
 
   return (
@@ -276,7 +285,15 @@ function ChainPill({
         <View
           className="size-10 items-center justify-center rounded-full"
           style={{ backgroundColor: chain.color + '22' }}>
-          {Icon && <Icon width={22} height={22} />}
+          {isImageIcon ? (
+            <Image
+              source={iconValue as ImageSourcePropType}
+              style={{ width: 22, height: 22, borderRadius: 11 }}
+            />
+          ) : // @ts-ignore - SVG component
+          iconValue ? (
+            React.createElement(iconValue as React.ComponentType<any>, { width: 22, height: 22 })
+          ) : null}
         </View>
         <View className="absolute -bottom-1 -right-1 size-5 items-center justify-center rounded-full bg-white shadow-sm">
           <UsdcIcon width={13} height={13} />
