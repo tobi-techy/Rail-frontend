@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { useAuthStore } from '@/stores/authStore';
 import apiClient from '@/api/client';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -60,7 +60,7 @@ export function FeedbackSheet({ visible, onClose }: Props) {
   };
 
   return (
-    <BottomSheet visible={visible} onClose={handleClose} showCloseButton>
+    <GorhomBottomSheet visible={visible} onClose={handleClose} showCloseButton>
       <View style={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 16 }}>
         {done ? (
           <View className="items-center py-8">
@@ -124,6 +124,6 @@ export function FeedbackSheet({ visible, onClose }: Props) {
           </>
         )}
       </View>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

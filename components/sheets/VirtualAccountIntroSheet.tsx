@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Button } from '@/components/ui';
 import { useCreateVirtualAccount } from '@/api/hooks/useVirtualAccount';
 import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import { BankIcon } from '@/assets/svg/filled';
-import { UsdIcon } from '@/assets/svg';
+import CountryFlag from 'react-native-country-flag';
 import { Building04Icon, ShieldKeyIcon, ZapIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
@@ -81,7 +81,7 @@ export function VirtualAccountIntroSheet({
   const loading = isPending || awaitingTos;
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
+    <GorhomBottomSheet visible={visible} onClose={onClose}>
       {/* Header icons */}
       <View className="mb-5 mt-2 items-center">
         <View className="flex-row items-center">
@@ -89,7 +89,7 @@ export function VirtualAccountIntroSheet({
             <BankIcon width={26} height={26} color="#fff" />
           </View>
           <View className="-ml-3 h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-gray-100 bg-white">
-            <UsdIcon width={56} height={56} />
+            <CountryFlag isoCode="US" size={40} />
           </View>
         </View>
       </View>
@@ -159,6 +159,6 @@ export function VirtualAccountIntroSheet({
       <TouchableOpacity onPress={onClose} className="mt-3 items-center py-2">
         <Text className="font-body text-[15px] text-gray-400">Cancel</Text>
       </TouchableOpacity>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

@@ -4,17 +4,26 @@ import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { BottomSheet } from '@/components/sheets/BottomSheet';
+import { GorhomBottomSheet } from '@/components/sheets/GorhomBottomSheet';
 import { Button } from '@/components/ui';
 import { EMPLOYMENT_STATUS_OPTIONS, INVESTMENT_PURPOSE_OPTIONS } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
-import { ArrowDown01Icon, ArrowLeft01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
+import {
+  ArrowDown01Icon,
+  ArrowLeft01Icon,
+  CheckmarkCircle01Icon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
 export default function KycAboutYouScreen() {
   const insets = useSafeAreaInsets();
-  const { employmentStatus, investmentPurposes, setEmploymentStatus, toggleInvestmentPurpose, clearInvestmentPurposes } =
-    useKycStore();
+  const {
+    employmentStatus,
+    investmentPurposes,
+    setEmploymentStatus,
+    toggleInvestmentPurpose,
+    clearInvestmentPurposes,
+  } = useKycStore();
 
   const [showEmployment, setShowEmployment] = useState(false);
   const [showPurpose, setShowPurpose] = useState(false);
@@ -87,7 +96,9 @@ export default function KycAboutYouScreen() {
           {/* Investment Purpose - Now Optional */}
           <View className="mt-6">
             <View className="flex-row items-center justify-between">
-              <Text className="mb-2 font-subtitle text-[14px] text-gray-900">Purpose of account</Text>
+              <Text className="mb-2 font-subtitle text-[14px] text-gray-900">
+                Purpose of account
+              </Text>
               <Text className="font-caption text-[12px] text-gray-400">Optional</Text>
             </View>
             <Pressable
@@ -130,12 +141,14 @@ export default function KycAboutYouScreen() {
             className="mt-2 py-2"
             accessibilityRole="button"
             accessibilityLabel="Skip investment goals">
-            <Text className="text-center font-body text-[14px] text-gray-500">Skip investment goals</Text>
+            <Text className="text-center font-body text-[14px] text-gray-500">
+              Skip investment goals
+            </Text>
           </Pressable>
         </View>
 
         {/* Employment Bottom Sheet */}
-        <BottomSheet
+        <GorhomBottomSheet
           visible={showEmployment}
           onClose={() => setShowEmployment(false)}
           showCloseButton={false}>
@@ -154,22 +167,31 @@ export default function KycAboutYouScreen() {
                 }`}
                 accessibilityRole="button">
                 <Text className="font-body text-[16px] text-gray-900">{option.label}</Text>
-                {selected && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} color="#111827" strokeWidth={2.5} />}
+                {selected && (
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle01Icon}
+                    size={20}
+                    color="#111827"
+                    strokeWidth={2.5}
+                  />
+                )}
               </Pressable>
             );
           })}
           <View className="mt-4">
             <Button title="Done" onPress={() => setShowEmployment(false)} />
           </View>
-        </BottomSheet>
+        </GorhomBottomSheet>
 
         {/* Investment Purpose Bottom Sheet */}
-        <BottomSheet
+        <GorhomBottomSheet
           visible={showPurpose}
           onClose={() => setShowPurpose(false)}
           showCloseButton={false}>
           <Text className="mb-1 font-display text-[22px] text-gray-900">Purpose of account</Text>
-          <Text className="mb-4 font-body text-[13px] text-gray-500">Select all that apply (optional)</Text>
+          <Text className="mb-4 font-body text-[13px] text-gray-500">
+            Select all that apply (optional)
+          </Text>
           {INVESTMENT_PURPOSE_OPTIONS.map((option, index) => {
             const selected = investmentPurposes.includes(option.value);
             return (
@@ -186,7 +208,14 @@ export default function KycAboutYouScreen() {
                   className={`size-6 items-center justify-center rounded ${
                     selected ? 'bg-gray-900' : 'border border-gray-300'
                   }`}>
-                  {selected && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} color="#FFFFFF" strokeWidth={3} />}
+                  {selected && (
+                    <HugeiconsIcon
+                      icon={CheckmarkCircle01Icon}
+                      size={14}
+                      color="#FFFFFF"
+                      strokeWidth={3}
+                    />
+                  )}
                 </View>
               </Pressable>
             );
@@ -194,7 +223,7 @@ export default function KycAboutYouScreen() {
           <View className="mt-4">
             <Button title="Done" onPress={() => setShowPurpose(false)} />
           </View>
-        </BottomSheet>
+        </GorhomBottomSheet>
       </SafeAreaView>
     </ErrorBoundary>
   );

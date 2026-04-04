@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Switch } from 'react-native';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 
 interface SettingsSheetProps {
   visible: boolean;
@@ -28,7 +28,7 @@ export function SettingsSheet({
   children,
 }: SettingsSheetProps) {
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
+    <GorhomBottomSheet visible={visible} onClose={onClose}>
       {/* Illustration */}
       {illustration && <View className="mb-4 items-center">{illustration}</View>}
 
@@ -64,6 +64,6 @@ export function SettingsSheet({
           />
         </View>
       )}
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

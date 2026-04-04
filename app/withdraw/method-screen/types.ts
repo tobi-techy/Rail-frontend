@@ -14,6 +14,13 @@ export type ExtendedWithdrawMethod =
 
 export type FundingFlow = 'send' | 'fund';
 
+/** Step-based withdrawal flow states */
+export type WithdrawalStep =
+  | 'amount' // Step 1: Amount entry (red keypad)
+  | 'destination' // Step 2: Wallet address / bank details
+  | 'details' // Step 3: Category, narration, review
+  | 'confirm'; // Step 4: Final review + auth
+
 export type MethodCopy = {
   title: string;
   subtitle: string;
@@ -32,3 +39,15 @@ export type WebAuthnOptionsPayload = {
   publicKey?: Record<string, any>;
   [key: string]: any;
 };
+
+/** Withdrawal flow state for step-based navigation */
+export interface WithdrawalFlowState {
+  step: WithdrawalStep;
+  amount: string;
+  destination: string;
+  chain: string;
+  fiatHolderName: string;
+  fiatAccountNumber: string;
+  category: string;
+  narration: string;
+}

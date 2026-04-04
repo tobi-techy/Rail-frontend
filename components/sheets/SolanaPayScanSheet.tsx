@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Button } from '../ui';
 import { PhantomIcon, SolflareIcon } from '@/assets/svg';
 import { useWalletAddresses } from '@/api/hooks/useWallet';
@@ -211,7 +211,7 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
   const isSending = step === 'sending';
 
   return (
-    <BottomSheet visible={visible} onClose={handleClose} dismissible={!isSending}>
+    <GorhomBottomSheet visible={visible} onClose={handleClose} dismissible={!isSending}>
       <View className="mb-6">
         <Text className="font-subtitle text-xl text-text-primary">Confirm Payment</Text>
         {request?.message ? (
@@ -247,7 +247,12 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
 
       {!!error && (
         <View className="mb-4 flex-row items-start gap-2 rounded-xl bg-red-50 px-4 py-3">
-          <HugeiconsIcon icon={AlertCircleIcon} size={16} color="#EF4444" style={{ marginTop: 1 }} />
+          <HugeiconsIcon
+            icon={AlertCircleIcon}
+            size={16}
+            color="#EF4444"
+            style={{ marginTop: 1 }}
+          />
           <View className="flex-1">
             <Text className="font-body text-sm text-red-600">{error}</Text>
             {walletMissing && (
@@ -302,6 +307,6 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
           />
         </View>
       )}
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

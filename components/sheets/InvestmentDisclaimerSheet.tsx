@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Button } from '@/components/ui';
 
 interface InvestmentDisclaimerSheetProps {
@@ -24,7 +24,11 @@ const BulletPoint = ({ children }: { children: React.ReactNode }) => (
 
 export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDisclaimerSheetProps) {
   return (
-    <BottomSheet visible={visible} onClose={onAccept} showCloseButton={false} dismissible={false}>
+    <GorhomBottomSheet
+      visible={visible}
+      onClose={onAccept}
+      showCloseButton={false}
+      dismissible={false}>
       <View className="max-h-[80vh]">
         {/* Header */}
         <View className="mb-6">
@@ -119,6 +123,6 @@ export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDiscl
           <Button title="I Understand" onPress={onAccept} />
         </View>
       </View>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

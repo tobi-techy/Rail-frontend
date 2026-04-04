@@ -1,13 +1,25 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Transaction, TransactionType, SvgComponent } from '../molecules/TransactionItem';
 import { resolveTransactionAssetIcon } from '@/utils/transactionIcon';
 import { formatAbsAmount } from '@/utils/transactionFormat';
 import { MaskedBalance } from '../molecules/MaskedBalance';
 import { useUIStore } from '@/stores';
-import { ArrowDownLeft01Icon, ArrowUpRight01Icon, Copy01Icon, CreditCardIcon, DollarCircleIcon, Mail01Icon, MinusSignIcon, PlusSignIcon, RepeatIcon, Tag01Icon, Wallet01Icon } from '@hugeicons/core-free-icons';
+import {
+  ArrowDownLeft01Icon,
+  ArrowUpRight01Icon,
+  Copy01Icon,
+  CreditCardIcon,
+  DollarCircleIcon,
+  Mail01Icon,
+  MinusSignIcon,
+  PlusSignIcon,
+  RepeatIcon,
+  Tag01Icon,
+  Wallet01Icon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
 interface TransactionDetailSheetProps {
@@ -76,10 +88,10 @@ const DetailRow = ({
 const LARGE_ICON_SIZE = 48;
 
 const WITHDRAWAL_BADGE: Record<string, { icon: any; bg: string }> = {
-  fiat:   { icon: CreditCardIcon, bg: '#3B82F6' },
-  card:   { icon: CreditCardIcon, bg: '#3B82F6' },
-  crypto: { icon: Wallet01Icon,     bg: '#8B5CF6' },
-  p2p:    { icon: Mail01Icon,       bg: '#10B981' },
+  fiat: { icon: CreditCardIcon, bg: '#3B82F6' },
+  card: { icon: CreditCardIcon, bg: '#3B82F6' },
+  crypto: { icon: Wallet01Icon, bg: '#8B5CF6' },
+  p2p: { icon: Mail01Icon, bg: '#10B981' },
 };
 
 const LargeTokenIcon = ({
@@ -119,14 +131,18 @@ const LargeTokenIcon = ({
 const LARGE_ACTION_ICON_MAP: Record<string, any> = {
   'arrow-up-right': ArrowUpRight01Icon,
   'arrow-down-left': ArrowDownLeft01Icon,
-  'repeat': RepeatIcon,
-  'plus': PlusSignIcon,
-  'minus': MinusSignIcon,
+  repeat: RepeatIcon,
+  plus: PlusSignIcon,
+  minus: MinusSignIcon,
 };
 
 const LargeActionIcon = ({ name }: { name: string }) => (
   <View className="h-12 w-12 items-center justify-center rounded-full border-2 border-surface bg-background-main">
-    <HugeiconsIcon icon={LARGE_ACTION_ICON_MAP[name] ?? ArrowUpRight01Icon} size={22} color="#757575" />
+    <HugeiconsIcon
+      icon={LARGE_ACTION_ICON_MAP[name] ?? ArrowUpRight01Icon}
+      size={22}
+      color="#757575"
+    />
   </View>
 );
 
@@ -163,7 +179,17 @@ export function TransactionDetailSheet({
   const { isBalanceVisible } = useUIStore();
   if (!transaction) return null;
 
-  const { icon, type, amount, currency = 'NGN', createdAt, toAddress, txHash, fee, withdrawalMethod } = transaction;
+  const {
+    icon,
+    type,
+    amount,
+    currency = 'NGN',
+    createdAt,
+    toAddress,
+    txHash,
+    fee,
+    withdrawalMethod,
+  } = transaction;
 
   const renderIcon = () => {
     let iconEl: React.ReactElement;
@@ -195,7 +221,9 @@ export function TransactionDetailSheet({
       );
     }
 
-    const badge = withdrawalMethod ? (WITHDRAWAL_BADGE[withdrawalMethod] ?? { Icon: Tag01Icon, bg: '#6B7280' }) : null;
+    const badge = withdrawalMethod
+      ? (WITHDRAWAL_BADGE[withdrawalMethod] ?? { Icon: Tag01Icon, bg: '#6B7280' })
+      : null;
 
     return (
       <View style={{ width: LARGE_ICON_SIZE, height: LARGE_ICON_SIZE }}>
@@ -212,7 +240,7 @@ export function TransactionDetailSheet({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
+    <GorhomBottomSheet visible={visible} onClose={onClose}>
       <View className="items-center pb-4">
         {renderIcon()}
         <View className="mt-3 rounded-full bg-surface px-3 py-1">
@@ -274,6 +302,6 @@ export function TransactionDetailSheet({
           <DetailRow label="Fees" value={fee} isGreen={fee.toLowerCase().includes('covered')} />
         )}
       </View>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

@@ -6,6 +6,8 @@ export { default as BnbIcon } from './bnb.svg';
 export { default as MaticIcon } from './matic.svg';
 export { default as BaseIcon } from './base.svg';
 export { default as AvalancheIcon } from './avalanche.svg';
+export { default as CeloIcon } from './celo.svg';
+export { default as TronIcon } from './tron.svg';
 export { default as PhantomIcon } from './phantom.svg';
 export { default as SolflareIcon } from './solflare.svg';
 

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Pressable, Image, ImageSourcePropType } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import QRCodeStyled from 'react-native-qrcode-styled';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Button } from '../ui';
 import { useDepositAddress } from '@/api/hooks/useWallet';
 import { getChainConfig, isEVMChain, isSolanaChain } from '@/utils/chains';
@@ -90,13 +90,13 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
 
   if (isLoading) {
     return (
-      <BottomSheet visible={visible} onClose={onClose}>
+      <GorhomBottomSheet visible={visible} onClose={onClose}>
         {header}
         <View className="items-center justify-center py-16">
           <ActivityIndicator size="small" color="#000" />
           <Text className="mt-3 font-body text-sm text-text-secondary">Loading wallet…</Text>
         </View>
-      </BottomSheet>
+      </GorhomBottomSheet>
     );
   }
 
@@ -109,7 +109,7 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
           ? 'Accept the Terms of Service to receive crypto.'
           : 'Please check your connection and try again.';
     return (
-      <BottomSheet visible={visible} onClose={onClose}>
+      <GorhomBottomSheet visible={visible} onClose={onClose}>
         {header}
         <View className="items-center justify-center py-12">
           <Text className="mb-2 font-subtitle text-base text-text-primary">
@@ -129,12 +129,12 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
             </Pressable>
           )}
         </View>
-      </BottomSheet>
+      </GorhomBottomSheet>
     );
   }
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
+    <GorhomBottomSheet visible={visible} onClose={onClose}>
       {header}
 
       <View className="items-center">
@@ -193,6 +193,6 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
           className="w-full"
         />
       </View>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

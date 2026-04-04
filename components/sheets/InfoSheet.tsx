@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 
 interface InfoRowProps {
   label: string;
@@ -27,7 +27,7 @@ export function InfoSheet({
   children,
 }: InfoSheetProps) {
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
+    <GorhomBottomSheet visible={visible} onClose={onClose}>
       <View className="items-center pr-8">
         {/* Image/Card */}
         {image && <View className="mb-4">{image}</View>}
@@ -61,6 +61,6 @@ export function InfoSheet({
 
       {/* Custom content */}
       {children}
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

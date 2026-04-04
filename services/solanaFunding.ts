@@ -150,7 +150,7 @@ async function buildAndSendTransfer(
 
   const authorization = await wallet.authorize({
     identity: APP_IDENTITY,
-    chain: 'devnet',
+    chain: 'mainnet-beta',
   });
   const sourceAddress = authorization.accounts?.[0]?.address;
   if (!sourceAddress) {

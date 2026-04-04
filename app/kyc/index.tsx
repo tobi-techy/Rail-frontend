@@ -21,6 +21,7 @@ import {
   CheckmarkCircle01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import CountryFlag from 'react-native-country-flag';
 
 const ISO2_TO_KYC: Record<string, Country> = {
   US: 'USA',
@@ -44,6 +45,9 @@ const ISO2_TO_KYC: Record<string, Country> = {
   PL: 'POL',
   SE: 'SWE',
 };
+const KYC_TO_ISO2: Record<string, string> = Object.fromEntries(
+  Object.entries(ISO2_TO_KYC).map(([k, v]) => [v, k])
+);
 
 const COUNTRIES: { code: Country; flag: string }[] = [
   { code: 'USA', flag: '🇺🇸' },
@@ -166,7 +170,7 @@ export default function KycCountryScreen() {
               accessibilityRole="button"
               accessibilityLabel="Select issuing country">
               <View className="flex-row items-center gap-3">
-                <Text className="text-2xl">{currentCountry.flag}</Text>
+                <CountryFlag isoCode={KYC_TO_ISO2[currentCountry.code] || 'US'} size={24} />
                 <View>
                   <Text className="font-subtitle text-[16px] text-gray-900">
                     {COUNTRY_LABELS[country]}
@@ -281,7 +285,7 @@ export default function KycCountryScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={`Choose ${COUNTRY_LABELS[item.code]}`}>
                     <View className="flex-row items-center gap-3">
-                      <Text className="text-xl">{item.flag}</Text>
+                      <CountryFlag isoCode={KYC_TO_ISO2[item.code] || 'US'} size={20} />
                       <View>
                         <Text className="font-subtitle text-[15px] text-gray-900">
                           {COUNTRY_LABELS[item.code]}

@@ -11,7 +11,7 @@ import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { Button } from '@/components/ui';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import type { VirtualAccount } from '@/api/types/funding';
-import { UsdIcon, EurIcon, GbpIcon } from '@/assets/svg';
+import CountryFlag from 'react-native-country-flag';
 import { VirtualAccountIntroSheet } from '@/components/sheets/VirtualAccountIntroSheet';
 import {
   ArrowLeft01Icon,
@@ -22,17 +22,15 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
-type Currency = 'USD' | 'EUR' | 'GBP';
-const CURRENCIES: Currency[] = ['USD', 'EUR', 'GBP'];
-const CURRENCY_FLAG: Record<Currency, React.ComponentType<any>> = {
-  USD: UsdIcon,
-  EUR: EurIcon,
-  GBP: GbpIcon,
+type Currency = 'USD' | 'EUR';
+const CURRENCIES: Currency[] = ['USD', 'EUR'];
+const CURRENCY_ISO: Record<Currency, string> = {
+  USD: 'US',
+  EUR: 'EU',
 };
 const CURRENCY_LABEL: Record<Currency, string> = {
   USD: 'US Dollar',
   EUR: 'Euro',
-  GBP: 'British Pound',
 };
 
 // ─── Copy row ───────────────────────────────────────────────────────────────
@@ -78,7 +76,7 @@ function CurrencyPicker({
   onSelect: (c: Currency) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const Flag = CURRENCY_FLAG[selected];
+  const flagCode = CURRENCY_ISO[selected];
 
   return (
     <View className="relative z-50">
@@ -89,7 +87,7 @@ function CurrencyPicker({
         }}
         className="flex-row items-center gap-2 rounded-full bg-[#F3F4F6] px-3 py-2">
         <View className="size-6 overflow-hidden rounded-full">
-          <Flag width={24} height={24} />
+          <CountryFlag isoCode={flagCode} size={20} />
         </View>
         <Text className="font-subtitle text-[14px] text-[#070914]">{selected}</Text>
         <HugeiconsIcon icon={ArrowDown01Icon} size={14} color="#6B7280" />
@@ -107,7 +105,7 @@ function CurrencyPicker({
             elevation: 8,
           }}>
           {CURRENCIES.map((c) => {
-            const CFlag = CURRENCY_FLAG[c];
+            const cFlagCode = CURRENCY_ISO[c];
             return (
               <Pressable
                 key={c}
@@ -118,7 +116,7 @@ function CurrencyPicker({
                 }}
                 className={`flex-row items-center gap-3 px-4 py-3 ${selected === c ? 'bg-gray-50' : ''}`}>
                 <View className="size-7 overflow-hidden rounded-full">
-                  <CFlag width={28} height={28} />
+                  <CountryFlag isoCode={cFlagCode} size={22} />
                 </View>
                 <View>
                   <Text className="font-subtitle text-[14px] text-[#070914]">{c}</Text>
@@ -216,11 +214,10 @@ function AccountDetails({ account }: { account: VirtualAccount }) {
 
 // ─── Empty state ────────────────────────────────────────────────────────────
 function EmptyState({ currency, onSetup }: { currency: Currency; onSetup: () => void }) {
-  const Flag = CURRENCY_FLAG[currency];
   return (
     <View className="flex-1 items-center justify-center px-8">
       <View className="mb-5 size-20 items-center justify-center overflow-hidden rounded-full bg-gray-50">
-        <Flag width={48} height={48} />
+        <CountryFlag isoCode={CURRENCY_ISO[currency]} size={36} />
       </View>
       <Text className="mb-2 text-center font-subtitle text-[20px] text-[#070914]">
         No {currency} account yet
@@ -292,7 +289,7 @@ export default function VirtualAccountScreen() {
           }>
           {/* Title */}
           <View className="px-6 pt-6">
-            <Text className="font-heading text-[30px] leading-[36px] text-[#070914]">
+            <Text className="font-headline-1 text-[30px] leading-[36px] text-[#070914]">
               Add money to your{'\n'}
               {selectedCurrency} account
             </Text>

@@ -1,10 +1,15 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { PhantomIcon, SolflareIcon, SolanaIcon } from '@/assets/svg';
 import { BankIcon } from '@/assets/svg/filled';
-import { ArrowRight01Icon, Mail01Icon, MailAtSign01Icon, UserGroupIcon } from '@hugeicons/core-free-icons';
+import {
+  ArrowRight01Icon,
+  Mail01Icon,
+  MailAtSign01Icon,
+  UserGroupIcon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
 interface FundingOption {
@@ -116,7 +121,7 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
   ];
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
+    <GorhomBottomSheet visible={visible} onClose={onClose}>
       <Text className="mb-6 font-subtitle text-xl text-text-primary">
         {mode === 'deposit' ? 'More deposit options' : 'Send money'}
       </Text>
@@ -167,6 +172,6 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
           </View>
         </View>
       ))}
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

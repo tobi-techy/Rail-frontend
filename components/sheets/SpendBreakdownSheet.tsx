@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import { Icon } from '@/components/atoms/Icon';
 import { useSpendingStash } from '@/api/hooks/useSpending';
@@ -114,7 +114,7 @@ export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBr
   const showEmpty = !isLoading && categories.length === 0;
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} showCloseButton={false} dismissible>
+    <GorhomBottomSheet visible={visible} onClose={onClose} showCloseButton={false} dismissible>
       <View className="items-center">
         <View className="h-1 w-10 rounded-full bg-neutral-200" />
       </View>
@@ -221,6 +221,6 @@ export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBr
           </Pressable>
         ) : null}
       </View>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

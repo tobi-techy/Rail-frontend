@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { router } from 'expo-router';
 import { Button } from '../ui/Button';
-import { BottomSheet } from '../sheets/BottomSheet';
+import { GorhomBottomSheet } from '../sheets/GorhomBottomSheet';
 import {
   ArrowLeft01Icon,
   ZapIcon,
@@ -162,7 +162,10 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
         />
       </View>
 
-      <BottomSheet visible={showLearnMore} onClose={() => setShowLearnMore(false)} showCloseButton>
+      <GorhomBottomSheet
+        visible={showLearnMore}
+        onClose={() => setShowLearnMore(false)}
+        showCloseButton>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 40 }}>
@@ -238,7 +241,7 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
             </View>
           ))}
         </ScrollView>
-      </BottomSheet>
+      </GorhomBottomSheet>
     </SafeAreaView>
   );
 }

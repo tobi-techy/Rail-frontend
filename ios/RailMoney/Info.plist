@@ -55,12 +55,18 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>NSBonjourServices</key>
+    <array>
+      <string>_expo._tcp</string>
+    </array>
     <key>NSCameraUsageDescription</key>
     <string>Camera access is required for QR code scanning</string>
     <key>NSContactsUsageDescription</key>
     <string>Access your contacts to send money to friends and family</string>
     <key>NSFaceIDUsageDescription</key>
     <string>Use Face ID to authenticate and secure your account</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Expo Dev Launcher uses the local network to discover and connect to development servers running on your computer.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Your location helps us provide location-based services and improve your experience</string>
     <key>NSMicrophoneUsageDescription</key>

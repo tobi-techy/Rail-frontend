@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import type { HugeiconsProps } from '@hugeicons/react-native';
@@ -48,7 +48,7 @@ export function ActionSheet({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
+    <GorhomBottomSheet visible={visible} onClose={onClose}>
       {/* Header */}
       <View className="mb-6">
         {illustration && <View className="mb-3">{illustration}</View>}
@@ -110,6 +110,6 @@ export function ActionSheet({
           );
         })}
       </ScrollView>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }
