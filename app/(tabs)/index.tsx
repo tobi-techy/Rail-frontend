@@ -17,12 +17,10 @@ import { Button } from '@/components/ui';
 import {
   InvestmentDisclaimerSheet,
   KYCVerificationSheet,
-  NavigableBottomSheet,
-  useNavigableBottomSheet,
-  type BottomSheetScreen,
-  BottomSheet,
+  GorhomBottomSheet,
   SpendBreakdownSheet,
 } from '@/components/sheets';
+import { OptionCard, SheetHeader } from '@/components/sheets/FundingSheetComponents';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
 import { useStation, useKYCStatus } from '@/api/hooks';
@@ -183,8 +181,8 @@ function DashboardScreen() {
   const [showCardComingSheet, setShowCardComingSheet] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
-  const receiveNav = useNavigableBottomSheet('receive-main');
-  const sendNav = useNavigableBottomSheet('send-main');
+  const receiveNav = { reset: () => {}, navigateTo: () => {} }; // placeholder
+  const sendNav = { reset: () => {}, navigateTo: () => {} }; // placeholder
 
   // Disclaimer
   const hasAcknowledgedDisclaimer = useAuthStore((s) => s.hasAcknowledgedDisclaimer);
@@ -630,18 +628,38 @@ function DashboardScreen() {
         </View>
       </View>
 
-      <NavigableBottomSheet
-        visible={showReceiveSheet}
-        onClose={() => setShowReceiveSheet(false)}
-        screens={receiveScreens}
-        navigation={receiveNav}
-      />
-      <NavigableBottomSheet
-        visible={showSendSheet}
-        onClose={() => setShowSendSheet(false)}
-        screens={sendScreens}
-        navigation={sendNav}
-      />
+      <GorhomBottomSheet visible={showReceiveSheet} onClose={() => setShowReceiveSheet(false)}>
+        <SheetHeader title="Receive Funds" />
+        {receiveMainActions.map((action, i) => (
+          <OptionCard
+            key={action.id}
+            index={i}
+            option={{
+              id: action.id,
+              icon: action.icon,
+              title: action.label,
+              subtitle: action.sublabel,
+              onPress: action.onPress,
+            }}
+          />
+        ))}
+      </GorhomBottomSheet>
+      <GorhomBottomSheet visible={showSendSheet} onClose={() => setShowSendSheet(false)}>
+        <SheetHeader title="Send Funds" />
+        {[...sendMainActions, ...sendMoreActions].map((action, i) => (
+          <OptionCard
+            key={action.id}
+            index={i}
+            option={{
+              id: action.id,
+              icon: action.icon,
+              title: action.label,
+              subtitle: action.sublabel,
+              onPress: action.onPress,
+            }}
+          />
+        ))}
+      </GorhomBottomSheet>
       <SpendBreakdownSheet
         visible={showSpendBreakdown}
         onClose={() => setShowSpendBreakdown(false)}
@@ -687,22 +705,13 @@ function DashboardScreen() {
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
       />
-      <BottomSheet
-        visible={showMicroLoanSheet}
-        onClose={() => setShowMicroLoanSheet(false)}
-        showCloseButton>
-        <View>
-          <View className="mb-6">
-            <Text className="text-center font-subtitle text-[24px] text-black">Rail Credit</Text>
-            <Text className="mt-2 text-center font-body text-[14px] leading-[20px] text-black/50">
-              Spend beyond your balance. Repay automatically.
-            </Text>
-          </View>
-          <ScrollView
-            className="max-h-[55vh]"
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            contentContainerStyle={{ paddingBottom: 8 }}>
+      <GorhomBottomSheet visible={showMicroLoanSheet} onClose={() => setShowMicroLoanSheet(false)}>
+        <View className="px-5">
+          <Text className="font-subtitle text-[20px] text-[#070914]">Rail Credit</Text>
+          <Text className="mt-1 font-body text-[14px] text-[#9CA3AF]">
+            Spend beyond your balance. Repay automatically.
+          </Text>
+          <View className="mt-5">
             <CreditSection title="How It Works">
               Money comes in — Rail detects your inflow and automatically gives you a safe credit
               advance based on your cashflow. Spend beyond your balance when you need to. Your next
@@ -722,31 +731,24 @@ function DashboardScreen() {
               repayment behavior, and how much Rail can safely lend. New users start with a
               conservative limit that grows as you use Rail consistently.
             </CreditSection>
-            <View className="mb-4 rounded-2xl bg-black/[0.03] p-4">
-              <Text className="font-body text-[13px] leading-[20px] text-black/60">
+            <View className="mb-4 rounded-2xl bg-[#F9FAFB] p-4">
+              <Text className="font-body text-[13px] leading-[20px] text-[#9CA3AF]">
                 Rail Credit is designed for short-term liquidity — not long-term debt. Advances are
                 automatically repaid from your next deposit. Only spend what you can repay.
               </Text>
             </View>
-          </ScrollView>
-        </View>
-      </BottomSheet>
-      <BottomSheet
-        visible={showCardComingSheet}
-        onClose={() => setShowCardComingSheet(false)}
-        showCloseButton>
-        <View>
-          <View className="mb-6">
-            <Text className="text-center font-subtitle text-[24px] text-black">Rail Card</Text>
-            <Text className="mt-2 text-center font-body text-[14px] leading-[20px] text-black/50">
-              Your USDC balance. Anywhere Visa is accepted.
-            </Text>
           </View>
-          <ScrollView
-            className="max-h-[55vh]"
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            contentContainerStyle={{ paddingBottom: 8 }}>
+        </View>
+      </GorhomBottomSheet>
+      <GorhomBottomSheet
+        visible={showCardComingSheet}
+        onClose={() => setShowCardComingSheet(false)}>
+        <View className="px-5">
+          <Text className="font-subtitle text-[20px] text-[#070914]">Rail Card</Text>
+          <Text className="mt-1 font-body text-[14px] text-[#9CA3AF]">
+            Your USDC balance. Anywhere Visa is accepted.
+          </Text>
+          <View className="mt-5">
             <CreditSection title="What It Is">
               A virtual Visa debit card powered directly by your Rail spend balance. No bank account
               needed. No currency conversion delays. Your USDC converts instantly at checkout —
@@ -765,15 +767,15 @@ function DashboardScreen() {
               to your stash — earning yield while you spend. Small amounts, compounded over time,
               add up.
             </CreditSection>
-            <View className="mb-4 rounded-2xl bg-black/[0.03] p-4">
-              <Text className="font-body text-[13px] leading-[20px] text-black/60">
+            <View className="mb-4 rounded-2xl bg-[#F9FAFB] p-4">
+              <Text className="font-body text-[13px] leading-[20px] text-[#9CA3AF]">
                 Rail Card is coming soon. You&apos;ll be notified when it&apos;s available for your
                 account. KYC verification is required to activate the card.
               </Text>
             </View>
-          </ScrollView>
+          </View>
         </View>
-      </BottomSheet>
+      </GorhomBottomSheet>
     </ScrollView>
   );
 }

@@ -1,15 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Dimensions, Keyboard, Platform, Pressable, StyleSheet } from 'react-native';
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+  BottomSheetView,
+} from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHaptics } from '@/hooks/useHaptics';
 import * as Haptics from 'expo-haptics';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-const MAX_SNAP = Math.round(SCREEN_HEIGHT * 0.8);
 
 interface GorhomBottomSheetProps {
   visible: boolean;
@@ -17,6 +18,8 @@ interface GorhomBottomSheetProps {
   children: React.ReactNode;
   showCloseButton?: boolean;
   dismissible?: boolean;
+  scrollable?: boolean;
+  snapPoints?: (string | number)[];
 }
 
 export function GorhomBottomSheet({
@@ -25,10 +28,11 @@ export function GorhomBottomSheet({
   children,
   showCloseButton = true,
   dismissible = true,
+  scrollable = true,
+  snapPoints,
 }: GorhomBottomSheetProps) {
   const ref = useRef<BottomSheetModal>(null);
   const insets = useSafeAreaInsets();
-  const { impact } = useHaptics();
 
   useEffect(() => {
     if (visible) {
@@ -40,9 +44,9 @@ export function GorhomBottomSheet({
 
   const handleDismiss = useCallback(() => {
     Keyboard.dismiss();
-    impact(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onClose();
-  }, [impact, onClose]);
+  }, [onClose]);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -57,11 +61,12 @@ export function GorhomBottomSheet({
     [dismissible]
   );
 
+  const Wrapper = scrollable ? BottomSheetScrollView : BottomSheetView;
+
   return (
     <BottomSheetModal
       ref={ref}
-      enableDynamicSizing
-      maxDynamicContentSize={MAX_SNAP}
+      {...(snapPoints ? { snapPoints } : { enableDynamicSizing: true })}
       enablePanDownToClose={dismissible}
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
@@ -70,10 +75,14 @@ export function GorhomBottomSheet({
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize">
-      <BottomSheetScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 16) }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
+      <Wrapper
+        {...(scrollable
+          ? {
+              contentContainerStyle: { paddingBottom: Math.max(insets.bottom, 16) },
+              keyboardShouldPersistTaps: 'handled',
+              showsVerticalScrollIndicator: false,
+            }
+          : { style: { paddingBottom: Math.max(insets.bottom, 16) } })}>
         {showCloseButton && (
           <Pressable
             style={styles.closeButton}
@@ -81,11 +90,11 @@ export function GorhomBottomSheet({
             hitSlop={12}
             accessibilityLabel="Close"
             accessibilityRole="button">
-            <HugeiconsIcon icon={Cancel01Icon} size={24} color="#757575" />
+            <HugeiconsIcon icon={Cancel01Icon} size={22} color="#9CA3AF" />
           </Pressable>
         )}
         {children}
-      </BottomSheetScrollView>
+      </Wrapper>
     </BottomSheetModal>
   );
 }
@@ -95,21 +104,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
   },
   indicator: {
     backgroundColor: '#D1D5DB',
     width: 36,
-  },
-  content: {
-    paddingHorizontal: 24,
-    paddingTop: 8,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 8,
   },
   closeButton: {
     position: 'absolute',
-    right: 24,
-    top: 8,
+    right: 20,
+    top: 4,
     zIndex: 10,
     padding: 4,
   },
