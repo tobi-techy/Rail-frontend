@@ -121,6 +121,7 @@ export default function CreateRailTagScreen() {
                 onPress={handleSubmit}
                 loading={isPending}
                 disabled={!canSubmit}
+                variant="orange"
               />
             </View>
           </StaggeredChild>

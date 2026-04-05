@@ -21,6 +21,19 @@ import { Button, Input } from '@/components/ui';
 import { SolanaIcon, MaticIcon, UsdcIcon } from '@/assets/svg';
 import AvalancheIcon from '@/assets/svg/avalanche.svg';
 import { SUPPORTED_CHAINS } from '@/utils/chains';
+import { HugeiconsIcon } from '@hugeicons/react-native';
+import {
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  Clock01Icon,
+  CreditCardIcon,
+  InformationCircleIcon,
+  InternetIcon,
+  MoneyReceiveSquareIcon,
+  ShieldEnergyIcon,
+  UserIcon,
+  Wallet01Icon,
+} from '@hugeicons/core-free-icons';
 import { useHaptics } from '@/hooks/useHaptics';
 import { formatCurrency } from './utils';
 import type { MethodCopy } from './types';
@@ -533,8 +546,21 @@ export type ConfirmSheetProps = {
   destinationInput: string;
   fiatAccountHolderName?: string;
   fiatAccountNumber?: string;
+  asset?: string;
+  availableBalance?: number;
+  withdrawalLimit?: number;
   category: string;
   narration: string;
+};
+
+const ASSET_ICONS: Record<string, React.ComponentType<any>> = {
+  USD: require('@/assets/svg/usd.svg').default,
+  EUR: require('@/assets/svg/eur.svg').default,
+  NGN: require('@/assets/svg/ngn.svg').default,
+  USDC: require('@/assets/svg/usdc.svg').default,
+  USDT: require('@/assets/svg/usdt.svg').default,
+  EURC: require('@/assets/svg/eurc.svg').default,
+  PYUSD: require('@/assets/svg/pyusd.svg').default,
 };
 
 export function ConfirmSheet({
@@ -544,50 +570,51 @@ export function ConfirmSheet({
   numericAmount,
   feeAmount,
   totalAmount,
-  methodTitle,
   isCryptoMethod,
   isFiatMethod,
   destinationChain,
   destinationInput,
   fiatAccountHolderName,
   fiatAccountNumber,
-  category,
-  narration,
+  asset,
+  availableBalance,
+  withdrawalLimit,
 }: ConfirmSheetProps) {
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['80%', MAX_SNAP], []);
 
   useEffect(() => {
-    if (visible) {
-      sheetRef.current?.present();
-    } else {
-      sheetRef.current?.dismiss();
-    }
+    if (visible) sheetRef.current?.present();
+    else sheetRef.current?.dismiss();
   }, [visible]);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.5}
-        pressBehavior="close"
-      />
+      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} pressBehavior="close" />
     ),
     []
   );
 
-  const maskAddress = (addr: string) => {
-    if (!addr || addr.length <= 12) return addr;
-    return `${addr.slice(0, 6)}...${addr.slice(-6)}`;
-  };
+  const maskAddr = (a: string) => (!a || a.length <= 12 ? a : `${a.slice(0, 6)}…..${a.slice(-6)}`);
+  const chainLabel = SUPPORTED_CHAINS.find((c) => c.chain === destinationChain)?.label ?? destinationChain;
+  const displayAsset = asset || (isFiatMethod ? 'USD' : 'USDC');
+  const AssetIcon = ASSET_ICONS[displayAsset];
 
-  const maskAccount = (acc?: string) => {
-    if (!acc) return '';
-    return `••••${acc.slice(-4)}`;
-  };
+  const wholePart = formatCurrency(Math.floor(numericAmount));
+  const decimalPart = (numericAmount % 1).toFixed(2).slice(1);
+
+  const DetailRow = ({ icon, label, value }: { icon: any; label: string; value: string }) => (
+    <View className="flex-row items-center justify-between px-4 py-3">
+      <View className="flex-row items-center gap-2.5">
+        <HugeiconsIcon icon={icon} size={18} color="#6B7280" />
+        <Text className="font-body text-[14px] text-[#6B7280]">{label}</Text>
+      </View>
+      <Text className="max-w-[55%] text-right font-subtitle text-[14px] text-[#070914]" numberOfLines={1}>{value}</Text>
+    </View>
+  );
+
+  const Divider = () => <View className="mx-4 h-px bg-[#E5E7EB]" />;
 
   return (
     <BottomSheetModal
@@ -596,126 +623,102 @@ export function ConfirmSheet({
       enablePanDownToClose
       onDismiss={onClose}
       backdropComponent={renderBackdrop}
-      backgroundStyle={styles.background}
-      handleIndicatorStyle={styles.indicator}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize">
+      backgroundStyle={{ backgroundColor: '#fff', borderRadius: 24 }}
+      handleIndicatorStyle={{ backgroundColor: '#D1D5DB', width: 36 }}
+      keyboardBehavior="interactive">
       <BottomSheetScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 16) }]}
-        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 20, paddingBottom: Math.max(insets.bottom, 20) }}
         showsVerticalScrollIndicator={false}>
-        <View className="items-center">
-          <Text className="text-center font-subtitle text-[22px] text-text-primary">
-            Confirm Withdrawal
-          </Text>
-          <Text className="mt-2 text-center font-body text-[13px] text-text-secondary">
-            {isCryptoMethod
-              ? 'Crypto withdrawals cannot be reversed. Please verify the address carefully.'
-              : 'Review your withdrawal details before confirming.'}
-          </Text>
-        </View>
 
-        <View className="mt-6 items-center">
-          <Text className="font-subtitle text-[48px] leading-[52px] text-text-primary">
-            <Text style={{ fontVariant: ['tabular-nums'] }}>${formatCurrency(numericAmount)}</Text>
-          </Text>
-          <Text className="mt-1 font-body text-[14px] text-text-secondary">{methodTitle}</Text>
-        </View>
-
-        <View className="mt-6 overflow-hidden rounded-2xl bg-surface">
-          {isFiatMethod && (
-            <>
-              <View className="flex-row items-center justify-between px-4 py-3.5">
-                <Text className="font-body text-[14px] text-text-secondary">Account holder</Text>
-                <Text className="font-subtitle text-[14px] text-text-primary">
-                  {fiatAccountHolderName || '—'}
-                </Text>
-              </View>
-              <View className="mx-4 h-px bg-gray-100" />
-              <View className="flex-row items-center justify-between px-4 py-3.5">
-                <Text className="font-body text-[14px] text-text-secondary">Account number</Text>
-                <Text className="font-subtitle text-[14px] text-text-primary">
-                  {maskAccount(fiatAccountNumber) || '—'}
-                </Text>
-              </View>
-              <View className="mx-4 h-px bg-gray-100" />
-              <View className="flex-row items-center justify-between px-4 py-3.5">
-                <Text className="font-body text-[14px] text-text-secondary">Routing</Text>
-                <Text className="font-subtitle text-[14px] text-text-primary">
-                  {maskAddress(destinationInput) || '—'}
-                </Text>
-              </View>
-            </>
-          )}
-
-          {isCryptoMethod && (
-            <>
-              <View className="flex-row items-center justify-between px-4 py-3.5">
-                <Text className="font-body text-[14px] text-text-secondary">Address</Text>
-                <Text className="font-subtitle text-[14px] text-text-primary" numberOfLines={1}>
-                  {maskAddress(destinationInput)}
-                </Text>
-              </View>
-              <View className="mx-4 h-px bg-gray-100" />
-              <View className="flex-row items-center justify-between px-4 py-3.5">
-                <Text className="font-body text-[14px] text-text-secondary">Network</Text>
-                <Text className="font-subtitle text-[14px] text-text-primary">
-                  {SUPPORTED_CHAINS.find((c) => c.chain === destinationChain)?.label ??
-                    destinationChain}
-                </Text>
-              </View>
-            </>
-          )}
-
-          <View className="mx-4 h-px bg-gray-100" />
-          <View className="flex-row items-center justify-between px-4 py-3.5">
-            <Text className="font-body text-[14px] text-text-secondary">Category</Text>
-            <Text className="font-subtitle text-[14px] text-text-primary">{category}</Text>
+        {/* Header */}
+        <View className="flex-row items-center justify-between">
+          <Pressable onPress={onClose} hitSlop={12} className="size-9 items-center justify-center rounded-full bg-[#F3F4F6]">
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color="#374151" />
+          </Pressable>
+          <Text className="font-subtitle text-[17px] text-[#070914]">Confirm Transaction</Text>
+          <View className="size-9 items-center justify-center rounded-full bg-[#F3F4F6]">
+            <HugeiconsIcon icon={InformationCircleIcon} size={18} color="#9CA3AF" />
           </View>
+        </View>
 
-          {narration && (
-            <>
-              <View className="mx-4 h-px bg-gray-100" />
-              <View className="px-4 py-3.5">
-                <Text className="font-body text-[14px] text-text-secondary">Note</Text>
-                <Text className="mt-1 font-body text-[14px] text-text-primary">
-                  `&quot;`{narration}`&quot;`
-                </Text>
-              </View>
-            </>
-          )}
-
-          <View className="mx-4 h-px bg-gray-100" />
-          <View className="flex-row items-center justify-between px-4 py-3.5">
-            <Text className="font-body text-[14px] text-text-secondary">Amount</Text>
-            <Text className="font-subtitle text-[14px] text-text-primary">
-              ${formatCurrency(numericAmount)}
+        {/* Transfer Amount */}
+        <View className="mt-6">
+          <Text className="font-body text-[13px] text-[#9CA3AF]">Transfer Amount</Text>
+          <View className="mt-2 flex-row items-end justify-between">
+            <Text style={{ fontVariant: ['tabular-nums'] }}>
+              <Text className="font-subtitle text-[40px] leading-[44px] text-[#070914]">{wholePart}</Text>
+              <Text className="font-subtitle text-[24px] text-[#9CA3AF]">{decimalPart}</Text>
             </Text>
+            <View className="flex-row items-center gap-1.5 rounded-full bg-[#F3F4F6] px-3 py-1.5">
+              {AssetIcon && <AssetIcon width={20} height={20} />}
+              <Text className="font-subtitle text-[13px] text-[#070914]">{displayAsset}</Text>
+            </View>
           </View>
-
-          {feeAmount > 0 && (
-            <>
-              <View className="mx-4 h-px bg-gray-100" />
-              <View className="flex-row items-center justify-between px-4 py-3.5">
-                <Text className="font-body text-[14px] text-text-secondary">Fee</Text>
-                <Text className="font-subtitle text-[14px] text-text-primary">
-                  ${formatCurrency(feeAmount)}
-                </Text>
-              </View>
-            </>
-          )}
-
-          <View className="mx-4 h-px bg-gray-100" />
-          <View className="flex-row items-center justify-between px-4 py-3.5">
-            <Text className="font-subtitle text-[14px] text-text-primary">Total</Text>
-            <Text className="font-subtitle text-[16px]" style={{ color: '#FF2E01' }}>
-              ${formatCurrency(totalAmount)}
+          {availableBalance !== null && availableBalance !== undefined && (
+            <Text className="mt-1 font-body text-[13px] text-[#9CA3AF]">
+              Balance: <Text className="font-subtitle text-[#070914]">{formatCurrency(availableBalance)} USDC</Text>
             </Text>
+          )}
+        </View>
+
+        {/* Details Section */}
+        <View className="mt-6">
+          <Text className="mb-2 font-body text-[13px] text-[#9CA3AF]">Details</Text>
+          <View className="rounded-2xl bg-[#F9FAFB]">
+            {isCryptoMethod && (
+              <>
+                <DetailRow icon={UserIcon} label="Address" value={maskAddr(destinationInput)} />
+                <Divider />
+                <DetailRow icon={InternetIcon} label="Network" value={chainLabel} />
+                <Divider />
+                <DetailRow icon={Wallet01Icon} label="Source" value="Spend Wallet" />
+              </>
+            )}
+            {isFiatMethod && (
+              <>
+                <DetailRow icon={UserIcon} label="Account Holder" value={fiatAccountHolderName || '—'} />
+                <Divider />
+                <DetailRow icon={CreditCardIcon} label="Account" value={fiatAccountNumber ? `••••${fiatAccountNumber.slice(-4)}` : '—'} />
+                <Divider />
+                <DetailRow icon={ArrowRight01Icon} label="Routing" value={maskAddr(destinationInput) || '—'} />
+                <Divider />
+                <DetailRow icon={Wallet01Icon} label="Source" value="Spend Wallet" />
+              </>
+            )}
           </View>
         </View>
 
-        <Button title="Confirm & Authorize" className="mt-6" onPress={onConfirm} />
+        {/* Note Section */}
+        <View className="mt-5">
+          <Text className="mb-2 font-body text-[13px] text-[#9CA3AF]">Note</Text>
+          <View className="rounded-2xl bg-[#F9FAFB]">
+            {withdrawalLimit !== null && withdrawalLimit !== undefined && withdrawalLimit > 0 && (
+              <>
+                <DetailRow icon={Clock01Icon} label="Daily Limit" value={`${formatCurrency(totalAmount)} of ${formatCurrency(withdrawalLimit)} USDC`} />
+                <Divider />
+              </>
+            )}
+            <DetailRow icon={MoneyReceiveSquareIcon} label="Fee" value={`$${formatCurrency(feeAmount)}`} />
+            <Divider />
+            <View className="flex-row items-center justify-between px-4 py-3">
+              <View className="flex-row items-center gap-2.5">
+                <HugeiconsIcon icon={ShieldEnergyIcon} size={18} color="#070914" />
+                <Text className="font-subtitle text-[14px] text-[#070914]">Total</Text>
+              </View>
+              <Text className="font-subtitle text-[16px] text-[#FF2E01]">${formatCurrency(totalAmount)}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Buttons */}
+        <View className="mt-6 flex-row gap-3">
+          <View className="flex-1">
+            <Button title="Cancel" variant="ghost" onPress={onClose} />
+          </View>
+          <View className="flex-1">
+            <Button title="Confirm" variant="black" onPress={onConfirm} />
+          </View>
+        </View>
       </BottomSheetScrollView>
     </BottomSheetModal>
   );

@@ -78,7 +78,7 @@ export const Button = forwardRef<View, ButtonProps>(
       ghost: 'text-gray-400',
     }[variant];
 
-    const sizeStyles = size === 'small' ? 'px-4 py-3' : 'px-6 py-5';
+    const sizeStyles = size === 'small' ? 'px-6 py-4' : 'px-6 py-5';
     const textSize = size === 'small' ? 'text-caption' : 'text-lg';
 
     return (
@@ -102,7 +102,7 @@ export const Button = forwardRef<View, ButtonProps>(
           } ${className}`}
           {...props}>
           {loading ? (
-            <ActivityIndicator color={variant === 'black' ? '#fff' : '#000'} size="small" />
+            <ActivityIndicator color={variant === 'white' || variant === 'ghost' ? '#000' : '#fff'} size="small" />
           ) : (
             <View className="flex-shrink flex-row items-center">
               {leftIcon && <View className="mr-2 flex-shrink-0">{leftIcon}</View>}

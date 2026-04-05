@@ -108,17 +108,13 @@ export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBr
   const donutStroke = 18;
   const donutRadius = (donutSize - donutStroke) / 2;
   const donutCircumference = 2 * Math.PI * donutRadius;
-  const donutProgress = 0.97;
+  const donutProgress = showEmpty || totalSpent === 0 ? 0 : 0.97;
   const donutOffset = donutCircumference * (1 - donutProgress);
 
   const showEmpty = !isLoading && categories.length === 0;
 
   return (
     <GorhomBottomSheet visible={visible} onClose={onClose} showCloseButton={false} dismissible>
-      <View className="items-center">
-        <View className="h-1 w-10 rounded-full bg-neutral-200" />
-      </View>
-
       <View className="mt-4 gap-6">
         <View className="gap-1">
           <Text className="font-body text-sm text-neutral-500">Total spent</Text>
@@ -141,18 +137,20 @@ export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBr
               strokeWidth={donutStroke}
               fill="none"
             />
-            <Circle
-              cx={donutSize / 2}
-              cy={donutSize / 2}
-              r={donutRadius}
-              stroke="#5B8FF9"
-              strokeWidth={donutStroke}
-              strokeLinecap="round"
-              strokeDasharray={`${donutCircumference} ${donutCircumference}`}
-              strokeDashoffset={donutOffset}
-              fill="none"
-              transform={`rotate(-90 ${donutSize / 2} ${donutSize / 2})`}
-            />
+            {!showEmpty && totalSpent > 0 && (
+              <Circle
+                cx={donutSize / 2}
+                cy={donutSize / 2}
+                r={donutRadius}
+                stroke="#5B8FF9"
+                strokeWidth={donutStroke}
+                strokeLinecap="round"
+                strokeDasharray={`${donutCircumference} ${donutCircumference}`}
+                strokeDashoffset={donutOffset}
+                fill="none"
+                transform={`rotate(-90 ${donutSize / 2} ${donutSize / 2})`}
+              />
+            )}
           </Svg>
         </View>
 

@@ -78,11 +78,11 @@ export function GorhomBottomSheet({
       <Wrapper
         {...(scrollable
           ? {
-              contentContainerStyle: { paddingBottom: Math.max(insets.bottom, 16) },
+              contentContainerStyle: { paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom, 16) },
               keyboardShouldPersistTaps: 'handled',
               showsVerticalScrollIndicator: false,
             }
-          : { style: { paddingBottom: Math.max(insets.bottom, 16) } })}>
+          : { style: { paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom, 16) } })}>
         {showCloseButton && (
           <Pressable
             style={styles.closeButton}

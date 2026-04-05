@@ -23,7 +23,7 @@ export default function KycTosScreen() {
         <Text className="font-subtitle text-base text-gray-900">Terms of Service</Text>
         <Pressable
           onPress={handleDone}
-          className="rounded-full bg-gray-900 px-4 py-1.5"
+          className="rounded-full bg-primary px-4 py-1.5"
           accessibilityRole="button">
           <Text className="font-subtitle text-sm text-white">Done</Text>
         </Pressable>

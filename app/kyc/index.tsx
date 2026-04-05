@@ -213,7 +213,7 @@ export default function KycCountryScreen() {
         <View
           className="absolute bottom-0 left-0 right-0 border-t border-gray-100 bg-white px-4 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
-          <Button title="Continue" onPress={() => router.push('/kyc/tax-id')} />
+          <Button title="Continue" onPress={() => router.push('/kyc/tax-id')} variant="orange" />
         </View>
 
         <Modal

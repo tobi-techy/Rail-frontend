@@ -204,14 +204,28 @@ export const walletService = {
   },
 
   /**
-   * Estimate transaction fee
+   * Estimate transaction fee via backend
    */
   async estimateFee(data: EstimateFeeRequest): Promise<EstimateFeeResponse> {
-    return {
-      fee: '0',
-      feeUSD: '0',
-      estimatedTime: '1-2 minutes',
-    };
+    try {
+      const response = await apiClient.get<any>('/v1/withdrawals/fees', {
+        params: {
+          amount: data.amount,
+          withdrawal_type: data.network?.startsWith('fiat') ? 'fiat' : 'crypto',
+          source_chain: data.network || 'SOL',
+          dest_chain: data.network || 'SOL',
+          currency: 'USDC',
+        },
+      });
+      return {
+        fee: String(response?.fee_amount ?? '0'),
+        feeUSD: String(response?.fee_usd ?? response?.fee_amount ?? '0'),
+        estimatedTime: response?.estimated_time || '1-2 minutes',
+      };
+    } catch {
+      // Fallback to zero fee if endpoint unavailable
+      return { fee: '0', feeUSD: '0', estimatedTime: '1-2 minutes' };
+    }
   },
 
   /**

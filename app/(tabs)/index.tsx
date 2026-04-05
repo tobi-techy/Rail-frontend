@@ -3,9 +3,7 @@ import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo, useR
 import { router, useNavigation, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import Avatar from '@zamplyy/react-native-nice-avatar';
 import { getAvatarConfig } from '@/utils/avatarConfig';
-
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 import { PhantomIcon, SolflareIcon, SolanaIcon, VisaWhite } from '@/assets/svg';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
@@ -19,8 +17,9 @@ import {
   KYCVerificationSheet,
   GorhomBottomSheet,
   SpendBreakdownSheet,
+  VirtualAccountSheet,
 } from '@/components/sheets';
-import { OptionCard, SheetHeader } from '@/components/sheets/FundingSheetComponents';
+import { SheetHeader, ExpandableOptionList } from '@/components/sheets/FundingSheetComponents';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
 import { useStation, useKYCStatus } from '@/api/hooks';
@@ -47,6 +46,7 @@ import {
   BankIcon,
   Money01Icon,
   CreditCardIcon,
+  InternetIcon,
   LayoutGridIcon,
   Message01Icon,
   SavingsIcon,
@@ -54,6 +54,8 @@ import {
   Wallet01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import { PaymentModal, usePaymentModal } from '@chainrails/react-native';
+import { useChainRailsSession } from '@/api/hooks/useChainRails';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -180,6 +182,19 @@ function DashboardScreen() {
   const [showSpendBreakdown, setShowSpendBreakdown] = useState(false);
   const [showCardComingSheet, setShowCardComingSheet] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [showVirtualAccountSheet, setShowVirtualAccountSheet] = useState(false);
+
+  // ChainRails cross-chain deposit
+  const [crPending, setCrPending] = useState(false);
+  const crSessionMutation = useChainRailsSession();
+  const cr = usePaymentModal({
+    sessionToken: null,
+    onSuccess: () => {
+      invalidateQueries.station();
+      invalidateQueries.funding();
+    },
+    onCancel: () => {},
+  });
 
   const receiveNav = { reset: () => {}, navigateTo: () => {} }; // placeholder
   const sendNav = { reset: () => {}, navigateTo: () => {} }; // placeholder
@@ -315,9 +330,9 @@ function DashboardScreen() {
     ) => {
       setShowSendSheet(false);
       setShowReceiveSheet(false);
-      router.push({ pathname: '/withdraw/[method]', params: { method, flow } } as never);
+      router.push({ pathname: '/withdraw/[method]', params: { method, flow, asset: selectedCurrency } } as never);
     },
-    []
+    [selectedCurrency]
   );
 
   // Funding action lists
@@ -326,32 +341,44 @@ function DashboardScreen() {
       {
         id: 'fiat',
         label: 'Fiat',
-        sublabel: 'Receive assets via US bank account',
-        icon: <HugeiconsIcon icon={BankIcon} size={26} color="#6366F1" />,
+        sublabel: `Receive assets via ${selectedCurrency === 'EUR' ? 'EUR' : 'US'} bank account`,
+        icon: <HugeiconsIcon icon={BankIcon} size={20} color="#6366F1" />,
         onPress: () => {
           setShowReceiveSheet(false);
-          router.push('/virtual-account' as never);
+          setShowVirtualAccountSheet(true);
         },
       },
       {
         id: 'crypto',
         label: 'Crypto',
         sublabel: 'Receive assets via wallet address',
-        icon: <HugeiconsIcon icon={Wallet01Icon} size={26} color="#6366F1" />,
+        icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
         onPress: () => {
           setShowReceiveSheet(false);
           router.push('/receive' as never);
         },
       },
       {
-        id: 'more',
-        label: 'More Options',
-        sublabel: 'Pick from several other options to fund account',
-        icon: <HugeiconsIcon icon={LayoutGridIcon} width={28} height={28} color="#6366F1" />,
-        onPress: () => receiveNav.navigateTo('receive-more'),
+        id: 'cross-chain',
+        label: 'Deposit from any chain',
+        sublabel: 'ETH, Arbitrum, Base, Starknet, BNB & more',
+        icon: <HugeiconsIcon icon={InternetIcon} size={20} color="#6366F1" />,
+        onPress: async () => {
+          setShowReceiveSheet(false);
+          setCrPending(true);
+          try {
+            const session = await crSessionMutation.mutateAsync('0');
+            cr.updateSession({ sessionToken: session.session_token });
+            cr.open();
+          } catch {
+            // session creation failed — silently handled
+          } finally {
+            setCrPending(false);
+          }
+        },
       },
     ],
-    [receiveNav]
+    [selectedCurrency]
   );
 
   const receiveMoreActions = useMemo<FundingAction[]>(
@@ -395,31 +422,49 @@ function DashboardScreen() {
     [isAndroid, startWithdrawal]
   );
 
+  const isFiatAsset = selectedCurrency === 'USD' || selectedCurrency === 'EUR' || selectedCurrency === 'NGN';
+
   const sendMainActions = useMemo<FundingAction[]>(
     () => [
+      ...(isFiatAsset
+        ? [
+            {
+              id: 'fiat',
+              label: `Send out ${selectedCurrency}`,
+              sublabel:
+                selectedCurrency === 'NGN'
+                  ? 'Send to Nigerian bank account'
+                  : selectedCurrency === 'EUR'
+                    ? 'Send via SEPA transfer'
+                    : 'Send to US bank account',
+              icon: <HugeiconsIcon icon={BankIcon} size={20} color="#6366F1" />,
+              onPress: () => startWithdrawal('fiat'),
+            },
+          ]
+        : [
+            {
+              id: 'crypto',
+              label: `Send ${selectedCurrency}`,
+              sublabel: 'Send to wallet address',
+              icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
+              onPress: () => startWithdrawal('crypto'),
+            },
+          ]),
       {
-        id: 'fiat',
-        label: 'Fiat',
-        sublabel: 'Send to US bank account',
-        icon: <HugeiconsIcon icon={BankIcon} size={26} color="#6366F1" />,
-        onPress: () => startWithdrawal('fiat'),
-      },
-      {
-        id: 'crypto',
-        label: 'To Wallet',
-        sublabel: 'Send to wallet address',
-        icon: <HugeiconsIcon icon={Wallet01Icon} size={26} color="#6366F1" />,
-        onPress: () => startWithdrawal('crypto'),
-      },
-      {
-        id: 'more',
-        label: 'More Options',
-        sublabel: 'Pick from several other options to send funds out',
-        icon: <HugeiconsIcon icon={LayoutGridIcon} width={28} height={28} color="#6366F1" />,
-        onPress: () => sendNav.navigateTo('send-more'),
+        id: isFiatAsset ? 'crypto' : 'fiat',
+        label: isFiatAsset ? 'Send to Wallet' : 'Send out fiat',
+        sublabel: isFiatAsset ? 'Send stablecoins to wallet address' : 'Send to bank account',
+        icon: (
+          <HugeiconsIcon
+            icon={isFiatAsset ? Wallet01Icon : BankIcon}
+            size={20}
+            color="#6366F1"
+          />
+        ),
+        onPress: () => startWithdrawal(isFiatAsset ? 'crypto' : 'fiat'),
       },
     ],
-    [sendNav, startWithdrawal]
+    [startWithdrawal, selectedCurrency, isFiatAsset]
   );
 
   const startP2P = useCallback(() => {
@@ -628,37 +673,14 @@ function DashboardScreen() {
         </View>
       </View>
 
-      <GorhomBottomSheet visible={showReceiveSheet} onClose={() => setShowReceiveSheet(false)}>
-        <SheetHeader title="Receive Funds" />
-        {receiveMainActions.map((action, i) => (
-          <OptionCard
-            key={action.id}
-            index={i}
-            option={{
-              id: action.id,
-              icon: action.icon,
-              title: action.label,
-              subtitle: action.sublabel,
-              onPress: action.onPress,
-            }}
-          />
-        ))}
+      <GorhomBottomSheet visible={showReceiveSheet} onClose={() => setShowReceiveSheet(false)} showCloseButton={false}>
+        <SheetHeader title="Receive Funds" showCurrencySelector />
+        <ExpandableOptionList main={receiveMainActions} more={receiveMoreActions} />
       </GorhomBottomSheet>
-      <GorhomBottomSheet visible={showSendSheet} onClose={() => setShowSendSheet(false)}>
-        <SheetHeader title="Send Funds" />
-        {[...sendMainActions, ...sendMoreActions].map((action, i) => (
-          <OptionCard
-            key={action.id}
-            index={i}
-            option={{
-              id: action.id,
-              icon: action.icon,
-              title: action.label,
-              subtitle: action.sublabel,
-              onPress: action.onPress,
-            }}
-          />
-        ))}
+      <PaymentModal {...cr} isPending={crPending} />
+      <GorhomBottomSheet visible={showSendSheet} onClose={() => setShowSendSheet(false)} showCloseButton={false}>
+        <SheetHeader title="Send Funds" showCurrencySelector />
+        <ExpandableOptionList main={sendMainActions} more={sendMoreActions} />
       </GorhomBottomSheet>
       <SpendBreakdownSheet
         visible={showSpendBreakdown}
@@ -704,6 +726,11 @@ function DashboardScreen() {
         visible={!!selectedTransaction}
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
+      />
+      <VirtualAccountSheet
+        visible={showVirtualAccountSheet}
+        onClose={() => setShowVirtualAccountSheet(false)}
+        currency={selectedCurrency === 'EUR' ? 'EUR' : selectedCurrency === 'NGN' ? 'NGN' : 'USD'}
       />
       <GorhomBottomSheet visible={showMicroLoanSheet} onClose={() => setShowMicroLoanSheet(false)}>
         <View className="px-5">

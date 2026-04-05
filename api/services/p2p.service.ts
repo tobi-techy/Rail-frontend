@@ -66,6 +66,11 @@ export const p2pService = {
     return apiClient.post<P2PSendResponse>('/v1/p2p/send', data);
   },
 
+  async getTransfers(): Promise<P2PTransfer[]> {
+    const res = await apiClient.get<{ transfers: P2PTransfer[] }>('/v1/p2p/transfers');
+    return res?.transfers ?? [];
+  },
+
   async getRecentRecipients(): Promise<P2PRecentRecipient[]> {
     const res = await apiClient.get<{ recipients: P2PRecentRecipient[] }>('/v1/p2p/recent');
     return res?.recipients ?? [];

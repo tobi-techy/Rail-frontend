@@ -37,17 +37,22 @@ export default function IndexScreen() {
     ? null
     : hasValidAuthSession && isProfileCompletionRequired(onboardingStatus)
       ? ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO
-      : hasValidAuthSession && !hasPasscode
-        ? ROUTES.AUTH.CREATE_PASSCODE
-        : hasValidAuthSession && hasValidPasscodeSession
-          ? getPostAuthRoute(onboardingStatus)
-          : hasValidAuthSession && hasPasscode
-            ? '/login-passcode'
-            : user && hasPasscode
-              ? '/login-passcode'
-              : user && !hasPasscode
-                ? '/(auth)/signin'
-                : '/intro';
+      : hasValidAuthSession && hasValidPasscodeSession
+        ? getPostAuthRoute(onboardingStatus)
+        : hasValidAuthSession && hasPasscode
+          ? '/login-passcode'
+          : hasValidAuthSession && !hasPasscode && getPostAuthRoute(onboardingStatus) === ROUTES.TABS
+            // User is authenticated and onboarding is complete but passcode status
+            // may not have synced yet (e.g. right after Apple sign-in).
+            // Route to tabs — the passcode gate on protected routes will handle it.
+            ? ROUTES.TABS as string
+            : hasValidAuthSession && !hasPasscode
+              ? ROUTES.AUTH.CREATE_PASSCODE
+              : user && hasPasscode
+                ? '/login-passcode'
+                : user && !hasPasscode
+                  ? '/(auth)/signin'
+                  : '/intro';
 
   useEffect(() => {
     if (targetRoute) {

@@ -11,3 +11,4 @@ export { NavigableBottomSheet, useNavigableBottomSheet } from './NavigableBottom
 export { MoreFundingOptionsSheet } from './MoreFundingOptionsSheet';
 export { SpendBreakdownSheet } from './SpendBreakdownSheet';
 export type { BottomSheetScreen } from './NavigableBottomSheet';
+export { VirtualAccountSheet } from './VirtualAccountSheet';

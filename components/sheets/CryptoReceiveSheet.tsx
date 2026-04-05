@@ -4,7 +4,7 @@ import * as Clipboard from 'expo-clipboard';
 import QRCodeStyled from 'react-native-qrcode-styled';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Button } from '../ui';
-import { useDepositAddress } from '@/api/hooks/useWallet';
+import { useWalletAddresses, useGetDepositAddress } from '@/api/hooks/useWallet';
 import { getChainConfig, isEVMChain, isSolanaChain } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import { SolanaIcon, MaticIcon, UsdcIcon, AvalancheIcon } from '@/assets/svg';
@@ -31,15 +31,29 @@ interface CryptoReceiveSheetProps {
 
 export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoReceiveSheetProps) {
   const chainConfig = getChainConfig(chain);
-  const { data: wallet, isLoading, isError, error, refetch } = useDepositAddress(chain);
+  const { data: wallet, isLoading, isError, error, refetch } = useWalletAddresses(chain);
+  const provisionWallet = useGetDepositAddress();
   const [copied, setCopied] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
   const { notification, selection } = useHaptics();
   const tokenLabel = chainConfig.token;
   const TokenBadge = UsdcIcon;
 
+  // Auto-provision wallet when GET returns 404 (wallet not created yet)
   useEffect(() => {
-    if (!visible) setCopied(false);
-  }, [visible]);
+    if (!visible) { setCopied(false); setProvisioning(false); return; }
+    const status = (error as any)?.status;
+    if (isError && (status === 404 || status === undefined) && !provisioning) {
+      setProvisioning(true);
+      provisionWallet.mutate(
+        { tokenId: 'usdc', network: chain },
+        {
+          onSuccess: () => { refetch(); setProvisioning(false); },
+          onError: () => setProvisioning(false),
+        }
+      );
+    }
+  }, [visible, isError, error, chain]);
 
   const address = wallet?.address ?? '';
 
@@ -88,13 +102,15 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
     </View>
   );
 
-  if (isLoading) {
+  if (isLoading || provisioning) {
     return (
       <GorhomBottomSheet visible={visible} onClose={onClose}>
         {header}
         <View className="items-center justify-center py-16">
           <ActivityIndicator size="small" color="#000" />
-          <Text className="mt-3 font-body text-sm text-text-secondary">Loading wallet…</Text>
+          <Text className="mt-3 font-body text-sm text-text-secondary">
+            {provisioning ? 'Setting up your wallet…' : 'Loading wallet…'}
+          </Text>
         </View>
       </GorhomBottomSheet>
     );

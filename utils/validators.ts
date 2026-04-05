@@ -36,16 +36,14 @@ export function validatePassword(password: string): ValidationResult {
     return { isValid: false, error: 'Password must be at least 8 characters' };
   }
 
-  if (!/[A-Z]/.test(password)) {
-    return { isValid: false, error: 'Password must contain at least one uppercase letter' };
-  }
+  let complexityCount = 0;
+  if (/[A-Z]/.test(password)) complexityCount++;
+  if (/[a-z]/.test(password)) complexityCount++;
+  if (/[0-9]/.test(password)) complexityCount++;
+  if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) complexityCount++;
 
-  if (!/[a-z]/.test(password)) {
-    return { isValid: false, error: 'Password must contain at least one lowercase letter' };
-  }
-
-  if (!/[0-9]/.test(password)) {
-    return { isValid: false, error: 'Password must contain at least one number' };
+  if (complexityCount < 3) {
+    return { isValid: false, error: 'Password must contain at least 3 of: uppercase, lowercase, digit, special character' };
   }
 
   return { isValid: true };

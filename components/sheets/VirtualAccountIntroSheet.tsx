@@ -15,7 +15,7 @@ interface VirtualAccountIntroSheetProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  currency?: 'USD' | 'EUR' | 'GBP';
+  currency?: 'USD' | 'EUR' | 'GBP' | 'NGN';
 }
 
 const FEATURES = [

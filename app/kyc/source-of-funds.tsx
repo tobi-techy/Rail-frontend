@@ -280,7 +280,7 @@ export default function SourceOfFundsScreen() {
         <Pressable
           onPress={handleContinue}
           disabled={!canContinue}
-          className={`items-center rounded-full py-4 ${canContinue ? 'bg-black' : 'bg-gray-200'}`}>
+          className={`items-center rounded-full py-4 ${canContinue ? 'bg-primary' : 'bg-gray-200'}`}>
           <Text
             className={`font-subtitle text-[16px] ${canContinue ? 'text-white' : 'text-gray-400'}`}>
             {startSession.isPending ? 'Starting verification…' : 'Continue'}

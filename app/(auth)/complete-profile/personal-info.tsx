@@ -86,7 +86,7 @@ export default function PersonalInfo() {
 
           <StaggeredChild index={3} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button title="Next" onPress={handleNext} />
+              <Button title="Next" onPress={handleNext} variant="orange" />
             </View>
           </StaggeredChild>
         </View>

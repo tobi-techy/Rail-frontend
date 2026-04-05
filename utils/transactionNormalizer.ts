@@ -5,6 +5,7 @@ import type {
   WithdrawalMethod,
 } from '@/components/molecules/TransactionItem';
 import type { Deposit, Withdrawal } from '@/api/types';
+import type { P2PTransfer } from '@/api/services/p2p.service';
 
 export type WithdrawalListResponse = Withdrawal[] | { withdrawals?: Withdrawal[] } | undefined;
 
@@ -79,3 +80,15 @@ export const withdrawalToTransaction = (w: Withdrawal): Transaction => {
     withdrawalMethod: method,
   };
 };
+
+export const p2pToTransaction = (t: P2PTransfer): Transaction => ({
+  id: t.id,
+  type: 'withdraw' as TransactionType,
+  title: t.status === 'completed' || t.status === 'claimed' ? 'Sent' : 'P2P Transfer',
+  subtitle: t.recipientIdentifier,
+  amount: parseFloat(t.amount) || 0,
+  currency: t.currency || 'USD',
+  status: normalizeStatus(t.status === 'claimed' ? 'completed' : t.status),
+  createdAt: new Date(t.createdAt || '1970-01-01T00:00:00Z'),
+  withdrawalMethod: 'p2p' as WithdrawalMethod,
+});

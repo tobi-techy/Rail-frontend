@@ -188,7 +188,7 @@ export default function Address() {
 
             <StaggeredChild index={5} delay={80} style={{ marginTop: 'auto' }}>
               <View className="pb-4 pt-6">
-                <Button title="Continue" onPress={handleNext} />
+                <Button title="Continue" onPress={handleNext} variant="orange" />
               </View>
             </StaggeredChild>
           </View>

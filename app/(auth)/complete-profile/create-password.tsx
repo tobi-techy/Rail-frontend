@@ -254,6 +254,7 @@ export default function CreatePassword() {
                 onPress={handleSubmit}
                 loading={isPending}
                 disabled={!isPasskeySignup && (!isPasswordValid || !doPasswordsMatch)}
+                variant="orange"
               />
               {isPasskeySignup ? (
                 <TouchableOpacity

@@ -70,7 +70,7 @@ export default function WithdrawAmountScreen() {
   const { data: station, refetch: refetchStation } = useStation();
   const { data: passkeys, isLoading: isPasskeysLoading } = usePasskeys();
   const { mutateAsync: registerPasskey, isPending: isRegisteringPasskey } = useRegisterPasskey();
-  const params = useLocalSearchParams<{ method?: string; symbol?: string; flow?: string }>();
+  const params = useLocalSearchParams<{ method?: string; symbol?: string; flow?: string; asset?: string }>();
 
   const selectedMethod = resolveMethod(
     typeof params.method === 'string' ? params.method : undefined
@@ -157,8 +157,8 @@ export default function WithdrawAmountScreen() {
     return Number.isFinite(n) ? n : 0;
   }, [rawAmount]);
   const feeAmount = useMemo(
-    () => (isFiatMethod && numericAmount > 0 ? 1 : 0),
-    [isFiatMethod, numericAmount]
+    () => (numericAmount > 0 ? 0.5 : 0),
+    [numericAmount]
   );
   const totalAmount = useMemo(() => numericAmount + feeAmount, [feeAmount, numericAmount]);
 
@@ -278,6 +278,8 @@ export default function WithdrawAmountScreen() {
     narration,
   });
 
+  const asset = typeof params.asset === 'string' ? params.asset : undefined;
+
   const withdrawal = useWithdrawalSubmit({
     selectedMethod,
     numericAmount,
@@ -291,6 +293,7 @@ export default function WithdrawAmountScreen() {
         setIsSubmissionSheetVisible(true);
       });
     },
+    asset,
     fiatAccountHolderName,
     fiatAccountNumber,
     category,
@@ -771,6 +774,9 @@ export default function WithdrawAmountScreen() {
           destinationInput={destinationInput}
           fiatAccountHolderName={fiatAccountHolderName}
           fiatAccountNumber={fiatAccountNumber}
+          asset={asset}
+          availableBalance={availableBalance}
+          withdrawalLimit={maxWithdrawable}
           category={category}
           narration={narration}
         />

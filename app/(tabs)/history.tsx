@@ -6,11 +6,13 @@ import type { Transaction } from '@/components/molecules/TransactionItem';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
 import { useCardTransactions } from '@/api/hooks/useCard';
+import { useP2PTransfers } from '@/api/hooks/useP2P';
 import type { Withdrawal } from '@/api/types';
 import {
   normalizeWithdrawals,
   depositToTransaction,
   withdrawalToTransaction,
+  p2pToTransaction,
 } from '@/utils/transactionNormalizer';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 
@@ -35,28 +37,32 @@ export default function History() {
   const deposits = useDeposits(50);
   const withdrawals = useWithdrawals(50);
   const cardTxQuery = useCardTransactions({ limit: 50 });
+  const p2pTransfers = useP2PTransfers();
 
-  const isLoading = deposits.isLoading || withdrawals.isLoading || cardTxQuery.isLoading;
+  const isLoading = deposits.isLoading || withdrawals.isLoading || cardTxQuery.isLoading || p2pTransfers.isLoading;
   const isRefetching =
-    deposits.isRefetching || withdrawals.isRefetching || cardTxQuery.isRefetching;
+    deposits.isRefetching || withdrawals.isRefetching || cardTxQuery.isRefetching || p2pTransfers.isRefetching;
 
   const refetch = () => {
     deposits.refetch();
     withdrawals.refetch();
     cardTxQuery.refetch();
+    p2pTransfers.refetch();
   };
 
   const transactions = useMemo(() => {
     const withdrawalRows = normalizeWithdrawals(withdrawals.data);
     const cardRows: Transaction[] = (cardTxQuery.data?.transactions ?? []).map(cardTxToTransaction);
+    const p2pRows: Transaction[] = (p2pTransfers.data ?? []).map(p2pToTransaction);
 
     const mapped: Transaction[] = [
       ...(deposits.data?.deposits ?? []).map(depositToTransaction),
       ...withdrawalRows.map(withdrawalToTransaction),
       ...cardRows,
+      ...p2pRows,
     ];
     return mapped.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }, [deposits.data, withdrawals.data, cardTxQuery.data]);
+  }, [deposits.data, withdrawals.data, cardTxQuery.data, p2pTransfers.data]);
   const showSkeleton = isLoading && transactions.length === 0;
 
   return (

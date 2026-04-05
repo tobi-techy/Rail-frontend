@@ -1,6 +1,8 @@
 // Token SVG exports
 export { default as UsdcIcon } from './usdc.svg';
 export { default as UsdtIcon } from './usdt.svg';
+export { default as EurcIcon } from './eurc.svg';
+export { default as PyusdIcon } from './pyusd.svg';
 export { default as SolanaIcon } from './solana.svg';
 export { default as BnbIcon } from './bnb.svg';
 export { default as MaticIcon } from './matic.svg';

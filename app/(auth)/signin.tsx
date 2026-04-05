@@ -167,7 +167,7 @@ export default function SignIn() {
 
           <StaggeredChild index={4} delay={120} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
-              <Button title="Sign In" onPress={handleSignIn} loading={isPending} />
+              <Button title="Sign In" onPress={handleSignIn} loading={isPending} variant="orange" />
               <TouchableOpacity
                 onPress={() => router.push(ROUTES.AUTH.SIGNUP as never)}
                 className="mt-4"

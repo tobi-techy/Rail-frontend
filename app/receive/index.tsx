@@ -10,9 +10,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { CryptoReceiveSheet } from '@/components/sheets';
-import { SolanaIcon, MaticIcon, UsdcIcon } from '@/assets/svg';
+import { SolanaIcon, MaticIcon, UsdcIcon, UsdtIcon, EurcIcon, PyusdIcon } from '@/assets/svg';
 import AvalancheIcon from '@/assets/svg/avalanche.svg';
-import { SUPPORTED_CHAINS, isEVMChain, type ChainConfig } from '@/utils/chains';
+import { SUPPORTED_CHAINS, isEVMChain, STABLECOIN_CHAINS, isStablecoin, type ChainConfig } from '@/utils/chains';
+import { useUIStore } from '@/stores';
 import { useHaptics } from '@/hooks/useHaptics';
 import type { WalletChain } from '@/api/types';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
@@ -36,13 +37,20 @@ const CHAIN_ICONS: Record<string, React.ComponentType<any> | ImageSourcePropType
   AVAX: AvalancheIcon,
 };
 
-function ChainCard({ config, onPress }: { config: ChainConfig; onPress: () => void }) {
+const TOKEN_BADGE_ICONS: Record<string, React.ComponentType<any>> = {
+  USDC: UsdcIcon,
+  USDT: UsdtIcon,
+  EURC: EurcIcon,
+  PYUSD: PyusdIcon,
+};
+
+function ChainCard({ config, onPress, stablecoin = 'USDC' }: { config: ChainConfig; onPress: () => void; stablecoin?: string }) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const iconValue = CHAIN_ICONS[config.chain];
   const isImageIcon = config.chain === 'CELO' || config.chain === 'BASE';
-  const tokenLabel = 'USDC';
-  const TokenBadge = UsdcIcon;
+  const tokenLabel = stablecoin;
+  const TokenBadge = TOKEN_BADGE_ICONS[stablecoin] || UsdcIcon;
 
   return (
     <AnimatedPressable
@@ -100,6 +108,10 @@ export default function ReceiveChainSelectScreen() {
   const [selectedChain, setSelectedChain] = useState<WalletChain | null>(null);
   const { selection } = useHaptics();
   const { track } = useAnalytics();
+  const currency = useUIStore((s) => s.currency);
+  const stablecoin = isStablecoin(currency) ? currency : 'USDC';
+  const supportedChainCodes = STABLECOIN_CHAINS[stablecoin] ?? STABLECOIN_CHAINS.USDC;
+  const filteredChains = SUPPORTED_CHAINS.filter((c) => supportedChainCodes.includes(c.chain));
 
   const handleChainPress = useCallback(
     (chain: WalletChain) => {
@@ -127,16 +139,16 @@ export default function ReceiveChainSelectScreen() {
           </View>
 
           <View className="mt-4">
-            <Text className="font-subtitle text-[32px] text-text-primary">Receive USDC</Text>
+            <Text className="font-subtitle text-[32px] text-text-primary">{`Receive ${stablecoin}`}</Text>
             <Text className="mt-2 font-body text-[14px] text-text-secondary">
               Pick the network you want to receive on.
             </Text>
           </View>
 
           <View className="mt-8 gap-3">
-            {SUPPORTED_CHAINS.map((config, i) => (
+            {filteredChains.map((config, i) => (
               <Animated.View key={config.chain} entering={FadeInUp.delay(i * 60).duration(350)}>
-                <ChainCard config={config} onPress={() => handleChainPress(config.chain)} />
+                <ChainCard config={config} onPress={() => handleChainPress(config.chain)} stablecoin={stablecoin} />
               </Animated.View>
             ))}
           </View>

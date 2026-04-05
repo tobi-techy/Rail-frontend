@@ -1,11 +1,21 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_2_37170)">
-<path fill-rule="evenodd" clip-rule="evenodd" d="M0 0H512V512H0V0Z" fill="white"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M341.3 0H512V512H341.3V0ZM0 0H170.7V512H0V0Z" fill="#008753"/>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- License: MIT. Made by joypixels: https://github.com/joypixels/emojione -->
+<svg width="800px" height="800px" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--emojione" preserveAspectRatio="xMidYMid meet">
+
+<g fill="#83bf4f">
+
+<path d="M2 32c0 13.1 8.4 24.2 20 28.3V3.7C10.4 7.8 2 18.9 2 32z">
+
+</path>
+
+<path d="M62 32c0-13.1-8.3-24.2-20-28.3v56.6C53.7 56.2 62 45.1 62 32">
+
+</path>
+
 </g>
-<defs>
-<clipPath id="clip0_2_37170">
-<rect width="512" height="512" fill="white"/>
-</clipPath>
-</defs>
+
+<path d="M22 60.3c3.1 1.1 6.5 1.7 10 1.7s6.9-.6 10-1.7V3.7C38.9 2.6 35.5 2 32 2s-6.9.6-10 1.7v56.6z" fill="#f9f9f9">
+
+</path>
+
 </svg>

@@ -80,7 +80,7 @@ export const getAmountError = ({
     return `This amount is above your ${limitLabel.toLowerCase()} of $${formatCurrency(withdrawalLimit)}.`;
   }
   if (!isFundFlow && numericAmount > availableBalance) {
-    // return `Insufficient funds. You need $${formatCurrency(numericAmount - availableBalance)} more.`;
+    // return `Insufficient balance. You have $${formatCurrency(availableBalance)} available.`;
   }
   return '';
 };
