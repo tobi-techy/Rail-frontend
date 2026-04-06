@@ -54,8 +54,6 @@ import {
   Wallet01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { PaymentModal, usePaymentModal } from '@chainrails/react-native';
-import { useChainRailsSession } from '@/api/hooks/useChainRails';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -183,18 +181,6 @@ function DashboardScreen() {
   const [showCardComingSheet, setShowCardComingSheet] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showVirtualAccountSheet, setShowVirtualAccountSheet] = useState(false);
-
-  // ChainRails cross-chain deposit
-  const [crPending, setCrPending] = useState(false);
-  const crSessionMutation = useChainRailsSession();
-  const cr = usePaymentModal({
-    sessionToken: null,
-    onSuccess: () => {
-      invalidateQueries.station();
-      invalidateQueries.funding();
-    },
-    onCancel: () => {},
-  });
 
   const receiveNav = { reset: () => {}, navigateTo: () => {} }; // placeholder
   const sendNav = { reset: () => {}, navigateTo: () => {} }; // placeholder
@@ -366,19 +352,9 @@ function DashboardScreen() {
         label: 'Deposit from any chain',
         sublabel: 'ETH, Arbitrum, Base, Starknet, BNB & more',
         icon: <HugeiconsIcon icon={InternetIcon} size={20} color="#6366F1" />,
-        onPress: async () => {
+        onPress: () => {
           setShowReceiveSheet(false);
-          setCrPending(true);
-          try {
-            const session = await crSessionMutation.mutateAsync('10');
-            cr.updateSession(session);
-            cr.open();
-          } catch (e) {
-            // session creation failed — silently handled
-            console.error('ChainRails session failed:', e);
-          } finally {
-            setCrPending(false);
-          }
+          router.push('/fund-crosschain');
         },
       },
     ],
@@ -681,7 +657,6 @@ function DashboardScreen() {
         <SheetHeader title="Receive Funds" showCurrencySelector />
         <ExpandableOptionList main={receiveMainActions} more={receiveMoreActions} />
       </GorhomBottomSheet>
-      <PaymentModal {...cr} isPending={crPending} />
       <GorhomBottomSheet
         visible={showSendSheet}
         onClose={() => setShowSendSheet(false)}

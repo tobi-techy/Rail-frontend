@@ -142,6 +142,14 @@ function AppNavigator() {
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />
+      <Stack.Screen
+        name="fund-crosschain"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_bottom',
+          contentStyle: { backgroundColor: '#FF2E01' },
+        }}
+      />
     </Stack>
   );
 }

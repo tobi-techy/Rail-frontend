@@ -85,6 +85,7 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     segments[0] === 'notifications' ||
     segments[0] === 'kyc' ||
     segments[0] === 'card' ||
+    segments[0] === 'fund-crosschain' ||
     pathname.startsWith('/spending-stash') ||
     pathname.startsWith('/investment-stash') ||
     pathname.startsWith('/withdraw') ||
@@ -97,6 +98,7 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/authorize-transaction') ||
     pathname.startsWith('/passkey-settings') ||
     pathname.startsWith('/receive') ||
+    pathname.startsWith('/fund-crosschain') ||
     pathname.startsWith('/kyc') ||
     pathname.startsWith('/card'),
   isOnWelcomeScreen: pathname === '/' || pathname === normalizeRoutePath(ROUTES.INTRO),
