@@ -330,7 +330,10 @@ function DashboardScreen() {
     ) => {
       setShowSendSheet(false);
       setShowReceiveSheet(false);
-      router.push({ pathname: '/withdraw/[method]', params: { method, flow, asset: selectedCurrency } } as never);
+      router.push({
+        pathname: '/withdraw/[method]',
+        params: { method, flow, asset: selectedCurrency },
+      } as never);
     },
     [selectedCurrency]
   );
@@ -367,11 +370,12 @@ function DashboardScreen() {
           setShowReceiveSheet(false);
           setCrPending(true);
           try {
-            const session = await crSessionMutation.mutateAsync('0');
-            cr.updateSession({ sessionToken: session.session_token });
+            const session = await crSessionMutation.mutateAsync('10');
+            cr.updateSession(session);
             cr.open();
-          } catch {
+          } catch (e) {
             // session creation failed — silently handled
+            console.error('ChainRails session failed:', e);
           } finally {
             setCrPending(false);
           }
@@ -422,7 +426,8 @@ function DashboardScreen() {
     [isAndroid, startWithdrawal]
   );
 
-  const isFiatAsset = selectedCurrency === 'USD' || selectedCurrency === 'EUR' || selectedCurrency === 'NGN';
+  const isFiatAsset =
+    selectedCurrency === 'USD' || selectedCurrency === 'EUR' || selectedCurrency === 'NGN';
 
   const sendMainActions = useMemo<FundingAction[]>(
     () => [
@@ -455,11 +460,7 @@ function DashboardScreen() {
         label: isFiatAsset ? 'Send to Wallet' : 'Send out fiat',
         sublabel: isFiatAsset ? 'Send stablecoins to wallet address' : 'Send to bank account',
         icon: (
-          <HugeiconsIcon
-            icon={isFiatAsset ? Wallet01Icon : BankIcon}
-            size={20}
-            color="#6366F1"
-          />
+          <HugeiconsIcon icon={isFiatAsset ? Wallet01Icon : BankIcon} size={20} color="#6366F1" />
         ),
         onPress: () => startWithdrawal(isFiatAsset ? 'crypto' : 'fiat'),
       },
@@ -673,12 +674,18 @@ function DashboardScreen() {
         </View>
       </View>
 
-      <GorhomBottomSheet visible={showReceiveSheet} onClose={() => setShowReceiveSheet(false)} showCloseButton={false}>
+      <GorhomBottomSheet
+        visible={showReceiveSheet}
+        onClose={() => setShowReceiveSheet(false)}
+        showCloseButton={false}>
         <SheetHeader title="Receive Funds" showCurrencySelector />
         <ExpandableOptionList main={receiveMainActions} more={receiveMoreActions} />
       </GorhomBottomSheet>
       <PaymentModal {...cr} isPending={crPending} />
-      <GorhomBottomSheet visible={showSendSheet} onClose={() => setShowSendSheet(false)} showCloseButton={false}>
+      <GorhomBottomSheet
+        visible={showSendSheet}
+        onClose={() => setShowSendSheet(false)}
+        showCloseButton={false}>
         <SheetHeader title="Send Funds" showCurrencySelector />
         <ExpandableOptionList main={sendMainActions} more={sendMoreActions} />
       </GorhomBottomSheet>
