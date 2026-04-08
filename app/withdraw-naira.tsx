@@ -10,17 +10,26 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeIn, FadeInUp, SlideInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Button } from '@/components/ui';
+import { Keypad } from '@/components/molecules/Keypad';
+import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
+import {
+  normalizeAmount,
+  formatMaxAmount,
+  toDisplayAmount,
+  formatCurrency,
+} from '@/app/withdraw/method-screen/utils';
 import {
   usePajRates,
   usePajBanks,
   usePajResolveBankAccount,
   usePajOfframp,
   usePajOrderStatus,
+  useStation,
 } from '@/api/hooks';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { PajVerificationSheet } from '@/components/sheets/PajVerificationSheet';
@@ -29,9 +38,13 @@ import {
   CheckmarkCircle02Icon,
   Search01Icon,
   Loading03Icon,
+  Cancel01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import type { PajBank } from '@/api/types/paj';
+
+const BRAND_RED = '#FF2E01';
+const MAX_INTEGER_DIGITS = 10;
 
 type Step = 'amount' | 'bank' | 'account' | 'confirm' | 'polling';
 
@@ -40,7 +53,7 @@ export default function WithdrawNairaScreen() {
   const [selectedBank, setSelectedBank] = useState<PajBank | null>(null);
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
-  const [amount, setAmount] = useState('');
+  const [rawAmount, setRawAmount] = useState('0');
   const [bankSearch, setBankSearch] = useState('');
   const [showVerification, setShowVerification] = useState(false);
   const [orderId, setOrderId] = useState('');
@@ -51,10 +64,21 @@ export default function WithdrawNairaScreen() {
   const resolveBank = usePajResolveBankAccount();
   const offramp = usePajOfframp();
   const { data: orderStatus } = usePajOrderStatus(orderId, step === 'polling');
+  const { data: station } = useStation();
+  const insets = useSafeAreaInsets();
 
   const offRampRate = ratesData?.offRampRate?.rate ?? 0;
-  const parsedAmount = parseFloat(amount) || 0;
+  const parsedAmount = useMemo(() => {
+    const n = parseFloat(rawAmount);
+    return Number.isFinite(n) ? n : 0;
+  }, [rawAmount]);
   const estimatedUSDC = offRampRate > 0 ? parsedAmount / offRampRate : 0;
+  const availableBalance = useMemo(() => {
+    const parsed = parseFloat(station?.spend_balance ?? '');
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  }, [station?.spend_balance]);
+  const displayAmount = toDisplayAmount(rawAmount);
+  const canContinue = parsedAmount >= 1000;
   const isCompleted = orderStatus?.status === 'COMPLETED';
   const isFailed = orderStatus?.status === 'FAILED';
 
@@ -78,6 +102,22 @@ export default function WithdrawNairaScreen() {
     }
     setStep('bank');
   }, [banksError]);
+
+  const onAmountKeyPress = useCallback((key: string) => {
+    setRawAmount((current) => {
+      if (key === 'backspace')
+        return current === '0' ? current : normalizeAmount(current.slice(0, -1));
+      if (key === 'decimal') return current.includes('.') ? current : `${current}.`;
+      if (!/^\d$/.test(key)) return current;
+      if (current.includes('.')) {
+        const [int, dec = ''] = current.split('.');
+        return dec.length >= 2 ? current : `${int}.${dec}${key}`;
+      }
+      const next = (current === '0' ? key : `${current}${key}`).replace(/^0+(?=\d)/, '') || '0';
+      if (next.length > MAX_INTEGER_DIGITS) return current;
+      return next;
+    });
+  }, []);
 
   // Auto-resolve when account number is 10 digits
   useEffect(() => {
@@ -145,6 +185,91 @@ export default function WithdrawNairaScreen() {
     }
   }, [selectedBank, accountNumber, parsedAmount, offramp, showError]);
 
+  // Amount step uses the red keypad screen (matches [method].tsx)
+  if (step === 'amount') {
+    return (
+      <SafeAreaView className="flex-1" style={{ backgroundColor: BRAND_RED }} edges={['top']}>
+        <StatusBar barStyle="light-content" backgroundColor={BRAND_RED} />
+        <View className="flex-1 px-5">
+          <Animated.View
+            entering={FadeIn.duration(400)}
+            className="flex-row items-center justify-between pb-2 pt-1">
+            <Pressable
+              className="size-11 items-center justify-center rounded-full bg-white/20"
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel="Close">
+              <HugeiconsIcon icon={Cancel01Icon} size={20} color="#FFFFFF" />
+            </Pressable>
+            <Text className="font-subtitle text-[20px] text-white">Withdraw Naira</Text>
+            <View className="size-11" />
+          </Animated.View>
+
+          <View className="flex-1 items-center justify-center px-2">
+            <Text className="font-body text-[13px] text-white/80">Enter amount in NGN</Text>
+            <View className="mt-2">
+              <AnimatedAmount amount={displayAmount} />
+            </View>
+            {offRampRate > 0 && parsedAmount > 0 && (
+              <Animated.View entering={FadeIn.duration(300)}>
+                <Text className="mt-2 text-center font-body text-[13px] text-white/90">
+                  ≈ ${estimatedUSDC.toFixed(2)} USDC at ₦{offRampRate.toLocaleString()}/USD
+                </Text>
+              </Animated.View>
+            )}
+            <Animated.View
+              entering={FadeInUp.delay(200).duration(400)}
+              className="mt-6 flex-row items-center justify-center gap-2">
+              <View className="flex-row items-center rounded-full bg-white/20 px-3 py-2">
+                <Text className="font-body text-[13px] text-white/90">
+                  Balance: ${formatCurrency(availableBalance)}
+                </Text>
+              </View>
+            </Animated.View>
+          </View>
+
+          <Animated.View entering={SlideInUp.delay(100).duration(500)} className="pb-3 pt-1 px-0">
+            <Button
+              title="Continue"
+              onPress={goToBankStep}
+              disabled={!canContinue}
+              variant="white"
+              className="bg-white"
+            />
+            {parsedAmount > 0 && parsedAmount < 1000 && (
+              <Text className="mt-2 text-center font-body text-[12px] text-white/70">
+                Minimum withdrawal is ₦1,000
+              </Text>
+            )}
+          </Animated.View>
+
+          <Animated.View entering={SlideInUp.delay(100).duration(500)}>
+            <Keypad
+              className="pb-2"
+              onKeyPress={onAmountKeyPress}
+              backspaceIcon="delete"
+              variant="dark"
+              leftKey="decimal"
+            />
+          </Animated.View>
+
+          <View style={{ paddingBottom: Math.max(insets.bottom, 12) }} />
+        </View>
+
+        <Text className="absolute bottom-2 left-0 right-0 text-center font-body text-[11px] text-white/40">
+          Powered by Paj Cash
+        </Text>
+
+        <PajVerificationSheet
+          visible={showVerification}
+          onClose={() => setShowVerification(false)}
+          onVerified={handleVerified}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // Remaining steps use white background
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
@@ -165,56 +290,6 @@ export default function WithdrawNairaScreen() {
               <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
             </Pressable>
           </View>
-
-          {/* Step 1: Enter amount (FIRST) */}
-          {step === 'amount' && (
-            <Animated.View entering={FadeInDown.duration(300)}>
-              <View className="mt-4">
-                <Text className="font-subtitle text-[28px] text-text-primary">
-                  Withdraw Naira
-                </Text>
-                <Text className="mt-2 font-body text-[14px] text-text-secondary">
-                  Enter the amount in NGN to send to your bank account.
-                </Text>
-              </View>
-
-              <View className="mt-8 rounded-2xl bg-surface p-5">
-                <Text className="mb-2 font-body text-[13px] text-[#9CA3AF]">Amount (NGN)</Text>
-                <View className="flex-row items-center">
-                  <Text className="font-subtitle text-[24px] text-text-primary">₦</Text>
-                  <TextInput
-                    className="ml-1 flex-1 font-subtitle text-[24px] text-text-primary"
-                    value={amount}
-                    onChangeText={setAmount}
-                    keyboardType="numeric"
-                    placeholder="0"
-                    placeholderTextColor="#D1D5DB"
-                    autoFocus
-                  />
-                </View>
-                {offRampRate > 0 && parsedAmount > 0 && (
-                  <Text className="mt-2 font-body text-[13px] text-[#6366F1]">
-                    ≈ ${estimatedUSDC.toFixed(2)} USDC at ₦{offRampRate.toLocaleString()}/USD
-                  </Text>
-                )}
-              </View>
-
-              <View className="mt-6">
-                <Button
-                  title="Continue"
-                  variant="black"
-                  disabled={parsedAmount < 1000}
-                  onPress={goToBankStep}
-                />
-              </View>
-
-              {parsedAmount > 0 && parsedAmount < 1000 && (
-                <Text className="mt-3 text-center font-body text-[12px] text-[#EF4444]">
-                  Minimum withdrawal is ₦1,000
-                </Text>
-              )}
-            </Animated.View>
-          )}
 
           {/* Step 2: Select bank */}
           {step === 'bank' && (
