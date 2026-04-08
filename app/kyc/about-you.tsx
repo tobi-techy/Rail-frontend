@@ -179,7 +179,7 @@ export default function KycAboutYouScreen() {
             );
           })}
           <View className="mt-4">
-            <Button title="Done" onPress={() => setShowEmployment(false)} />
+            <Button title="Done" onPress={() => setShowEmployment(false)} variant="orange" />
           </View>
         </GorhomBottomSheet>
 
@@ -221,7 +221,7 @@ export default function KycAboutYouScreen() {
             );
           })}
           <View className="mt-4">
-            <Button title="Done" onPress={() => setShowPurpose(false)} />
+            <Button title="Done" onPress={() => setShowPurpose(false)} variant="orange" />
           </View>
         </GorhomBottomSheet>
       </SafeAreaView>

@@ -121,7 +121,7 @@ export default function SignUp() {
                   Privacy Policy
                 </Text>
               </Text>
-              <Button title="Continue" onPress={handleSignUp} loading={isPending} />
+              <Button title="Continue" onPress={handleSignUp} loading={isPending} variant="orange" />
               <TouchableOpacity
                 onPress={() => router.push(ROUTES.AUTH.SIGNIN as never)}
                 className="mt-4">

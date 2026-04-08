@@ -16,7 +16,7 @@ export function useVirtualAccounts(enabled = true) {
 export function useCreateVirtualAccount() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (currency: 'USD' | 'EUR' | 'GBP') =>
+    mutationFn: (currency: 'USD' | 'EUR' | 'GBP' | 'NGN') =>
       virtualAccountService.createVirtualAccount(currency),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.virtualAccount.list() });

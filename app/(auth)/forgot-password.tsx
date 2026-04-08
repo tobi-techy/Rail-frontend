@@ -140,7 +140,7 @@ export default function ForgotPassword() {
               </StaggeredChild>
               <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>
                 <View className="pt-8">
-                  <Button title="Send code" onPress={handleSendCode} loading={isSending} />
+                  <Button title="Send code" onPress={handleSendCode} loading={isSending} variant="orange" />
                   <Pressable
                     className="mt-6 items-center"
                     onPress={() => router.replace(ROUTES.AUTH.SIGNIN as never)}>
@@ -239,6 +239,7 @@ export default function ForgotPassword() {
                   title="Update password"
                   onPress={handleResetPassword}
                   loading={isResetting}
+                  variant="orange"
                 />
               </View>
             </>

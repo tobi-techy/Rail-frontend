@@ -68,24 +68,15 @@ export function validatePassword(password: string): ValidationResult {
     errors.push('Password is too long');
   }
 
-  // Check for at least one uppercase letter
-  if (!/[A-Z]/.test(password)) {
-    errors.push('Password must contain at least one uppercase letter');
-  }
+  // Must satisfy at least 3 of 4 complexity categories (matches backend policy)
+  let complexityCount = 0;
+  if (/[A-Z]/.test(password)) complexityCount++;
+  if (/[a-z]/.test(password)) complexityCount++;
+  if (/\d/.test(password)) complexityCount++;
+  if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) complexityCount++;
 
-  // Check for at least one lowercase letter
-  if (!/[a-z]/.test(password)) {
-    errors.push('Password must contain at least one lowercase letter');
-  }
-
-  // Check for at least one digit
-  if (!/\d/.test(password)) {
-    errors.push('Password must contain at least one digit');
-  }
-
-  // Check for at least one special character
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-    errors.push('Password must contain at least one special character');
+  if (complexityCount < 3) {
+    errors.push('Password must contain at least 3 of: uppercase, lowercase, digit, special character');
   }
 
   return {

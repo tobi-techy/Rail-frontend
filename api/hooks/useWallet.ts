@@ -168,7 +168,9 @@ export function useWalletAddresses(chain?: WalletChain) {
   const query = useQuery({
     queryKey: queryKeys.wallet.addresses(chain),
     queryFn: () => walletService.getWalletAddresses(chain ? { chain } : undefined),
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {
       const status = error?.status;

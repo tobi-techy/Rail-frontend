@@ -142,6 +142,7 @@ export default function Phone() {
                 title={isPasskeySignup ? 'Create Account' : 'Next'}
                 onPress={handleNext}
                 loading={isPending}
+                variant="orange"
               />
               <Pressable
                 onPress={() => {

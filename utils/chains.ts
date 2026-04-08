@@ -96,3 +96,20 @@ export function getDefaultWithdrawalChain(): WalletChain {
 export function getDefaultReceiveChain(): WalletChain {
   return SOLANA_MAINNET_CHAIN;
 }
+
+// Stablecoin deposit support per chain (from Bridge route table).
+// Only lists Rail's supported deposit chains.
+export const STABLECOIN_CHAINS: Record<string, WalletChain[]> = {
+  USDC: ['SOL', 'MATIC', 'CELO', 'BASE', 'AVAX'],
+  USDT: ['SOL'],
+  EURC: ['SOL', 'BASE'],
+  PYUSD: ['SOL'],
+};
+
+export type StablecoinCode = keyof typeof STABLECOIN_CHAINS;
+
+export const STABLECOIN_CODES: StablecoinCode[] = ['USDC', 'USDT', 'EURC', 'PYUSD'];
+
+export function isStablecoin(code: string): code is StablecoinCode {
+  return code in STABLECOIN_CHAINS;
+}

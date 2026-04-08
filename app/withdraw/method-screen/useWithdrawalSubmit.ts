@@ -17,6 +17,8 @@ interface UseWithdrawalSubmitOptions {
   destinationChain?: string;
   isFundFlow: boolean;
   onStartMobileWalletFunding: () => void;
+  // asset from picker (USD, EUR, NGN, USDC, etc.)
+  asset?: string;
   // fiat extras
   fiatAccountHolderName?: string;
   fiatAccountNumber?: string;
@@ -33,6 +35,7 @@ export function useWithdrawalSubmit({
   destinationChain,
   isFundFlow,
   onStartMobileWalletFunding,
+  asset,
   fiatAccountHolderName,
   fiatAccountNumber,
   p2pNote,
@@ -53,6 +56,7 @@ export function useWithdrawalSubmit({
     destinationChain,
     isFundFlow,
     onStartMobileWalletFunding,
+    asset,
     fiatAccountHolderName,
     fiatAccountNumber,
     p2pNote,
@@ -66,6 +70,7 @@ export function useWithdrawalSubmit({
     destinationChain,
     isFundFlow,
     onStartMobileWalletFunding,
+    asset,
     fiatAccountHolderName,
     fiatAccountNumber,
     p2pNote,
@@ -160,10 +165,11 @@ export function useWithdrawalSubmit({
       }
 
       // fiat
+      const fiatCurrency = (['USD', 'EUR', 'NGN'].includes(opts.asset ?? '') ? opts.asset! : 'USD') as 'USD' | 'EUR' | 'NGN';
       initiateFiatWithdrawal(
         {
           amount,
-          currency: 'USD',
+          currency: fiatCurrency,
           account_holder_name: (opts.fiatAccountHolderName ?? '').trim(),
           account_number: (opts.fiatAccountNumber ?? '').replace(/\D/g, ''),
           routing_number: destination.replace(/\D/g, ''),

@@ -23,7 +23,7 @@ prepare_react_native_project!
 target 'RailMoney' do
   use_expo_modules!
 
-  pod 'DiditSDK', :podspec => 'https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.2.6/DiditSDK.podspec'
+  pod 'DiditSDK', :podspec => 'https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.2.8/DiditSDK.podspec'
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];

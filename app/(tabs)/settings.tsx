@@ -49,7 +49,7 @@ import * as Haptics from 'expo-haptics';
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CURRENCIES: Currency[] = ['USD', 'EUR'];
-const CURRENCY_LABELS: Record<Currency, string> = { USD: 'US Dollar (USD)', EUR: 'Euro (EUR)' };
+const CURRENCY_LABELS: Record<Currency, string> = { USD: 'US Dollar (USD)', EUR: 'Euro (EUR)', NGN: 'Nigerian Naira (NGN)', USDC: 'USD Coin (USDC)', USDT: 'Tether (USDT)', EURC: 'Euro Coin (EURC)', PYUSD: 'PayPal USD (PYUSD)' };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

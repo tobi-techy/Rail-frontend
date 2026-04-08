@@ -9,7 +9,7 @@ interface VirtualAccountListResponse {
 export const virtualAccountService = {
   getVirtualAccounts: () =>
     apiClient.get<VirtualAccountListResponse>('/v1/funding/virtual-accounts'),
-  createVirtualAccount: (currency: 'USD' | 'EUR' | 'GBP') =>
+  createVirtualAccount: (currency: 'USD' | 'EUR' | 'GBP' | 'NGN') =>
     apiClient.post<CreateVirtualAccountResponse>('/v1/funding/virtual-account', { currency }),
   getTOSLink: () => apiClient.get<{ tos_link: string }>('/v1/funding/tos-link'),
 };

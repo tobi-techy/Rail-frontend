@@ -167,7 +167,7 @@ export default function KycDiditSdkScreen() {
           <View className="w-full gap-y-3">
             <Pressable
               onPress={handleRetry}
-              className="flex-row items-center justify-center gap-x-2 rounded-full bg-gray-900 px-6 py-4"
+              className="flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-6 py-4"
               accessibilityRole="button"
               accessibilityLabel="Try verification again">
               <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />

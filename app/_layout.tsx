@@ -142,6 +142,30 @@ function AppNavigator() {
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />
+      <Stack.Screen
+        name="fund-crosschain"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_bottom',
+          contentStyle: { backgroundColor: '#FF2E01' },
+        }}
+      />
+      <Stack.Screen
+        name="fund-naira"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_bottom',
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      />
+      <Stack.Screen
+        name="withdraw-naira"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_bottom',
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      />
     </Stack>
   );
 }

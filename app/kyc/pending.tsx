@@ -126,7 +126,7 @@ export default function KycPendingScreen() {
             </Text>
             <Pressable
               onPress={() => router.back()}
-              className="mt-8 rounded-full bg-gray-900 px-8 py-4"
+              className="mt-8 rounded-full bg-primary px-8 py-4"
               accessibilityRole="button">
               <Text className="font-subtitle text-[15px] text-white">Close</Text>
             </Pressable>
@@ -145,7 +145,7 @@ export default function KycPendingScreen() {
                 resetKycState();
                 router.replace('/(tabs)');
               }}
-              className="mt-8 rounded-full bg-gray-900 px-8 py-4"
+              className="mt-8 rounded-full bg-primary px-8 py-4"
               accessibilityRole="button">
               <Text className="font-subtitle text-[15px] text-white">Get started</Text>
             </Pressable>
@@ -162,7 +162,7 @@ export default function KycPendingScreen() {
             <View className="mt-6 w-full gap-y-3">
               <Pressable
                 onPress={handleRetry}
-                className="flex-row items-center justify-center gap-x-2 rounded-full bg-gray-900 px-8 py-4"
+                className="flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-8 py-4"
                 accessibilityRole="button">
                 <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />
                 <Text className="font-subtitle text-[15px] text-white">Try Again</Text>
@@ -189,7 +189,7 @@ export default function KycPendingScreen() {
             <View className="mt-6 w-full gap-y-3">
               <Pressable
                 onPress={handleRetry}
-                className="flex-row items-center justify-center gap-x-2 rounded-full bg-gray-900 px-8 py-4"
+                className="flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-8 py-4"
                 accessibilityRole="button">
                 <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />
                 <Text className="font-subtitle text-[15px] text-white">Start New Verification</Text>

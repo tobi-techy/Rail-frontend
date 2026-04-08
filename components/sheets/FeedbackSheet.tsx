@@ -61,7 +61,7 @@ export function FeedbackSheet({ visible, onClose }: Props) {
 
   return (
     <GorhomBottomSheet visible={visible} onClose={handleClose} showCloseButton>
-      <View style={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 16 }}>
+      <View style={{ paddingBottom: insets.bottom + 16 }}>
         {done ? (
           <View className="items-center py-8">
             <Text className="mb-2 text-2xl">🎉</Text>
