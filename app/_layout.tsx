@@ -150,6 +150,22 @@ function AppNavigator() {
           contentStyle: { backgroundColor: '#FF2E01' },
         }}
       />
+      <Stack.Screen
+        name="fund-naira"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_bottom',
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      />
+      <Stack.Screen
+        name="withdraw-naira"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_bottom',
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      />
     </Stack>
   );
 }

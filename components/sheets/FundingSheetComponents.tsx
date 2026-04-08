@@ -8,7 +8,18 @@ import { ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { useUIStore } from '@/stores';
 import type { Currency } from '@/stores/uiStore';
-import { UsdcIcon, UsdtIcon, EurcIcon, PyusdIcon, UsdIcon, EurIcon, NgnIcon } from '@/assets/svg';
+import {
+  UsdcIcon,
+  UsdtIcon,
+  EurcIcon,
+  PyusdIcon,
+  UsdIcon,
+  EurIcon,
+  NgnIcon,
+  GhsIcon,
+  KesIcon,
+  CadIcon,
+} from '@/assets/svg';
 
 export type FundingOption = {
   id: string;
@@ -116,15 +127,21 @@ export function SheetHeader({
   title,
   rightElement,
   showCurrencySelector = false,
+  selectedCurrency,
+  onCurrencyChange,
 }: {
   title: string;
   rightElement?: React.ReactNode;
   showCurrencySelector?: boolean;
+  selectedCurrency?: Currency;
+  onCurrencyChange?: (currency: Currency) => void;
 }) {
   return (
     <View className="mb-4 flex-row items-center justify-between pt-2">
       <Text className="font-subtitle text-[20px] text-[#070914]">{title}</Text>
-      {showCurrencySelector ? <CurrencySelectorPill /> : rightElement}
+      {showCurrencySelector ? (
+        <CurrencySelectorPill selectedCurrency={selectedCurrency} onCurrencyChange={onCurrencyChange} />
+      ) : rightElement}
     </View>
   );
 }
@@ -141,7 +158,30 @@ type CurrencyOption = {
 const CURRENCIES: CurrencyOption[] = [
   { code: 'USD', label: 'US Dollar', symbol: '$', type: 'fiat', Icon: UsdIcon },
   { code: 'EUR', label: 'Euro', symbol: '\u20ac', type: 'fiat', Icon: EurIcon },
-  { code: 'NGN', label: 'Nigerian Naira', symbol: '\u20a6', type: 'fiat', Icon: NgnIcon, disabled: true },
+  { code: 'CAD', label: 'Canadian Dollar', symbol: 'CA$', type: 'fiat', Icon: CadIcon },
+  {
+    code: 'NGN',
+    label: 'Nigerian Naira',
+    symbol: '\u20a6',
+    type: 'fiat',
+    Icon: NgnIcon,
+  },
+  {
+    code: 'GHS',
+    label: 'Ghanaian Cedi',
+    symbol: 'GH\u20b5',
+    type: 'fiat',
+    Icon: GhsIcon,
+    disabled: true,
+  },
+  {
+    code: 'KES',
+    label: 'Kenyan Shilling',
+    symbol: 'KSh',
+    type: 'fiat',
+    Icon: KesIcon,
+    disabled: true,
+  },
   { code: 'USDC', label: 'USD Coin', symbol: 'USDC', type: 'stablecoin', Icon: UsdcIcon },
   { code: 'USDT', label: 'Tether', symbol: 'USDT', type: 'stablecoin', Icon: UsdtIcon },
   { code: 'EURC', label: 'Euro Coin', symbol: 'EURC', type: 'stablecoin', Icon: EurcIcon },
@@ -159,10 +199,18 @@ function CurrencyIcon({ currency, size = 20 }: { currency: CurrencyOption; size?
   return null;
 }
 
-function CurrencySelectorPill() {
+function CurrencySelectorPill({
+  selectedCurrency: externalCurrency,
+  onCurrencyChange,
+}: {
+  selectedCurrency?: Currency;
+  onCurrencyChange?: (currency: Currency) => void;
+}) {
   const [pickerVisible, setPickerVisible] = useState(false);
-  const currency = useUIStore((s) => s.currency);
+  const storeCurrency = useUIStore((s) => s.currency);
   const setCurrency = useUIStore((s) => s.setCurrency);
+  const currency = externalCurrency ?? storeCurrency;
+  const handleSelect = onCurrencyChange ?? setCurrency;
   const current = CURRENCIES.find((c) => c.code === currency) ?? CURRENCIES[0];
 
   return (
@@ -184,9 +232,7 @@ function CurrencySelectorPill() {
         visible={pickerVisible}
         onClose={() => setPickerVisible(false)}
         showCloseButton={false}>
-        <Text className="mb-2 font-subtitle text-[20px] text-[#070914]">
-          Asset
-        </Text>
+        <Text className="mb-2 font-subtitle text-[20px] text-[#070914]">Asset</Text>
         <Text className="mb-5 font-body text-[13px] text-[#9CA3AF]">
           Choose what to send or receive
         </Text>
@@ -202,7 +248,7 @@ function CurrencySelectorPill() {
             onPress={() => {
               if (c.disabled) return;
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setCurrency(c.code);
+              handleSelect(c.code);
               setPickerVisible(false);
             }}
             className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#F3F4F6] bg-white px-4 py-3.5 active:bg-[#F9FAFB]"
@@ -236,7 +282,7 @@ function CurrencySelectorPill() {
             key={c.code}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setCurrency(c.code);
+              handleSelect(c.code);
               setPickerVisible(false);
             }}
             className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#F3F4F6] bg-white px-4 py-3.5 active:bg-[#F9FAFB]">

@@ -53,3 +53,6 @@ export * from './useVirtualAccount';
 
 // P2P hooks
 export * from './useP2P';
+
+// Paj Cash NGN ramp hooks
+export * from './usePaj';

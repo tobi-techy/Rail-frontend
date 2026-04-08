@@ -182,8 +182,21 @@ function DashboardScreen() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showVirtualAccountSheet, setShowVirtualAccountSheet] = useState(false);
 
-  const receiveNav = { reset: () => {}, navigateTo: () => {} }; // placeholder
-  const sendNav = { reset: () => {}, navigateTo: () => {} }; // placeholder
+  // Local currency for send/receive sheets — does NOT affect balance card
+  const [sheetCurrency, setSheetCurrency] = useState<Currency>('USD');
+  const onSheetCurrencyChange = useCallback((c: Currency) => setSheetCurrency(c), []);
+
+  const openReceiveSheet = useCallback(() => {
+    setSheetCurrency('USD');
+    setShowReceiveSheet(true);
+  }, []);
+  const openSendSheet = useCallback(() => {
+    setSheetCurrency('USD');
+    setShowSendSheet(true);
+  }, []);
+
+  const receiveNav = { reset: (_?: string) => {}, navigateTo: () => {} }; // placeholder
+  const sendNav = { reset: (_?: string) => {}, navigateTo: () => {} }; // placeholder
 
   // Disclaimer
   const hasAcknowledgedDisclaimer = useAuthStore((s) => s.hasAcknowledgedDisclaimer);
@@ -318,47 +331,87 @@ function DashboardScreen() {
       setShowReceiveSheet(false);
       router.push({
         pathname: '/withdraw/[method]',
-        params: { method, flow, asset: selectedCurrency },
+        params: { method, flow, asset: sheetCurrency },
       } as never);
     },
-    [selectedCurrency]
+    [sheetCurrency]
   );
 
+  // KYC gate — wraps an action so it shows KYC sheet if not verified
+  const gateKyc = useCallback((action: () => void) => {
+    if (bridgeActive) { action(); return; }
+    setShowSendSheet(false);
+    setShowReceiveSheet(false);
+    setShowKYCSheet(true);
+  }, [bridgeActive]);
+
   // Funding action lists
+  const isSheetFiat =
+    sheetCurrency === 'USD' || sheetCurrency === 'EUR' || sheetCurrency === 'NGN'
+    || sheetCurrency === 'GHS' || sheetCurrency === 'KES' || sheetCurrency === 'CAD';
+
   const receiveMainActions = useMemo<FundingAction[]>(
-    () => [
-      {
-        id: 'fiat',
-        label: 'Fiat',
-        sublabel: `Receive assets via ${selectedCurrency === 'EUR' ? 'EUR' : 'US'} bank account`,
-        icon: <HugeiconsIcon icon={BankIcon} size={20} color="#6366F1" />,
-        onPress: () => {
-          setShowReceiveSheet(false);
-          setShowVirtualAccountSheet(true);
-        },
-      },
-      {
-        id: 'crypto',
-        label: 'Crypto',
-        sublabel: 'Receive assets via wallet address',
-        icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
-        onPress: () => {
-          setShowReceiveSheet(false);
-          router.push('/receive' as never);
-        },
-      },
-      {
-        id: 'cross-chain',
-        label: 'Deposit from any chain',
-        sublabel: 'ETH, Arbitrum, Base, Starknet, BNB & more',
-        icon: <HugeiconsIcon icon={InternetIcon} size={20} color="#6366F1" />,
-        onPress: () => {
-          setShowReceiveSheet(false);
-          router.push('/fund-crosschain');
-        },
-      },
-    ],
-    [selectedCurrency]
+    () => isSheetFiat
+      ? [
+          ...(sheetCurrency === 'NGN'
+            ? [
+                {
+                  id: 'naira-fund',
+                  label: 'Fund with Naira',
+                  sublabel: 'Deposit NGN via bank transfer',
+                  icon: <HugeiconsIcon icon={BankIcon} size={20} color="#008751" />,
+                  onPress: () => gateKyc(() => {
+                    setShowReceiveSheet(false);
+                    router.push('/fund-naira' as never);
+                  }),
+                },
+              ]
+            : [
+                {
+                  id: 'fiat',
+                  label: `Receive ${sheetCurrency}`,
+                  sublabel: `Receive via ${sheetCurrency === 'EUR' ? 'SEPA' : 'bank'} transfer`,
+                  icon: <HugeiconsIcon icon={BankIcon} size={20} color="#6366F1" />,
+                  onPress: () => gateKyc(() => {
+                    setShowReceiveSheet(false);
+                    setShowVirtualAccountSheet(true);
+                  }),
+                },
+              ]),
+          {
+            id: 'crypto',
+            label: 'Receive via Crypto',
+            sublabel: 'Receive stablecoins via wallet address',
+            icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
+            onPress: () => {
+              setShowReceiveSheet(false);
+              router.push('/receive' as never);
+            },
+          },
+        ]
+      : [
+          {
+            id: 'crypto',
+            label: `Receive ${sheetCurrency}`,
+            sublabel: 'Receive via wallet address',
+            icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
+            onPress: () => {
+              setShowReceiveSheet(false);
+              router.push('/receive' as never);
+            },
+          },
+          {
+            id: 'cross-chain',
+            label: 'Deposit from any chain',
+            sublabel: 'ETH, Arbitrum, Base, Starknet, BNB & more',
+            icon: <HugeiconsIcon icon={InternetIcon} size={20} color="#6366F1" />,
+            onPress: () => {
+              setShowReceiveSheet(false);
+              router.push('/fund-crosschain');
+            },
+          },
+        ],
+    [sheetCurrency, isSheetFiat, gateKyc]
   );
 
   const receiveMoreActions = useMemo<FundingAction[]>(
@@ -402,62 +455,103 @@ function DashboardScreen() {
     [isAndroid, startWithdrawal]
   );
 
-  const isFiatAsset =
-    selectedCurrency === 'USD' || selectedCurrency === 'EUR' || selectedCurrency === 'NGN';
+  const startP2P = useCallback(() => {
+    setShowSendSheet(false);
+    router.push({ pathname: '/withdraw/[method]', params: { method: 'p2p' } } as never);
+  }, []);
 
   const sendMainActions = useMemo<FundingAction[]>(
     () => [
-      ...(isFiatAsset
+      ...(isSheetFiat
         ? [
+            ...(sheetCurrency === 'NGN'
+              ? [
+                  {
+                    id: 'naira-withdraw',
+                    label: 'Withdraw to bank',
+                    sublabel: 'Send NGN to Nigerian bank account',
+                    icon: <HugeiconsIcon icon={BankIcon} size={20} color="#008751" />,
+                    onPress: () => gateKyc(() => {
+                      setShowSendSheet(false);
+                      router.push('/withdraw-naira' as never);
+                    }),
+                  },
+                ]
+              : [
+                  {
+                    id: 'fiat',
+                    label: `Send out ${sheetCurrency}`,
+                    sublabel:
+                      sheetCurrency === 'EUR'
+                        ? 'Send via SEPA transfer'
+                        : sheetCurrency === 'GHS'
+                          ? 'Send to Ghanaian bank account'
+                          : sheetCurrency === 'KES'
+                            ? 'Send to Kenyan bank account'
+                            : sheetCurrency === 'CAD'
+                              ? 'Send to Canadian bank account'
+                              : 'Send to US bank account',
+                    icon: <HugeiconsIcon icon={BankIcon} size={20} color="#6366F1" />,
+                    onPress: () => gateKyc(() => startWithdrawal('fiat')),
+                  },
+                ]),
             {
-              id: 'fiat',
-              label: `Send out ${selectedCurrency}`,
-              sublabel:
-                selectedCurrency === 'NGN'
-                  ? 'Send to Nigerian bank account'
-                  : selectedCurrency === 'EUR'
-                    ? 'Send via SEPA transfer'
-                    : 'Send to US bank account',
-              icon: <HugeiconsIcon icon={BankIcon} size={20} color="#6366F1" />,
-              onPress: () => startWithdrawal('fiat'),
+              id: 'p2p',
+              label: 'Send to People',
+              sublabel: 'Via RailTag, email, or phone',
+              icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#FF2E01" />,
+              onPress: startP2P,
             },
+            ...(Platform.OS === 'ios'
+              ? [
+                  {
+                    id: 'tap-to-pay',
+                    label: 'Tap to Pay',
+                    sublabel: 'Send to someone nearby',
+                    icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
+                    onPress: () => gateKyc(() => {
+                      setShowSendSheet(false);
+                      router.push('/tap-to-pay' as never);
+                    }),
+                  },
+                ]
+              : []),
           ]
         : [
             {
               id: 'crypto',
-              label: `Send ${selectedCurrency}`,
+              label: `Send ${sheetCurrency}`,
               sublabel: 'Send to wallet address',
               icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
               onPress: () => startWithdrawal('crypto'),
             },
           ]),
       {
-        id: isFiatAsset ? 'crypto' : 'fiat',
-        label: isFiatAsset ? 'Send to Wallet' : 'Send out fiat',
-        sublabel: isFiatAsset ? 'Send stablecoins to wallet address' : 'Send to bank account',
+        id: isSheetFiat ? 'crypto' : 'fiat',
+        label: isSheetFiat ? 'Send to Wallet' : 'Send out fiat',
+        sublabel: isSheetFiat ? 'Send stablecoins to wallet address' : 'Send to bank account',
         icon: (
-          <HugeiconsIcon icon={isFiatAsset ? Wallet01Icon : BankIcon} size={20} color="#6366F1" />
+          <HugeiconsIcon icon={isSheetFiat ? Wallet01Icon : BankIcon} size={20} color="#6366F1" />
         ),
-        onPress: () => startWithdrawal(isFiatAsset ? 'crypto' : 'fiat'),
+        onPress: () => isSheetFiat ? startWithdrawal('crypto') : gateKyc(() => startWithdrawal('fiat')),
       },
     ],
-    [startWithdrawal, selectedCurrency, isFiatAsset]
+    [startWithdrawal, startP2P, sheetCurrency, isSheetFiat, gateKyc]
   );
-
-  const startP2P = useCallback(() => {
-    setShowSendSheet(false);
-    router.push({ pathname: '/withdraw/[method]', params: { method: 'p2p' } } as never);
-  }, []);
 
   const sendMoreActions = useMemo<FundingAction[]>(
     () => [
-      {
-        id: 'p2p',
-        label: 'Send to People',
-        sublabel: 'Via RailTag, email, or phone',
-        icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#FF2E01" />,
-        onPress: startP2P,
-      },
+      ...(!isSheetFiat
+        ? [
+            {
+              id: 'p2p',
+              label: 'Send to People',
+              sublabel: 'Via RailTag, email, or phone',
+              icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#FF2E01" />,
+              onPress: startP2P,
+            },
+          ]
+        : []),
       ...(isAndroid
         ? [
             {
@@ -487,41 +581,7 @@ function DashboardScreen() {
           ]
         : []),
     ],
-    [isAndroid, startP2P, startWithdrawal]
-  );
-
-  const receiveScreens = useMemo<BottomSheetScreen[]>(
-    () => [
-      {
-        id: 'receive-main',
-        title: 'Add Funds',
-        subtitle: 'Choose one of the options\nbelow to add funds',
-        component: <FundingOptionsList actions={receiveMainActions} />,
-      },
-      {
-        id: 'receive-more',
-        title: 'More deposit options',
-        component: <FundingOptionsList actions={receiveMoreActions} />,
-      },
-    ],
-    [receiveMainActions, receiveMoreActions]
-  );
-
-  const sendScreens = useMemo<BottomSheetScreen[]>(
-    () => [
-      {
-        id: 'send-main',
-        title: 'Send Funds',
-        subtitle: 'Choose one of the options\nbelow to send funds',
-        component: <FundingOptionsList actions={sendMainActions} />,
-      },
-      {
-        id: 'send-more',
-        title: 'More send options',
-        component: <FundingOptionsList actions={sendMoreActions} />,
-      },
-    ],
-    [sendMainActions, sendMoreActions]
+    [isAndroid, isSheetFiat, startP2P, startWithdrawal]
   );
 
   return (
@@ -548,17 +608,17 @@ function DashboardScreen() {
         <View className="mb-2 flex-row gap-3">
           <Button
             title="Receive"
-            onPress={() => (bridgeActive ? setShowReceiveSheet(true) : setShowKYCSheet(true))}
+            onPress={() => openReceiveSheet()}
             leftIcon={<HugeiconsIcon icon={ArrowDownLeft01Icon} size={20} color="white" />}
             size="small"
             variant="black"
           />
           <Button
             title="Send"
-            onPress={() => (bridgeActive ? setShowSendSheet(true) : setShowKYCSheet(true))}
-            leftIcon={<HugeiconsIcon icon={ArrowUpRight01Icon} size={20} color="white" />}
+            onPress={() => openSendSheet()}
+            leftIcon={<HugeiconsIcon icon={ArrowUpRight01Icon} size={20} color="black" />}
             size="small"
-            variant="black"
+            variant="white"
           />
         </View>
 
@@ -654,14 +714,14 @@ function DashboardScreen() {
         visible={showReceiveSheet}
         onClose={() => setShowReceiveSheet(false)}
         showCloseButton={false}>
-        <SheetHeader title="Receive Funds" showCurrencySelector />
+        <SheetHeader title="Receive Funds" showCurrencySelector selectedCurrency={sheetCurrency} onCurrencyChange={onSheetCurrencyChange} />
         <ExpandableOptionList main={receiveMainActions} more={receiveMoreActions} />
       </GorhomBottomSheet>
       <GorhomBottomSheet
         visible={showSendSheet}
         onClose={() => setShowSendSheet(false)}
         showCloseButton={false}>
-        <SheetHeader title="Send Funds" showCurrencySelector />
+        <SheetHeader title="Send Funds" showCurrencySelector selectedCurrency={sheetCurrency} onCurrencyChange={onSheetCurrencyChange} />
         <ExpandableOptionList main={sendMainActions} more={sendMoreActions} />
       </GorhomBottomSheet>
       <SpendBreakdownSheet
@@ -712,7 +772,7 @@ function DashboardScreen() {
       <VirtualAccountSheet
         visible={showVirtualAccountSheet}
         onClose={() => setShowVirtualAccountSheet(false)}
-        currency={selectedCurrency === 'EUR' ? 'EUR' : selectedCurrency === 'NGN' ? 'NGN' : 'USD'}
+        currency={sheetCurrency === 'EUR' ? 'EUR' : sheetCurrency === 'NGN' ? 'NGN' : 'USD'}
       />
       <GorhomBottomSheet visible={showMicroLoanSheet} onClose={() => setShowMicroLoanSheet(false)}>
         <View className="px-5">
