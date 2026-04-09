@@ -25,6 +25,7 @@ export default function PajVerifyScreen() {
   const [maskedEmail, setMaskedEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
+  const [otp, setOtp] = useState('');
   const otpRef = useRef<any>(null);
   const { showError, showInfo } = useFeedbackPopup();
 
@@ -64,6 +65,7 @@ export default function PajVerifyScreen() {
         router.back();
       } catch {
         setErrorMessage('Invalid or expired code. Please try again.');
+        setOtp('');
         otpRef.current?.clear?.();
       }
     },
@@ -72,6 +74,7 @@ export default function PajVerifyScreen() {
 
   const handleOTPComplete = useCallback(
     (code: string) => {
+      setOtp(code);
       if (code.length === 6 && !verify.isPending) {
         handleVerify(code);
       }
@@ -85,6 +88,7 @@ export default function PajVerifyScreen() {
       await initiate.mutateAsync();
       setResendTimer(60);
       setErrorMessage('');
+      setOtp('');
       otpRef.current?.clear?.();
       showInfo('Code Resent', 'A new verification code has been sent.');
     } catch {
@@ -174,9 +178,8 @@ export default function PajVerifyScreen() {
                     title="Verify"
                     variant="black"
                     loading={verify.isPending}
-                    onPress={() => {
-                      /* auto-submits on complete */
-                    }}
+                    disabled={otp.length < 6}
+                    onPress={() => handleVerify(otp)}
                   />
 
                   <View className="mt-6 items-center">

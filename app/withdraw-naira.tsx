@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown, FadeIn, FadeInUp, SlideInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Button } from '@/components/ui';
@@ -69,6 +69,13 @@ export default function WithdrawNairaScreen() {
   const { data: orderStatus } = usePajOrderStatus(orderId, step === 'polling');
   const { data: station } = useStation();
   const insets = useSafeAreaInsets();
+
+  // Refetch banks when returning from paj-verify (session may now be valid)
+  useFocusEffect(
+    useCallback(() => {
+      if (banksError) refetchBanks();
+    }, [banksError, refetchBanks])
+  );
 
   const offRampRate = ratesData?.offRampRate?.rate ?? 0;
   const parsedAmount = useMemo(() => {
