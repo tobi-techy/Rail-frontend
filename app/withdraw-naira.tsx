@@ -32,7 +32,6 @@ import {
   useStation,
 } from '@/api/hooks';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { PajVerificationSheet } from '@/components/sheets/PajVerificationSheet';
 import {
   ArrowLeft01Icon,
   CheckmarkCircle02Icon,
@@ -55,12 +54,16 @@ export default function WithdrawNairaScreen() {
   const [accountName, setAccountName] = useState('');
   const [rawAmount, setRawAmount] = useState('0');
   const [bankSearch, setBankSearch] = useState('');
-  const [showVerification, setShowVerification] = useState(false);
   const [orderId, setOrderId] = useState('');
 
   const { showError } = useFeedbackPopup();
   const { data: ratesData } = usePajRates();
-  const { data: banksData, isLoading: banksLoading, error: banksError, refetch: refetchBanks } = usePajBanks();
+  const {
+    data: banksData,
+    isLoading: banksLoading,
+    error: banksError,
+    refetch: refetchBanks,
+  } = usePajBanks();
   const resolveBank = usePajResolveBankAccount();
   const offramp = usePajOfframp();
   const { data: orderStatus } = usePajOrderStatus(orderId, step === 'polling');
@@ -89,15 +92,10 @@ export default function WithdrawNairaScreen() {
     return banks.filter((b) => b.name.toLowerCase().includes(q));
   }, [banks, bankSearch]);
 
-  const handleVerified = useCallback(() => {
-    setShowVerification(false);
-    refetchBanks();
-  }, [refetchBanks]);
-
   // When moving to bank step, check if Paj session is needed
   const goToBankStep = useCallback(() => {
     if (banksError) {
-      setShowVerification(true);
+      router.push('/paj-verify');
       return;
     }
     setStep('bank');
@@ -132,7 +130,7 @@ export default function WithdrawNairaScreen() {
           onError: (err: any) => {
             setAccountName('');
             if (err?.code === 'PAJ_VERIFICATION_REQUIRED') {
-              setShowVerification(true);
+              router.push('/paj-verify');
               return;
             }
             showError('Could not verify this account number');
@@ -154,11 +152,20 @@ export default function WithdrawNairaScreen() {
 
   const goBack = useCallback(() => {
     switch (step) {
-      case 'amount': router.back(); break;
-      case 'bank': setStep('amount'); break;
-      case 'account': setStep('bank'); break;
-      case 'confirm': setStep('account'); break;
-      default: router.back();
+      case 'amount':
+        router.back();
+        break;
+      case 'bank':
+        setStep('amount');
+        break;
+      case 'account':
+        setStep('bank');
+        break;
+      case 'confirm':
+        setStep('account');
+        break;
+      default:
+        router.back();
     }
   }, [step]);
 
@@ -174,7 +181,7 @@ export default function WithdrawNairaScreen() {
       setStep('polling');
     } catch (err: any) {
       if (err?.code === 'PAJ_VERIFICATION_REQUIRED') {
-        setShowVerification(true);
+        router.push('/paj-verify');
         return;
       }
       if (err?.code === 'INSUFFICIENT_BALANCE') {
@@ -208,7 +215,7 @@ export default function WithdrawNairaScreen() {
           <View className="flex-1 items-center justify-center px-2">
             <Text className="font-body text-[13px] text-white/80">Enter amount in NGN</Text>
             <View className="mt-2">
-              <AnimatedAmount amount={displayAmount} />
+              <AnimatedAmount amount={displayAmount} prefix="₦" />
             </View>
             {offRampRate > 0 && parsedAmount > 0 && (
               <Animated.View entering={FadeIn.duration(300)}>
@@ -228,7 +235,7 @@ export default function WithdrawNairaScreen() {
             </Animated.View>
           </View>
 
-          <Animated.View entering={SlideInUp.delay(100).duration(500)} className="pb-3 pt-1 px-0">
+          <Animated.View entering={SlideInUp.delay(100).duration(500)} className="px-0 pb-3 pt-1">
             <Button
               title="Continue"
               onPress={goToBankStep}
@@ -259,12 +266,6 @@ export default function WithdrawNairaScreen() {
         <Text className="absolute bottom-2 left-0 right-0 text-center font-body text-[11px] text-white/40">
           Powered by Paj Cash
         </Text>
-
-        <PajVerificationSheet
-          visible={showVerification}
-          onClose={() => setShowVerification(false)}
-          onVerified={handleVerified}
-        />
       </SafeAreaView>
     );
   }
@@ -495,8 +496,8 @@ export default function WithdrawNairaScreen() {
                       Processing withdrawal
                     </Text>
                     <Text className="mt-2 text-center font-body text-[14px] text-text-secondary">
-                      Sending ₦{parsedAmount.toLocaleString()} to {selectedBank?.name}. This
-                      usually takes a few minutes.
+                      Sending ₦{parsedAmount.toLocaleString()} to {selectedBank?.name}. This usually
+                      takes a few minutes.
                     </Text>
                   </>
                 )}
@@ -509,12 +510,6 @@ export default function WithdrawNairaScreen() {
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <PajVerificationSheet
-        visible={showVerification}
-        onClose={() => setShowVerification(false)}
-        onVerified={handleVerified}
-      />
     </SafeAreaView>
   );
 }

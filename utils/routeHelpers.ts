@@ -2,11 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { userService } from '@/api/services';
 import { logger } from '@/lib/logger';
 import { ROUTES } from '@/constants/routes';
-import {
-  isKycSubmissionRequired,
-  isOnboardingAppReady,
-  isProfileCompletionRequired,
-} from '@/utils/onboardingFlow';
+import { isOnboardingAppReady, isProfileCompletionRequired } from '@/utils/onboardingFlow';
 import { isAuthSessionInvalidError } from '@/utils/authErrorClassifier';
 import type { RouteConfig, AuthState } from '@/types/routing.types';
 
@@ -86,6 +82,10 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     segments[0] === 'kyc' ||
     segments[0] === 'card' ||
     segments[0] === 'fund-crosschain' ||
+    segments[0] === 'fund-naira' ||
+    segments[0] === 'withdraw-naira' ||
+    segments[0] === 'paj-verify' ||
+    segments[0] === 'tap-to-pay' ||
     pathname.startsWith('/spending-stash') ||
     pathname.startsWith('/investment-stash') ||
     pathname.startsWith('/withdraw') ||
@@ -99,6 +99,10 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/passkey-settings') ||
     pathname.startsWith('/receive') ||
     pathname.startsWith('/fund-crosschain') ||
+    pathname.startsWith('/fund-naira') ||
+    pathname.startsWith('/withdraw-naira') ||
+    pathname.startsWith('/paj-verify') ||
+    pathname.startsWith('/tap-to-pay') ||
     pathname.startsWith('/kyc') ||
     pathname.startsWith('/card'),
   isOnWelcomeScreen: pathname === '/' || pathname === normalizeRoutePath(ROUTES.INTRO),
@@ -136,7 +140,6 @@ const handleAuthenticatedUser = (
   // Prefer top-level onboardingStatus because it is updated during onboarding flows
   // (e.g. after complete-profile) before the nested user object is refreshed.
   const userOnboardingStatus = onboardingStatus || user?.onboardingStatus;
-  const needsKYC = isKycSubmissionRequired(userOnboardingStatus);
   const needsProfile = isProfileCompletionRequired(userOnboardingStatus);
   const needsPasscodeSetup = !hasPasscode && !needsProfile && Boolean(userOnboardingStatus);
 
@@ -157,21 +160,6 @@ const handleAuthenticatedUser = (
       return null;
     }
     return ROUTES.AUTH.CREATE_PASSCODE;
-  }
-
-  // KYC-required users can stay in the app, on passcode creation, on profile screens (transitioning), or on KYC screens.
-  if (needsKYC) {
-    if (
-      config.inAppGroup ||
-      config.isOnCreatePasscode ||
-      config.isOnConfirmPasscode ||
-      config.isOnCreateRailTag ||
-      config.isOnCompleteProfile
-    )
-      return null;
-    // User needs KYC but isn't in the app group (e.g. fresh app open at /)
-    // Route them to /kyc instead of falling through to TABS
-    return '/kyc';
   }
 
   // If on passcode screen and session is valid -> go to dashboard

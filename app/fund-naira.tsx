@@ -16,13 +16,9 @@ import * as Haptics from 'expo-haptics';
 import { Button } from '@/components/ui';
 import { Keypad } from '@/components/molecules/Keypad';
 import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
-import {
-  normalizeAmount,
-  toDisplayAmount,
-} from '@/app/withdraw/method-screen/utils';
+import { normalizeAmount, toDisplayAmount } from '@/app/withdraw/method-screen/utils';
 import { usePajRates, usePajOnramp, usePajOrderStatus } from '@/api/hooks';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { PajVerificationSheet } from '@/components/sheets/PajVerificationSheet';
 import {
   ArrowLeft01Icon,
   Copy01Icon,
@@ -74,7 +70,6 @@ function CopyRow({ label, value }: { label: string; value: string }) {
 export default function FundNairaScreen() {
   const [step, setStep] = useState<Step>('amount');
   const [rawAmount, setRawAmount] = useState('0');
-  const [showVerification, setShowVerification] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [orderDetails, setOrderDetails] = useState<{
     accountNumber: string;
@@ -133,17 +128,12 @@ export default function FundNairaScreen() {
       setStep('pay');
     } catch (err: any) {
       if (err?.code === 'PAJ_VERIFICATION_REQUIRED') {
-        setShowVerification(true);
+        router.push('/paj-verify');
         return;
       }
       showError(err?.message || 'Failed to create order');
     }
   }, [parsedAmount, onramp, showError]);
-
-  const handleVerified = useCallback(() => {
-    setShowVerification(false);
-    handleCreateOrder();
-  }, [handleCreateOrder]);
 
   // Amount step uses the red keypad screen
   if (step === 'amount') {
@@ -168,7 +158,7 @@ export default function FundNairaScreen() {
           <View className="flex-1 items-center justify-center px-2">
             <Text className="font-body text-[13px] text-white/80">Enter amount in NGN</Text>
             <View className="mt-2">
-              <AnimatedAmount amount={displayAmount} />
+              <AnimatedAmount amount={displayAmount} prefix="₦" />
             </View>
             {onrampRate > 0 && parsedAmount > 0 && (
               <Animated.View entering={FadeIn.duration(300)}>
@@ -179,7 +169,7 @@ export default function FundNairaScreen() {
             )}
           </View>
 
-          <Animated.View entering={SlideInUp.delay(100).duration(500)} className="pb-3 pt-1 px-0">
+          <Animated.View entering={SlideInUp.delay(100).duration(500)} className="px-0 pb-3 pt-1">
             <Button
               title="Continue"
               onPress={handleCreateOrder}
@@ -211,12 +201,6 @@ export default function FundNairaScreen() {
         <Text className="absolute bottom-2 left-0 right-0 text-center font-body text-[11px] text-white/40">
           Powered by Paj Cash
         </Text>
-
-        <PajVerificationSheet
-          visible={showVerification}
-          onClose={() => setShowVerification(false)}
-          onVerified={handleVerified}
-        />
       </SafeAreaView>
     );
   }
@@ -262,10 +246,7 @@ export default function FundNairaScreen() {
                 <View className="h-px bg-[#EBEBEB]" />
                 <CopyRow label="Account Name" value={orderDetails.accountName} />
                 <View className="h-px bg-[#EBEBEB]" />
-                <CopyRow
-                  label="Amount"
-                  value={`₦${orderDetails.fiatAmount.toLocaleString()}`}
-                />
+                <CopyRow label="Amount" value={`₦${orderDetails.fiatAmount.toLocaleString()}`} />
               </View>
 
               <View className="mt-4 flex-row items-start gap-2 rounded-xl bg-[#FFF7ED] p-3">
@@ -342,12 +323,6 @@ export default function FundNairaScreen() {
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <PajVerificationSheet
-        visible={showVerification}
-        onClose={() => setShowVerification(false)}
-        onVerified={handleVerified}
-      />
     </SafeAreaView>
   );
 }
