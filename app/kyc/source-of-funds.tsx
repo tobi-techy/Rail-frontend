@@ -160,7 +160,7 @@ export default function SourceOfFundsScreen() {
         return;
       }
 
-      setSubmitError('Could not start verification. Please try again.');
+      setSubmitError(apiError?.message || 'Could not start verification. Please try again.');
     }
   };
 
