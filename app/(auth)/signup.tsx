@@ -7,12 +7,8 @@ import { AuthGradient, InputField, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useRegister } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { signupSchema, fieldError } from '@/utils/schemas';
 import { useAuthStore } from '@/stores/authStore';
-
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
 
 const normalizeRegistrationMethod = (value?: string): 'password' | 'passkey' => {
   const normalized = value?.trim().toLowerCase();
@@ -36,19 +32,14 @@ export default function SignUp() {
   );
 
   const handleSignUp = () => {
-    const normalizedEmail = email.trim().toLowerCase();
-
-    if (!normalizedEmail) {
-      setEmailError('Email is required');
-      showWarning('Missing Email', 'Please enter your email address.');
+    const result = signupSchema.safeParse({ email });
+    if (!result.success) {
+      const msg = fieldError(result.error, 'email');
+      setEmailError(msg);
+      showWarning('Invalid Email', msg);
       return;
     }
-
-    if (!isValidEmail(normalizedEmail)) {
-      setEmailError('Please enter a valid email address');
-      showWarning('Invalid Email', 'Please enter a valid email address.');
-      return;
-    }
+    const normalizedEmail = result.data.email;
 
     setEmailError('');
     updateRegistrationData({ authMethod: registrationMethod });

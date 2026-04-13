@@ -1,11 +1,14 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 
-const mod = Platform.OS === 'ios' ? NativeModules.RailTapToPay : null;
+const mod =
+  Platform.OS === 'ios' || Platform.OS === 'android'
+    ? NativeModules.RailTapToPay
+    : null;
 const emitter = mod ? new NativeEventEmitter(mod) : null;
 
 export type NearbyPeer = {
-  peerId: string;
+  peerId: string;   // opaque session UUID — never user-controlled
   railtag: string;
   displayName: string;
 };
@@ -15,41 +18,61 @@ export type TransferRequest = {
   amount: string;
   senderName: string;
   senderRailtag: string;
+  nonce: string;  // server-issued nonce from sender's intent — must be echoed back
+};
+
+// nonce is the server-issued value echoed back by the recipient
+export type TransferAcceptedEvent = {
+  peerId: string;
+  nonce: string;
 };
 
 export function useTapToPay(railtag: string, displayName: string) {
   const [peers, setPeers] = useState<NearbyPeer[]>([]);
+  const [peerDistances, setPeerDistances] = useState<Record<string, number>>({});
   const [incomingRequest, setIncomingRequest] = useState<TransferRequest | null>(null);
-  const [transferAccepted, setTransferAccepted] = useState<string | null>(null);
+  const [transferAccepted, setTransferAccepted] = useState<TransferAcceptedEvent | null>(null);
   const [transferDeclined, setTransferDeclined] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const peersRef = useRef<NearbyPeer[]>([]);
+  const distancesRef = useRef<Record<string, number>>({});
+  const distanceFlushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const railtagRef = useRef(railtag);
+  const displayNameRef = useRef(displayName);
+  railtagRef.current = railtag;
+  displayNameRef.current = displayName;
 
   const start = useCallback(() => {
     if (!mod) return;
-    mod.startDiscovery(railtag, displayName);
+    mod.startDiscovery(railtagRef.current, displayNameRef.current);
     setIsActive(true);
-  }, [railtag, displayName]);
+  }, []);
 
   const stop = useCallback(() => {
     if (!mod) return;
     mod.stopDiscovery();
     setPeers([]);
     peersRef.current = [];
+    distancesRef.current = {};
+    setPeerDistances({});
+    if (distanceFlushTimer.current) { clearTimeout(distanceFlushTimer.current); distanceFlushTimer.current = null; }
     setIsActive(false);
     setIncomingRequest(null);
     setTransferAccepted(null);
     setTransferDeclined(false);
   }, []);
 
-  const sendIntent = useCallback((peerId: string, amount: string) => {
+  // nonce is the server-issued intent nonce — included in the MC payload
+  const sendIntent = useCallback((peerId: string, amount: string, nonce: string) => {
     if (!mod) return;
-    mod.sendTransferIntent(peerId, amount);
+    mod.sendTransferIntent(peerId, amount, nonce);
   }, []);
 
-  const respond = useCallback((peerId: string, accepted: boolean) => {
+  // nonce must be echoed back so the sender can confirm with the server
+  const respond = useCallback((peerId: string, accepted: boolean, nonce: string) => {
     if (!mod) return;
-    mod.respondToTransfer(peerId, accepted);
+    mod.respondToTransfer(peerId, accepted, nonce);
     setIncomingRequest(null);
   }, []);
 
@@ -64,16 +87,25 @@ export function useTapToPay(railtag: string, displayName: string) {
       emitter.addListener('onPeerLost', ({ peerId }: { peerId: string }) => {
         peersRef.current = peersRef.current.filter((p) => p.peerId !== peerId);
         setPeers([...peersRef.current]);
+        delete distancesRef.current[peerId];
+        setPeerDistances({ ...distancesRef.current });
+      }),
+      emitter.addListener('onPeerDistance', ({ peerId, distance }: { peerId: string; distance: number }) => {
+        distancesRef.current[peerId] = distance;
+        // Throttle state updates to ~4fps to avoid excessive re-renders
+        if (!distanceFlushTimer.current) {
+          distanceFlushTimer.current = setTimeout(() => {
+            setPeerDistances({ ...distancesRef.current });
+            distanceFlushTimer.current = null;
+          }, 250);
+        }
       }),
       emitter.addListener('onTransferRequest', (req: TransferRequest) => {
         setIncomingRequest(req);
       }),
-      emitter.addListener(
-        'onTransferAccepted',
-        ({ responderRailtag }: { responderRailtag: string }) => {
-          setTransferAccepted(responderRailtag);
-        }
-      ),
+      emitter.addListener('onTransferAccepted', (evt: TransferAcceptedEvent) => {
+        setTransferAccepted(evt);
+      }),
       emitter.addListener('onTransferDeclined', () => {
         setTransferDeclined(true);
         setTimeout(() => setTransferDeclined(false), 3000);
@@ -81,19 +113,18 @@ export function useTapToPay(railtag: string, displayName: string) {
     ];
 
     return () => {
-      for (const sub of subs) {
-        sub.remove();
-      }
+      for (const sub of subs) sub.remove();
     };
   }, []);
 
   return {
     peers,
+    peerDistances,
     incomingRequest,
     transferAccepted,
     transferDeclined,
     isActive,
-    isSupported: Platform.OS === 'ios' && !!mod,
+    isSupported: !!mod,
     start,
     stop,
     sendIntent,

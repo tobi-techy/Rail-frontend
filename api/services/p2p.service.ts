@@ -19,6 +19,23 @@ export interface P2PSendRequest {
   identifier: string;
   amount: string;
   note?: string;
+  idempotencyKey?: string;
+}
+
+export interface TapIntentRequest {
+  recipientRailtag: string;
+  amount: string;
+}
+
+export interface TapIntentResponse {
+  nonce: string;
+  recipientId: string;
+  expiresAt: string;
+}
+
+export interface TapConfirmRequest {
+  nonce: string;
+  idempotencyKey: string;
 }
 
 export interface P2PTransfer {
@@ -82,5 +99,13 @@ export const p2pService = {
 
   async checkRailTag(railTag: string): Promise<CheckRailTagResponse> {
     return apiClient.post<CheckRailTagResponse>('/v1/p2p/railtag/check', { railTag });
+  },
+
+  async tapIntent(data: TapIntentRequest): Promise<TapIntentResponse> {
+    return apiClient.post<TapIntentResponse>('/v1/p2p/tap/intent', data);
+  },
+
+  async tapConfirm(data: TapConfirmRequest): Promise<P2PSendResponse> {
+    return apiClient.post<P2PSendResponse>('/v1/p2p/tap/confirm', data);
   },
 };

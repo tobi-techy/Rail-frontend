@@ -101,7 +101,6 @@ interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: (
-    password: string,
     reason?: string
   ) => Promise<{ funds_swept: string; sweep_tx_hash?: string }>;
   register: (email: string) => Promise<void>;
@@ -346,7 +345,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         );
       },
 
-      deleteAccount: async (password, reason?) => {
+      deleteAccount: async (reason?) => {
         set({ isLoading: true, error: null });
         try {
           // Get Apple auth code for token revocation if Apple Sign In is available
@@ -362,7 +361,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             // Not an Apple user or user cancelled — continue with deletion
           }
 
-          const response = await authService.deleteAccount(password, reason, appleAuthCode);
+          const response = await authService.deleteAccount(reason, appleAuthCode);
           set({ ...initialState, hasPasscode: false, hasCompletedOnboarding: false });
           return { funds_swept: response.funds_swept, sweep_tx_hash: response.sweep_tx_hash };
         } catch (error: any) {

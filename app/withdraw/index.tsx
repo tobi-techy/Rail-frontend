@@ -5,7 +5,8 @@ import { router } from 'expo-router';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { BankIcon, CoinIcon } from '@/assets/svg/filled';
-import { useKycGate } from '@/hooks/useKycGate';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { ROUTES } from '@/constants/routes';
 import { useKYCStatus } from '@/api/hooks';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 import { KYCVerificationSheet } from '@/components/sheets';
@@ -51,7 +52,7 @@ function WithdrawOptionCard({
 
 export default function WithdrawMethodSelectorScreen() {
   const [showKYCSheet, setShowKYCSheet] = useState(false);
-  const { requireKyc } = useKycGate();
+  const { requireFeature } = useFeatureGate();
   const { data: kycStatus } = useKYCStatus();
   const { track } = useAnalytics();
 
@@ -83,12 +84,15 @@ export default function WithdrawMethodSelectorScreen() {
               title="Fiat"
               subtitle="Withdraw to US bank account via routing details"
               onPress={() =>
-                requireKyc(
+                requireFeature(
                   () => {
                     track(ANALYTICS_EVENTS.WITHDRAW_INITIATED, { method: 'fiat' });
                     router.push('/withdraw/fiat' as never);
                   },
-                  () => setShowKYCSheet(true)
+                  {
+                    onProfileRequired: () => router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never),
+                    onKycRequired: () => setShowKYCSheet(true),
+                  }
                 )
               }
               icon={<BankIcon width={24} height={24} />}

@@ -1,7 +1,6 @@
 import { ROUTES } from '../../constants/routes';
 import {
   getPostAuthRoute,
-  isKycSubmissionRequired,
   isOnboardingAppReady,
   isProfileCompletionRequired,
 } from '../../utils/onboardingFlow';
@@ -11,7 +10,7 @@ describe('onboardingFlow helpers', () => {
     expect(getPostAuthRoute('started')).toBe(ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO);
   });
 
-  it('routes wallets_pending to KYC (profile already completed)', () => {
-    expect(getPostAuthRoute('wallets_pending')).toBe('/kyc');
+  it('routes wallets_pending to tabs (KYC no longer blocks app access)', () => {
+    expect(getPostAuthRoute('wallets_pending')).toBe(ROUTES.TABS);
   });
 });

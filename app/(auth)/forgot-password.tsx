@@ -9,11 +9,9 @@ import { OTPInput } from '@/components/ui/OTPInput';
 import { ROUTES } from '@/constants/routes';
 import { useForgotPassword, useVerifyResetCode, useResetPassword } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { validatePassword } from '@/utils/inputValidator';
+import { emailSchema, resetPasswordSchema, fieldError } from '@/utils/schemas';
 
 type Step = 'email' | 'otp' | 'password';
-
-const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 export default function ForgotPassword() {
   const [step, setStep] = useState<Step>('email');
@@ -36,19 +34,15 @@ export default function ForgotPassword() {
 
   // Step 1: Send OTP
   const handleSendCode = useCallback(() => {
-    const normalized = email.trim().toLowerCase();
-    if (!normalized) {
-      setEmailError('Email is required');
-      return;
-    }
-    if (!isValidEmail(normalized)) {
-      setEmailError('Enter a valid email');
+    const result = emailSchema.safeParse(email);
+    if (!result.success) {
+      setEmailError(result.error.issues[0]?.message ?? 'Enter a valid email');
       return;
     }
     setEmailError('');
     Keyboard.dismiss();
     forgotPassword(
-      { email: normalized },
+      { email: result.data },
       {
         onSuccess: () => setStep('otp'),
         onError: (e: any) => showError('Failed', e?.message || 'Could not send reset code'),
@@ -79,13 +73,10 @@ export default function ForgotPassword() {
 
   // Step 3: Set new password
   const handleResetPassword = useCallback(() => {
-    const v = validatePassword(password);
-    if (!v.isValid) {
-      setPasswordError(v.errors[0] ?? 'Password too weak');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setConfirmError('Passwords don\u2019t match');
+    const result = resetPasswordSchema.safeParse({ password, confirmPassword });
+    if (!result.success) {
+      setPasswordError(fieldError(result.error, 'password'));
+      setConfirmError(fieldError(result.error, 'confirmPassword'));
       return;
     }
     setPasswordError('');

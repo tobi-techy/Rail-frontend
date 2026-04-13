@@ -266,12 +266,11 @@ export const authService = {
    * @returns Deletion result with funds swept info
    */
   async deleteAccount(
-    password: string,
     reason?: string,
     appleAuthCode?: string
   ): Promise<{ message: string; funds_swept: string; sweep_tx_hash?: string }> {
     return apiClient.delete(AUTH_ENDPOINTS.DELETE_ACCOUNT, {
-      data: { password, reason, apple_auth_code: appleAuthCode },
+      data: { reason, apple_auth_code: appleAuthCode },
     });
   },
 };

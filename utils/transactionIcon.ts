@@ -25,6 +25,8 @@ const TOKEN_ICON_BY_SYMBOL: Record<string, SvgComponent> = {
   GBP: SvgAssets.GbpIcon,
   EUR: SvgAssets.EurIcon,
   CAD: SvgAssets.CadIcon,
+  GHS: SvgAssets.GhsIcon,
+  KES: SvgAssets.KesIcon,
   MXN: SvgAssets.MxnIcon,
 };
 
@@ -34,6 +36,8 @@ const FIAT_ICON_BY_SYMBOL: Record<string, SvgComponent> = {
   GBP: SvgAssets.GbpIcon,
   NGN: SvgAssets.NgnIcon,
   CAD: SvgAssets.CadIcon,
+  GHS: SvgAssets.GhsIcon,
+  KES: SvgAssets.KesIcon,
   MXN: SvgAssets.MxnIcon,
 };
 

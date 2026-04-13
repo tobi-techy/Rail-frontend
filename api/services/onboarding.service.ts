@@ -12,11 +12,22 @@ import type {
 } from '../types';
 
 const ONBOARDING_ENDPOINTS = {
+  BASIC_COMPLETE: '/v1/onboarding/basic-complete',
   COMPLETE: '/v1/onboarding/complete',
   KYC_SUBMIT: '/v1/onboarding/kyc/submit',
 };
 
 export const onboardingService = {
+  /**
+   * Basic complete — slim signup with name + password only
+   */
+  async basicComplete(data: { firstName: string; lastName: string; password: string }) {
+    return apiClient.post<{ userId: string; onboardingStatus: string; message: string }>(
+      ONBOARDING_ENDPOINTS.BASIC_COMPLETE,
+      data
+    );
+  },
+
   /**
    * Complete onboarding process for an authenticated user
    * Sets profile/password and triggers account provisioning

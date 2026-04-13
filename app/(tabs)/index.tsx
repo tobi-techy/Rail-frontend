@@ -3,7 +3,7 @@ import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo, useR
 import { router, useNavigation, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { getAvatarConfig } from '@/utils/avatarConfig';
+import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 import { PhantomIcon, SolflareIcon, SolanaIcon, VisaWhite } from '@/assets/svg';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
@@ -22,10 +22,11 @@ import {
 import { SheetHeader, ExpandableOptionList } from '@/components/sheets/FundingSheetComponents';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { ROUTES } from '@/constants/routes';
 import { useStation, useKYCStatus } from '@/api/hooks';
 import { useCards } from '@/api/hooks/useCard';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
-import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import {
   normalizeWithdrawals,
   depositToTransaction,
@@ -240,7 +241,6 @@ function DashboardScreen() {
     () => [userFirstName, userLastName].filter(Boolean).join(' ') || userEmail || 'Rail User',
     [userFirstName, userLastName, userEmail]
   );
-  const avatarConfig = useMemo(() => getAvatarConfig(avatarName), [avatarName]);
 
   // Reset sheet nav on close
   useEffect(() => {
@@ -296,7 +296,7 @@ function DashboardScreen() {
         </View>
       ),
     });
-  }, [navigation, avatarConfig]);
+  }, [navigation]);
 
   // Derived values
   const hasData = Boolean(station?.total_balance) && !isStationPending;
@@ -318,7 +318,6 @@ function DashboardScreen() {
   }, [deposits.data, withdrawals.data]);
 
   const kycApproved = kycStatus?.status === 'approved' && kycStatus?.verified === true;
-  const bridgeActive = kycStatus?.bridge?.status === 'active';
 
   const hasCard = Boolean(cardsData?.cards && cardsData.cards.length > 0);
 
@@ -337,13 +336,22 @@ function DashboardScreen() {
     [sheetCurrency]
   );
 
-  // KYC gate — wraps an action so it shows KYC sheet if not verified
-  const gateKyc = useCallback((action: () => void) => {
-    if (bridgeActive) { action(); return; }
-    setShowSendSheet(false);
-    setShowReceiveSheet(false);
-    setShowKYCSheet(true);
-  }, [bridgeActive]);
+  // Feature gate — checks profile completion then KYC
+  const { requireFeature } = useFeatureGate();
+  const gateFeature = useCallback((action: () => void) => {
+    requireFeature(action, {
+      onProfileRequired: () => {
+        setShowSendSheet(false);
+        setShowReceiveSheet(false);
+        router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never);
+      },
+      onKycRequired: () => {
+        setShowSendSheet(false);
+        setShowReceiveSheet(false);
+        setShowKYCSheet(true);
+      },
+    });
+  }, [requireFeature]);
 
   // Funding action lists
   const isSheetFiat =
@@ -360,7 +368,7 @@ function DashboardScreen() {
                   label: 'Fund with Naira',
                   sublabel: 'Deposit NGN via bank transfer',
                   icon: <HugeiconsIcon icon={BankIcon} size={20} color="#008751" />,
-                  onPress: () => gateKyc(() => {
+                  onPress: () => gateFeature(() => {
                     setShowReceiveSheet(false);
                     router.push('/fund-naira' as never);
                   }),
@@ -372,7 +380,7 @@ function DashboardScreen() {
                   label: `Receive ${sheetCurrency}`,
                   sublabel: `Receive via ${sheetCurrency === 'EUR' ? 'SEPA' : 'bank'} transfer`,
                   icon: <HugeiconsIcon icon={BankIcon} size={20} color="#6366F1" />,
-                  onPress: () => gateKyc(() => {
+                  onPress: () => gateFeature(() => {
                     setShowReceiveSheet(false);
                     setShowVirtualAccountSheet(true);
                   }),
@@ -383,10 +391,10 @@ function DashboardScreen() {
             label: 'Receive via Crypto',
             sublabel: 'Receive stablecoins via wallet address',
             icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
-            onPress: () => {
+            onPress: () => gateFeature(() => {
               setShowReceiveSheet(false);
               router.push('/receive' as never);
-            },
+            }),
           },
         ]
       : [
@@ -395,23 +403,23 @@ function DashboardScreen() {
             label: `Receive ${sheetCurrency}`,
             sublabel: 'Receive via wallet address',
             icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
-            onPress: () => {
+            onPress: () => gateFeature(() => {
               setShowReceiveSheet(false);
               router.push('/receive' as never);
-            },
+            }),
           },
           {
             id: 'cross-chain',
             label: 'Deposit from any chain',
             sublabel: 'ETH, Arbitrum, Base, Starknet, BNB & more',
             icon: <HugeiconsIcon icon={InternetIcon} size={20} color="#6366F1" />,
-            onPress: () => {
+            onPress: () => gateFeature(() => {
               setShowReceiveSheet(false);
               router.push('/fund-crosschain');
-            },
+            }),
           },
         ],
-    [sheetCurrency, isSheetFiat, gateKyc]
+    [sheetCurrency, isSheetFiat, gateFeature]
   );
 
   const receiveMoreActions = useMemo<FundingAction[]>(
@@ -423,21 +431,21 @@ function DashboardScreen() {
               label: 'Seed Vault / MWA',
               sublabel: 'Fund with any Solana wallet — Seed Vault on Seeker',
               icon: <SolanaIcon width={28} height={28} />,
-              onPress: () => startWithdrawal('mwa-fund', 'fund'),
+              onPress: () => gateFeature(() => startWithdrawal('mwa-fund', 'fund')),
             },
             {
               id: 'phantom',
               label: 'Phantom',
               sublabel: 'Send USDC from Phantom to Rail',
               icon: <PhantomIcon width={28} height={28} />,
-              onPress: () => startWithdrawal('phantom', 'fund'),
+              onPress: () => gateFeature(() => startWithdrawal('phantom', 'fund')),
             },
             {
               id: 'solflare',
               label: 'Solflare',
               sublabel: 'Send USDC from Solflare to Rail',
               icon: <SolflareIcon width={28} height={28} />,
-              onPress: () => startWithdrawal('solflare', 'fund'),
+              onPress: () => gateFeature(() => startWithdrawal('solflare', 'fund')),
             },
           ]
         : []),
@@ -446,61 +454,93 @@ function DashboardScreen() {
         label: 'Solana Pay',
         sublabel: 'Pay with Solana Pay',
         icon: <SolanaIcon width={28} height={28} />,
-        onPress: () => {
+        onPress: () => gateFeature(() => {
           setShowReceiveSheet(false);
           setShowSolanaPayScan(true);
-        },
+        }),
       },
     ],
-    [isAndroid, startWithdrawal]
+    [isAndroid, startWithdrawal, gateFeature]
   );
 
   const startP2P = useCallback(() => {
-    setShowSendSheet(false);
-    router.push({ pathname: '/withdraw/[method]', params: { method: 'p2p' } } as never);
-  }, []);
+    gateFeature(() => {
+      setShowSendSheet(false);
+      router.push({ pathname: '/withdraw/[method]', params: { method: 'p2p' } } as never);
+    });
+  }, [gateFeature]);
 
   const sendMainActions = useMemo<FundingAction[]>(
+    () => isSheetFiat
+      ? [
+          ...(sheetCurrency === 'NGN'
+            ? [
+                {
+                  id: 'naira-withdraw',
+                  label: 'Withdraw to bank',
+                  sublabel: 'Send NGN to Nigerian bank account',
+                  icon: <HugeiconsIcon icon={BankIcon} size={20} color="#008751" />,
+                  onPress: () => gateFeature(() => {
+                    setShowSendSheet(false);
+                    router.push('/withdraw-naira' as never);
+                  }),
+                },
+              ]
+            : [
+                {
+                  id: 'fiat',
+                  label: `Send out ${sheetCurrency}`,
+                  sublabel:
+                    sheetCurrency === 'EUR'
+                      ? 'Send via SEPA transfer'
+                      : sheetCurrency === 'GHS'
+                        ? 'Send to Ghanaian bank account'
+                        : sheetCurrency === 'KES'
+                          ? 'Send to Kenyan bank account'
+                          : sheetCurrency === 'CAD'
+                            ? 'Send to Canadian bank account'
+                            : 'Send to US bank account',
+                  icon: <HugeiconsIcon icon={BankIcon} size={20} color="#6366F1" />,
+                  onPress: () => gateFeature(() => startWithdrawal('fiat')),
+                },
+              ]),
+          {
+            id: 'p2p',
+            label: 'Send to People',
+            sublabel: 'Via RailTag, email, or phone',
+            icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#FF2E01" />,
+            onPress: startP2P,
+          },
+        ]
+      : [
+          {
+            id: 'crypto',
+            label: `Send ${sheetCurrency}`,
+            sublabel: 'Send to wallet address',
+            icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
+            onPress: () => gateFeature(() => startWithdrawal('crypto')),
+          },
+          {
+            id: 'p2p',
+            label: 'Send to People',
+            sublabel: 'Via RailTag, email, or phone',
+            icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#FF2E01" />,
+            onPress: startP2P,
+          },
+        ],
+    [startWithdrawal, startP2P, sheetCurrency, isSheetFiat, gateFeature]
+  );
+
+  const sendMoreActions = useMemo<FundingAction[]>(
     () => [
       ...(isSheetFiat
         ? [
-            ...(sheetCurrency === 'NGN'
-              ? [
-                  {
-                    id: 'naira-withdraw',
-                    label: 'Withdraw to bank',
-                    sublabel: 'Send NGN to Nigerian bank account',
-                    icon: <HugeiconsIcon icon={BankIcon} size={20} color="#008751" />,
-                    onPress: () => gateKyc(() => {
-                      setShowSendSheet(false);
-                      router.push('/withdraw-naira' as never);
-                    }),
-                  },
-                ]
-              : [
-                  {
-                    id: 'fiat',
-                    label: `Send out ${sheetCurrency}`,
-                    sublabel:
-                      sheetCurrency === 'EUR'
-                        ? 'Send via SEPA transfer'
-                        : sheetCurrency === 'GHS'
-                          ? 'Send to Ghanaian bank account'
-                          : sheetCurrency === 'KES'
-                            ? 'Send to Kenyan bank account'
-                            : sheetCurrency === 'CAD'
-                              ? 'Send to Canadian bank account'
-                              : 'Send to US bank account',
-                    icon: <HugeiconsIcon icon={BankIcon} size={20} color="#6366F1" />,
-                    onPress: () => gateKyc(() => startWithdrawal('fiat')),
-                  },
-                ]),
             {
-              id: 'p2p',
-              label: 'Send to People',
-              sublabel: 'Via RailTag, email, or phone',
-              icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#FF2E01" />,
-              onPress: startP2P,
+              id: 'crypto',
+              label: 'Send to Wallet',
+              sublabel: 'Send stablecoins to wallet address',
+              icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
+              onPress: () => gateFeature(() => startWithdrawal('crypto')),
             },
             ...(Platform.OS === 'ios'
               ? [
@@ -509,7 +549,7 @@ function DashboardScreen() {
                     label: 'Tap to Pay',
                     sublabel: 'Send to someone nearby',
                     icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
-                    onPress: () => gateKyc(() => {
+                    onPress: () => gateFeature(() => {
                       setShowSendSheet(false);
                       router.push('/tap-to-pay' as never);
                     }),
@@ -519,39 +559,13 @@ function DashboardScreen() {
           ]
         : [
             {
-              id: 'crypto',
-              label: `Send ${sheetCurrency}`,
-              sublabel: 'Send to wallet address',
-              icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
-              onPress: () => startWithdrawal('crypto'),
+              id: 'fiat',
+              label: 'Send out fiat',
+              sublabel: 'Send to bank account',
+              icon: <HugeiconsIcon icon={BankIcon} size={20} color="#6366F1" />,
+              onPress: () => gateFeature(() => startWithdrawal('fiat')),
             },
           ]),
-      {
-        id: isSheetFiat ? 'crypto' : 'fiat',
-        label: isSheetFiat ? 'Send to Wallet' : 'Send out fiat',
-        sublabel: isSheetFiat ? 'Send stablecoins to wallet address' : 'Send to bank account',
-        icon: (
-          <HugeiconsIcon icon={isSheetFiat ? Wallet01Icon : BankIcon} size={20} color="#6366F1" />
-        ),
-        onPress: () => isSheetFiat ? startWithdrawal('crypto') : gateKyc(() => startWithdrawal('fiat')),
-      },
-    ],
-    [startWithdrawal, startP2P, sheetCurrency, isSheetFiat, gateKyc]
-  );
-
-  const sendMoreActions = useMemo<FundingAction[]>(
-    () => [
-      ...(!isSheetFiat
-        ? [
-            {
-              id: 'p2p',
-              label: 'Send to People',
-              sublabel: 'Via RailTag, email, or phone',
-              icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#FF2E01" />,
-              onPress: startP2P,
-            },
-          ]
-        : []),
       ...(isAndroid
         ? [
             {
@@ -559,29 +573,29 @@ function DashboardScreen() {
               label: 'Phantom',
               sublabel: 'Send using Phantom wallet',
               icon: <PhantomIcon width={28} height={28} />,
-              onPress: () => startWithdrawal('phantom'),
+              onPress: () => gateFeature(() => startWithdrawal('phantom')),
             },
             {
               id: 'solflare',
               label: 'Solflare',
               sublabel: 'Send using Solflare wallet',
               icon: <SolflareIcon width={28} height={28} />,
-              onPress: () => startWithdrawal('solflare'),
+              onPress: () => gateFeature(() => startWithdrawal('solflare')),
             },
             {
               id: 'solana-pay',
               label: 'Solana Pay',
               sublabel: 'Send with Solana Pay',
               icon: <SolanaIcon width={28} height={28} />,
-              onPress: () => {
+              onPress: () => gateFeature(() => {
                 setShowSendSheet(false);
                 setShowSolanaPayScan(true);
-              },
+              }),
             },
           ]
         : []),
     ],
-    [isAndroid, isSheetFiat, startP2P, startWithdrawal]
+    [isAndroid, isSheetFiat, startWithdrawal, gateFeature]
   );
 
   return (
@@ -608,14 +622,14 @@ function DashboardScreen() {
         <View className="mb-2 flex-row gap-3">
           <Button
             title="Receive"
-            onPress={() => openReceiveSheet()}
+            onPress={openReceiveSheet}
             leftIcon={<HugeiconsIcon icon={ArrowDownLeft01Icon} size={20} color="white" />}
             size="small"
             variant="black"
           />
           <Button
             title="Send"
-            onPress={() => openSendSheet()}
+            onPress={openSendSheet}
             leftIcon={<HugeiconsIcon icon={ArrowUpRight01Icon} size={20} color="black" />}
             size="small"
             variant="white"
@@ -631,7 +645,7 @@ function DashboardScreen() {
             cardColor="#FF2E01"
             className="flex-1"
             isLoading={isStationPending}
-            onPress={() => setShowSpendBreakdown(true)}
+            onPress={() => gateFeature(() => setShowSpendBreakdown(true))}
           />
           <StashCard
             title="Stash"
@@ -654,7 +668,7 @@ function DashboardScreen() {
             className="max-w-[50%] flex-1"
             isLoading={isStationPending}
             getStarted={!hasCard}
-            onPress={() => setShowCardComingSheet(true)}
+            onPress={() => gateFeature(() => setShowCardComingSheet(true))}
           />
           <StashCard
             title="Credit"
@@ -739,20 +753,9 @@ function DashboardScreen() {
       />
       <InvestmentDisclaimerSheet
         visible={showDisclaimer}
-        onAccept={async () => {
+        onAccept={() => {
           setHasAcknowledgedDisclaimer(true);
           setShowDisclaimer(false);
-          try {
-            const res = await virtualAccountService.getTOSLink();
-            if (res?.tos_link) {
-              router.push({
-                pathname: '/kyc/tos',
-                params: { url: encodeURIComponent(res.tos_link) },
-              });
-            }
-          } catch (error) {
-            console.warn('Failed to fetch TOS link:', error);
-          }
         }}
       />
       <SolanaPayScanSheet

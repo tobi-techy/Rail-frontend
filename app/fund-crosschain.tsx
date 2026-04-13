@@ -70,7 +70,7 @@ export default function FundCrosschainScreen() {
     setLoading(true);
     try {
       const session = await crSessionMutation.mutateAsync(rawAmount);
-      cr.updateSession(session);
+      cr.updateSession({ ...session, amount: rawAmount });
       cr.open();
     } catch (e) {
       console.error('ChainRails session failed:', e);
@@ -109,6 +109,14 @@ export default function FundCrosschainScreen() {
               <AnimatedAmount amount={displayAmount} />
             </View>
           </View>
+          <Animated.View entering={SlideInUp.delay(80).duration(500)} className="pb-3 pt-1">
+            <Button
+              title={loading ? 'Loading...' : 'Fund'}
+              onPress={onContinue}
+              disabled={numericAmount <= 0 || loading}
+            />
+          </Animated.View>
+
           <Animated.View entering={SlideInUp.delay(100).duration(500)} style={keypadStyle}>
             <Keypad
               className="pb-2"
@@ -119,16 +127,8 @@ export default function FundCrosschainScreen() {
             />
           </Animated.View>
         </View>
-        <Animated.View
-          entering={SlideInUp.delay(200).duration(500)}
-          className="border-t border-white/20 px-5 pt-3"
-          style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
-          <Button
-            title={loading ? 'Loading...' : 'Continue'}
-            onPress={onContinue}
-            disabled={numericAmount <= 0 || loading}
-          />
-        </Animated.View>
+
+        <View style={{ paddingBottom: Math.max(insets.bottom, 12) }} />
       </SafeAreaView>
       <PaymentModal {...cr} isPending={loading} />
     </ErrorBoundary>

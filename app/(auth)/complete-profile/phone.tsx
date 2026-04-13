@@ -47,14 +47,22 @@ export default function Phone() {
     const nextRegistrationData = { ...registrationData, phone: normalizedPhone };
     updateRegistrationData({ phone: normalizedPhone });
 
-    if (!isPasskeySignup) {
+    const { hasCompletedOnboarding, hasPasscode } = useAuthStore.getState();
+    const isDeferredFlow = !hasCompletedOnboarding && hasPasscode;
+
+    if (!isPasskeySignup && !isDeferredFlow) {
       router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_PASSWORD as never);
       return;
     }
 
+    // In deferred flow, name comes from user profile (already saved during basic-complete)
+    const user = useAuthStore.getState().user;
+    const firstName = nextRegistrationData.firstName || user?.firstName || '';
+    const lastName = nextRegistrationData.lastName || user?.lastName || '';
+
     const payload: OnboardingCompleteRequest = {
-      firstName: nextRegistrationData.firstName,
-      lastName: nextRegistrationData.lastName,
+      firstName,
+      lastName,
       dateOfBirth: nextRegistrationData.dob,
       country: nextRegistrationData.country,
       address: {
@@ -99,7 +107,7 @@ export default function Phone() {
 
         setOnboardingStatus(response.onboarding?.onboardingStatus || 'kyc_pending');
         clearRegistrationData();
-        router.replace(ROUTES.AUTH.CREATE_PASSCODE as never);
+        router.replace('/kyc?autoLaunch=true' as never);
       },
       onError: (error: any) => {
         showError('Profile Submission Failed', error?.message || 'Please try again.');
@@ -147,12 +155,14 @@ export default function Phone() {
               <Pressable
                 onPress={() => {
                   updateRegistrationData({ phone: '' });
-                  if (!isPasskeySignup) {
+                  const isDeferred = !useAuthStore.getState().hasCompletedOnboarding && useAuthStore.getState().hasPasscode;
+                  if (!isPasskeySignup && !isDeferred) {
                     router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_PASSWORD as never);
                   } else {
+                    const u = useAuthStore.getState().user;
                     const payload: OnboardingCompleteRequest = {
-                      firstName: registrationData.firstName,
-                      lastName: registrationData.lastName,
+                      firstName: registrationData.firstName || u?.firstName || '',
+                      lastName: registrationData.lastName || u?.lastName || '',
                       dateOfBirth: registrationData.dob,
                       country: registrationData.country,
                       address: {
@@ -179,7 +189,7 @@ export default function Phone() {
                         });
                         setOnboardingStatus(response.onboarding?.onboardingStatus || 'kyc_pending');
                         clearRegistrationData();
-                        router.replace(ROUTES.AUTH.CREATE_PASSCODE as never);
+                        router.replace('/kyc?autoLaunch=true' as never);
                       },
                       onError: (error: any) => {
                         showError(

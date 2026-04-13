@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Button } from '@/components/ui';
+import { virtualAccountService } from '@/api/services/virtualAccount.service';
+import { logger } from '@/lib/logger';
 
 interface InvestmentDisclaimerSheetProps {
   visible: boolean;
@@ -23,6 +26,27 @@ const BulletPoint = ({ children }: { children: React.ReactNode }) => (
 );
 
 export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDisclaimerSheetProps) {
+  const [loading, setLoading] = useState(false);
+
+  const handleAccept = async () => {
+    setLoading(true);
+    try {
+      const res = await virtualAccountService.getTOSLink();
+      const url = res?.tos_link;
+      if (url) {
+        await WebBrowser.openAuthSessionAsync(url);
+      }
+    } catch (error) {
+      logger.warn('[Disclaimer] Failed to open Bridge TOS', {
+        component: 'InvestmentDisclaimerSheet',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setLoading(false);
+      onAccept();
+    }
+  };
+
   return (
     <GorhomBottomSheet
       visible={visible}
@@ -120,7 +144,7 @@ export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDiscl
 
         {/* Accept Button */}
         <View className="mt-4 pt-2">
-          <Button title="I Understand" onPress={onAccept} />
+          <Button title={loading ? 'Opening Terms…' : 'I Understand'} onPress={handleAccept} disabled={loading} />
         </View>
       </View>
     </GorhomBottomSheet>

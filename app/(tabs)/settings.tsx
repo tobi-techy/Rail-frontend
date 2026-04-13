@@ -3,10 +3,9 @@ import { Passkey } from 'react-native-passkey';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
-import Avatar from '@zamplyy/react-native-nice-avatar';
-import { getAvatarConfig } from '@/utils/avatarConfig';
+import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
 
-import { BottomSheet, SettingsSheet } from '@/components/sheets';
+import { GorhomBottomSheet, SettingsSheet } from '@/components/sheets';
 import { SegmentedSlider } from '@/components/molecules';
 import { Button, Input } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
@@ -49,7 +48,7 @@ import * as Haptics from 'expo-haptics';
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CURRENCIES: Currency[] = ['USD', 'EUR'];
-const CURRENCY_LABELS: Record<Currency, string> = { USD: 'US Dollar (USD)', EUR: 'Euro (EUR)', NGN: 'Nigerian Naira (NGN)', USDC: 'USD Coin (USDC)', USDT: 'Tether (USDT)', EURC: 'Euro Coin (EURC)', PYUSD: 'PayPal USD (PYUSD)' };
+const CURRENCY_LABELS: Record<Currency, string> = { USD: 'US Dollar (USD)', EUR: 'Euro (EUR)', NGN: 'Nigerian Naira (NGN)', GHS: 'Ghanaian Cedi (GHS)', KES: 'Kenyan Shilling (KES)', CAD: 'Canadian Dollar (CAD)', USDC: 'USD Coin (USDC)', USDT: 'Tether (USDT)', EURC: 'Euro Coin (EURC)', PYUSD: 'PayPal USD (PYUSD)' };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -207,7 +206,6 @@ function ProfileCard({
     () => [firstName, lastName].filter(Boolean).join(' ') || email || 'Rail User',
     [firstName, lastName, email]
   );
-  const avatarConfig = useMemo(() => getAvatarConfig(avatarName), [avatarName]);
   const { impact } = useHaptics();
 
   const displayName =
@@ -221,7 +219,7 @@ function ProfileCard({
       }}
       className="mx-md mb-2 mt-md flex-row items-center justify-between rounded-2xl border border-surface bg-white px-4 py-4">
       <View className="flex-row items-center gap-3">
-        <Avatar size={52} {...avatarConfig} />
+        <DiceBearAvatar seed={avatarName} size={52} />
         <View>
           <Text className="font-subtitle text-[17px] text-text-primary" numberOfLines={1}>
             {displayName}
@@ -285,7 +283,6 @@ export default function Settings() {
   const [activeSheet, setActiveSheet] = useState<SheetType>(null);
   const closeSheet = () => {
     setActiveSheet(null);
-    setDeletePassword('');
   };
 
   const {
@@ -321,7 +318,6 @@ export default function Settings() {
   // Account state
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deletePassword, setDeletePassword] = useState('');
 
   // API hooks
   const { refetch: refetchAllocationBalances } = useAllocationBalances();
@@ -381,10 +377,9 @@ export default function Settings() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!deletePassword) return;
     setIsDeleting(true);
     try {
-      const result = await deleteAccount(deletePassword, 'User requested account deletion');
+      const result = await deleteAccount('User requested account deletion');
       closeSheet();
       const fundsMsg =
         parseFloat(result.funds_swept) > 0
@@ -539,7 +534,7 @@ export default function Settings() {
       </ScrollView>
 
       {/* Spend */}
-      <BottomSheet visible={activeSheet === 'allocation'} onClose={closeSheet}>
+      <GorhomBottomSheet visible={activeSheet === 'allocation'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Base/Active Split</Text>
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
           Set how new deposits are split between Base and Active allocations.
@@ -579,7 +574,7 @@ export default function Settings() {
           flex>
           {isEnablingAllocation && <ActivityIndicator color="#fff" />}
         </Button>
-      </BottomSheet>
+      </GorhomBottomSheet>
 
       <SettingsSheet
         visible={activeSheet === 'autoInvest'}
@@ -600,7 +595,7 @@ export default function Settings() {
         onToggleChange={setRoundupsEnabled}
       />
 
-      <BottomSheet visible={activeSheet === 'limits'} onClose={closeSheet}>
+      <GorhomBottomSheet visible={activeSheet === 'limits'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Spending Limits</Text>
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
           Set your daily spending limit to help manage your expenses.
@@ -618,10 +613,10 @@ export default function Settings() {
         />
         <Text className="my-4 text-center font-subtitle text-2xl">${spendingLimit}</Text>
         <Button title="Save Limit" variant="black" onPress={closeSheet} />
-      </BottomSheet>
+      </GorhomBottomSheet>
 
       {/* Preferences */}
-      <BottomSheet visible={activeSheet === 'privacy'} onClose={closeSheet}>
+      <GorhomBottomSheet visible={activeSheet === 'privacy'} onClose={closeSheet}>
         <Text className="mb-4 font-subtitle text-xl">Privacy</Text>
         <SheetToggleRow
           label="Hide Balances"
@@ -629,9 +624,9 @@ export default function Settings() {
           value={!isBalanceVisible}
           onChange={() => toggleBalanceVisibility()}
         />
-      </BottomSheet>
+      </GorhomBottomSheet>
 
-      <BottomSheet visible={activeSheet === 'haptics'} onClose={closeSheet}>
+      <GorhomBottomSheet visible={activeSheet === 'haptics'} onClose={closeSheet}>
         <Text className="mb-4 font-subtitle text-xl">Haptics</Text>
         <SheetToggleRow
           label="Enable Haptic Feedback"
@@ -639,9 +634,9 @@ export default function Settings() {
           value={hapticsEnabled}
           onChange={setHapticsEnabled}
         />
-      </BottomSheet>
+      </GorhomBottomSheet>
 
-      <BottomSheet visible={activeSheet === 'lockOnResume'} onClose={closeSheet}>
+      <GorhomBottomSheet visible={activeSheet === 'lockOnResume'} onClose={closeSheet}>
         <Text className="mb-4 font-subtitle text-xl">App LockIcon</Text>
         <SheetToggleRow
           label="Require Authentication on Resume"
@@ -649,9 +644,9 @@ export default function Settings() {
           value={requireBiometricOnResume}
           onChange={setRequireBiometricOnResume}
         />
-      </BottomSheet>
+      </GorhomBottomSheet>
 
-      <BottomSheet visible={activeSheet === 'biometric'} onClose={closeSheet}>
+      <GorhomBottomSheet visible={activeSheet === 'biometric'} onClose={closeSheet}>
         <Text className="mb-1 font-subtitle text-xl">Biometrics</Text>
         <Text className="mb-5 font-caption text-caption text-text-secondary">
           Use Face ID or fingerprint to sign in instantly.
@@ -662,9 +657,9 @@ export default function Settings() {
           value={isBiometricEnabled}
           onChange={handleToggleBiometric}
         />
-      </BottomSheet>
+      </GorhomBottomSheet>
 
-      <BottomSheet visible={activeSheet === 'currency'} onClose={closeSheet}>
+      <GorhomBottomSheet visible={activeSheet === 'currency'} onClose={closeSheet}>
         <View className="mb-4 flex-row items-center justify-between">
           <Text className="font-subtitle text-xl">Display Currency</Text>
           <Pressable
@@ -696,10 +691,10 @@ export default function Settings() {
             }}
           />
         ))}
-      </BottomSheet>
+      </GorhomBottomSheet>
 
       {/* Security */}
-      <BottomSheet visible={activeSheet === 'pin'} onClose={closeSheet}>
+      <GorhomBottomSheet visible={activeSheet === 'pin'} onClose={closeSheet}>
         <Text className="mb-2 font-subtitle text-xl">
           {hasPasscodeConfigured ? 'Update PIN' : 'Create PIN'}
         </Text>
@@ -754,10 +749,10 @@ export default function Settings() {
             {isSavingPin && <ActivityIndicator color="#fff" />}
           </Button>
         </View>
-      </BottomSheet>
+      </GorhomBottomSheet>
 
       {/* Account */}
-      <BottomSheet visible={activeSheet === 'logout'} onClose={closeSheet}>
+      <GorhomBottomSheet visible={activeSheet === 'logout'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Log Out</Text>
         <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
           Are you sure you want to log out? You&apos;ll need to sign in again to access your
@@ -773,9 +768,9 @@ export default function Settings() {
             {isLoggingOut && <ActivityIndicator color="#fff" />}
           </Button>
         </View>
-      </BottomSheet>
+      </GorhomBottomSheet>
 
-      <BottomSheet visible={activeSheet === 'delete'} onClose={closeSheet}>
+      <GorhomBottomSheet visible={activeSheet === 'delete'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl text-text-primary">Delete Account</Text>
         <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-10">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-red-100">
@@ -790,26 +785,18 @@ export default function Settings() {
           Any remaining funds in your account will be transferred to our company treasury before
           deletion.
         </Text>
-        <Input
-          label="Confirm Password"
-          value={deletePassword}
-          onChangeText={setDeletePassword}
-          secureTextEntry
-          placeholder="Enter your password"
-          className="mb-6"
-        />
         <View className="flex-row gap-3">
           <Button title="Cancel" variant="ghost" onPress={closeSheet} disabled={isDeleting} flex />
           <Button
             title={isDeleting ? '' : 'Delete Account'}
             variant="orange"
             onPress={handleDeleteAccount}
-            disabled={isDeleting || !deletePassword}
+            disabled={isDeleting}
             flex>
             {isDeleting && <ActivityIndicator color="#fff" />}
           </Button>
         </View>
-      </BottomSheet>
+      </GorhomBottomSheet>
     </View>
   );
 }

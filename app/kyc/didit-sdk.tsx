@@ -18,7 +18,13 @@ export default function KycDiditSdkScreen() {
   const [isRetrying, setIsRetrying] = useState(false);
   const launching = useRef(false);
 
-  const handleClose = useCallback(() => router.navigate('/(tabs)'), []);
+  const handleClose = useCallback(() => {
+    if (router.canDismiss()) {
+      router.dismissAll();
+    } else {
+      router.replace('/(tabs)');
+    }
+  }, []);
 
   const handleRetry = useCallback(() => {
     setIsRetrying(true);
@@ -69,7 +75,11 @@ export default function KycDiditSdkScreen() {
             break;
 
           case 'cancelled':
-            router.navigate('/(tabs)');
+            if (router.canDismiss()) {
+              router.dismissAll();
+            } else {
+              router.replace('/(tabs)');
+            }
             break;
 
           case 'failed':

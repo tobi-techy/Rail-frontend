@@ -11,6 +11,7 @@ import { API_CONFIG } from './config';
 import { generateRequestId } from '../utils/requestId';
 import { useAuthStore } from '../stores/authStore';
 import { sslPinningAdapter, SSL_PINNING_ACTIVE } from './sslPinningAdapter';
+import { getDeviceFingerprint } from '../utils/deviceFingerprint';
 
 /**
  * SSL Certificate Pinning Configuration
@@ -105,6 +106,7 @@ function isPasscodeProtectedEndpoint(method?: string, url?: string): boolean {
     return true;
   if (normalizedMethod === 'POST' && path === '/v1/security/ip-whitelist') return true;
   if (normalizedMethod === 'POST' && path === '/v1/security/withdrawals/confirm') return true;
+  if (normalizedMethod === 'POST' && path === '/v1/p2p/tap/confirm') return true;
   if (normalizedMethod === 'POST' && /^\/v1\/security\/devices\/[^/]+\/trust$/.test(path))
     return true;
   if (normalizedMethod === 'DELETE' && /^\/v1\/security\/devices\/[^/]+$/.test(path)) return true;
@@ -194,6 +196,16 @@ axiosInstance.interceptors.request.use(
     }
 
     config.headers['X-Request-ID'] = generateRequestId();
+
+    // Attach device fingerprint for fraud detection (cross-account device correlation)
+    try {
+      const fingerprint = await getDeviceFingerprint();
+      if (fingerprint) {
+        config.headers['X-Device-Fingerprint'] = fingerprint;
+      }
+    } catch {
+      // Non-blocking — don't fail requests if fingerprint generation fails
+    }
 
     // Add CSRF token for state-changing requests
     // SECURITY: Only for authenticated, non-auth endpoints

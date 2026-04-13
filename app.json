@@ -80,6 +80,8 @@
         "NSPhotoLibraryUsageDescription": "Access your photo library to upload profile pictures and payment verification documents",
         "NSLocationWhenInUseUsageDescription": "Your location helps us provide location-based services and improve your experience",
         "NSContactsUsageDescription": "Access your contacts to send money to friends and family",
+        "NSMicrophoneUsageDescription": "Microphone access may be required during identity verification",
+        "NSNearbyInteractionUsageDescription": "This app does not use nearby interaction features directly, but a third-party SDK requires this permission",
         "UIRequiredDeviceCapabilities": ["armv7"],
         "UISupportedInterfaceOrientations": ["UIInterfaceOrientationPortrait"],
         "UIStatusBarStyle": "UIStatusBarStyleDefault"

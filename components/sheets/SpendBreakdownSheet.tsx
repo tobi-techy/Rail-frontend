@@ -76,7 +76,7 @@ function CategoryRow({
           <Text className="font-body text-sm text-neutral-500">{percent}% of spend</Text>
         </View>
       </View>
-      <Text className="font-body text-base tabular-nums text-neutral-900">
+      <Text className="font-mono text-base tabular-nums text-neutral-900">
         {isBalanceVisible ? `-${formattedAmount}` : '****'}
       </Text>
     </View>
@@ -121,7 +121,7 @@ export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBr
           {isLoading ? (
             <Skeleton className="h-8 w-32" />
           ) : (
-            <Text className="font-subtitle text-2xl tabular-nums text-neutral-900">
+            <Text className="font-mono-semibold text-2xl tabular-nums text-neutral-900">
               {totalDisplay}
             </Text>
           )}

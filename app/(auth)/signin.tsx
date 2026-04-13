@@ -10,16 +10,9 @@ import { useLogin } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { getPostAuthRoute } from '@/utils/onboardingFlow';
 
+import { signinSchema, fieldError } from '@/utils/schemas';
+
 import { isSafeInput } from '@/utils/security';
-
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-const isValidPassword = (password: string): boolean => {
-  return password.length >= 8;
-};
 
 export default function SignIn() {
   const insets = useSafeAreaInsets();
@@ -33,16 +26,13 @@ export default function SignIn() {
   const { showError, showWarning } = useFeedbackPopup();
 
   const handleSignIn = () => {
-    if (!email || !password) {
-      if (!email) setEmailError('Email is required');
-      if (!password) setPasswordError('Password is required');
-      showWarning('Missing Fields', 'Please enter both email and password.');
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      setEmailError('Please enter a valid email address');
-      showWarning('Invalid Email', 'Please enter a valid email address.');
+    const result = signinSchema.safeParse({ email, password });
+    if (!result.success) {
+      const err = result.error;
+      setEmailError(fieldError(err, 'email'));
+      setPasswordError(fieldError(err, 'password'));
+      const first = err.issues[0]?.message ?? 'Please check your input.';
+      showWarning('Validation Error', first);
       return;
     }
 
@@ -52,22 +42,15 @@ export default function SignIn() {
       return;
     }
 
-    if (!isValidPassword(password)) {
-      setPasswordError('Password must be at least 8 characters');
-      showWarning('Weak Password', 'Password must be at least 8 characters.');
-      return;
-    }
-
     setEmailError('');
     setPasswordError('');
 
     // Clear password from state immediately for security
-    // Store in temp variable to pass to login function
     const passwordToUse = password;
     setPassword('');
 
     login(
-      { email: email.trim().toLowerCase(), password: passwordToUse },
+      { email: result.data.email, password: passwordToUse },
       {
         onSuccess: (response) => {
           const targetRoute = getPostAuthRoute(response.user?.onboardingStatus);

@@ -24,6 +24,7 @@ target 'RailMoney' do
   use_expo_modules!
 
   pod 'DiditSDK', :podspec => 'https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.2.8/DiditSDK.podspec'
+  pod 'RailTapToPay', :path => '../modules/rail-tap-to-pay'
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];

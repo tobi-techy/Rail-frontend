@@ -9,6 +9,28 @@ import { useAuthStore } from '../../stores/authStore';
 import type { OnboardingCompleteRequest, KYCVerificationRequest } from '../types';
 
 /**
+ * Basic complete onboarding mutation (slim signup — name + password)
+ */
+export function useOnboardingBasicComplete() {
+  return useMutation({
+    mutationFn: (data: { firstName: string; lastName: string; password: string }) =>
+      onboardingService.basicComplete(data),
+    onSuccess: (response, variables) => {
+      const firstName = variables.firstName.trim();
+      const lastName = variables.lastName.trim();
+      const fullName = [firstName, lastName].filter(Boolean).join(' ');
+
+      useAuthStore.setState((state) => ({
+        user: state.user
+          ? { ...state.user, firstName, lastName, fullName }
+          : state.user,
+        onboardingStatus: response.onboardingStatus ?? 'basic_complete',
+      }));
+    },
+  });
+}
+
+/**
  * Complete onboarding mutation
  */
 export function useOnboardingComplete() {

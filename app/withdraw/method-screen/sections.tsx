@@ -465,7 +465,7 @@ export function FiatKycRequiredScreen({
             </TouchableOpacity>
             <Text className="font-subtitle text-lg text-gray-900">Withdraw</Text>
           </View>
-          <View className="flex-1 items-center justify-center px-6">
+          <View className="flex-1 justify-center px-6">
             {isPending ? (
               <>
                 <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
@@ -474,7 +474,7 @@ export function FiatKycRequiredScreen({
                 <Text className="mb-2 font-subtitle text-xl text-gray-900">
                   Verification in Progress
                 </Text>
-                <Text className="mb-8 text-center font-body text-sm text-gray-500">
+                <Text className="mb-8 font-body text-sm text-gray-500">
                   Your identity verification is being processed. This usually takes a few minutes.
                 </Text>
                 <View className="w-full gap-y-3">
@@ -492,14 +492,38 @@ export function FiatKycRequiredScreen({
                   <HugeiconsIcon icon={ShieldEnergyIcon} size={32} color="#F59E0B" />
                 </View>
                 <Text className="mb-2 font-subtitle text-xl text-gray-900">
-                  Verification Required
+                  One-time verification needed
                 </Text>
-                <Text className="mb-8 text-center font-body text-sm text-gray-500">
-                  Complete identity verification to withdraw fiat to a bank account.
+                <Text className="mb-6 font-body text-sm leading-5 text-gray-500">
+                  To send money to your bank account, we're required by financial regulations to
+                  verify your identity. It takes under 5 minutes and only needs to be done once.
                 </Text>
+                <View className="mb-8 gap-y-3 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                  <Text className="font-subtitle text-[13px] text-gray-700">
+                    Once verified, you can:
+                  </Text>
+                  <View className="flex-row items-center gap-3">
+                    <HugeiconsIcon icon={Building04Icon} size={16} color="#6B7280" />
+                    <Text className="font-body text-[13px] text-gray-600">
+                      Withdraw to your bank account
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center gap-3">
+                    <HugeiconsIcon icon={CreditCardIcon} size={16} color="#6B7280" />
+                    <Text className="font-body text-[13px] text-gray-600">
+                      Get a Rail Debit Card
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center gap-3">
+                    <HugeiconsIcon icon={MoneyReceiveSquareIcon} size={16} color="#6B7280" />
+                    <Text className="font-body text-[13px] text-gray-600">
+                      Deposit from your bank
+                    </Text>
+                  </View>
+                </View>
                 <View className="w-full gap-y-3">
                   <Button
-                    title={hasStartedKyc ? 'Continue Verification' : 'Start Verification'}
+                    title={hasStartedKyc ? 'Continue Verification' : 'Verify Identity — 5 min'}
                     onPress={handleVerificationPress}
                   />
                   <Button
@@ -508,6 +532,9 @@ export function FiatKycRequiredScreen({
                     onPress={() => router.replace('/withdraw/crypto' as never)}
                   />
                 </View>
+                <Text className="mt-4 text-center font-body text-[11px] text-gray-400">
+                  Your data is encrypted and never sold to third parties.
+                </Text>
               </>
             )}
           </View>

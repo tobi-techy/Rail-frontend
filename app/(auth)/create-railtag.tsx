@@ -6,8 +6,7 @@ import { Button } from '@/components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
 import { useSetRailTag, useCheckRailTag } from '@/api/hooks';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-
-const RAILTAG_REGEX = /^[a-z0-9]{0,30}$/;
+import { railTagSchema } from '@/utils/schemas';
 
 export default function CreateRailTagScreen() {
   const [tag, setTag] = useState('');
@@ -21,8 +20,7 @@ export default function CreateRailTagScreen() {
   const { showError } = useFeedbackPopup();
 
   const handleChange = (value: string) => {
-    const normalized = value.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (!RAILTAG_REGEX.test(normalized)) return;
+    const normalized = value.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
     setTag(normalized);
     setAvailability('idle');
 
@@ -47,6 +45,7 @@ export default function CreateRailTagScreen() {
   );
 
   const handleSubmit = () => {
+    if (!railTagSchema.safeParse(tag).success) return;
     setRailTag(tag, {
       onSuccess: () => router.replace('/kyc?autoLaunch=true'),
       onError: (err: any) =>

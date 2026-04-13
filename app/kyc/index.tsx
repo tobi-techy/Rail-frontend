@@ -97,7 +97,11 @@ export default function KycCountryScreen() {
     if (!kycStatus) return;
     if (kycStatus.status === 'approved') {
       useAuthStore.getState().setOnboardingStatus('completed');
-      router.replace('/(tabs)');
+      if (router.canDismiss()) {
+        router.dismissAll();
+      } else {
+        router.replace('/(tabs)');
+      }
     } else if (
       kycStatus.has_submitted &&
       kycStatus.status !== 'rejected' &&
@@ -136,7 +140,13 @@ export default function KycCountryScreen() {
           <View className="size-11" />
           <Pressable
             className="size-11 items-center justify-center"
-            onPress={() => router.navigate('/(tabs)')}
+            onPress={() => {
+              if (router.canDismiss()) {
+                router.dismissAll();
+              } else {
+                router.replace('/(tabs)');
+              }
+            }}
             accessibilityRole="button"
             accessibilityLabel="Close verification">
             <HugeiconsIcon icon={Cancel01Icon} size={22} color="#111827" />
