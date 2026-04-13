@@ -1,16 +1,23 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  interpolateColor,
+  Easing,
+} from 'react-native-reanimated';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useAIChatStore } from '@/stores/aiChatStore';
 
-type TabBarProps = BottomTabBarProps & {
-  rightIcon?: React.ReactNode;
-  onRightIconPress?: () => void;
-  rightIconAccessibilityLabel?: string;
-};
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// ─── Tab Item ────────────────────────────────────────────────────
 
 function TabBarItem({
   route,
@@ -61,12 +68,12 @@ function TabBarItem({
       <Animated.View style={animatedStyle} className="items-center gap-[3px]">
         {options.tabBarIcon?.({
           focused: isFocused,
-          color: isFocused ? '#FF2E01' : '#9CA3AF',
-          size: 24,
+          color: isFocused ? '#FF2E01' : '#6B7280',
+          size: 14,
         })}
         <Text
           className="font-body tracking-[0.2px]"
-          style={{ fontSize: 10, color: isFocused ? '#FF2E01' : '#9CA3AF' }}>
+          style={{ fontSize: 10, color: isFocused ? '#FF2E01' : '#6B7280' }}>
           {label}
         </Text>
       </Animated.View>
@@ -74,7 +81,58 @@ function TabBarItem({
   );
 }
 
-export function TabBar({ state, descriptors, navigation }: TabBarProps) {
+// ─── AI Button ───────────────────────────────────────────────────
+
+function AIButton() {
+  const router = useRouter();
+  const { impact } = useHaptics();
+  const open = useAIChatStore((s) => s.open);
+  const scale = useSharedValue(1);
+  const glow = useSharedValue(0);
+
+  const handlePress = useCallback(() => {
+    impact();
+    glow.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) }, () => {
+      glow.value = withTiming(0, { duration: 400 });
+    });
+    open();
+    router.push('/ai-chat');
+  }, [impact, open, router, glow]);
+
+  const buttonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    backgroundColor: interpolateColor(glow.value, [0, 1], ['#1F2937', '#374151']),
+  }));
+
+  return (
+    <AnimatedPressable
+      onPress={handlePress}
+      onPressIn={() => {
+        scale.value = withSpring(0.88, { damping: 15 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 15 });
+      }}
+      accessibilityRole="button"
+      accessibilityLabel="AI Chat"
+      style={[
+        buttonStyle,
+        {
+          width: 42,
+          height: 42,
+          borderRadius: 21,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+      ]}>
+      <Text style={{ fontSize: 18, color: '#FFFFFF' }}>✦</Text>
+    </AnimatedPressable>
+  );
+}
+
+// ─── Tab Bar ─────────────────────────────────────────────────────
+
+export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -82,12 +140,14 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
       className="absolute bottom-0 left-0 right-0 items-center"
       style={{ paddingBottom: insets.bottom + 1 }}
       pointerEvents="box-none">
-      <View className="flex-row items-center justify-center">
+      <View className="flex-row items-center justify-center gap-3">
+        {/* Main tab pill */}
         <View className="overflow-hidden rounded-[40px]">
           <BlurView
-            intensity={9}
-            tint="default"
-            className="flex-row items-center gap-7 px-6 pb-2.5 pt-3">
+            intensity={40}
+            tint="light"
+            className="flex-row items-center gap-7 border border-black/[0.06] px-6 pb-2.5 pt-3"
+            style={{ backgroundColor: 'rgba(255,255,255,0.75)' }}>
             {state.routes.map((route, index) => (
               <TabBarItem
                 key={route.key}
@@ -99,6 +159,9 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
             ))}
           </BlurView>
         </View>
+
+        {/* AI button — pushed to the right, separate from the pill */}
+        <AIButton />
       </View>
     </View>
   );

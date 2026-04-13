@@ -11,12 +11,7 @@ export type { Token, Transaction } from './walletStore';
 
 // Withdrawal store
 export { useWithdrawalStore } from './withdrawalStore';
-export type {
-  Network,
-  BridgeProvider,
-  Recipient,
-  TransactionDetails,
-} from './withdrawalStore';
+export type { Network, BridgeProvider, Recipient, TransactionDetails } from './withdrawalStore';
 
 // UI store
 export { useUIStore } from './uiStore';
@@ -24,3 +19,6 @@ export { useFeedbackPopupStore } from './feedbackPopupStore';
 
 // Auth store types (modular)
 export * from './auth/types';
+
+// AI Chat store
+export { useAIChatStore } from './aiChatStore';

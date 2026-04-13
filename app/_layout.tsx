@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Stack } from 'expo-router';
-import { AppState, Platform, StatusBar, View } from 'react-native';
+import { AppState, Platform, StatusBar, StyleSheet, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -174,6 +175,14 @@ function AppNavigator() {
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       />
+      <Stack.Screen
+        name="ai-chat"
+        options={{
+          headerShown: false,
+          animation: 'fade',
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      />
     </Stack>
   );
 }
@@ -184,20 +193,24 @@ export default function Layout() {
   const [securityChecked, setSecurityChecked] = useState(false);
   const [customSplashStartTime, setCustomSplashStartTime] = useState<number | null>(null);
   const refreshCurrencyRates = useUIStore((s) => s.refreshCurrencyRates);
+  const [isBlurred, setIsBlurred] = useState(AppState.currentState !== 'active');
 
   useProtectedRoute();
   useBiometricLock();
 
   useEffect(() => {
-    Promise.all([enforceDeviceSecurity({ allowContinue: __DEV__ }), initEncryption()]).finally(() =>
-      setSecurityChecked(true)
-    );
+    const sub = AppState.addEventListener('change', (s) => {
+      setIsBlurred(s === 'background');
+      focusManager.setFocused(s === 'active');
+    });
+    focusManager.setFocused(AppState.currentState === 'active');
+    return () => sub.remove();
   }, []);
 
   useEffect(() => {
-    focusManager.setFocused(AppState.currentState === 'active');
-    const sub = AppState.addEventListener('change', (s) => focusManager.setFocused(s === 'active'));
-    return () => sub.remove();
+    Promise.all([enforceDeviceSecurity({ allowContinue: __DEV__ }), initEncryption()]).finally(() =>
+      setSecurityChecked(true)
+    );
   }, []);
 
   useEffect(() => {
@@ -276,7 +289,10 @@ export default function Layout() {
               <SafeAreaProvider style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
                 <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
                   <PostHogProvider
-                    apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
+                    apiKey={
+                      process.env.EXPO_PUBLIC_POSTHOG_API_KEY ||
+                      'phc_bG9OhXAMZfICZ0hFeCcHJSx5FGzpBhN4nDHbZAIYhbR'
+                    }
                     options={{
                       host: 'https://us.i.posthog.com',
                       enableSessionReplay: true,
@@ -286,6 +302,9 @@ export default function Layout() {
                       <AppReadyTracker />
                       <AppNavigator />
                       <FeedbackPopupHost />
+                      {isBlurred && (
+                        <BlurView intensity={50} tint="regular" style={StyleSheet.absoluteFill} />
+                      )}
                     </PostHogSurveyProvider>
                   </PostHogProvider>
                 </View>

@@ -19,6 +19,7 @@ export { investmentService } from './investment.service';
 export { notificationService } from './notification.service';
 export { cardService } from './card.service';
 export { pajService } from './paj.service';
+export { aiService } from './ai.service';
 
 // Re-export for convenience
 export { default as auth } from './auth.service';
