@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
+import { Dimensions, Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
@@ -66,7 +66,7 @@ export function GorhomBottomSheet({
   return (
     <BottomSheetModal
       ref={ref}
-      {...(snapPoints ? { snapPoints } : { enableDynamicSizing: true })}
+      {...(snapPoints ? { snapPoints } : { enableDynamicSizing: true, maxDynamicContentSize: Dimensions.get('window').height * 0.8 })}
       enablePanDownToClose={dismissible}
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}

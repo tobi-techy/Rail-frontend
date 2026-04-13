@@ -14,6 +14,8 @@ import {
 } from '@/utils/routeHelpers';
 import { SessionManager } from '@/utils/sessionManager';
 
+const LOCAL_ADVANCED_STATUSES = new Set(['kyc_pending', 'kyc_approved', 'completed']);
+
 /**
  * Protected route hook that manages authentication-based navigation
  * Handles token validation, welcome screen status, and routing logic
@@ -48,6 +50,10 @@ export function useProtectedRoute() {
       passcodeService.getStatus(),
     ]);
 
+    // Re-check auth state — session may have been cleared while requests were in flight
+    const currentState = useAuthStore.getState();
+    if (!currentState.isAuthenticated || !currentState.accessToken) return;
+
     if (userResult.status === 'fulfilled') {
       const currentUserResponse = userResult.value;
       const backendUser = currentUserResponse?.user ?? currentUserResponse;
@@ -55,14 +61,13 @@ export function useProtectedRoute() {
         currentUserResponse?.onboarding?.onboardingStatus ?? backendUser?.onboardingStatus;
 
       if (backendUser) {
-        const localStatus = state.onboardingStatus;
-        const LOCAL_ADVANCED = new Set(['kyc_pending', 'kyc_approved', 'completed']);
+        const localStatus = currentState.onboardingStatus;
         const resolvedStatus =
           localStatus &&
-          LOCAL_ADVANCED.has(localStatus) &&
-          !LOCAL_ADVANCED.has(backendOnboardingStatus ?? '')
+          LOCAL_ADVANCED_STATUSES.has(localStatus) &&
+          !LOCAL_ADVANCED_STATUSES.has(backendOnboardingStatus ?? '')
             ? localStatus
-            : (backendOnboardingStatus ?? state.onboardingStatus);
+            : (backendOnboardingStatus ?? currentState.onboardingStatus);
 
         useAuthStore.setState({
           user: backendUser,
@@ -199,6 +204,13 @@ export function useProtectedRoute() {
       'change',
       async (nextAppState: AppStateStatus) => {
         if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+          // Only run full foreground logic when returning from background.
+          // inactive fires during system dialogs, button taps, sheets — skip those.
+          if (appState.current !== 'background') {
+            appState.current = nextAppState;
+            return;
+          }
+
           const freshState = useAuthStore.getState();
 
           logger.debug('[Auth] App came to foreground', {
@@ -206,23 +218,47 @@ export function useProtectedRoute() {
             action: 'app-foreground',
           });
 
-          if (freshState.isAuthenticated) {
-            if (freshState.checkTokenExpiry()) {
+          // Clear passcode session on resume — forces re-auth via login-passcode
+          if (freshState.isAuthenticated && freshState.hasPasscode) {
+            SessionManager.handlePasscodeSessionExpired();
+          }
+
+          // Re-read state after clearing passcode session
+          const stateAfterClear = useAuthStore.getState();
+
+          if (stateAfterClear.isAuthenticated && stateAfterClear.accessToken) {
+            if (stateAfterClear.checkTokenExpiry()) {
               logger.info('[Auth] 7-day token expired after app resume', {
                 component: 'useProtectedRoute',
                 action: 'token-expired-on-resume',
               });
               SessionManager.handleSessionExpired();
+              appState.current = nextAppState;
               return;
             }
 
             // Reset passcode session timer on activity (extends session)
-            if (freshState.passcodeSessionExpiresAt) {
+            if (stateAfterClear.passcodeSessionExpiresAt) {
               SessionManager.resetPasscodeSessionTimer();
             }
 
-            freshState.updateLastActivity();
-            await refreshBackendAuthState();
+            stateAfterClear.updateLastActivity();
+
+            // Skip refresh if passcode session was cleared (user will be redirected to login-passcode)
+            if (!stateAfterClear.passcodeSessionExpiresAt && stateAfterClear.hasPasscode) {
+              appState.current = nextAppState;
+              return;
+            }
+
+            try {
+              await refreshBackendAuthState();
+            } catch (error) {
+              logger.warn('[Auth] Failed to refresh auth state on resume', {
+                component: 'useProtectedRoute',
+                action: 'foreground-refresh-failed',
+                error: error instanceof Error ? error.message : String(error),
+              });
+            }
           }
         }
 

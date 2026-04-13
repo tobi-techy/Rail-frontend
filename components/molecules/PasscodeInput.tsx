@@ -118,7 +118,7 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
                   {isFilled &&
                     (showPasscode ? (
                       <Text
-                        className={`font-subtitle text-headline-2 ${isDark ? 'text-white' : 'text-text-primary'}`}>
+                        className={`font-mono-semibold text-headline-2 ${isDark ? 'text-white' : 'text-text-primary'}`}>
                         {passcode[index]}
                       </Text>
                     ) : (

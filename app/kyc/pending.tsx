@@ -45,7 +45,11 @@ export default function KycPendingScreen() {
         useAuthStore.getState().setOnboardingStatus('completed');
         setLocalSubmissionPendingAt(null);
         resetKycState();
-        router.replace('/(tabs)');
+        if (router.canDismiss()) {
+          router.dismissAll();
+        } else {
+          router.replace('/(tabs)');
+        }
       }
       // rejected/expired — stay on screen to show the result
     },
@@ -109,7 +113,7 @@ export default function KycPendingScreen() {
     if (hasTimedOut) {
       return 'Verification is taking longer than expected. Your documents may need additional review. You can try again or contact support for assistance.';
     }
-    return 'This usually takes a few minutes. You can close this screen — we&apos;ll notify you when it&apos;s done.';
+    return "This usually takes a few minutes. You can close this screen — we'll notify you when it's done.";
   };
 
   return (
@@ -125,7 +129,13 @@ export default function KycPendingScreen() {
               Unable to check your verification status. Please try again later.
             </Text>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => {
+                if (router.canDismiss()) {
+                  router.dismissAll();
+                } else {
+                  router.replace('/(tabs)');
+                }
+              }}
               className="mt-8 rounded-full bg-primary px-8 py-4"
               accessibilityRole="button">
               <Text className="font-subtitle text-[15px] text-white">Close</Text>
@@ -143,7 +153,11 @@ export default function KycPendingScreen() {
             <Pressable
               onPress={() => {
                 resetKycState();
-                router.replace('/(tabs)');
+                if (router.canDismiss()) {
+                  router.dismissAll();
+                } else {
+                  router.replace('/(tabs)');
+                }
               }}
               className="mt-8 rounded-full bg-primary px-8 py-4"
               accessibilityRole="button">
@@ -202,7 +216,13 @@ export default function KycPendingScreen() {
                 <Text className="font-subtitle text-[15px] text-gray-700">Contact Support</Text>
               </Pressable>
               <Pressable
-                onPress={() => router.replace('/(tabs)')}
+                onPress={() => {
+                  if (router.canDismiss()) {
+                    router.dismissAll();
+                  } else {
+                    router.replace('/(tabs)');
+                  }
+                }}
                 className="mt-2 py-2"
                 accessibilityRole="button">
                 <Text className="text-center font-body text-[14px] text-gray-500">
@@ -224,7 +244,13 @@ export default function KycPendingScreen() {
               {getTimeoutMessage()}
             </Text>
             <Pressable
-              onPress={() => router.replace('/(tabs)')}
+              onPress={() => {
+                if (router.canDismiss()) {
+                  router.dismissAll();
+                } else {
+                  router.replace('/(tabs)');
+                }
+              }}
               className="mt-8 rounded-full border border-gray-200 px-8 py-4"
               accessibilityRole="button">
               <Text className="font-subtitle text-[15px] text-gray-700">Close</Text>

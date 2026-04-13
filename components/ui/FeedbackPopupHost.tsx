@@ -170,13 +170,13 @@ export function FeedbackPopupHost() {
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text
               className="text-[15px] text-black"
-              style={{ fontFamily: 'InstrumentSans-SemiBold' }}>
+              style={{ fontFamily: 'SFProDisplay-Semibold' }}>
               {popup.title}
             </Text>
             {popup.message ? (
               <Text
                 className="mt-1 text-[13px] text-black/70"
-                style={{ fontFamily: 'InstrumentSans-Regular' }}>
+                style={{ fontFamily: 'SFProDisplay-Regular' }}>
                 {popup.message}
               </Text>
             ) : null}
@@ -187,7 +187,7 @@ export function FeedbackPopupHost() {
               hitSlop={6}
               style={{ marginLeft: 10, alignSelf: 'center' }}>
               <Text
-                style={{ fontFamily: 'InstrumentSans-SemiBold', fontSize: 13, color: '#111827' }}>
+                style={{ fontFamily: 'SFProDisplay-Semibold', fontSize: 13, color: '#111827' }}>
                 {popup.action.label}
               </Text>
             </Pressable>

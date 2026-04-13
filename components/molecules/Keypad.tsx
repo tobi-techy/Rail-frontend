@@ -123,12 +123,12 @@ export const Keypad: React.FC<KeypadProps> = ({
                   <HugeiconsIcon icon={Key01Icon} size={24} color={iconColor} />
                 ) : isDecimal ? (
                   <Text
-                    className={`font-subtitle text-headline-2 ${isDark ? 'text-white' : 'text-text-primary'}`}>
+                    className={`font-mono-semibold text-headline-2 ${isDark ? 'text-white' : 'text-text-primary'}`}>
                     .
                   </Text>
                 ) : (
                   <Text
-                    className={`font-subtitle text-keypad ${isDark ? 'text-white' : 'text-text-primary'}`}>
+                    className={`font-mono-semibold text-keypad ${isDark ? 'text-white' : 'text-text-primary'}`}>
                     {key}
                   </Text>
                 )}

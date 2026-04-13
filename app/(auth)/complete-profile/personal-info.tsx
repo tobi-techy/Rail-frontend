@@ -7,6 +7,7 @@ import { InputField, AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { personalInfoSchema, fieldError } from '@/utils/schemas';
 
 export default function PersonalInfo() {
   const registrationData = useAuthStore((state) => state.registrationData);
@@ -18,23 +19,22 @@ export default function PersonalInfo() {
   const { showWarning } = useFeedbackPopup();
 
   const handleNext = () => {
-    const normalizedFirstName = firstName.trim();
-    const normalizedLastName = lastName.trim();
-
-    if (!normalizedFirstName || !normalizedLastName) {
-      if (!normalizedFirstName) setFirstNameError('First name is required');
-      if (!normalizedLastName) setLastNameError('Last name is required');
-      showWarning('Missing Information', 'Please enter your first and last name.');
+    const result = personalInfoSchema.safeParse({ firstName, lastName });
+    if (!result.success) {
+      setFirstNameError(fieldError(result.error, 'firstName'));
+      setLastNameError(fieldError(result.error, 'lastName'));
+      const first = result.error.issues[0]?.message ?? 'Please check your input.';
+      showWarning('Invalid Input', first);
       return;
     }
 
     setFirstNameError('');
     setLastNameError('');
     updateRegistrationData({
-      firstName: normalizedFirstName,
-      lastName: normalizedLastName,
+      firstName: result.data.firstName,
+      lastName: result.data.lastName,
     });
-    router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never);
+    router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_PASSWORD as never);
   };
 
   return (
@@ -52,7 +52,7 @@ export default function PersonalInfo() {
                 Personal Info
               </Text>
               <Text className="mt-2 font-body text-caption text-black/60">
-                Let&apos;s start with your name
+                Enter your legal name exactly as it appears on your ID document.
               </Text>
             </View>
           </StaggeredChild>

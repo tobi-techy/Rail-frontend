@@ -7,7 +7,7 @@ Pod::Spec.new do |s|
   s.author       = "Rail"
   s.platform     = :ios, "15.0"
   s.source       = { :path => "." }
-  s.source_files = "ios/**/*.{h,m}"
-  s.frameworks   = "MultipeerConnectivity"
+  s.source_files = "ios/**/*.{h,m,mm}"
+  s.frameworks      = "MultipeerConnectivity", "NearbyInteraction"
   s.dependency "React-Core"
 end

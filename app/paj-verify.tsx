@@ -11,7 +11,7 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { OTPInput, Button } from '@/components/ui';
@@ -29,6 +29,15 @@ export default function PajVerifyScreen() {
   const otpRef = useRef<any>(null);
   const { showError, showInfo } = useFeedbackPopup();
 
+  const navigation = useNavigation();
+  const safeGoBack = useCallback(() => {
+    if (navigation.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  }, [navigation]);
+
   const initiate = usePajInitiate();
   const verify = usePajVerify();
 
@@ -44,7 +53,7 @@ export default function PajVerifyScreen() {
       const res = await initiate.mutateAsync();
       if (res.status === 'already_verified') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.back();
+        safeGoBack();
         return;
       }
       setMaskedEmail(res.email || '');
@@ -53,7 +62,7 @@ export default function PajVerifyScreen() {
     } catch {
       showError('Failed to send verification code. Please try again.');
     }
-  }, [initiate, showError]);
+  }, [initiate, showError, safeGoBack]);
 
   const handleVerify = useCallback(
     async (code: string) => {
@@ -62,20 +71,20 @@ export default function PajVerifyScreen() {
       try {
         await verify.mutateAsync(code);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.back();
+        safeGoBack();
       } catch {
         setErrorMessage('Invalid or expired code. Please try again.');
         setOtp('');
         otpRef.current?.clear?.();
       }
     },
-    [verify]
+    [verify, safeGoBack]
   );
 
   const handleOTPComplete = useCallback(
     (code: string) => {
       setOtp(code);
-      if (code.length === 6 && !verify.isPending) {
+      if (code.length === 4 && !verify.isPending) {
         handleVerify(code);
       }
     },
@@ -114,7 +123,7 @@ export default function PajVerifyScreen() {
             <View className="flex-row items-center pb-2 pt-1">
               <Pressable
                 className="size-11 items-center justify-center rounded-full bg-surface"
-                onPress={() => router.back()}
+                onPress={safeGoBack}
                 accessibilityRole="button"
                 accessibilityLabel="Go back">
                 <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
@@ -122,7 +131,7 @@ export default function PajVerifyScreen() {
             </View>
 
             {step === 'initiate' ? (
-              <Animated.View entering={FadeInDown.duration(300)}>
+              <Animated.View entering={FadeInDown.duration(300)} className="flex-1">
                 <View className="mb-8 mt-6">
                   <Text className="font-subtitle text-[34px] text-black">
                     Enable Naira{'\n'}transactions
@@ -137,6 +146,7 @@ export default function PajVerifyScreen() {
                   <Button
                     title="Send verification code"
                     variant="black"
+                    className="bg-primary"
                     loading={initiate.isPending}
                     onPress={handleInitiate}
                   />
@@ -146,12 +156,12 @@ export default function PajVerifyScreen() {
                 </View>
               </Animated.View>
             ) : (
-              <Animated.View entering={FadeInDown.duration(300)}>
+              <Animated.View entering={FadeInDown.duration(300)} className="flex-1">
                 <View className="mb-8 mt-6">
                   <Text className="font-subtitle text-[34px] text-black">Enter code</Text>
                   <View className="mt-4">
                     <Text className="font-body text-[18px] text-black/60">
-                      We sent a 6-digit code to
+                      We sent a 4-digit code to
                     </Text>
                     <Text className="mt-1 font-subtitle text-[28px] text-black">
                       {maskedEmail || 'your email'}
@@ -165,7 +175,7 @@ export default function PajVerifyScreen() {
                   </Text>
                   <OTPInput
                     ref={otpRef}
-                    length={6}
+                    length={4}
                     onComplete={handleOTPComplete}
                     autoValidate
                     error={errorMessage}
@@ -177,8 +187,9 @@ export default function PajVerifyScreen() {
                   <Button
                     title="Verify"
                     variant="black"
+                    className="bg-primary"
                     loading={verify.isPending}
-                    disabled={otp.length < 6}
+                    disabled={otp.length < 4}
                     onPress={() => handleVerify(otp)}
                   />
 

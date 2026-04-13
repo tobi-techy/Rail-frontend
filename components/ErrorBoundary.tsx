@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   devText: {
     fontSize: 11,
     color: '#991B1B',
-    fontFamily: 'monospace',
+    fontFamily: 'SFMono-Regular',
   },
   footer: {
     paddingHorizontal: 20,

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Pressable, Image, ImageSourcePropType } from 'react-native';
+import { View, Text, ActivityIndicator, Pressable } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import QRCodeStyled from 'react-native-qrcode-styled';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
@@ -7,21 +7,11 @@ import { Button } from '../ui';
 import { useWalletAddresses, useGetDepositAddress } from '@/api/hooks/useWallet';
 import { getChainConfig, isEVMChain, isSolanaChain } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
-import { SolanaIcon, MaticIcon, UsdcIcon, AvalancheIcon } from '@/assets/svg';
+import { UsdcIcon } from '@/assets/svg';
+import { ChainLogo } from '@/components/ChainLogo';
 import type { WalletChain } from '@/api/types';
 import { CheckmarkCircle01Icon, Copy01Icon, RefreshIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-
-const CeloIconImg = require('@/assets/svg/celo.webp') as ImageSourcePropType;
-const BaseIconImg = require('@/assets/svg/base.jpeg') as ImageSourcePropType;
-
-const CHAIN_ICONS: Record<string, React.ComponentType<any> | ImageSourcePropType> = {
-  SOL: SolanaIcon,
-  MATIC: MaticIcon,
-  CELO: CeloIconImg,
-  BASE: BaseIconImg,
-  AVAX: AvalancheIcon,
-};
 
 interface CryptoReceiveSheetProps {
   visible: boolean;
@@ -71,25 +61,13 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
     setTimeout(() => setCopied(false), 2000);
   }, [address, notification]);
 
-  const iconValue = CHAIN_ICONS[chain];
-  const isImageIcon = chain === 'CELO' || chain === 'BASE';
-
   const header = (
     <View className="mb-5 flex-row items-center gap-3">
-      {/* Chain icon + USDC badge */}
       <View className="relative size-12">
         <View
           className="size-12 items-center justify-center rounded-full"
           style={{ backgroundColor: chainConfig.color + '18' }}>
-          {isImageIcon ? (
-            <Image
-              source={iconValue as ImageSourcePropType}
-              style={{ width: 28, height: 28, borderRadius: 14 }}
-            />
-          ) : // @ts-ignore - SVG component
-          iconValue ? (
-            React.createElement(iconValue as React.ComponentType<any>, { width: 28, height: 28 })
-          ) : null}
+          <ChainLogo chain={chain} size={28} />
         </View>
         <View className="absolute -bottom-1 -right-1 size-5 items-center justify-center rounded-full bg-white shadow-sm">
           <TokenBadge width={14} height={14} />
@@ -190,7 +168,7 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
 
         {isEVMChain(chain) && (
           <Text className="mb-4 text-center font-caption text-xs text-text-secondary">
-            This address is shared across EVM networks (Polygon, Celo, Base, Avalanche).
+            This address is shared across EVM networks (Ethereum, Arbitrum, Optimism, Polygon, Base, Avalanche).
           </Text>
         )}
 

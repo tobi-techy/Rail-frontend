@@ -54,7 +54,7 @@ export function PajVerificationSheet({ visible, onClose, onVerified }: PajVerifi
   const handleOTPComplete = useCallback(
     (code: string) => {
       setOtp(code);
-      if (code.length === 6) {
+      if (code.length === 4) {
         handleVerify(code);
       }
     },
@@ -96,11 +96,11 @@ export function PajVerificationSheet({ visible, onClose, onVerified }: PajVerifi
             Enter verification code
           </Text>
           <Text className="mb-6 font-body text-[14px] leading-5 text-text-secondary">
-            We sent a 6-digit code to {maskedEmail || 'your email'}
+            We sent a 4-digit code to {maskedEmail || 'your email'}
           </Text>
 
           <OTPInput
-            length={6}
+            length={4}
             value={otp}
             onChange={handleOTPComplete}
             disabled={verify.isPending}
@@ -110,8 +110,9 @@ export function PajVerificationSheet({ visible, onClose, onVerified }: PajVerifi
             <Button
               title="Verify"
               variant="black"
+              className="bg-primary"
               loading={verify.isPending}
-              disabled={otp.length < 6}
+              disabled={otp.length < 4}
               onPress={() => handleVerify(otp)}
             />
           </View>

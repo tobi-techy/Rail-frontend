@@ -64,7 +64,7 @@ export const GradientCard: React.FC<GradientCardProps> = ({
 
         {/* Amount section */}
         <View>
-          <Text className="font-subtitle text-white">{amount}</Text>
+          <Text className="font-mono-semibold text-white">{amount}</Text>
           {amountSubtitle && (
             <Text className="font-body text-white/80">{amountSubtitle}</Text>
           )}

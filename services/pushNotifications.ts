@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import apiClient from '@/api/client';
+import { logger } from '@/lib/logger';
 
 // Configure how notifications appear when app is in foreground
 Notifications.setNotificationHandler({
@@ -30,7 +31,7 @@ class PushNotificationService {
 
   async initialize(): Promise<string | null> {
     if (!Device.isDevice) {
-      console.log('Push notifications require a physical device');
+      logger.debug('Push notifications require a physical device', { component: 'PushNotifications' });
       return null;
     }
 
@@ -44,7 +45,7 @@ class PushNotificationService {
     }
 
     if (finalStatus !== 'granted') {
-      console.log('Push notification permission denied');
+      logger.debug('Push notification permission denied', { component: 'PushNotifications' });
       return null;
     }
 
@@ -105,7 +106,7 @@ class PushNotificationService {
         device_model: Device.modelName,
         os_version: Device.osVersion,
       });
-      console.log('Push token registered with backend');
+      logger.debug('Push token registered with backend', { component: 'PushNotifications' });
     } catch (error) {
       console.warn('Failed to register push token:', error);
     }

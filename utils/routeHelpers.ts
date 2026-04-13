@@ -85,6 +85,7 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     segments[0] === 'fund-naira' ||
     segments[0] === 'withdraw-naira' ||
     segments[0] === 'paj-verify' ||
+    segments[0] === 'ai-chat' ||
     segments[0] === 'tap-to-pay' ||
     pathname.startsWith('/spending-stash') ||
     pathname.startsWith('/investment-stash') ||
@@ -102,9 +103,11 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/fund-naira') ||
     pathname.startsWith('/withdraw-naira') ||
     pathname.startsWith('/paj-verify') ||
+    pathname.startsWith('/ai-chat') ||
     pathname.startsWith('/tap-to-pay') ||
     pathname.startsWith('/kyc') ||
-    pathname.startsWith('/card'),
+    pathname.startsWith('/card') ||
+    pathname.startsWith('/complete-profile'),
   isOnWelcomeScreen: pathname === '/' || pathname === normalizeRoutePath(ROUTES.INTRO),
   isOnLoginPasscode: pathname === '/login-passcode',
   isOnVerifyEmail: pathname === normalizeRoutePath(ROUTES.AUTH.VERIFY_EMAIL),
@@ -123,7 +126,8 @@ export const isInCriticalAuthFlow = (config: RouteConfig): boolean => {
     config.isOnVerifyEmail ||
     config.isOnCreatePasscode ||
     config.isOnConfirmPasscode ||
-    config.isOnCreateRailTag
+    config.isOnCreateRailTag ||
+    config.isOnCompleteProfile
   );
 };
 
@@ -137,11 +141,11 @@ const handleAuthenticatedUser = (
   hasValidPasscodeSession: boolean
 ): string | null => {
   const { user, onboardingStatus, hasPasscode } = authState;
-  // Prefer top-level onboardingStatus because it is updated during onboarding flows
-  // (e.g. after complete-profile) before the nested user object is refreshed.
   const userOnboardingStatus = onboardingStatus || user?.onboardingStatus;
   const needsProfile = isProfileCompletionRequired(userOnboardingStatus);
-  const needsPasscodeSetup = !hasPasscode && !needsProfile && Boolean(userOnboardingStatus);
+  // Don't redirect to create-passcode if user has a valid passcode session.
+  // This means they just logged in and syncPasscodeStatus hasn't completed yet.
+  const needsPasscodeSetup = !hasPasscode && !needsProfile && Boolean(userOnboardingStatus) && !hasValidPasscodeSession;
 
   if (needsProfile) {
     if (
@@ -178,7 +182,8 @@ const handleAuthenticatedUser = (
     !config.isOnLoginPasscode &&
     !config.isOnCreatePasscode &&
     !config.isOnConfirmPasscode &&
-    !config.isOnCreateRailTag
+    !config.isOnCreateRailTag &&
+    !config.isOnCompleteProfile
   ) {
     logger.info('[RouteHelpers] Passcode session missing/expired, redirecting to login-passcode', {
       component: 'routeHelpers',

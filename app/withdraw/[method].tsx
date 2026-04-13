@@ -19,6 +19,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Keypad } from '@/components/molecules/Keypad';
 import { Button } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
+import { useUIStore } from '@/stores';
 import { SessionManager } from '@/utils/sessionManager';
 import {
   safeName,
@@ -59,7 +60,6 @@ import {
   WithdrawSubmissionSheet,
 } from './method-screen/sections';
 import { P2PSendScreen } from './method-screen/P2PSendScreen';
-import { DestinationSheet, DetailsSheet, ConfirmSheet } from './method-screen/StepSheets';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
@@ -70,7 +70,13 @@ export default function WithdrawAmountScreen() {
   const { data: station, refetch: refetchStation } = useStation();
   const { data: passkeys, isLoading: isPasskeysLoading } = usePasskeys();
   const { mutateAsync: registerPasskey, isPending: isRegisteringPasskey } = useRegisterPasskey();
-  const params = useLocalSearchParams<{ method?: string; symbol?: string; flow?: string; asset?: string }>();
+  const params = useLocalSearchParams<{
+    method?: string; symbol?: string; flow?: string; asset?: string;
+    _confirm?: string;
+    destinationInput?: string; destinationChain?: string;
+    fiatAccountHolderName?: string; fiatAccountNumber?: string;
+    category?: string; narration?: string;
+  }>();
 
   const selectedMethod = resolveMethod(
     typeof params.method === 'string' ? params.method : undefined
@@ -104,16 +110,16 @@ export default function WithdrawAmountScreen() {
 
   const [rawAmount, setRawAmount] = useState('0');
   const [didTryContinue, setDidTryContinue] = useState(false);
-  // Step-based flow state
+  // Step-based flow state — restored from params when returning from confirm screen
   const [currentStep, setCurrentStep] = useState<WithdrawalStep>('amount');
-  const [destinationInput, setDestinationInput] = useState(prefilledAssetSymbol);
-  const [destinationChain, setDestinationChain] = useState('SOL');
+  const [destinationInput, setDestinationInput] = useState(params.destinationInput ?? prefilledAssetSymbol);
+  const [destinationChain, setDestinationChain] = useState(params.destinationChain ?? 'SOL');
   const [didTryDestination, setDidTryDestination] = useState(false);
   const [didTryFiatAccount, setDidTryFiatAccount] = useState(false);
-  const [fiatAccountHolderName, setFiatAccountHolderName] = useState('');
-  const [fiatAccountNumber, setFiatAccountNumber] = useState('');
-  const [category, setCategory] = useState('Transfer');
-  const [narration, setNarration] = useState('');
+  const [fiatAccountHolderName, setFiatAccountHolderName] = useState(params.fiatAccountHolderName ?? '');
+  const [fiatAccountNumber, setFiatAccountNumber] = useState(params.fiatAccountNumber ?? '');
+  const [category, setCategory] = useState(params.category ?? 'Transfer');
+  const [narration, setNarration] = useState(params.narration ?? '');
   const [isAuthorizeScreenVisible, setIsAuthorizeScreenVisible] = useState(false);
   const [isConfirmSheetVisible, setIsConfirmSheetVisible] = useState(false);
   const [isSubmissionSheetVisible, setIsSubmissionSheetVisible] = useState(false);
@@ -413,6 +419,25 @@ export default function WithdrawAmountScreen() {
     setRawAmount(formatMaxAmount(maxWithdrawable));
   }, [maxWithdrawable]);
 
+  // When returning from the confirm screen, open auth immediately
+  useEffect(() => {
+    if (params._confirm !== '1') return;
+    passkey.onAuthPasscodeChange('');
+    if (hasActivePasscodeSession()) {
+      setSubmitWithActiveSession(true);
+    } else {
+      setAuthorizedFingerprint(null);
+      setIsAuthorizeScreenVisible(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params._confirm]);
+
+  useEffect(() => {
+    if (!submitWithActiveSession) return;
+    setSubmitWithActiveSession(false);
+    onSubmitAuthorizedWithdrawal();
+  }, [onSubmitAuthorizedWithdrawal, submitWithActiveSession]);
+
   const onContinuePress = useCallback(() => {
     setDidTryContinue(true);
     funding.reset();
@@ -422,55 +447,31 @@ export default function WithdrawAmountScreen() {
       passkey.onAuthPasscodeChange('');
       passkey.setAuthError('');
       setAuthorizedFingerprint(null);
-      setCurrentStep('confirm');
-      return;
-    }
-    // Step 1 → Step 2: Destination
-    setDidTryDestination(false);
-    setCurrentStep('destination');
-  }, [canContinue, funding, isMWAWithdrawMethod, mwaWithdrawal, passkey]);
-
-  const onDestinationContinue = useCallback(() => {
-    if (isMobileWalletFundingFlow) {
-      void funding.startFunding(() => {
-        setCurrentStep('amount');
-        setIsSubmissionSheetVisible(true);
-      });
-      return;
-    }
-    setDidTryDestination(true);
-    setDidTryFiatAccount(true);
-    passkey.setAuthError('');
-    if (!canSaveDestination) return;
-    // Step 2 → Step 3: Details
-    setCurrentStep('details');
-  }, [canSaveDestination, funding, isMobileWalletFundingFlow, passkey]);
-
-  const onDetailsContinue = useCallback(() => {
-    // Step 3 → Step 4: Confirm
-    setCurrentStep('confirm');
-  }, []);
-
-  const onConfirmTransaction = useCallback(() => {
-    setCurrentStep('amount');
-    if (isMWAWithdrawMethod) {
       setIsAuthorizeScreenVisible(true);
       return;
     }
-    passkey.onAuthPasscodeChange('');
-    if (hasActivePasscodeSession()) {
-      setSubmitWithActiveSession(true);
-      return;
-    }
-    setAuthorizedFingerprint(null);
-    setIsAuthorizeScreenVisible(true);
-  }, [hasActivePasscodeSession, isMWAWithdrawMethod, passkey]);
-
-  useEffect(() => {
-    if (!submitWithActiveSession) return;
-    setSubmitWithActiveSession(false);
-    onSubmitAuthorizedWithdrawal();
-  }, [onSubmitAuthorizedWithdrawal, submitWithActiveSession]);
+    router.push({
+      pathname: '/withdraw/destination',
+      params: {
+        method: selectedMethod,
+        amount: numericAmount.toFixed(2),
+        isFiatMethod: String(isFiatMethod),
+        isCryptoMethod: String(isCryptoDestinationMethod),
+        isAssetTradeMethod: String(isAssetTradeMethod),
+        methodTitle: methodCopy.title,
+        detailLabel: methodCopy.detailLabel,
+        detailPlaceholder: methodCopy.detailPlaceholder,
+        detailHint: methodCopy.detailHint,
+        availableBalance: String(availableBalance),
+        withdrawalLimit: String(maxWithdrawable),
+        currency: useUIStore.getState().currency,
+      },
+    });
+  }, [
+    canContinue, funding, isMWAWithdrawMethod, mwaWithdrawal, passkey,
+    selectedMethod, numericAmount, isFiatMethod, isCryptoDestinationMethod,
+    isAssetTradeMethod, methodCopy, availableBalance, maxWithdrawable,
+  ]);
 
   const MAX_PIN_ATTEMPTS = 5;
   const LOCKOUT_DURATION_MS = 30_000;
@@ -539,14 +540,6 @@ export default function WithdrawAmountScreen() {
     }
     onCloseSubmittedSheet();
   }, [funding.isFundingPending, isMobileWalletFundingFlow, onCloseSubmittedSheet]);
-
-  const onDestinationChange = useCallback(
-    (value: string) => {
-      setDidTryDestination(false);
-      setDestinationInput(sanitizeDestinationInput({ value, isFiatMethod, isAssetTradeMethod }));
-    },
-    [isAssetTradeMethod, isFiatMethod]
-  );
 
   // ── Derived display ───────────────────────────────────────────────────────
 
@@ -678,6 +671,32 @@ export default function WithdrawAmountScreen() {
             )}
           </View>
 
+          <Animated.View
+            entering={SlideInUp.delay(100).duration(500)}
+            className="pb-3 pt-1 px-0">
+            {isMWAWithdrawMethod && !!mwaWithdrawal.error && (
+              <Animated.View entering={FadeIn.duration(200)}>
+                <Text className="mb-2 font-body text-[13px] text-white/90">
+                  {mwaWithdrawal.error}
+                </Text>
+              </Animated.View>
+            )}
+            <Button
+              title={
+                mwaWithdrawal.isConnecting
+                  ? 'Opening wallet...'
+                  : mwaWithdrawal.isSubmitting
+                    ? 'Sending...'
+                    : 'Send'
+              }
+              onPress={onContinuePress}
+              disabled={!canContinue}
+              loading={mwaWithdrawal.isLoading}
+              variant="white"
+              className="bg-white"
+            />
+          </Animated.View>
+
           <Animated.View entering={SlideInUp.delay(100).duration(500)} style={keypadAnimatedStyle}>
             <Keypad
               className="pb-2"
@@ -689,97 +708,7 @@ export default function WithdrawAmountScreen() {
           </Animated.View>
         </View>
 
-        <Animated.View
-          entering={SlideInUp.delay(200).duration(500)}
-          className="border-t border-white/20 px-5 pt-3"
-          style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
-          {isMWAWithdrawMethod && !!mwaWithdrawal.error && (
-            <Animated.View entering={FadeIn.duration(200)}>
-              <Text className="mb-2 font-body text-[13px] text-white/90">
-                {mwaWithdrawal.error}
-              </Text>
-            </Animated.View>
-          )}
-          <Button
-            title={
-              mwaWithdrawal.isConnecting
-                ? 'Opening wallet...'
-                : mwaWithdrawal.isSubmitting
-                  ? 'Sending...'
-                  : 'Continue'
-            }
-            onPress={onContinuePress}
-            disabled={!canContinue}
-            loading={mwaWithdrawal.isLoading}
-            variant="white"
-            className="bg-white"
-          />
-        </Animated.View>
-
-        {/* Step 2: Destination Sheet */}
-        <DestinationSheet
-          visible={currentStep === 'destination'}
-          onClose={() => setCurrentStep('amount')}
-          onContinue={onDestinationContinue}
-          methodCopy={methodCopy}
-          isFiatMethod={isFiatMethod}
-          isCryptoMethod={isCryptoDestinationMethod}
-          destinationInput={destinationInput}
-          onDestinationChange={onDestinationChange}
-          destinationError={destinationError}
-          didTryDestination={didTryDestination}
-          destinationChain={destinationChain}
-          onChainChange={setDestinationChain}
-          fiatAccountHolderName={fiatAccountHolderName}
-          onFiatAccountHolderNameChange={setFiatAccountHolderName}
-          fiatAccountNumber={fiatAccountNumber}
-          onFiatAccountNumberChange={setFiatAccountNumber}
-          fiatAccountNumberError={fiatAccountNumberError}
-          didTryFiatAccount={didTryFiatAccount}
-          numericAmount={numericAmount}
-        />
-
-        {/* Step 3: Details Sheet */}
-        <DetailsSheet
-          visible={currentStep === 'details'}
-          onClose={() => setCurrentStep('destination')}
-          onContinue={onDetailsContinue}
-          numericAmount={numericAmount}
-          feeAmount={feeAmount}
-          totalAmount={totalAmount}
-          category={category}
-          onCategoryChange={setCategory}
-          narration={narration}
-          onNarrationChange={setNarration}
-          methodCopy={methodCopy}
-          isCryptoMethod={isCryptoDestinationMethod}
-          destinationChain={destinationChain}
-          destinationInput={destinationInput}
-          fiatAccountHolderName={fiatAccountHolderName}
-          fiatAccountNumber={fiatAccountNumber}
-        />
-
-        {/* Step 4: Confirm Sheet */}
-        <ConfirmSheet
-          visible={currentStep === 'confirm'}
-          onClose={() => setCurrentStep('details')}
-          onConfirm={onConfirmTransaction}
-          numericAmount={numericAmount}
-          feeAmount={feeAmount}
-          totalAmount={totalAmount}
-          methodTitle={methodCopy.title}
-          isCryptoMethod={isCryptoDestinationMethod}
-          isFiatMethod={isFiatMethod}
-          destinationChain={destinationChain}
-          destinationInput={destinationInput}
-          fiatAccountHolderName={fiatAccountHolderName}
-          fiatAccountNumber={fiatAccountNumber}
-          asset={asset}
-          availableBalance={availableBalance}
-          withdrawalLimit={maxWithdrawable}
-          category={category}
-          narration={narration}
-        />
+        <View style={{ paddingBottom: Math.max(insets.bottom, 12) }} />
 
         <WithdrawSubmissionSheet
           visible={isSubmissionSheetVisible}

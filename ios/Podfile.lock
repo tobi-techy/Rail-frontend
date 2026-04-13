@@ -25,6 +25,28 @@ PODS:
     - GoogleUtilities/UserDefaults (~> 8.0)
     - PromisesObjC (~> 2.4)
   - DiditSDK (3.2.8)
+  - Ease (0.4.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - EXApplication (7.0.8):
     - ExpoModulesCore
   - EXAV (16.0.8):
@@ -2594,6 +2616,7 @@ PODS:
 
 DEPENDENCIES:
   - DiditSDK (from `https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.2.8/DiditSDK.podspec`)
+  - Ease (from `../node_modules/react-native-ease`)
   - EXApplication (from `../node_modules/expo-application/ios`)
   - EXAV (from `../node_modules/expo-av/ios`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
@@ -2743,6 +2766,8 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   DiditSDK:
     :podspec: https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.2.8/DiditSDK.podspec
+  Ease:
+    :path: "../node_modules/react-native-ease"
   EXApplication:
     :path: "../node_modules/expo-application/ios"
   EXAV:
@@ -3008,6 +3033,7 @@ SPEC CHECKSUMS:
   AppAuth: 1c1a8afa7e12f2ec3a294d9882dfa5ab7d3cb063
   AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
   DiditSDK: 46ecbc14aef347a9b2481625df70fed418985df6
+  Ease: f274c6c2deebb432862bc1dc245f17fcb4977ea7
   EXApplication: 1e98d4b1dccdf30627f92917f4b2c5a53c330e5f
   EXAV: b60fcf142fae6684d295bc28cd7cfcb3335570ea
   EXConstants: fce59a631a06c4151602843667f7cfe35f81e271
@@ -3058,7 +3084,7 @@ SPEC CHECKSUMS:
   PostHog: 03a7f279ef47449caf4b5757efe226f77798990c
   posthog-react-native-session-replay: cc5a281243db99912bf0edf27a58c81a9c672a3a
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
-  RailTapToPay: 4a0cd989cbbc17ba32f53a6d2dc3519f8cc43f34
+  RailTapToPay: 77f267bf1cbcacc8623a87dadbfd9a278a19b2e4
   RCTDeprecation: 943572d4be82d480a48f4884f670135ae30bf990
   RCTRequired: 8f3cfc90cc25cf6e420ddb3e7caaaabc57df6043
   RCTTypeSafety: 16a4144ca3f959583ab019b57d5633df10b5e97c
@@ -3147,6 +3173,6 @@ SPEC CHECKSUMS:
   Yoga: 5934998fbeaef7845dbf698f698518695ab4cd1a
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: f4f109a914151815daf95246a6d4e46d11c2d371
+PODFILE CHECKSUM: b196f0c320fdc584f3483f289fc530149436eabc
 
 COCOAPODS: 1.16.2

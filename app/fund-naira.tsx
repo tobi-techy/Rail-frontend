@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import Animated, { FadeInDown, FadeIn, FadeInUp, SlideInUp } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
@@ -80,6 +80,14 @@ export default function FundNairaScreen() {
   } | null>(null);
 
   const { showError } = useFeedbackPopup();
+  const navigation = useNavigation();
+  const safeGoBack = useCallback(() => {
+    if (navigation.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  }, [navigation]);
   const { data: rates } = usePajRates();
   const onramp = usePajOnramp();
   const { data: orderStatus } = usePajOrderStatus(orderId, step === 'polling');
@@ -146,7 +154,7 @@ export default function FundNairaScreen() {
             className="flex-row items-center justify-between pb-2 pt-1">
             <Pressable
               className="size-11 items-center justify-center rounded-full bg-white/20"
-              onPress={() => router.back()}
+              onPress={safeGoBack}
               accessibilityRole="button"
               accessibilityLabel="Close">
               <HugeiconsIcon icon={Cancel01Icon} size={20} color="#FFFFFF" />
@@ -220,7 +228,7 @@ export default function FundNairaScreen() {
           <View className="flex-row items-center pb-2 pt-1">
             <Pressable
               className="size-11 items-center justify-center rounded-full bg-surface"
-              onPress={() => router.back()}
+              onPress={safeGoBack}
               accessibilityRole="button"
               accessibilityLabel="Go back">
               <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
@@ -282,7 +290,7 @@ export default function FundNairaScreen() {
                       account.
                     </Text>
                     <View className="mt-8 w-full">
-                      <Button title="Done" variant="black" onPress={() => router.back()} />
+                      <Button title="Done" variant="black" onPress={safeGoBack} />
                     </View>
                   </>
                 ) : isFailed ? (
@@ -294,7 +302,7 @@ export default function FundNairaScreen() {
                       Your deposit could not be processed. Please contact support.
                     </Text>
                     <View className="mt-8 w-full">
-                      <Button title="Go back" variant="black" onPress={() => router.back()} />
+                      <Button title="Go back" variant="black" onPress={safeGoBack} />
                     </View>
                   </>
                 ) : (

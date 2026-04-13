@@ -3,7 +3,20 @@
 import { PaginationParams, PaginatedResponse } from './common';
 
 // Mainnet chains
-export type MainnetChain = 'SOL' | 'MATIC' | 'CELO' | 'BASE' | 'AVAX';
+export type MainnetChain =
+  | 'SOL'
+  | 'ETH'
+  | 'BASE'
+  | 'ARB'
+  | 'OP'
+  | 'MATIC'
+  | 'AVAX'
+  | 'STARKNET'
+  | 'BSC'
+  | 'BNB'
+  | 'MONAD'
+  | 'HYPEREVM'
+  | 'LISK';
 
 // All supported wallet chains
 export type WalletChain = MainnetChain;

@@ -2,17 +2,12 @@ import React from 'react';
 import { View, Text, ViewProps, TouchableOpacity } from 'react-native';
 import { useUIStore } from '@/stores';
 import { sanitizeNumber } from '@/utils/sanitizeInput';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import type { Currency } from '@/stores/uiStore';
 import { formatCurrencyAmount, convertFromUsd, type FxRates } from '@/utils/currency';
 import { EyeIcon, ViewOffIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import { EaseView } from 'react-native-ease';
 
 export interface BalanceCardProps extends ViewProps {
   balance?: string;
@@ -27,36 +22,26 @@ function formatBalance(usdValue: number, currency: Currency, rates: FxRates): st
   return formatCurrencyAmount(converted, currency);
 }
 
+const DIGIT_H = 66; // text-balance-lg is 50px, lineHeight 1.1 = 55px — add 1px buffer
+
 function AnimatedBalance({ value, isVisible }: { value: string; isVisible: boolean }) {
-  const opacity = useSharedValue(1);
-  const displayValue = isVisible ? value : '****';
-  const isFirst = React.useRef(true);
-
-  React.useEffect(() => {
-    if (isFirst.current) {
-      isFirst.current = false;
-      return;
-    }
-    opacity.value = 0;
-    opacity.value = withTiming(1, { duration: 140, easing: Easing.out(Easing.ease) });
-  }, [displayValue, opacity]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
+  const display = isVisible ? value : value.replace(/[0-9]/g, '•');
 
   return (
-    <Animated.View style={[animatedStyle, { maxWidth: '86%' }]} className="min-w-0">
-      <Animated.Text
-        className="font-subtitle text-balance-lg text-text-primary"
-        style={{ fontVariant: ['tabular-nums'] }}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.58}
-        ellipsizeMode="tail">
-        {displayValue}
-      </Animated.Text>
-    </Animated.View>
+    <View style={{ maxWidth: '86%', flexDirection: 'row', alignItems: 'flex-end' }}>
+      <Text
+        style={{
+          height: DIGIT_H,
+          lineHeight: DIGIT_H,
+          fontFamily: 'SFMono-Semibold',
+          fontVariant: ['tabular-nums'],
+          fontSize: 60,
+          letterSpacing: -3.8,
+          color: '#070914',
+        }}>
+        {display}
+      </Text>
+    </View>
   );
 }
 
@@ -71,7 +56,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   const { isBalanceVisible, toggleBalanceVisibility, currency, currencyRates } = useUIStore();
   const isNegative = percentChange.startsWith('-');
   const rawUsd = parseFloat(balance.replace(/[^0-9.-]/g, '')) || 0;
-  const dataLoading = isLoading ?? (rawUsd === 0 && percentChange === '0.00%');
+  const dataLoading = isLoading === true;
   const displayBalance = dataLoading ? '---' : formatBalance(rawUsd, currency, currencyRates);
 
   return (

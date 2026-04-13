@@ -6,7 +6,7 @@ import { type KYCStatusResponse, type KycStatus, isKycInReview } from '@/api/typ
 import { useKYCStatus, useKycStatusPolling } from '@/api/hooks/useKYC';
 import { useAuthStore } from '@/stores/authStore';
 import { useKycStore } from '@/stores/kycStore';
-import { Alert02Icon, Camera01Icon, CheckmarkCircle02Icon, Clock01Icon, File01Icon, RefreshIcon } from '@hugeicons/core-free-icons';
+import { Alert02Icon, Camera01Icon, CheckmarkCircle02Icon, Clock01Icon, File01Icon, RefreshIcon, ShieldKeyIcon, LockPasswordIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import {
   NavigableBottomSheet,
@@ -109,8 +109,15 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
   }, [onClose]);
 
   const handleContinue = useCallback(() => {
+    const state = useKycStore.getState();
+    const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, diditSessionToken } = state;
+    let screen = '/kyc/tax-id';
+    if (diditSessionToken) screen = '/kyc/didit-sdk';
+    else if (disclosuresConfirmed && taxId && employmentStatus && investmentPurposes.length > 0) screen = '/kyc/disclosures';
+    else if (employmentStatus && investmentPurposes.length > 0 && taxId) screen = '/kyc/disclosures';
+    else if (taxId) screen = '/kyc/about-you';
     onClose();
-    requestAnimationFrame(() => router.push('/kyc'));
+    requestAnimationFrame(() => router.push(screen as never));
   }, [onClose]);
 
   const handleCheckStatus = useCallback(async () => {
@@ -146,7 +153,7 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
         : statusMode === 'rejected'
           ? status?.rejection_reason ||
             'Your last submission was not approved. You can retry now with clear ID photos.'
-          : 'We use this info to confirm your identity and comply with legal requirements.';
+          : 'We use this info to confirm your identity and comply with financial regulations. Takes under 5 minutes.';
 
   const screens: BottomSheetScreen[] = [
     {
@@ -195,37 +202,46 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
             </View>
 
             {statusMode === 'not_started' && (
-              <View className="mb-6 rounded-3xl border border-gray-200 bg-white">
-                <View className="flex-row items-center gap-4 border-b border-gray-100 p-5">
-                  <HugeiconsIcon icon={File01Icon} size={24} color="#111827" />
-                  <View className="flex-1">
-                    <Text className="font-subtitle text-[15px] text-gray-900">Your photo ID</Text>
-                    <Text className="mt-1 font-body text-[13px] leading-5 text-gray-500">
-                      We accept most common forms of ID.
+              <>
+                <View className="mb-4 rounded-3xl border border-gray-200 bg-white">
+                  <View className="flex-row items-center gap-4 border-b border-gray-100 p-5">
+                    <HugeiconsIcon icon={File01Icon} size={24} color="#111827" />
+                    <View className="flex-1">
+                      <Text className="font-subtitle text-[15px] text-gray-900">Your photo ID</Text>
+                      <Text className="mt-1 font-body text-[13px] leading-5 text-gray-500">
+                        We accept most common forms of ID.
+                      </Text>
+                    </View>
+                  </View>
+                  <View className="flex-row items-center gap-4 p-5">
+                    <HugeiconsIcon icon={Camera01Icon} size={24} color="#111827" />
+                    <View className="flex-1">
+                      <Text className="font-subtitle text-[15px] text-gray-900">
+                        A quick scan of your face
+                      </Text>
+                      <Text className="mt-1 font-body text-[13px] leading-5 text-gray-500">
+                        This is to confirm that you match your ID.
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                <View className="mb-6 flex-row gap-3">
+                  <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-gray-50 px-3 py-2.5">
+                    <HugeiconsIcon icon={ShieldKeyIcon} size={16} color="#6B7280" />
+                    <Text className="flex-1 font-body text-[12px] leading-4 text-gray-500">
+                      256-bit encrypted & never sold
+                    </Text>
+                  </View>
+                  <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-gray-50 px-3 py-2.5">
+                    <HugeiconsIcon icon={LockPasswordIcon} size={16} color="#6B7280" />
+                    <Text className="flex-1 font-body text-[12px] leading-4 text-gray-500">
+                      Required by financial regulations
                     </Text>
                   </View>
                 </View>
-                <View className="flex-row items-center gap-4 p-5">
-                  <HugeiconsIcon icon={Camera01Icon} size={24} color="#111827" />
-                  <View className="flex-1">
-                    <Text className="font-subtitle text-[15px] text-gray-900">
-                      A quick scan of your face
-                    </Text>
-                    <Text className="mt-1 font-body text-[13px] leading-5 text-gray-500">
-                      This is to confirm that you match your ID.
-                    </Text>
-                  </View>
-                </View>
-              </View>
+              </>
             )}
 
-            {statusMode === 'rejected' && (
-              <View className="mb-4 rounded-2xl bg-red-50 px-4 py-3">
-                <Text className="font-body text-[13px] text-red-700">{introBody}</Text>
-              </View>
-            )}
-
-            {/* #7: Polling timeout recovery */}
             {statusMode === 'pending' && pollingTimedOut && (
               <View className="mb-4 rounded-2xl bg-amber-50 px-4 py-3">
                 <Text className="font-body text-[13px] leading-5 text-amber-800">

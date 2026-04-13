@@ -1,37 +1,54 @@
-import React, { useEffect, useRef } from 'react';
-import { Text } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { View, Text } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withTiming,
-  Easing,
+  withSpring,
 } from 'react-native-reanimated';
 import { layout, moderateScale, responsive } from '@/utils/layout';
 
-type AnimatedAmountProps = { amount: string };
+type AnimatedAmountProps = { amount: string; prefix?: string };
 
-export function AnimatedAmount({ amount }: AnimatedAmountProps) {
-  const translateY = useSharedValue(0);
-  const opacity = useSharedValue(1);
-  const prevLen = useRef(amount.length);
+const glideSpring = { damping: 14, stiffness: 200, mass: 0.7 };
+const fadeSpring = { damping: 22, stiffness: 100, mass: 0.8 };
+
+function AnimatedChar({ char, fontSize, animate }: { char: string; fontSize: number; animate: boolean }) {
+  const translateY = useSharedValue(animate ? 24 : 0);
+  const opacity = useSharedValue(animate ? 0.15 : 1);
 
   useEffect(() => {
-    const grew = amount.length > prevLen.current;
-    prevLen.current = amount.length;
-    if (grew) {
-      translateY.value = 14;
-      opacity.value = 0.4;
-      translateY.value = withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) });
-      opacity.value = withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) });
+    if (animate) {
+      translateY.value = withSpring(0, glideSpring);
+      opacity.value = withSpring(1, fadeSpring);
     }
-  }, [amount]);
+  }, [animate]);
 
   const style = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
     opacity: opacity.value,
   }));
 
-  const displayText = `$${amount}`;
+  return (
+    <Animated.View style={style}>
+      <Text
+        style={{
+          fontFamily: 'SFMono-Bold',
+          fontSize,
+          color: '#FFFFFF',
+          fontVariant: ['tabular-nums'],
+        }}>
+        {char}
+      </Text>
+    </Animated.View>
+  );
+}
+
+export function AnimatedAmount({ amount, prefix = '$' }: AnimatedAmountProps) {
+  const prevLen = useRef(amount.length);
+  const grew = amount.length > prevLen.current;
+  useEffect(() => { prevLen.current = amount.length; });
+
+  const displayText = `${prefix}${amount}`;
   const len = displayText.length;
   const baseSize =
     len <= 4
@@ -46,18 +63,15 @@ export function AnimatedAmount({ amount }: AnimatedAmountProps) {
   const fontSize = moderateScale(baseSize, layout.isSeekerDevice ? 0.35 : 0.45);
 
   return (
-    <Animated.View style={[style, { width: '100%' }]}>
-      <Text
-        style={{
-          fontFamily: 'InstrumentSans-Bold',
-          fontSize,
-          color: '#FFFFFF',
-          textAlign: 'center',
-          fontVariant: ['tabular-nums'],
-        }}
-        numberOfLines={1}>
-        {displayText}
-      </Text>
-    </Animated.View>
+    <View style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'flex-end', overflow: 'hidden' }}>
+      {displayText.split('').map((char, i) => (
+        <AnimatedChar
+          key={`${i}-${displayText.length}`}
+          char={char}
+          fontSize={fontSize}
+          animate={grew && i === displayText.length - 1}
+        />
+      ))}
+    </View>
   );
 }

@@ -2,15 +2,14 @@ import { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import Avatar from '@zamplyy/react-native-nice-avatar';
-
 import { CountryPicker } from '@/components';
 import { Input, Button } from '@/components/ui';
+import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
 import { useAuthStore } from '@/stores/authStore';
 import { useKycStore } from '@/stores/kycStore';
 import { useUpdateProfile } from '@/api/hooks/useUser';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { getAvatarConfig } from '@/utils/avatarConfig';
+import { profileEditSchema, fieldError } from '@/utils/schemas';
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
@@ -117,8 +116,6 @@ export default function ProfileEdit() {
     [firstName, lastName, user?.email]
   );
 
-  const avatarConfig = useMemo(() => getAvatarConfig(avatarName), [avatarName]);
-
   const isDirty = useMemo(
     () =>
       firstName !== initialValues.firstName ||
@@ -144,41 +141,44 @@ export default function ProfileEdit() {
     ]
   );
 
-  const validateForKyc = () => {
-    const missing: string[] = [];
+  // Fields that cannot be edited once set
+  const isEmailLocked = Boolean(user?.email);
+  const isNameLocked = Boolean(user?.firstName?.trim() && user?.lastName?.trim());
+  const isDobLocked = Boolean(user?.dateOfBirth);
 
-    if (requiredFields.has('first_name') && !firstName.trim()) missing.push('first name');
-    if (requiredFields.has('last_name') && !lastName.trim()) missing.push('last name');
-    if (requiredFields.has('date_of_birth') && !dateOfBirth.trim()) missing.push('date of birth');
-    if (requiredFields.has('address_street') && !street.trim()) missing.push('street address');
-    if (requiredFields.has('address_city') && !city.trim()) missing.push('city');
-    if (requiredFields.has('address_postal_code') && !postalCode.trim())
-      missing.push('postal code');
-    if (requiredFields.has('address_country') && !countryCode.trim()) missing.push('country');
+  const validateForm = () => {
+    const result = profileEditSchema.safeParse({
+      firstName,
+      lastName,
+      phone,
+      dateOfBirth,
+      street,
+      city,
+      state,
+      postalCode,
+      country: countryCode,
+    });
 
-    if (missing.length > 0) {
-      showError('Missing details', `Please complete: ${missing.join(', ')}.`);
+    if (!result.success) {
+      const first = result.error.issues[0];
+      showError('Validation Error', first?.message ?? 'Please check your input.');
       return false;
     }
-
-    if (dateOfBirth.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth.trim())) {
-      showError('Invalid date', 'Use YYYY-MM-DD for date of birth.');
-      return false;
-    }
-
     return true;
   };
 
   const handleSave = async () => {
     if (!isDirty || isPending) return;
-    if (!validateForKyc()) return;
+    if (!validateForm()) return;
 
     try {
       const updated = await updateProfile({
-        firstName: normalizeOptional(firstName),
-        lastName: normalizeOptional(lastName),
+        ...(isNameLocked ? {} : {
+          firstName: normalizeOptional(firstName),
+          lastName: normalizeOptional(lastName),
+        }),
         phone: normalizeOptional(phone),
-        dateOfBirth: normalizeOptional(dateOfBirth),
+        ...(isDobLocked ? {} : { dateOfBirth: normalizeOptional(dateOfBirth) }),
         country: normalizeOptional(countryCode),
         addressStreet: normalizeOptional(street),
         addressCity: normalizeOptional(city),
@@ -232,14 +232,20 @@ export default function ProfileEdit() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
         keyboardShouldPersistTaps="handled">
         <View className="items-center py-8">
-          <Avatar size={88} {...avatarConfig} />
+          <DiceBearAvatar seed={avatarName} size={88} />
           <Text className="mt-4 font-subtitle text-[20px] text-text-primary">
             {[firstName, lastName].filter(Boolean).join(' ') || 'Rail User'}
           </Text>
           <Text className="mt-1 font-caption text-caption text-text-secondary">{user?.email}</Text>
         </View>
 
-        <View className="mx-md mb-6 h-px bg-surface" />
+        <View className="mx-md mb-2 h-px bg-surface" />
+
+        {(isNameLocked || isDobLocked) && (
+          <Text className="mx-md mb-4 font-body text-[12px] leading-5 text-text-secondary">
+            Name, date of birth, and email cannot be changed as they must match your verified ID.
+          </Text>
+        )}
 
         <View className="gap-4 px-md">
           <Input
@@ -249,6 +255,8 @@ export default function ProfileEdit() {
             placeholder="Enter first name"
             autoCapitalize="words"
             returnKeyType="next"
+            editable={!isNameLocked}
+            style={isNameLocked ? { opacity: 0.5 } : undefined}
           />
           <Input
             label="Last Name"
@@ -257,6 +265,8 @@ export default function ProfileEdit() {
             placeholder="Enter last name"
             autoCapitalize="words"
             returnKeyType="next"
+            editable={!isNameLocked}
+            style={isNameLocked ? { opacity: 0.5 } : undefined}
           />
           <Input
             label="Phone Number"
@@ -274,6 +284,8 @@ export default function ProfileEdit() {
             placeholder="YYYY-MM-DD"
             autoCapitalize="none"
             returnKeyType="next"
+            editable={!isDobLocked}
+            style={isDobLocked ? { opacity: 0.5 } : undefined}
           />
 
           <CountryPicker
@@ -320,7 +332,9 @@ export default function ProfileEdit() {
           />
 
           <View>
-            <Text className="mb-1.5 font-caption text-caption text-text-secondary">Email</Text>
+            <Text className="mb-1.5 font-caption text-caption text-text-secondary">
+              Email {isEmailLocked && '(locked)'}
+            </Text>
             <View className="rounded-xl border border-surface bg-surface px-4 py-4">
               <Text className="font-body text-body text-text-secondary">{user?.email}</Text>
             </View>

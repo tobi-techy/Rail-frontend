@@ -6,6 +6,9 @@ export const DEFAULT_USD_BASE_EXCHANGE_RATES: FxRates = {
   USD: 1,
   EUR: 0.92,
   NGN: 1550,
+  GHS: 15.5,
+  KES: 129,
+  CAD: 1.36,
   USDC: 1,
   USDT: 1,
   EURC: 1.09,
@@ -16,13 +19,16 @@ const CURRENCY_LOCALE: Record<Currency, string> = {
   USD: 'en-US',
   EUR: 'en-IE',
   NGN: 'en-NG',
+  GHS: 'en-GH',
+  KES: 'en-KE',
+  CAD: 'en-CA',
   USDC: 'en-US',
   USDT: 'en-US',
   EURC: 'en-IE',
   PYUSD: 'en-US',
 };
 
-export const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'EUR', 'NGN', 'USDC', 'USDT', 'EURC', 'PYUSD'];
+export const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'EUR', 'NGN', 'GHS', 'KES', 'CAD', 'USDC', 'USDT', 'EURC', 'PYUSD'];
 
 const LEGACY_CURRENCY_FALLBACK: Record<string, Currency> = {
   GBP: 'EUR',
@@ -100,6 +106,9 @@ const INTL_CURRENCY_CODE: Record<Currency, string> = {
   USD: 'USD',
   EUR: 'EUR',
   NGN: 'NGN',
+  GHS: 'GHS',
+  KES: 'KES',
+  CAD: 'CAD',
   USDC: 'USD',
   USDT: 'USD',
   EURC: 'EUR',

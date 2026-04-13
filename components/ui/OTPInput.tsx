@@ -52,7 +52,7 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
     if (autoValidate) Keyboard.dismiss();
   };
 
-  const boxSize = Math.min((width - 60) / length - 4, 90);
+  const boxSize = Math.min((width - 60) / length - 4, 56);
 
   const colors = isDark
     ? {
@@ -89,7 +89,7 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
           accessibilityHint: 'Enter your verification code',
         }}
         theme={{
-          containerStyle: { width: '100%', justifyContent: 'center', gap: 8 },
+          containerStyle: { width: '100%', justifyContent: 'flex-start', gap: 8 },
           pinCodeContainerStyle: {
             width: boxSize,
             height: boxSize,
@@ -101,7 +101,7 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
             justifyContent: 'center',
           },
           pinCodeTextStyle: {
-            fontFamily: 'InstrumentSans-SemiBold',
+            fontFamily: 'SFMono-Semibold',
             fontSize: 24,
             color: colors.text,
             textAlign: 'center',

@@ -15,6 +15,7 @@ import {
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { addressSchema, fieldError } from '@/utils/schemas';
 
 export default function Address() {
   const registrationData = useAuthStore((state) => state.registrationData);
@@ -58,34 +59,32 @@ export default function Address() {
   };
 
   const handleNext = () => {
-    const nextErrors = {
-      street: formData.street.trim() ? '' : 'Street address is required',
-      city: formData.city.trim() ? '' : 'City is required',
-      state: formData.state.trim()
-        ? ''
-        : `${getSubdivisionLabel(formData.countryCode)} is required`,
-      postalCode: formData.postalCode.trim() ? '' : 'Postal code is required',
-    };
+    const result = addressSchema.safeParse({
+      street: formData.street,
+      city: formData.city,
+      state: formData.state,
+      postalCode: formData.postalCode,
+      country: formData.countryCode,
+    });
 
-    if (
-      nextErrors.street ||
-      nextErrors.city ||
-      nextErrors.state ||
-      nextErrors.postalCode ||
-      !formData.countryCode
-    ) {
-      setErrors(nextErrors);
+    if (!result.success) {
+      setErrors({
+        street: fieldError(result.error, 'street'),
+        city: fieldError(result.error, 'city'),
+        state: fieldError(result.error, 'state') || (!formData.state.trim() ? `${getSubdivisionLabel(formData.countryCode)} is required` : ''),
+        postalCode: fieldError(result.error, 'postalCode'),
+      });
       showWarning('Missing Information', 'Please complete all address fields before continuing.');
       return;
     }
 
     setErrors({ street: '', city: '', state: '', postalCode: '' });
     updateRegistrationData({
-      street: formData.street.trim(),
-      city: formData.city.trim(),
-      state: formData.state.trim(),
-      postalCode: formData.postalCode.trim(),
-      country: formData.countryCode,
+      street: result.data.street,
+      city: result.data.city,
+      state: result.data.state,
+      postalCode: result.data.postalCode,
+      country: result.data.country,
     });
     router.push(ROUTES.AUTH.COMPLETE_PROFILE.PHONE as never);
   };
@@ -113,7 +112,7 @@ export default function Address() {
                   Your details
                 </Text>
                 <Text className="mt-2 font-body text-[14px] text-black/60">
-                  Enter your full <Text className="font-semibold">residential</Text> address.
+                  Enter your residential address as it appears on your ID or proof of address.
                 </Text>
               </View>
             </StaggeredChild>

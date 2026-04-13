@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -11,6 +11,8 @@ import {
   CreditCardIcon,
   ChartUpIcon,
   ArrowDownLeft01Icon,
+  ShieldKeyIcon,
+  Clock01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
@@ -33,14 +35,10 @@ const STEPS = [
 ];
 
 const FEATURES_UNLOCKED = [
-  { icon: CreditCardIcon, title: 'Fiat deposits', description: 'Add money from your bank account' },
-  { icon: CreditCardIcon, title: 'Get a Rail Card', description: 'Spend your crypto anywhere' },
-  { icon: ChartUpIcon, title: 'Invest', description: 'Trade stocks, ETFs, and crypto' },
-  {
-    icon: ArrowDownLeft01Icon,
-    title: 'Withdraw to bank',
-    description: 'Cash out to your local bank',
-  },
+  { icon: ArrowDownLeft01Icon, label: 'Withdraw to bank' },
+  { icon: CreditCardIcon, label: 'Rail Debit Card' },
+  { icon: BankIcon, label: 'Bank deposits' },
+  { icon: ChartUpIcon, label: 'Invest' },
 ];
 
 export default function KycVerificationIntroScreen() {
@@ -60,13 +58,33 @@ export default function KycVerificationIntroScreen() {
           </Pressable>
         </View>
 
-        <View className="flex-1 px-6 pt-12">
+        <ScrollView
+          className="flex-1 px-6"
+          contentContainerStyle={{ paddingTop: 24, paddingBottom: 16 }}
+          showsVerticalScrollIndicator={false}>
           <Text className="font-display text-[32px] leading-[36px] text-gray-900">
             Verify your identity
           </Text>
           <Text className="mt-3 font-body text-[15px] leading-6 text-gray-600">
-            Complete verification to unlock all features
+            A one-time check required by financial regulations. Takes under 5 minutes.
           </Text>
+
+          {/* What you unlock */}
+          <View className="mt-8 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+            <Text className="mb-3 font-subtitle text-[13px] text-gray-700">
+              What you unlock:
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {FEATURES_UNLOCKED.map((f) => (
+                <View
+                  key={f.label}
+                  className="flex-row items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5">
+                  <HugeiconsIcon icon={f.icon} size={14} color="#374151" />
+                  <Text className="font-body text-[13px] text-gray-700">{f.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
 
           <Text className="mt-8 font-subtitle text-[18px] text-gray-900">How it works</Text>
           <View className="mt-4 gap-y-6">
@@ -84,11 +102,27 @@ export default function KycVerificationIntroScreen() {
               </View>
             ))}
           </View>
-        </View>
+
+          {/* Trust signals */}
+          <View className="mt-8 flex-row gap-3">
+            <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-gray-50 px-3 py-2.5">
+              <HugeiconsIcon icon={ShieldKeyIcon} size={15} color="#6B7280" />
+              <Text className="flex-1 font-body text-[12px] leading-4 text-gray-500">
+                Encrypted & never sold
+              </Text>
+            </View>
+            <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-gray-50 px-3 py-2.5">
+              <HugeiconsIcon icon={Clock01Icon} size={15} color="#6B7280" />
+              <Text className="flex-1 font-body text-[12px] leading-4 text-gray-500">
+                Done once, valid forever
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
 
         <View className="px-6" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           <Button
-            title="Continue"
+            title="Get Started"
             onPress={() => {
               track(ANALYTICS_EVENTS.KYC_VERIFICATION_STARTED);
               router.replace('/kyc/tax-id');
