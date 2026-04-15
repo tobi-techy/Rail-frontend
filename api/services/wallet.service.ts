@@ -21,13 +21,12 @@ import type {
   GetNetworksResponse,
   GetWalletAddressesRequest,
   WalletAddressesResponse,
-  ApiResponse,
 } from '../types';
 import type { Transaction } from '../types/wallet';
 
 const WALLET_ENDPOINTS = {
   BALANCE: '/v1/balances',
-  TRANSACTIONS: '/v1/withdrawals',
+  TRANSACTIONS: '/v1/funding/transactions',
   TRANSACTION_DETAIL: '/v1/withdrawals/:id',
   TRANSFER: '/v1/withdrawals/crypto',
   DEPOSIT_ADDRESS: '/v1/funding/deposit/address',
@@ -82,23 +81,24 @@ export const walletService = {
 
     const rows = Array.isArray(response)
       ? response
-      : response?.items ||
+      : response?.transactions ||
+        response?.items ||
         response?.withdrawals ||
+        response?.data?.transactions ||
         response?.data?.items ||
-        response?.data?.withdrawals ||
         [];
     const items = rows.map((tx: any) => ({
       id: tx?.id || tx?.withdrawal_id || '',
       type: (tx?.type as Transaction['type']) || 'withdraw',
-      tokenId: 'USDC',
+      tokenId: tx?.currency || 'USDC',
       amount: String(tx?.amount ?? '0'),
       usdAmount: String(tx?.amount ?? '0'),
       from: '',
-      to: tx?.destination_address || '',
+      to: tx?.destination_address || tx?.address || '',
       timestamp: tx?.created_at || tx?.updated_at || new Date().toISOString(),
       status: tx?.status || 'pending',
       txHash: tx?.tx_hash || undefined,
-      network: tx?.destination_chain || 'SOL',
+      network: tx?.chain || tx?.destination_chain || 'SOL',
       fee: undefined,
       confirmations: undefined,
     }));

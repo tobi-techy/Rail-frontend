@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useNavigation } from 'expo-router';
-import Animated, { FadeInDown, FadeIn, FadeInUp, SlideInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeIn, SlideInUp } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { Button } from '@/components/ui';
@@ -77,6 +77,7 @@ export default function FundNairaScreen() {
     bank: string;
     fiatAmount: number;
     tokenAmount: number;
+    fee: number;
   } | null>(null);
 
   const { showError } = useFeedbackPopup();
@@ -97,7 +98,7 @@ export default function FundNairaScreen() {
   const parsedAmount = parseFloat(rawAmount) || 0;
   const estimatedUSDC = onrampRate > 0 ? parsedAmount / onrampRate : 0;
   const displayAmount = toDisplayAmount(rawAmount);
-  const canContinue = parsedAmount >= 1000;
+  const canContinue = parsedAmount >= 100;
 
   const isCompleted = orderStatus?.status === 'COMPLETED';
   const isFailed = orderStatus?.status === 'FAILED';
@@ -119,8 +120,8 @@ export default function FundNairaScreen() {
   }, []);
 
   const handleCreateOrder = useCallback(async () => {
-    if (parsedAmount < 1000) {
-      showError('Minimum amount is ₦1,000');
+    if (parsedAmount < 100) {
+      showError('Minimum amount is ₦100');
       return;
     }
     try {
@@ -131,6 +132,7 @@ export default function FundNairaScreen() {
         bank: order.bank,
         fiatAmount: order.fiatAmount,
         tokenAmount: order.tokenAmount,
+        fee: order.fee ?? 0,
       });
       setOrderId(order.orderId);
       setStep('pay');
@@ -186,9 +188,9 @@ export default function FundNairaScreen() {
               variant="white"
               className="bg-white"
             />
-            {parsedAmount > 0 && parsedAmount < 1000 && (
+            {parsedAmount > 0 && parsedAmount < 100 && (
               <Text className="mt-2 text-center font-body text-[12px] text-white/70">
-                Minimum amount is ₦1,000
+                Minimum amount is ₦100
               </Text>
             )}
           </Animated.View>
@@ -255,6 +257,23 @@ export default function FundNairaScreen() {
                 <CopyRow label="Account Name" value={orderDetails.accountName} />
                 <View className="h-px bg-[#EBEBEB]" />
                 <CopyRow label="Amount" value={`₦${orderDetails.fiatAmount.toLocaleString()}`} />
+              </View>
+
+              {/* Fee breakdown */}
+              <View className="mt-4 rounded-2xl bg-surface px-5 py-3">
+                <View className="flex-row items-center justify-between py-2">
+                  <Text className="font-body text-[13px] text-[#9CA3AF]">PAJ fee</Text>
+                  <Text className="font-subtitle text-[14px] text-[#070914]">
+                    {orderDetails.fee > 0 ? `$${orderDetails.fee.toFixed(2)} USDC` : 'Free'}
+                  </Text>
+                </View>
+                <View className="h-px bg-[#EBEBEB]" />
+                <View className="flex-row items-center justify-between py-2">
+                  <Text className="font-body text-[13px] text-[#9CA3AF]">You&apos;ll receive</Text>
+                  <Text className="font-subtitle text-[14px] text-[#10B981]">
+                    ~${(orderDetails.tokenAmount - orderDetails.fee).toFixed(2)} USDC
+                  </Text>
+                </View>
               </View>
 
               <View className="mt-4 flex-row items-start gap-2 rounded-xl bg-[#FFF7ED] p-3">
