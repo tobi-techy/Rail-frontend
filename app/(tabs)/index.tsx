@@ -24,6 +24,7 @@ import { SheetHeader, ExpandableOptionList } from '@/components/sheets/FundingSh
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { isFeatureEnabled, FeatureGates } from '@/utils/featureGate';
 import { ROUTES } from '@/constants/routes';
 import { useStation, useKYCStatus } from '@/api/hooks';
 import { useGameplayProfile } from '@/api/hooks/useGameplay';
@@ -687,11 +688,24 @@ function DashboardScreen() {
             getStarted={!hasCard}
             onPress={() => gateFeature(() => setShowCardComingSheet(true))}
           />
-          <GameplayCard
-            data={gameplayData}
-            isLoading={isGameplayPending}
-            className="max-w-[50%] flex-1"
-          />
+          {isFeatureEnabled(FeatureGates.GAMEPLAY) ? (
+            <GameplayCard
+              data={gameplayData}
+              isLoading={isGameplayPending}
+              className="max-w-[50%] flex-1"
+            />
+          ) : (
+            <StashCard
+              title="Credit"
+              amount=""
+              getStarted="Coming soon"
+              icon={<HugeiconsIcon icon={Money01Icon} size={26} color="white" strokeWidth={1.8} />}
+              cardColor="#4F46E5"
+              className="max-w-[50%] flex-1"
+              badge={{ label: 'Soon', color: 'gray' }}
+              onPress={() => setShowMicroLoanSheet(true)}
+            />
+          )}
         </View>
 
         <FeatureBanner
