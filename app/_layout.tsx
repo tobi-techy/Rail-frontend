@@ -95,6 +95,14 @@ function AppNavigator() {
       />
       <Stack.Screen name="investment-stash" options={{ headerShown: false }} />
       <Stack.Screen
+        name="gameplay"
+        options={{ headerShown: false, animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name="subscription"
+        options={{ headerShown: false, animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
         name="withdraw"
         options={{
           headerShown: false,
@@ -179,8 +187,10 @@ function AppNavigator() {
         name="ai-chat"
         options={{
           headerShown: false,
-          animation: 'fade',
-          contentStyle: { backgroundColor: '#FFFFFF' },
+          animation: 'fade_from_bottom',
+          animationDuration: 250,
+          contentStyle: { backgroundColor: '#F9F8F6' },
+          gestureEnabled: false,
         }}
       />
     </Stack>

@@ -48,4 +48,18 @@ export const ENDPOINTS = {
     CREATE: '/security/passcode/create',
     VERIFY: '/security/passcode/verify',
   },
+  GAMEPLAY: {
+    PROFILE: '/v1/gameplay/profile',
+    STREAKS: '/v1/gameplay/streaks',
+    XP: '/v1/gameplay/xp',
+    XP_HISTORY: '/v1/gameplay/xp/history',
+    CHALLENGES: '/v1/gameplay/challenges',
+    ACHIEVEMENTS: '/v1/gameplay/achievements',
+    LEADERBOARD: '/v1/gameplay/leaderboard',
+  },
+  SUBSCRIPTION: {
+    STATUS: '/v1/subscription',
+    SUBSCRIBE: '/v1/subscription',
+    CANCEL: '/v1/subscription',
+  },
 } as const;

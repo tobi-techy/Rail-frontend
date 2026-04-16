@@ -62,6 +62,15 @@ export const queryKeys = {
     all: ['station'] as const,
     home: () => [...queryKeys.station.all, 'home'] as const,
   },
+  gameplay: {
+    all: ['gameplay'] as const,
+    profile: () => [...queryKeys.gameplay.all, 'profile'] as const,
+    streaks: () => [...queryKeys.gameplay.all, 'streaks'] as const,
+    challenges: () => [...queryKeys.gameplay.all, 'challenges'] as const,
+    achievements: () => [...queryKeys.gameplay.all, 'achievements'] as const,
+    xpHistory: () => [...queryKeys.gameplay.all, 'xp-history'] as const,
+    subscription: () => [...queryKeys.gameplay.all, 'subscription'] as const,
+  },
   allocation: {
     all: ['allocation'] as const,
     balances: () => [...queryKeys.allocation.all, 'balances'] as const,
