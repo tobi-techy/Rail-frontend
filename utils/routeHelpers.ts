@@ -107,6 +107,8 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/tap-to-pay') ||
     pathname.startsWith('/kyc') ||
     pathname.startsWith('/card') ||
+    pathname.startsWith('/gameplay') ||
+    pathname.startsWith('/subscription') ||
     pathname.startsWith('/complete-profile'),
   isOnWelcomeScreen: pathname === '/' || pathname === normalizeRoutePath(ROUTES.INTRO),
   isOnLoginPasscode: pathname === '/login-passcode',
@@ -145,7 +147,8 @@ const handleAuthenticatedUser = (
   const needsProfile = isProfileCompletionRequired(userOnboardingStatus);
   // Don't redirect to create-passcode if user has a valid passcode session.
   // This means they just logged in and syncPasscodeStatus hasn't completed yet.
-  const needsPasscodeSetup = !hasPasscode && !needsProfile && Boolean(userOnboardingStatus) && !hasValidPasscodeSession;
+  const needsPasscodeSetup =
+    !hasPasscode && !needsProfile && Boolean(userOnboardingStatus) && !hasValidPasscodeSession;
 
   if (needsProfile) {
     if (
