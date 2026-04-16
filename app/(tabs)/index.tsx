@@ -665,7 +665,15 @@ function DashboardScreen() {
             isLoading={isStationPending}
             onPress={() => gateFeature(() => setShowSpendBreakdown(true))}
           />
-          <GameplayCard data={gameplayData} isLoading={isGameplayPending} className="flex-1" />
+          <StashCard
+            title="Stash"
+            amount={stash.dollars}
+            amountCents={stash.cents}
+            icon={<HugeiconsIcon icon={SavingsIcon} size={26} color="white" strokeWidth={1.8} />}
+            cardColor="#00E011"
+            className="flex-1"
+            isLoading={isStationPending}
+          />
         </View>
         <View className="mt-5 flex-row gap-3">
           <StashCard

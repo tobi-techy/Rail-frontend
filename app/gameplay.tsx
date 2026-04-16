@@ -124,7 +124,7 @@ export default function GameplayScreen() {
           <View className="mb-3 flex-row items-center justify-between">
             <Text className="font-subtitle text-subtitle text-text-primary">Challenges</Text>
             {!isPro && (
-              <Pressable onPress={() => router.push('/subscription')}>
+              <Pressable onPress={() => router.push('/subscription' as never)}>
                 <Text className="font-button text-small text-primary">Unlock Pro</Text>
               </Pressable>
             )}
@@ -199,7 +199,7 @@ export default function GameplayScreen() {
         {!isPro && (
           <Pressable
             className="mx-5 mt-6 rounded-2xl bg-black px-5 py-4"
-            onPress={() => router.push('/subscription')}>
+            onPress={() => router.push('/subscription' as never)}>
             <Text className="font-subtitle text-body text-white">Upgrade to Rail Pro</Text>
             <Text className="mt-1 font-body text-small text-gray-400">
               Unlock all streaks, weekly challenges, full badge collection & AI insights

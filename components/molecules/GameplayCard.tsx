@@ -46,7 +46,7 @@ export const GameplayCard: React.FC<GameplayCardProps> = ({ data, isLoading, cla
       className={`flex-1 rounded-3xl px-4 py-4 ${className ?? ''}`}
       onPress={() => {
         impact();
-        router.push('/gameplay');
+        router.push('/gameplay' as never);
       }}
       onPressIn={() => {
         scale.value = withSpring(0.96, { damping: 20, stiffness: 300 });
