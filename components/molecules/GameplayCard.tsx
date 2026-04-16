@@ -42,7 +42,7 @@ export const GameplayCard: React.FC<GameplayCardProps> = ({ data, isLoading, cla
 
   return (
     <AnimatedPressable
-      style={[animStyle, { backgroundColor: '#00C853' }]}
+      style={[animStyle, { backgroundColor: '#1E3A5F' }]}
       className={`flex-1 rounded-3xl px-4 py-4 ${className ?? ''}`}
       onPress={() => {
         impact();
@@ -81,7 +81,7 @@ export const GameplayCard: React.FC<GameplayCardProps> = ({ data, isLoading, cla
         <>
           {/* XP Progress bar */}
           <View
-            className="mb-2 h-1.5 overflow-hidden rounded-full"
+            className="mb-2 mt-20 h-1.5 overflow-hidden rounded-full"
             style={{ backgroundColor: 'rgba(255,255,255,0.25)' }}>
             <View
               className="h-full rounded-full bg-white"
