@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Alert, ActivityIndicator, Image } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  Alert,
+  ActivityIndicator,
+  Image,
+  ImageBackground,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -86,12 +94,11 @@ export default function SubscriptionScreen() {
   };
 
   return (
-    <View className="flex-1 bg-black">
-      <Image
-        source={require('@/assets/pro-bg.png')}
-        className="absolute -right-20 -top-16 h-[380px] w-[380px] opacity-[0.12]"
-        resizeMode="contain"
-      />
+    <ImageBackground
+      source={require('@/assets/pro-bg.png')}
+      resizeMode="contain"
+      imageStyle={{ opacity: 0.65, top: -60, left: 80, width: 600, height: 600 }}
+      className="flex-1 bg-black">
       <SafeAreaView className="flex-1" edges={['top', 'bottom']}>
         <View className="flex-1 justify-between px-5">
           {/* ── Top ────────────────────────────────────────────── */}
@@ -264,6 +271,6 @@ export default function SubscriptionScreen() {
           </Animated.View>
         </View>
       </SafeAreaView>
-    </View>
+    </ImageBackground>
   );
 }
