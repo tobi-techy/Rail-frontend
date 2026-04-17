@@ -31,7 +31,9 @@ class PushNotificationService {
 
   async initialize(): Promise<string | null> {
     if (!Device.isDevice) {
-      logger.debug('Push notifications require a physical device', { component: 'PushNotifications' });
+      logger.debug('Push notifications require a physical device', {
+        component: 'PushNotifications',
+      });
       return null;
     }
 
@@ -49,13 +51,20 @@ class PushNotificationService {
       return null;
     }
 
-    // Get push token
+    // Get native device push token (APNs for iOS, FCM for Android)
+    // This is required for AWS SNS delivery — Expo tokens only work with Expo's push service
     try {
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-      const token = await Notifications.getExpoPushTokenAsync({
-        projectId,
+      const deviceToken = await Notifications.getDevicePushTokenAsync();
+      this.expoPushToken = deviceToken.data;
+
+      logger.debug('Got native device push token', {
+        component: 'PushNotifications',
+        platform: deviceToken.type,
+        tokenPrefix:
+          typeof deviceToken.data === 'string'
+            ? deviceToken.data.substring(0, 20) + '...'
+            : 'unknown',
       });
-      this.expoPushToken = token.data;
 
       // Android-specific channel setup
       if (Platform.OS === 'android') {
@@ -186,6 +195,18 @@ class PushNotificationService {
       case 'transaction_declined':
         qc.invalidateQueries({ queryKey: queryKeys.station.all });
         break;
+      case 'level_up':
+      case 'challenge_complete':
+      case 'achievement_unlocked':
+      case 'streak_warning':
+      case 'financial_insight':
+        qc.invalidateQueries({ queryKey: queryKeys.gameplay.all });
+        qc.invalidateQueries({ queryKey: queryKeys.station.all });
+        break;
+      case 'subscription_expired':
+      case 'subscription_past_due':
+        qc.invalidateQueries({ queryKey: queryKeys.gameplay.all });
+        break;
     }
     // Always refresh notification bell
     qc.invalidateQueries({ queryKey: queryKeys.notifications.all });
@@ -235,6 +256,17 @@ class PushNotificationService {
         break;
       case 'security':
         router.push('/(tabs)/settings');
+        break;
+      case 'level_up':
+      case 'challenge_complete':
+      case 'achievement_unlocked':
+      case 'streak_warning':
+      case 'financial_insight':
+        router.push('/gameplay' as never);
+        break;
+      case 'subscription_expired':
+      case 'subscription_past_due':
+        router.push('/subscription' as never);
         break;
       default:
         router.push(screen ? (screen as any) : '/notifications');
