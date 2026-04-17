@@ -167,8 +167,20 @@ export function useNetworks() {
 export function useWalletAddresses(chain?: WalletChain) {
   const query = useQuery({
     queryKey: queryKeys.wallet.addresses(chain),
-    queryFn: () => walletService.getWalletAddresses(chain ? { chain } : undefined),
-    staleTime: Infinity,
+    queryFn: async () => {
+      // Use the deposit address endpoint which returns the liquidation address
+      // (the correct address for receiving deposits) instead of the raw custody wallet.
+      const result = await walletService.getDepositAddress({
+        tokenId: 'usdc',
+        network: chain || 'SOL',
+      });
+      return {
+        address: result.address,
+        chain: (chain || 'SOL') as WalletChain,
+        status: 'live' as const,
+      };
+    },
+    staleTime: 5 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
