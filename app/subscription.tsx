@@ -89,7 +89,7 @@ export default function SubscriptionScreen() {
     <ImageBackground
       source={require('@/assets/pro-bg.png')}
       resizeMode="cover"
-      imageStyle={{ opacity: 0.06 }}
+      imageStyle={{ opacity: 0.15 }}
       className="flex-1 bg-black">
       <SafeAreaView className="flex-1" edges={['top', 'bottom']}>
         <View className="flex-1 justify-between px-5">
