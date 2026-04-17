@@ -102,8 +102,10 @@ export const gameplayService = {
     return apiClient.get(ENDPOINTS.SUBSCRIPTION.STATUS);
   },
 
-  async subscribe(): Promise<{ subscription: Subscription }> {
-    return apiClient.post(ENDPOINTS.SUBSCRIPTION.SUBSCRIBE);
+  async subscribe(
+    plan: 'pro_monthly' | 'pro_yearly' = 'pro_monthly'
+  ): Promise<{ subscription: Subscription }> {
+    return apiClient.post(ENDPOINTS.SUBSCRIPTION.SUBSCRIBE, { plan });
   },
 
   async cancelSubscription(): Promise<{ message: string }> {

@@ -60,7 +60,8 @@ export function useSubscription() {
 export function useSubscribeMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => gameplayService.subscribe(),
+    mutationFn: (plan: 'pro_monthly' | 'pro_yearly' = 'pro_monthly') =>
+      gameplayService.subscribe(plan),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.gameplay.subscription() });
       qc.invalidateQueries({ queryKey: queryKeys.gameplay.profile() });
