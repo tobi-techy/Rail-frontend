@@ -58,6 +58,7 @@ export function useDeposits(limit = 20, offset = 0) {
     queryFn: () => fundingService.getDeposits(limit, offset),
     enabled: isAuthenticated,
     staleTime: 30_000,
+    refetchOnMount: 'always',
     refetchInterval: 60_000,
   });
 }
@@ -82,6 +83,15 @@ export function useInitiateWithdrawal() {
       applyOptimisticStationWithdrawal(queryClient, Number(variables?.amount || 0));
       await refreshPostWithdrawalQueries(queryClient);
     },
+  });
+}
+
+// Cancel a pending withdrawal
+export function useCancelWithdrawal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (withdrawalId: string) => fundingService.cancelWithdrawal(withdrawalId),
+    onSuccess: () => refreshPostWithdrawalQueries(queryClient),
   });
 }
 
