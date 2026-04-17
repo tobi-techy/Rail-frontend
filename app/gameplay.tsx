@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -188,7 +188,7 @@ export default function GameplayScreen() {
               <View className="flex-1 items-center rounded-2xl border border-gray-100 py-8">
                 <HugeiconsIcon icon={FireIcon} size={28} color="#D1D5DB" />
                 <Text className="mt-3 font-body text-caption text-text-secondary">
-                  Deposit to start
+                  Make your first deposit to start
                 </Text>
               </View>
             )}
@@ -201,16 +201,6 @@ export default function GameplayScreen() {
             <Text className="font-mono text-small tracking-[3px] text-text-tertiary">
               CHALLENGES
             </Text>
-            {!isPro && (
-              <Pressable
-                onPress={() => {
-                  impact();
-                  router.push('/subscription' as never);
-                }}
-                hitSlop={8}>
-                <Text className="font-button text-small text-primary">Get Pro</Text>
-              </Pressable>
-            )}
           </View>
           {challenges.map((uc: UserChallenge, i: number) => {
             const pct = uc.challenge ? (uc.progress / uc.challenge.target_value) * 100 : 0;
@@ -253,7 +243,7 @@ export default function GameplayScreen() {
             <View className="items-center rounded-2xl border border-gray-100 py-8">
               <HugeiconsIcon icon={Target01Icon} size={28} color="#D1D5DB" />
               <Text className="mt-3 font-body text-caption text-text-secondary">
-                {isPro ? 'New challenges Monday' : 'Go Pro for challenges'}
+                {isPro ? 'New challenges Monday' : 'New challenges drop Monday'}
               </Text>
             </View>
           )}
@@ -303,24 +293,26 @@ export default function GameplayScreen() {
           </View>
         </Animated.View>
 
-        {/* ── Pro CTA ──────────────────────────────────────────── */}
-        {!isPro && (
-          <Animated.View entering={FadeInDown.delay(380).duration(400)} className="mx-5 mt-4">
+        {/* Dev: test push notification */}
+        {__DEV__ && (
+          <View className="mx-5 mt-8">
             <Pressable
-              onPress={() => {
+              onPress={async () => {
                 impact();
-                router.push('/subscription' as never);
+                try {
+                  const apiClient = require('@/api/client').default;
+                  await apiClient.post('/v1/gameplay/test-push');
+                  Alert.alert('Sent', 'Check your notifications');
+                } catch (e: any) {
+                  Alert.alert('Failed', e?.message ?? 'Could not send test push');
+                }
               }}
-              className="flex-row items-center justify-between rounded-2xl bg-black px-5 py-5">
-              <View className="flex-1">
-                <Text className="font-subtitle text-body text-white">Unlock everything</Text>
-                <Text className="mt-0.5 font-body text-small text-gray-400">
-                  Rail Pro · $4.99/mo
-                </Text>
-              </View>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={20} color="#fff" />
+              className="items-center rounded-full border border-gray-200 py-3">
+              <Text className="font-button text-caption text-text-secondary">
+                Test Push Notification
+              </Text>
             </Pressable>
-          </Animated.View>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
