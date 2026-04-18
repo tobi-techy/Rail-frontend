@@ -18,6 +18,7 @@ import { Keypad } from '@/components/molecules/Keypad';
 import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
 import { normalizeAmount, toDisplayAmount } from '@/app/withdraw/method-screen/utils';
 import { usePajRates, usePajOnramp, usePajOrderStatus } from '@/api/hooks';
+import { invalidateQueries } from '@/api/queryClient';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import {
   ArrowLeft01Icon,
@@ -102,6 +103,16 @@ export default function FundNairaScreen() {
 
   const isCompleted = orderStatus?.status === 'COMPLETED';
   const isFailed = orderStatus?.status === 'FAILED';
+
+  // Refresh balances & gameplay streak when deposit completes
+  React.useEffect(() => {
+    if (isCompleted) {
+      invalidateQueries.station();
+      invalidateQueries.wallet();
+      invalidateQueries.funding();
+      invalidateQueries.gameplay();
+    }
+  }, [isCompleted]);
 
   const onAmountKeyPress = useCallback((key: string) => {
     setRawAmount((current) => {

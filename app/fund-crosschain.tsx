@@ -11,9 +11,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { PaymentModal, usePaymentModal } from '@chainrails/react-native';
 import { useChainRailsSession } from '@/api/hooks/useChainRails';
+import { invalidateQueries } from '@/api/queryClient';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Keypad } from '@/components/molecules/Keypad';
 import { Button } from '@/components/ui';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
 import { normalizeAmount } from '@/app/withdraw/method-screen/utils';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
@@ -27,11 +29,20 @@ export default function FundCrosschainScreen() {
   const [rawAmount, setRawAmount] = useState('0');
   const [loading, setLoading] = useState(false);
   const crSessionMutation = useChainRailsSession();
+  const { showSuccess } = useFeedbackPopup();
 
   const cr = usePaymentModal({
     sessionToken: null,
-    onSuccess: () => router.back(),
-    onCancel: () => {},
+    onSuccess: () => {
+      cr.close();
+      invalidateQueries.wallet();
+      invalidateQueries.gameplay();
+      showSuccess('Deposit successful', 'Your balance has been updated');
+      router.replace('/(tabs)');
+    },
+    onCancel: () => {
+      cr.close();
+    },
   });
 
   const numericAmount = useMemo(() => {

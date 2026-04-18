@@ -92,6 +92,7 @@ export function usePajOnramp() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['funding'] });
       queryClient.invalidateQueries({ queryKey: ['station'] });
+      queryClient.invalidateQueries({ queryKey: ['gameplay'] });
     },
   });
 }

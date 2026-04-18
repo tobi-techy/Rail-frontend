@@ -163,6 +163,7 @@ class PushNotificationService {
         qc.invalidateQueries({ queryKey: queryKeys.wallet.all });
         qc.invalidateQueries({ queryKey: queryKeys.funding.all });
         qc.invalidateQueries({ queryKey: queryKeys.allocation.all });
+        qc.invalidateQueries({ queryKey: queryKeys.gameplay.all });
         break;
       case 'investment_complete':
         qc.invalidateQueries({ queryKey: queryKeys.investment.all });

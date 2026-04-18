@@ -178,6 +178,7 @@ export const invalidateQueries = {
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
   passkeys: () => queryClient.invalidateQueries({ queryKey: queryKeys.passkeys.all }),
   notifications: () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
+  gameplay: () => queryClient.invalidateQueries({ queryKey: queryKeys.gameplay.all }),
   all: () => queryClient.invalidateQueries(),
 };
 
