@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View, Text, Pressable, StatusBar, KeyboardAvoidingView, Platform,
-  ScrollView, ActivityIndicator, TextInput,
+  ScrollView, ActivityIndicator, TextInput, Share,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useNavigation } from 'expo-router';
@@ -297,37 +297,6 @@ export default function WithdrawNairaScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Divider */}
-          <View className="my-5 h-px bg-gray-100" />
-
-          {/* Recent Recipients */}
-          <Animated.View entering={FadeInUp.delay(140).duration(250)}>
-            <Text className="mb-3 font-subtitle text-[15px] text-text-primary">Recent Recipients</Text>
-            {filteredSavedBanks.length === 0 ? (
-              <Text className="py-6 text-center font-body text-[14px] text-text-secondary">
-                {searchQuery ? 'No matching recipients' : 'No saved recipients yet'}
-              </Text>
-            ) : (
-              filteredSavedBanks.map((saved, i) => (
-                <Animated.View key={saved.id} entering={FadeInUp.delay(160 + i * 40).duration(200)}>
-                  <Pressable
-                    className="flex-row items-center gap-3 rounded-2xl px-2 py-3 active:bg-surface"
-                    onPress={() => selectSavedBank(saved)}>
-                    <DiceBearAvatar seed={saved.accountName} size={44} />
-                    <View className="flex-1">
-                      <Text className="font-subtitle text-[15px] text-text-primary" numberOfLines={1}>
-                        {saved.accountName}
-                      </Text>
-                      <Text className="font-body text-[13px] text-text-secondary" numberOfLines={1}>
-                        {saved.bank} | {saved.accountNumber}
-                      </Text>
-                    </View>
-                  </Pressable>
-                </Animated.View>
-              ))
-            )}
-          </Animated.View>
-
           <View style={{ height: 40 }} />
         </ScrollView>
       </SafeAreaView>
@@ -528,7 +497,22 @@ export default function WithdrawNairaScreen() {
               <View className="flex-row items-center rounded-full bg-white/20 px-3 py-2">
                 <Text className="font-body text-[13px] text-white/90">Balance: ${formatCurrency(availableBalance)}</Text>
               </View>
+              <Pressable
+                className="rounded-full bg-white/30 px-3 py-2"
+                onPress={() => {
+                  const maxNGN = Math.floor((availableBalance - railFeeUSD) * offRampRate);
+                  if (maxNGN > 0 && offRampRate > 0) setRawAmount(String(maxNGN));
+                }}>
+                <Text className="font-subtitle text-[13px] text-white">Max</Text>
+              </Pressable>
             </Animated.View>
+            {offRampRate > 0 && (
+              <Animated.View entering={FadeIn.delay(300).duration(300)} className="mt-3">
+                <Text className="text-center font-body text-[12px] text-white/60">
+                  Rate: ₦{offRampRate.toLocaleString()}/USD · Fee: ₦{Math.round(railFeeUSD * offRampRate).toLocaleString()}
+                </Text>
+              </Animated.View>
+            )}
           </View>
 
           <Animated.View entering={SlideInUp.delay(100).duration(500)} className="pb-3 pt-1">
@@ -634,8 +618,11 @@ export default function WithdrawNairaScreen() {
                     <Animated.Text entering={FadeIn.delay(450).duration(300)} className="mt-2 text-center font-body text-[14px] leading-[20px] text-text-secondary">
                       On its way to {accountName} at {selectedBank?.name}
                     </Animated.Text>
-                    <Animated.View entering={FadeInDown.delay(550).duration(400)} className="mt-10 w-full">
-                      <Button title="Done" variant="black" onPress={safeGoBack} />
+                    <Animated.View entering={FadeInDown.delay(550).duration(400)} className="mt-10 w-full gap-3">
+                      <Button title="Share receipt" variant="black" onPress={() => {
+                        Share.share({ message: `Rail Money\n\nWithdrawal Receipt\n━━━━━━━━━━━━━━━━━━\nAmount: ₦${parsedAmount.toLocaleString()}\nTo: ${accountName}\nBank: ${selectedBank?.name}\nAccount: ${accountNumber}\nDate: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}\nStatus: Completed\n━━━━━━━━━━━━━━━━━━\nSent via Rail Money` });
+                      }} />
+                      <Button title="Done" variant="white" onPress={safeGoBack} />
                     </Animated.View>
                   </Animated.View>
                 ) : isFailed ? (
@@ -667,11 +654,17 @@ export default function WithdrawNairaScreen() {
                         ? 'Your withdrawal is still being processed.\nCheck back in your transaction history.'
                         : `Sending ₦${parsedAmount.toLocaleString()} to ${selectedBank?.name}`}
                     </Animated.Text>
-                    {pollingTimedOut && (
-                      <Animated.View entering={FadeInDown.delay(450).duration(400)} className="mt-10 w-full">
-                        <Button title="Done" variant="black" onPress={safeGoBack} />
-                      </Animated.View>
+                    {!pollingTimedOut && (
+                      <Animated.Text entering={FadeIn.delay(450).duration(300)} className="mt-3 text-center font-body text-[12px] text-text-secondary/60">
+                        Usually arrives in 2–5 minutes
+                      </Animated.Text>
                     )}
+                    <Animated.View entering={FadeInDown.delay(500).duration(400)} className="mt-10 w-full">
+                      <Button title="Done" variant="white" onPress={safeGoBack} />
+                      <Text className="mt-2 text-center font-body text-[12px] text-text-secondary">
+                        We'll notify you when it's complete
+                      </Text>
+                    </Animated.View>
                   </Animated.View>
                 )}
               </View>
@@ -683,8 +676,13 @@ export default function WithdrawNairaScreen() {
       </KeyboardAvoidingView>
 
       {step === 'confirm' && (
-        <View className="bg-white px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
-          <Button title="Confirm withdrawal" variant="orange" onPress={() => { passkey.setAuthError(''); passkey.onAuthPasscodeChange(''); setStep('auth'); }} />
+        <View className="flex-row gap-3 border-t border-gray-100 bg-white px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
+          <View className="flex-1">
+            <Button title="Cancel" variant="ghost" onPress={safeGoBack} />
+          </View>
+          <View className="flex-[2]">
+            <Button title="Confirm & Send" variant="orange" onPress={() => { passkey.setAuthError(''); passkey.onAuthPasscodeChange(''); setStep('auth'); }} />
+          </View>
         </View>
       )}
     </SafeAreaView>
