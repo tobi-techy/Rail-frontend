@@ -316,10 +316,7 @@ export function TransactionDetailSheet({
         {type === 'withdraw' && (
           <>
             {transaction.title === 'NGN Withdrawal' ? (
-              <>
-                <DetailRow label="Destination" value={transaction.subtitle || 'Bank Account'} />
-                <DetailRow label="Provider" value="PajCash" />
-              </>
+              <DetailRow label="Destination" value={transaction.subtitle || 'Bank Account'} />
             ) : (
               <DetailRow label="To" value={transaction.subtitle || 'Bank Account'} />
             )}

@@ -101,11 +101,9 @@ export const pajOrderToTransaction = (o: PajOrderStatus & { orderType?: string; 
     id: o.orderId,
     type: (isOfframp ? 'withdraw' : 'deposit') as TransactionType,
     title: isOfframp ? 'NGN Withdrawal' : 'NGN Deposit',
-    subtitle: isOfframp
-      ? `₦${o.fiatAmount?.toLocaleString() ?? '0'} · PajCash`
-      : `₦${o.fiatAmount?.toLocaleString() ?? '0'} · PajCash`,
-    amount: o.amount || o.tokenAmount || 0,
-    currency: 'USD',
+    subtitle: `₦${o.fiatAmount?.toLocaleString() ?? '0'}`,
+    amount: o.fiatAmount || 0,
+    currency: 'NGN',
     status: normalizeStatus(statusMap[o.status] ?? o.status),
     createdAt: new Date(o.createdAt || Date.now()),
     withdrawalMethod: isOfframp ? ('fiat' as WithdrawalMethod) : undefined,
