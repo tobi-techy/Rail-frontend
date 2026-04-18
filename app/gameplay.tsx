@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable, Alert, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -101,15 +101,21 @@ function ActivityHeatmap({ dates }: { dates: string[] }) {
   }
   if (week.length > 0) weeks.push(week);
 
+  const screenWidth = Dimensions.get('window').width - 40;
+  const gap = 3;
+  const cellSize = Math.floor((screenWidth - (weeks.length - 1) * gap) / weeks.length);
+
   return (
-    <View className="flex-row gap-[3px]">
+    <View style={{ flexDirection: 'row', gap }}>
       {weeks.map((w, wi) => (
-        <View key={wi} className="gap-[3px]">
+        <View key={wi} style={{ gap }}>
           {w.map((cell, ci) => (
             <View
               key={ci}
-              className="h-[10px] w-[10px] rounded-[2px]"
               style={{
+                width: cellSize,
+                height: cellSize,
+                borderRadius: 2,
                 backgroundColor:
                   cell.date === '' ? 'transparent' : cell.active ? '#000' : '#F3F4F6',
               }}
