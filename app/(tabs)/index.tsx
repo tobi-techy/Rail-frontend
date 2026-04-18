@@ -3,7 +3,6 @@ import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo, useR
 import { router, useNavigation, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 import { PhantomIcon, SolflareIcon, SolanaIcon, VisaWhite } from '@/assets/svg';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
@@ -51,7 +50,6 @@ import {
   Money01Icon,
   CreditCardIcon,
   InternetIcon,
-  LayoutGridIcon,
   Message01Icon,
   SavingsIcon,
   UserGroupIcon,
@@ -688,24 +686,11 @@ function DashboardScreen() {
             getStarted={!hasCard}
             onPress={() => gateFeature(() => setShowCardComingSheet(true))}
           />
-          {isFeatureEnabled(FeatureGates.GAMEPLAY) ? (
-            <GameplayCard
-              data={gameplayData}
-              isLoading={isGameplayPending}
-              className="max-w-[50%] flex-1"
-            />
-          ) : (
-            <StashCard
-              title="Credit"
-              amount=""
-              getStarted="Coming soon"
-              icon={<HugeiconsIcon icon={Money01Icon} size={26} color="white" strokeWidth={1.8} />}
-              cardColor="#4F46E5"
-              className="max-w-[50%] flex-1"
-              badge={{ label: 'Soon', color: 'gray' }}
-              onPress={() => setShowMicroLoanSheet(true)}
-            />
-          )}
+          <GameplayCard
+            data={gameplayData}
+            isLoading={isGameplayPending}
+            className="max-w-[50%] flex-1"
+          />
         </View>
 
         <FeatureBanner
