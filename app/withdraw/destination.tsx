@@ -78,6 +78,7 @@ import {
 } from '@/components/withdraw/WithdrawalStatusScreen';
 import { useAuthStore } from '@/stores/authStore';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
+import { NgnIcon } from '@/assets/svg';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { parseApiError } from '@/utils/apiError';
 
@@ -591,8 +592,8 @@ export default function DestinationScreen() {
         <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
           {/* Amount hero */}
           <View className="items-center py-8">
-            <View className="mb-3 size-14 items-center justify-center rounded-full bg-surface">
-              <Text className="font-subtitle text-[24px] text-text-primary">₦</Text>
+            <View className="mb-3 size-14 items-center justify-center overflow-hidden rounded-full">
+              <NgnIcon width={56} height={56} />
             </View>
             <Text className="font-mono-semibold text-[42px] leading-[46px] text-text-primary" style={{ letterSpacing: -1 }}>
               ₦{formatCurrency(numericAmount)}
@@ -640,12 +641,12 @@ export default function DestinationScreen() {
             )}
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-body text-[14px] text-text-secondary">Rail fee</Text>
-              <Text className="font-subtitle text-[14px] text-text-primary">$0.06</Text>
+              <Text className="font-subtitle text-[14px] text-text-primary">₦{offRampRate > 0 ? Math.round(0.06 * offRampRate).toLocaleString() : '—'}</Text>
             </View>
             <View className="mx-5 h-px bg-gray-100" />
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-subtitle text-[14px] text-text-primary">Total</Text>
-              <Text className="font-subtitle text-[16px] text-text-primary">≈ ${(ngnUsdEquivalent + 0.06).toFixed(2)} USDC</Text>
+              <Text className="font-subtitle text-[16px] text-text-primary">₦{offRampRate > 0 ? Math.round((ngnUsdEquivalent + 0.06) * offRampRate).toLocaleString() : formatCurrency(numericAmount)}</Text>
             </View>
           </View>
 

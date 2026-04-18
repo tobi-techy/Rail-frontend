@@ -30,6 +30,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
 import { Confetti } from '@/components/atoms/Confetti';
+import { NgnIcon } from '@/assets/svg';
 import type { PajBank, PajSavedBankAccount } from '@/api/types/paj';
 
 const BRAND_RED = '#FF2E01';
@@ -566,8 +567,8 @@ export default function WithdrawNairaScreen() {
               <Animated.View entering={FadeInDown.duration(300)}>
                 {/* Amount hero — matches crypto confirm screen */}
                 <Animated.View entering={FadeInUp.duration(250)} className="items-center py-8">
-                  <View className="mb-3 size-14 items-center justify-center rounded-full bg-surface">
-                    <Text className="font-subtitle text-[24px] text-text-primary">₦</Text>
+                  <View className="mb-3 size-14 items-center justify-center overflow-hidden rounded-full">
+                    <NgnIcon width={56} height={56} />
                   </View>
                   <Text className="font-mono-semibold text-[42px] leading-[46px] text-text-primary" style={{ letterSpacing: -1 }}>
                     ₦{parsedAmount.toLocaleString()}
@@ -598,13 +599,13 @@ export default function WithdrawNairaScreen() {
                 <View className="overflow-hidden rounded-3xl bg-surface">
                   {([
                     ['Rate', `₦${offRampRate.toLocaleString()}/USD`],
-                    ['Rail fee', '$0.06'],
-                    ['Total debit', `≈ $${(estimatedUSDC + 0.06).toFixed(2)} USDC`],
+                    ['Rail fee', `₦${offRampRate > 0 ? Math.round(0.06 * offRampRate).toLocaleString() : '—'}`],
+                    ['Total', `₦${offRampRate > 0 ? Math.round((estimatedUSDC + 0.06) * offRampRate).toLocaleString() : parsedAmount.toLocaleString()}`],
                   ] as [string, string][]).map(([label, value], i, arr) => (
                     <React.Fragment key={label}>
                       <View className="flex-row items-center justify-between px-5 py-4">
-                        <Text className={`${label === 'Total debit' ? 'font-subtitle' : 'font-body'} text-[14px] ${label === 'Total debit' ? 'text-text-primary' : 'text-text-secondary'}`}>{label}</Text>
-                        <Text className={`font-subtitle text-[${label === 'Total debit' ? '16' : '14'}px] text-text-primary`}>{value}</Text>
+                        <Text className={`${label === 'Total' ? 'font-subtitle' : 'font-body'} text-[14px] ${label === 'Total' ? 'text-text-primary' : 'text-text-secondary'}`}>{label}</Text>
+                        <Text className={`font-subtitle text-[${label === 'Total' ? '16' : '14'}px] text-text-primary`}>{value}</Text>
                       </View>
                       {i < arr.length - 1 && <View className="mx-5 h-px bg-gray-100" />}
                     </React.Fragment>
