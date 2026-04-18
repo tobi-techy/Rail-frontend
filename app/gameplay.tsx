@@ -117,7 +117,7 @@ function ActivityHeatmap({ dates }: { dates: string[] }) {
                 height: cellSize,
                 borderRadius: 2,
                 backgroundColor:
-                  cell.date === '' ? 'transparent' : cell.active ? '#000' : '#F3F4F6',
+                  cell.date === '' ? 'transparent' : cell.active ? '#FF5722' : '#F3F4F6',
               }}
             />
           ))}
@@ -232,7 +232,7 @@ export default function GameplayScreen() {
             <View className="flex-row items-center gap-1.5">
               <View className="h-2.5 w-2.5 rounded-sm bg-gray-100" />
               <Text className="font-mono text-[9px] text-text-tertiary">None</Text>
-              <View className="ml-1 h-2.5 w-2.5 rounded-sm bg-black" />
+              <View className="ml-1 h-2.5 w-2.5 rounded-sm bg-[#FF5722]" />
               <Text className="font-mono text-[9px] text-text-tertiary">Deposited</Text>
             </View>
           </View>
