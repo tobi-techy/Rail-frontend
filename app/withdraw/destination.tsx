@@ -6,6 +6,7 @@ import {
   ScrollView,
   StatusBar,
   KeyboardAvoidingView,
+  ActivityIndicator,
   Platform,
   TextInput,
   Keyboard,
@@ -312,6 +313,13 @@ export default function DestinationScreen() {
   ]);
 
   const ngnPasskeyScope = `ngn-offramp:${safeName(user?.email) || 'unknown'}:${numericAmount.toFixed(2)}`;
+  const [ngnPasskeyAvailable, setNgnPasskeyAvailable] = useState(false);
+  useEffect(() => {
+    try {
+      const { Passkey } = require('react-native-passkey');
+      setNgnPasskeyAvailable(Passkey.isSupported() && Boolean(safeName(user?.email)));
+    } catch { setNgnPasskeyAvailable(false); }
+  }, [user?.email]);
   const ngnPasskey = usePasskeyAuthorize({
     email: user?.email,
     passkeyPromptScope: ngnPasskeyScope,
@@ -560,71 +568,101 @@ export default function DestinationScreen() {
   // NGN: Confirm review screen
   // ═══════════════════════════════════════════════════════════════════════
   if (ngnShowConfirm && !ngnShowAuth) {
+    if (ngnSubmitting) {
+      return (
+        <SafeAreaView className="flex-1 bg-white items-center justify-center" edges={['top', 'bottom']}>
+          <ActivityIndicator size="small" color="#EA580C" />
+          <Text className="mt-4 font-subtitle text-[17px] text-text-primary">Processing withdrawal…</Text>
+        </SafeAreaView>
+      );
+    }
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
         <StatusBar barStyle="dark-content" />
-        <View className="px-5 pb-2 pt-1">
+        <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-surface"
             onPress={() => setNgnShowConfirm(false)}>
             <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
           </Pressable>
+          <Text className="font-subtitle text-[17px] text-text-primary">Review</Text>
+          <View className="size-11" />
         </View>
         <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-          <Text className="mt-2 font-subtitle text-[28px] text-text-primary">
-            Review withdrawal
-          </Text>
-          <Text className="mb-6 mt-1 font-body text-[14px] text-text-secondary">
-            Confirm the details below
-          </Text>
-
-          <View className="gap-4 rounded-2xl bg-[#F9FAFB] p-4">
-            <View className="flex-row items-center justify-between">
-              <Text className="font-body text-[13px] text-text-secondary">Recipient</Text>
-              <Text className="font-subtitle text-[14px] text-text-primary">{ngnAccountName}</Text>
+          {/* Amount hero */}
+          <View className="items-center py-8">
+            <View className="mb-3 size-14 items-center justify-center rounded-full bg-surface">
+              <Text className="font-subtitle text-[24px] text-text-primary">₦</Text>
             </View>
-            <View className="flex-row items-center justify-between">
-              <Text className="font-body text-[13px] text-text-secondary">Bank</Text>
-              <Text className="font-body text-[14px] text-text-primary">{ngnBank?.name}</Text>
-            </View>
-            <View className="flex-row items-center justify-between">
-              <Text className="font-body text-[13px] text-text-secondary">Account</Text>
-              <Text className="font-body text-[14px] text-text-primary">{ngnAccountNumber}</Text>
-            </View>
-            <View className="h-px bg-gray-200" />
-            <View className="flex-row items-center justify-between">
-              <Text className="font-body text-[13px] text-text-secondary">Amount</Text>
-              <Text className="font-subtitle text-[14px] text-text-primary">
-                ₦{formatCurrency(numericAmount)}
-              </Text>
-            </View>
-            {offRampRate > 0 && (
-              <View className="flex-row items-center justify-between">
-                <Text className="font-body text-[13px] text-text-secondary">Rate</Text>
-                <Text className="font-body text-[14px] text-text-primary">
-                  ₦{offRampRate.toLocaleString()}/USD
-                </Text>
-              </View>
-            )}
+            <Text className="font-mono-semibold text-[42px] leading-[46px] text-text-primary" style={{ letterSpacing: -1 }}>
+              ₦{formatCurrency(numericAmount)}
+            </Text>
             {ngnUsdEquivalent > 0 && (
-              <View className="flex-row items-center justify-between">
-                <Text className="font-body text-[13px] text-text-secondary">USD equivalent</Text>
-                <Text className="font-body text-[14px] text-text-primary">
-                  ≈ ${ngnUsdEquivalent.toFixed(2)}
-                </Text>
-              </View>
+              <Text className="mt-1 font-body text-[14px] text-text-secondary">≈ ${ngnUsdEquivalent.toFixed(2)} USDC</Text>
             )}
           </View>
+
+          {/* Destination card */}
+          <Text className="mb-2 ml-1 font-body text-[12px] uppercase tracking-wider text-text-secondary">Destination</Text>
+          <View className="overflow-hidden rounded-3xl bg-surface">
+            <View className="flex-row items-center justify-between px-5 py-4">
+              <Text className="font-body text-[14px] text-text-secondary">Recipient</Text>
+              <Text className="ml-6 max-w-[60%] text-right font-subtitle text-[14px] text-text-primary" numberOfLines={1}>{ngnAccountName}</Text>
+            </View>
+            <View className="mx-5 h-px bg-gray-100" />
+            <View className="flex-row items-center justify-between px-5 py-4">
+              <Text className="font-body text-[14px] text-text-secondary">Bank</Text>
+              <Text className="font-subtitle text-[14px] text-text-primary">{ngnBank?.name}</Text>
+            </View>
+            <View className="mx-5 h-px bg-gray-100" />
+            <View className="flex-row items-center justify-between px-5 py-4">
+              <Text className="font-body text-[14px] text-text-secondary">Account</Text>
+              <Text className="font-subtitle text-[14px] text-text-primary">{ngnAccountNumber}</Text>
+            </View>
+            <View className="mx-5 h-px bg-gray-100" />
+            <View className="flex-row items-center justify-between px-5 py-4">
+              <Text className="font-body text-[14px] text-text-secondary">Source</Text>
+              <Text className="font-subtitle text-[14px] text-text-primary">Spend Wallet</Text>
+            </View>
+          </View>
+
+          {/* Transaction card */}
+          <Text className="mb-2 ml-1 mt-4 font-body text-[12px] uppercase tracking-wider text-text-secondary">Transaction</Text>
+          <View className="overflow-hidden rounded-3xl bg-surface">
+            {offRampRate > 0 && (
+              <>
+                <View className="flex-row items-center justify-between px-5 py-4">
+                  <Text className="font-body text-[14px] text-text-secondary">Rate</Text>
+                  <Text className="font-subtitle text-[14px] text-text-primary">₦{offRampRate.toLocaleString()}/USD</Text>
+                </View>
+                <View className="mx-5 h-px bg-gray-100" />
+              </>
+            )}
+            <View className="flex-row items-center justify-between px-5 py-4">
+              <Text className="font-body text-[14px] text-text-secondary">Rail fee</Text>
+              <Text className="font-subtitle text-[14px] text-text-primary">$0.06</Text>
+            </View>
+            <View className="mx-5 h-px bg-gray-100" />
+            <View className="flex-row items-center justify-between px-5 py-4">
+              <Text className="font-subtitle text-[14px] text-text-primary">Total</Text>
+              <Text className="font-subtitle text-[16px] text-text-primary">≈ ${(ngnUsdEquivalent + 0.06).toFixed(2)} USDC</Text>
+            </View>
+          </View>
+
+          <Text className="mt-4 font-body text-[12px] leading-[18px] text-text-secondary">
+            * Please verify bank details. Incorrect details may result in failed or delayed transfers.
+          </Text>
         </ScrollView>
 
         <View
-          className="border-t border-gray-100 bg-white px-5 pt-3"
+          className="flex-row gap-3 border-t border-gray-100 bg-white px-5 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
-          <Button
-            title="Confirm & Authorize"
-            variant="orange"
-            onPress={() => setNgnShowAuth(true)}
-          />
+          <View className="flex-1">
+            <Button title="Cancel" variant="ghost" onPress={() => setNgnShowConfirm(false)} />
+          </View>
+          <View className="flex-[2]">
+            <Button title="Confirm & Send" variant="orange" onPress={() => setNgnShowAuth(true)} />
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -651,6 +689,9 @@ export default function DestinationScreen() {
           onValueChange={ngnPasskey.onAuthPasscodeChange}
           onComplete={ngnLockoutUntil ? undefined : onNgnPasscodeComplete}
           errorText={ngnPasskey.authError}
+          showToggle
+          showFingerprint={ngnPasskeyAvailable}
+          onFingerprint={ngnLockoutUntil ? undefined : ngnPasskey.onPasskeyAuthorize}
           autoSubmit
           variant="light"
           className="mt-3 flex-1"
