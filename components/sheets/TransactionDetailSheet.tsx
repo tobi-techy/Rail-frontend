@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Transaction, TransactionType, SvgComponent } from '../molecules/TransactionItem';
@@ -7,6 +7,9 @@ import { resolveTransactionAssetIcon } from '@/utils/transactionIcon';
 import { formatAbsAmount } from '@/utils/transactionFormat';
 import { MaskedBalance } from '../molecules/MaskedBalance';
 import { useUIStore } from '@/stores';
+import { useCancelWithdrawal } from '@/api/hooks/useFunding';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { safeError } from '@/utils/logSanitizer';
 import {
   ArrowDownLeft01Icon,
   ArrowUpRight01Icon,
@@ -177,7 +180,38 @@ export function TransactionDetailSheet({
   transaction,
 }: TransactionDetailSheetProps) {
   const { isBalanceVisible } = useUIStore();
+  const cancelWithdrawal = useCancelWithdrawal();
+  const { showSuccess, showError } = useFeedbackPopup();
+
   if (!transaction) return null;
+
+  const isCancellable =
+    transaction.type === 'withdraw' && transaction.status === 'pending';
+
+  const handleCancel = () => {
+    Alert.alert('Cancel Withdrawal', 'Are you sure you want to cancel this withdrawal?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes, Cancel',
+        style: 'destructive',
+        onPress: () => {
+          cancelWithdrawal.mutate(transaction.id, {
+            onSuccess: () => {
+              showSuccess('Withdrawal cancelled');
+              onClose();
+            },
+            onError: (error) => {
+              safeError('Cancel withdrawal failed', error);
+              showError(
+                'Cancellation failed',
+                (error as any)?.message || 'Please try again later'
+              );
+            },
+          });
+        },
+      },
+    ]);
+  };
 
   const {
     icon,
@@ -278,10 +312,17 @@ export function TransactionDetailSheet({
           </>
         )}
 
-        {/* Withdraw details */}
+        {/* Withdraw details — NGN/PajCash vs standard */}
         {type === 'withdraw' && (
           <>
-            <DetailRow label="To" value={transaction.subtitle || 'Bank Account'} />
+            {transaction.title === 'NGN Withdrawal' ? (
+              <>
+                <DetailRow label="Destination" value={transaction.subtitle || 'Bank Account'} />
+                <DetailRow label="Provider" value="PajCash" />
+              </>
+            ) : (
+              <DetailRow label="To" value={transaction.subtitle || 'Bank Account'} />
+            )}
             <DetailRow
               label="Status"
               value={statusLabel(transaction.status)}
@@ -302,6 +343,17 @@ export function TransactionDetailSheet({
           <DetailRow label="Fees" value={fee} isGreen={fee.toLowerCase().includes('covered')} />
         )}
       </View>
+
+      {isCancellable && (
+        <TouchableOpacity
+          onPress={handleCancel}
+          disabled={cancelWithdrawal.isPending}
+          className="mt-4 items-center py-3">
+          <Text className="font-subtitle text-body text-destructive">
+            {cancelWithdrawal.isPending ? 'Cancelling…' : 'Cancel Withdrawal'}
+          </Text>
+        </TouchableOpacity>
+      )}
     </GorhomBottomSheet>
   );
 }

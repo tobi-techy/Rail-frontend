@@ -33,8 +33,10 @@ import {
   normalizeWithdrawals,
   depositToTransaction,
   withdrawalToTransaction,
+  pajOrderToTransaction,
 } from '@/utils/transactionNormalizer';
 import { useAuthStore } from '@/stores/authStore';
+import { usePajOrders } from '@/api/hooks/usePaj';
 import { useUIStore } from '@/stores';
 import type { Currency } from '@/stores/uiStore';
 import { invalidateQueries } from '@/api/queryClient';
@@ -223,6 +225,7 @@ function DashboardScreen() {
   const { data: gameplayData, isPending: isGameplayPending } = useGameplayProfile();
   const deposits = useDeposits(10);
   const withdrawals = useWithdrawals(10);
+  const pajOrders = usePajOrders();
   const { data: kycStatus, refetch: refetchKYC } = useKYCStatus();
 
   // Refetch KYC status every time this screen comes into focus
@@ -315,9 +318,10 @@ function DashboardScreen() {
     const rows: Transaction[] = [
       ...(deposits.data?.deposits ?? []).map(depositToTransaction),
       ...normalizeWithdrawals(withdrawals.data).map(withdrawalToTransaction),
+      ...(pajOrders.data?.orders ?? []).map(pajOrderToTransaction),
     ];
     return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 3);
-  }, [deposits.data, withdrawals.data]);
+  }, [deposits.data, withdrawals.data, pajOrders.data]);
 
   const kycApproved = kycStatus?.status === 'approved' && kycStatus?.verified === true;
 

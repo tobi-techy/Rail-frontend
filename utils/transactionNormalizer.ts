@@ -6,6 +6,7 @@ import type {
 } from '@/components/molecules/TransactionItem';
 import type { Deposit, Withdrawal } from '@/api/types';
 import type { P2PTransfer } from '@/api/services/p2p.service';
+import type { PajOrderStatus } from '@/api/types/paj';
 
 export type WithdrawalListResponse = Withdrawal[] | { withdrawals?: Withdrawal[] } | undefined;
 
@@ -92,3 +93,21 @@ export const p2pToTransaction = (t: P2PTransfer): Transaction => ({
   createdAt: new Date(t.createdAt || '1970-01-01T00:00:00Z'),
   withdrawalMethod: 'p2p' as WithdrawalMethod,
 });
+
+export const pajOrderToTransaction = (o: PajOrderStatus & { orderType?: string; createdAt?: string; tokenAmount?: number; bankAccountNumber?: string }): Transaction => {
+  const isOfframp = o.type === 'OFF_RAMP' || o.orderType === 'offramp';
+  const statusMap: Record<string, string> = { INIT: 'pending', PAID: 'pending', COMPLETED: 'completed', FAILED: 'failed' };
+  return {
+    id: o.orderId,
+    type: (isOfframp ? 'withdraw' : 'deposit') as TransactionType,
+    title: isOfframp ? 'NGN Withdrawal' : 'NGN Deposit',
+    subtitle: isOfframp
+      ? `₦${o.fiatAmount?.toLocaleString() ?? '0'} · PajCash`
+      : `₦${o.fiatAmount?.toLocaleString() ?? '0'} · PajCash`,
+    amount: o.amount || o.tokenAmount || 0,
+    currency: 'USD',
+    status: normalizeStatus(statusMap[o.status] ?? o.status),
+    createdAt: new Date(o.createdAt || Date.now()),
+    withdrawalMethod: isOfframp ? ('fiat' as WithdrawalMethod) : undefined,
+  };
+};

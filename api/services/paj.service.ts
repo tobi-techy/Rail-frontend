@@ -82,6 +82,11 @@ export const pajService = {
   async getOrderStatus(orderId: string): Promise<PajOrderStatus> {
     return apiClient.get(`${PAJ_ENDPOINTS.ORDER_STATUS}/${orderId}/status`);
   },
+
+  /** Get user's Paj order history for transaction display */
+  async getOrders(): Promise<{ orders: PajOrderStatus[] }> {
+    return apiClient.get(PAJ_ENDPOINTS.ORDER_STATUS);
+  },
 };
 
 export default pajService;

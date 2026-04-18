@@ -54,6 +54,7 @@ export interface PajOfframpOrder {
   amount: number;
   rate: number;
   fee: number;
+  railFee: number;
   status: string;
 }
 

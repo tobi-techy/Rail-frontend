@@ -7,7 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useNavigation } from 'expo-router';
 import Animated, { FadeInDown, FadeIn, FadeInUp, SlideInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { Button, Input } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { Keypad } from '@/components/molecules/Keypad';
 import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
 import {
@@ -24,11 +24,12 @@ import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { useAuthStore } from '@/stores/authStore';
 import { BankPickerSheet } from '@/components/sheets/BankPickerSheet';
 import {
-  ArrowLeft01Icon, CheckmarkCircle02Icon, Loading03Icon, Cancel01Icon,
+  ArrowLeft01Icon, CheckmarkCircle02Icon, Cancel01Icon,
   BankIcon, ArrowDown01Icon, Search01Icon, Add01Icon, ArrowRight01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
+import { Confetti } from '@/components/atoms/Confetti';
 import type { PajBank, PajSavedBankAccount } from '@/api/types/paj';
 
 const BRAND_RED = '#FF2E01';
@@ -74,13 +75,30 @@ export default function WithdrawNairaScreen() {
 
   useFocusEffect(useCallback(() => { refetchBanks(); refetchSavedBanks(); }, [refetchBanks, refetchSavedBanks]));
 
+  // Proactive Paj session guard — redirect before the user hits an API error
+  const needsPajSession = (banksError as any)?.code === 'PAJ_VERIFICATION_REQUIRED';
+
   const offRampRate = ratesData?.offRampRate?.rate ?? 0;
   const parsedAmount = useMemo(() => { const n = parseFloat(rawAmount); return Number.isFinite(n) ? n : 0; }, [rawAmount]);
   const estimatedUSDC = offRampRate > 0 ? parsedAmount / offRampRate : 0;
   const availableBalance = useMemo(() => { const p = parseFloat(station?.spend_balance ?? ''); return Number.isFinite(p) && p >= 0 ? p : 0; }, [station?.spend_balance]);
-  const canContinueAmount = parsedAmount >= 1000;
+  const canContinueAmount = parsedAmount >= 100;
   const isCompleted = orderStatus?.status === 'COMPLETED';
   const isFailed = orderStatus?.status === 'FAILED';
+  const [pollingTimedOut, setPollingTimedOut] = useState(false);
+
+  // Timeout polling after 3 minutes to avoid infinite spinner
+  useEffect(() => {
+    if (step !== 'polling' || isCompleted || isFailed) { setPollingTimedOut(false); return; }
+    const timer = setTimeout(() => setPollingTimedOut(true), 3 * 60 * 1000);
+    return () => clearTimeout(timer);
+  }, [step, isCompleted, isFailed]);
+
+  // Haptic feedback on terminal status
+  useEffect(() => {
+    if (isCompleted) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (isFailed) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  }, [isCompleted, isFailed]);
   const banks = banksData?.banks ?? [];
   const savedBanks = savedBanksData?.accounts ?? [];
 
@@ -144,28 +162,32 @@ export default function WithdrawNairaScreen() {
 
   // ── Select saved recipient ──────────────────────────────────────────────
   const selectSavedBank = useCallback((saved: PajSavedBankAccount) => {
+    if (needsPajSession) { router.push('/paj-verify'); return; }
     Haptics.selectionAsync();
     const matchedBank = banks.find((b) => b.name === saved.bank || b.id === saved.bank);
     setSelectedBank(matchedBank ?? null);
     setAccountNumber(saved.accountNumber);
     setAccountName(saved.accountName);
     setStep('confirm');
-  }, [banks]);
+  }, [needsPajSession, banks]);
 
   // ── Auto-resolve account ────────────────────────────────────────────────
   useEffect(() => {
     if (accountNumber.length === 10 && selectedBank) {
+      let stale = false;
       resolveBank.mutate(
         { bankId: selectedBank.id, accountNumber },
         {
-          onSuccess: (data) => { setAccountName(data.accountName); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); },
+          onSuccess: (data) => { if (!stale) { setAccountName(data.accountName); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } },
           onError: (err: any) => {
+            if (stale) return;
             setAccountName('');
             if (err?.code === 'PAJ_VERIFICATION_REQUIRED') { router.push('/paj-verify'); return; }
             showError('Could not verify this account number');
           },
         }
       );
+      return () => { stale = true; };
     } else if (step === 'newRecipient') { setAccountName(''); }
   }, [accountNumber, selectedBank]);
 
@@ -194,16 +216,16 @@ export default function WithdrawNairaScreen() {
   }, [step, safeGoBack]);
 
   const goToConfirm = useCallback(() => {
-    if (banksError && !banksFetching) { router.push('/paj-verify'); return; }
+    if (needsPajSession) { router.push('/paj-verify'); return; }
     if (saveBankDetails && selectedBank && accountName) {
       addBank.mutate({ bankId: selectedBank.id, accountNumber }, { onSuccess: () => refetchSavedBanks() });
     }
     setStep('confirm');
-  }, [banksError, banksFetching, saveBankDetails, selectedBank, accountName, accountNumber, addBank, refetchSavedBanks]);
+  }, [needsPajSession, saveBankDetails, selectedBank, accountName, accountNumber, addBank, refetchSavedBanks]);
 
   // ── Confirm withdrawal ─────────────────────────────────────────────────
   const handleConfirmWithdrawal = useCallback(async () => {
-    if (!selectedBank || !accountNumber || parsedAmount < 1000) return;
+    if (!selectedBank || !accountNumber || parsedAmount < 100) return;
     try {
       const order = await offramp.mutateAsync({ bankId: selectedBank.id, accountNumber, amount: parsedAmount });
       setOrderId(order.orderId);
@@ -228,7 +250,7 @@ export default function WithdrawNairaScreen() {
           </Pressable>
         </View>
 
-        <ScrollView className="flex-1 px-5" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1 px-5" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeInDown.duration(250)}>
             <Text className="font-subtitle text-[28px] text-text-primary">Send to bank account</Text>
             <Text className="mt-1 font-body text-[14px] text-text-secondary">
@@ -328,7 +350,7 @@ export default function WithdrawNairaScreen() {
 
               <View className="mt-4 px-5">
                 <Text className="font-subtitle text-[28px] text-text-primary">New Recipient</Text>
-                <Text className="mt-1 mb-6 font-body text-[14px] text-text-secondary">Enter the recipient's bank details</Text>
+                <Text className="mt-1 mb-6 font-body text-[14px] text-text-secondary">Enter the recipient&apos;s bank details</Text>
 
                 {/* Bank picker */}
                 <Animated.View entering={FadeInUp.delay(40).duration(250)}>
@@ -418,13 +440,13 @@ export default function WithdrawNairaScreen() {
                 )}
               </View>
             </ScrollView>
-
-            {/* Sticky CTA — always at bottom */}
-            <View className="border-t border-gray-100 bg-white px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
-              <Button title="Continue" variant="orange" disabled={!accountName} onPress={goToConfirm} />
-            </View>
           </View>
         </KeyboardAvoidingView>
+
+        {/* Sticky CTA — outside KAV so it stays at screen bottom */}
+        <View className="border-t border-gray-100 bg-white px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
+          <Button title="Continue" variant="orange" disabled={!accountName} onPress={goToConfirm} />
+        </View>
 
         <BankPickerSheet
           visible={showBankPicker}
@@ -507,9 +529,9 @@ export default function WithdrawNairaScreen() {
           </View>
 
           <Animated.View entering={SlideInUp.delay(100).duration(500)} className="pb-3 pt-1">
-            <Button title="Continue" onPress={() => setStep('recipients')} disabled={!canContinueAmount} variant="white" />
-            {parsedAmount > 0 && parsedAmount < 1000 && (
-              <Text className="mt-2 text-center font-body text-[12px] text-white/70">Minimum withdrawal is ₦1,000</Text>
+            <Button title="Continue" onPress={() => { if (needsPajSession) { router.push('/paj-verify'); return; } setStep('recipients'); }} disabled={!canContinueAmount} variant="white" />
+            {parsedAmount > 0 && parsedAmount < 100 && (
+              <Text className="mt-2 text-center font-body text-[12px] text-white/70">Minimum withdrawal is ₦100</Text>
             )}
           </Animated.View>
 
@@ -531,93 +553,137 @@ export default function WithdrawNairaScreen() {
       <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View className="flex-1">
-          <ScrollView className="flex-1 px-5" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <ScrollView className="flex-1 px-5" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
             <View className="flex-row items-center pb-2 pt-1">
-              <Pressable className="size-11 items-center justify-center rounded-full bg-surface" onPress={goBack}>
-                <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
-              </Pressable>
+              {step !== 'polling' && (
+                <Pressable className="size-11 items-center justify-center rounded-full bg-surface" onPress={goBack}>
+                  <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
+                </Pressable>
+              )}
             </View>
 
             {step === 'confirm' && (
               <Animated.View entering={FadeInDown.duration(300)}>
-                <Text className="mt-4 font-subtitle text-[28px] text-text-primary">Confirm withdrawal</Text>
-                <Text className="mt-2 font-body text-[14px] text-text-secondary">Please review the details below</Text>
-
-                <View className="mt-8">
-                  <Text className="font-body text-[14px] text-text-secondary">You're sending</Text>
-                  <Text
-                    className="mt-1 font-subtitle text-text-primary"
-                    style={{ fontSize: `₦${parsedAmount.toLocaleString()}`.length > 14 ? 32 : `₦${parsedAmount.toLocaleString()}`.length > 10 ? 40 : 60 }}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit>
+                {/* Amount hero — matches crypto confirm screen */}
+                <Animated.View entering={FadeInUp.duration(250)} className="items-center py-8">
+                  <View className="mb-3 size-14 items-center justify-center rounded-full bg-surface">
+                    <Text className="font-subtitle text-[24px] text-text-primary">₦</Text>
+                  </View>
+                  <Text className="font-mono-semibold text-[42px] leading-[46px] text-text-primary" style={{ letterSpacing: -1 }}>
                     ₦{parsedAmount.toLocaleString()}
                   </Text>
                   <Text className="mt-1 font-body text-[14px] text-text-secondary">≈ ${estimatedUSDC.toFixed(2)} USDC</Text>
-                </View>
+                </Animated.View>
 
-                <View className="mt-6 rounded-2xl bg-[#F9FAFB] px-5 py-1">
-                  {[
+                {/* Destination card */}
+                <Text className="mb-2 ml-1 font-body text-[12px] uppercase tracking-wider text-text-secondary">Destination</Text>
+                <View className="overflow-hidden rounded-3xl bg-surface">
+                  {([
                     ['Recipient', accountName],
                     ['Bank', selectedBank?.name],
                     ['Account', accountNumber],
+                  ] as [string, string | undefined][]).map(([label, value], i, arr) => (
+                    <React.Fragment key={label}>
+                      <View className="flex-row items-center justify-between px-5 py-4">
+                        <Text className="font-body text-[14px] text-text-secondary">{label}</Text>
+                        <Text className="font-subtitle text-[14px] text-text-primary">{value}</Text>
+                      </View>
+                      {i < arr.length - 1 && <View className="mx-5 h-px bg-gray-100" />}
+                    </React.Fragment>
+                  ))}
+                </View>
+
+                {/* Transaction card — fee matches backend RailNGNWithdrawalFee constant */}
+                <Text className="mb-2 ml-1 mt-4 font-body text-[12px] uppercase tracking-wider text-text-secondary">Transaction</Text>
+                <View className="overflow-hidden rounded-3xl bg-surface">
+                  {([
                     ['Rate', `₦${offRampRate.toLocaleString()}/USD`],
-                  ].map(([label, value], i, arr) => (
-                    <View key={label} className={`flex-row items-center justify-between py-3.5 ${i < arr.length - 1 ? 'border-b border-[#F3F4F6]' : ''}`}>
-                      <Text className="font-body text-[14px] text-text-secondary">{label}</Text>
-                      <Text className="font-subtitle text-[14px] text-text-primary">{value}</Text>
-                    </View>
+                    ['Rail fee', '$0.06'],
+                    ['Total debit', `≈ $${(estimatedUSDC + 0.06).toFixed(2)} USDC`],
+                  ] as [string, string][]).map(([label, value], i, arr) => (
+                    <React.Fragment key={label}>
+                      <View className="flex-row items-center justify-between px-5 py-4">
+                        <Text className={`${label === 'Total debit' ? 'font-subtitle' : 'font-body'} text-[14px] ${label === 'Total debit' ? 'text-text-primary' : 'text-text-secondary'}`}>{label}</Text>
+                        <Text className={`font-subtitle text-[${label === 'Total debit' ? '16' : '14'}px] text-text-primary`}>{value}</Text>
+                      </View>
+                      {i < arr.length - 1 && <View className="mx-5 h-px bg-gray-100" />}
+                    </React.Fragment>
                   ))}
                 </View>
               </Animated.View>
             )}
 
             {step === 'polling' && (
-              <Animated.View entering={FadeInDown.duration(300)}>
-                <View className="mt-16 items-center">
-                  {isCompleted ? (
-                    <>
-                      <View className="mb-4 size-16 items-center justify-center rounded-full bg-[#ECFDF5]">
-                        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={32} color="#10B981" />
-                      </View>
-                      <Text className="font-subtitle text-[24px] text-text-primary">Withdrawal sent!</Text>
-                      <Text className="mt-2 text-center font-body text-[14px] text-text-secondary">
-                        ₦{parsedAmount.toLocaleString()} is on its way to {accountName} at {selectedBank?.name}.
-                      </Text>
-                      <View className="mt-8 w-full"><Button title="Done" variant="orange" onPress={safeGoBack} /></View>
-                    </>
-                  ) : isFailed ? (
-                    <>
-                      <Text className="font-subtitle text-[24px] text-text-primary">Withdrawal failed</Text>
-                      <Text className="mt-2 text-center font-body text-[14px] text-text-secondary">
-                        Your funds have been returned to your balance. Please try again.
-                      </Text>
-                      <View className="mt-8 w-full"><Button title="Go back" variant="orange" onPress={safeGoBack} /></View>
-                    </>
-                  ) : (
-                    <>
-                      <View className="mb-4 size-16 items-center justify-center rounded-full" style={{ backgroundColor: '#FFF5F3' }}>
-                        <HugeiconsIcon icon={Loading03Icon} size={28} color={BRAND_RED} />
-                      </View>
-                      <Text className="font-subtitle text-[24px] text-text-primary">Processing withdrawal</Text>
-                      <Text className="mt-2 text-center font-body text-[14px] text-text-secondary">
-                        Sending ₦{parsedAmount.toLocaleString()} to {selectedBank?.name}. This usually takes a few minutes.
-                      </Text>
-                    </>
-                  )}
-                </View>
-              </Animated.View>
+              <View className="flex-1 items-center justify-center" style={{ minHeight: 400 }}>
+                {isCompleted && <Confetti />}
+
+                {isCompleted ? (
+                  <Animated.View entering={FadeInDown.duration(400)} className="items-center px-4">
+                    <Animated.View entering={FadeIn.delay(100).duration(300)} className="mb-6 size-20 items-center justify-center rounded-full bg-[#ECFDF5]">
+                      <HugeiconsIcon icon={CheckmarkCircle02Icon} size={40} color="#10B981" />
+                    </Animated.View>
+                    <Animated.Text entering={FadeInDown.delay(200).duration(400)} className="font-mono-semibold text-[36px] text-text-primary" style={{ letterSpacing: -1 }}>
+                      ₦{parsedAmount.toLocaleString()}
+                    </Animated.Text>
+                    <Animated.Text entering={FadeIn.delay(350).duration(300)} className="mt-3 font-subtitle text-[20px] text-text-primary">
+                      Withdrawal sent
+                    </Animated.Text>
+                    <Animated.Text entering={FadeIn.delay(450).duration(300)} className="mt-2 text-center font-body text-[14px] leading-[20px] text-text-secondary">
+                      On its way to {accountName} at {selectedBank?.name}
+                    </Animated.Text>
+                    <Animated.View entering={FadeInDown.delay(550).duration(400)} className="mt-10 w-full">
+                      <Button title="Done" variant="black" onPress={safeGoBack} />
+                    </Animated.View>
+                  </Animated.View>
+                ) : isFailed ? (
+                  <Animated.View entering={FadeInDown.duration(400)} className="items-center px-4">
+                    <Animated.View entering={FadeIn.delay(100).duration(300)} className="mb-6 size-20 items-center justify-center rounded-full bg-[#FEF2F2]">
+                      <HugeiconsIcon icon={Cancel01Icon} size={36} color="#EF4444" />
+                    </Animated.View>
+                    <Animated.Text entering={FadeInDown.delay(200).duration(400)} className="font-subtitle text-[20px] text-text-primary">
+                      Withdrawal failed
+                    </Animated.Text>
+                    <Animated.Text entering={FadeIn.delay(350).duration(300)} className="mt-2 text-center font-body text-[14px] leading-[20px] text-text-secondary">
+                      Your funds have been returned to your balance.{'\n'}Please try again.
+                    </Animated.Text>
+                    <Animated.View entering={FadeInDown.delay(450).duration(400)} className="mt-10 w-full gap-3">
+                      <Button title="Try again" variant="black" onPress={() => { setStep('confirm'); setOrderId(''); setPollingTimedOut(false); }} />
+                      <Button title="Go home" variant="white" onPress={safeGoBack} />
+                    </Animated.View>
+                  </Animated.View>
+                ) : (
+                  <Animated.View entering={FadeInDown.duration(400)} className="items-center px-4">
+                    <Animated.View entering={FadeIn.delay(100).duration(300)} className="mb-6 size-20 items-center justify-center rounded-full bg-[#FFF7ED]">
+                      <ActivityIndicator size="small" color="#EA580C" />
+                    </Animated.View>
+                    <Animated.Text entering={FadeInDown.delay(200).duration(400)} className="font-subtitle text-[20px] text-text-primary">
+                      {pollingTimedOut ? 'Taking longer than expected' : 'Processing'}
+                    </Animated.Text>
+                    <Animated.Text entering={FadeIn.delay(350).duration(300)} className="mt-2 text-center font-body text-[14px] leading-[20px] text-text-secondary">
+                      {pollingTimedOut
+                        ? 'Your withdrawal is still being processed.\nCheck back in your transaction history.'
+                        : `Sending ₦${parsedAmount.toLocaleString()} to ${selectedBank?.name}`}
+                    </Animated.Text>
+                    {pollingTimedOut && (
+                      <Animated.View entering={FadeInDown.delay(450).duration(400)} className="mt-10 w-full">
+                        <Button title="Done" variant="black" onPress={safeGoBack} />
+                      </Animated.View>
+                    )}
+                  </Animated.View>
+                )}
+              </View>
             )}
 
             <Text className="mb-8 mt-8 text-center font-body text-[11px] text-[#9CA3AF]">Powered by Paj Cash</Text>
           </ScrollView>
-
-          {step === 'confirm' && (
-            <View className="bg-white px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
-              <Button title="Confirm withdrawal" variant="orange" onPress={() => { passkey.setAuthError(''); passkey.onAuthPasscodeChange(''); setStep('auth'); }} />
-            </View>
-          )}
         </View>
       </KeyboardAvoidingView>
+
+      {step === 'confirm' && (
+        <View className="bg-white px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
+          <Button title="Confirm withdrawal" variant="orange" onPress={() => { passkey.setAuthError(''); passkey.onAuthPasscodeChange(''); setStep('auth'); }} />
+        </View>
+      )}
     </SafeAreaView>
   );
 }

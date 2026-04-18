@@ -12,6 +12,7 @@ const pajKeys = {
   rates: () => [...pajKeys.all, 'rates'] as const,
   banks: () => [...pajKeys.all, 'banks'] as const,
   savedBanks: () => [...pajKeys.all, 'savedBanks'] as const,
+  orders: () => [...pajKeys.all, 'orders'] as const,
   orderStatus: (id: string) => [...pajKeys.all, 'order', id] as const,
 };
 
@@ -116,7 +117,19 @@ export function usePajOfframp() {
       queryClient.invalidateQueries({ queryKey: ['funding'] });
       queryClient.invalidateQueries({ queryKey: ['station'] });
       queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      queryClient.invalidateQueries({ queryKey: pajKeys.orders() });
     },
+  });
+}
+
+/** User's Paj order history for transaction display */
+export function usePajOrders() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  return useQuery({
+    queryKey: pajKeys.orders(),
+    queryFn: () => pajService.getOrders(),
+    enabled: isAuthenticated,
+    staleTime: 30_000,
   });
 }
 

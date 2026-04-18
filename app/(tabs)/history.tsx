@@ -13,7 +13,9 @@ import {
   depositToTransaction,
   withdrawalToTransaction,
   p2pToTransaction,
+  pajOrderToTransaction,
 } from '@/utils/transactionNormalizer';
+import { usePajOrders } from '@/api/hooks/usePaj';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 
 function cardTxToTransaction(tx: any): Transaction {
@@ -38,6 +40,7 @@ export default function History() {
   const withdrawals = useWithdrawals(50);
   const cardTxQuery = useCardTransactions({ limit: 50 });
   const p2pTransfers = useP2PTransfers();
+  const pajOrders = usePajOrders();
 
   const isLoading = deposits.isLoading || withdrawals.isLoading || cardTxQuery.isLoading || p2pTransfers.isLoading;
   const isRefetching =
@@ -48,21 +51,24 @@ export default function History() {
     withdrawals.refetch();
     cardTxQuery.refetch();
     p2pTransfers.refetch();
+    pajOrders.refetch();
   };
 
   const transactions = useMemo(() => {
     const withdrawalRows = normalizeWithdrawals(withdrawals.data);
     const cardRows: Transaction[] = (cardTxQuery.data?.transactions ?? []).map(cardTxToTransaction);
     const p2pRows: Transaction[] = (p2pTransfers.data ?? []).map(p2pToTransaction);
+    const pajRows: Transaction[] = (pajOrders.data?.orders ?? []).map(pajOrderToTransaction);
 
     const mapped: Transaction[] = [
       ...(deposits.data?.deposits ?? []).map(depositToTransaction),
       ...withdrawalRows.map(withdrawalToTransaction),
       ...cardRows,
       ...p2pRows,
+      ...pajRows,
     ];
     return mapped.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }, [deposits.data, withdrawals.data, cardTxQuery.data, p2pTransfers.data]);
+  }, [deposits.data, withdrawals.data, cardTxQuery.data, p2pTransfers.data, pajOrders.data]);
   const showSkeleton = isLoading && transactions.length === 0;
 
   return (
