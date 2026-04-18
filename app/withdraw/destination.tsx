@@ -157,20 +157,20 @@ export default function DestinationScreen() {
   const isAssetTradeMethod = params.isAssetTradeMethod === 'true';
   const numericAmount = parseFloat(params.amount ?? '0') || 0;
 
-  // Chain-specific fees: Solana $0.10, EVM $0.50, Fiat USD/EUR/GBP $1.00, NGN ~₦100 ($0.06)
+  // Chain-specific fees: Solana $0.10, EVM $0.50, Fiat USD/EUR/GBP $1.00, NGN from API
   const getFee = () => {
     if (numericAmount <= 0) return 0;
     if (isFiatMethod) {
-      const fc = params.currency ?? storeCurrency;
-      if (fc === 'NGN') return railFeeUSD;
+      const fc = params.currency ?? 'USD';
+      if (fc === 'NGN') return 0.06; // placeholder — overridden by railFeeUSD below after hooks
       return 1.0;
     }
     // Crypto
     if (destinationChain === 'SOL') return 0.1;
     return 0.5;
   };
-  const feeAmount = getFee();
-  const totalAmount = numericAmount + feeAmount;
+  const feeAmountBase = getFee();
+  const totalAmountBase = numericAmount + feeAmountBase;
 
   const storeCurrency = useUIStore((s) => s.currency);
   const currencyCode = params.currency ?? storeCurrency;
@@ -255,6 +255,10 @@ export default function DestinationScreen() {
   const savedBanksList: PajSavedBankAccount[] = (pajSavedBanks as any)?.accounts ?? [];
   const offRampRate = pajRates?.offRampRate?.rate ?? 0;
   const railFeeUSD = pajRates?.railFee ?? 0.06;
+  // Recalculate fee with API value for NGN (overrides the placeholder above)
+  const isNGNFee = isFiatMethod && (params.currency ?? storeCurrency) === 'NGN';
+  const feeAmount = isNGNFee ? railFeeUSD : feeAmountBase;
+  const totalAmount = numericAmount + feeAmount;
   const ngnAmount = isNGN ? numericAmount : 0;
   const ngnUsdEquivalent = isNGN && offRampRate > 0 ? numericAmount / offRampRate : 0;
   const filteredPajBanks = useMemo(() => {

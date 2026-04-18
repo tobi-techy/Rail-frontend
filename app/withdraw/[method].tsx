@@ -208,7 +208,7 @@ export default function WithdrawAmountScreen() {
     }
     if (destinationChain === 'SOL' || !destinationChain) return 0.1;
     return 0.5;
-  }, [numericAmount, isFiatMethod, asset, destinationChain]);
+  }, [numericAmount, isFiatMethod, asset, destinationChain, railFeeUSD]);
   const totalAmount = useMemo(() => numericAmount + feeAmount, [feeAmount, numericAmount]);
 
   const amountError = useMemo(
