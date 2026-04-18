@@ -162,7 +162,7 @@ export default function DestinationScreen() {
     if (numericAmount <= 0) return 0;
     if (isFiatMethod) {
       const fc = params.currency ?? storeCurrency;
-      if (fc === 'NGN') return 0.06;
+      if (fc === 'NGN') return railFeeUSD;
       return 1.0;
     }
     // Crypto
@@ -254,6 +254,7 @@ export default function DestinationScreen() {
   const pajBanks: PajBank[] = pajBanksData?.banks ?? [];
   const savedBanksList: PajSavedBankAccount[] = (pajSavedBanks as any)?.accounts ?? [];
   const offRampRate = pajRates?.offRampRate?.rate ?? 0;
+  const railFeeUSD = pajRates?.railFee ?? 0.06;
   const ngnAmount = isNGN ? numericAmount : 0;
   const ngnUsdEquivalent = isNGN && offRampRate > 0 ? numericAmount / offRampRate : 0;
   const filteredPajBanks = useMemo(() => {
@@ -641,12 +642,12 @@ export default function DestinationScreen() {
             )}
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-body text-[14px] text-text-secondary">Rail fee</Text>
-              <Text className="font-subtitle text-[14px] text-text-primary">₦{offRampRate > 0 ? Math.round(0.06 * offRampRate).toLocaleString() : '—'}</Text>
+              <Text className="font-subtitle text-[14px] text-text-primary">₦{offRampRate > 0 ? Math.round(railFeeUSD * offRampRate).toLocaleString() : '—'}</Text>
             </View>
             <View className="mx-5 h-px bg-gray-100" />
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-subtitle text-[14px] text-text-primary">Total</Text>
-              <Text className="font-subtitle text-[16px] text-text-primary">₦{offRampRate > 0 ? Math.round((ngnUsdEquivalent + 0.06) * offRampRate).toLocaleString() : formatCurrency(numericAmount)}</Text>
+              <Text className="font-subtitle text-[16px] text-text-primary">₦{offRampRate > 0 ? Math.round((ngnUsdEquivalent + railFeeUSD) * offRampRate).toLocaleString() : formatCurrency(numericAmount)}</Text>
             </View>
           </View>
 

@@ -170,6 +170,7 @@ export default function WithdrawAmountScreen() {
   const isNGNAsset = asset === 'NGN';
   const { data: pajRatesData } = usePajRates();
   const ngnRate = pajRatesData?.offRampRate?.rate ?? 0;
+  const railFeeUSD = pajRatesData?.railFee ?? 0.06;
 
   const availableBalance = useMemo(() => {
     const source =
@@ -202,7 +203,7 @@ export default function WithdrawAmountScreen() {
   const feeAmount = useMemo(() => {
     if (numericAmount <= 0) return 0;
     if (isFiatMethod) {
-      if (asset === 'NGN') return 0.06;
+      if (asset === 'NGN') return railFeeUSD;
       return 1.0;
     }
     if (destinationChain === 'SOL' || !destinationChain) return 0.1;

@@ -80,6 +80,7 @@ export default function WithdrawNairaScreen() {
   const needsPajSession = (banksError as any)?.code === 'PAJ_VERIFICATION_REQUIRED';
 
   const offRampRate = ratesData?.offRampRate?.rate ?? 0;
+  const railFeeUSD = ratesData?.railFee ?? 0.06;
   const parsedAmount = useMemo(() => { const n = parseFloat(rawAmount); return Number.isFinite(n) ? n : 0; }, [rawAmount]);
   const estimatedUSDC = offRampRate > 0 ? parsedAmount / offRampRate : 0;
   const availableBalance = useMemo(() => { const p = parseFloat(station?.spend_balance ?? ''); return Number.isFinite(p) && p >= 0 ? p : 0; }, [station?.spend_balance]);
@@ -599,8 +600,8 @@ export default function WithdrawNairaScreen() {
                 <View className="overflow-hidden rounded-3xl bg-surface">
                   {([
                     ['Rate', `₦${offRampRate.toLocaleString()}/USD`],
-                    ['Rail fee', `₦${offRampRate > 0 ? Math.round(0.06 * offRampRate).toLocaleString() : '—'}`],
-                    ['Total', `₦${offRampRate > 0 ? Math.round((estimatedUSDC + 0.06) * offRampRate).toLocaleString() : parsedAmount.toLocaleString()}`],
+                    ['Rail fee', `₦${offRampRate > 0 ? Math.round(railFeeUSD * offRampRate).toLocaleString() : '—'}`],
+                    ['Total', `₦${offRampRate > 0 ? Math.round((estimatedUSDC + railFeeUSD) * offRampRate).toLocaleString() : parsedAmount.toLocaleString()}`],
                   ] as [string, string][]).map(([label, value], i, arr) => (
                     <React.Fragment key={label}>
                       <View className="flex-row items-center justify-between px-5 py-4">
