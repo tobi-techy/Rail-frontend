@@ -15,6 +15,7 @@ export interface PajRatesResponse {
   onRampRate: PajRate;
   offRampRate: PajRate;
   railFee: number;
+  minWithdrawalNGN: number;
 }
 
 export interface PajBank {

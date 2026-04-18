@@ -81,10 +81,11 @@ export default function WithdrawNairaScreen() {
 
   const offRampRate = ratesData?.offRampRate?.rate ?? 0;
   const railFeeUSD = ratesData?.railFee ?? 0.06;
+  const minWithdrawalNGN = ratesData?.minWithdrawalNGN ?? 1500;
   const parsedAmount = useMemo(() => { const n = parseFloat(rawAmount); return Number.isFinite(n) ? n : 0; }, [rawAmount]);
   const estimatedUSDC = offRampRate > 0 ? parsedAmount / offRampRate : 0;
   const availableBalance = useMemo(() => { const p = parseFloat(station?.spend_balance ?? ''); return Number.isFinite(p) && p >= 0 ? p : 0; }, [station?.spend_balance]);
-  const canContinueAmount = parsedAmount >= 500;
+  const canContinueAmount = parsedAmount >= minWithdrawalNGN;
   const isCompleted = orderStatus?.status === 'COMPLETED';
   const isFailed = orderStatus?.status === 'FAILED';
   const [pollingTimedOut, setPollingTimedOut] = useState(false);
@@ -227,7 +228,7 @@ export default function WithdrawNairaScreen() {
 
   // ── Confirm withdrawal ─────────────────────────────────────────────────
   const handleConfirmWithdrawal = useCallback(async () => {
-    if (!selectedBank || !accountNumber || parsedAmount < 500) return;
+    if (!selectedBank || !accountNumber || parsedAmount < minWithdrawalNGN) return;
     try {
       const order = await offramp.mutateAsync({ bankId: selectedBank.id, accountNumber, amount: parsedAmount });
       setOrderId(order.orderId);
@@ -532,8 +533,8 @@ export default function WithdrawNairaScreen() {
 
           <Animated.View entering={SlideInUp.delay(100).duration(500)} className="pb-3 pt-1">
             <Button title="Continue" onPress={() => { if (needsPajSession) { router.push('/paj-verify'); return; } setStep('recipients'); }} disabled={!canContinueAmount} variant="white" />
-            {parsedAmount > 0 && parsedAmount < 500 && (
-              <Text className="mt-2 text-center font-body text-[12px] text-white/70">Minimum withdrawal is ₦500</Text>
+            {parsedAmount > 0 && parsedAmount < minWithdrawalNGN && (
+              <Text className="mt-2 text-center font-body text-[12px] text-white/70">Minimum withdrawal is ₦{minWithdrawalNGN.toLocaleString()}</Text>
             )}
           </Animated.View>
 
