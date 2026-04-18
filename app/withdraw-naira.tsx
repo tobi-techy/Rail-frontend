@@ -297,6 +297,33 @@ export default function WithdrawNairaScreen() {
             </Pressable>
           </Animated.View>
 
+          {/* Recent Recipients */}
+          {filteredSavedBanks.length > 0 && (
+            <>
+              <View className="my-5 h-px bg-gray-100" />
+              <Animated.View entering={FadeInUp.delay(140).duration(250)}>
+                <Text className="mb-3 font-subtitle text-[15px] text-text-primary">Recent Recipients</Text>
+                {filteredSavedBanks.map((saved, i) => (
+                  <Animated.View key={saved.id} entering={FadeInUp.delay(160 + i * 40).duration(200)}>
+                    <Pressable
+                      className="flex-row items-center gap-3 rounded-2xl px-2 py-3 active:bg-surface"
+                      onPress={() => selectSavedBank(saved)}>
+                      <DiceBearAvatar seed={saved.accountName} size={44} />
+                      <View className="flex-1">
+                        <Text className="font-subtitle text-[15px] text-text-primary" numberOfLines={1}>
+                          {saved.accountName}
+                        </Text>
+                        <Text className="font-body text-[13px] text-text-secondary" numberOfLines={1}>
+                          {saved.bank} · {saved.accountNumber}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  </Animated.View>
+                ))}
+              </Animated.View>
+            </>
+          )}
+
           <View style={{ height: 40 }} />
         </ScrollView>
       </SafeAreaView>
@@ -417,6 +444,16 @@ export default function WithdrawNairaScreen() {
 
         {/* Sticky CTA — outside KAV so it stays at screen bottom */}
         <View className="border-t border-gray-100 bg-white px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
+          {accountName !== '' && offRampRate > 0 && (
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="font-body text-[13px] text-text-secondary">
+                ₦{parsedAmount.toLocaleString()} + ₦{Math.round(railFeeUSD * offRampRate).toLocaleString()} fee
+              </Text>
+              <Text className="font-subtitle text-[13px] text-text-primary">
+                ₦{(parsedAmount + Math.round(railFeeUSD * offRampRate)).toLocaleString()}
+              </Text>
+            </View>
+          )}
           <Button title="Continue" variant="orange" disabled={!accountName} onPress={goToConfirm} />
         </View>
 
