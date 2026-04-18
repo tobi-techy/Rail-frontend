@@ -51,6 +51,7 @@ export const ENDPOINTS = {
   GAMEPLAY: {
     PROFILE: '/v1/gameplay/profile',
     STREAKS: '/v1/gameplay/streaks',
+    HEATMAP: '/v1/gameplay/activity-heatmap',
     XP: '/v1/gameplay/xp',
     XP_HISTORY: '/v1/gameplay/xp/history',
     CHALLENGES: '/v1/gameplay/challenges',

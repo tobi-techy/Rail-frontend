@@ -77,6 +77,10 @@ export const gameplayService = {
     return apiClient.get(ENDPOINTS.GAMEPLAY.STREAKS);
   },
 
+  async getActivityHeatmap(): Promise<{ dates: string[] }> {
+    return apiClient.get(ENDPOINTS.GAMEPLAY.HEATMAP);
+  },
+
   async getXP(): Promise<{
     total_xp: number;
     level: number;

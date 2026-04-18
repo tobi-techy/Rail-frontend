@@ -25,6 +25,14 @@ export function useStreaks() {
   });
 }
 
+export function useActivityHeatmap() {
+  return useQuery({
+    queryKey: [...queryKeys.gameplay.all, 'heatmap'],
+    queryFn: () => gameplayService.getActivityHeatmap(),
+    staleTime: 60 * 1000,
+  });
+}
+
 export function useChallenges() {
   return useQuery({
     queryKey: queryKeys.gameplay.challenges(),

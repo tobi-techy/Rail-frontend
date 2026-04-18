@@ -28,6 +28,7 @@ import {
   useAchievements,
   useChallenges,
   useSubscription,
+  useActivityHeatmap,
 } from '@/api/hooks/useGameplay';
 import { useHaptics } from '@/hooks/useHaptics';
 import { Skeleton } from '@/components/atoms/Skeleton';
@@ -69,6 +70,57 @@ const STREAK_META: Record<string, { label: string; icon: any }> = {
   roundup: { label: 'Round-Up', icon: StarIcon },
 };
 
+// ── Activity Heatmap (GitHub contribution graph style) ─────────────────────
+function ActivityHeatmap({ dates }: { dates: string[] }) {
+  const dateSet = new Set(dates);
+  const today = new Date();
+  const cells: { date: string; active: boolean }[] = [];
+
+  // Generate last 91 days (13 weeks)
+  for (let i = 90; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().split('T')[0];
+    cells.push({ date: key, active: dateSet.has(key) });
+  }
+
+  // Arrange into 7 rows (Mon-Sun) × 13 columns (weeks)
+  const weeks: { date: string; active: boolean }[][] = [];
+  let week: { date: string; active: boolean }[] = [];
+  // Pad the first week so columns align
+  const firstDay = new Date(cells[0].date).getDay();
+  for (let i = 0; i < firstDay; i++) {
+    week.push({ date: '', active: false });
+  }
+  for (const cell of cells) {
+    week.push(cell);
+    if (week.length === 7) {
+      weeks.push(week);
+      week = [];
+    }
+  }
+  if (week.length > 0) weeks.push(week);
+
+  return (
+    <View className="flex-row gap-[3px]">
+      {weeks.map((w, wi) => (
+        <View key={wi} className="gap-[3px]">
+          {w.map((cell, ci) => (
+            <View
+              key={ci}
+              className="h-[10px] w-[10px] rounded-[2px]"
+              style={{
+                backgroundColor:
+                  cell.date === '' ? 'transparent' : cell.active ? '#000' : '#F3F4F6',
+              }}
+            />
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default function GameplayScreen() {
   const router = useRouter();
   const { impact } = useHaptics();
@@ -77,6 +129,8 @@ export default function GameplayScreen() {
   const { data: achievementsData } = useAchievements();
   const { data: challengesData } = useChallenges();
   const { data: subData } = useSubscription();
+  const { data: heatmapData } = useActivityHeatmap();
+  const depositStreak = profile?.streaks?.find((s: any) => s.streak_type === 'deposit');
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -153,45 +207,28 @@ export default function GameplayScreen() {
           )}
         </Animated.View>
 
-        {/* ── Streaks — inspired by Speak (big numbers, centered) ── */}
+        {/* ── Activity Heatmap (GitHub-style) ──────────────────── */}
         <Animated.View entering={FadeInDown.delay(80).duration(400)} className="mt-8 px-5">
-          <Text className="mb-4 font-mono text-small tracking-[3px] text-text-tertiary">
-            STREAKS
-          </Text>
-          <View className="flex-row gap-3">
-            {(profile?.streaks ?? []).map((s) => {
-              const meta = STREAK_META[s.streak_type] ?? { label: s.streak_type, icon: FireIcon };
-              const isActive = s.current_count > 0;
-              return (
-                <View
-                  key={s.id}
-                  className="flex-1 items-center rounded-2xl border border-gray-100 bg-white py-5">
-                  <View
-                    className={`mb-2 h-11 w-11 items-center justify-center rounded-full ${isActive ? 'bg-black' : 'bg-surface'}`}>
-                    <HugeiconsIcon
-                      icon={meta.icon}
-                      size={20}
-                      color={isActive ? '#fff' : '#9CA3AF'}
-                    />
-                  </View>
-                  <Text className="font-mono-bold text-headline-2 text-text-primary">
-                    {s.current_count}
-                  </Text>
-                  <Text className="font-body text-small text-text-secondary">{meta.label}</Text>
-                  <Text className="mt-1 font-mono text-[9px] text-text-tertiary">
-                    Best {s.longest_count}
-                  </Text>
-                </View>
-              );
-            })}
-            {(profile?.streaks ?? []).length === 0 && (
-              <View className="flex-1 items-center rounded-2xl border border-gray-100 py-8">
-                <HugeiconsIcon icon={FireIcon} size={28} color="#D1D5DB" />
-                <Text className="mt-3 font-body text-caption text-text-secondary">
-                  Make your first deposit to start
+          <View className="mb-4 flex-row items-center justify-between">
+            <Text className="font-mono text-small tracking-[3px] text-text-tertiary">ACTIVITY</Text>
+            {depositStreak && depositStreak.current_count > 0 && (
+              <View className="flex-row items-center gap-1.5">
+                <HugeiconsIcon icon={FireIcon} size={14} color="#FF2E01" />
+                <Text className="font-mono-semibold text-small text-text-primary">
+                  {depositStreak.current_count} day streak
                 </Text>
               </View>
             )}
+          </View>
+          <ActivityHeatmap dates={heatmapData?.dates ?? []} />
+          <View className="mt-3 flex-row items-center justify-between">
+            <Text className="font-mono text-[9px] text-text-tertiary">90 days ago</Text>
+            <View className="flex-row items-center gap-1.5">
+              <View className="h-2.5 w-2.5 rounded-sm bg-gray-100" />
+              <Text className="font-mono text-[9px] text-text-tertiary">None</Text>
+              <View className="ml-1 h-2.5 w-2.5 rounded-sm bg-black" />
+              <Text className="font-mono text-[9px] text-text-tertiary">Deposited</Text>
+            </View>
           </View>
         </Animated.View>
 
@@ -292,28 +329,6 @@ export default function GameplayScreen() {
             })}
           </View>
         </Animated.View>
-
-        {/* Dev: test push notification */}
-        {__DEV__ && (
-          <View className="mx-5 mt-8">
-            <Pressable
-              onPress={async () => {
-                impact();
-                try {
-                  const apiClient = require('@/api/client').default;
-                  await apiClient.post('/v1/gameplay/test-push');
-                  Alert.alert('Sent', 'Check your notifications');
-                } catch (e: any) {
-                  Alert.alert('Failed', e?.message ?? 'Could not send test push');
-                }
-              }}
-              className="items-center rounded-full border border-gray-200 py-3">
-              <Text className="font-button text-caption text-text-secondary">
-                Test Push Notification
-              </Text>
-            </Pressable>
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
