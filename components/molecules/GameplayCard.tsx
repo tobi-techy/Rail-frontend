@@ -70,13 +70,13 @@ export const GameplayCard: React.FC<GameplayCardProps> = ({ data, isLoading, cla
             />
           </View>
           <Text className="font-subtitle text-stash text-white" numberOfLines={1}>
-            Lvl {level}
+            {title}
           </Text>
           <Text
             className="mt-0.5 font-body text-[11px]"
             style={{ color: 'rgba(255,255,255,0.6)' }}
             numberOfLines={1}>
-            {title}
+            Level {level}
           </Text>
         </>
       )}
