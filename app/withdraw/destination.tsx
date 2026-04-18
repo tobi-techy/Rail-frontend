@@ -1443,47 +1443,6 @@ export default function DestinationScreen() {
           style={{ maxHeight: 400 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
-          {/* Saved banks first */}
-          {savedBanksList.length > 0 && !ngnBankSearch && (
-            <>
-              <Text className="mb-2 font-caption text-[11px] uppercase tracking-wider text-[#9CA3AF]">
-                Saved
-              </Text>
-              {savedBanksList.map((s) => {
-                const bank = pajBanks.find((b) => b.name === s.bank || b.id === s.bank);
-                return (
-                  <Pressable
-                    key={s.id}
-                    onPress={() => {
-                      selection();
-                      if (bank) setNgnBank(bank);
-                      setNgnAccountNumber(s.accountNumber);
-                      setNgnAccountName(s.accountName);
-                      setNgnBankSheetOpen(false);
-                    }}
-                    className="flex-row items-center gap-3 rounded-xl px-2 py-3 active:bg-[#F9FAFB]">
-                    <View className="size-9 items-center justify-center rounded-full bg-[#F3F4F6]">
-                      <Text className="font-subtitle text-[12px] text-text-secondary">
-                        {(bank?.name ?? s.bank).slice(0, 2).toUpperCase()}
-                      </Text>
-                    </View>
-                    <View className="flex-1">
-                      <Text className="font-subtitle text-[14px] text-text-primary">
-                        {s.accountName}
-                      </Text>
-                      <Text className="font-body text-[12px] text-text-secondary">
-                        {bank?.name ?? s.bank} · ••{s.accountNumber.slice(-4)}
-                      </Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
-              <View className="my-3 h-px bg-gray-100" />
-              <Text className="mb-2 font-caption text-[11px] uppercase tracking-wider text-[#9CA3AF]">
-                All Banks
-              </Text>
-            </>
-          )}
           {filteredPajBanks.map((bank) => (
             <Pressable
               key={bank.id}
