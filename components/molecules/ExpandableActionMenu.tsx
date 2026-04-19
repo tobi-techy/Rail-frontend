@@ -14,7 +14,7 @@ interface MenuItem {
   id: string;
   label: string;
   icon: HugeIconType;
-  iconColor?: string;
+  iconColor: string;
   onPress: () => void;
 }
 
@@ -42,12 +42,12 @@ export function ExpandableActionMenu({ items }: Props) {
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade">
-        <BlurView intensity={60} tint="light" style={StyleSheet.absoluteFill}>
+        <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
 
           <Animated.View entering={FadeIn.duration(200)} style={[styles.closeBtn, { top: insets.top + 12 }]}>
             <Pressable onPress={() => setOpen(false)} hitSlop={12}>
-              <HugeiconsIcon icon={Cancel01Icon} size={22} color="#000" />
+              <HugeiconsIcon icon={Cancel01Icon} size={22} color="rgba(255,255,255,0.7)" />
             </Pressable>
           </Animated.View>
 
@@ -56,7 +56,7 @@ export function ExpandableActionMenu({ items }: Props) {
               <Animated.View key={item.id} entering={FadeInRight.delay(i * 60).duration(250)}>
                 <Pressable onPress={() => handleItem(item)} style={styles.menuItem}>
                   <Text style={styles.menuLabel}>{item.label}</Text>
-                  <HugeiconsIcon icon={item.icon} size={24} color="#1A1A1A" />
+                  <HugeiconsIcon icon={item.icon} size={24} color={item.iconColor} />
                 </Pressable>
               </Animated.View>
             ))}
@@ -96,6 +96,6 @@ const styles = StyleSheet.create({
   menuLabel: {
     fontFamily: 'SFProDisplay-Semibold',
     fontSize: 20,
-    color: '#1A1A1A',
+    color: '#FFFFFF',
   },
 });
