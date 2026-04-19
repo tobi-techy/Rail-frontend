@@ -229,25 +229,20 @@ export function StreakRing({ currentStreak, longestStreak, activeDates, streakTy
 
   return (
     <View>
-      {/* Ring + center content */}
+      {/* Center content */}
       <View style={{ alignItems: 'center' }}>
-        <View style={{ width: 140, height: 140, alignItems: 'center', justifyContent: 'center' }}>
-          <Ring progress={ringProgress} />
-          {/* Center content */}
-          <View style={{ position: 'absolute', alignItems: 'center' }}>
-            <Animated.View style={flameStyle}>
-              <HugeiconsIcon icon={FireIcon} size={22} color={currentStreak > 0 ? '#FF2E01' : '#D1D5DB'} />
-            </Animated.View>
-            <Text style={{ fontFamily: 'SFMono-Semibold', fontSize: 36, color: '#1A1A1A', marginTop: 2, letterSpacing: -1 }}>
-              {currentStreak}
-            </Text>
-            <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 12, color: '#8C8C8C', marginTop: -2 }}>
-              day{currentStreak !== 1 ? 's' : ''}
-            </Text>
-          </View>
+        <View style={{ alignItems: 'center', paddingVertical: 8 }}>
+          <Animated.View style={flameStyle}>
+            <HugeiconsIcon icon={FireIcon} size={22} color={currentStreak > 0 ? '#FF2E01' : '#D1D5DB'} />
+          </Animated.View>
+          <Text style={{ fontFamily: 'SFMono-Semibold', fontSize: 36, color: '#1A1A1A', marginTop: 2, letterSpacing: -1 }}>
+            {currentStreak}
+          </Text>
+          <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 12, color: '#8C8C8C', marginTop: -2 }}>
+            day{currentStreak !== 1 ? 's' : ''}
+          </Text>
         </View>
 
-        {/* Longest streak */}
         {longestStreak != null && longestStreak > 0 && (
           <Text style={{ fontFamily: 'SFMono-Medium', fontSize: 11, color: '#9CA3AF', marginTop: 8 }}>
             Longest: {longestStreak} day{longestStreak !== 1 ? 's' : ''}
