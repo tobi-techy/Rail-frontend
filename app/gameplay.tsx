@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, Pressable, Alert, Dimensions } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -34,6 +34,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import type { Achievement, UserChallenge } from '@/api/services/gameplay.service';
 import { AchievementBadge } from '@/components/molecules/AchievementBadge';
+import { StreakRing } from '@/components/molecules/StreakRing';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -71,62 +72,7 @@ const STREAK_META: Record<string, { label: string; icon: any }> = {
   roundup: { label: 'Round-Up', icon: StarIcon },
 };
 
-// ── Activity Heatmap (GitHub contribution graph style) ─────────────────────
-function ActivityHeatmap({ dates }: { dates: string[] }) {
-  const dateSet = new Set(dates);
-  const today = new Date();
-  const cells: { date: string; active: boolean }[] = [];
-
-  // Generate last 91 days (13 weeks)
-  for (let i = 90; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().split('T')[0];
-    cells.push({ date: key, active: dateSet.has(key) });
-  }
-
-  // Arrange into 7 rows (Mon-Sun) × 13 columns (weeks)
-  const weeks: { date: string; active: boolean }[][] = [];
-  let week: { date: string; active: boolean }[] = [];
-  // Pad the first week so columns align
-  const firstDay = new Date(cells[0].date).getDay();
-  for (let i = 0; i < firstDay; i++) {
-    week.push({ date: '', active: false });
-  }
-  for (const cell of cells) {
-    week.push(cell);
-    if (week.length === 7) {
-      weeks.push(week);
-      week = [];
-    }
-  }
-  if (week.length > 0) weeks.push(week);
-
-  const screenWidth = Dimensions.get('window').width - 40;
-  const gap = 3;
-  const cellSize = Math.floor((screenWidth - (weeks.length - 1) * gap) / weeks.length);
-
-  return (
-    <View style={{ flexDirection: 'row', gap }}>
-      {weeks.map((w, wi) => (
-        <View key={wi} style={{ gap }}>
-          {w.map((cell, ci) => (
-            <View
-              key={ci}
-              style={{
-                width: cellSize,
-                height: cellSize,
-                borderRadius: 2,
-                backgroundColor:
-                  cell.date === '' ? 'transparent' : cell.active ? '#FF5722' : '#F3F4F6',
-              }}
-            />
-          ))}
-        </View>
-      ))}
-    </View>
-  );
-}
+// ── (StreakRing component replaces the old heatmap) ─────────────────────
 
 export default function GameplayScreen() {
   const router = useRouter();
@@ -214,29 +160,17 @@ export default function GameplayScreen() {
           )}
         </Animated.View>
 
-        {/* ── Activity Heatmap (GitHub-style) ──────────────────── */}
+        {/* ── Streak Ring ─────────────────────────────────────── */}
         <Animated.View entering={FadeInDown.delay(80).duration(400)} className="mt-8 px-5">
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="font-mono text-small tracking-[3px] text-text-tertiary">ACTIVITY</Text>
-            {depositStreak && depositStreak.current_count > 0 && (
-              <View className="flex-row items-center gap-1.5">
-                <HugeiconsIcon icon={FireIcon} size={14} color="#FF2E01" />
-                <Text className="font-mono-semibold text-small text-text-primary">
-                  {depositStreak.current_count} day streak
-                </Text>
-              </View>
-            )}
+          <View className="mb-4">
+            <Text className="font-mono text-small tracking-[3px] text-text-tertiary">STREAK</Text>
           </View>
-          <ActivityHeatmap dates={heatmapData?.dates ?? []} />
-          <View className="mt-3 flex-row items-center justify-between">
-            <Text className="font-mono text-[9px] text-text-tertiary">90 days ago</Text>
-            <View className="flex-row items-center gap-1.5">
-              <View className="h-2.5 w-2.5 rounded-sm bg-gray-100" />
-              <Text className="font-mono text-[9px] text-text-tertiary">None</Text>
-              <View className="ml-1 h-2.5 w-2.5 rounded-sm bg-[#FF5722]" />
-              <Text className="font-mono text-[9px] text-text-tertiary">Deposited</Text>
-            </View>
-          </View>
+          <StreakRing
+            currentStreak={depositStreak?.current_count ?? 0}
+            longestStreak={depositStreak?.longest_count}
+            activeDates={heatmapData?.dates ?? []}
+            streakType="deposit"
+          />
         </Animated.View>
 
         {/* ── Challenges ───────────────────────────────────────── */}
