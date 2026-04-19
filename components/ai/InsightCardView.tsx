@@ -17,17 +17,8 @@ function CardWrapper({ children, delay = 0 }: { children: React.ReactNode; delay
     <Animated.View
       entering={FadeInUp.duration(300).delay(delay)}
       style={{
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        padding: 16,
         marginTop: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.04)',
-        shadowColor: '#000',
-        shadowOpacity: 0.03,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
+        paddingVertical: 4,
       }}>
       {children}
     </Animated.View>
@@ -55,7 +46,7 @@ function StatGrid({ card }: { card: InsightCard }) {
         {items.map((item: any, i: number) => {
           const sc = item.sentiment === 'positive' ? '#16A34A' : item.sentiment === 'negative' ? '#DC2626' : P;
           return (
-            <View key={i} style={{ minWidth: 90, backgroundColor: '#F9F8F6', borderRadius: 12, padding: 12 }}>
+            <View key={i} style={{ minWidth: 90, paddingVertical: 8 }}>
               <Text style={{ fontFamily: `${F}-Regular`, fontSize: 11, color: S, marginBottom: 4 }}>
                 {item.icon ? `${item.icon} ` : ''}{item.label}
               </Text>
