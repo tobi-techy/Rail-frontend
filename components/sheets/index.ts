@@ -13,3 +13,4 @@ export { SpendBreakdownSheet } from './SpendBreakdownSheet';
 export type { BottomSheetScreen } from './NavigableBottomSheet';
 export { VirtualAccountSheet } from './VirtualAccountSheet';
 export { PajVerificationSheet } from './PajVerificationSheet';
+export { MFAChallengeSheet } from './MFAChallengeSheet';

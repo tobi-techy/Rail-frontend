@@ -21,6 +21,7 @@ export { cardService } from './card.service';
 export { pajService } from './paj.service';
 export { aiService } from './ai.service';
 export { gameplayService } from './gameplay.service';
+export { securityService } from './security.service';
 
 // Re-export for convenience
 export { default as auth } from './auth.service';

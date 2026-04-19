@@ -62,3 +62,6 @@ export * from './useWithdrawalLimits';
 
 // Gameplay hooks
 export * from './useGameplay';
+
+// Security hooks
+export * from './useSecurity';

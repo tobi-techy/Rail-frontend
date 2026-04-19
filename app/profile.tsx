@@ -1,10 +1,12 @@
 import React, { useCallback, useLayoutEffect, useState } from 'react';
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
-import { useNavigation } from 'expo-router';
+import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { useNavigation, router } from 'expo-router';
 import { useStation } from '@/api/hooks/useStation';
 import { useAuthStore } from '@/stores/authStore';
 import { invalidateQueries } from '@/api/queryClient';
 import { formatCurrencyAmount } from '@/utils/currency';
+import { ShieldKeyIcon, Key01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const fmt = (v: string | undefined) => formatCurrencyAmount(parseFloat(v ?? '0') || 0, 'USD');
 
@@ -91,6 +93,39 @@ const Profile = () => {
             ))}
           </View>
         )}
+
+        {/* Security */}
+        <View className="gap-2">
+          <Text className="font-body-bold text-base font-semibold text-[#000]">Security</Text>
+          <Pressable
+            onPress={() => router.push('/whitelist' as never)}
+            className="flex-row items-center rounded-2xl bg-[#F5F5F5] p-4">
+            <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-white">
+              <HugeiconsIcon icon={ShieldKeyIcon} size={18} color="#6B7280" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-subtitle text-sm text-[#000]">Withdrawal Whitelist</Text>
+              <Text className="mt-0.5 font-caption text-xs text-text-secondary">
+                Manage approved withdrawal addresses
+              </Text>
+            </View>
+            <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#9CA3AF" />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/passkey-settings' as never)}
+            className="flex-row items-center rounded-2xl bg-[#F5F5F5] p-4">
+            <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-white">
+              <HugeiconsIcon icon={Key01Icon} size={18} color="#6B7280" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-subtitle text-sm text-[#000]">Passkeys</Text>
+              <Text className="mt-0.5 font-caption text-xs text-text-secondary">
+                Manage passkeys for fast authorization
+              </Text>
+            </View>
+            <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#9CA3AF" />
+          </Pressable>
+        </View>
       </View>
     </ScrollView>
   );

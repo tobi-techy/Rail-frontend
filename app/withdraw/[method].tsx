@@ -64,6 +64,8 @@ import {
   WithdrawalStatusScreen,
   type WithdrawalStatusType,
 } from '@/components/withdraw/WithdrawalStatusScreen';
+import { WhitelistPrompt } from '@/components/withdraw/WhitelistPrompt';
+import { MFAChallengeSheet } from '@/components/sheets/MFAChallengeSheet';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { usePajRates } from '@/api/hooks/usePaj';
@@ -146,6 +148,8 @@ export default function WithdrawAmountScreen() {
   const [isSubmissionSheetVisible, setIsSubmissionSheetVisible] = useState(false);
   const [withdrawalStatus, setWithdrawalStatus] = useState<WithdrawalStatusType | null>(null);
   const [withdrawalErrorMsg, setWithdrawalErrorMsg] = useState('');
+  const [showWhitelistPrompt, setShowWhitelistPrompt] = useState(false);
+  const [showMFASheet, setShowMFASheet] = useState(false);
   const [submitWithActiveSession, setSubmitWithActiveSession] = useState(false);
   const [showKycSheet, setShowKycSheet] = useState(false);
   // PIN lockout
@@ -377,6 +381,19 @@ export default function WithdrawAmountScreen() {
         if (isPasscodeSessionError(err)) {
           setIsAuthorizeScreenVisible(true);
           passkey.setAuthError('Authorization expired. Confirm with passkey or PIN to continue.');
+          return;
+        }
+        // Security: intercept whitelist and MFA step-up errors
+        const errMsg = parseApiError(err, '');
+        if (
+          errMsg.toLowerCase().includes('not whitelisted') ||
+          errMsg.toLowerCase().includes('cooling period')
+        ) {
+          setShowWhitelistPrompt(true);
+          return;
+        }
+        if (errMsg.toLowerCase().includes('step_up') || errMsg.toLowerCase().includes('mfa')) {
+          setShowMFASheet(true);
           return;
         }
         setIsAuthorizeScreenVisible(false);
@@ -643,18 +660,39 @@ export default function WithdrawAmountScreen() {
   }
 
   // ── Full-screen withdrawal status ─────────────────────────────────────────
+  if (showWhitelistPrompt) {
+    return (
+      <SafeAreaView className="flex-1 justify-center px-5" edges={['top', 'bottom']}>
+        <WhitelistPrompt
+          address={destinationInput}
+          chain={destinationChain ?? 'SOL'}
+          onWhitelist={() => {
+            setShowWhitelistPrompt(false);
+            router.push('/whitelist' as never);
+          }}
+          onDismiss={() => setShowWhitelistPrompt(false)}
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (withdrawalStatus) {
     const statusAmount = isNGNAsset
       ? `₦${formatCurrency(numericAmount)}`
       : `$${formatCurrency(numericAmount)}`;
-    const recipientLabel = fiatAccountHolderName || (destinationInput ? `${destinationInput.slice(0, 6)}...${destinationInput.slice(-4)}` : undefined);
-    const statusMessage = withdrawalStatus === 'failed'
-      ? withdrawalErrorMsg
-      : withdrawalStatus === 'success' && isFiatMethod
-        ? 'Usually arrives in 2–5 minutes. We\'ll notify you when it lands.'
-        : withdrawalStatus === 'success'
-          ? 'Your withdrawal has been submitted to the network.'
-          : undefined;
+    const recipientLabel =
+      fiatAccountHolderName ||
+      (destinationInput
+        ? `${destinationInput.slice(0, 6)}...${destinationInput.slice(-4)}`
+        : undefined);
+    const statusMessage =
+      withdrawalStatus === 'failed'
+        ? withdrawalErrorMsg
+        : withdrawalStatus === 'success' && isFiatMethod
+          ? "Usually arrives in 2–5 minutes. We'll notify you when it lands."
+          : withdrawalStatus === 'success'
+            ? 'Your withdrawal has been submitted to the network.'
+            : undefined;
     return (
       <WithdrawalStatusScreen
         status={withdrawalStatus}
@@ -818,6 +856,14 @@ export default function WithdrawAmountScreen() {
           isAssetTradeMethod={isAssetTradeMethod}
           isFundFlow={isFundFlow}
           fundingSignature={funding.fundingSignature}
+        />
+        <MFAChallengeSheet
+          visible={showMFASheet}
+          onClose={() => setShowMFASheet(false)}
+          onVerified={() => {
+            setShowMFASheet(false);
+            onSubmitAuthorizedWithdrawal();
+          }}
         />
       </SafeAreaView>
     </ErrorBoundary>
