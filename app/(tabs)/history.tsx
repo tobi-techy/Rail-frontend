@@ -125,7 +125,11 @@ export default function History() {
       </View>
 
       {/* Filter chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 10, gap: 8 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 8, gap: 8, alignItems: 'center' }}>
         {filters.map((f) => (
           <Pressable
             key={f.id}
