@@ -16,6 +16,7 @@ import Animated, {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Cancel01Icon, Mic01Icon, MicOff01Icon } from '@hugeicons/core-free-icons';
 import { useVoiceSession, VoiceState } from '@/hooks/useVoiceSession';
+import { useFeedbackPopupStore } from '@/stores/feedbackPopupStore';
 
 const ACCENT = '#FF2E01';
 const BG = '#0A0A0A';
@@ -110,11 +111,23 @@ export default function VoiceModeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, transcript, responseText, error, connect, disconnect } = useVoiceSession();
+  const showPopup = useFeedbackPopupStore((s) => s.showPopup);
 
   useEffect(() => {
     connect();
     return () => { disconnect(); };
   }, []);
+
+  useEffect(() => {
+    if (error) {
+      showPopup({
+        type: 'error',
+        title: 'Voice unavailable',
+        message: error,
+        action: { label: 'Retry', onPress: () => connect() },
+      });
+    }
+  }, [error]);
 
   const handleClose = () => {
     disconnect();
@@ -153,21 +166,9 @@ export default function VoiceModeScreen() {
         <StateLabel state={state} />
       </View>
 
-      {/* Error */}
-      {error ? (
-        <Animated.View entering={FadeIn} style={styles.errorBanner}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Pressable onPress={connect} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Retry</Text>
-          </Pressable>
-        </Animated.View>
-      ) : null}
-
       {/* Bottom controls */}
       <View style={[styles.bottomControls, { paddingBottom: insets.bottom + 20 }]}>
-        <Pressable
-          onPress={handleClose}
-          style={styles.endBtn}>
+        <Pressable onPress={handleClose} style={styles.endBtn}>
           <Text style={styles.endBtnText}>End</Text>
         </Pressable>
       </View>
@@ -217,17 +218,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 20,
   },
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  errorText: { fontFamily: 'SFProDisplay-Regular', fontSize: 14, color: '#EF4444' },
-  retryBtn: { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 },
-  retryText: { fontFamily: 'SFProDisplay-Medium', fontSize: 14, color: '#FFFFFF' },
   bottomControls: { alignItems: 'center', paddingTop: 16 },
   endBtn: {
     backgroundColor: 'rgba(255,255,255,0.1)',
