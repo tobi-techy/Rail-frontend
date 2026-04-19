@@ -235,14 +235,14 @@ export default function GameplayScreen() {
               {earnedCount}/{achievements.length}
             </Text>
           </View>
-          <View className="flex-row flex-wrap" style={{ gap: 4 }}>
+          <View className="flex-row flex-wrap">
             {achievements.map((a: Achievement, i: number) => {
               const IconComp = BADGE_ICON[a.icon] ?? Award01Icon;
               return (
                 <Animated.View
                   key={a.id}
                   entering={FadeInDown.delay(280 + i * 30).duration(300)}
-                  style={{ width: '33%', alignItems: 'center', marginBottom: 20 }}>
+                  style={{ width: '33.33%', alignItems: 'center', marginBottom: 20 }}>
                   <AchievementBadge
                     achievement={a}
                     icon={IconComp}
