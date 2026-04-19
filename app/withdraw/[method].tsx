@@ -647,11 +647,20 @@ export default function WithdrawAmountScreen() {
     const statusAmount = isNGNAsset
       ? `₦${formatCurrency(numericAmount)}`
       : `$${formatCurrency(numericAmount)}`;
+    const recipientLabel = fiatAccountHolderName || (destinationInput ? `${destinationInput.slice(0, 6)}...${destinationInput.slice(-4)}` : undefined);
+    const statusMessage = withdrawalStatus === 'failed'
+      ? withdrawalErrorMsg
+      : withdrawalStatus === 'success' && isFiatMethod
+        ? 'Usually arrives in 2–5 minutes. We\'ll notify you when it lands.'
+        : withdrawalStatus === 'success'
+          ? 'Your withdrawal has been submitted to the network.'
+          : undefined;
     return (
       <WithdrawalStatusScreen
         status={withdrawalStatus}
         amount={statusAmount}
-        message={withdrawalStatus === 'failed' ? withdrawalErrorMsg : undefined}
+        recipient={recipientLabel}
+        message={statusMessage}
         onDone={() => router.replace('/(tabs)' as never)}
         onRetry={
           withdrawalStatus === 'failed'
