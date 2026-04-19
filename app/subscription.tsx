@@ -30,13 +30,16 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const ROWS: [string, boolean, boolean][] = [
   ['Streaks & challenges', true, true],
   ['XP, levels & badges', true, true],
-  ['Basic AI insights', true, true],
+  ['Basic AI insights (20/mo)', true, true],
   ['Virtual debit card', true, true],
   ['Unlimited AI agent', false, true],
-  ['Higher cashback', false, true],
-  ['Custom physical card', false, true],
-  ['Spending analytics', false, true],
-  ['Leaderboard access', false, true],
+  ['Voice mode', false, true],
+  ['Receipt scanning', false, true],
+  ['Weekly financial report', false, true],
+  ['What-if simulator', false, true],
+  ['Goal autopilot', false, true],
+  ['Tax export', false, true],
+  ['AI spending challenges', false, true],
   ['Priority support', false, true],
 ];
 
@@ -97,7 +100,7 @@ export default function SubscriptionScreen() {
     <ImageBackground
       source={require('@/assets/pro-bg.png')}
       resizeMode="contain"
-      imageStyle={{ opacity: 0.65, top: -60, left: 80, width: 600, height: 600 }}
+      imageStyle={{ opacity: 0.65, top: -60, left: 50, width: 600, height: 600 }}
       className="flex-1 bg-black">
       <SafeAreaView className="flex-1" edges={['top', 'bottom']}>
         <View className="flex-1 justify-between px-5">

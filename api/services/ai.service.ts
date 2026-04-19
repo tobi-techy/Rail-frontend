@@ -158,6 +158,32 @@ export const aiService = {
       message: message ?? 'Analyze this image',
     });
   },
+
+  // ── Premium endpoints (pro-only) ──────────────────────────────
+
+  async getWeeklyReport(): Promise<{ data: AIChatResponse }> {
+    return apiClient.get(`${BASE}/report/weekly`);
+  },
+
+  async simulate(depositAmount: number, frequency: 'weekly' | 'monthly', durationMonths: number): Promise<{ data: any }> {
+    return apiClient.post(`${BASE}/simulate`, {
+      deposit_amount: depositAmount,
+      deposit_frequency: frequency,
+      duration_months: durationMonths,
+    });
+  },
+
+  async getTaxSummary(year = '2026'): Promise<{ data: AIChatResponse }> {
+    return apiClient.get(`${BASE}/tax-summary?year=${year}`);
+  },
+
+  async generateChallenge(): Promise<{ data: AIChatResponse }> {
+    return apiClient.post(`${BASE}/challenge/generate`);
+  },
+
+  async getGoalProgress(): Promise<{ data: AIChatResponse }> {
+    return apiClient.get(`${BASE}/goals/progress`);
+  },
 };
 
 export default aiService;
