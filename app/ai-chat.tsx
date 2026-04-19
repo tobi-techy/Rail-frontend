@@ -113,7 +113,46 @@ export default function AIChatScreen() {
   }, [(messages ?? []).length, isStreaming]);
 
   const handleSend = useCallback(
-    async (msg: string) => {
+    async (msg: string, image?: { uri: string; base64: string }) => {
+      // Image analysis flow
+      if (image) {
+        const userMsg: AIMessage = {
+          role: 'user',
+          content: msg ? `📸 ${msg}` : '📸 [Receipt image attached]',
+          created_at: new Date().toISOString(),
+        };
+        useAIChatStore.setState((s) => ({
+          messages: [...s.messages, userMsg],
+          isStreaming: true,
+        }));
+        setAttachedImage(null);
+        try {
+          const res = await aiService.analyzeImage(image.base64, msg || 'Analyze this receipt and extract the transaction details.');
+          const assistantMsg: AIMessage = {
+            role: 'assistant',
+            content: res.data.content,
+            created_at: new Date().toISOString(),
+          };
+          useAIChatStore.setState((s) => ({
+            messages: [...s.messages, assistantMsg],
+            cards: res.data.cards ?? [],
+            isStreaming: false,
+          }));
+        } catch {
+          const errorMsg: AIMessage = {
+            role: 'assistant',
+            content: "I couldn't analyze that image — try again with a clearer photo 📸",
+            created_at: new Date().toISOString(),
+          };
+          useAIChatStore.setState((s) => ({
+            messages: [...s.messages, errorMsg],
+            isStreaming: false,
+          }));
+        }
+        return;
+      }
+
+      // Text-only flow
       let convId = activeConversationId;
       if (!convId) convId = await createConversation(msg.slice(0, 50));
       sendMessage(msg, convId);
@@ -181,6 +220,8 @@ export default function AIChatScreen() {
     router.push('/voice-mode');
   }, [router, isPro]);
 
+  const [attachedImage, setAttachedImage] = useState<{ uri: string; base64: string } | null>(null);
+
   const handleImagePress = useCallback(async () => {
     if (!isPro) {
       router.push('/subscription');
@@ -199,38 +240,8 @@ export default function AIChatScreen() {
     });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      // Send image to AI for receipt analysis
-      const userMsg: AIMessage = {
-        role: 'user',
-        content: '📸 [Receipt image attached]',
-        created_at: new Date().toISOString(),
-      };
-      useAIChatStore.setState((s) => ({
-        messages: [...s.messages, userMsg],
-        isStreaming: true,
-      }));
-      try {
-        const res = await aiService.analyzeImage(asset.base64!, 'Analyze this receipt and extract the transaction details.');
-        const assistantMsg: AIMessage = {
-          role: 'assistant',
-          content: res.data.content,
-          created_at: new Date().toISOString(),
-        };
-        useAIChatStore.setState((s) => ({
-          messages: [...s.messages, assistantMsg],
-          cards: res.data.cards ?? [],
-          isStreaming: false,
-        }));
-      } catch {
-        const errorMsg: AIMessage = {
-          role: 'assistant',
-          content: "I couldn't analyze that image — try again with a clearer photo 📸",
-          created_at: new Date().toISOString(),
-        };
-        useAIChatStore.setState((s) => ({
-          messages: [...s.messages, errorMsg],
-          isStreaming: false,
-        }));
+      if (asset.base64) {
+        setAttachedImage({ uri: asset.uri, base64: asset.base64 });
       }
     }
   }, [isPro, router]);
@@ -319,7 +330,7 @@ export default function AIChatScreen() {
 
           {/* Input */}
           <View style={{ paddingBottom: insets.bottom + 8 }}>
-            <InputBar onSend={handleSend} onMicPress={handleMicPress} onImagePress={handleImagePress} isStreaming={isStreaming} placeholder="Ask a follow up..." initialValue={editText} />
+            <InputBar onSend={handleSend} onMicPress={handleMicPress} onImagePress={handleImagePress} isStreaming={isStreaming} placeholder="Ask a follow up..." initialValue={editText} attachedImage={attachedImage} onClearImage={() => setAttachedImage(null)} />
           </View>
         </KeyboardAvoidingView>
 
@@ -418,7 +429,7 @@ export default function AIChatScreen() {
         {/* Bottom: suggestions + input */}
         <View style={{ paddingBottom: insets.bottom + 8 }}>
           <SuggestionChips suggestions={suggestions ?? []} onPress={handleSend} />
-          <InputBar onSend={handleSend} onMicPress={handleMicPress} onImagePress={handleImagePress} isStreaming={isStreaming} />
+          <InputBar onSend={handleSend} onMicPress={handleMicPress} onImagePress={handleImagePress} isStreaming={isStreaming} attachedImage={attachedImage} onClearImage={() => setAttachedImage(null)} />
         </View>
       </KeyboardAvoidingView>
     </View>
