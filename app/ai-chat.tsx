@@ -17,9 +17,11 @@ import { useAIChatStore } from '@/stores/aiChatStore';
 import { useAIHaptics } from '@/hooks/useAIHaptics';
 import { ChatBubble, InputBar, ThreadRow } from '@/components/ai';
 import { ActionConfirmSheet } from '@/components/ai/ActionConfirmSheet';
+import { ActionSheet } from '@/components/sheets/ActionSheet';
 import type { AIMessage, PendingAction } from '@/api/types/ai';
 import { aiService } from '@/api/services/ai.service';
 import { useSubscription } from '@/api/hooks/useGameplay';
+import { Camera01Icon, Image01Icon } from '@hugeicons/core-free-icons';
 
 const BG = '#F9F8F6';
 const ACCENT = '#FF2E01';
@@ -221,12 +223,9 @@ export default function AIChatScreen() {
   }, [router, isPro]);
 
   const [attachedImage, setAttachedImage] = useState<{ uri: string; base64: string } | null>(null);
+  const [showImageSheet, setShowImageSheet] = useState(false);
 
-  const handleImagePress = useCallback(async () => {
-    if (!isPro) {
-      router.push('/subscription');
-      return;
-    }
+  const pickFromGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Allow photo access to scan receipts.');
@@ -238,12 +237,33 @@ export default function AIChatScreen() {
       base64: true,
       allowsEditing: true,
     });
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      if (asset.base64) {
-        setAttachedImage({ uri: asset.uri, base64: asset.base64 });
-      }
+    if (!result.canceled && result.assets[0]?.base64) {
+      setAttachedImage({ uri: result.assets[0].uri, base64: result.assets[0].base64 });
     }
+  };
+
+  const pickFromCamera = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Allow camera access to scan receipts.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.8,
+      base64: true,
+      allowsEditing: true,
+    });
+    if (!result.canceled && result.assets[0]?.base64) {
+      setAttachedImage({ uri: result.assets[0].uri, base64: result.assets[0].base64 });
+    }
+  };
+
+  const handleImagePress = useCallback(() => {
+    if (!isPro) {
+      router.push('/subscription');
+      return;
+    }
+    setShowImageSheet(true);
   }, [isPro, router]);
 
   const renderMessage = useCallback(
@@ -341,6 +361,34 @@ export default function AIChatScreen() {
           onClose={() => clearPendingAction()}
           onConfirmed={handleActionConfirmed}
           onCancelled={handleActionCancelled}
+        />
+
+        <ActionSheet
+          visible={showImageSheet}
+          onClose={() => setShowImageSheet(false)}
+          icon={Camera01Icon}
+          title="Add Receipt"
+          subtitle="Scan or upload a receipt for Miriam to analyze"
+          actions={[
+            {
+              id: 'scan',
+              label: 'Scan Receipt',
+              sublabel: 'Take a photo with your camera',
+              icon: Camera01Icon,
+              iconColor: '#FF2E01',
+              iconBgColor: '#FFF0ED',
+              onPress: pickFromCamera,
+            },
+            {
+              id: 'upload',
+              label: 'Upload from Gallery',
+              sublabel: 'Choose an existing photo',
+              icon: Image01Icon,
+              iconColor: '#2196F3',
+              iconBgColor: '#E3F2FD',
+              onPress: pickFromGallery,
+            },
+          ]}
         />
       </View>
     );

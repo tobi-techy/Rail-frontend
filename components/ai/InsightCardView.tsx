@@ -1,44 +1,75 @@
 import React from 'react';
 import { View, Text, Dimensions } from 'react-native';
-import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
+import { BarChart, LineChart } from 'react-native-gifted-charts';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { InsightCard } from '@/api/types/ai';
 
-const DISPLAY = 'SFProDisplay';
-const MONO = 'SFMono';
-const TEXT_PRIMARY = '#1A1A1A';
-const TEXT_SECONDARY = '#8C8C8C';
-const ACCENT = '#FF2E01';
-const CHART_COLORS = ['#4CAF50', '#2196F3', '#FF9800', '#E91E63', '#9C27B0', '#00BCD4'];
-const SCREEN_W = Dimensions.get('window').width;
+const F = 'SFProDisplay';
+const M = 'SFMono';
+const P = '#1A1A1A';
+const S = '#8C8C8C';
+const A = '#FF2E01';
+const COLORS = ['#FF2E01', '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#00BCD4'];
+const W = Dimensions.get('window').width;
+
+function CardWrapper({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  return (
+    <Animated.View
+      entering={FadeInUp.duration(300).delay(delay)}
+      style={{
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 16,
+        marginTop: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.04)',
+        shadowColor: '#000',
+        shadowOpacity: 0.03,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 2,
+      }}>
+      {children}
+    </Animated.View>
+  );
+}
+
+function CardTitle({ title, subtitle, sentiment }: { title: string; subtitle?: string; sentiment?: string }) {
+  const color = sentiment === 'positive' ? '#16A34A' : sentiment === 'negative' ? '#DC2626' : A;
+  return (
+    <View style={{ marginBottom: 12 }}>
+      <Text style={{ fontFamily: `${F}-Medium`, fontSize: 13, color: S, letterSpacing: 0.3 }}>{title}</Text>
+      {subtitle && (
+        <Text style={{ fontFamily: `${M}-Bold`, fontSize: 20, color, marginTop: 4, letterSpacing: -0.5 }}>{subtitle}</Text>
+      )}
+    </View>
+  );
+}
 
 function StatGrid({ card }: { card: InsightCard }) {
   const items = Array.isArray(card.data) ? card.data : [];
   return (
-    <View style={{ marginTop: 12 }}>
-      <Text style={{ fontFamily: `${DISPLAY}-Medium`, fontSize: 13, color: TEXT_SECONDARY, letterSpacing: 0.3, marginBottom: 12 }}>
-        {card.title}
-      </Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20 }}>
+    <CardWrapper>
+      <CardTitle title={card.title} subtitle={card.subtitle} sentiment={card.sentiment} />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
         {items.map((item: any, i: number) => {
-          const sentimentColor = item.sentiment === 'positive' ? '#16A34A' : item.sentiment === 'negative' ? '#DC2626' : TEXT_PRIMARY;
+          const sc = item.sentiment === 'positive' ? '#16A34A' : item.sentiment === 'negative' ? '#DC2626' : P;
           return (
-            <View key={i} style={{ minWidth: 80 }}>
-              <Text style={{ fontFamily: `${DISPLAY}-Regular`, fontSize: 11, color: TEXT_SECONDARY, marginBottom: 2 }}>
+            <View key={i} style={{ minWidth: 90, backgroundColor: '#F9F8F6', borderRadius: 12, padding: 12 }}>
+              <Text style={{ fontFamily: `${F}-Regular`, fontSize: 11, color: S, marginBottom: 4 }}>
                 {item.icon ? `${item.icon} ` : ''}{item.label}
               </Text>
-              <Text style={{ fontFamily: `${MONO}-Semibold`, fontSize: 22, color: sentimentColor, letterSpacing: -0.5 }}>
+              <Text style={{ fontFamily: `${M}-Bold`, fontSize: 22, color: sc, letterSpacing: -0.5 }}>
                 {item.value}
               </Text>
               {item.change && (
-                <Text style={{ fontFamily: `${MONO}-Medium`, fontSize: 12, color: sentimentColor, marginTop: 1 }}>
-                  {item.change}
-                </Text>
+                <Text style={{ fontFamily: `${M}-Medium`, fontSize: 12, color: sc, marginTop: 2 }}>{item.change}</Text>
               )}
             </View>
           );
         })}
       </View>
-    </View>
+    </CardWrapper>
   );
 }
 
@@ -46,101 +77,156 @@ function ChartCard({ card }: { card: InsightCard }) {
   const chartData = card.data as any;
   if (!chartData?.points?.length) return null;
 
-  const chartWidth = SCREEN_W - 80;
+  const chartWidth = W - 100;
   const points = chartData.points.map((p: any, i: number) => ({
     value: parseFloat(p.value) || 0,
     label: p.label,
-    frontColor: CHART_COLORS[i % CHART_COLORS.length],
+    frontColor: COLORS[i % COLORS.length],
   }));
 
-  const sentimentColor = card.sentiment === 'positive' ? '#16A34A' : card.sentiment === 'negative' ? '#DC2626' : ACCENT;
+  const sc = card.sentiment === 'positive' ? '#16A34A' : card.sentiment === 'negative' ? '#DC2626' : A;
 
   return (
-    <View style={{ marginTop: 12 }}>
-      <Text style={{ fontFamily: `${DISPLAY}-Medium`, fontSize: 13, color: TEXT_SECONDARY, letterSpacing: 0.3 }}>
-        {card.title}
-      </Text>
-      {card.subtitle && (
-        <Text style={{ fontFamily: `${MONO}-Semibold`, fontSize: 16, color: sentimentColor, marginTop: 4 }}>
-          {card.subtitle}
-        </Text>
+    <CardWrapper>
+      <CardTitle title={card.title} subtitle={card.subtitle} sentiment={card.sentiment} />
+      {chartData.chart_type === 'bar' ? (
+        <BarChart
+          data={points}
+          width={chartWidth}
+          height={150}
+          barWidth={Math.min(28, chartWidth / points.length - 8)}
+          spacing={Math.max(8, chartWidth / points.length - 28)}
+          noOfSections={4}
+          barBorderRadius={6}
+          yAxisThickness={0}
+          xAxisThickness={0}
+          hideRules
+          xAxisLabelTextStyle={{ fontFamily: `${F}-Regular`, fontSize: 9, color: S }}
+          yAxisTextStyle={{ fontFamily: `${M}-Regular`, fontSize: 9, color: S }}
+          isAnimated
+          animationDuration={600}
+        />
+      ) : (
+        <LineChart
+          data={points.map((p: any) => ({ value: p.value, label: p.label }))}
+          width={chartWidth}
+          height={150}
+          color={sc}
+          thickness={2.5}
+          noOfSections={4}
+          yAxisThickness={0}
+          xAxisThickness={0}
+          hideRules
+          dataPointsColor={sc}
+          dataPointsRadius={4}
+          curved
+          areaChart
+          startFillColor={sc}
+          startOpacity={0.12}
+          endOpacity={0}
+          xAxisLabelTextStyle={{ fontFamily: `${F}-Regular`, fontSize: 9, color: S }}
+          yAxisTextStyle={{ fontFamily: `${M}-Regular`, fontSize: 9, color: S }}
+          isAnimated
+          animationDuration={800}
+        />
       )}
-      <View style={{ marginTop: 12 }}>
-        {chartData.chart_type === 'bar' ? (
-          <BarChart
-            data={points}
-            width={chartWidth}
-            height={160}
-            barWidth={Math.min(24, chartWidth / points.length - 8)}
-            spacing={Math.max(8, chartWidth / points.length - 24)}
-            noOfSections={4}
-            barBorderRadius={4}
-            yAxisThickness={0}
-            xAxisThickness={0}
-            hideRules
-            xAxisLabelTextStyle={{ fontFamily: `${DISPLAY}-Regular`, fontSize: 9, color: TEXT_SECONDARY }}
-            yAxisTextStyle={{ fontFamily: `${MONO}-Regular`, fontSize: 9, color: TEXT_SECONDARY }}
-            isAnimated
-            animationDuration={600}
-          />
-        ) : (
-          <LineChart
-            data={points.map((p: any) => ({ value: p.value, label: p.label }))}
-            width={chartWidth}
-            height={160}
-            color={sentimentColor}
-            thickness={2}
-            noOfSections={4}
-            yAxisThickness={0}
-            xAxisThickness={0}
-            hideRules
-            hideDataPoints={false}
-            dataPointsColor={sentimentColor}
-            dataPointsRadius={3}
-            curved
-            areaChart
-            startFillColor={sentimentColor}
-            startOpacity={0.15}
-            endOpacity={0}
-            xAxisLabelTextStyle={{ fontFamily: `${DISPLAY}-Regular`, fontSize: 9, color: TEXT_SECONDARY }}
-            yAxisTextStyle={{ fontFamily: `${MONO}-Regular`, fontSize: 9, color: TEXT_SECONDARY }}
-            isAnimated
-            animationDuration={800}
-          />
-        )}
-      </View>
-    </View>
+    </CardWrapper>
   );
 }
 
 function BreakdownCard({ card }: { card: InsightCard }) {
   const items = Array.isArray(card.data) ? card.data : [];
+  const total = items.reduce((sum: number, item: any) => sum + (parseFloat(item.amount) || 0), 0);
+
   return (
-    <View style={{ marginTop: 12 }}>
-      <Text style={{ fontFamily: `${DISPLAY}-Medium`, fontSize: 13, color: TEXT_SECONDARY, letterSpacing: 0.3, marginBottom: 8 }}>
-        {card.title}
-      </Text>
+    <CardWrapper>
+      <CardTitle title={card.title} subtitle={card.subtitle} sentiment={card.sentiment} />
+      {/* Mini bar visualization */}
+      {total > 0 && (
+        <View style={{ flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 14 }}>
+          {items.map((item: any, i: number) => {
+            const pct = (parseFloat(item.amount) || 0) / total;
+            return <View key={i} style={{ flex: pct, backgroundColor: item.color || COLORS[i % COLORS.length] }} />;
+          })}
+        </View>
+      )}
       {items.map((item: any, i: number) => (
-        <View key={i} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 }}>
+        <View key={i} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: i < items.length - 1 ? 1 : 0, borderBottomColor: 'rgba(0,0,0,0.04)' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
-            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: item.color || CHART_COLORS[i % CHART_COLORS.length] }} />
-            <Text style={{ fontFamily: `${DISPLAY}-Regular`, fontSize: 14, color: TEXT_PRIMARY, flex: 1 }} numberOfLines={1}>
-              {item.label}
-            </Text>
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: item.color || COLORS[i % COLORS.length] }} />
+            <Text style={{ fontFamily: `${F}-Regular`, fontSize: 14, color: P, flex: 1 }} numberOfLines={1}>{item.label}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontFamily: `${MONO}-Semibold`, fontSize: 15, color: TEXT_PRIMARY }}>
-              ${parseFloat(item.amount).toFixed(2)}
-            </Text>
+            <Text style={{ fontFamily: `${M}-Semibold`, fontSize: 15, color: P }}>${parseFloat(item.amount).toFixed(2)}</Text>
             {item.percent != null && (
-              <Text style={{ fontFamily: `${MONO}-Regular`, fontSize: 11, color: TEXT_SECONDARY }}>
-                {parseFloat(item.percent).toFixed(1)}%
-              </Text>
+              <Text style={{ fontFamily: `${M}-Regular`, fontSize: 11, color: S }}>{parseFloat(item.percent).toFixed(1)}%</Text>
             )}
           </View>
         </View>
       ))}
-    </View>
+    </CardWrapper>
+  );
+}
+
+function ProgressCard({ card }: { card: InsightCard }) {
+  const data = card.data as any;
+  const current = parseFloat(data?.current) || 0;
+  const target = parseFloat(data?.target) || 1;
+  const pct = Math.min(current / target, 1);
+
+  return (
+    <CardWrapper>
+      <CardTitle title={card.title} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+        <Text style={{ fontFamily: `${M}-Bold`, fontSize: 18, color: P }}>${current.toFixed(2)}</Text>
+        <Text style={{ fontFamily: `${M}-Regular`, fontSize: 14, color: S }}>${target.toFixed(2)}</Text>
+      </View>
+      <View style={{ height: 8, backgroundColor: '#F3F4F6', borderRadius: 4, overflow: 'hidden' }}>
+        <View style={{ height: 8, width: `${pct * 100}%`, backgroundColor: pct >= 1 ? '#16A34A' : A, borderRadius: 4 }} />
+      </View>
+      <Text style={{ fontFamily: `${F}-Regular`, fontSize: 12, color: S, marginTop: 6, textAlign: 'center' }}>
+        {(pct * 100).toFixed(0)}% complete
+      </Text>
+    </CardWrapper>
+  );
+}
+
+function AlertCard({ card }: { card: InsightCard }) {
+  const isNeg = card.sentiment === 'negative';
+  const bg = isNeg ? '#FEF2F2' : card.sentiment === 'positive' ? '#F0FDF4' : '#FFF7ED';
+  const border = isNeg ? '#FECACA' : card.sentiment === 'positive' ? '#BBF7D0' : '#FED7AA';
+  const textColor = isNeg ? '#991B1B' : card.sentiment === 'positive' ? '#166534' : '#92400E';
+
+  return (
+    <Animated.View
+      entering={FadeInUp.duration(300)}
+      style={{
+        backgroundColor: bg,
+        borderRadius: 14,
+        padding: 14,
+        marginTop: 12,
+        borderWidth: 1,
+        borderColor: border,
+      }}>
+      <Text style={{ fontFamily: `${F}-Semibold`, fontSize: 14, color: textColor }}>{card.title}</Text>
+      {card.subtitle && (
+        <Text style={{ fontFamily: `${F}-Regular`, fontSize: 13, color: textColor, marginTop: 4, opacity: 0.85 }}>{card.subtitle}</Text>
+      )}
+    </Animated.View>
+  );
+}
+
+function HighlightCard({ card }: { card: InsightCard }) {
+  return (
+    <CardWrapper>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <View style={{ width: 4, height: 20, borderRadius: 2, backgroundColor: A }} />
+        <Text style={{ fontFamily: `${F}-Semibold`, fontSize: 15, color: P }}>{card.title}</Text>
+      </View>
+      {card.subtitle && (
+        <Text style={{ fontFamily: `${F}-Regular`, fontSize: 14, color: S, marginTop: 4, paddingLeft: 12 }}>{card.subtitle}</Text>
+      )}
+    </CardWrapper>
   );
 }
 
@@ -152,12 +238,13 @@ export function InsightCardView({ card }: { card: InsightCard }) {
       return <ChartCard card={card} />;
     case 'breakdown':
       return <BreakdownCard card={card} />;
+    case 'progress':
+      return <ProgressCard card={card} />;
+    case 'alert':
+      return <AlertCard card={card} />;
+    case 'highlight':
+      return <HighlightCard card={card} />;
     default:
-      return (
-        <View style={{ marginTop: 12 }}>
-          <Text style={{ fontFamily: `${DISPLAY}-Medium`, fontSize: 13, color: TEXT_SECONDARY }}>{card.title}</Text>
-          {card.subtitle && <Text style={{ fontFamily: `${DISPLAY}-Regular`, fontSize: 14, color: TEXT_PRIMARY, marginTop: 4 }}>{card.subtitle}</Text>}
-        </View>
-      );
+      return <HighlightCard card={card} />;
   }
 }
