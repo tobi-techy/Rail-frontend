@@ -53,7 +53,6 @@ function Ring({ progress, size = 140, strokeWidth = 6 }: { progress: number; siz
 
   return (
     <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-      {/* Background ring */}
       <Circle
         cx={size / 2}
         cy={size / 2}
@@ -62,7 +61,6 @@ function Ring({ progress, size = 140, strokeWidth = 6 }: { progress: number; siz
         strokeWidth={strokeWidth}
         fill="none"
       />
-      {/* Progress ring */}
       <AnimatedCircle
         cx={size / 2}
         cy={size / 2}
@@ -72,7 +70,7 @@ function Ring({ progress, size = 140, strokeWidth = 6 }: { progress: number; siz
         fill="none"
         strokeDasharray={circumference}
         animatedProps={animatedProps}
-        strokeLinecap="round"
+        strokeLinecap={progress > 0.15 ? 'round' : 'butt'}
       />
     </Svg>
   );
@@ -189,7 +187,7 @@ function MilestoneCard({ currentStreak }: { currentStreak: number }) {
         <Text style={{ fontFamily: 'SFProDisplay-Semibold', fontSize: 14, color: '#1A1A1A' }}>
           {remaining} more day{remaining !== 1 ? 's' : ''} to {next.label}
         </Text>
-        <View style={{ height: 4, backgroundColor: '#FED7AA', borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
+        <View style={{ height: 4, backgroundColor: '#F3F4F6', borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
           <View style={{ height: 4, width: `${Math.min(progress * 100, 100)}%`, backgroundColor: '#FF2E01', borderRadius: 2 }} />
         </View>
       </View>
@@ -252,7 +250,7 @@ export function StreakRing({ currentStreak, longestStreak, activeDates, streakTy
         {/* Longest streak */}
         {longestStreak != null && longestStreak > 0 && (
           <Text style={{ fontFamily: 'SFMono-Medium', fontSize: 11, color: '#9CA3AF', marginTop: 8 }}>
-            Longest: {longestStreak} days
+            Longest: {longestStreak} day{longestStreak !== 1 ? 's' : ''}
           </Text>
         )}
       </View>
