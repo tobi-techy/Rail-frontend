@@ -33,6 +33,7 @@ import {
 import { useHaptics } from '@/hooks/useHaptics';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import type { Achievement, UserChallenge } from '@/api/services/gameplay.service';
+import { AchievementBadge } from '@/components/molecules/AchievementBadge';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -292,7 +293,7 @@ export default function GameplayScreen() {
           )}
         </Animated.View>
 
-        {/* ── Badges — 3-col circle grid (Zero/OLIO/Duolingo style) ── */}
+        {/* ── Badges — 3-col circle grid ── */}
         <Animated.View entering={FadeInDown.delay(260).duration(400)} className="mt-8 px-5">
           <View className="mb-4 flex-row items-center justify-between">
             <Text className="font-mono text-small tracking-[3px] text-text-tertiary">BADGES</Text>
@@ -300,36 +301,19 @@ export default function GameplayScreen() {
               {earnedCount}/{achievements.length}
             </Text>
           </View>
-          <View className="flex-row flex-wrap justify-between">
+          <View className="flex-row flex-wrap" style={{ gap: 4 }}>
             {achievements.map((a: Achievement, i: number) => {
-              const accent = RARITY_ACCENT[a.rarity] ?? '#6B7280';
-              const bg = RARITY_BG[a.rarity] ?? '#E5E7EB';
               const IconComp = BADGE_ICON[a.icon] ?? Award01Icon;
               return (
                 <Animated.View
                   key={a.id}
                   entering={FadeInDown.delay(280 + i * 30).duration(300)}
-                  className="mb-5 w-[31%] items-center">
-                  {/* Large circle badge — locked = gray, unlocked = colored */}
-                  <View
-                    className="mb-2 h-[88px] w-[88px] items-center justify-center rounded-full"
-                    style={{ backgroundColor: a.unlocked ? bg : '#F3F4F6' }}>
-                    {a.unlocked ? (
-                      <HugeiconsIcon icon={IconComp} size={32} color={accent} />
-                    ) : (
-                      <HugeiconsIcon icon={LockIcon} size={24} color="#C4C4C4" />
-                    )}
-                  </View>
-                  <Text
-                    className="text-center font-subtitle text-[11px] text-text-primary"
-                    numberOfLines={2}>
-                    {a.name}
-                  </Text>
-                  <Text
-                    className="mt-0.5 font-mono text-[9px] capitalize"
-                    style={{ color: a.unlocked ? accent : '#C4C4C4' }}>
-                    {a.rarity}
-                  </Text>
+                  style={{ width: '33%', alignItems: 'center', marginBottom: 20 }}>
+                  <AchievementBadge
+                    achievement={a}
+                    icon={IconComp}
+                    size="medium"
+                  />
                 </Animated.View>
               );
             })}
