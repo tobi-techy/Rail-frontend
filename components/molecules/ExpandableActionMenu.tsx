@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Modal, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
-import Animated, { FadeIn, FadeOut, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { MoreHorizontalIcon, Cancel01Icon } from '@hugeicons/core-free-icons';
 import type { HugeiconsProps } from '@hugeicons/react-native';
@@ -14,7 +14,7 @@ interface MenuItem {
   id: string;
   label: string;
   icon: HugeIconType;
-  iconColor: string;
+  iconColor?: string;
   onPress: () => void;
 }
 
@@ -42,29 +42,21 @@ export function ExpandableActionMenu({ items }: Props) {
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade">
-        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill}>
+        <BlurView intensity={60} tint="light" style={StyleSheet.absoluteFill}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
 
-          {/* Close button */}
           <Animated.View entering={FadeIn.duration(200)} style={[styles.closeBtn, { top: insets.top + 12 }]}>
             <Pressable onPress={() => setOpen(false)} hitSlop={12}>
-              <HugeiconsIcon icon={Cancel01Icon} size={22} color="#FFF" />
+              <HugeiconsIcon icon={Cancel01Icon} size={22} color="#000" />
             </Pressable>
           </Animated.View>
 
-          {/* Menu items — bottom aligned */}
           <View style={[styles.menuContainer, { paddingBottom: insets.bottom + 40 }]}>
             {items.map((item, i) => (
-              <Animated.View
-                key={item.id}
-                entering={FadeInRight.delay(i * 60).duration(250)}>
-                <Pressable
-                  onPress={() => handleItem(item)}
-                  style={styles.menuItem}>
+              <Animated.View key={item.id} entering={FadeInRight.delay(i * 60).duration(250)}>
+                <Pressable onPress={() => handleItem(item)} style={styles.menuItem}>
                   <Text style={styles.menuLabel}>{item.label}</Text>
-                  <View style={[styles.menuIcon, { backgroundColor: item.iconColor }]}>
-                    <HugeiconsIcon icon={item.icon} size={22} color="#FFF" />
-                  </View>
+                  <HugeiconsIcon icon={item.icon} size={24} color="#1A1A1A" />
                 </Pressable>
               </Animated.View>
             ))}
@@ -93,8 +85,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'flex-end',
-    paddingHorizontal: 20,
-    gap: 12,
+    paddingHorizontal: 24,
+    gap: 28,
   },
   menuItem: {
     flexDirection: 'row',
@@ -103,14 +95,7 @@ const styles = StyleSheet.create({
   },
   menuLabel: {
     fontFamily: 'SFProDisplay-Semibold',
-    fontSize: 18,
-    color: '#FFFFFF',
-  },
-  menuIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontSize: 20,
+    color: '#1A1A1A',
   },
 });
