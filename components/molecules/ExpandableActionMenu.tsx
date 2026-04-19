@@ -42,26 +42,32 @@ export function ExpandableActionMenu({ items }: Props) {
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade">
-        <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
+        {/* White frosted glass */}
+        <View style={StyleSheet.absoluteFill}>
+          <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.6)' }]} />
+        </View>
 
-          <Animated.View entering={FadeIn.duration(200)} style={[styles.closeBtn, { top: insets.top + 12 }]}>
-            <Pressable onPress={() => setOpen(false)} hitSlop={12}>
-              <HugeiconsIcon icon={Cancel01Icon} size={22} color="rgba(255,255,255,0.7)" />
-            </Pressable>
-          </Animated.View>
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
 
-          <View style={[styles.menuContainer, { paddingBottom: insets.bottom + 40 }]}>
-            {items.map((item, i) => (
-              <Animated.View key={item.id} entering={FadeInRight.delay(i * 60).duration(250)}>
-                <Pressable onPress={() => handleItem(item)} style={styles.menuItem}>
-                  <Text style={styles.menuLabel}>{item.label}</Text>
-                  <HugeiconsIcon icon={item.icon} size={24} color={item.iconColor} />
-                </Pressable>
-              </Animated.View>
-            ))}
-          </View>
-        </BlurView>
+        {/* Close */}
+        <Animated.View entering={FadeIn.duration(200)} style={[styles.closeBtn, { top: insets.top + 12 }]}>
+          <Pressable onPress={() => setOpen(false)} hitSlop={12}>
+            <HugeiconsIcon icon={Cancel01Icon} size={22} color="#1A1A1A" />
+          </Pressable>
+        </Animated.View>
+
+        {/* Menu items */}
+        <View style={[styles.menuContainer, { paddingBottom: insets.bottom + 40 }]}>
+          {items.map((item, i) => (
+            <Animated.View key={item.id} entering={FadeInRight.delay(i * 60).duration(250)}>
+              <Pressable onPress={() => handleItem(item)} style={styles.menuItem}>
+                <Text style={styles.menuLabel}>{item.label}</Text>
+                <HugeiconsIcon icon={item.icon} size={24} color={item.iconColor} />
+              </Pressable>
+            </Animated.View>
+          ))}
+        </View>
       </Modal>
     </>
   );
@@ -80,6 +86,7 @@ const styles = StyleSheet.create({
   closeBtn: {
     position: 'absolute',
     right: 20,
+    zIndex: 10,
   },
   menuContainer: {
     flex: 1,
@@ -96,6 +103,6 @@ const styles = StyleSheet.create({
   menuLabel: {
     fontFamily: 'SFProDisplay-Semibold',
     fontSize: 20,
-    color: '#FFFFFF',
+    color: '#1A1A1A',
   },
 });
