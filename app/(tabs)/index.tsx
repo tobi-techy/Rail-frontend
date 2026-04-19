@@ -56,8 +56,12 @@ import {
   SavingsIcon,
   UserGroupIcon,
   Wallet01Icon,
+  MoneyReceiveSquareIcon,
+  Exchange01Icon,
+  InvestmentIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ExpandableActionMenu } from '@/components/molecules/ExpandableActionMenu';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -620,6 +624,7 @@ function DashboardScreen() {
   );
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       className="min-h-screen flex-1"
       refreshControl={
@@ -874,5 +879,39 @@ function DashboardScreen() {
         </View>
       </GorhomBottomSheet>
     </ScrollView>
+
+    <ExpandableActionMenu
+      items={[
+        {
+          id: 'fund-stash',
+          label: 'Fund Stash',
+          icon: SavingsIcon,
+          iconColor: '#16A34A',
+          onPress: () => router.push('/spending-stash/transfer' as never),
+        },
+        {
+          id: 'withdraw-naira',
+          label: 'Withdraw NGN',
+          icon: MoneyReceiveSquareIcon,
+          iconColor: '#EA580C',
+          onPress: () => router.push('/withdraw' as never),
+        },
+        {
+          id: 'swap',
+          label: 'Swap',
+          icon: Exchange01Icon,
+          iconColor: '#2563EB',
+          onPress: () => router.push('/market' as never),
+        },
+        {
+          id: 'invest',
+          label: 'Invest',
+          icon: InvestmentIcon,
+          iconColor: '#7C3AED',
+          onPress: () => router.push('/investment-stash' as never),
+        },
+      ]}
+    />
+    </View>
   );
 }
