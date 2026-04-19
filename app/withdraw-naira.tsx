@@ -683,23 +683,42 @@ export default function WithdrawNairaScreen() {
                     <Animated.View entering={FadeIn.delay(100).duration(300)} className="mb-6 size-20 items-center justify-center rounded-full bg-[#FFF7ED]">
                       <ActivityIndicator size="small" color="#EA580C" />
                     </Animated.View>
-                    <Animated.Text entering={FadeInDown.delay(200).duration(400)} className="font-subtitle text-[20px] text-text-primary">
-                      {pollingTimedOut ? 'Taking longer than expected' : 'Processing'}
+                    <Animated.Text entering={FadeInDown.delay(200).duration(400)} className="font-mono-semibold text-[36px] text-text-primary" style={{ letterSpacing: -1 }}>
+                      ₦{parsedAmount.toLocaleString()}
                     </Animated.Text>
-                    <Animated.Text entering={FadeIn.delay(350).duration(300)} className="mt-2 text-center font-body text-[14px] leading-[20px] text-text-secondary">
+                    <Animated.Text entering={FadeInDown.delay(300).duration(400)} className="font-subtitle text-[20px] text-text-primary">
+                      {pollingTimedOut ? 'Taking longer than expected' : 'Processing withdrawal'}
+                    </Animated.Text>
+                    <Animated.Text entering={FadeIn.delay(400).duration(300)} className="mt-2 text-center font-body text-[14px] leading-[20px] text-text-secondary">
                       {pollingTimedOut
-                        ? 'Your withdrawal is still being processed.\nCheck back in your transaction history.'
-                        : `Sending ₦${parsedAmount.toLocaleString()} to ${selectedBank?.name}`}
+                        ? 'Your withdrawal is still being processed.\nYou\'ll be notified when it arrives.'
+                        : `Sending to ${accountName} at ${selectedBank?.name}`}
                     </Animated.Text>
-                    {!pollingTimedOut && (
-                      <Animated.Text entering={FadeIn.delay(450).duration(300)} className="mt-3 text-center font-body text-[12px] text-text-secondary/60">
-                        Usually arrives in 2–5 minutes
-                      </Animated.Text>
-                    )}
-                    <Animated.View entering={FadeInDown.delay(500).duration(400)} className="mt-10 w-full">
-                      <Button title="Done" variant="white" onPress={safeGoBack} />
-                      <Text className="mt-2 text-center font-body text-[12px] text-text-secondary">
-                        We'll notify you when it's complete
+
+                    {/* Transaction details card */}
+                    <Animated.View entering={FadeInDown.delay(500).duration(400)} className="mt-6 w-full rounded-2xl border border-gray-100 bg-[#F9FAFB] px-4 py-3">
+                      <View className="flex-row justify-between py-2">
+                        <Text className="font-body text-[13px] text-text-secondary">Amount</Text>
+                        <Text className="font-mono text-[13px] text-text-primary">₦{parsedAmount.toLocaleString()}</Text>
+                      </View>
+                      <View className="flex-row justify-between border-t border-gray-100 py-2">
+                        <Text className="font-body text-[13px] text-text-secondary">To</Text>
+                        <Text className="font-subtitle text-[13px] text-text-primary">{accountName}</Text>
+                      </View>
+                      <View className="flex-row justify-between border-t border-gray-100 py-2">
+                        <Text className="font-body text-[13px] text-text-secondary">Bank</Text>
+                        <Text className="font-body text-[13px] text-text-primary">{selectedBank?.name}</Text>
+                      </View>
+                      <View className="flex-row justify-between border-t border-gray-100 py-2">
+                        <Text className="font-body text-[13px] text-text-secondary">ETA</Text>
+                        <Text className="font-mono text-[13px] text-[#EA580C]">2–5 minutes</Text>
+                      </View>
+                    </Animated.View>
+
+                    <Animated.View entering={FadeInDown.delay(600).duration(400)} className="mt-8 w-full">
+                      <Button title="Done" variant="black" onPress={safeGoBack} />
+                      <Text className="mt-3 text-center font-body text-[12px] text-text-secondary">
+                        We'll notify you when it arrives
                       </Text>
                     </Animated.View>
                   </Animated.View>
