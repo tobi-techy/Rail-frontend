@@ -1,7 +1,6 @@
 import { useNavigation } from 'expo-router';
 import React, { useState, useMemo } from 'react';
 import { Text, View, RefreshControl, TextInput, Pressable, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Search01Icon } from '@hugeicons/core-free-icons';
 import { TransactionList } from '@/components/molecules/TransactionList';
@@ -40,7 +39,6 @@ export default function History() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  const insets = useSafeAreaInsets();
 
   const filters = [
     { id: 'all', label: 'All' },
@@ -109,10 +107,10 @@ export default function History() {
   const showSkeleton = isLoading && transactions.length === 0;
 
   return (
-    <View className="flex-1 bg-background-main" style={{ paddingTop: insets.top }}>
+    <View className="flex-1 bg-background-main">
       {/* Search */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 12, paddingHorizontal: 12, height: 44 }}>
+      <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 2 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 12, paddingHorizontal: 12, height: 40 }}>
           <HugeiconsIcon icon={Search01Icon} size={18} color="#9CA3AF" />
           <TextInput
             value={search}
