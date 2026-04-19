@@ -7,31 +7,18 @@ import Animated, {
   withRepeat,
   withSequence,
   Easing,
-  FadeInDown,
 } from 'react-native-reanimated';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { FireIcon, Target01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
+import { CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
 
-const MILESTONES = [
-  { days: 3, label: 'Spark', icon: FireIcon },
-  { days: 7, label: 'On Fire', icon: FireIcon },
-  { days: 14, label: 'Committed', icon: Target01Icon },
-  { days: 30, label: 'Unstoppable', icon: FireIcon },
-  { days: 60, label: 'Iron Will', icon: Target01Icon },
-  { days: 90, label: 'Diamond', icon: Target01Icon },
-  { days: 365, label: 'Legend', icon: FireIcon },
-];
-
-function getNextMilestone(current: number) {
-  return MILESTONES.find((m) => m.days > current) ?? MILESTONES[MILESTONES.length - 1];
+interface Props {
+  currentStreak: number;
+  longestStreak?: number;
+  activeDates: string[];
+  streakType?: string;
 }
 
-function getCurrentMilestone(current: number) {
-  const passed = MILESTONES.filter((m) => m.days <= current);
-  return passed.length > 0 ? passed[passed.length - 1] : null;
-}
-
-function WeekDots({ activeDates }: { activeDates: string[] }) {
+export function StreakRing({ activeDates }: Props) {
   const dateSet = new Set(activeDates);
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
@@ -65,7 +52,7 @@ function WeekDots({ activeDates }: { activeDates: string[] }) {
   }));
 
   return (
-    <View style={{ marginTop: 24 }}>
+    <View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, paddingHorizontal: 4 }}>
         {days.map((d, i) => (
           <Text key={i} style={{ fontFamily: 'SFMono-Medium', fontSize: 10, color: '#9CA3AF', width: 28, textAlign: 'center' }}>{d}</Text>
@@ -92,85 +79,6 @@ function WeekDots({ activeDates }: { activeDates: string[] }) {
           })}
         </View>
       ))}
-    </View>
-  );
-}
-
-function MilestoneCard({ currentStreak }: { currentStreak: number }) {
-  const next = getNextMilestone(currentStreak);
-  const prev = getCurrentMilestone(currentStreak);
-  const prevDays = prev?.days ?? 0;
-  const progress = next.days > prevDays ? (currentStreak - prevDays) / (next.days - prevDays) : 1;
-  const remaining = next.days - currentStreak;
-
-  if (remaining <= 0) return null;
-
-  return (
-    <Animated.View entering={FadeInDown.delay(200).duration(400)} style={{
-      flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF7ED',
-      borderRadius: 16, padding: 14, marginTop: 20, gap: 12,
-    }}>
-      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF0ED', alignItems: 'center', justifyContent: 'center' }}>
-        <HugeiconsIcon icon={next.icon} size={20} color="#FF2E01" />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontFamily: 'SFProDisplay-Semibold', fontSize: 14, color: '#1A1A1A' }}>
-          {remaining} more day{remaining !== 1 ? 's' : ''} to {next.label}
-        </Text>
-        <View style={{ height: 4, backgroundColor: '#F3F4F6', borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
-          <View style={{ height: 4, width: `${Math.min(progress * 100, 100)}%`, backgroundColor: '#FF2E01', borderRadius: 2 }} />
-        </View>
-      </View>
-    </Animated.View>
-  );
-}
-
-interface Props {
-  currentStreak: number;
-  longestStreak?: number;
-  activeDates: string[];
-  streakType?: string;
-}
-
-export function StreakRing({ currentStreak, longestStreak, activeDates }: Props) {
-  const flameScale = useSharedValue(1);
-  useEffect(() => {
-    if (currentStreak > 0) {
-      flameScale.value = withRepeat(
-        withSequence(
-          withTiming(1.12, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-        ),
-        -1,
-      );
-    }
-  }, [currentStreak]);
-
-  const flameStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: flameScale.value }],
-  }));
-
-  return (
-    <View>
-      <View style={{ alignItems: 'center', paddingVertical: 8 }}>
-        <Animated.View style={flameStyle}>
-          <HugeiconsIcon icon={FireIcon} size={22} color={currentStreak > 0 ? '#FF2E01' : '#D1D5DB'} />
-        </Animated.View>
-        <Text style={{ fontFamily: 'SFMono-Semibold', fontSize: 36, color: '#1A1A1A', marginTop: 2, letterSpacing: -1 }}>
-          {currentStreak}
-        </Text>
-        <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 12, color: '#8C8C8C', marginTop: -2 }}>
-          day{currentStreak !== 1 ? 's' : ''}
-        </Text>
-        {longestStreak != null && longestStreak > 0 && (
-          <Text style={{ fontFamily: 'SFMono-Medium', fontSize: 11, color: '#9CA3AF', marginTop: 8 }}>
-            Longest: {longestStreak} day{longestStreak !== 1 ? 's' : ''}
-          </Text>
-        )}
-      </View>
-
-      <WeekDots activeDates={activeDates} />
-      <MilestoneCard currentStreak={currentStreak} />
     </View>
   );
 }
