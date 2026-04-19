@@ -7,14 +7,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { useAIChatStore } from '@/stores/aiChatStore';
 import { useAIHaptics } from '@/hooks/useAIHaptics';
 import { ChatBubble, InputBar, ThreadRow } from '@/components/ai';
-import type { AIMessage } from '@/api/types/ai';
+import { ActionConfirmSheet } from '@/components/ai/ActionConfirmSheet';
+import type { AIMessage, PendingAction } from '@/api/types/ai';
+import { aiService } from '@/api/services/ai.service';
+import { useSubscription } from '@/api/hooks/useGameplay';
 
 const BG = '#F9F8F6';
 const ACCENT = '#FF2E01';
@@ -32,7 +37,7 @@ function TypingDots() {
       entering={FadeIn.duration(200)}
       exiting={FadeOut.duration(150)}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16, paddingLeft: 2 }}>
-      <Text style={{ fontFamily: 'SFMono-Medium', fontSize: 11, color: ACCENT, letterSpacing: 0.5, marginRight: 8 }}>ADA</Text>
+      <Text style={{ fontFamily: 'SFMono-Medium', fontSize: 12, color: ACCENT, letterSpacing: 0.5, marginRight: 8 }}>MIRIAM</Text>
       {[0, 1, 2].map((i) => (
         <View key={i} style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: TEXT_TERTIARY, opacity: 0.4 + i * 0.25 }} />
       ))}
@@ -63,7 +68,7 @@ function SuggestionChips({ suggestions, onPress }: { suggestions: string[]; onPr
             paddingHorizontal: 16,
             paddingVertical: 10,
           }}>
-          <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 13, color: TEXT_SECONDARY }}>{s}</Text>
+          <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 15, color: TEXT_SECONDARY }}>{s}</Text>
         </Pressable>
       ))}
     </ScrollView>
@@ -78,19 +83,25 @@ export default function AIChatScreen() {
   const router = useRouter();
   const [showThreads, setShowThreads] = useState(false);
   const { onNewThread } = useAIHaptics();
+  const { data: subData } = useSubscription();
+  const isPro = __DEV__ || (subData?.is_pro ?? false);
 
   const {
     conversations,
     activeConversationId,
     messages,
     isStreaming,
+    streamedContent,
     cards,
     suggestions,
+    pendingAction,
+    overCeiling,
     sendMessage,
     selectConversation,
     createConversation,
     deleteConversation,
     clearActiveConversation,
+    clearPendingAction,
     close,
   } = useAIChatStore();
 
@@ -103,11 +114,28 @@ export default function AIChatScreen() {
 
   const handleSend = useCallback(
     async (msg: string) => {
-      if (!activeConversationId) await createConversation(msg.slice(0, 50));
-      sendMessage(msg);
+      let convId = activeConversationId;
+      if (!convId) convId = await createConversation(msg.slice(0, 50));
+      sendMessage(msg, convId);
+      setEditText('');
     },
     [activeConversationId, createConversation, sendMessage]
   );
+
+  const handleActionConfirmed = useCallback(
+    (action: PendingAction) => {
+      clearPendingAction();
+      const confirmMsg: AIMessage = { role: 'assistant', content: `✅ Done — ${action.description}`, created_at: new Date().toISOString() };
+      useAIChatStore.setState((s) => ({ messages: [...s.messages, confirmMsg] }));
+    },
+    [clearPendingAction]
+  );
+
+  const handleActionCancelled = useCallback(() => {
+    clearPendingAction();
+    const cancelMsg: AIMessage = { role: 'assistant', content: 'No worries — action cancelled.', created_at: new Date().toISOString() };
+    useAIChatStore.setState((s) => ({ messages: [...s.messages, cancelMsg] }));
+  }, [clearPendingAction]);
 
   const handleBack = useCallback(() => {
     if (showThreads) setShowThreads(false);
@@ -139,6 +167,74 @@ export default function AIChatScreen() {
     [deleteConversation]
   );
 
+  const [editText, setEditText] = useState('');
+
+  const handleEdit = useCallback((content: string) => {
+    setEditText(content);
+  }, []);
+
+  const handleMicPress = useCallback(() => {
+    if (!isPro) {
+      router.push('/subscription');
+      return;
+    }
+    router.push('/voice-mode');
+  }, [router, isPro]);
+
+  const handleImagePress = useCallback(async () => {
+    if (!isPro) {
+      router.push('/subscription');
+      return;
+    }
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Allow photo access to scan receipts.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      base64: true,
+      allowsEditing: true,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      // Send image to AI for receipt analysis
+      const userMsg: AIMessage = {
+        role: 'user',
+        content: '📸 [Receipt image attached]',
+        created_at: new Date().toISOString(),
+      };
+      useAIChatStore.setState((s) => ({
+        messages: [...s.messages, userMsg],
+        isStreaming: true,
+      }));
+      try {
+        const res = await aiService.analyzeImage(asset.base64!, 'Analyze this receipt and extract the transaction details.');
+        const assistantMsg: AIMessage = {
+          role: 'assistant',
+          content: res.data.content,
+          created_at: new Date().toISOString(),
+        };
+        useAIChatStore.setState((s) => ({
+          messages: [...s.messages, assistantMsg],
+          cards: res.data.cards ?? [],
+          isStreaming: false,
+        }));
+      } catch {
+        const errorMsg: AIMessage = {
+          role: 'assistant',
+          content: "I couldn't analyze that image — try again with a clearer photo 📸",
+          created_at: new Date().toISOString(),
+        };
+        useAIChatStore.setState((s) => ({
+          messages: [...s.messages, errorMsg],
+          isStreaming: false,
+        }));
+      }
+    }
+  }, [isPro, router]);
+
   const renderMessage = useCallback(
     ({ item, index }: { item: AIMessage; index: number }) => {
       const isLast = index === (messages ?? []).length - 1;
@@ -149,10 +245,11 @@ export default function AIChatScreen() {
           cards={showCards}
           isLatest={isLast}
           animate={isLast && item.role === 'assistant'}
+          onEdit={handleEdit}
         />
       );
     },
-    [messages, cards]
+    [messages, cards, handleEdit]
   );
 
   // ── Active Chat View ───────────────────────────────────────────
@@ -180,7 +277,7 @@ export default function AIChatScreen() {
             </Pressable>
             <View style={{ alignItems: 'center' }}>
               <Text style={{ fontFamily: 'SFMono-Bold', fontSize: 13, color: TEXT_PRIMARY, letterSpacing: 0.5 }}>
-                ADA
+                MIRIAM
               </Text>
             </View>
             <Pressable onPress={handleNewThread} hitSlop={12} style={{ padding: 8 }}>
@@ -195,7 +292,26 @@ export default function AIChatScreen() {
             keyExtractor={(_, i) => String(i)}
             contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 20 }}
             renderItem={renderMessage}
-            ListFooterComponent={isStreaming ? <TypingDots /> : null}
+            ListFooterComponent={
+              <>
+                {isStreaming && streamedContent ? (
+                  <ChatBubble
+                    msg={{ role: 'assistant', content: streamedContent }}
+                    isLatest
+                    animate={false}
+                  />
+                ) : isStreaming ? (
+                  <TypingDots />
+                ) : null}
+                {overCeiling && (
+                  <View style={{ backgroundColor: '#FFF7ED', borderRadius: 12, padding: 12, marginTop: 8 }}>
+                    <Text style={{ fontFamily: 'SFProDisplay-Medium', fontSize: 13, color: '#92400E', textAlign: 'center' }}>
+                      You&apos;ve reached your monthly AI limit. Miriam will be back at full power next month 💡
+                    </Text>
+                  </View>
+                )}
+              </>
+            }
             showsVerticalScrollIndicator={false}
             keyboardDismissMode="interactive"
             keyboardShouldPersistTaps="handled"
@@ -203,9 +319,18 @@ export default function AIChatScreen() {
 
           {/* Input */}
           <View style={{ paddingBottom: insets.bottom + 8 }}>
-            <InputBar onSend={handleSend} isStreaming={isStreaming} placeholder="Ask a follow up..." />
+            <InputBar onSend={handleSend} onMicPress={handleMicPress} onImagePress={handleImagePress} isStreaming={isStreaming} placeholder="Ask a follow up..." initialValue={editText} />
           </View>
         </KeyboardAvoidingView>
+
+        <ActionConfirmSheet
+          key={pendingAction?.id}
+          action={pendingAction}
+          visible={!!pendingAction}
+          onClose={() => clearPendingAction()}
+          onConfirmed={handleActionConfirmed}
+          onCancelled={handleActionCancelled}
+        />
       </View>
     );
   }
@@ -283,7 +408,7 @@ export default function AIChatScreen() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 100 }}>
           <Text style={{ fontSize: 36, color: ACCENT, marginBottom: 8 }}>✦</Text>
           <Text style={{ fontFamily: 'SFMono-Bold', fontSize: 28, color: TEXT_PRIMARY, letterSpacing: -0.5 }}>
-            ada
+            miriam
           </Text>
           <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 14, color: TEXT_TERTIARY, marginTop: 6 }}>
             Your financial companion
@@ -293,7 +418,7 @@ export default function AIChatScreen() {
         {/* Bottom: suggestions + input */}
         <View style={{ paddingBottom: insets.bottom + 8 }}>
           <SuggestionChips suggestions={suggestions ?? []} onPress={handleSend} />
-          <InputBar onSend={handleSend} isStreaming={isStreaming} />
+          <InputBar onSend={handleSend} onMicPress={handleMicPress} onImagePress={handleImagePress} isStreaming={isStreaming} />
         </View>
       </KeyboardAvoidingView>
     </View>

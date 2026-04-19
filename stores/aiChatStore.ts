@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { aiService } from '@/api/services/ai.service';
-import type { AIConversation, AIMessage, AIChatResponse, InsightCard } from '@/api/types/ai';
+import type { AIConversation, AIMessage, InsightCard, PendingAction } from '@/api/types/ai';
 
 interface AIChatState {
   // Conversations list
@@ -15,6 +15,8 @@ interface AIChatState {
   cards: InsightCard[];
   suggestions: string[];
   suggestionsLoading: boolean;
+  pendingAction: PendingAction | null;
+  overCeiling: boolean;
   // Screen state
   isOpen: boolean;
 }
@@ -29,8 +31,9 @@ interface AIChatActions {
   deleteConversation: (id: string) => Promise<void>;
   clearActiveConversation: () => void;
   // Chat
-  sendMessage: (message: string) => Promise<void>;
+  sendMessage: (message: string, conversationId?: string) => Promise<void>;
   fetchSuggestions: () => Promise<void>;
+  clearPendingAction: () => void;
   reset: () => void;
 }
 
@@ -44,6 +47,8 @@ const initialState: AIChatState = {
   cards: [],
   suggestions: [],
   suggestionsLoading: false,
+  pendingAction: null,
+  overCeiling: false,
   isOpen: false,
 };
 
@@ -81,7 +86,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
   },
 
   selectConversation: async (id: string) => {
-    set({ activeConversationId: id, messages: [], cards: [] });
+    set({ activeConversationId: id, messages: [], cards: [], pendingAction: null });
     try {
       const res = await aiService.getConversation(id);
       set({ messages: res.data.messages ?? [] });
@@ -99,10 +104,11 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
   },
 
   clearActiveConversation: () =>
-    set({ activeConversationId: null, messages: [], cards: [], streamedContent: '' }),
+    set({ activeConversationId: null, messages: [], cards: [], streamedContent: '', pendingAction: null }),
 
-  sendMessage: async (message: string) => {
-    const { activeConversationId } = get();
+  sendMessage: async (message: string, conversationId?: string) => {
+    if (get().isStreaming) return;
+    const convId = conversationId ?? get().activeConversationId;
     const userMsg: AIMessage = {
       role: 'user',
       content: message,
@@ -113,15 +119,65 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
       isStreaming: true,
       streamedContent: '',
       cards: [],
+      pendingAction: null,
+      overCeiling: false,
     }));
 
+    // Use streaming for one-shot chat (no conversation), sync for conversation chat
+    if (!convId) {
+      let accumulated = '';
+      let finalCards: InsightCard[] = [];
+      let finalPending: PendingAction | null = null;
+
+      aiService.streamChat(
+        { message },
+        (event) => {
+          switch (event.type) {
+            case 'token':
+              accumulated += event.content;
+              set({ streamedContent: accumulated });
+              break;
+            case 'cards':
+              finalCards = event.data;
+              set({ cards: event.data });
+              break;
+            case 'pending_action':
+              finalPending = event.data;
+              set({ pendingAction: event.data });
+              break;
+            case 'done':
+              break;
+            case 'error':
+              accumulated += accumulated ? '' : (event.content ?? "Something went wrong 🔄");
+              break;
+          }
+        },
+        () => {
+          const content = accumulated || "I'm having a moment — try again 🔄";
+          const assistantMsg: AIMessage = { role: 'assistant', content, created_at: new Date().toISOString() };
+          set((s) => ({
+            messages: [...s.messages, assistantMsg],
+            cards: finalCards,
+            pendingAction: finalPending,
+            isStreaming: false,
+            streamedContent: '',
+          }));
+        },
+        (err) => {
+          const errorMsg: AIMessage = { role: 'assistant', content: "I'm having a moment — try again 🔄", created_at: new Date().toISOString() };
+          set((s) => ({ messages: [...s.messages, errorMsg], isStreaming: false, streamedContent: '' }));
+        }
+      );
+      return;
+    }
+
+    // Conversation chat — use sync endpoint (supports actions + persistence)
     try {
-      let response: AIChatResponse;
-      if (activeConversationId) {
-        const res = await aiService.chatInConversation(activeConversationId, message);
-        response = res.data;
-      } else {
-        response = await aiService.chat({ message });
+      const res = await aiService.chatInConversation(convId, message);
+      const response = res.data;
+
+      if (response.over_ceiling) {
+        set({ overCeiling: true });
       }
 
       const assistantMsg: AIMessage = {
@@ -132,6 +188,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
       set((s) => ({
         messages: [...s.messages, assistantMsg],
         cards: response.cards ?? [],
+        pendingAction: response.pending_action ?? null,
         isStreaming: false,
       }));
     } catch {
@@ -154,6 +211,8 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
       set({ suggestionsLoading: false });
     }
   },
+
+  clearPendingAction: () => set({ pendingAction: null }),
 
   reset: () => set(initialState),
 }));

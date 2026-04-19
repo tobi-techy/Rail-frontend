@@ -86,6 +86,7 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     segments[0] === 'withdraw-naira' ||
     segments[0] === 'paj-verify' ||
     segments[0] === 'ai-chat' ||
+    segments[0] === 'voice-mode' ||
     segments[0] === 'tap-to-pay' ||
     pathname.startsWith('/spending-stash') ||
     pathname.startsWith('/investment-stash') ||
@@ -104,6 +105,7 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/withdraw-naira') ||
     pathname.startsWith('/paj-verify') ||
     pathname.startsWith('/ai-chat') ||
+    pathname.startsWith('/voice-mode') ||
     pathname.startsWith('/tap-to-pay') ||
     pathname.startsWith('/kyc') ||
     pathname.startsWith('/card') ||

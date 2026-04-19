@@ -4,6 +4,8 @@
  */
 
 import apiClient from '../client';
+import { API_CONFIG } from '../config';
+import { useAuthStore } from '@/stores/authStore';
 import type {
   AIChatRequest,
   AIChatResponse,
@@ -14,6 +16,7 @@ import type {
   AIWrappedCard,
   AIQuickInsight,
   AIStreamEvent,
+  ActionConfirmResponse,
 } from '../types/ai';
 
 const BASE = '/v1/ai';
@@ -24,7 +27,7 @@ export const aiService = {
     return apiClient.post<AIChatResponse>(`${BASE}/chat`, req);
   },
 
-  /** SSE streaming chat — returns an AbortController so caller can cancel */
+  /** SSE streaming chat — uses fetch ReadableStream for real token-by-token streaming */
   streamChat(
     req: AIChatRequest,
     onEvent: (event: AIStreamEvent) => void,
@@ -32,26 +35,65 @@ export const aiService = {
     onError: (err: string) => void
   ): AbortController {
     const controller = new AbortController();
-    // Fire-and-forget async IIFE
+    const { accessToken } = useAuthStore.getState();
+    const baseURL = API_CONFIG.baseURL;
+
     (async () => {
       try {
-        const resp = await apiClient.post<any>(`${BASE}/chat/stream`, req, {
-          responseType: 'text',
+        const resp = await fetch(`${baseURL}${BASE}/chat/stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
+          body: JSON.stringify(req),
           signal: controller.signal,
-          headers: { Accept: 'text/event-stream' },
-          // @ts-ignore — axios adapter may not support streaming natively; fallback to full text
         });
-        const text = typeof resp === 'string' ? resp : JSON.stringify(resp);
-        for (const line of text.split('\n')) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const event = JSON.parse(line.slice(6)) as AIStreamEvent;
-            onEvent(event);
-          } catch {}
+
+        if (!resp.ok) {
+          onError(`Stream failed: ${resp.status}`);
+          return;
         }
+
+        const reader = resp.body?.getReader();
+        if (!reader) {
+          onError('ReadableStream not supported');
+          return;
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const payload = line.slice(6).trim();
+            if (!payload || payload === '[DONE]') continue;
+            try {
+              onEvent(JSON.parse(payload) as AIStreamEvent);
+            } catch {}
+          }
+        }
+
+        // Process remaining buffer
+        if (buffer.startsWith('data: ')) {
+          const payload = buffer.slice(6).trim();
+          if (payload && payload !== '[DONE]') {
+            try { onEvent(JSON.parse(payload) as AIStreamEvent); } catch {}
+          }
+        }
+
         onDone();
       } catch (e: any) {
-        if (e?.name !== 'CanceledError') onError(e?.message ?? 'Stream failed');
+        if (e?.name !== 'AbortError') onError(e?.message ?? 'Stream failed');
       }
     })();
     return controller;
@@ -83,6 +125,14 @@ export const aiService = {
     return apiClient.delete(`${BASE}/conversations/${id}`);
   },
 
+  async confirmAction(conversationId: string): Promise<{ data: ActionConfirmResponse }> {
+    return apiClient.post(`${BASE}/conversations/${conversationId}/confirm`);
+  },
+
+  async cancelAction(conversationId: string): Promise<{ data: ActionConfirmResponse }> {
+    return apiClient.post(`${BASE}/conversations/${conversationId}/cancel`);
+  },
+
   // ── Utility endpoints ──────────────────────────────────────────
 
   async getUsage(): Promise<{ data: AIUsage }> {
@@ -99,6 +149,14 @@ export const aiService = {
 
   async getQuickInsight(type: 'performance' | 'top_mover' | 'streak'): Promise<AIQuickInsight> {
     return apiClient.get(`${BASE}/quick-insight?type=${type}`);
+  },
+
+  /** Send an image (base64) for AI analysis (receipt scanning, etc.) */
+  async analyzeImage(base64Image: string, message?: string): Promise<{ data: AIChatResponse }> {
+    return apiClient.post(`${BASE}/chat/image`, {
+      image: base64Image,
+      message: message ?? 'Analyze this image',
+    });
   },
 };
 
