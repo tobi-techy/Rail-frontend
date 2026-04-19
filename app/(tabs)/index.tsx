@@ -62,6 +62,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { ExpandableActionMenu } from '@/components/molecules/ExpandableActionMenu';
+import { OnboardingProgressCard } from '@/components/molecules/OnboardingProgressCard';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -635,7 +636,7 @@ function DashboardScreen() {
           percentChange={monthChange}
           timeframe="Last 30d"
           className="rounded-x"
-          isLoading={isStationPending}
+          isLoading={isStationPending || refreshing}
         />
 
         {isStationError && !isStationPending && (
@@ -738,6 +739,21 @@ function DashboardScreen() {
           hasCard={hasCard}
           onKYCPress={() => setShowKYCSheet(true)}
         />
+
+        {!kycApproved && (
+          <OnboardingProgressCard
+            steps={[
+              { label: 'Create account', done: true },
+              { label: 'Verify identity (KYC)', done: kycApproved },
+              { label: 'Make first deposit', done: (parseFloat(station?.total_balance ?? '0') > 0) },
+              { label: 'Set up Rail Card', done: hasCard },
+            ]}
+            onPress={() => {
+              if (!kycApproved) setShowKYCSheet(true);
+              else router.push('/card' as never);
+            }}
+          />
+        )}
 
         <View className="py-5">
           {transactions.length === 0 ? (

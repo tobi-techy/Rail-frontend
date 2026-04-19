@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
+import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Share01Icon } from '@hugeicons/core-free-icons';
 import { Transaction, TransactionType, SvgComponent } from '../molecules/TransactionItem';
 import { resolveTransactionAssetIcon } from '@/utils/transactionIcon';
 import { formatAbsAmount } from '@/utils/transactionFormat';
@@ -351,6 +353,28 @@ export function TransactionDetailSheet({
           </Text>
         </TouchableOpacity>
       )}
+
+      {/* Share receipt */}
+      <TouchableOpacity
+        onPress={() => {
+          const lines = [
+            'Rail Money — Transaction Receipt',
+            '━━━━━━━━━━━━━━━━━━━━━━━━',
+            `Type: ${typeLabels[type]}`,
+            `Amount: ${formatAbsAmount(amount)} ${currency}`,
+            `Date: ${formatDate(createdAt)}`,
+            txHash ? `TX: ${txHash}` : '',
+            fee ? `Fees: ${fee}` : '',
+            `Status: ${statusLabel(transaction?.status ?? 'completed')}`,
+            '━━━━━━━━━━━━━━━━━━━━━━━━',
+            'Sent via Rail Money',
+          ].filter(Boolean).join('\n');
+          Share.share({ message: lines });
+        }}
+        className="mt-3 flex-row items-center justify-center gap-2 rounded-full border border-gray-200 py-3">
+        <HugeiconsIcon icon={Share01Icon} size={18} color="#6B7280" />
+        <Text className="font-subtitle text-caption text-text-secondary">Share Receipt</Text>
+      </TouchableOpacity>
     </GorhomBottomSheet>
   );
 }
