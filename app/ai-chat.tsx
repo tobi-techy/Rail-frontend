@@ -480,6 +480,34 @@ export default function AIChatScreen() {
           <InputBar onSend={handleSend} onMicPress={handleMicPress} onImagePress={handleImagePress} isStreaming={isStreaming} attachedImage={attachedImage} onClearImage={() => setAttachedImage(null)} />
         </View>
       </KeyboardAvoidingView>
+
+      <ActionSheet
+        visible={showImageSheet}
+        onClose={() => setShowImageSheet(false)}
+        icon={Camera01Icon}
+        title="Add Receipt"
+        subtitle="Scan or upload a receipt for Miriam to analyze"
+        actions={[
+          {
+            id: 'scan',
+            label: 'Scan Receipt',
+            sublabel: 'Take a photo with your camera',
+            icon: Camera01Icon,
+            iconColor: '#FF2E01',
+            iconBgColor: '#FFF0ED',
+            onPress: pickFromCamera,
+          },
+          {
+            id: 'upload',
+            label: 'Upload from Gallery',
+            sublabel: 'Choose an existing photo',
+            icon: Image01Icon,
+            iconColor: '#2196F3',
+            iconBgColor: '#E3F2FD',
+            onPress: pickFromGallery,
+          },
+        ]}
+      />
     </View>
   );
 }
