@@ -162,7 +162,7 @@ export default function DestinationScreen() {
     if (numericAmount <= 0) return 0;
     if (isFiatMethod) {
       const fc = params.currency ?? 'USD';
-      if (fc === 'NGN') return 0.06; // placeholder — overridden by railFeeUSD below after hooks
+      if (fc === 'NGN') return 0.02; // ₦30 flat — actual value from API via railFeeUSD
       return 1.0;
     }
     // Crypto
@@ -254,7 +254,7 @@ export default function DestinationScreen() {
   const pajBanks: PajBank[] = pajBanksData?.banks ?? [];
   const savedBanksList: PajSavedBankAccount[] = (pajSavedBanks as any)?.accounts ?? [];
   const offRampRate = pajRates?.offRampRate?.rate ?? 0;
-  const railFeeUSD = pajRates?.railFee ?? 0.06;
+  const railFeeUSD = pajRates?.railFee ?? 0.02;
   // Recalculate fee with API value for NGN (overrides the placeholder above)
   const isNGNFee = isFiatMethod && (params.currency ?? storeCurrency) === 'NGN';
   const feeAmount = isNGNFee ? railFeeUSD : feeAmountBase;

@@ -80,7 +80,7 @@ export default function WithdrawNairaScreen() {
   const needsPajSession = (banksError as any)?.code === 'PAJ_VERIFICATION_REQUIRED';
 
   const offRampRate = ratesData?.offRampRate?.rate ?? 0;
-  const railFeeUSD = ratesData?.railFee ?? 0.06;
+  const railFeeUSD = ratesData?.railFee ?? 0.02;
   const minWithdrawalNGN = ratesData?.minWithdrawalNGN ?? 1500;
   const parsedAmount = useMemo(() => { const n = parseFloat(rawAmount); return Number.isFinite(n) ? n : 0; }, [rawAmount]);
   const estimatedUSDC = offRampRate > 0 ? parsedAmount / offRampRate : 0;

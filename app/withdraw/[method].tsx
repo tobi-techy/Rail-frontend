@@ -174,7 +174,7 @@ export default function WithdrawAmountScreen() {
   const isNGNAsset = asset === 'NGN';
   const { data: pajRatesData } = usePajRates();
   const ngnRate = pajRatesData?.offRampRate?.rate ?? 0;
-  const railFeeUSD = pajRatesData?.railFee ?? 0.06;
+  const railFeeUSD = pajRatesData?.railFee ?? 0.02;
 
   const availableBalance = useMemo(() => {
     const source =
