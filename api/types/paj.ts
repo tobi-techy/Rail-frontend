@@ -73,5 +73,6 @@ export interface PajOrderStatus {
   fee?: number;
   bankId?: string;
   bankAccountNumber?: string;
+  bankAccountName?: string;
   createdAt?: string;
 }

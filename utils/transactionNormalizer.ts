@@ -95,15 +95,16 @@ export const p2pToTransaction = (t: P2PTransfer): Transaction => ({
   withdrawalMethod: 'p2p' as WithdrawalMethod,
 });
 
-export const pajOrderToTransaction = (o: PajOrderStatus & { orderType?: string; createdAt?: string; tokenAmount?: number; bankAccountNumber?: string }): Transaction => {
+export const pajOrderToTransaction = (o: PajOrderStatus & { orderType?: string; createdAt?: string; tokenAmount?: number; bankAccountNumber?: string; bankAccountName?: string }): Transaction => {
   const isOfframp = o.type === 'OFF_RAMP' || o.orderType === 'offramp';
   const statusMap: Record<string, string> = { INIT: 'pending', PAID: 'pending', COMPLETED: 'completed', FAILED: 'failed' };
+  const acctName = o.bankAccountName;
   const acctNum = o.bankAccountNumber;
 
   let title: string;
   let subtitle: string;
   if (isOfframp) {
-    title = acctNum ? `Sent to ${acctNum}` : 'USDC to NGN';
+    title = acctName || (acctNum ? `Sent to ${acctNum}` : 'USDC to NGN');
     subtitle = `₦${(o.fiatAmount ?? 0).toLocaleString()}`;
   } else {
     title = 'NGN Deposit';
@@ -125,6 +126,7 @@ export const pajOrderToTransaction = (o: PajOrderStatus & { orderType?: string; 
       fee: o.fee,
       tokenAmount: o.tokenAmount,
       bankAccountNumber: acctNum,
+      bankAccountName: acctName,
       bankId: (o as any).bankId,
       orderType: isOfframp ? 'offramp' : 'onramp',
     },
