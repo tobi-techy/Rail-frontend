@@ -67,4 +67,11 @@ export interface PajOrderStatus {
   fiatAmount: number;
   rate: number;
   type: string; // ON_RAMP, OFF_RAMP
+  orderType?: string; // onramp, offramp (from GetOrders)
+  tokenAmount?: number;
+  currency?: string;
+  fee?: number;
+  bankId?: string;
+  bankAccountNumber?: string;
+  createdAt?: string;
 }

@@ -30,6 +30,8 @@ export interface Transaction {
   toAddress?: string;
   fee?: string;
   withdrawalMethod?: WithdrawalMethod;
+  /** Extra metadata for detail sheet / receipt */
+  metadata?: Record<string, string | number | undefined>;
   icon?: {
     type: 'token' | 'icon' | 'swap';
     Token?: SvgComponent;

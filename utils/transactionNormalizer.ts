@@ -58,6 +58,7 @@ export const depositToTransaction = (d: Deposit): Transaction => ({
   status: normalizeStatus(d.status),
   createdAt: new Date(d.created_at),
   txHash: d.tx_hash,
+  metadata: { chain: d.chain, depositType: d.type },
 });
 
 export const withdrawalToTransaction = (w: Withdrawal): Transaction => {
@@ -97,15 +98,35 @@ export const p2pToTransaction = (t: P2PTransfer): Transaction => ({
 export const pajOrderToTransaction = (o: PajOrderStatus & { orderType?: string; createdAt?: string; tokenAmount?: number; bankAccountNumber?: string }): Transaction => {
   const isOfframp = o.type === 'OFF_RAMP' || o.orderType === 'offramp';
   const statusMap: Record<string, string> = { INIT: 'pending', PAID: 'pending', COMPLETED: 'completed', FAILED: 'failed' };
+  const acctNum = o.bankAccountNumber;
+
+  let title: string;
+  let subtitle: string;
+  if (isOfframp) {
+    title = acctNum ? `Sent to ${acctNum}` : 'USDC to NGN';
+    subtitle = `₦${(o.fiatAmount ?? 0).toLocaleString()}`;
+  } else {
+    title = 'NGN Deposit';
+    subtitle = `₦${(o.fiatAmount ?? 0).toLocaleString()}`;
+  }
+
   return {
     id: o.orderId,
     type: (isOfframp ? 'withdraw' : 'deposit') as TransactionType,
-    title: isOfframp ? 'NGN Withdrawal' : 'NGN Deposit',
-    subtitle: `₦${o.fiatAmount?.toLocaleString() ?? '0'}`,
+    title,
+    subtitle,
     amount: o.fiatAmount || 0,
     currency: 'NGN',
     status: normalizeStatus(statusMap[o.status] ?? o.status),
     createdAt: new Date(o.createdAt || Date.now()),
     withdrawalMethod: isOfframp ? ('fiat' as WithdrawalMethod) : undefined,
+    metadata: {
+      rate: o.rate,
+      fee: o.fee,
+      tokenAmount: o.tokenAmount,
+      bankAccountNumber: acctNum,
+      bankId: (o as any).bankId,
+      orderType: isOfframp ? 'offramp' : 'onramp',
+    },
   };
 };
