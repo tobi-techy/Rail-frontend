@@ -89,7 +89,16 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
     set({ activeConversationId: id, messages: [], cards: [], pendingAction: null });
     try {
       const res = await aiService.getConversation(id);
-      set({ messages: res.data.messages ?? [] });
+      const msgs = res.data.messages ?? [];
+      // Extract cards from the last assistant message's metadata (persisted by backend)
+      let lastCards: InsightCard[] = [];
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].role === 'assistant' && msgs[i].metadata?.cards) {
+          lastCards = msgs[i].metadata.cards as InsightCard[];
+          break;
+        }
+      }
+      set({ messages: msgs, cards: lastCards });
     } catch {}
   },
 
@@ -104,10 +113,18 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
   },
 
   clearActiveConversation: () =>
-    set({ activeConversationId: null, messages: [], cards: [], streamedContent: '', pendingAction: null }),
+    set({
+      activeConversationId: null,
+      messages: [],
+      cards: [],
+      streamedContent: '',
+      pendingAction: null,
+    }),
 
   sendMessage: async (message: string, conversationId?: string) => {
     if (get().isStreaming) return;
+
+    // Free tier: check message count (20/month limit enforced by backend cost ceiling)
     const convId = conversationId ?? get().activeConversationId;
     const userMsg: AIMessage = {
       role: 'user',
@@ -148,13 +165,17 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
             case 'done':
               break;
             case 'error':
-              accumulated += accumulated ? '' : (event.content ?? "Something went wrong 🔄");
+              accumulated += accumulated ? '' : (event.content ?? 'Something went wrong 🔄');
               break;
           }
         },
         () => {
           const content = accumulated || "I'm having a moment — try again 🔄";
-          const assistantMsg: AIMessage = { role: 'assistant', content, created_at: new Date().toISOString() };
+          const assistantMsg: AIMessage = {
+            role: 'assistant',
+            content,
+            created_at: new Date().toISOString(),
+          };
           set((s) => ({
             messages: [...s.messages, assistantMsg],
             cards: finalCards,
@@ -164,8 +185,16 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
           }));
         },
         (err) => {
-          const errorMsg: AIMessage = { role: 'assistant', content: "I'm having a moment — try again 🔄", created_at: new Date().toISOString() };
-          set((s) => ({ messages: [...s.messages, errorMsg], isStreaming: false, streamedContent: '' }));
+          const errorMsg: AIMessage = {
+            role: 'assistant',
+            content: "I'm having a moment — try again 🔄",
+            created_at: new Date().toISOString(),
+          };
+          set((s) => ({
+            messages: [...s.messages, errorMsg],
+            isStreaming: false,
+            streamedContent: '',
+          }));
         }
       );
       return;

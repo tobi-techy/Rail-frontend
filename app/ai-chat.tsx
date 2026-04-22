@@ -18,7 +18,7 @@ import { useAIHaptics } from '@/hooks/useAIHaptics';
 import { ChatBubble, InputBar, ThreadRow } from '@/components/ai';
 import { ActionConfirmSheet } from '@/components/ai/ActionConfirmSheet';
 import { ActionSheet } from '@/components/sheets/ActionSheet';
-import type { AIMessage, PendingAction } from '@/api/types/ai';
+import type { AIMessage, PendingAction, InsightCard } from '@/api/types/ai';
 import { aiService } from '@/api/services/ai.service';
 import { useSubscription } from '@/api/hooks/useGameplay';
 import { Camera01Icon, Image01Icon } from '@hugeicons/core-free-icons';
@@ -38,10 +38,34 @@ function TypingDots() {
     <Animated.View
       entering={FadeIn.duration(200)}
       exiting={FadeOut.duration(150)}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16, paddingLeft: 2 }}>
-      <Text style={{ fontFamily: 'SFMono-Medium', fontSize: 12, color: ACCENT, letterSpacing: 0.5, marginRight: 8 }}>MIRIAM</Text>
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginBottom: 16,
+        paddingLeft: 2,
+      }}>
+      <Text
+        style={{
+          fontFamily: 'SFMono-Medium',
+          fontSize: 12,
+          color: ACCENT,
+          letterSpacing: 0.5,
+          marginRight: 8,
+        }}>
+        MIRIAM
+      </Text>
       {[0, 1, 2].map((i) => (
-        <View key={i} style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: TEXT_TERTIARY, opacity: 0.4 + i * 0.25 }} />
+        <View
+          key={i}
+          style={{
+            width: 5,
+            height: 5,
+            borderRadius: 2.5,
+            backgroundColor: TEXT_TERTIARY,
+            opacity: 0.4 + i * 0.25,
+          }}
+        />
       ))}
     </Animated.View>
   );
@@ -49,7 +73,13 @@ function TypingDots() {
 
 // ─── Suggestion Chips ────────────────────────────────────────────
 
-function SuggestionChips({ suggestions, onPress }: { suggestions: string[]; onPress: (s: string) => void }) {
+function SuggestionChips({
+  suggestions,
+  onPress,
+}: {
+  suggestions: string[];
+  onPress: (s: string) => void;
+}) {
   const { onTap } = useAIHaptics();
   if (!suggestions.length) return null;
 
@@ -61,7 +91,10 @@ function SuggestionChips({ suggestions, onPress }: { suggestions: string[]; onPr
       {suggestions.slice(0, 5).map((s, i) => (
         <Pressable
           key={i}
-          onPress={() => { onTap(); onPress(s); }}
+          onPress={() => {
+            onTap();
+            onPress(s);
+          }}
           style={{
             backgroundColor: SURFACE,
             borderRadius: 20,
@@ -70,7 +103,9 @@ function SuggestionChips({ suggestions, onPress }: { suggestions: string[]; onPr
             paddingHorizontal: 16,
             paddingVertical: 10,
           }}>
-          <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 15, color: TEXT_SECONDARY }}>{s}</Text>
+          <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 15, color: TEXT_SECONDARY }}>
+            {s}
+          </Text>
         </Pressable>
       ))}
     </ScrollView>
@@ -129,7 +164,10 @@ export default function AIChatScreen() {
         }));
         setAttachedImage(null);
         try {
-          const res = await aiService.analyzeImage(image.base64, msg || 'Analyze this receipt and extract the transaction details.');
+          const res = await aiService.analyzeImage(
+            image.base64,
+            msg || 'Analyze this receipt and extract the transaction details.'
+          );
           const assistantMsg: AIMessage = {
             role: 'assistant',
             content: res.data.content,
@@ -164,17 +202,37 @@ export default function AIChatScreen() {
   );
 
   const handleActionConfirmed = useCallback(
-    (action: PendingAction) => {
+    async (action: PendingAction) => {
       clearPendingAction();
-      const confirmMsg: AIMessage = { role: 'assistant', content: `✅ Done — ${action.description}`, created_at: new Date().toISOString() };
-      useAIChatStore.setState((s) => ({ messages: [...s.messages, confirmMsg] }));
+      // SECURITY FIX (R5-I1): Verify server actually executed the action before showing success
+      try {
+        const convId = useAIChatStore.getState().activeConversationId;
+        if (convId) await aiService.confirmAction(convId);
+        const confirmMsg: AIMessage = {
+          role: 'assistant',
+          content: `✅ Done — ${action.description}`,
+          created_at: new Date().toISOString(),
+        };
+        useAIChatStore.setState((s) => ({ messages: [...s.messages, confirmMsg] }));
+      } catch {
+        const errorMsg: AIMessage = {
+          role: 'assistant',
+          content: '❌ Action failed — please try again.',
+          created_at: new Date().toISOString(),
+        };
+        useAIChatStore.setState((s) => ({ messages: [...s.messages, errorMsg] }));
+      }
     },
     [clearPendingAction]
   );
 
   const handleActionCancelled = useCallback(() => {
     clearPendingAction();
-    const cancelMsg: AIMessage = { role: 'assistant', content: 'No worries — action cancelled.', created_at: new Date().toISOString() };
+    const cancelMsg: AIMessage = {
+      role: 'assistant',
+      content: 'No worries — action cancelled.',
+      created_at: new Date().toISOString(),
+    };
     useAIChatStore.setState((s) => ({ messages: [...s.messages, cancelMsg] }));
   }, [clearPendingAction]);
 
@@ -269,7 +327,13 @@ export default function AIChatScreen() {
   const renderMessage = useCallback(
     ({ item, index }: { item: AIMessage; index: number }) => {
       const isLast = index === (messages ?? []).length - 1;
-      const showCards = isLast && item.role === 'assistant' ? cards : undefined;
+      // Show cards from live state for the latest message, or from persisted metadata for older messages
+      let showCards: InsightCard[] | undefined;
+      if (isLast && item.role === 'assistant') {
+        showCards = cards;
+      } else if (item.role === 'assistant' && item.metadata?.cards) {
+        showCards = item.metadata.cards as InsightCard[];
+      }
       return (
         <ChatBubble
           msg={item}
@@ -307,12 +371,21 @@ export default function AIChatScreen() {
               <Text style={{ fontSize: 20, color: TEXT_PRIMARY }}>←</Text>
             </Pressable>
             <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontFamily: 'SFMono-Bold', fontSize: 13, color: TEXT_PRIMARY, letterSpacing: 0.5 }}>
+              <Text
+                style={{
+                  fontFamily: 'SFMono-Bold',
+                  fontSize: 13,
+                  color: TEXT_PRIMARY,
+                  letterSpacing: 0.5,
+                }}>
                 MIRIAM
               </Text>
             </View>
             <Pressable onPress={handleNewThread} hitSlop={12} style={{ padding: 8 }}>
-              <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 20, color: TEXT_PRIMARY }}>+</Text>
+              <Text
+                style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 20, color: TEXT_PRIMARY }}>
+                +
+              </Text>
             </Pressable>
           </View>
 
@@ -335,9 +408,22 @@ export default function AIChatScreen() {
                   <TypingDots />
                 ) : null}
                 {overCeiling && (
-                  <View style={{ backgroundColor: '#FFF7ED', borderRadius: 12, padding: 12, marginTop: 8 }}>
-                    <Text style={{ fontFamily: 'SFProDisplay-Medium', fontSize: 13, color: '#92400E', textAlign: 'center' }}>
-                      You&apos;ve reached your monthly AI limit. Miriam will be back at full power next month 💡
+                  <View
+                    style={{
+                      backgroundColor: '#FFF7ED',
+                      borderRadius: 12,
+                      padding: 12,
+                      marginTop: 8,
+                    }}>
+                    <Text
+                      style={{
+                        fontFamily: 'SFProDisplay-Medium',
+                        fontSize: 13,
+                        color: '#92400E',
+                        textAlign: 'center',
+                      }}>
+                      You&apos;ve reached your monthly AI limit. Miriam will be back at full power
+                      next month 💡
                     </Text>
                   </View>
                 )}
@@ -350,7 +436,16 @@ export default function AIChatScreen() {
 
           {/* Input */}
           <View style={{ paddingBottom: insets.bottom + 8 }}>
-            <InputBar onSend={handleSend} onMicPress={handleMicPress} onImagePress={handleImagePress} isStreaming={isStreaming} placeholder="Ask a follow up..." initialValue={editText} attachedImage={attachedImage} onClearImage={() => setAttachedImage(null)} />
+            <InputBar
+              onSend={handleSend}
+              onMicPress={handleMicPress}
+              onImagePress={handleImagePress}
+              isStreaming={isStreaming}
+              placeholder="Ask a follow up..."
+              initialValue={editText}
+              attachedImage={attachedImage}
+              onClearImage={() => setAttachedImage(null)}
+            />
           </View>
         </KeyboardAvoidingView>
 
@@ -411,7 +506,9 @@ export default function AIChatScreen() {
           <Pressable onPress={() => setShowThreads(false)} hitSlop={12} style={{ padding: 8 }}>
             <Text style={{ fontSize: 20, color: TEXT_PRIMARY }}>←</Text>
           </Pressable>
-          <Text style={{ fontFamily: 'SFProDisplay-Medium', fontSize: 14, color: TEXT_SECONDARY }}>Threads</Text>
+          <Text style={{ fontFamily: 'SFProDisplay-Medium', fontSize: 14, color: TEXT_SECONDARY }}>
+            Threads
+          </Text>
           <Pressable onPress={handleNewThread} hitSlop={12} style={{ padding: 8 }}>
             <Text style={{ fontSize: 20, color: TEXT_PRIMARY }}>+</Text>
           </Pressable>
@@ -419,7 +516,8 @@ export default function AIChatScreen() {
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
           {(conversations ?? []).length === 0 ? (
             <View style={{ alignItems: 'center', paddingTop: 80 }}>
-              <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 14, color: TEXT_TERTIARY }}>
+              <Text
+                style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 14, color: TEXT_TERTIARY }}>
                 No threads yet
               </Text>
             </View>
@@ -455,21 +553,42 @@ export default function AIChatScreen() {
             paddingTop: insets.top + 8,
             paddingHorizontal: 16,
           }}>
-          <Pressable onPress={() => { close(); router.back(); }} hitSlop={12} style={{ padding: 8 }}>
+          <Pressable
+            onPress={() => {
+              close();
+              router.back();
+            }}
+            hitSlop={12}
+            style={{ padding: 8 }}>
             <Text style={{ fontSize: 20, color: TEXT_PRIMARY }}>✕</Text>
           </Pressable>
           <Pressable onPress={() => setShowThreads(true)} hitSlop={12} style={{ padding: 8 }}>
-            <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 18, color: TEXT_PRIMARY }}>☰</Text>
+            <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 18, color: TEXT_PRIMARY }}>
+              ☰
+            </Text>
           </Pressable>
         </View>
 
         {/* Center branding */}
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 100 }}>
+        <View
+          style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 100 }}>
           <Text style={{ fontSize: 36, color: ACCENT, marginBottom: 8 }}>✦</Text>
-          <Text style={{ fontFamily: 'SFMono-Bold', fontSize: 28, color: TEXT_PRIMARY, letterSpacing: -0.5 }}>
+          <Text
+            style={{
+              fontFamily: 'SFMono-Bold',
+              fontSize: 28,
+              color: TEXT_PRIMARY,
+              letterSpacing: -0.5,
+            }}>
             miriam
           </Text>
-          <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 14, color: TEXT_TERTIARY, marginTop: 6 }}>
+          <Text
+            style={{
+              fontFamily: 'SFProDisplay-Regular',
+              fontSize: 14,
+              color: TEXT_TERTIARY,
+              marginTop: 6,
+            }}>
             Your financial companion
           </Text>
         </View>
@@ -477,7 +596,14 @@ export default function AIChatScreen() {
         {/* Bottom: suggestions + input */}
         <View style={{ paddingBottom: insets.bottom + 8 }}>
           <SuggestionChips suggestions={suggestions ?? []} onPress={handleSend} />
-          <InputBar onSend={handleSend} onMicPress={handleMicPress} onImagePress={handleImagePress} isStreaming={isStreaming} attachedImage={attachedImage} onClearImage={() => setAttachedImage(null)} />
+          <InputBar
+            onSend={handleSend}
+            onMicPress={handleMicPress}
+            onImagePress={handleImagePress}
+            isStreaming={isStreaming}
+            attachedImage={attachedImage}
+            onClearImage={() => setAttachedImage(null)}
+          />
         </View>
       </KeyboardAvoidingView>
 
