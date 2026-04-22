@@ -18,7 +18,7 @@ import { Keypad } from '@/components/molecules/Keypad';
 import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
 import { normalizeAmount, toDisplayAmount } from '@/app/withdraw/method-screen/utils';
 import { usePajRates, usePajOnramp, usePajOrderStatus } from '@/api/hooks';
-import { invalidateQueries } from '@/api/queryClient';
+import { useQueryClient } from '@tanstack/react-query';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import {
   ArrowLeft01Icon,
@@ -82,6 +82,7 @@ export default function FundNairaScreen() {
   } | null>(null);
 
   const { showError } = useFeedbackPopup();
+  const queryClient = useQueryClient();
   const navigation = useNavigation();
   const safeGoBack = useCallback(() => {
     if (navigation.canGoBack()) {
@@ -104,15 +105,28 @@ export default function FundNairaScreen() {
   const isCompleted = orderStatus?.status === 'COMPLETED';
   const isFailed = orderStatus?.status === 'FAILED';
 
-  // Refresh balances & gameplay streak when deposit completes
+  // Refresh balances & gameplay streak when deposit completes.
+  // invalidateQueries only marks queries stale — it won't refetch if no
+  // component is currently subscribed (user is on this screen, not home).
+  // Use refetchQueries to force a network fetch, and retry after a short
+  // delay so the backend allocation worker has time to process the 70/30 split.
   React.useEffect(() => {
-    if (isCompleted) {
-      invalidateQueries.station();
-      invalidateQueries.wallet();
-      invalidateQueries.funding();
-      invalidateQueries.gameplay();
-    }
-  }, [isCompleted]);
+    if (!isCompleted) return;
+
+    const refetchAll = () =>
+      Promise.all([
+        queryClient.refetchQueries({ queryKey: ['station'] }),
+        queryClient.refetchQueries({ queryKey: ['wallet'] }),
+        queryClient.refetchQueries({ queryKey: ['funding'] }),
+        queryClient.refetchQueries({ queryKey: ['gameplay'] }),
+      ]);
+
+    // Immediate refetch
+    void refetchAll();
+    // Retry after 3s to catch allocation worker lag
+    const t = setTimeout(() => void refetchAll(), 3000);
+    return () => clearTimeout(t);
+  }, [isCompleted, queryClient]);
 
   const onAmountKeyPress = useCallback((key: string) => {
     setRawAmount((current) => {
