@@ -46,21 +46,16 @@ function useKeyboardVisible() {
   const [visible, setVisible] = useState(false);
   const height = useSharedValue(0);
 
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useKeyboardHandler({
-      onMove: (e) => {
-        'worklet';
-        height.value = e.height;
-      },
-      onEnd: (e) => {
-        'worklet';
-        runOnJS(setVisible)(e.height > 0);
-      },
-    });
-  } catch {
-    // keyboard-controller native module not linked — fall back to no-op
-  }
+  useKeyboardHandler({
+    onMove: (e) => {
+      'worklet';
+      height.value = e.height;
+    },
+    onEnd: (e) => {
+      'worklet';
+      runOnJS(setVisible)(e.height > 0);
+    },
+  });
 
   return visible;
 }

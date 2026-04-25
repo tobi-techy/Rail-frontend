@@ -6,8 +6,10 @@ import { MoreHorizontalIcon } from '@hugeicons/core-free-icons';
 import type { AIConversation } from '@/api/types/ai';
 
 function relativeDateLabel(iso: string): string {
+  if (!iso) return '';
   const now = new Date();
   const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
   const diffMs = now.getTime() - d.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
