@@ -40,17 +40,25 @@ export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
           accessibilityRole="text"
           accessibilityLabel={`Your message: ${content.slice(0, 100)}`}>
           <View className="rounded-3xl bg-[#EDEDEB] px-5 py-3.5">
-            <Text className="font-body text-[17px] leading-[28px] text-[#1A1A1A]">
-              {content}
-            </Text>
+            <Text className="font-body text-[17px] leading-[28px] text-[#1A1A1A]">{content}</Text>
           </View>
         </Pressable>
       </Animated.View>
     );
   }
 
+  const topCards = cards?.filter((c) => c.type === 'stat_grid' || c.type === 'highlight');
+  const bottomCards = cards?.filter((c) => c.type !== 'stat_grid' && c.type !== 'highlight');
+
   return (
     <Animated.View className="mb-6 self-start">
+      {(typingDone || !animate) &&
+        topCards?.map((card, i) => (
+          <View key={`top-${i}`} className="mb-2">
+            <InsightCardView card={card} />
+          </View>
+        ))}
+
       <Pressable
         onLongPress={handleLongPress}
         delayLongPress={400}
@@ -74,8 +82,8 @@ export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
       )}
 
       {(typingDone || !animate) &&
-        cards?.map((card, i) => (
-          <View key={i} className="mt-3">
+        bottomCards?.map((card, i) => (
+          <View key={`btm-${i}`} className="mt-3">
             <InsightCardView card={card} />
           </View>
         ))}
