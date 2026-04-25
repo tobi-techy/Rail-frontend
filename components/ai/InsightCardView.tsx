@@ -4,7 +4,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { PinIcon, ArrowUpRight01Icon } from '@hugeicons/core-free-icons';
 import type { InsightCard } from '@/api/types/ai';
-import { BarChart, LineChart } from 'react-native-gifted-charts';
+import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
 import { useMiriamHubStore } from '@/stores/miriamHubStore';
 import type { PinnedInsight } from '@/stores/miriamHubStore';
 
@@ -59,11 +59,9 @@ function CardContainer({
   isPinned?: boolean;
   accent?: boolean;
 }) {
-  const borderColor = accent ? 'border-primary' : 'border-black/[0.08]';
-
   return (
-    <Animated.View entering={FadeInUp.duration(300)} className="my-2">
-      <View className={`bg-white ${borderColor} overflow-hidden rounded-2xl border`}>
+    <Animated.View entering={FadeInUp.duration(300)} className="my-3">
+      <View className="overflow-hidden rounded-2xl">
         {onPin && (
           <View className="absolute right-3 top-3 z-10 flex-row gap-2">
             <Pressable
@@ -102,18 +100,18 @@ function StatGridCard({
   }
 
   return (
-    <CardContainer onPin={onPin} isPinned={isPinned} accent={card.data?.accent as boolean}>
-      <View className="p-4">
+    <CardContainer onPin={onPin} isPinned={isPinned}>
+      <View className="py-2">
         {card.title && (
           <Text className="font-heading-semibold mb-3 text-base text-text-primary">
             {card.title}
           </Text>
         )}
-        <View className="flex-row flex-wrap" style={{ gap: 12 }}>
+        <View className="flex-row flex-wrap" style={{ gap: 16 }}>
           {stats.map((s, i) => (
-            <View key={i} className="min-w-[100px] flex-1">
+            <View key={i} className="min-w-[90px] flex-1">
               <Text className="mb-1 font-body text-xs text-text-secondary">{s.label}</Text>
-              <Text className="font-heading-bold text-2xl text-text-primary">{s.value}</Text>
+              <Text className="font-heading-semibold text-lg text-text-primary">{s.value}</Text>
               {s.change && (
                 <Text
                   className={`mt-0.5 font-body-medium text-xs ${s.positive || s.sentiment === 'positive' ? 'text-success' : 'text-red-500'}`}>
@@ -156,8 +154,8 @@ function ChartCard({
     raw.length <= 7;
 
   return (
-    <CardContainer onPin={onPin} isPinned={isPinned} accent={card.data?.accent as boolean}>
-      <View className="p-4">
+    <CardContainer onPin={onPin} isPinned={isPinned}>
+      <View className="py-2">
         {card.title && (
           <Text className="font-heading-semibold mb-3 text-base text-text-primary">
             {card.title}
@@ -208,33 +206,64 @@ function BreakdownCard({
     | { label: string; value?: string; amount?: number; percent?: number; color?: string }[]
     | undefined;
 
-  if (!Array.isArray(items)) {
-    console.warn('[InsightCardView] breakdown missing items array');
+  if (!Array.isArray(items) || items.length === 0) {
     return <CardErrorFallback />;
   }
 
+  const COLORS = ['#FF2E01', '#FF6B4A', '#FFB199', '#1A7A6D', '#4ECDC4', '#95E1D3', '#8C8C8C'];
+  const pieData = items.map((item, i) => ({
+    value:
+      item.amount !== undefined && item.amount !== null
+        ? Number(item.amount)
+        : parseFloat((item.value ?? '0').replace(/[^0-9.]/g, '')) || 0,
+    color: item.color ?? COLORS[i % COLORS.length],
+    text: '',
+  }));
+  const total = pieData.reduce((s, d) => s + d.value, 0);
+
   return (
-    <CardContainer onPin={onPin} isPinned={isPinned} accent={card.data?.accent as boolean}>
-      <View className="p-4">
+    <CardContainer onPin={onPin} isPinned={isPinned}>
+      <View className="py-2">
         {card.title && (
-          <Text className="font-heading-semibold mb-3 text-base text-text-primary">
+          <Text className="font-heading-semibold mb-4 text-base text-text-primary">
             {card.title}
           </Text>
         )}
-        <View className="gap-3">
-          {items.map((item, i) => (
-            <View key={i} className="flex-row items-center">
-              <Text className="flex-1 font-body-medium text-sm text-text-primary">
-                {item.label}
+        <View className="flex-row items-center">
+          <PieChart
+            data={pieData}
+            donut
+            radius={52}
+            innerRadius={34}
+            innerCircleColor="#FAFAF8"
+            centerLabelComponent={() => (
+              <Text className="font-heading-bold text-sm text-text-primary">
+                ${total.toFixed(0)}
               </Text>
-              <Text className="font-body-medium text-sm text-text-primary">
-                {item.value ??
-                  (item.amount !== undefined && item.amount !== null
-                    ? `$${Number(item.amount).toFixed(2)}`
-                    : '')}
-              </Text>
-            </View>
-          ))}
+            )}
+          />
+          <View className="ml-5 flex-1 gap-2.5">
+            {items.map((item, i) => {
+              const amt =
+                item.amount !== undefined && item.amount !== null
+                  ? Number(item.amount)
+                  : parseFloat((item.value ?? '0').replace(/[^0-9.]/g, '')) || 0;
+              return (
+                <View key={i} className="flex-row items-center">
+                  <View
+                    className="mr-2.5 h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: item.color ?? COLORS[i % COLORS.length] }}
+                  />
+                  <Text className="flex-1 font-body text-[13px] text-text-secondary">
+                    {item.label}
+                  </Text>
+                  <Text className="font-body-medium text-[13px] text-text-primary">
+                    ${amt.toFixed(2)}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
         </View>
       </View>
     </CardContainer>
