@@ -10,6 +10,8 @@ import { Button } from '@/components/ui';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
 import { formatCurrency } from './method-screen/utils';
+import { useNudge } from '@/hooks/useNudge';
+import { AmbientMiriam } from '@/components/ai/AmbientMiriam';
 
 const CATEGORIES = [
   { label: 'Transfer', emoji: '💸' },
@@ -37,6 +39,7 @@ export default function DetailsScreen() {
 
   const [category, setCategory] = useState('Transfer');
   const [narration, setNarration] = useState('');
+  const { nudge, dismiss: dismissNudge } = useNudge('withdraw', params.amount, 'USDC');
 
   const onContinue = useCallback(() => {
     router.push({
@@ -48,6 +51,7 @@ export default function DetailsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-[#F8F9FB]" edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FB" />
+      <AmbientMiriam nudge={nudge} onDismiss={dismissNudge} />
 
       {/* Header */}
       <View className="flex-row items-center justify-between bg-white px-5 pb-3 pt-1">

@@ -23,6 +23,7 @@ import type {
   FinancialHealth,
   FinancialTimeline,
   FinancialPlan,
+  NudgeResponse,
 } from '../types/ai';
 
 const BASE = '/v1/ai';
@@ -37,7 +38,7 @@ function unwrapData<T>(payload: any): T {
 export const aiService = {
   /** Main chat. Backend returns conversation_id when persistence is available. */
   async chat(req: AIChatRequest): Promise<AIChatResponse> {
-    return apiClient.post<AIChatResponse>(`${BASE}/chat`, req);
+    return apiClient.post<AIChatResponse>(`${BASE}/chat`, req, { timeout: 120000 });
   },
 
   /** SSE streaming chat — uses fetch ReadableStream for real token-by-token streaming */
@@ -149,7 +150,7 @@ export const aiService = {
   },
 
   async chatInConversation(id: string, message: string): Promise<{ data: AIChatResponse }> {
-    return apiClient.post(`${BASE}/conversations/${id}/chat`, { message });
+    return apiClient.post(`${BASE}/conversations/${id}/chat`, { message }, { timeout: 120000 });
   },
 
   async deleteConversation(id: string): Promise<void> {
@@ -183,7 +184,7 @@ export const aiService = {
   },
 
   async getFinancialHealth(): Promise<FinancialHealth & { error?: string }> {
-    const payload = await apiClient.get<any>(`${BASE}/financial-health`);
+    const payload = await apiClient.get<any>(`${BASE}/financial-health`, { timeout: 60000 });
     return unwrapData<FinancialHealth & { error?: string }>(payload);
   },
 
@@ -192,7 +193,7 @@ export const aiService = {
   },
 
   async getFinancialPlan(): Promise<FinancialPlan & { error?: string }> {
-    const payload = await apiClient.get<any>(`${BASE}/financial-plan`);
+    const payload = await apiClient.get<any>(`${BASE}/financial-plan`, { timeout: 60000 });
     return unwrapData<FinancialPlan & { error?: string }>(payload);
   },
 
@@ -233,7 +234,7 @@ export const aiService = {
     return apiClient.post(`${BASE}/chat/image`, {
       image: base64Image,
       message: message ?? 'Analyze this image',
-    });
+    }, { timeout: 120000 });
   },
 
   // ── Premium endpoints (pro-only) ──────────────────────────────
@@ -272,6 +273,12 @@ export const aiService = {
     comment?: string
   ): Promise<void> {
     return apiClient.post(`${BASE}/feedback`, { message_id: messageId, rating, comment });
+  },
+
+  /** Ambient nudge — lightweight contextual nudge from Miriam */
+  async getNudge(screen: string, amount?: string, currency?: string): Promise<NudgeResponse> {
+    const res = await apiClient.post<NudgeResponse>(`${BASE}/nudge`, { screen, amount, currency });
+    return res as NudgeResponse;
   },
 };
 

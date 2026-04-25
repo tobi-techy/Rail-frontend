@@ -238,3 +238,12 @@ export interface ChartAnnotation {
   index: number;
   type: 'milestone' | 'peak';
 }
+
+// ============= Ambient Nudge Types =============
+
+export interface NudgeResponse {
+  show: boolean;
+  message?: string;
+  severity: 'info' | 'warning' | 'celebration';
+  shake: boolean;
+}

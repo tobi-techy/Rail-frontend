@@ -62,6 +62,9 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { ExpandableActionMenu } from '@/components/molecules/ExpandableActionMenu';
 import { OnboardingProgressCard } from '@/components/molecules/OnboardingProgressCard';
 
+import { useNudge } from '@/hooks/useNudge';
+import { AmbientMiriam } from '@/components/ai/AmbientMiriam';
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const fmt = (value: string | undefined, currency: Currency, rates: FxRates, fallback = '---') => {
@@ -188,6 +191,7 @@ function DashboardScreen() {
   const [showCardComingSheet, setShowCardComingSheet] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showVirtualAccountSheet, setShowVirtualAccountSheet] = useState(false);
+  const { nudge, dismiss: dismissNudge } = useNudge('home');
 
   // Local currency for send/receive sheets — does NOT affect balance card
   const [sheetCurrency, setSheetCurrency] = useState<Currency>('USD');
@@ -623,7 +627,9 @@ function DashboardScreen() {
   );
 
   return (
-    <ScrollView
+    <View className="flex-1">
+      <AmbientMiriam nudge={nudge} onDismiss={dismissNudge} />
+      <ScrollView
       className="min-h-screen flex-1"
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
@@ -914,5 +920,6 @@ function DashboardScreen() {
         </View>
       </GorhomBottomSheet>
     </ScrollView>
+    </View>
   );
 }
