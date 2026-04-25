@@ -249,9 +249,12 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
           void get().processQueue();
         },
         (err) => {
+          const is404 = err?.includes('404') || err?.includes('Not Found');
           const errorMsg: AIMessage = {
             role: 'assistant',
-            content: "I'm having a moment — try again",
+            content: is404
+              ? 'Miriam is not available right now — the AI service is being set up on the backend.'
+              : "I'm having a moment — try again",
             created_at: new Date().toISOString(),
           };
           set((s) => ({
@@ -299,11 +302,14 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
       }));
       void get().processQueue();
     } catch (err: any) {
+      const is404 = err?.status === 404 || err?.message?.includes('404') || err?.code === 'HTTP_404';
       const errorMsg: AIMessage = {
         role: 'assistant',
-        content: err?.message?.includes('network')
-          ? 'Network issue — check your connection and try again'
-          : "I'm having a moment — try again in a few seconds",
+        content: is404
+          ? 'Miriam is not available right now — the AI service is being set up on the backend.'
+          : err?.message?.includes('network')
+            ? 'Network issue — check your connection and try again'
+            : "I'm having a moment — try again in a few seconds",
         created_at: new Date().toISOString(),
       };
       set((s) => ({

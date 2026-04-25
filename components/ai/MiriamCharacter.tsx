@@ -1,18 +1,25 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import { View } from 'react-native';
-import Svg, { Ellipse } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
   withSequence,
-  interpolate,
+  withDelay,
   Easing,
   cancelAnimation,
 } from 'react-native-reanimated';
 
-export type MiriamEmotion = 'neutral' | 'happy' | 'sad' | 'thinking' | 'surprised' | 'sleepy';
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export type MiriamEmotion =
+  | 'neutral'
+  | 'happy'
+  | 'sad'
+  | 'thinking'
+  | 'surprised'
+  | 'sleepy';
 
 interface Props {
   size?: number;
@@ -22,452 +29,256 @@ interface Props {
   color?: string;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Emotion configs
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Emotion Eye Presets ────────────────────────────────────────────────────
 
-type EyeConfig = {
-  leftY: number;
-  rightY: number;
+interface EyePreset {
+  yOffset: number;
   scaleY: number;
-  eyeRx: number;
-  eyeRy: number;
+  rx: number;
+  ry: number;
   lookBiasX: number;
   lookBiasY: number;
-};
-
-function getEmotionConfig(size: number, emotion: MiriamEmotion): EyeConfig {
-  const s = size;
-  const configs: Record<MiriamEmotion, EyeConfig> = {
-    neutral: {
-      leftY: s * 0.32,
-      rightY: s * 0.32,
-      scaleY: 1,
-      eyeRx: s * 0.065,
-      eyeRy: s * 0.095,
-      lookBiasX: 0,
-      lookBiasY: 0,
-    },
-    happy: {
-      leftY: s * 0.35,
-      rightY: s * 0.35,
-      scaleY: 0.55,
-      eyeRx: s * 0.07,
-      eyeRy: s * 0.08,
-      lookBiasX: 0,
-      lookBiasY: 1,
-    },
-    sad: {
-      leftY: s * 0.31,
-      rightY: s * 0.31,
-      scaleY: 0.85,
-      eyeRx: s * 0.065,
-      eyeRy: s * 0.09,
-      lookBiasX: 0,
-      lookBiasY: 2,
-    },
-    thinking: {
-      leftY: s * 0.3,
-      rightY: s * 0.32,
-      scaleY: 1,
-      eyeRx: s * 0.065,
-      eyeRy: s * 0.095,
-      lookBiasX: 3,
-      lookBiasY: -3,
-    },
-    surprised: {
-      leftY: s * 0.29,
-      rightY: s * 0.29,
-      scaleY: 1.25,
-      eyeRx: s * 0.075,
-      eyeRy: s * 0.11,
-      lookBiasX: 0,
-      lookBiasY: -2,
-    },
-    sleepy: {
-      leftY: s * 0.36,
-      rightY: s * 0.36,
-      scaleY: 0.3,
-      eyeRx: s * 0.07,
-      eyeRy: s * 0.05,
-      lookBiasX: 0,
-      lookBiasY: 1,
-    },
-  };
-  return configs[emotion];
+  blinkSpeed: number;
+  blinkHold: number;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Component
-// ─────────────────────────────────────────────────────────────────────────────
+const PRESETS: Record<MiriamEmotion, EyePreset> = {
+  neutral:   { yOffset: 0.36, scaleY: 1,    rx: 0.06,  ry: 0.085, lookBiasX: 0,  lookBiasY: 0,  blinkSpeed: 90,  blinkHold: 70  },
+  happy:     { yOffset: 0.38, scaleY: 0.6,  rx: 0.065, ry: 0.075, lookBiasX: 0,  lookBiasY: 1,  blinkSpeed: 80,  blinkHold: 60  },
+  sad:       { yOffset: 0.37, scaleY: 0.8,  rx: 0.06,  ry: 0.08,  lookBiasX: 0,  lookBiasY: 2,  blinkSpeed: 120, blinkHold: 100 },
+  thinking:  { yOffset: 0.34, scaleY: 1,    rx: 0.06,  ry: 0.085, lookBiasX: 3,  lookBiasY: -2, blinkSpeed: 90,  blinkHold: 70  },
+  surprised: { yOffset: 0.33, scaleY: 1.3,  rx: 0.07,  ry: 0.1,   lookBiasX: 0,  lookBiasY: -1, blinkSpeed: 100, blinkHold: 50  },
+  sleepy:    { yOffset: 0.40, scaleY: 0.25, rx: 0.065, ry: 0.04,  lookBiasX: 0,  lookBiasY: 1,  blinkSpeed: 250, blinkHold: 400 },
+};
+
+const ease = Easing.inOut(Easing.sin);
+const aloop = (to: number, ms: number) =>
+  withRepeat(withTiming(to, { duration: ms, easing: ease }), -1, true);
+
+// ─── Component ──────────────────────────────────────────────────────────────
 
 export function MiriamCharacter({
   size = 64,
   emotion = 'neutral',
   isProcessing = false,
   animate = true,
-  color = '#FF2E01',
+  color = '#EF4A2F',
 }: Props) {
   const s = size;
-  const center = s * 0.5;
-  const radius = s * 0.48;
+  const r = s * 0.44;
+  const preset = useMemo(() => PRESETS[emotion], [emotion]);
 
-  // ── Shared values ─────────────────────────────────────────────────────────
-  const floatY = useSharedValue(0);
+  const bobY = useSharedValue(0);
   const swayX = useSharedValue(0);
-  const breathe = useSharedValue(1);
   const tilt = useSharedValue(0);
-  const squash = useSharedValue(1);
-  const glow = useSharedValue(0);
-
+  const breathe = useSharedValue(1);
   const blink = useSharedValue(1);
   const lookX = useSharedValue(0);
   const lookY = useSharedValue(0);
 
-  const shouldAnimate = animate;
-  const config = useMemo(() => getEmotionConfig(s, emotion), [s, emotion]);
+  // ── Body idle ───────────────────────────────────────────────────────────
 
-  // ── Body idle animations ──────────────────────────────────────────────────
   useEffect(() => {
-    if (!shouldAnimate) {
-      cancelAnimation(floatY);
-      cancelAnimation(swayX);
-      cancelAnimation(breathe);
-      cancelAnimation(tilt);
-      cancelAnimation(squash);
-      floatY.value = 0;
-      swayX.value = 0;
-      breathe.value = 1;
-      tilt.value = 0;
-      squash.value = 1;
+    if (!animate) {
+      [bobY, swayX, tilt, breathe].forEach(v => cancelAnimation(v));
+      bobY.value = 0; swayX.value = 0; tilt.value = 0; breathe.value = 1;
       return;
     }
+    // Set starting positions so reverse-repeat swings both directions
+    swayX.value = -s * 0.04;
+    tilt.value = -3;
 
-    // Bob up and down
-    floatY.value = withRepeat(
-      withTiming(-s * 0.06, { duration: 2800, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true
-    );
+    bobY.value = aloop(-s * 0.05, 2400);
+    swayX.value = withRepeat(withTiming(s * 0.04, { duration: 1600, easing: ease }), -1, true);
+    tilt.value = withRepeat(withTiming(3, { duration: 2000, easing: ease }), -1, true);
+    breathe.value = aloop(1.02, 2800);
+    return () => [bobY, swayX, tilt, breathe].forEach(v => cancelAnimation(v));
+  }, [animate, s]);
 
-    // Sway left and right (head movement)
-    swayX.value = withRepeat(
-      withTiming(s * 0.04, { duration: 3200, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true
-    );
+  // ── Processing → faster/wider sway ──────────────────────────────────────
 
-    // Breathe scale
-    breathe.value = withRepeat(
-      withTiming(1.03, { duration: 3200, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true
-    );
-
-    // Tilt rotation
-    tilt.value = withRepeat(
-      withTiming(5, { duration: 4500, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true
-    );
-
-    // Squash / stretch
-    squash.value = withRepeat(
-      withSequence(
-        withTiming(1.02, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0.98, { duration: 1400, easing: Easing.inOut(Easing.sin) })
-      ),
-      -1,
-      true
-    );
-
-    return () => {
-      cancelAnimation(floatY);
-      cancelAnimation(swayX);
-      cancelAnimation(breathe);
-      cancelAnimation(tilt);
-      cancelAnimation(squash);
-    };
-  }, [shouldAnimate, s, floatY, swayX, breathe, tilt, squash]);
-
-  // ── Processing glow ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isProcessing) {
-      cancelAnimation(glow);
-      glow.value = 0;
+      if (animate) {
+        cancelAnimation(swayX);
+        swayX.value = -s * 0.04;
+        swayX.value = withRepeat(withTiming(s * 0.04, { duration: 1600, easing: ease }), -1, true);
+      }
       return;
     }
-    glow.value = withRepeat(
-      withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true
-    );
-    return () => cancelAnimation(glow);
-  }, [isProcessing, glow]);
+    cancelAnimation(swayX);
+    swayX.value = -s * 0.07;
+    swayX.value = withRepeat(withTiming(s * 0.07, { duration: 400, easing: ease }), -1, true);
+  }, [isProcessing, animate, s]);
 
-  // ── Random blinking ───────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!shouldAnimate) {
-      blink.value = 1;
-      return;
-    }
+  // ── Blinking ────────────────────────────────────────────────────────────
 
-    let timeoutId: ReturnType<typeof setTimeout>;
-
-    const scheduleBlink = () => {
-      const delay = 2000 + Math.random() * 4000;
-      const holdClosed = emotion === 'sleepy' ? 400 : 80;
-      const blinkSpeed = emotion === 'sleepy' ? 200 : 100;
-
-      timeoutId = setTimeout(() => {
-        const doubleBlink = Math.random() < 0.3 && emotion !== 'sleepy';
-
-        if (doubleBlink) {
-          blink.value = withSequence(
-            withTiming(0.1, { duration: blinkSpeed }),
-            withTiming(1, { duration: blinkSpeed }),
-            withTiming(0.1, { duration: blinkSpeed }),
-            withTiming(1, { duration: blinkSpeed })
-          );
-        } else {
-          blink.value = withSequence(
-            withTiming(0.1, { duration: blinkSpeed }),
-            withTiming(1, { duration: holdClosed })
-          );
-        }
-        scheduleBlink();
-      }, delay);
+  const scheduleBlink = useCallback(() => {
+    if (!animate) { blink.value = 1; return undefined; }
+    let tid: ReturnType<typeof setTimeout>;
+    const run = () => {
+      tid = setTimeout(() => {
+        const { blinkSpeed: spd, blinkHold: hold } = preset;
+        const dbl = Math.random() < 0.25 && emotion !== 'sleepy';
+        blink.value = dbl
+          ? withSequence(
+              withTiming(0.05, { duration: spd }),
+              withTiming(1, { duration: spd }),
+              withDelay(80, withSequence(
+                withTiming(0.05, { duration: spd }),
+                withTiming(1, { duration: hold }),
+              )),
+            )
+          : withSequence(
+              withTiming(0.05, { duration: spd }),
+              withTiming(1, { duration: hold }),
+            );
+        run();
+      }, 2200 + Math.random() * 3500);
     };
+    run();
+    return () => clearTimeout(tid);
+  }, [animate, emotion, preset]);
 
-    scheduleBlink();
-    return () => clearTimeout(timeoutId);
-  }, [shouldAnimate, emotion, blink]);
+  useEffect(() => scheduleBlink(), [scheduleBlink]);
 
-  // ── Random looking around ─────────────────────────────────────────────────
+  // ── Look direction ──────────────────────────────────────────────────────
+
   useEffect(() => {
-    if (!shouldAnimate) {
-      lookX.value = 0;
-      lookY.value = 0;
-      return;
-    }
-
-    let timeoutId: ReturnType<typeof setTimeout>;
-
-    const directions = [
-      { x: 0, y: 0 },
-      { x: 1.5, y: -0.5 },
-      { x: -1.5, y: -0.5 },
-      { x: 1, y: 1 },
-      { x: -1, y: 1 },
-      { x: 2, y: 0 },
-      { x: -2, y: 0 },
-    ];
-
-    const scheduleLook = () => {
-      const delay = 1200 + Math.random() * 2800;
-      timeoutId = setTimeout(() => {
-        const dir = directions[Math.floor(Math.random() * directions.length)];
-        const targetX = dir.x + config.lookBiasX;
-        const targetY = dir.y + config.lookBiasY;
-
-        lookX.value = withTiming(targetX, { duration: 350, easing: Easing.inOut(Easing.sin) });
-        lookY.value = withTiming(targetY, { duration: 350, easing: Easing.inOut(Easing.sin) });
-        scheduleLook();
-      }, delay);
+    if (!animate) { lookX.value = 0; lookY.value = 0; return; }
+    const dirs = [[0,0],[1.5,-0.5],[-1.5,-0.5],[1,1],[-1,1],[2,0],[-2,0]];
+    let tid: ReturnType<typeof setTimeout>;
+    const run = () => {
+      tid = setTimeout(() => {
+        const [dx, dy] = dirs[Math.floor(Math.random() * dirs.length)];
+        lookX.value = withTiming(dx + preset.lookBiasX, { duration: 300, easing: ease });
+        lookY.value = withTiming(dy + preset.lookBiasY, { duration: 300, easing: ease });
+        run();
+      }, 1500 + Math.random() * 2500);
     };
+    run();
+    return () => clearTimeout(tid);
+  }, [animate, emotion, preset]);
 
-    scheduleLook();
-    return () => clearTimeout(timeoutId);
-  }, [shouldAnimate, emotion, config, lookX, lookY]);
+  // ── Animated styles ─────────────────────────────────────────────────────
 
-  // ── Animated styles ───────────────────────────────────────────────────────
-
-  const bodyStyle = useAnimatedStyle(() => ({
+  const bodyAnim = useAnimatedStyle(() => ({
     transform: [
-      { translateX: center + swayX.value },
-      { translateY: center + floatY.value },
+      { translateY: bobY.value },
+      { translateX: swayX.value },
       { rotate: `${tilt.value}deg` },
-      { scaleX: breathe.value },
-      { scaleY: breathe.value * squash.value },
-      { translateX: -center },
-      { translateY: -center },
+      { scale: breathe.value },
     ],
   }));
 
-  const shadowStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(floatY.value, [-s * 0.06, 0], [0.22, 0.1]),
+  const eyeAnim = useAnimatedStyle(() => ({
     transform: [
-      { translateX: center + swayX.value * 0.5 },
-      { translateY: center + s * 0.42 },
-      { scaleX: interpolate(floatY.value, [-s * 0.06, 0], [0.7, 1]) },
-      { translateX: -center },
-      { translateY: -center },
+      { translateX: lookX.value * s * 0.008 },
+      { translateY: lookY.value * s * 0.008 },
+      { scaleY: blink.value * preset.scaleY },
     ],
   }));
 
-  const glowStyle1 = useAnimatedStyle(() => ({
-    opacity: interpolate(glow.value, [0, 1], [0, 0.25]),
-    transform: [{ scale: interpolate(glow.value, [0, 1], [1, 1.3]) }],
-  }));
+  // ── Eye geometry ────────────────────────────────────────────────────────
 
-  const glowStyle2 = useAnimatedStyle(() => ({
-    opacity: interpolate(glow.value, [0, 1], [0, 0.15]),
-    transform: [{ scale: interpolate(glow.value, [0, 1], [1, 1.5]) }],
-  }));
+  const eyeW = preset.rx * s * 2;
+  const eyeH = preset.ry * s * 2;
+  const eyeY = preset.yOffset * s - eyeH / 2;
+  const leftX = s * 0.36 - eyeW / 2;
+  const rightX = s * 0.56 - eyeW / 2;
 
-  const ambientGlowStyle = useAnimatedStyle(() => ({
-    opacity: 0.14 + interpolate(glow.value, [0, 1], [0, 0.2]),
-    transform: [{ scale: 1.05 + interpolate(glow.value, [0, 1], [0, 0.15]) }],
-  }));
-
-  const leftEyeStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: lookX.value * (s * 0.008) },
-      { translateY: lookY.value * (s * 0.008) },
-      { scaleY: blink.value * config.scaleY },
-    ],
-  }));
-
-  const rightEyeStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: lookX.value * (s * 0.008) },
-      { translateY: lookY.value * (s * 0.008) },
-      { scaleY: blink.value * config.scaleY },
-    ],
-  }));
-
-  // ── Geometry ──────────────────────────────────────────────────────────────
-
-  const leftEyeCX = s * 0.36;
-  const rightEyeCX = s * 0.54;
-  const eyeW = config.eyeRx * 2;
-  const eyeH = config.eyeRy * 2;
+  // Padding so head movement isn't clipped
+  const pad = s * 0.15;
 
   return (
     <View
-      style={{ width: s, height: s }}
+      style={{
+        width: s,
+        height: s,
+        overflow: 'visible',
+      }}
       accessibilityLabel={`Miriam AI assistant, ${emotion} mood`}
-      accessibilityRole="image">
-      {/* Ambient glow ring */}
-      <Animated.View
-        className="absolute inset-[-6px] rounded-full"
-        style={[{ backgroundColor: color }, ambientGlowStyle]}
+      accessibilityRole="image"
+    >
+      {/* Soft outer glow ring — static, thin pinkish halo */}
+      <View
+        style={{
+          position: 'absolute',
+          left: (s - r * 2.16) / 2,
+          top: (s - r * 2.16) / 2,
+          width: r * 2.16,
+          height: r * 2.16,
+          borderRadius: r * 1.08,
+          backgroundColor: 'rgba(239, 74, 47, 0.18)',
+        }}
       />
 
-      {/* Processing pulse rings */}
-      {isProcessing && (
-        <>
-          <Animated.View
-            className="absolute inset-[-10px] rounded-full"
-            style={[{ backgroundColor: color, opacity: 0 }, glowStyle1]}
-          />
-          <Animated.View
-            className="absolute inset-[-16px] rounded-full"
-            style={[{ backgroundColor: color, opacity: 0 }, glowStyle2]}
-          />
-        </>
-      )}
-
-      {/* Shadow beneath */}
+      {/* Body group — bobs, sways, tilts as one unit */}
       <Animated.View
         style={[
           {
             position: 'absolute',
-            left: 0,
-            top: 0,
-            width: s,
-            height: s,
+            left: -pad,
+            top: -pad,
+            width: s + pad * 2,
+            height: s + pad * 2,
+            overflow: 'visible',
           },
-          shadowStyle,
-        ]}>
-        <Svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
-          <Ellipse
-            cx={center}
-            cy={center + radius * 0.9}
-            rx={radius * 0.7}
-            ry={radius * 0.15}
-            fill="#000000"
-          />
-        </Svg>
-      </Animated.View>
-
-      {/* Body + Face (everything moves together) */}
-      <Animated.View
-        style={[
-          {
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            width: s,
-            height: s,
-          },
-          bodyStyle,
-        ]}>
-        {/* Main sphere — solid brand color */}
+          bodyAnim,
+        ]}
+      >
+        {/* Main sphere */}
         <View
           style={{
             position: 'absolute',
-            left: center - radius,
-            top: center - radius,
-            width: radius * 2,
-            height: radius * 2,
-            borderRadius: radius,
+            left: pad + (s - r * 2) / 2,
+            top: pad + (s - r * 2) / 2,
+            width: r * 2,
+            height: r * 2,
+            borderRadius: r,
             backgroundColor: color,
             overflow: 'hidden',
-          }}>
-          {/* Top-left warm highlight (creates 3D spherical feel) */}
+          }}
+        >
+          {/* Top-left warm highlight — subtle */}
           <View
             style={{
               position: 'absolute',
-              left: -radius * 0.1,
-              top: -radius * 0.15,
-              width: radius * 1.4,
-              height: radius * 1.4,
-              borderRadius: radius * 0.7,
-              backgroundColor: '#FF9A7A',
-              opacity: 0.55,
+              left: -r * 0.1,
+              top: -r * 0.15,
+              width: r * 1.2,
+              height: r * 1.2,
+              borderRadius: r * 0.6,
+              backgroundColor: '#FF9E80',
+              opacity: 0.3,
             }}
           />
 
-          {/* Bottom-right depth shadow */}
+          {/* Bottom-right depth — subtle */}
           <View
             style={{
               position: 'absolute',
-              right: -radius * 0.15,
-              bottom: -radius * 0.15,
-              width: radius * 1.3,
-              height: radius * 1.3,
-              borderRadius: radius * 0.65,
-              backgroundColor: '#7A1200',
-              opacity: 0.45,
+              right: -r * 0.1,
+              bottom: -r * 0.1,
+              width: r * 1.1,
+              height: r * 1.1,
+              borderRadius: r * 0.55,
+              backgroundColor: '#A02010',
+              opacity: 0.2,
             }}
           />
 
-          {/* Soft specular highlight */}
+          {/* Tiny specular dot */}
           <View
             style={{
               position: 'absolute',
-              left: radius * 0.12,
-              top: radius * 0.15,
-              width: radius * 0.55,
-              height: radius * 0.45,
-              borderRadius: radius * 0.25,
+              left: r * 0.25,
+              top: r * 0.28,
+              width: r * 0.12,
+              height: r * 0.09,
+              borderRadius: r * 0.06,
               backgroundColor: '#FFFFFF',
-              opacity: 0.28,
-            }}
-          />
-
-          {/* Sharp pin highlight */}
-          <View
-            style={{
-              position: 'absolute',
-              left: radius * 0.18,
-              top: radius * 0.22,
-              width: radius * 0.18,
-              height: radius * 0.14,
-              borderRadius: radius * 0.09,
-              backgroundColor: '#FFFFFF',
-              opacity: 0.5,
+              opacity: 0.3,
             }}
           />
         </View>
@@ -477,14 +288,14 @@ export function MiriamCharacter({
           style={[
             {
               position: 'absolute',
-              left: leftEyeCX - config.eyeRx,
-              top: config.leftY - config.eyeRy,
+              left: pad + leftX,
+              top: pad + eyeY,
               width: eyeW,
               height: eyeH,
-              borderRadius: config.eyeRx,
+              borderRadius: eyeW / 2,
               backgroundColor: '#FFFFFF',
             },
-            leftEyeStyle,
+            eyeAnim,
           ]}
         />
 
@@ -493,42 +304,42 @@ export function MiriamCharacter({
           style={[
             {
               position: 'absolute',
-              left: rightEyeCX - config.eyeRx,
-              top: config.rightY - config.eyeRy,
+              left: pad + rightX,
+              top: pad + eyeY,
               width: eyeW,
               height: eyeH,
-              borderRadius: config.eyeRx,
+              borderRadius: eyeW / 2,
               backgroundColor: '#FFFFFF',
             },
-            rightEyeStyle,
+            eyeAnim,
           ]}
         />
 
-        {/* Subtle cheek blush for happy emotion */}
+        {/* Happy cheek blush */}
         {emotion === 'happy' && (
           <>
             <View
               style={{
                 position: 'absolute',
-                left: s * 0.18,
-                top: s * 0.48,
-                width: s * 0.14,
-                height: s * 0.14,
-                borderRadius: s * 0.07,
-                backgroundColor: '#FF7A52',
-                opacity: 0.3,
+                left: pad + s * 0.19,
+                top: pad + s * 0.50,
+                width: s * 0.1,
+                height: s * 0.07,
+                borderRadius: s * 0.05,
+                backgroundColor: '#FF8060',
+                opacity: 0.25,
               }}
             />
             <View
               style={{
                 position: 'absolute',
-                left: s * 0.68,
-                top: s * 0.48,
-                width: s * 0.14,
-                height: s * 0.14,
-                borderRadius: s * 0.07,
-                backgroundColor: '#FF7A52',
-                opacity: 0.3,
+                left: pad + s * 0.71,
+                top: pad + s * 0.50,
+                width: s * 0.1,
+                height: s * 0.07,
+                borderRadius: s * 0.05,
+                backgroundColor: '#FF8060',
+                opacity: 0.25,
               }}
             />
           </>

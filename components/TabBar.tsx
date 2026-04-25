@@ -101,26 +101,7 @@ function AIButton() {
         accessibilityLabel="Miriam AI"
         accessibilityRole="button"
         style={{ width: 64, height: 64 }}>
-        <Animated.View
-          style={[
-            animatedStyle,
-            {
-              width: 64,
-              height: 64,
-              borderRadius: 32,
-              alignItems: 'center',
-              justifyContent: 'center',
-              // shadowColor: ACCENT,
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.35,
-              shadowRadius: 10,
-              // elevation: 6,
-              // borderWidth: 1.5,
-              // borderColor: 'rgba(255, 46, 1, 0.15)',
-            },
-          ]}>
-          <MiriamCharacter size={64} emotion="happy" animate={true} />
-        </Animated.View>
+          <MiriamCharacter size={64} emotion="sad" animate={true} />
       </Pressable>
     </View>
   );
