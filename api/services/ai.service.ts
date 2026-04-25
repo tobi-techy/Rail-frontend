@@ -86,17 +86,19 @@ export const aiService = {
           }
         };
 
-        xhr.onprogress = () => {
-          const newText = xhr.responseText.slice(seenBytes);
-          seenBytes = xhr.responseText.length;
-          if (newText) parseSSEChunk(newText);
-        };
-
-        xhr.onload = () => {
-          // Parse any remaining data not caught by onprogress
-          const remaining = xhr.responseText.slice(seenBytes);
-          if (remaining) parseSSEChunk(remaining);
-          onDone();
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState >= 3 && xhr.responseText) {
+            const newText = xhr.responseText.slice(seenBytes);
+            seenBytes = xhr.responseText.length;
+            if (newText) parseSSEChunk(newText);
+          }
+          if (xhr.readyState === 4) {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              onDone();
+            } else if (xhr.status > 0) {
+              onError(`Stream failed: ${xhr.status}`);
+            }
+          }
         };
 
         xhr.onerror = () => onError('Stream connection failed');
