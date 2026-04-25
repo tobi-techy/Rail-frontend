@@ -18,7 +18,7 @@ import {
   NgnIcon,
   GhsIcon,
   KesIcon,
-  CadIcon,
+  GbpIcon,
 } from '@/assets/svg';
 
 export type FundingOption = {
@@ -140,8 +140,13 @@ export function SheetHeader({
     <View className="mb-4 flex-row items-center justify-between pt-2">
       <Text className="font-subtitle text-[20px] text-[#070914]">{title}</Text>
       {showCurrencySelector ? (
-        <CurrencySelectorPill selectedCurrency={selectedCurrency} onCurrencyChange={onCurrencyChange} />
-      ) : rightElement}
+        <CurrencySelectorPill
+          selectedCurrency={selectedCurrency}
+          onCurrencyChange={onCurrencyChange}
+        />
+      ) : (
+        rightElement
+      )}
     </View>
   );
 }
@@ -158,7 +163,7 @@ type CurrencyOption = {
 const CURRENCIES: CurrencyOption[] = [
   { code: 'USD', label: 'US Dollar', symbol: '$', type: 'fiat', Icon: UsdIcon },
   { code: 'EUR', label: 'Euro', symbol: '\u20ac', type: 'fiat', Icon: EurIcon },
-  { code: 'CAD', label: 'Canadian Dollar', symbol: 'CA$', type: 'fiat', Icon: CadIcon },
+  { code: 'GBP', label: 'British Pound', symbol: '\u00a3', type: 'fiat', Icon: GbpIcon },
   {
     code: 'NGN',
     label: 'Nigerian Naira',

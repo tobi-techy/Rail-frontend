@@ -376,8 +376,7 @@ function DashboardScreen() {
     sheetCurrency === 'GBP' ||
     sheetCurrency === 'NGN' ||
     sheetCurrency === 'GHS' ||
-    sheetCurrency === 'KES' ||
-    sheetCurrency === 'CAD';
+    sheetCurrency === 'KES';
 
   const receiveMainActions = useMemo<FundingAction[]>(
     () =>
@@ -523,8 +522,8 @@ function DashboardScreen() {
                           ? 'Send to Ghanaian bank account'
                           : sheetCurrency === 'KES'
                             ? 'Send to Kenyan bank account'
-                            : sheetCurrency === 'CAD'
-                              ? 'Send to Canadian bank account'
+                            : sheetCurrency === 'GBP'
+                              ? 'Send to UK bank account'
                               : 'Send to US bank account',
                     icon: <HugeiconsIcon icon={BankIcon} size={20} color="#6366F1" />,
                     onPress: () => gateFeature(() => startWithdrawal('fiat')),
@@ -630,41 +629,41 @@ function DashboardScreen() {
     <View className="flex-1">
       <AmbientMiriam nudge={nudge} onDismiss={dismissNudge} />
       <ScrollView
-      className="min-h-screen flex-1"
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
-      }>
-      <View className="px-md" style={{ paddingBottom: insets.bottom + 80 }}>
-        <BalanceCard
-          balance={balance}
-          percentChange={monthChange}
-          timeframe="Last 30d"
-          className="rounded-x"
-          isLoading={isStationPending || refreshing}
-        />
-
-        {isStationError && !isStationPending && (
-          <Text className="mb-2 text-center font-body text-[12px] text-red-400">
-            Unable to load balance — pull to refresh
-          </Text>
-        )}
-
-        <View className="mb-2 flex-row items-center gap-3">
-          <Button
-            title="Receive"
-            onPress={openReceiveSheet}
-            leftIcon={<HugeiconsIcon icon={ArrowDownLeft01Icon} size={20} color="white" />}
-            size="small"
-            variant="black"
+        className="min-h-screen flex-1"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
+        }>
+        <View className="px-md" style={{ paddingBottom: insets.bottom + 80 }}>
+          <BalanceCard
+            balance={balance}
+            percentChange={monthChange}
+            timeframe="Last 30d"
+            className="rounded-x"
+            isLoading={isStationPending || refreshing}
           />
-          <Button
-            title="Send"
-            onPress={openSendSheet}
-            leftIcon={<HugeiconsIcon icon={ArrowUpRight01Icon} size={20} color="black" />}
-            size="small"
-            variant="white"
-          />
-          {/*<ExpandableActionMenu
+
+          {isStationError && !isStationPending && (
+            <Text className="mb-2 text-center font-body text-[12px] text-red-400">
+              Unable to load balance — pull to refresh
+            </Text>
+          )}
+
+          <View className="mb-2 flex-row items-center gap-3">
+            <Button
+              title="Receive"
+              onPress={openReceiveSheet}
+              leftIcon={<HugeiconsIcon icon={ArrowDownLeft01Icon} size={20} color="white" />}
+              size="small"
+              variant="black"
+            />
+            <Button
+              title="Send"
+              onPress={openSendSheet}
+              leftIcon={<HugeiconsIcon icon={ArrowUpRight01Icon} size={20} color="black" />}
+              size="small"
+              variant="white"
+            />
+            {/*<ExpandableActionMenu
             items={[
               {
                 id: 'fund-stash',
@@ -696,230 +695,237 @@ function DashboardScreen() {
               },
             ]}
           />*/}
-        </View>
+          </View>
 
-        <View className="mt-5 flex-row gap-3">
-          <StashCard
-            title="Spend"
-            amount={spend.dollars}
-            amountCents={spend.cents}
-            icon={<HugeiconsIcon icon={CreditCardIcon} size={26} color="white" strokeWidth={1.8} />}
-            cardColor="#FF2E01"
-            className="flex-1"
-            isLoading={isStationPending}
-            onPress={() => gateFeature(() => setShowSpendBreakdown(true))}
-          />
-          <StashCard
-            title="Stash"
-            amount={stash.dollars}
-            amountCents={stash.cents}
-            icon={<HugeiconsIcon icon={SavingsIcon} size={26} color="white" strokeWidth={1.8} />}
-            cardColor="#00E011"
-            className="flex-1"
-            isLoading={isStationPending}
-          />
-        </View>
-        <View className="mt-3 flex-row gap-3">
-          <StashCard
-            title="Card"
-            amount={spend.dollars}
-            amountCents={spend.cents}
-            icon={<VisaWhite width={32} height={32} strokeWidth={1.8} />}
-            cardColor="#000"
-            className="max-w-[50%] flex-1"
-            isLoading={isStationPending}
-            getStarted={!hasCard}
-            onPress={() => gateFeature(() => setShowCardComingSheet(true))}
-          />
-          <GameplayCard data={gameplayData} isLoading={isGameplayPending} className="flex-1" />
-        </View>
+          <View className="mt-5 flex-row gap-3">
+            <StashCard
+              title="Spend"
+              amount={spend.dollars}
+              amountCents={spend.cents}
+              icon={
+                <HugeiconsIcon icon={CreditCardIcon} size={26} color="white" strokeWidth={1.8} />
+              }
+              cardColor="#FF2E01"
+              className="flex-1"
+              isLoading={isStationPending}
+              onPress={() => gateFeature(() => setShowSpendBreakdown(true))}
+            />
+            <StashCard
+              title="Stash"
+              amount={stash.dollars}
+              amountCents={stash.cents}
+              icon={<HugeiconsIcon icon={SavingsIcon} size={26} color="white" strokeWidth={1.8} />}
+              cardColor="#00E011"
+              className="flex-1"
+              isLoading={isStationPending}
+            />
+          </View>
+          <View className="mt-3 flex-row gap-3">
+            <StashCard
+              title="Card"
+              amount={spend.dollars}
+              amountCents={spend.cents}
+              icon={<VisaWhite width={32} height={32} strokeWidth={1.8} />}
+              cardColor="#000"
+              className="max-w-[50%] flex-1"
+              isLoading={isStationPending}
+              getStarted={!hasCard}
+              onPress={() => gateFeature(() => setShowCardComingSheet(true))}
+            />
+            <GameplayCard data={gameplayData} isLoading={isGameplayPending} className="flex-1" />
+          </View>
 
-        {!kycApproved && (
-          <OnboardingProgressCard
-            steps={[
-              { label: 'Create account', done: true },
-              { label: 'Verify identity (KYC)', done: kycApproved },
-              { label: 'Make first deposit', done: parseFloat(station?.total_balance ?? '0') > 0 },
-              { label: 'Set up Rail Card', done: hasCard },
-            ]}
-            onPress={() => {
-              if (!kycApproved) setShowKYCSheet(true);
-              else router.push('/card' as never);
-            }}
-          />
-        )}
-
-        <View className="py-5">
-          {transactions.length === 0 ? (
-            <View className="items-center justify-center rounded-3xl bg-white px-5 py-8">
-              <TransactionsEmptyIllustration width={220} height={140} />
-              <Text className="mt-4 text-center font-subtitle text-headline-2 text-gray-900">
-                No transactions yet
-              </Text>
-              <Text className="mt-2 text-center font-body text-base text-gray-500">
-                Your activity will show up here once you receive or send funds.
-              </Text>
-            </View>
-          ) : (
-            <>
-              <View className="mb-3 flex-row items-center justify-between">
-                <Text className="font-subtitle text-subtitle text-text-primary">
-                  Recent Activity
-                </Text>
-                <Pressable
-                  onPress={() => router.push('/(tabs)/history' as never)}
-                  accessibilityRole="button"
-                  accessibilityLabel="See all transactions"
-                  className="min-h-[44px] flex-row items-center">
-                  <Text className="font-caption text-caption text-text-secondary">See all</Text>
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#757575" />
-                </Pressable>
-              </View>
-              <TransactionList
-                transactions={transactions}
-                onTransactionPress={setSelectedTransaction}
-                scrollEnabled={false}
-              />
-            </>
+          {!kycApproved && (
+            <OnboardingProgressCard
+              steps={[
+                { label: 'Create account', done: true },
+                { label: 'Verify identity (KYC)', done: kycApproved },
+                {
+                  label: 'Make first deposit',
+                  done: parseFloat(station?.total_balance ?? '0') > 0,
+                },
+                { label: 'Set up Rail Card', done: hasCard },
+              ]}
+              onPress={() => {
+                if (!kycApproved) setShowKYCSheet(true);
+                else router.push('/card' as never);
+              }}
+            />
           )}
-        </View>
-      </View>
 
-      <GorhomBottomSheet
-        visible={showReceiveSheet}
-        onClose={() => setShowReceiveSheet(false)}
-        showCloseButton={false}>
-        <SheetHeader
-          title="Receive Funds"
-          showCurrencySelector
-          selectedCurrency={sheetCurrency}
-          onCurrencyChange={onSheetCurrencyChange}
-        />
-        <ExpandableOptionList main={receiveMainActions} more={receiveMoreActions} />
-      </GorhomBottomSheet>
-      <GorhomBottomSheet
-        visible={showSendSheet}
-        onClose={() => setShowSendSheet(false)}
-        showCloseButton={false}>
-        <SheetHeader
-          title="Send Funds"
-          showCurrencySelector
-          selectedCurrency={sheetCurrency}
-          onCurrencyChange={onSheetCurrencyChange}
-        />
-        <ExpandableOptionList main={sendMainActions} more={sendMoreActions} />
-      </GorhomBottomSheet>
-      <SpendBreakdownSheet
-        visible={showSpendBreakdown}
-        onClose={() => setShowSpendBreakdown(false)}
-        onViewDetails={() => {
-          setShowSpendBreakdown(false);
-          router.push('/spending-stash');
-        }}
-      />
-      <KYCVerificationSheet
-        visible={showKYCSheet}
-        onClose={() => setShowKYCSheet(false)}
-        kycStatus={kycStatus}
-      />
-      <InvestmentDisclaimerSheet
-        visible={showDisclaimer}
-        onAccept={() => {
-          setHasAcknowledgedDisclaimer(true);
-          setShowDisclaimer(false);
-        }}
-      />
-      <SolanaPayScanSheet
-        visible={showSolanaPayScan}
-        onClose={() => setShowSolanaPayScan(false)}
-        onConfirmed={() => {
-          setShowSolanaPayScan(false);
-          void invalidateQueries.station();
-          void invalidateQueries.funding();
-        }}
-      />
-      <TransactionDetailSheet
-        visible={!!selectedTransaction}
-        onClose={() => setSelectedTransaction(null)}
-        transaction={selectedTransaction}
-      />
-      <VirtualAccountSheet
-        visible={showVirtualAccountSheet}
-        onClose={() => setShowVirtualAccountSheet(false)}
-        currency={sheetCurrency === 'EUR' ? 'EUR' : sheetCurrency === 'NGN' ? 'NGN' : 'USD'}
-      />
-      <GorhomBottomSheet visible={showMicroLoanSheet} onClose={() => setShowMicroLoanSheet(false)}>
-        <View className="px-5">
-          <Text className="font-subtitle text-[20px] text-[#070914]">Rail Credit</Text>
-          <Text className="mt-1 font-body text-[14px] text-[#9CA3AF]">
-            Spend beyond your balance. Repay automatically.
-          </Text>
-          <View className="mt-5">
-            <CreditSection title="How It Works">
-              Money comes in — Rail detects your inflow and automatically gives you a safe credit
-              advance based on your cashflow. Spend beyond your balance when you need to. Your next
-              deposit repays it automatically. No applications, no billing cycles, no stress.
-            </CreditSection>
-            <CreditSection title="What You Get">
-              <CreditBullet>Credit that feels like part of your normal money</CreditBullet>
-              <CreditBullet>Automatic repayment from your next deposit</CreditBullet>
-              <CreditBullet>Safe limit based on your actual income — not promises</CreditBullet>
-              <CreditBullet>No applications, no forms, no waiting</CreditBullet>
-              <CreditBullet>
-                Build credit behavior while building wealth simultaneously
-              </CreditBullet>
-            </CreditSection>
-            <CreditSection title="Your Safe Credit Limit">
-              Your limit is calculated from your average net inflow, income stability, past
-              repayment behavior, and how much Rail can safely lend. New users start with a
-              conservative limit that grows as you use Rail consistently.
-            </CreditSection>
-            <View className="mb-4 rounded-2xl bg-[#F9FAFB] p-4">
-              <Text className="font-body text-[13px] leading-[20px] text-[#9CA3AF]">
-                Rail Credit is designed for short-term liquidity — not long-term debt. Advances are
-                automatically repaid from your next deposit. Only spend what you can repay.
-              </Text>
-            </View>
+          <View className="py-5">
+            {transactions.length === 0 ? (
+              <View className="items-center justify-center rounded-3xl bg-white px-5 py-8">
+                <TransactionsEmptyIllustration width={220} height={140} />
+                <Text className="mt-4 text-center font-subtitle text-headline-2 text-gray-900">
+                  No transactions yet
+                </Text>
+                <Text className="mt-2 text-center font-body text-base text-gray-500">
+                  Your activity will show up here once you receive or send funds.
+                </Text>
+              </View>
+            ) : (
+              <>
+                <View className="mb-3 flex-row items-center justify-between">
+                  <Text className="font-subtitle text-subtitle text-text-primary">
+                    Recent Activity
+                  </Text>
+                  <Pressable
+                    onPress={() => router.push('/(tabs)/history' as never)}
+                    accessibilityRole="button"
+                    accessibilityLabel="See all transactions"
+                    className="min-h-[44px] flex-row items-center">
+                    <Text className="font-caption text-caption text-text-secondary">See all</Text>
+                    <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#757575" />
+                  </Pressable>
+                </View>
+                <TransactionList
+                  transactions={transactions}
+                  onTransactionPress={setSelectedTransaction}
+                  scrollEnabled={false}
+                />
+              </>
+            )}
           </View>
         </View>
-      </GorhomBottomSheet>
-      <GorhomBottomSheet
-        visible={showCardComingSheet}
-        onClose={() => setShowCardComingSheet(false)}>
-        <View className="px-5">
-          <Text className="font-subtitle text-[20px] text-[#070914]">Rail Card</Text>
-          <Text className="mt-1 font-body text-[14px] text-[#9CA3AF]">
-            Your USDC balance. Anywhere Visa is accepted.
-          </Text>
-          <View className="mt-5">
-            <CreditSection title="What It Is">
-              A virtual Visa debit card powered directly by your Rail spend balance. No bank account
-              needed. No currency conversion delays. Your USDC converts instantly at checkout —
-              spend it like regular money, anywhere in the world.
-            </CreditSection>
-            <CreditSection title="What You Get">
-              <CreditBullet>Virtual Visa card — works online and in-app instantly</CreditBullet>
-              <CreditBullet>Apple Pay and Google Pay support</CreditBullet>
-              <CreditBullet>Round-ups on every purchase go straight to your stash</CreditBullet>
-              <CreditBullet>Real-time transaction notifications</CreditBullet>
-              <CreditBullet>Freeze and unfreeze from the app in one tap</CreditBullet>
-              <CreditBullet>Daily spending limits you control</CreditBullet>
-            </CreditSection>
-            <CreditSection title="How Round-Ups Work">
-              Every card purchase rounds up to the nearest dollar. The difference goes automatically
-              to your stash — earning yield while you spend. Small amounts, compounded over time,
-              add up.
-            </CreditSection>
-            <View className="mb-4 rounded-2xl bg-[#F9FAFB] p-4">
-              <Text className="font-body text-[13px] leading-[20px] text-[#9CA3AF]">
-                Rail Card is coming soon. You&apos;ll be notified when it&apos;s available for your
-                account. KYC verification is required to activate the card.
-              </Text>
+
+        <GorhomBottomSheet
+          visible={showReceiveSheet}
+          onClose={() => setShowReceiveSheet(false)}
+          showCloseButton={false}>
+          <SheetHeader
+            title="Receive Funds"
+            showCurrencySelector
+            selectedCurrency={sheetCurrency}
+            onCurrencyChange={onSheetCurrencyChange}
+          />
+          <ExpandableOptionList main={receiveMainActions} more={receiveMoreActions} />
+        </GorhomBottomSheet>
+        <GorhomBottomSheet
+          visible={showSendSheet}
+          onClose={() => setShowSendSheet(false)}
+          showCloseButton={false}>
+          <SheetHeader
+            title="Send Funds"
+            showCurrencySelector
+            selectedCurrency={sheetCurrency}
+            onCurrencyChange={onSheetCurrencyChange}
+          />
+          <ExpandableOptionList main={sendMainActions} more={sendMoreActions} />
+        </GorhomBottomSheet>
+        <SpendBreakdownSheet
+          visible={showSpendBreakdown}
+          onClose={() => setShowSpendBreakdown(false)}
+          onViewDetails={() => {
+            setShowSpendBreakdown(false);
+            router.push('/spending-stash');
+          }}
+        />
+        <KYCVerificationSheet
+          visible={showKYCSheet}
+          onClose={() => setShowKYCSheet(false)}
+          kycStatus={kycStatus}
+        />
+        <InvestmentDisclaimerSheet
+          visible={showDisclaimer}
+          onAccept={() => {
+            setHasAcknowledgedDisclaimer(true);
+            setShowDisclaimer(false);
+          }}
+        />
+        <SolanaPayScanSheet
+          visible={showSolanaPayScan}
+          onClose={() => setShowSolanaPayScan(false)}
+          onConfirmed={() => {
+            setShowSolanaPayScan(false);
+            void invalidateQueries.station();
+            void invalidateQueries.funding();
+          }}
+        />
+        <TransactionDetailSheet
+          visible={!!selectedTransaction}
+          onClose={() => setSelectedTransaction(null)}
+          transaction={selectedTransaction}
+        />
+        <VirtualAccountSheet
+          visible={showVirtualAccountSheet}
+          onClose={() => setShowVirtualAccountSheet(false)}
+          currency={sheetCurrency === 'EUR' ? 'EUR' : sheetCurrency === 'NGN' ? 'NGN' : 'USD'}
+        />
+        <GorhomBottomSheet
+          visible={showMicroLoanSheet}
+          onClose={() => setShowMicroLoanSheet(false)}>
+          <View className="px-5">
+            <Text className="font-subtitle text-[20px] text-[#070914]">Rail Credit</Text>
+            <Text className="mt-1 font-body text-[14px] text-[#9CA3AF]">
+              Spend beyond your balance. Repay automatically.
+            </Text>
+            <View className="mt-5">
+              <CreditSection title="How It Works">
+                Money comes in — Rail detects your inflow and automatically gives you a safe credit
+                advance based on your cashflow. Spend beyond your balance when you need to. Your
+                next deposit repays it automatically. No applications, no billing cycles, no stress.
+              </CreditSection>
+              <CreditSection title="What You Get">
+                <CreditBullet>Credit that feels like part of your normal money</CreditBullet>
+                <CreditBullet>Automatic repayment from your next deposit</CreditBullet>
+                <CreditBullet>Safe limit based on your actual income — not promises</CreditBullet>
+                <CreditBullet>No applications, no forms, no waiting</CreditBullet>
+                <CreditBullet>
+                  Build credit behavior while building wealth simultaneously
+                </CreditBullet>
+              </CreditSection>
+              <CreditSection title="Your Safe Credit Limit">
+                Your limit is calculated from your average net inflow, income stability, past
+                repayment behavior, and how much Rail can safely lend. New users start with a
+                conservative limit that grows as you use Rail consistently.
+              </CreditSection>
+              <View className="mb-4 rounded-2xl bg-[#F9FAFB] p-4">
+                <Text className="font-body text-[13px] leading-[20px] text-[#9CA3AF]">
+                  Rail Credit is designed for short-term liquidity — not long-term debt. Advances
+                  are automatically repaid from your next deposit. Only spend what you can repay.
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
-      </GorhomBottomSheet>
-    </ScrollView>
+        </GorhomBottomSheet>
+        <GorhomBottomSheet
+          visible={showCardComingSheet}
+          onClose={() => setShowCardComingSheet(false)}>
+          <View className="px-5">
+            <Text className="font-subtitle text-[20px] text-[#070914]">Rail Card</Text>
+            <Text className="mt-1 font-body text-[14px] text-[#9CA3AF]">
+              Your USDC balance. Anywhere Visa is accepted.
+            </Text>
+            <View className="mt-5">
+              <CreditSection title="What It Is">
+                A virtual Visa debit card powered directly by your Rail spend balance. No bank
+                account needed. No currency conversion delays. Your USDC converts instantly at
+                checkout — spend it like regular money, anywhere in the world.
+              </CreditSection>
+              <CreditSection title="What You Get">
+                <CreditBullet>Virtual Visa card — works online and in-app instantly</CreditBullet>
+                <CreditBullet>Apple Pay and Google Pay support</CreditBullet>
+                <CreditBullet>Round-ups on every purchase go straight to your stash</CreditBullet>
+                <CreditBullet>Real-time transaction notifications</CreditBullet>
+                <CreditBullet>Freeze and unfreeze from the app in one tap</CreditBullet>
+                <CreditBullet>Daily spending limits you control</CreditBullet>
+              </CreditSection>
+              <CreditSection title="How Round-Ups Work">
+                Every card purchase rounds up to the nearest dollar. The difference goes
+                automatically to your stash — earning yield while you spend. Small amounts,
+                compounded over time, add up.
+              </CreditSection>
+              <View className="mb-4 rounded-2xl bg-[#F9FAFB] p-4">
+                <Text className="font-body text-[13px] leading-[20px] text-[#9CA3AF]">
+                  Rail Card is coming soon. You&apos;ll be notified when it&apos;s available for
+                  your account. KYC verification is required to activate the card.
+                </Text>
+              </View>
+            </View>
+          </View>
+        </GorhomBottomSheet>
+      </ScrollView>
     </View>
   );
 }
