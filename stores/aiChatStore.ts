@@ -220,10 +220,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
             set({ streamedContent: accumulated });
             break;
           case 'tool_result':
-            // Show thinking indicator while tools execute
-            if (!accumulated) {
-              set({ streamedContent: '🔍 Looking up your data...' });
-            }
+            // Keep Miriam typing dots visible during tool execution
             break;
           case 'cards':
             finalCards = event.data;
