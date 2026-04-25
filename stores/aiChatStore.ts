@@ -267,7 +267,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
           role: 'assistant',
           content: is404
             ? 'Miriam is not available right now — the AI service is being set up on the backend.'
-            : "I'm having a moment — try again",
+            : "I'm having a moment — try again in a few seconds 🔄",
           created_at: new Date().toISOString(),
         };
         set((s) => ({
