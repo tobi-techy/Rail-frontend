@@ -2,7 +2,7 @@ import { env } from '../utils/env';
 
 export const API_CONFIG = {
   baseURL: env.EXPO_PUBLIC_API_URL,
-  timeout: 15000,
+  timeout: 120000,
   retries: 3,
   retryDelay: 1000,
 } as const;

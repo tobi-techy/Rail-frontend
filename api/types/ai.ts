@@ -229,7 +229,16 @@ export type AIStreamEvent =
   | { type: 'cards'; data: InsightCard[] }
   | { type: 'token'; content: string }
   | { type: 'pending_action'; data: PendingAction }
-  | { type: 'done'; data: { tokens_used: number; provider: string; model?: string } }
+  | {
+      type: 'done';
+      data: {
+        tokens_used: number;
+        provider: string;
+        model?: string;
+        conversation_id?: string;
+        over_ceiling?: boolean;
+      };
+    }
   | { type: 'error'; content: string };
 
 export interface ChartAnnotation {

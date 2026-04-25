@@ -103,7 +103,13 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
   },
 
   selectConversation: async (id: string) => {
-    set({ activeConversationId: id, messages: [], cards: [], pendingAction: null, lastError: null });
+    set({
+      activeConversationId: id,
+      messages: [],
+      cards: [],
+      pendingAction: null,
+      lastError: null,
+    });
     try {
       const res = await aiService.getConversation(id);
       const msgs = res.data.messages ?? [];
@@ -198,129 +204,88 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
       connectionStatus: 'streaming',
     }));
 
-    // Use streaming for one-shot chat (no conversation), sync for conversation chat
-    if (!convId) {
-      let accumulated = '';
-      let finalCards: InsightCard[] = [];
-      let finalPending: PendingAction | null = null;
-      let hitCeiling = false;
+    // Stream for both one-shot and conversation chat
+    let accumulated = '';
+    let finalCards: InsightCard[] = [];
+    let finalPending: PendingAction | null = null;
+    let hitCeiling = false;
+    let resolvedConvId = convId;
 
-      const controller = aiService.streamChat(
-        { message },
-        (event) => {
-          switch (event.type) {
-            case 'token':
-              accumulated += event.content;
-              set({ streamedContent: accumulated });
-              break;
-            case 'cards':
-              finalCards = event.data;
-              set({ cards: event.data });
-              break;
-            case 'pending_action':
-              finalPending = event.data;
-              set({ pendingAction: event.data });
-              break;
-            case 'done':
-              break;
-            case 'error':
-              accumulated += accumulated ? '' : (event.content ?? 'Something went wrong');
-              break;
-          }
-        },
-        () => {
-          const content = accumulated || "I'm having a moment — try again";
-          const assistantMsg: AIMessage = {
-            role: 'assistant',
-            content,
-            created_at: new Date().toISOString(),
-          };
-          set((s) => ({
-            messages: [...s.messages, assistantMsg],
-            cards: finalCards,
-            pendingAction: finalPending,
-            isStreaming: false,
-            streamedContent: '',
-            overCeiling: hitCeiling,
-            connectionStatus: 'online',
-            streamAbortController: null,
-          }));
-          // Auto-process queued messages
-          void get().processQueue();
-        },
-        (err) => {
-          const is404 = err?.includes('404') || err?.includes('Not Found');
-          const errorMsg: AIMessage = {
-            role: 'assistant',
-            content: is404
-              ? 'Miriam is not available right now — the AI service is being set up on the backend.'
-              : "I'm having a moment — try again",
-            created_at: new Date().toISOString(),
-          };
-          set((s) => ({
-            messages: [...s.messages, errorMsg],
-            isStreaming: false,
-            streamedContent: '',
-            lastError: err,
-            connectionStatus: 'online',
-            streamAbortController: null,
-          }));
-          void get().processQueue();
+    const controller = aiService.streamChat(
+      { message, ...(convId ? { conversation_id: convId } : {}) },
+      (event) => {
+        switch (event.type) {
+          case 'token':
+            accumulated += event.content;
+            set({ streamedContent: accumulated });
+            break;
+          case 'tool_result':
+            // Show thinking indicator while tools execute
+            if (!accumulated) {
+              set({ streamedContent: '🔍 Looking up your data...' });
+            }
+            break;
+          case 'cards':
+            finalCards = event.data;
+            set({ cards: event.data });
+            break;
+          case 'pending_action':
+            finalPending = event.data;
+            set({ pendingAction: event.data });
+            break;
+          case 'done':
+            if (event.data?.conversation_id) resolvedConvId = event.data.conversation_id;
+            if (event.data?.over_ceiling) hitCeiling = true;
+            break;
+          case 'error':
+            accumulated += accumulated ? '' : (event.content ?? 'Something went wrong');
+            break;
         }
-      );
-
-      set({ streamAbortController: controller });
-      return;
-    }
-
-    // Conversation chat — use sync endpoint (supports actions + persistence)
-    try {
-      const res = await aiService.chatInConversation(convId, message);
-      const response = res.data;
-
-      if (response.over_ceiling) {
-        set({ overCeiling: true });
+      },
+      () => {
+        const content = accumulated || "I'm having a moment — try again in a few seconds 🔄";
+        const assistantMsg: AIMessage = {
+          role: 'assistant',
+          content,
+          metadata: { cards: finalCards },
+          created_at: new Date().toISOString(),
+        };
+        set((s) => ({
+          messages: [...s.messages, assistantMsg],
+          cards: finalCards,
+          pendingAction: finalPending,
+          isStreaming: false,
+          streamedContent: '',
+          overCeiling: hitCeiling,
+          activeConversationId: resolvedConvId ?? s.activeConversationId,
+          connectionStatus: 'online',
+          streamAbortController: null,
+          lastError: null,
+        }));
+        void get().processQueue();
+      },
+      (err) => {
+        const is404 = err?.includes('404') || err?.includes('Not Found');
+        const errorMsg: AIMessage = {
+          role: 'assistant',
+          content: is404
+            ? 'Miriam is not available right now — the AI service is being set up on the backend.'
+            : "I'm having a moment — try again",
+          created_at: new Date().toISOString(),
+        };
+        set((s) => ({
+          messages: [...s.messages, errorMsg],
+          isStreaming: false,
+          streamedContent: '',
+          lastError: err,
+          connectionStatus: 'online',
+          streamAbortController: null,
+        }));
+        void get().processQueue();
       }
+    );
 
-      const assistantMsg: AIMessage = {
-        role: 'assistant',
-        content: response.content,
-        metadata: {
-          cards: response.cards ?? [],
-          tool_calls: response.tool_calls ?? [],
-        },
-        created_at: new Date().toISOString(),
-      };
-      set((s) => ({
-        messages: [...s.messages, assistantMsg],
-        activeConversationId: response.conversation_id ?? convId,
-        cards: response.cards ?? [],
-        pendingAction: response.pending_action ?? null,
-        isStreaming: false,
-        connectionStatus: 'online',
-        lastError: null,
-      }));
-      void get().processQueue();
-    } catch (err: any) {
-      const is404 = err?.status === 404 || err?.message?.includes('404') || err?.code === 'HTTP_404';
-      const errorMsg: AIMessage = {
-        role: 'assistant',
-        content: is404
-          ? 'Miriam is not available right now — the AI service is being set up on the backend.'
-          : err?.message?.includes('network')
-            ? 'Network issue — check your connection and try again'
-            : "I'm having a moment — try again in a few seconds",
-        created_at: new Date().toISOString(),
-      };
-      set((s) => ({
-        messages: [...s.messages, errorMsg],
-        isStreaming: false,
-        connectionStatus: navigator?.onLine === false ? 'offline' : 'online',
-        lastError: err?.message ?? 'Unknown error',
-        streamAbortController: null,
-      }));
-      void get().processQueue();
-    }
+    set({ streamAbortController: controller });
   },
 
   sendImage: async (base64Image: string, message?: string, conversationId?: string) => {
