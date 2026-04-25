@@ -29,8 +29,10 @@ class InsightCardErrorBoundary extends Component<EBProps, { hasError: boolean }>
   render() {
     if (!this.state.hasError) return this.props.children;
     return (
-      <View className="rounded-2xl bg-red-50 border border-red-100 p-4 my-2">
-        <Text className="font-body-medium text-sm text-red-800">Unable to display this insight</Text>
+      <View className="my-2 rounded-2xl border border-red-100 bg-red-50 p-4">
+        <Text className="font-body-medium text-sm text-red-800">
+          Unable to display this insight
+        </Text>
       </View>
     );
   }
@@ -38,7 +40,7 @@ class InsightCardErrorBoundary extends Component<EBProps, { hasError: boolean }>
 
 function CardErrorFallback() {
   return (
-    <View className="rounded-2xl bg-white border border-black/[0.08] p-4 my-2">
+    <View className="my-2 rounded-2xl border border-black/[0.08] bg-white p-4">
       <Text className="font-body text-sm text-text-secondary">Insight unavailable</Text>
     </View>
   );
@@ -61,12 +63,12 @@ function CardContainer({
 
   return (
     <Animated.View entering={FadeInUp.duration(300)} className="my-2">
-      <View className={`bg-white ${borderColor} border rounded-2xl overflow-hidden`}>
+      <View className={`bg-white ${borderColor} overflow-hidden rounded-2xl border`}>
         {onPin && (
-          <View className="absolute top-3 right-3 z-10 flex-row gap-2">
+          <View className="absolute right-3 top-3 z-10 flex-row gap-2">
             <Pressable
               onPress={onPin}
-              className={`w-8 h-8 rounded-full items-center justify-center ${isPinned ? 'bg-primary' : 'bg-black/[0.06]'}`}
+              className={`h-8 w-8 items-center justify-center rounded-full ${isPinned ? 'bg-primary' : 'bg-black/[0.06]'}`}
               accessibilityRole="button"
               accessibilityLabel={isPinned ? 'Unpin insight' : 'Pin to Miriam Hub'}>
               <HugeiconsIcon icon={PinIcon} size={16} color={isPinned ? '#FFFFFF' : '#8C8C8C'} />
@@ -81,8 +83,18 @@ function CardContainer({
 
 /* ─── Stat Grid ─── */
 
-function StatGridCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: () => void; isPinned?: boolean }) {
-  const stats = card.data?.stats as Array<{ label: string; value: string; change?: string; positive?: boolean }> | undefined;
+function StatGridCard({
+  card,
+  onPin,
+  isPinned,
+}: {
+  card: InsightCard;
+  onPin?: () => void;
+  isPinned?: boolean;
+}) {
+  const stats = (Array.isArray(card.data) ? card.data : card.data?.stats) as
+    | { label: string; value: string; change?: string; positive?: boolean; sentiment?: string }[]
+    | undefined;
 
   if (!Array.isArray(stats)) {
     console.warn('[InsightCardView] stat_grid missing stats array');
@@ -92,14 +104,19 @@ function StatGridCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: ()
   return (
     <CardContainer onPin={onPin} isPinned={isPinned} accent={card.data?.accent as boolean}>
       <View className="p-4">
-        {card.title && <Text className="font-heading-semibold text-base text-text-primary mb-3">{card.title}</Text>}
+        {card.title && (
+          <Text className="font-heading-semibold mb-3 text-base text-text-primary">
+            {card.title}
+          </Text>
+        )}
         <View className="flex-row flex-wrap" style={{ gap: 12 }}>
           {stats.map((s, i) => (
-            <View key={i} className="flex-1 min-w-[100px]">
-              <Text className="font-body text-xs text-text-secondary mb-1">{s.label}</Text>
+            <View key={i} className="min-w-[100px] flex-1">
+              <Text className="mb-1 font-body text-xs text-text-secondary">{s.label}</Text>
               <Text className="font-heading-bold text-2xl text-text-primary">{s.value}</Text>
               {s.change && (
-                <Text className={`font-body-medium text-xs mt-0.5 ${s.positive ? 'text-success' : 'text-red-500'}`}>
+                <Text
+                  className={`mt-0.5 font-body-medium text-xs ${s.positive || s.sentiment === 'positive' ? 'text-success' : 'text-red-500'}`}>
                   {s.change}
                 </Text>
               )}
@@ -113,20 +130,39 @@ function StatGridCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: ()
 
 /* ─── Chart (Bar / Line) ─── */
 
-function ChartCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: () => void; isPinned?: boolean }) {
-  const raw = card.data?.data as Array<{ label: string; value: number }> | undefined;
+function ChartCard({
+  card,
+  onPin,
+  isPinned,
+}: {
+  card: InsightCard;
+  onPin?: () => void;
+  isPinned?: boolean;
+}) {
+  const raw = (card.data?.points ??
+    card.data?.data ??
+    (Array.isArray(card.data) ? card.data : undefined)) as
+    | { label: string; value: number }[]
+    | undefined;
   if (!Array.isArray(raw) || raw.length === 0) {
     console.warn('[InsightCardView] chart missing data array');
     return <CardErrorFallback />;
   }
 
   const barData = raw.map((d) => ({ label: d.label, value: d.value, frontColor: '#FF2E01' }));
-  const isBar = (card.data?.chartType as string) === 'bar' || raw.length <= 7;
+  const isBar =
+    (card.data?.chartType as string) === 'bar' ||
+    (card.data?.chart_type as string) === 'bar' ||
+    raw.length <= 7;
 
   return (
     <CardContainer onPin={onPin} isPinned={isPinned} accent={card.data?.accent as boolean}>
       <View className="p-4">
-        {card.title && <Text className="font-heading-semibold text-base text-text-primary mb-3">{card.title}</Text>}
+        {card.title && (
+          <Text className="font-heading-semibold mb-3 text-base text-text-primary">
+            {card.title}
+          </Text>
+        )}
         <View className="items-center">
           {isBar ? (
             <BarChart
@@ -159,8 +195,18 @@ function ChartCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: () =>
 
 /* ─── Breakdown ─── */
 
-function BreakdownCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: () => void; isPinned?: boolean }) {
-  const items = card.data?.items as Array<{ label: string; value: string; percent?: number }> | undefined;
+function BreakdownCard({
+  card,
+  onPin,
+  isPinned,
+}: {
+  card: InsightCard;
+  onPin?: () => void;
+  isPinned?: boolean;
+}) {
+  const items = (Array.isArray(card.data) ? card.data : card.data?.items) as
+    | { label: string; value?: string; amount?: number; percent?: number; color?: string }[]
+    | undefined;
 
   if (!Array.isArray(items)) {
     console.warn('[InsightCardView] breakdown missing items array');
@@ -170,12 +216,23 @@ function BreakdownCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: (
   return (
     <CardContainer onPin={onPin} isPinned={isPinned} accent={card.data?.accent as boolean}>
       <View className="p-4">
-        {card.title && <Text className="font-heading-semibold text-base text-text-primary mb-3">{card.title}</Text>}
+        {card.title && (
+          <Text className="font-heading-semibold mb-3 text-base text-text-primary">
+            {card.title}
+          </Text>
+        )}
         <View className="gap-3">
           {items.map((item, i) => (
             <View key={i} className="flex-row items-center">
-              <Text className="font-body-medium text-sm text-text-primary flex-1">{item.label}</Text>
-              <Text className="font-body-medium text-sm text-text-primary">{item.value}</Text>
+              <Text className="flex-1 font-body-medium text-sm text-text-primary">
+                {item.label}
+              </Text>
+              <Text className="font-body-medium text-sm text-text-primary">
+                {item.value ??
+                  (item.amount !== undefined && item.amount !== null
+                    ? `$${Number(item.amount).toFixed(2)}`
+                    : '')}
+              </Text>
             </View>
           ))}
         </View>
@@ -186,7 +243,15 @@ function BreakdownCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: (
 
 /* ─── Progress ─── */
 
-function ProgressCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: () => void; isPinned?: boolean }) {
+function ProgressCard({
+  card,
+  onPin,
+  isPinned,
+}: {
+  card: InsightCard;
+  onPin?: () => void;
+  isPinned?: boolean;
+}) {
   const goal = card.data?.goal as string;
   const current = card.data?.current as number | undefined;
   const target = card.data?.target as number | undefined;
@@ -201,18 +266,21 @@ function ProgressCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: ()
   return (
     <CardContainer onPin={onPin} isPinned={isPinned} accent={card.data?.accent as boolean}>
       <View className="p-4">
-        {card.title && <Text className="font-heading-semibold text-base text-text-primary mb-2">{card.title}</Text>}
-        <View className="flex-row items-center justify-between mb-2">
+        {card.title && (
+          <Text className="font-heading-semibold mb-2 text-base text-text-primary">
+            {card.title}
+          </Text>
+        )}
+        <View className="mb-2 flex-row items-center justify-between">
           <Text className="font-body text-sm text-text-secondary">{goal}</Text>
-          <Text className="font-body-medium text-sm text-text-primary">{Math.round(pct * 100)}%</Text>
+          <Text className="font-body-medium text-sm text-text-primary">
+            {Math.round(pct * 100)}%
+          </Text>
         </View>
-        <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
-          <View
-            className="h-full bg-primary rounded-full"
-            style={{ width: `${pct * 100}%` }}
-          />
+        <View className="h-2 overflow-hidden rounded-full bg-gray-100">
+          <View className="h-full rounded-full bg-primary" style={{ width: `${pct * 100}%` }} />
         </View>
-        <Text className="font-body text-xs text-text-tertiary mt-1.5">
+        <Text className="mt-1.5 font-body text-xs text-text-tertiary">
           {current} of {target}
         </Text>
       </View>
@@ -222,7 +290,15 @@ function ProgressCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: ()
 
 /* ─── Alert ─── */
 
-function AlertCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: () => void; isPinned?: boolean }) {
+function AlertCard({
+  card,
+  onPin,
+  isPinned,
+}: {
+  card: InsightCard;
+  onPin?: () => void;
+  isPinned?: boolean;
+}) {
   const severity = (card.data?.severity as string) ?? 'info';
   const bgMap: Record<string, string> = {
     high: 'bg-red-50',
@@ -241,15 +317,18 @@ function AlertCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: () =>
     <Animated.View entering={FadeInUp.duration(300)} className="my-2">
       <View className={`rounded-2xl ${bgMap[severity]} ${borderMap[severity]} border p-4`}>
         {card.title && (
-          <Text className={`font-heading-semibold text-base mb-1 ${severity === 'high' ? 'text-red-800' : severity === 'medium' ? 'text-amber-800' : 'text-text-primary'}`}>
+          <Text
+            className={`font-heading-semibold mb-1 text-base ${severity === 'high' ? 'text-red-800' : severity === 'medium' ? 'text-amber-800' : 'text-text-primary'}`}>
             {card.title}
           </Text>
         )}
-        <Text className="font-body text-sm text-text-secondary">{card.data?.description as string}</Text>
+        <Text className="font-body text-sm text-text-secondary">
+          {card.data?.description as string}
+        </Text>
         {onPin && (
           <Pressable
             onPress={onPin}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 items-center justify-center"
+            className="absolute right-3 top-3 h-8 w-8 items-center justify-center rounded-full bg-white/80"
             accessibilityRole="button"
             accessibilityLabel="Pin to Miriam Hub">
             <HugeiconsIcon icon={PinIcon} size={16} color={isPinned ? '#FF2E01' : '#8C8C8C'} />
@@ -262,17 +341,27 @@ function AlertCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: () =>
 
 /* ─── Highlight ─── */
 
-function HighlightCard({ card, onPin, isPinned }: { card: InsightCard; onPin?: () => void; isPinned?: boolean }) {
+function HighlightCard({
+  card,
+  onPin,
+  isPinned,
+}: {
+  card: InsightCard;
+  onPin?: () => void;
+  isPinned?: boolean;
+}) {
   const emoji = card.data?.emoji as string;
   const label = card.data?.label as string;
 
   return (
     <CardContainer onPin={onPin} isPinned={isPinned} accent>
-      <View className="p-4 flex-row items-start gap-3">
+      <View className="flex-row items-start gap-3 p-4">
         {emoji && <Text className="text-2xl">{emoji}</Text>}
         <View className="flex-1">
-          {card.title && <Text className="font-heading-semibold text-base text-text-primary">{card.title}</Text>}
-          {label && <Text className="font-body text-sm text-text-secondary mt-1">{label}</Text>}
+          {card.title && (
+            <Text className="font-heading-semibold text-base text-text-primary">{card.title}</Text>
+          )}
+          {label && <Text className="mt-1 font-body text-sm text-text-secondary">{label}</Text>}
         </View>
       </View>
     </CardContainer>
@@ -295,7 +384,9 @@ export function InsightCardView({
   const handlePin = useCallback(() => {
     if (isPinned) {
       // Find the pinned insight id to unpin
-      const pinned = useMiriamHubStore.getState().pinnedInsights.find((p) => p.card.type === card.type && p.card.title === card.title);
+      const pinned = useMiriamHubStore
+        .getState()
+        .pinnedInsights.find((p) => p.card.type === card.type && p.card.title === card.title);
       if (pinned) unpinInsight(pinned.id);
     } else {
       const newInsight: PinnedInsight = {
@@ -349,7 +440,7 @@ export function InsightCardView({
         </Wrap>
       );
     default:
-      console.warn('[InsightCardView] unknown type:', card.type);
-      return <CardErrorFallback />;
+      // Unknown card types are silently skipped
+      return null;
   }
 }
