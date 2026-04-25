@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { HugeiconsIcon } from '@hugeicons/react-native';
@@ -31,22 +31,32 @@ interface Props {
 export function ThreadRow({ conv, onPress, onDelete }: Props) {
   const swipeRef = useRef<Swipeable>(null);
   const [showUndo, setShowUndo] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleDelete = useCallback(() => {
     setShowUndo(true);
-    const timer = setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       setShowUndo(false);
       onDelete();
     }, 3000);
-    return () => clearTimeout(timer);
   }, [onDelete]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   if (showUndo) {
     return (
       <View className="mx-5 py-5 flex-row items-center justify-between border-b border-black/[0.06]">
         <Text className="font-body text-[15px] text-text-tertiary">Thread deleted</Text>
         <Pressable
-          onPress={() => setShowUndo(false)}
+          onPress={() => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            setShowUndo(false);
+          }}
           accessibilityRole="button"
           accessibilityLabel="Undo">
           <Text className="font-body-medium text-[15px] text-[#1A7A6D]">Undo</Text>

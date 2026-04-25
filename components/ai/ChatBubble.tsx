@@ -19,15 +19,17 @@ interface Props {
 
 export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
   const isUser = msg.role === 'user';
+  const content = msg.content ?? '';
   const [typingDone, setTypingDone] = useState(!animate);
   const [copied, setCopied] = useState(false);
 
   const handleLongPress = useCallback(async () => {
+    if (!content) return;
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await Clipboard.setStringAsync(msg.content);
+    await Clipboard.setStringAsync(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-  }, [msg.content]);
+  }, [content]);
 
   if (isUser) {
     return (
@@ -36,10 +38,10 @@ export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
           onLongPress={handleLongPress}
           delayLongPress={400}
           accessibilityRole="text"
-          accessibilityLabel={`Your message: ${msg.content.slice(0, 100)}`}>
+          accessibilityLabel={`Your message: ${content.slice(0, 100)}`}>
           <View className="rounded-3xl bg-[#EDEDEB] px-5 py-3.5">
             <Text className="font-body text-[17px] leading-[28px] text-[#1A1A1A]">
-              {msg.content}
+              {content}
             </Text>
           </View>
         </Pressable>
@@ -53,14 +55,14 @@ export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
         onLongPress={handleLongPress}
         delayLongPress={400}
         accessibilityRole="text"
-        accessibilityLabel={`Miriam: ${msg.content.slice(0, 100)}`}>
+        accessibilityLabel={`Miriam: ${content.slice(0, 100)}`}>
         <View className="py-1">
           {animate && !typingDone ? (
-            <TypingText text={msg.content} speed={10} onComplete={() => setTypingDone(true)}>
+            <TypingText text={content} speed={10} onComplete={() => setTypingDone(true)}>
               {(displayed) => <MarkdownContent content={displayed} />}
             </TypingText>
           ) : (
-            <MarkdownContent content={msg.content} />
+            <MarkdownContent content={content} />
           )}
         </View>
       </Pressable>

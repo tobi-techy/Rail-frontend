@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -23,6 +23,7 @@ const SEVERITY_CONFIG: Record<string, { emotion: MiriamEmotion; bubbleBg: string
 };
 
 export function AmbientMiriam({ nudge, onDismiss, onPress }: Props) {
+  const { width } = useWindowDimensions();
   if (!nudge?.show || !nudge.message) return null;
 
   const config = SEVERITY_CONFIG[nudge.severity] ?? SEVERITY_CONFIG.info;
@@ -32,7 +33,7 @@ export function AmbientMiriam({ nudge, onDismiss, onPress }: Props) {
       entering={SlideInRight.duration(300).springify().damping(18)}
       exiting={SlideOutRight.duration(200)}
       className="absolute right-4 top-2 z-30 flex-row items-start"
-      style={{ maxWidth: '85%' }}
+      style={{ maxWidth: width * 0.85 }}
       pointerEvents="box-none">
       {/* Speech bubble */}
       <Pressable
