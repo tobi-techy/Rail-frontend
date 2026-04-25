@@ -6,6 +6,7 @@ import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { useAIChatStore } from '@/stores/aiChatStore';
 import { MiriamCharacter } from '@/components/ai';
 
@@ -74,6 +75,7 @@ function AIButton() {
   const router = useRouter();
   const { impact } = useHaptics();
   const open = useAIChatStore((s) => s.open);
+  const { requireFeature } = useFeatureGate();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -83,9 +85,17 @@ function AIButton() {
 
   const handlePress = useCallback(() => {
     impact();
-    open();
-    router.push('/ai-chat');
-  }, [impact, open, router]);
+    requireFeature(
+      () => {
+        open();
+        router.push('/ai-chat');
+      },
+      {
+        onProfileRequired: () => router.push('/complete-profile/personal-info'),
+        onKycRequired: () => router.push('/kyc'),
+      }
+    );
+  }, [impact, open, router, requireFeature]);
 
   return (
     <View>

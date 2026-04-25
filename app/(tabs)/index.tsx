@@ -715,7 +715,7 @@ function DashboardScreen() {
               amount={stash.dollars}
               amountCents={stash.cents}
               icon={<HugeiconsIcon icon={SavingsIcon} size={26} color="white" strokeWidth={1.8} />}
-              cardColor="#00E011"
+              cardColor="#0A7A3B"
               className="flex-1"
               isLoading={isStationPending}
             />
