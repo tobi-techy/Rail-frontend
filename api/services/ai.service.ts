@@ -41,7 +41,7 @@ export const aiService = {
     return apiClient.post<AIChatResponse>(`${BASE}/chat`, req, { timeout: 120000 });
   },
 
-  /** SSE streaming chat — uses fetch ReadableStream for real token-by-token streaming */
+  /** SSE streaming chat — uses XHR progressive loading (React Native compatible) */
   streamChat(
     req: AIChatRequest,
     onEvent: (event: AIStreamEvent) => void,
@@ -54,9 +54,6 @@ export const aiService = {
 
     (async () => {
       try {
-        // SECURITY FIX (R5-L1): Include CSRF token, request ID, and device fingerprint
-        // to match the protections applied by the Axios interceptor.
-        // NOTE: SSL pinning cannot be applied to raw fetch — this is a documented accepted risk.
         const { generateRequestId } = await import('@/utils/requestId');
         let fingerprint = '';
         try {
@@ -64,45 +61,21 @@ export const aiService = {
           fingerprint = await getDeviceFingerprint();
         } catch {}
 
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-          'X-Requested-With': 'RailApp',
-          'X-Request-ID': generateRequestId(),
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-          ...(fingerprint ? { 'X-Device-Fingerprint': fingerprint } : {}),
-        };
+        const url = `${baseURL}${BASE}/chat/stream`;
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('Accept', 'text/event-stream');
+        xhr.setRequestHeader('X-Requested-With', 'RailApp');
+        xhr.setRequestHeader('X-Request-ID', generateRequestId());
+        if (accessToken) xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+        if (csrfToken) xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+        if (fingerprint) xhr.setRequestHeader('X-Device-Fingerprint', fingerprint);
 
-        const resp = await fetch(`${baseURL}${BASE}/chat/stream`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(req),
-          signal: controller.signal,
-        });
+        let seenBytes = 0;
 
-        if (!resp.ok) {
-          onError(`Stream failed: ${resp.status}`);
-          return;
-        }
-
-        const reader = resp.body?.getReader();
-        if (!reader) {
-          onError('ReadableStream not supported');
-          return;
-        }
-
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-
+        const parseSSEChunk = (text: string) => {
+          const lines = text.split('\n');
           for (const line of lines) {
             if (!line.startsWith('data: ')) continue;
             const payload = line.slice(6).trim();
@@ -111,19 +84,28 @@ export const aiService = {
               onEvent(JSON.parse(payload) as AIStreamEvent);
             } catch {}
           }
-        }
+        };
 
-        // Process remaining buffer
-        if (buffer.startsWith('data: ')) {
-          const payload = buffer.slice(6).trim();
-          if (payload && payload !== '[DONE]') {
-            try {
-              onEvent(JSON.parse(payload) as AIStreamEvent);
-            } catch {}
-          }
-        }
+        xhr.onprogress = () => {
+          const newText = xhr.responseText.slice(seenBytes);
+          seenBytes = xhr.responseText.length;
+          if (newText) parseSSEChunk(newText);
+        };
 
-        onDone();
+        xhr.onload = () => {
+          // Parse any remaining data not caught by onprogress
+          const remaining = xhr.responseText.slice(seenBytes);
+          if (remaining) parseSSEChunk(remaining);
+          onDone();
+        };
+
+        xhr.onerror = () => onError('Stream connection failed');
+        xhr.ontimeout = () => onError('Stream timed out');
+        xhr.timeout = 120000;
+
+        controller.signal.addEventListener('abort', () => xhr.abort());
+
+        xhr.send(JSON.stringify(req));
       } catch (e: any) {
         if (e?.name !== 'AbortError') onError(e?.message ?? 'Stream failed');
       }
@@ -231,10 +213,14 @@ export const aiService = {
 
   /** Send an image (base64) for AI analysis (receipt scanning, etc.) */
   async analyzeImage(base64Image: string, message?: string): Promise<{ data: AIChatResponse }> {
-    return apiClient.post(`${BASE}/chat/image`, {
-      image: base64Image,
-      message: message ?? 'Analyze this image',
-    }, { timeout: 120000 });
+    return apiClient.post(
+      `${BASE}/chat/image`,
+      {
+        image: base64Image,
+        message: message ?? 'Analyze this image',
+      },
+      { timeout: 120000 }
+    );
   },
 
   // ── Premium endpoints (pro-only) ──────────────────────────────
