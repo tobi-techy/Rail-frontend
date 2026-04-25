@@ -4,11 +4,10 @@ import { router, useNavigation, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
-import { PhantomIcon, SolflareIcon, SolanaIcon, VisaWhite } from '@/assets/svg';
+import { PhantomIcon, SolflareIcon, SolanaIcon, VisaLogo, VisaWhite } from '@/assets/svg';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { StashCard } from '@/components/molecules/StashCard';
 import { GameplayCard } from '@/components/molecules/GameplayCard';
-import { FeatureBanner } from '@/components/molecules/FeatureBanner';
 import { TransactionList } from '@/components/molecules/TransactionList';
 import { NotificationBell } from '@/components/molecules/NotificationBell';
 import { Button } from '@/components/ui';
@@ -23,7 +22,6 @@ import { SheetHeader, ExpandableOptionList } from '@/components/sheets/FundingSh
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
-import { isFeatureEnabled, FeatureGates } from '@/utils/featureGate';
 import { ROUTES } from '@/constants/routes';
 import { useStation, useKYCStatus } from '@/api/hooks';
 import { useGameplayProfile } from '@/api/hooks/useGameplay';
@@ -660,7 +658,7 @@ function DashboardScreen() {
             size="small"
             variant="white"
           />
-          <ExpandableActionMenu
+          {/*<ExpandableActionMenu
             items={[
               {
                 id: 'fund-stash',
@@ -691,7 +689,7 @@ function DashboardScreen() {
                 onPress: () => router.push('/investment-stash' as never),
               },
             ]}
-          />
+          />*/}
         </View>
 
         <View className="mt-5 flex-row gap-3">
@@ -715,7 +713,7 @@ function DashboardScreen() {
             isLoading={isStationPending}
           />
         </View>
-        <View className="mt-5 flex-row gap-3">
+        <View className="mt-3 flex-row gap-3">
           <StashCard
             title="Card"
             amount={spend.dollars}
@@ -727,25 +725,15 @@ function DashboardScreen() {
             getStarted={!hasCard}
             onPress={() => gateFeature(() => setShowCardComingSheet(true))}
           />
-          <GameplayCard
-            data={gameplayData}
-            isLoading={isGameplayPending}
-            className="max-w-[50%] flex-1"
-          />
+          <GameplayCard data={gameplayData} isLoading={isGameplayPending} className="flex-1" />
         </View>
-
-        <FeatureBanner
-          kycApproved={kycApproved}
-          hasCard={hasCard}
-          onKYCPress={() => setShowKYCSheet(true)}
-        />
 
         {!kycApproved && (
           <OnboardingProgressCard
             steps={[
               { label: 'Create account', done: true },
               { label: 'Verify identity (KYC)', done: kycApproved },
-              { label: 'Make first deposit', done: (parseFloat(station?.total_balance ?? '0') > 0) },
+              { label: 'Make first deposit', done: parseFloat(station?.total_balance ?? '0') > 0 },
               { label: 'Set up Rail Card', done: hasCard },
             ]}
             onPress={() => {

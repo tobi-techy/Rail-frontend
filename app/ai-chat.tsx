@@ -1,35 +1,64 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useRef, useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   Pressable,
   FlatList,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import {
+  KeyboardAvoidingView,
+  useKeyboardHandler,
+} from 'react-native-keyboard-controller';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useSharedValue,
+  runOnJS,
+} from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { HugeiconsIcon } from '@hugeicons/react-native';
+import {
+  ArrowLeft01Icon,
+  Menu01Icon,
+  Add01Icon,
+  Search01Icon,
+  Camera01Icon,
+  Image01Icon,
+} from '@hugeicons/core-free-icons';
 import { useAIChatStore } from '@/stores/aiChatStore';
-import { useAIHaptics } from '@/hooks/useAIHaptics';
-import { ChatBubble, InputBar, ThreadRow } from '@/components/ai';
+import { ChatBubble, InputBar, ThreadRow, MiriamCharacter } from '@/components/ai';
 import { ActionConfirmSheet } from '@/components/ai/ActionConfirmSheet';
 import { ActionSheet } from '@/components/sheets/ActionSheet';
 import type { AIMessage, PendingAction, InsightCard } from '@/api/types/ai';
-import { aiService } from '@/api/services/ai.service';
 import { useSubscription } from '@/api/hooks/useGameplay';
-import { Camera01Icon, Image01Icon } from '@hugeicons/core-free-icons';
 
-const BG = '#F9F8F6';
-const ACCENT = '#FF2E01';
-const TEXT_PRIMARY = '#1A1A1A';
-const TEXT_SECONDARY = '#8C8C8C';
-const TEXT_TERTIARY = '#B5B5B5';
-const SURFACE = '#FFFFFF';
-const BORDER = 'rgba(0,0,0,0.06)';
+const BG = '#F7F7F2';
+
+// ─── Keyboard state hook ─────────────────────────────────────────
+
+function useKeyboardVisible() {
+  const [visible, setVisible] = useState(false);
+  const height = useSharedValue(0);
+
+  useKeyboardHandler({
+    onMove: (e) => {
+      'worklet';
+      height.value = e.height;
+    },
+    onEnd: (e) => {
+      'worklet';
+      runOnJS(setVisible)(e.height > 0);
+    },
+  });
+
+  return visible;
+}
 
 // ─── Typing Dots ─────────────────────────────────────────────────
 
@@ -38,36 +67,31 @@ function TypingDots() {
     <Animated.View
       entering={FadeIn.duration(200)}
       exiting={FadeOut.duration(150)}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        marginBottom: 16,
-        paddingLeft: 2,
-      }}>
-      <Text
-        style={{
-          fontFamily: 'SFMono-Medium',
-          fontSize: 12,
-          color: ACCENT,
-          letterSpacing: 0.5,
-          marginRight: 8,
-        }}>
-        MIRIAM
-      </Text>
-      {[0, 1, 2].map((i) => (
-        <View
-          key={i}
-          style={{
-            width: 5,
-            height: 5,
-            borderRadius: 2.5,
-            backgroundColor: TEXT_TERTIARY,
-            opacity: 0.4 + i * 0.25,
-          }}
-        />
-      ))}
+      className="mb-6 flex-row items-center gap-3">
+      <MiriamCharacter size={28} emotion="thinking" isProcessing />
+      <View className="flex-row items-center gap-1.5">
+        {[0, 1, 2].map((i) => (
+          <View
+            key={i}
+            className="h-1.5 w-1.5 rounded-full bg-[#B5B5B5]"
+            style={{ opacity: 0.4 + i * 0.25 }}
+          />
+        ))}
+      </View>
     </Animated.View>
+  );
+}
+
+// ─── Retry Banner ────────────────────────────────────────────────
+
+function RetryBanner({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className="mt-3 flex-row items-center justify-center gap-2 py-3">
+      <Text className="font-body text-[15px] text-[#B5B5B5]">Failed to send.</Text>
+      <Text className="font-body-medium text-[15px] text-[#1A7A6D]">Retry</Text>
+    </Pressable>
   );
 }
 
@@ -80,35 +104,61 @@ function SuggestionChips({
   suggestions: string[];
   onPress: (s: string) => void;
 }) {
-  const { onTap } = useAIHaptics();
   if (!suggestions.length) return null;
 
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12, gap: 8 }}>
-      {suggestions.slice(0, 5).map((s, i) => (
+      className="h-[48px]"
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingVertical: 6,
+        gap: 8,
+        alignItems: 'center',
+      }}>
+      {suggestions.slice(0, 6).map((s, i) => (
         <Pressable
           key={i}
-          onPress={() => {
-            onTap();
-            onPress(s);
-          }}
-          style={{
-            backgroundColor: SURFACE,
-            borderRadius: 20,
-            borderWidth: 1,
-            borderColor: BORDER,
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-          }}>
-          <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 15, color: TEXT_SECONDARY }}>
+          onPress={() => onPress(s)}
+          className="rounded-full border border-black/[0.06] bg-white px-4 py-2">
+          <Text className="font-body text-[14px] text-[#6B7280]" numberOfLines={1}>
             {s}
           </Text>
         </Pressable>
       ))}
     </ScrollView>
+  );
+}
+
+// ─── Empty State (Miriam centered) ───────────────────────────────
+
+function EmptyChatState({
+  onSend,
+  suggestions,
+  hideForTyping,
+}: {
+  onSend: (msg: string) => void;
+  suggestions: string[];
+  hideForTyping: boolean;
+}) {
+  if (hideForTyping) return <View className="flex-1" />;
+
+  return (
+    <View className="flex-1">
+      <View className="flex-1 items-center justify-center px-6">
+        <MiriamCharacter size={120} emotion="happy" animate />
+        <Text className="mt-6 font-mono-bold text-[32px] tracking-tight text-[#1A1A1A]">
+          Miriam
+        </Text>
+        <Text className="mt-2 font-body text-[16px] text-[#B5B5B5]">
+          Your financial assistant
+        </Text>
+      </View>
+      <View className="pb-2">
+        <SuggestionChips suggestions={suggestions} onPress={onSend} />
+      </View>
+    </View>
   );
 }
 
@@ -119,7 +169,8 @@ export default function AIChatScreen() {
   const scrollRef = useRef<FlatList>(null);
   const router = useRouter();
   const [showThreads, setShowThreads] = useState(false);
-  const { onNewThread } = useAIHaptics();
+  const isKeyboardVisible = useKeyboardVisible();
+  const [threadSearch, setThreadSearch] = useState('');
   const { data: subData } = useSubscription();
   const isPro = __DEV__ || (subData?.is_pro ?? false);
 
@@ -133,7 +184,10 @@ export default function AIChatScreen() {
     suggestions,
     pendingAction,
     overCeiling,
+    lastError,
     sendMessage,
+    sendImage,
+    retryLastMessage,
     selectConversation,
     createConversation,
     deleteConversation,
@@ -141,87 +195,82 @@ export default function AIChatScreen() {
     clearPendingAction,
     close,
   } = useAIChatStore();
+  const messageCount = messages.length;
 
-  // Auto-scroll on new messages
+  const smartSuggestions = useMemo(() => {
+    const defaults = [
+      "What's my financial health?",
+      'Forecast my end-of-month balance',
+      'Show my spending breakdown',
+      'Help me build a savings plan',
+    ];
+    const merged = [...defaults, ...(suggestions ?? [])];
+    const seen = new Set<string>();
+    return merged.filter((s) => {
+      const key = s.trim().toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [suggestions]);
+
+  const filteredConversations = useMemo(() => {
+    const list = conversations ?? [];
+    if (!threadSearch.trim()) return list;
+    const q = threadSearch.toLowerCase();
+    return list.filter((c) => (c.title ?? '').toLowerCase().includes(q));
+  }, [conversations, threadSearch]);
+
   useEffect(() => {
-    if ((messages ?? []).length > 0) {
+    if (messageCount > 0) {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     }
-  }, [(messages ?? []).length, isStreaming]);
+  }, [messageCount, isStreaming]);
+
+  const [editText, setEditText] = useState('');
+  const [attachedImage, setAttachedImage] = useState<{ uri: string; base64: string } | null>(null);
+  const [showImageSheet, setShowImageSheet] = useState(false);
 
   const handleSend = useCallback(
     async (msg: string, image?: { uri: string; base64: string }) => {
-      // Image analysis flow
+      const trimmed = msg.trim();
+      if (!trimmed && !image) return;
+
       if (image) {
-        const userMsg: AIMessage = {
-          role: 'user',
-          content: msg ? `📸 ${msg}` : '📸 [Receipt image attached]',
-          created_at: new Date().toISOString(),
-        };
-        useAIChatStore.setState((s) => ({
-          messages: [...s.messages, userMsg],
-          isStreaming: true,
-        }));
         setAttachedImage(null);
-        try {
-          const res = await aiService.analyzeImage(
-            image.base64,
-            msg || 'Analyze this receipt and extract the transaction details.'
-          );
-          const assistantMsg: AIMessage = {
-            role: 'assistant',
-            content: res.data.content,
-            created_at: new Date().toISOString(),
-          };
-          useAIChatStore.setState((s) => ({
-            messages: [...s.messages, assistantMsg],
-            cards: res.data.cards ?? [],
-            isStreaming: false,
-          }));
-        } catch {
-          const errorMsg: AIMessage = {
-            role: 'assistant',
-            content: "I couldn't analyze that image — try again with a clearer photo 📸",
-            created_at: new Date().toISOString(),
-          };
-          useAIChatStore.setState((s) => ({
-            messages: [...s.messages, errorMsg],
-            isStreaming: false,
-          }));
-        }
+        await sendImage(
+          image.base64,
+          trimmed || 'Analyze this receipt and extract the transaction details.'
+        );
         return;
       }
 
-      // Text-only flow
       let convId = activeConversationId;
-      if (!convId) convId = await createConversation(msg.slice(0, 50));
-      sendMessage(msg, convId);
+      if (!convId) {
+        try {
+          convId = await createConversation(trimmed.slice(0, 50));
+        } catch {
+          await sendMessage(trimmed);
+          setEditText('');
+          return;
+        }
+      }
+
+      await sendMessage(trimmed, convId);
       setEditText('');
     },
-    [activeConversationId, createConversation, sendMessage]
+    [activeConversationId, createConversation, sendMessage, sendImage]
   );
 
   const handleActionConfirmed = useCallback(
-    async (action: PendingAction) => {
+    (action: PendingAction) => {
       clearPendingAction();
-      // SECURITY FIX (R5-I1): Verify server actually executed the action before showing success
-      try {
-        const convId = useAIChatStore.getState().activeConversationId;
-        if (convId) await aiService.confirmAction(convId);
-        const confirmMsg: AIMessage = {
-          role: 'assistant',
-          content: `✅ Done — ${action.description}`,
-          created_at: new Date().toISOString(),
-        };
-        useAIChatStore.setState((s) => ({ messages: [...s.messages, confirmMsg] }));
-      } catch {
-        const errorMsg: AIMessage = {
-          role: 'assistant',
-          content: '❌ Action failed — please try again.',
-          created_at: new Date().toISOString(),
-        };
-        useAIChatStore.setState((s) => ({ messages: [...s.messages, errorMsg] }));
-      }
+      const confirmMsg: AIMessage = {
+        role: 'assistant',
+        content: `✅ Done — ${action.description}`,
+        created_at: new Date().toISOString(),
+      };
+      useAIChatStore.setState((s) => ({ messages: [...s.messages, confirmMsg] }));
     },
     [clearPendingAction]
   );
@@ -237,40 +286,22 @@ export default function AIChatScreen() {
   }, [clearPendingAction]);
 
   const handleBack = useCallback(() => {
-    if (showThreads) setShowThreads(false);
-    else if (activeConversationId) clearActiveConversation();
-    else {
+    if (showThreads) {
+      setShowThreads(false);
+      setThreadSearch('');
+    } else if (activeConversationId) {
+      clearActiveConversation();
+    } else {
       close();
       router.back();
     }
   }, [showThreads, activeConversationId, clearActiveConversation, close, router]);
 
   const handleNewThread = useCallback(() => {
-    onNewThread();
     clearActiveConversation();
     setShowThreads(false);
-  }, [clearActiveConversation, onNewThread]);
-
-  const handleSelectThread = useCallback(
-    (id: string) => {
-      selectConversation(id);
-      setShowThreads(false);
-    },
-    [selectConversation]
-  );
-
-  const handleDeleteThread = useCallback(
-    (id: string) => {
-      deleteConversation(id);
-    },
-    [deleteConversation]
-  );
-
-  const [editText, setEditText] = useState('');
-
-  const handleEdit = useCallback((content: string) => {
-    setEditText(content);
-  }, []);
+    setThreadSearch('');
+  }, [clearActiveConversation]);
 
   const handleMicPress = useCallback(() => {
     if (!isPro) {
@@ -280,8 +311,13 @@ export default function AIChatScreen() {
     router.push('/voice-mode');
   }, [router, isPro]);
 
-  const [attachedImage, setAttachedImage] = useState<{ uri: string; base64: string } | null>(null);
-  const [showImageSheet, setShowImageSheet] = useState(false);
+  const handleImagePress = useCallback(() => {
+    if (!isPro) {
+      router.push('/subscription');
+      return;
+    }
+    setShowImageSheet(true);
+  }, [isPro, router]);
 
   const pickFromGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -316,18 +352,12 @@ export default function AIChatScreen() {
     }
   };
 
-  const handleImagePress = useCallback(() => {
-    if (!isPro) {
-      router.push('/subscription');
-      return;
-    }
-    setShowImageSheet(true);
-  }, [isPro, router]);
+  const hasFailedMessage =
+    lastError && messages.length > 0 && messages[messages.length - 1].role === 'assistant';
 
   const renderMessage = useCallback(
     ({ item, index }: { item: AIMessage; index: number }) => {
       const isLast = index === (messages ?? []).length - 1;
-      // Show cards from live state for the latest message, or from persisted metadata for older messages
       let showCards: InsightCard[] | undefined;
       if (isLast && item.role === 'assistant') {
         showCards = cards;
@@ -340,56 +370,58 @@ export default function AIChatScreen() {
           cards={showCards}
           isLatest={isLast}
           animate={isLast && item.role === 'assistant'}
-          onEdit={handleEdit}
+          onEdit={(content) => setEditText(content)}
         />
       );
     },
-    [messages, cards, handleEdit]
+    [messages, cards]
   );
 
-  // ── Active Chat View ───────────────────────────────────────────
+  const isEmpty = !activeConversationId && (messages ?? []).length === 0;
 
-  if (activeConversationId || (messages ?? []).length > 0) {
-    return (
-      <View style={{ flex: 1, backgroundColor: BG }}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1 }}
-          keyboardVerticalOffset={0}>
-          {/* Header */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: insets.top + 8,
-              paddingHorizontal: 16,
-              paddingBottom: 12,
-              backgroundColor: BG,
-            }}>
-            <Pressable onPress={handleBack} hitSlop={12} style={{ padding: 8 }}>
-              <Text style={{ fontSize: 20, color: TEXT_PRIMARY }}>←</Text>
+  return (
+    <View className="flex-1" style={{ backgroundColor: BG }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={0}>
+        {/* ── Header ── */}
+        <View
+          className="flex-row items-center justify-between px-5 pb-3"
+          style={{ paddingTop: insets.top + 8, backgroundColor: BG }}>
+          <Pressable
+            onPress={handleBack}
+            hitSlop={12}
+            className="w-10 h-10 rounded-full items-center justify-center">
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#1A1A1A" />
+          </Pressable>
+          <Text className="font-mono-bold text-[17px] tracking-wider text-[#1A1A1A]">
+            Miriam
+          </Text>
+          <View className="flex-row items-center gap-1">
+            <Pressable
+              onPress={() => setShowThreads(true)}
+              hitSlop={12}
+              className="w-10 h-10 rounded-full items-center justify-center">
+              <HugeiconsIcon icon={Menu01Icon} size={22} color="#1A1A1A" />
             </Pressable>
-            <View style={{ alignItems: 'center' }}>
-              <Text
-                style={{
-                  fontFamily: 'SFMono-Bold',
-                  fontSize: 13,
-                  color: TEXT_PRIMARY,
-                  letterSpacing: 0.5,
-                }}>
-                MIRIAM
-              </Text>
-            </View>
-            <Pressable onPress={handleNewThread} hitSlop={12} style={{ padding: 8 }}>
-              <Text
-                style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 20, color: TEXT_PRIMARY }}>
-                +
-              </Text>
+            <Pressable
+              onPress={handleNewThread}
+              hitSlop={12}
+              className="w-10 h-10 rounded-full items-center justify-center">
+              <HugeiconsIcon icon={Add01Icon} size={22} color="#1A1A1A" />
             </Pressable>
           </View>
+        </View>
 
-          {/* Messages */}
+        {/* ── Content ── */}
+        {isEmpty ? (
+          <EmptyChatState
+            onSend={handleSend}
+            suggestions={smartSuggestions}
+            hideForTyping={isKeyboardVisible}
+          />
+        ) : (
           <FlatList
             ref={scrollRef}
             data={messages ?? []}
@@ -407,23 +439,11 @@ export default function AIChatScreen() {
                 ) : isStreaming ? (
                   <TypingDots />
                 ) : null}
+                {hasFailedMessage && <RetryBanner onPress={retryLastMessage} />}
                 {overCeiling && (
-                  <View
-                    style={{
-                      backgroundColor: '#FFF7ED',
-                      borderRadius: 12,
-                      padding: 12,
-                      marginTop: 8,
-                    }}>
-                    <Text
-                      style={{
-                        fontFamily: 'SFProDisplay-Medium',
-                        fontSize: 13,
-                        color: '#92400E',
-                        textAlign: 'center',
-                      }}>
-                      You&apos;ve reached your monthly AI limit. Miriam will be back at full power
-                      next month 💡
+                  <View className="mt-3 rounded-2xl bg-amber-50 p-4">
+                    <Text className="text-center font-body text-[14px] text-amber-700">
+                      Monthly AI limit reached. Miriam resets next month.
                     </Text>
                   </View>
                 )}
@@ -433,179 +453,111 @@ export default function AIChatScreen() {
             keyboardDismissMode="interactive"
             keyboardShouldPersistTaps="handled"
           />
+        )}
 
-          {/* Input */}
-          <View style={{ paddingBottom: insets.bottom + 8 }}>
-            <InputBar
-              onSend={handleSend}
-              onMicPress={handleMicPress}
-              onImagePress={handleImagePress}
-              isStreaming={isStreaming}
-              placeholder="Ask a follow up..."
-              initialValue={editText}
-              attachedImage={attachedImage}
-              onClearImage={() => setAttachedImage(null)}
-            />
-          </View>
-        </KeyboardAvoidingView>
-
-        <ActionConfirmSheet
-          key={pendingAction?.id}
-          action={pendingAction}
-          visible={!!pendingAction}
-          onClose={() => clearPendingAction()}
-          onConfirmed={handleActionConfirmed}
-          onCancelled={handleActionCancelled}
-        />
-
-        <ActionSheet
-          visible={showImageSheet}
-          onClose={() => setShowImageSheet(false)}
-          icon={Camera01Icon}
-          title="Add Receipt"
-          subtitle="Scan or upload a receipt for Miriam to analyze"
-          actions={[
-            {
-              id: 'scan',
-              label: 'Scan Receipt',
-              sublabel: 'Take a photo with your camera',
-              icon: Camera01Icon,
-              iconColor: '#FF2E01',
-              iconBgColor: '#FFF0ED',
-              onPress: pickFromCamera,
-            },
-            {
-              id: 'upload',
-              label: 'Upload from Gallery',
-              sublabel: 'Choose an existing photo',
-              icon: Image01Icon,
-              iconColor: '#2196F3',
-              iconBgColor: '#E3F2FD',
-              onPress: pickFromGallery,
-            },
-          ]}
-        />
-      </View>
-    );
-  }
-
-  // ── Threads List View ──────────────────────────────────────────
-
-  if (showThreads) {
-    return (
-      <Animated.View entering={FadeIn.duration(150)} style={{ flex: 1, backgroundColor: BG }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingTop: insets.top + 8,
-            paddingHorizontal: 16,
-            paddingBottom: 12,
-          }}>
-          <Pressable onPress={() => setShowThreads(false)} hitSlop={12} style={{ padding: 8 }}>
-            <Text style={{ fontSize: 20, color: TEXT_PRIMARY }}>←</Text>
-          </Pressable>
-          <Text style={{ fontFamily: 'SFProDisplay-Medium', fontSize: 14, color: TEXT_SECONDARY }}>
-            Threads
-          </Text>
-          <Pressable onPress={handleNewThread} hitSlop={12} style={{ padding: 8 }}>
-            <Text style={{ fontSize: 20, color: TEXT_PRIMARY }}>+</Text>
-          </Pressable>
-        </View>
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          {(conversations ?? []).length === 0 ? (
-            <View style={{ alignItems: 'center', paddingTop: 80 }}>
-              <Text
-                style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 14, color: TEXT_TERTIARY }}>
-                No threads yet
+        {/* ── Threads Overlay ── */}
+        {showThreads && (
+          <Animated.View
+            entering={FadeIn.duration(150)}
+            exiting={FadeOut.duration(150)}
+            className="absolute bottom-0 left-0 right-0 top-0 z-20"
+            style={{ backgroundColor: BG }}>
+            <View
+              className="flex-row items-center justify-between px-5 pb-3"
+              style={{ paddingTop: insets.top + 8 }}>
+              <Pressable
+                onPress={() => {
+                  setShowThreads(false);
+                  setThreadSearch('');
+                }}
+                hitSlop={12}
+                className="w-10 h-10 rounded-full items-center justify-center">
+                <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#1A1A1A" />
+              </Pressable>
+              <Text className="font-heading-semibold text-[18px] text-[#1A1A1A]">
+                Threads
               </Text>
+              <Pressable
+                onPress={handleNewThread}
+                hitSlop={12}
+                className="w-10 h-10 rounded-full items-center justify-center">
+                <HugeiconsIcon icon={Add01Icon} size={22} color="#1A1A1A" />
+              </Pressable>
             </View>
-          ) : (
-            (conversations ?? []).map((conv) => (
-              <ThreadRow
-                key={conv.id}
-                conv={conv}
-                onPress={() => handleSelectThread(conv.id)}
-                onDelete={() => handleDeleteThread(conv.id)}
-              />
-            ))
+
+            <View className="mx-5 mb-4">
+              <View className="flex-row items-center rounded-full bg-white px-4 py-3 border border-black/[0.05]">
+                <HugeiconsIcon icon={Search01Icon} size={18} color="#B5B5B5" />
+                <TextInput
+                  value={threadSearch}
+                  onChangeText={setThreadSearch}
+                  placeholder="Search threads"
+                  placeholderTextColor="#B5B5B5"
+                  className="flex-1 font-body text-[15px] text-[#1A1A1A] ml-2.5"
+                />
+              </View>
+            </View>
+
+            <ScrollView
+              className="flex-1"
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled">
+              {filteredConversations.length === 0 ? (
+                <View className="items-center pt-24 px-6">
+                  <MiriamCharacter size={48} emotion="sleepy" animate={false} />
+                  <Text className="mt-4 font-heading-semibold text-[17px] text-[#1A1A1A] text-center">
+                    {threadSearch ? 'No matching threads' : 'No threads yet'}
+                  </Text>
+                  <Text className="mt-2 font-body text-[14px] text-[#B5B5B5] text-center">
+                    {threadSearch
+                      ? 'Try a different search term.'
+                      : 'Start a conversation with Miriam to see it here.'}
+                  </Text>
+                </View>
+              ) : (
+                filteredConversations.map((conv) => (
+                  <ThreadRow
+                    key={conv.id}
+                    conv={conv}
+                    onPress={() => {
+                      selectConversation(conv.id);
+                      setShowThreads(false);
+                      setThreadSearch('');
+                    }}
+                    onDelete={() => deleteConversation(conv.id)}
+                  />
+                ))
+              )}
+            </ScrollView>
+          </Animated.View>
+        )}
+
+        {/* ── Input ── */}
+        <View className="pb-2" style={{ paddingBottom: insets.bottom + 4 }}>
+          {!isEmpty && !isKeyboardVisible && (
+            <SuggestionChips suggestions={smartSuggestions} onPress={handleSend} />
           )}
-        </ScrollView>
-      </Animated.View>
-    );
-  }
-
-  // ── Home View (Perplexity-inspired) ────────────────────────────
-
-  return (
-    <View style={{ flex: 1, backgroundColor: BG }}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={0}>
-        {/* Header */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingTop: insets.top + 8,
-            paddingHorizontal: 16,
-          }}>
-          <Pressable
-            onPress={() => {
-              close();
-              router.back();
-            }}
-            hitSlop={12}
-            style={{ padding: 8 }}>
-            <Text style={{ fontSize: 20, color: TEXT_PRIMARY }}>✕</Text>
-          </Pressable>
-          <Pressable onPress={() => setShowThreads(true)} hitSlop={12} style={{ padding: 8 }}>
-            <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 18, color: TEXT_PRIMARY }}>
-              ☰
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* Center branding */}
-        <View
-          style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 100 }}>
-          <Text style={{ fontSize: 36, color: ACCENT, marginBottom: 8 }}>✦</Text>
-          <Text
-            style={{
-              fontFamily: 'SFMono-Bold',
-              fontSize: 28,
-              color: TEXT_PRIMARY,
-              letterSpacing: -0.5,
-            }}>
-            miriam
-          </Text>
-          <Text
-            style={{
-              fontFamily: 'SFProDisplay-Regular',
-              fontSize: 14,
-              color: TEXT_TERTIARY,
-              marginTop: 6,
-            }}>
-            Your financial companion
-          </Text>
-        </View>
-
-        {/* Bottom: suggestions + input */}
-        <View style={{ paddingBottom: insets.bottom + 8 }}>
-          <SuggestionChips suggestions={suggestions ?? []} onPress={handleSend} />
           <InputBar
             onSend={handleSend}
             onMicPress={handleMicPress}
             onImagePress={handleImagePress}
             isStreaming={isStreaming}
+            placeholder={isEmpty ? 'Ask anything...' : 'Ask a follow up...'}
+            initialValue={editText}
             attachedImage={attachedImage}
             onClearImage={() => setAttachedImage(null)}
           />
         </View>
       </KeyboardAvoidingView>
+
+      <ActionConfirmSheet
+        key={pendingAction?.id}
+        action={pendingAction}
+        visible={!!pendingAction}
+        onClose={() => clearPendingAction()}
+        onConfirmed={handleActionConfirmed}
+        onCancelled={handleActionCancelled}
+      />
 
       <ActionSheet
         visible={showImageSheet}

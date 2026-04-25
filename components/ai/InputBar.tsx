@@ -1,11 +1,20 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, TextInput, Pressable, Text, Keyboard, Image } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, FadeIn } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  FadeIn,
+} from 'react-native-reanimated';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { Mic01Icon, Image01Icon, ArrowUp01Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
-import { useAIHaptics } from '@/hooks/useAIHaptics';
+import {
+  Mic01Icon,
+  Image01Icon,
+  ArrowUp01Icon,
+  Cancel01Icon,
+} from '@hugeicons/core-free-icons';
 
-const ACCENT = '#FF2E01';
+const ACCENT = '#1A7A6D';
 
 interface AttachedImage {
   uri: string;
@@ -40,7 +49,6 @@ export function InputBar({
   const [text, setText] = useState(initialValue ?? '');
   const inputRef = useRef<TextInput>(null);
   const sendScale = useSharedValue(1);
-  const { onSend: hapticSend } = useAIHaptics();
   const hasContent = text.trim().length > 0 || !!attachedImage;
 
   const sendStyle = useAnimatedStyle(() => ({
@@ -49,7 +57,6 @@ export function InputBar({
 
   const handleSend = () => {
     if ((!text.trim() && !attachedImage) || isStreaming) return;
-    hapticSend();
     onSend(text.trim(), attachedImage ?? undefined);
     setText('');
   };
@@ -67,37 +74,27 @@ export function InputBar({
 
   return (
     <View
+      className="mx-4 rounded-[24px] bg-white border border-black/[0.05]"
       style={{
-        backgroundColor: '#FFFFFF',
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.06)',
-        marginHorizontal: 16,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
+        shadowColor: '#000',
+        shadowOpacity: 0.03,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 2,
       }}>
-      {/* Image preview */}
       {attachedImage && (
-        <Animated.View entering={FadeIn.duration(150)} style={{ paddingTop: 8, paddingBottom: 4, paddingHorizontal: 4 }}>
-          <View style={{ position: 'relative', alignSelf: 'flex-start' }}>
+        <Animated.View entering={FadeIn.duration(150)} className="px-4 pt-3">
+          <View className="relative self-start">
             <Image
               source={{ uri: attachedImage.uri }}
-              style={{ width: 80, height: 80, borderRadius: 12 }}
+              className="w-20 h-20 rounded-xl"
               resizeMode="cover"
             />
             <Pressable
               onPress={onClearImage}
-              style={{
-                position: 'absolute',
-                top: -6,
-                right: -6,
-                width: 22,
-                height: 22,
-                borderRadius: 11,
-                backgroundColor: '#1A1A1A',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
+              className="absolute -top-1.5 -right-1.5 w-[22px] h-[22px] rounded-full bg-[#1A1A1A] items-center justify-center"
+              accessibilityRole="button"
+              accessibilityLabel="Remove image">
               <HugeiconsIcon icon={Cancel01Icon} size={12} color="#FFFFFF" />
             </Pressable>
           </View>
@@ -108,7 +105,9 @@ export function InputBar({
         ref={inputRef}
         value={text}
         onChangeText={setText}
-        placeholder={attachedImage ? 'Add a message...' : (placeholder ?? 'Ask Miriam anything...')}
+        placeholder={
+          attachedImage ? 'Add a message...' : (placeholder ?? 'Ask anything...')
+        }
         placeholderTextColor="#B5B5B5"
         multiline
         maxLength={4000}
@@ -116,31 +115,44 @@ export function InputBar({
         returnKeyType="default"
         blurOnSubmit={false}
         enablesReturnKeyAutomatically
-        style={{
-          fontFamily: 'SFProDisplay-Regular',
-          fontSize: 16,
-          color: '#1A1A1A',
-          maxHeight: 120,
-          paddingVertical: 8,
-          paddingHorizontal: 4,
-        }}
+        className="font-body text-[17px] text-[#1A1A1A] max-h-[120px] px-5 pt-4 pb-2 leading-[26px]"
       />
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 2, paddingBottom: 4 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+
+      <View className="flex-row items-center justify-between px-3 pb-3">
+        <View className="flex-row items-center gap-0.5">
           {showAttachments && onImagePress && (
-            <Pressable onPress={onImagePress} disabled={isStreaming} hitSlop={8}
-              style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
-              <HugeiconsIcon icon={Image01Icon} size={20} color={isStreaming ? '#D4D4D4' : '#8C8C8C'} />
+            <Pressable
+              onPress={onImagePress}
+              disabled={isStreaming}
+              hitSlop={8}
+              className="w-10 h-10 rounded-full items-center justify-center"
+              accessibilityRole="button"
+              accessibilityLabel="Attach image">
+              <HugeiconsIcon
+                icon={Image01Icon}
+                size={22}
+                color={isStreaming ? '#D4D4D4' : '#8C8C8C'}
+              />
             </Pressable>
           )}
           {showAttachments && onMicPress && (
-            <Pressable onPress={onMicPress} disabled={isStreaming} hitSlop={8}
-              style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
-              <HugeiconsIcon icon={Mic01Icon} size={20} color={isStreaming ? '#D4D4D4' : '#8C8C8C'} />
+            <Pressable
+              onPress={onMicPress}
+              disabled={isStreaming}
+              hitSlop={8}
+              className="w-10 h-10 rounded-full items-center justify-center"
+              accessibilityRole="button"
+              accessibilityLabel="Voice input">
+              <HugeiconsIcon
+                icon={Mic01Icon}
+                size={22}
+                color={isStreaming ? '#D4D4D4' : '#8C8C8C'}
+              />
             </Pressable>
           )}
           {text.length > 3500 && (
-            <Text style={{ fontFamily: 'SFMono-Medium', fontSize: 11, color: text.length > 3900 ? '#DC2626' : '#8C8C8C' }}>
+            <Text
+              className={`font-mono-medium text-[12px] ml-1 ${text.length > 3900 ? 'text-red-600' : 'text-text-secondary'}`}>
               {text.length}/4000
             </Text>
           )}
@@ -149,18 +161,22 @@ export function InputBar({
         <Animated.View style={sendStyle}>
           <Pressable
             onPress={handleSend}
-            onPressIn={() => { sendScale.value = withSpring(0.88, { damping: 15 }); }}
-            onPressOut={() => { sendScale.value = withSpring(1, { damping: 15 }); }}
+            onPressIn={() => {
+              sendScale.value = withSpring(0.88, { damping: 15 });
+            }}
+            onPressOut={() => {
+              sendScale.value = withSpring(1, { damping: 15 });
+            }}
             disabled={!hasContent || isStreaming}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              backgroundColor: hasContent ? ACCENT : '#E8E8E6',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            <HugeiconsIcon icon={ArrowUp01Icon} size={18} color={hasContent ? '#FFF' : '#B5B5B5'} />
+            className="w-[42px] h-[42px] rounded-full items-center justify-center"
+            style={{ backgroundColor: hasContent ? ACCENT : '#E8E8E6' }}
+            accessibilityRole="button"
+            accessibilityLabel="Send message">
+            <HugeiconsIcon
+              icon={ArrowUp01Icon}
+              size={20}
+              color={hasContent ? '#FFF' : '#B5B5B5'}
+            />
           </Pressable>
         </Animated.View>
       </View>

@@ -88,6 +88,11 @@ export const fundingService = {
       amount: typeof req.amount === 'number' ? req.amount.toFixed(2) : req.amount,
     });
   },
+
+  // Cancel a pending withdrawal
+  async cancelWithdrawal(withdrawalId: string): Promise<void> {
+    return apiClient.delete(`/v1/withdrawals/${withdrawalId}`);
+  },
 };
 
 export default fundingService;

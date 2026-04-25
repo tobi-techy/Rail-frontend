@@ -146,13 +146,17 @@ export const walletService = {
       payload.destination_chain = data.network;
     }
 
+    const config = data.idempotencyKey
+      ? { headers: { 'Idempotency-Key': data.idempotencyKey } }
+      : undefined;
+
     let response: any;
     try {
-      response = await apiClient.post<any>(WALLET_ENDPOINTS.TRANSFER, payload);
+      response = await apiClient.post<any>(WALLET_ENDPOINTS.TRANSFER, payload, config);
     } catch (error) {
       // Compatibility fallback for environments that have not mounted /withdrawals/crypto yet.
       if (isNotFoundError(error)) {
-        response = await apiClient.post<any>(WALLET_ENDPOINTS.TRANSACTIONS, payload);
+        response = await apiClient.post<any>(WALLET_ENDPOINTS.TRANSACTIONS, payload, config);
       } else {
         throw error;
       }

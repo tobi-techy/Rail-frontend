@@ -6,13 +6,28 @@ import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { useVerifyPasscode } from '@/api/hooks';
 import { useAuthStore } from '@/stores/authStore';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useHaptics } from '@/hooks/useHaptics';
 import { ArrowLeft01Icon, FingerPrintIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import { logger } from '@/lib/logger';
 
 export default function AuthorizeTransactionScreen() {
   const params = useLocalSearchParams();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  // SECURITY FIX (NEW-M4): Reject deep link access — this screen must only be
+  // reached from internal navigation. If not authenticated, redirect immediately.
+  useEffect(() => {
+    if (!isAuthenticated) {
+      logger.warn('[AuthorizeTransaction] Unauthenticated access attempt — possible deep link abuse', {
+        component: 'AuthorizeTransaction',
+        action: 'unauthorized-access',
+      });
+      router.replace('/');
+    }
+  }, [isAuthenticated]);
+
   const amount = (typeof params.amount === 'string' ? params.amount : '')
     .replace(/[^0-9.]/g, '')
     .slice(0, 20);

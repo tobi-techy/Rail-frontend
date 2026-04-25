@@ -21,6 +21,8 @@ export type WithdrawalStep =
   | 'details' // Step 3: Category, narration, review
   | 'confirm'; // Step 4: Final review + auth
 
+export type FiatCurrency = 'USD' | 'EUR' | 'GBP' | 'NGN';
+
 export type MethodCopy = {
   title: string;
   subtitle: string;
@@ -46,6 +48,7 @@ export interface WithdrawalFlowState {
   amount: string;
   destination: string;
   chain: string;
+  fiatCurrency: FiatCurrency;
   fiatHolderName: string;
   fiatAccountNumber: string;
   category: string;

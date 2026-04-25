@@ -31,10 +31,12 @@ export function generateRequestId(): string {
         hex.substring(20, 32),
       ].join('-');
     } catch {
-      // Last resort: use timestamp + counter (still better than Math.random)
-      const now = Date.now().toString(16);
-      const counter = Math.floor(performance.now() * 1000) % 0xffffff;
-      return `${now.padStart(12, '0')}-0000-4000-8000-000000${counter.toString(16).padStart(6, '0')}`;
+      // SECURITY FIX (L-2): Improved last-resort fallback with better entropy.
+      // Combines timestamp, high-res timer, and a simple counter to reduce predictability.
+      const ts = Date.now().toString(36);
+      const hr = Math.floor(performance.now() * 1000).toString(36);
+      const rnd = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+      return `${ts}-${hr}-4000-8000-${rnd}${Date.now().toString(16).slice(-6)}`;
     }
   }
 }

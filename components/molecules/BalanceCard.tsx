@@ -7,7 +7,6 @@ import type { Currency } from '@/stores/uiStore';
 import { formatCurrencyAmount, convertFromUsd, type FxRates } from '@/utils/currency';
 import { EyeIcon, ViewOffIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { EaseView } from 'react-native-ease';
 
 export interface BalanceCardProps extends ViewProps {
   balance?: string;

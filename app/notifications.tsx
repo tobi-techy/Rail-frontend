@@ -125,6 +125,18 @@ export default function NotificationsScreen() {
         case 'offramp_failure':
           router.push('/spending-stash' as any);
           break;
+        case 'morning_greeting':
+          router.push('/(tabs)' as any);
+          break;
+        case 'spending_alert':
+        case 'budget_pace_alert':
+        case 'cash_runway_alert':
+        case 'idle_money':
+        case 'savings_milestone':
+        case 'weekly_digest':
+        case 'month_recap':
+          router.push('/ai-chat' as any);
+          break;
         default:
           break;
       }

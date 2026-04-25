@@ -74,6 +74,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   fullName?: string;
+  railTag?: string;
   dateOfBirth?: string;
   country?: string;
   addressStreet?: string;

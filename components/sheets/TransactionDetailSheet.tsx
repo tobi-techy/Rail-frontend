@@ -11,6 +11,7 @@ import { formatAbsAmount } from '@/utils/transactionFormat';
 import { MaskedBalance } from '../molecules/MaskedBalance';
 import { useUIStore } from '@/stores';
 import { useCancelWithdrawal } from '@/api/hooks/useFunding';
+import { usePajBanks } from '@/api/hooks/usePaj';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { safeError } from '@/utils/logSanitizer';
 import {
@@ -198,14 +199,42 @@ export function TransactionDetailSheet({
   const { isBalanceVisible } = useUIStore();
   const cancelWithdrawal = useCancelWithdrawal();
   const { showSuccess, showError } = useFeedbackPopup();
+  const { data: pajBanksData } = usePajBanks();
   const [showMore, setShowMore] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const receiptRef = useRef<ViewShot>(null);
+
+  const handleShareReceipt = useCallback(async () => {
+    if (!transaction) return;
+    setShowReceipt(true);
+    // Wait for the receipt view to render
+    await new Promise((r) => setTimeout(r, 100));
+    try {
+      const uri = await receiptRef.current?.capture?.();
+      if (!uri) {
+        // Fallback to text share
+        Share.share({ message: buildTextReceipt(transaction) });
+        return;
+      }
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share Receipt' });
+      } else {
+        Share.share({ url: uri });
+      }
+    } catch {
+      Share.share({ message: buildTextReceipt(transaction) });
+    } finally {
+      setShowReceipt(false);
+    }
+  }, [transaction]);
 
   if (!transaction) return null;
 
   const isCancellable = transaction.type === 'withdraw' && transaction.status === 'pending';
   const meta = transaction.metadata ?? {};
+  const resolvedBankName = meta.bankId
+    ? (pajBanksData?.banks ?? []).find((b) => b.id === meta.bankId)?.name
+    : undefined;
 
   const handleCancel = () => {
     Alert.alert('Cancel Withdrawal', 'Are you sure you want to cancel this withdrawal?', [
@@ -228,29 +257,6 @@ export function TransactionDetailSheet({
       },
     ]);
   };
-
-  const handleShareReceipt = useCallback(async () => {
-    setShowReceipt(true);
-    // Wait for the receipt view to render
-    await new Promise((r) => setTimeout(r, 100));
-    try {
-      const uri = await receiptRef.current?.capture?.();
-      if (!uri) {
-        // Fallback to text share
-        Share.share({ message: buildTextReceipt(transaction) });
-        return;
-      }
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share Receipt' });
-      } else {
-        Share.share({ url: uri });
-      }
-    } catch {
-      Share.share({ message: buildTextReceipt(transaction) });
-    } finally {
-      setShowReceipt(false);
-    }
-  }, [transaction]);
 
   const {
     icon,
@@ -315,7 +321,10 @@ export function TransactionDetailSheet({
   // Build extra detail rows for "See More"
   const extraRows: { label: string; value: string; copyable?: boolean }[] = [];
   if (meta.bankAccountNumber) extraRows.push({ label: 'Account Number', value: String(meta.bankAccountNumber), copyable: true });
-  if (meta.bankId) extraRows.push({ label: 'Bank', value: String(meta.bankId) });
+  if (meta.bankId) {
+    const bankName = (pajBanksData?.banks ?? []).find((b) => b.id === meta.bankId)?.name;
+    extraRows.push({ label: 'Bank', value: resolvedBankName || String(meta.bankId) });
+  }
   if (meta.rate) extraRows.push({ label: 'Exchange Rate', value: `₦${Number(meta.rate).toLocaleString()}` });
   if (meta.tokenAmount) extraRows.push({ label: 'USDC Amount', value: `$${Number(meta.tokenAmount).toFixed(2)}` });
   if (meta.fee) extraRows.push({ label: 'Fee', value: `$${Number(meta.fee).toFixed(2)}` });
@@ -361,7 +370,7 @@ export function TransactionDetailSheet({
         )}
 
         {type === 'withdraw' && (
-          <DetailRow label="To" value={transaction.subtitle || 'Bank Account'} />
+          <DetailRow label="To" value={String(meta.bankAccountName || meta.bankAccountNumber || transaction.subtitle || 'Bank Account')} />
         )}
 
         {type === 'swap' && (
@@ -430,7 +439,7 @@ export function TransactionDetailSheet({
       {showReceipt && (
         <View style={{ position: 'absolute', left: -9999 }}>
           <ViewShot ref={receiptRef} options={{ format: 'png', quality: 1 }}>
-            <ReceiptImage transaction={transaction} />
+            <ReceiptImage transaction={transaction} bankName={resolvedBankName} />
           </ViewShot>
         </View>
       )}
@@ -439,7 +448,7 @@ export function TransactionDetailSheet({
 }
 
 /* ── Styled receipt image component ── */
-function ReceiptImage({ transaction }: { transaction: Transaction }) {
+function ReceiptImage({ transaction, bankName }: { transaction: Transaction; bankName?: string }) {
   const { type, amount, currency = 'NGN', createdAt, txHash, status, title, subtitle, metadata } = transaction;
   const meta = metadata ?? {};
   const isCredit = type === 'deposit' || type === 'receive';
@@ -473,15 +482,16 @@ function ReceiptImage({ transaction }: { transaction: Transaction }) {
       {/* Details */}
       <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
         <ReceiptRow label="Type" value={typeLabels[type]} />
-        {title && <ReceiptRow label="Description" value={title} />}
-        {subtitle && <ReceiptRow label="Details" value={subtitle} />}
+        {!!title && <ReceiptRow label="Description" value={title} />}
+        {!!subtitle && <ReceiptRow label="Details" value={subtitle} />}
         <ReceiptRow label="Date" value={formatDateShort(createdAt)} />
-        {meta.bankAccountNumber && <ReceiptRow label="Account" value={String(meta.bankAccountNumber)} />}
-        {meta.bankId && <ReceiptRow label="Bank" value={String(meta.bankId)} />}
-        {meta.rate && <ReceiptRow label="Rate" value={`₦${Number(meta.rate).toLocaleString()}`} />}
-        {meta.tokenAmount && <ReceiptRow label="USDC" value={`$${Number(meta.tokenAmount).toFixed(2)}`} />}
-        {meta.fee && Number(meta.fee) > 0 && <ReceiptRow label="Fee" value={`$${Number(meta.fee).toFixed(2)}`} />}
-        {txHash && <ReceiptRow label="TX ID" value={txHash.length > 20 ? `${txHash.slice(0, 8)}...${txHash.slice(-8)}` : txHash} />}
+        {!!meta.bankAccountName && <ReceiptRow label="Recipient" value={String(meta.bankAccountName)} />}
+        {!!meta.bankAccountNumber && <ReceiptRow label="Account" value={String(meta.bankAccountNumber)} />}
+        {!!(bankName || meta.bankId) && <ReceiptRow label="Bank" value={bankName || String(meta.bankId)} />}
+        {!!meta.rate && <ReceiptRow label="Rate" value={`₦${Number(meta.rate).toLocaleString()}`} />}
+        {!!meta.tokenAmount && <ReceiptRow label="USDC" value={`$${Number(meta.tokenAmount).toFixed(2)}`} />}
+        {!!meta.fee && Number(meta.fee) > 0 && <ReceiptRow label="Fee" value={`$${Number(meta.fee).toFixed(2)}`} />}
+        {!!txHash && <ReceiptRow label="TX ID" value={txHash.length > 20 ? `${txHash.slice(0, 8)}...${txHash.slice(-8)}` : txHash} />}
       </View>
 
       {/* Footer */}

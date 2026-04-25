@@ -6,7 +6,7 @@ import { logger } from '../lib/logger';
 const SECURE_STORE_KEY = 'rail_encryption_key';
 // Fixed salt — not secret, just ensures the PBKDF2 output is domain-separated
 const PBKDF2_SALT = CryptoJS.enc.Hex.parse('7261696c6d6f6e657961707076310000');
-const PBKDF2_ITERATIONS = 10000;
+const PBKDF2_ITERATIONS = 100_000; // SECURITY FIX (NEW-L1): Increased from 10k to 100k per OWASP recommendations
 const KEY_SIZE = 256 / 32; // 256-bit key
 
 let _cachedKey: CryptoJS.lib.WordArray | null = null;
@@ -69,6 +69,20 @@ function getKey(): CryptoJS.lib.WordArray {
     throw new Error('[Encryption] Key not initialized. Call initEncryption() at app startup.');
   }
   return _cachedKey;
+}
+
+/**
+ * SECURITY FIX (NEW-H2): Zeroize the cached encryption key from memory.
+ * Must be called on logout to prevent key extraction via Frida/debugger.
+ */
+export function clearEncryptionKey(): void {
+  if (_cachedKey && _cachedKey.words) {
+    for (let i = 0; i < _cachedKey.words.length; i++) {
+      _cachedKey.words[i] = 0;
+    }
+    _cachedKey.sigBytes = 0;
+  }
+  _cachedKey = null;
 }
 
 export const encryptData = (data: string): string => {

@@ -4,7 +4,6 @@ import { walletService } from '../api/services';
 import { encryptObject, decryptObject } from '../utils/encryption';
 import { logger } from '@/lib/logger';
 import type { Token, Transaction } from '@/lib/domain/wallet/models';
-import { MOCK_TOKENS, MOCK_TRANSACTIONS } from '@/__mocks__/wallet.mock';
 import { ERROR_MESSAGES } from '@/lib/constants/messages';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -66,7 +65,9 @@ const createEncryptedStorage = () => ({
     try {
       const encrypted = await AsyncStorage.getItem(name);
       if (encrypted) {
-        return JSON.parse(decryptObject(encrypted));
+        // SECURITY FIX (H-5): decryptObject<T> already JSON.parses internally.
+        // Wrapping in JSON.parse() again caused double-parse failures.
+        return decryptObject<any>(encrypted);
       }
       return null;
     } catch (error) {
@@ -131,8 +132,10 @@ export const useWalletStore = create<WalletState & WalletActions>()(
 
           if (tokens.length === 0) {
             logger.error('[WalletStore] No valid tokens received');
+            // SECURITY FIX (M-6): Never fall back to mock data — show empty state with error
             set({
-              tokens: __DEV__ ? MOCK_TOKENS : [],
+              tokens: [],
+              error: __DEV__ ? 'No valid tokens received (dev)' : null,
               isLoading: false,
             });
           } else {
@@ -148,10 +151,10 @@ export const useWalletStore = create<WalletState & WalletActions>()(
           const errorMessage =
             error?.error?.message || error?.message || ERROR_MESSAGES.WALLET.LOAD_FAILED;
 
-          // Show error to user in production, fallback to mock data only in dev
+          // SECURITY FIX (M-6): Show error state, never mock data in production
           set({
-            tokens: __DEV__ ? MOCK_TOKENS : [],
-            error: __DEV__ ? null : errorMessage,
+            tokens: [],
+            error: errorMessage,
             isLoading: false,
           });
           get().calculateTotalBalance();
@@ -243,9 +246,9 @@ export const useWalletStore = create<WalletState & WalletActions>()(
             '[WalletStore] Failed to fetch transactions',
             error instanceof Error ? error : { error }
           );
-          // Fallback to mock data only in dev
+          // SECURITY FIX (M-6): Show error state, never mock data
           set({
-            transactions: __DEV__ ? MOCK_TRANSACTIONS : [],
+            transactions: [],
             error: error instanceof Error ? error.message : ERROR_MESSAGES.WALLET.LOAD_FAILED,
             isLoading: false,
           });

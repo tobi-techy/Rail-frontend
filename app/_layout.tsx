@@ -160,22 +160,6 @@ function AppNavigator() {
         }}
       />
       <Stack.Screen
-        name="fund-naira"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_bottom',
-          contentStyle: { backgroundColor: '#FFFFFF' },
-        }}
-      />
-      <Stack.Screen
-        name="withdraw-naira"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_bottom',
-          contentStyle: { backgroundColor: '#FFFFFF' },
-        }}
-      />
-      <Stack.Screen
         name="paj-verify"
         options={{
           headerShown: false,
@@ -257,6 +241,13 @@ export default function Layout() {
     try {
       SessionManager.initialize();
       gleap.initialize(process.env.EXPO_PUBLIC_GLEAP_TOKEN ?? '');
+      // SECURITY FIX (L-5): Log when Gleap token is missing instead of silent degradation
+      if (!process.env.EXPO_PUBLIC_GLEAP_TOKEN) {
+        logger.warn('[Layout] EXPO_PUBLIC_GLEAP_TOKEN not set — Gleap feedback disabled', {
+          component: 'Layout',
+          action: 'gleap-token-missing',
+        });
+      }
       gleap.showFeedbackButton(false);
     } catch (error) {
       logger.error(
@@ -299,14 +290,13 @@ export default function Layout() {
               <SafeAreaProvider style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
                 <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
                   <PostHogProvider
-                    apiKey={
-                      process.env.EXPO_PUBLIC_POSTHOG_API_KEY ||
-                      'phc_bG9OhXAMZfICZ0hFeCcHJSx5FGzpBhN4nDHbZAIYhbR'
-                    }
+                    apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
                     options={{
                       host: 'https://us.i.posthog.com',
-                      enableSessionReplay: true,
-                      sessionReplayConfig: { maskAllTextInputs: true, maskAllImages: false },
+                      // SECURITY FIX (C-3): Only enable session replay when key is configured.
+                      // Mask all images to prevent capturing sensitive financial data (balances, QR codes).
+                      enableSessionReplay: !!process.env.EXPO_PUBLIC_POSTHOG_API_KEY,
+                      sessionReplayConfig: { maskAllTextInputs: true, maskAllImages: true },
                     }}>
                     <PostHogSurveyProvider>
                       <AppReadyTracker />

@@ -1,63 +1,93 @@
-import React, { useState } from 'react';
-import { View, Pressable, Share } from 'react-native';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { ThumbsUpIcon, ThumbsDownIcon, Share01Icon, Copy01Icon } from '@hugeicons/core-free-icons';
+import React from 'react';
+import { View, Pressable, Share, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { HugeiconsIcon } from '@hugeicons/react-native';
+import {
+  Copy01Icon,
+  Share01Icon,
+  ThumbsUpIcon,
+  ThumbsDownIcon,
+  Delete01Icon,
+} from '@hugeicons/core-free-icons';
 import { useAIHaptics } from '@/hooks/useAIHaptics';
+import { aiService } from '@/api/services';
 
 interface Props {
   content: string;
+  messageId?: string;
   onDelete?: () => void;
 }
 
-export function MessageActions({ content, onDelete }: Props) {
-  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
-  const { onLike, onTap } = useAIHaptics();
+export function MessageActions({ content, messageId, onDelete }: Props) {
+  const { onTap } = useAIHaptics();
 
-  const handleThumbsUp = () => {
-    setFeedback((v) => (v === 'up' ? null : 'up'));
-    onLike();
-    // TODO: POST /v1/ai/feedback { message_id, rating: 'positive' }
-  };
-
-  const handleThumbsDown = () => {
-    setFeedback((v) => (v === 'down' ? null : 'down'));
+  const handleCopy = async () => {
     onTap();
-    // TODO: POST /v1/ai/feedback { message_id, rating: 'negative' }
-  };
-
-  const handleCopy = () => {
-    onTap();
-    void Clipboard.setStringAsync(content);
+    await Clipboard.setStringAsync(content);
   };
 
   const handleShare = async () => {
     onTap();
-    try { await Share.share({ message: content }); } catch {}
+    await Share.share({ message: content });
+  };
+
+  const handleFeedback = async (rating: 'positive' | 'negative') => {
+    onTap();
+    if (!messageId) return;
+    try {
+      await aiService.sendFeedback(messageId, rating);
+    } catch {
+      // Silent fail — feedback is best-effort
+    }
+  };
+
+  const handleDelete = () => {
+    onTap();
+    Alert.alert('Delete message?', 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: onDelete },
+    ]);
   };
 
   return (
-    <View style={{ flexDirection: 'row', gap: 16, marginTop: 10, paddingLeft: 2 }}>
-      <Pressable onPress={handleThumbsUp} hitSlop={8}>
-        <HugeiconsIcon
-          icon={ThumbsUpIcon}
-          size={16}
-          color={feedback === 'up' ? '#16A34A' : '#C4C4C4'}
-        />
+    <View className="flex-row items-center gap-1 mt-2 ml-1">
+      <Pressable
+        onPress={handleCopy}
+        className="p-2 rounded-full"
+        accessibilityRole="button"
+        accessibilityLabel="Copy message">
+        <HugeiconsIcon icon={Copy01Icon} size={16} color="#B5B5B5" />
       </Pressable>
-      <Pressable onPress={handleThumbsDown} hitSlop={8}>
-        <HugeiconsIcon
-          icon={ThumbsDownIcon}
-          size={16}
-          color={feedback === 'down' ? '#DC2626' : '#C4C4C4'}
-        />
+      <Pressable
+        onPress={handleShare}
+        className="p-2 rounded-full"
+        accessibilityRole="button"
+        accessibilityLabel="Share message">
+        <HugeiconsIcon icon={Share01Icon} size={16} color="#B5B5B5" />
       </Pressable>
-      <Pressable onPress={handleCopy} hitSlop={8}>
-        <HugeiconsIcon icon={Copy01Icon} size={16} color="#C4C4C4" />
+      <Pressable
+        onPress={() => handleFeedback('positive')}
+        className="p-2 rounded-full"
+        accessibilityRole="button"
+        accessibilityLabel="Thumbs up">
+        <HugeiconsIcon icon={ThumbsUpIcon} size={16} color="#B5B5B5" />
       </Pressable>
-      <Pressable onPress={handleShare} hitSlop={8}>
-        <HugeiconsIcon icon={Share01Icon} size={16} color="#C4C4C4" />
+      <Pressable
+        onPress={() => handleFeedback('negative')}
+        className="p-2 rounded-full"
+        accessibilityRole="button"
+        accessibilityLabel="Thumbs down">
+        <HugeiconsIcon icon={ThumbsDownIcon} size={16} color="#B5B5B5" />
       </Pressable>
+      {onDelete && (
+        <Pressable
+          onPress={handleDelete}
+          className="p-2 rounded-full"
+          accessibilityRole="button"
+          accessibilityLabel="Delete message">
+          <HugeiconsIcon icon={Delete01Icon} size={16} color="#EF4444" />
+        </Pressable>
+      )}
     </View>
   );
 }

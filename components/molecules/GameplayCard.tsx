@@ -45,7 +45,7 @@ export const GameplayCard: React.FC<GameplayCardProps> = ({ data, isLoading, cla
       accessibilityRole="button"
       accessibilityLabel={`Level ${level} ${title}`}>
       <View className="mb-16 flex-row items-start justify-between">
-        <HugeiconsIcon icon={Award01Icon} size={26} color="white" strokeWidth={1.8} />
+        <HugeiconsIcon icon={Award01Icon} size={20} color="white" strokeWidth={1.8} />
         {streakCount > 0 && (
           <View className="flex-row items-center gap-1 rounded-full bg-white/15 px-2 py-0.5">
             <HugeiconsIcon icon={FireIcon} size={12} color="#FF2E01" />
@@ -62,14 +62,14 @@ export const GameplayCard: React.FC<GameplayCardProps> = ({ data, isLoading, cla
       ) : (
         <>
           <View
-            className="mb-2 h-1.5 overflow-hidden rounded-full"
+            className="mb-2 mt-3 h-1.5 overflow-hidden rounded-full"
             style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
             <View
               className="h-full rounded-full bg-white"
               style={{ width: `${Math.min(progressPct, 100)}%` }}
             />
           </View>
-          <Text className="font-subtitle text-stash text-white" numberOfLines={1}>
+          <Text className="font-subtitle text-[18px] text-white" numberOfLines={1}>
             {title}
           </Text>
           <Text

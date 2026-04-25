@@ -38,24 +38,24 @@ export function ExpandableActionMenu({ items }: Props) {
       <Pressable
         onPress={() => { impact(); setOpen(true); }}
         style={styles.trigger}>
-        <HugeiconsIcon icon={MoreHorizontalIcon} size={20} color="#000" />
+        <HugeiconsIcon icon={MoreHorizontalIcon} size={26} color="#000" />
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade">
         {/* White frosted glass */}
         <View style={StyleSheet.absoluteFill}>
-          <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={26} tint="light" style={StyleSheet.absoluteFill} />
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.6)' }]} />
         </View>
 
         <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
 
         {/* Close */}
-        <Animated.View entering={FadeIn.duration(200)} style={[styles.closeBtn, { top: insets.top + 12 }]}>
+        {/*<Animated.View entering={FadeIn.duration(200)} style={[styles.closeBtn, { top: insets.top + 12 }]}>
           <Pressable onPress={() => setOpen(false)} hitSlop={12}>
             <HugeiconsIcon icon={Cancel01Icon} size={22} color="#1A1A1A" />
           </Pressable>
-        </Animated.View>
+        </Animated.View>*/}
 
         {/* Menu items */}
         <View style={[styles.menuContainer, { paddingBottom: insets.bottom + 40 }]}>
@@ -63,7 +63,7 @@ export function ExpandableActionMenu({ items }: Props) {
             <Animated.View key={item.id} entering={FadeInRight.delay(i * 60).duration(250)}>
               <Pressable onPress={() => handleItem(item)} style={styles.menuItem}>
                 <Text style={styles.menuLabel}>{item.label}</Text>
-                <HugeiconsIcon icon={item.icon} size={24} color={item.iconColor} />
+                <HugeiconsIcon icon={item.icon} size={24} fill={item.iconColor} />
               </Pressable>
             </Animated.View>
           ))}
@@ -77,9 +77,6 @@ const styles = StyleSheet.create({
   trigger: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
   },

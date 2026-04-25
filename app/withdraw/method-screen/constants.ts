@@ -37,12 +37,12 @@ const METHOD_ALIASES: Record<string, ExtendedWithdrawMethod> = {
 const METHOD_COPY: Record<ExtendedWithdrawMethod, MethodCopy> = {
   fiat: {
     title: 'Withdraw to Bank',
-    subtitle: 'Send USD to a linked US bank account',
+    subtitle: 'Send funds to your bank account',
     limitLabel: 'Fiat withdrawal limit',
     detailTitle: 'Enter bank details',
-    detailHint: 'We use your bank details to deliver your fiat withdrawal.',
-    detailLabel: 'Routing number',
-    detailPlaceholder: '9-digit routing number',
+    detailHint: 'We use your bank details to deliver your withdrawal.',
+    detailLabel: 'Bank details',
+    detailPlaceholder: 'Enter your bank details',
   },
   crypto: {
     title: 'Withdraw to Wallet',

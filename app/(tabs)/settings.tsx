@@ -191,58 +191,7 @@ const SheetToggleRow = ({
   </View>
 );
 
-// ── Profile Card ──────────────────────────────────────────────────────────────
-
-function ProfileCard({
-  firstName,
-  lastName,
-  email,
-}: {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-}) {
-  const avatarName = useMemo(
-    () => [firstName, lastName].filter(Boolean).join(' ') || email || 'Rail User',
-    [firstName, lastName, email]
-  );
-  const { impact } = useHaptics();
-
-  const displayName =
-    firstName || lastName ? [firstName, lastName].filter(Boolean).join(' ') : 'Rail User';
-
-  return (
-    <Pressable
-      onPress={() => {
-        impact(Haptics.ImpactFeedbackStyle.Light);
-        router.push('/profile-edit' as never);
-      }}
-      className="mx-md mb-2 mt-md flex-row items-center justify-between rounded-2xl border border-surface bg-white px-4 py-4">
-      <View className="flex-row items-center gap-3">
-        <DiceBearAvatar seed={avatarName} size={52} />
-        <View>
-          <Text className="font-subtitle text-[17px] text-text-primary" numberOfLines={1}>
-            {displayName}
-          </Text>
-          {email ? (
-            <Text
-              className="mt-0.5 font-caption text-caption text-text-secondary"
-              numberOfLines={1}>
-              {email}
-            </Text>
-          ) : null}
-        </View>
-      </View>
-      <View className="flex-row items-center gap-1.5 rounded-full border border-surface bg-surface px-3 py-1.5">
-        <Text className="font-button text-[13px] text-text-primary">Edit</Text>
-        <HugeiconsIcon icon={ArrowRight01Icon} size={13} color="#121212" strokeWidth={2.5} />
-      </View>
-    </Pressable>
-  );
-}
-
 export default function Settings() {
-  const { impact } = useHaptics();
   const { showError, showSuccess, showWarning, showInfo } = useFeedbackPopup();
   const {
     isAvailable: biometricHardwareAvailable,
@@ -401,7 +350,6 @@ export default function Settings() {
         className="flex-1"
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}>
-        <ProfileCard firstName={user?.firstName} lastName={user?.lastName} email={user?.email} />
         <Section title="Spend">
           <SettingButton
             icon={<HugeiconsIcon icon={ArrowLeftRightIcon} size={22} color="#121212" />}

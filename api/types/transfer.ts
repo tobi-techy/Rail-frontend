@@ -8,6 +8,8 @@ export interface CreateTransferRequest {
   amount: string;
   network: string;
   memo?: string;
+  /** SECURITY (M-8): Idempotency key to prevent duplicate transactions */
+  idempotencyKey?: string;
 }
 
 export interface CreateTransferResponse {

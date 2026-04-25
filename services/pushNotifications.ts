@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import apiClient from '@/api/client';
+import { queryKeys } from '@/api/queryClient';
 import { logger } from '@/lib/logger';
 
 // Configure how notifications appear when app is in foreground
@@ -73,7 +74,10 @@ class PushNotificationService {
 
       return this.expoPushToken;
     } catch (error) {
-      console.error('Failed to get push token:', error);
+      logger.error('Failed to get push token', {
+        component: 'PushNotifications',
+        error: error instanceof Error ? error.message : String(error),
+      });
       return null;
     }
   }
@@ -117,7 +121,10 @@ class PushNotificationService {
       });
       logger.debug('Push token registered with backend', { component: 'PushNotifications' });
     } catch (error) {
-      console.warn('Failed to register push token:', error);
+      logger.warn('Failed to register push token', {
+        component: 'PushNotifications',
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -130,7 +137,10 @@ class PushNotificationService {
       });
       this.expoPushToken = null;
     } catch (error) {
-      console.error('Failed to unregister push token:', error);
+      logger.error('Failed to unregister push token', {
+        component: 'PushNotifications',
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -154,7 +164,6 @@ class PushNotificationService {
     type: string | undefined,
     qc: import('@tanstack/react-query').QueryClient
   ) {
-    const { queryKeys } = require('@/api/queryClient');
     switch (type) {
       case 'deposit_confirmed':
       case 'allocation_complete':
@@ -203,6 +212,22 @@ class PushNotificationService {
       case 'financial_insight':
         qc.invalidateQueries({ queryKey: queryKeys.gameplay.all });
         qc.invalidateQueries({ queryKey: queryKeys.station.all });
+        break;
+      case 'spending_alert':
+      case 'budget_pace_alert':
+      case 'cash_runway_alert':
+      case 'idle_money':
+      case 'savings_milestone':
+      case 'weekly_digest':
+      case 'month_recap':
+      case 'morning_greeting':
+        qc.invalidateQueries({ queryKey: queryKeys.station.all });
+        qc.invalidateQueries({ queryKey: queryKeys.wallet.all });
+        break;
+      case 'miriam_proactive':
+      case 'miriam_action_required':
+        qc.invalidateQueries({ queryKey: queryKeys.station.all });
+        qc.invalidateQueries({ queryKey: queryKeys.wallet.all });
         break;
       case 'subscription_expired':
       case 'subscription_past_due':
@@ -269,8 +294,43 @@ class PushNotificationService {
       case 'subscription_past_due':
         router.push('/subscription' as never);
         break;
+      case 'morning_greeting':
+        router.push('/(tabs)' as never);
+        break;
+      case 'spending_alert':
+      case 'budget_pace_alert':
+      case 'cash_runway_alert':
+      case 'idle_money':
+      case 'savings_milestone':
+      case 'weekly_digest':
+      case 'month_recap':
+        router.push('/ai-chat' as never);
+        break;
+      case 'miriam_proactive':
+        router.push('/ai-chat' as never);
+        break;
+      case 'miriam_action_required':
+        router.push('/ai-chat' as never);
+        break;
       default:
-        router.push(screen ? (screen as any) : '/notifications');
+        // SECURITY FIX (R4-H1): Validate screen against allowlist to prevent
+        // arbitrary navigation via crafted push notification payloads.
+        const SAFE_SCREENS = new Set([
+          '/notifications',
+          '/(tabs)',
+          '/(tabs)/settings',
+          '/ai-chat',
+          '/spending-stash',
+          '/investment-stash',
+          '/kyc',
+          '/card',
+          '/gameplay',
+          '/subscription',
+          '/market',
+        ]);
+        const target =
+          typeof screen === 'string' && SAFE_SCREENS.has(screen) ? screen : '/notifications';
+        router.push(target as any);
     }
   }
 

@@ -22,6 +22,9 @@ const SECURE_VALUE_PLACEHOLDER = '__secure__';
 const SENSITIVE_KEYS = ['accessToken', 'refreshToken', 'passcodeSessionToken'] as const;
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+// SECURITY NOTE (H-4): Client-side lockout is a UX convenience only.
+// Server-side rate limiting MUST be the authoritative enforcement.
+// An attacker can clear AsyncStorage to reset loginAttempts/lockoutUntil.
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -32,7 +35,8 @@ const withRetry = async <T>(operation: () => Promise<T>, retries = MAX_RETRIES):
     return await operation();
   } catch (error) {
     if (retries > 0) {
-      await sleep(RETRY_DELAY_MS);
+      // SECURITY FIX (R3-L2): Exponential backoff for SecureStore contention
+      await sleep(RETRY_DELAY_MS * Math.pow(2, MAX_RETRIES - retries));
       return withRetry(operation, retries - 1);
     }
     throw error;
@@ -92,7 +96,6 @@ interface AuthState {
   passcodeSessionExpiresAt?: string;
   loginAttempts: number;
   lockoutUntil: string | null;
-  _pendingPasscode: string | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -153,7 +156,6 @@ const initialState: AuthState = {
   passcodeSessionExpiresAt: undefined,
   loginAttempts: 0,
   lockoutUntil: null,
-  _pendingPasscode: null,
   isLoading: false,
   error: null,
   registrationData: {
@@ -329,6 +331,17 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             error: e instanceof Error ? e.message : String(e),
           });
         }
+        // SECURITY FIX (NEW-H2): Zeroize encryption key from memory on logout
+        try {
+          const { clearEncryptionKey } = await import('../utils/encryption');
+          clearEncryptionKey();
+        } catch (e) {
+          logger.warn('[AuthStore] Encryption key cleanup failed', {
+            component: 'AuthStore',
+            action: 'encryption-cleanup-error',
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
         set({
           ...initialState,
           hasPasscode: false,
@@ -362,6 +375,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           }
 
           const response = await authService.deleteAccount(reason, appleAuthCode);
+          // SECURITY FIX (R3-I1): Zeroize encryption key after account deletion
+          try {
+            const { clearEncryptionKey } = await import('../utils/encryption');
+            clearEncryptionKey();
+          } catch {}
           set({ ...initialState, hasPasscode: false, hasCompletedOnboarding: false });
           return { funds_swept: response.funds_swept, sweep_tx_hash: response.sweep_tx_hash };
         } catch (error: any) {
@@ -552,7 +570,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       setPendingEmail: (email) => set({ pendingVerificationEmail: email }),
       setOnboardingStatus: (status, step?) =>
         set({ onboardingStatus: status, currentOnboardingStep: step || null }),
-      setHasCompletedOnboarding: (completed) => set({ hasCompletedOnboarding: completed }),
+      setHasCompletedOnboarding: (completed) => {
+        set({ hasCompletedOnboarding: completed });
+        // SECURITY FIX (NEW-L4): Clear PII from registrationData once profile is complete
+        if (completed) {
+          set({ registrationData: initialState.registrationData });
+        }
+      },
       setHasAcknowledgedDisclaimer: (acknowledged) =>
         set({ hasAcknowledgedDisclaimer: acknowledged }),
       setHasPasscode: (hasPasscode) => set({ hasPasscode }),
@@ -602,7 +626,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       clearError: () => set({ error: null }),
       reset: () => set(initialState),
 
-      clearSession: () =>
+      clearSession: () => {
+        // SECURITY FIX (R3-M2): Zeroize encryption key on forced session clear too
+        import('../utils/encryption')
+          .then(({ clearEncryptionKey }) => clearEncryptionKey())
+          .catch(() => {});
         set({
           accessToken: null,
           refreshToken: null,
@@ -614,7 +642,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           passcodeSessionToken: undefined,
           passcodeSessionExpiresAt: undefined,
           error: null,
-        }),
+        });
+      },
     }),
     {
       name: 'auth-storage',
@@ -623,7 +652,6 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         user: state.user,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
-        csrfToken: state.csrfToken,
         lastActivityAt: state.lastActivityAt,
         tokenIssuedAt: state.tokenIssuedAt,
         tokenExpiresAt: state.tokenExpiresAt,
@@ -640,7 +668,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         lockoutUntil: state.lockoutUntil,
         hasAcknowledgedDisclaimer: state.hasAcknowledgedDisclaimer,
         // Persist registrationData to allow resume of profile completion
-        registrationData: state.registrationData,
+        // SECURITY FIX (H-3): Strip password before persisting — never store plaintext passwords in AsyncStorage
+        registrationData: {
+          ...state.registrationData,
+          password: '',
+        },
       }),
     }
   )

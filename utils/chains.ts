@@ -134,20 +134,10 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
     token: 'USDC',
     via: 'chainrails',
   },
-  {
-    chain: 'LISK',
-    label: 'Lisk',
-    shortLabel: 'LSK',
-    color: '#4070F4',
-    warning: 'Only send USDC on Lisk to this address.',
-    nativeCurrency: 'LSK',
-    token: 'USDC',
-    via: 'chainrails',
-  },
 ];
 
 export function isEVMChain(chain: WalletChain): boolean {
-  return ['ETH', 'BASE', 'ARB', 'OP', 'MATIC', 'AVAX', 'BSC', 'BNB', 'STARKNET', 'MONAD', 'HYPEREVM', 'LISK'].includes(chain);
+  return ['ETH', 'BASE', 'ARB', 'OP', 'MATIC', 'AVAX', 'BSC', 'BNB', 'MONAD', 'HYPEREVM'].includes(chain);
 }
 
 export function isSolanaChain(chain: WalletChain): boolean {
@@ -189,10 +179,41 @@ export const STABLECOIN_CHAINS: Record<string, WalletChain[]> = {
   PYUSD: ['SOL'],
 };
 
+/**
+ * Withdrawal (off-ramp) chains per stablecoin.
+ * Source: Bridge route table + ChainRails token availability docs.
+ *
+ * Bridge (source = Solana USDC wallet):
+ *   USDC → SOL, ETH, BASE, ARB, OP, MATIC, AVAX, HYPEREVM
+ *   EURC → SOL (direct), ETH (via Bridge), BASE (via Bridge)
+ *   PYUSD → SOL (direct), ETH (via Bridge)
+ *   USDT → SOL (direct), ETH (via Bridge)
+ *   USDG → SOL (direct)
+ *
+ * ChainRails (token availability by network):
+ *   USDC → BSC, STARKNET, MONAD, HYPEREVM, LISK
+ *   USDT → BSC, STARKNET (NOT Monad, HyperEVM, Lisk)
+ *   EURC → Ethereum only via ChainRails (NOT Starknet, BSC, Monad, etc.)
+ *   PYUSD → none via ChainRails
+ */
+export const WITHDRAWAL_CHAINS: Record<string, WalletChain[]> = {
+  USDC: ['SOL', 'ETH', 'BASE', 'ARB', 'OP', 'MATIC', 'AVAX', 'BSC', 'STARKNET', 'MONAD', 'HYPEREVM'],
+  USDT: ['SOL', 'ETH', 'BSC', 'STARKNET'],
+  EURC: ['SOL', 'ETH', 'BASE'],
+  PYUSD: ['SOL', 'ETH'],
+  USDG: ['SOL'],
+};
+
 export type StablecoinCode = keyof typeof STABLECOIN_CHAINS;
 
 export const STABLECOIN_CODES: StablecoinCode[] = ['USDC', 'USDT', 'EURC', 'PYUSD'];
 
 export function isStablecoin(code: string): code is StablecoinCode {
   return code in STABLECOIN_CHAINS;
+}
+
+/** Get the chains that support withdrawals for a given stablecoin currency. */
+export function getWithdrawalChainsForCurrency(currency: string): ChainConfig[] {
+  const allowed = WITHDRAWAL_CHAINS[currency.toUpperCase()] ?? WITHDRAWAL_CHAINS.USDC;
+  return SUPPORTED_CHAINS.filter((c) => allowed.includes(c.chain));
 }

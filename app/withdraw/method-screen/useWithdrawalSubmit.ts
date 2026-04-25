@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useInitiateFiatWithdrawal, useInitiateWithdrawal } from '@/api/hooks/useFunding';
 import { invalidateQueries, queryClient, queryKeys } from '@/api/queryClient';
 import { p2pService } from '@/api/services/p2p.service';
-import type { ExtendedWithdrawMethod } from './types';
+import type { ExtendedWithdrawMethod, FiatCurrency } from './types';
 
 interface SubmitCallbacks {
   onSuccess: () => void;
@@ -20,8 +20,10 @@ interface UseWithdrawalSubmitOptions {
   // asset from picker (USD, EUR, NGN, USDC, etc.)
   asset?: string;
   // fiat extras
+  fiatCurrency?: FiatCurrency;
   fiatAccountHolderName?: string;
   fiatAccountNumber?: string;
+  fiatBic?: string;
   // p2p extras
   p2pNote?: string;
   category?: string;
@@ -36,8 +38,10 @@ export function useWithdrawalSubmit({
   isFundFlow,
   onStartMobileWalletFunding,
   asset,
+  fiatCurrency,
   fiatAccountHolderName,
   fiatAccountNumber,
+  fiatBic,
   p2pNote,
   category,
   narration,
@@ -57,8 +61,10 @@ export function useWithdrawalSubmit({
     isFundFlow,
     onStartMobileWalletFunding,
     asset,
+    fiatCurrency,
     fiatAccountHolderName,
     fiatAccountNumber,
+    fiatBic,
     p2pNote,
     category,
     narration,
@@ -71,8 +77,10 @@ export function useWithdrawalSubmit({
     isFundFlow,
     onStartMobileWalletFunding,
     asset,
+    fiatCurrency,
     fiatAccountHolderName,
     fiatAccountNumber,
+    fiatBic,
     p2pNote,
     category,
     narration,
@@ -165,14 +173,21 @@ export function useWithdrawalSubmit({
       }
 
       // fiat
-      const fiatCurrency = (['USD', 'EUR', 'NGN'].includes(opts.asset ?? '') ? opts.asset! : 'USD') as 'USD' | 'EUR' | 'NGN';
+      const currency = opts.fiatCurrency ?? 'USD';
       initiateFiatWithdrawal(
         {
           amount,
-          currency: fiatCurrency,
+          currency,
           account_holder_name: (opts.fiatAccountHolderName ?? '').trim(),
-          account_number: (opts.fiatAccountNumber ?? '').replace(/\D/g, ''),
-          routing_number: destination.replace(/\D/g, ''),
+          account_number: currency === 'EUR'
+            ? '' // EUR uses IBAN only
+            : (opts.fiatAccountNumber ?? '').replace(/\D/g, ''),
+          routing_number: currency === 'EUR'
+            ? destination.replace(/\s/g, '').toUpperCase() // IBAN
+            : currency === 'GBP'
+              ? destination.replace(/\D/g, '') // sort code
+              : destination.replace(/\D/g, ''), // USD routing number
+          ...(currency === 'EUR' && opts.fiatBic ? { bic: opts.fiatBic.replace(/\s/g, '').toUpperCase() } : {}),
           category: normalizedCategory,
           narration: normalizedNarration,
         },

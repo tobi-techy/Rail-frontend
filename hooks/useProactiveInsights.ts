@@ -44,69 +44,57 @@ export function useProactiveInsights(options: UseProactiveInsightsOptions = {}) 
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const lastPollRef = useRef<number>(0);
 
-  const fetchInsight = useCallback(async () => {
+  const fetchInsight = useCallback(async (signal: AbortSignal) => {
     // Debounce: don't poll more than once per minute
     const now = Date.now();
     if (now - lastPollRef.current < 60_000) return;
     lastPollRef.current = now;
 
     setLoading(true);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12_000);
     try {
-      // Try different insight types in priority order
-      const types: ('performance' | 'top_mover' | 'streak')[] = [
-        'performance',
-        'top_mover',
-        'streak',
-      ];
-
-      for (const type of types) {
-        try {
-          const res = await aiService.getQuickInsight(type);
-          if (res.error || !res.insight?.trim()) {
-            continue;
-          }
-          const generated: ProactiveInsight = {
-            id: `quick-${type}-${now}`,
-            type: mapInsightType(type),
-            title: mapInsightTitle(type),
-            message: res.insight,
-            priority: type === 'performance' ? 'high' : 'medium',
-            dismissable: true,
-            dataSource: `ai_quick_insight_${type}`,
-            generatedAt: new Date().toISOString(),
-          };
-          if (!dismissedIds.has(generated.id)) {
-            setInsight(generated);
-            break;
-          }
-        } catch {
-          // Try next type
+      // Only try 'performance' — avoids sequential 6s+ calls when providers are quota-limited
+      const res = await aiService.getQuickInsight('performance');
+      if (signal.aborted) return;
+      if (!res.error && res.insight?.trim()) {
+        const generated: ProactiveInsight = {
+          id: `quick-performance-${now}`,
+          type: 'weekly_summary',
+          title: 'Performance Update',
+          message: res.insight,
+          priority: 'high',
+          dismissable: true,
+          dataSource: 'ai_quick_insight_performance',
+          generatedAt: new Date().toISOString(),
+        };
+        if (!dismissedIds.has(generated.id)) {
+          setInsight(generated);
         }
       }
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.name === 'AbortError' || signal.aborted) return;
       logger.warn('Failed to fetch proactive insights', { error: e });
     } finally {
-      clearTimeout(timeout);
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   }, [dismissedIds]);
 
   useEffect(() => {
     if (!enabled) return;
 
+    const controller = new AbortController();
+
     // Defer initial fetch to avoid state updates during mount
     const timeout = setTimeout(() => {
-      void fetchInsight();
+      void fetchInsight(controller.signal);
     }, 100);
 
     // Polling interval
     const interval = setInterval(() => {
-      void fetchInsight();
+      void fetchInsight(controller.signal);
     }, pollIntervalMs);
 
     return () => {
+      controller.abort();
       clearTimeout(timeout);
       clearInterval(interval);
     };
@@ -119,7 +107,7 @@ export function useProactiveInsights(options: UseProactiveInsightsOptions = {}) 
 
   const refresh = useCallback(() => {
     lastPollRef.current = 0;
-    void fetchInsight();
+    void fetchInsight(new AbortController().signal);
   }, [fetchInsight]);
 
   return {
@@ -130,28 +118,4 @@ export function useProactiveInsights(options: UseProactiveInsightsOptions = {}) 
   };
 }
 
-function mapInsightType(type: string): ProactiveInsightType {
-  switch (type) {
-    case 'performance':
-      return 'weekly_summary';
-    case 'top_mover':
-      return 'savings_opportunity';
-    case 'streak':
-      return 'savings_opportunity';
-    default:
-      return 'savings_opportunity';
-  }
-}
 
-function mapInsightTitle(type: string): string {
-  switch (type) {
-    case 'performance':
-      return 'Performance Update';
-    case 'top_mover':
-      return 'Top Mover';
-    case 'streak':
-      return 'Streak Alert';
-    default:
-      return 'Financial Insight';
-  }
-}

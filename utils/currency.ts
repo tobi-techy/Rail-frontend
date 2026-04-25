@@ -5,6 +5,7 @@ export type FxRates = Record<Currency, number>;
 export const DEFAULT_USD_BASE_EXCHANGE_RATES: FxRates = {
   USD: 1,
   EUR: 0.92,
+  GBP: 0.79,
   NGN: 1550,
   GHS: 15.5,
   KES: 129,
@@ -18,6 +19,7 @@ export const DEFAULT_USD_BASE_EXCHANGE_RATES: FxRates = {
 const CURRENCY_LOCALE: Record<Currency, string> = {
   USD: 'en-US',
   EUR: 'en-IE',
+  GBP: 'en-GB',
   NGN: 'en-NG',
   GHS: 'en-GH',
   KES: 'en-KE',
@@ -28,10 +30,9 @@ const CURRENCY_LOCALE: Record<Currency, string> = {
   PYUSD: 'en-US',
 };
 
-export const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'EUR', 'NGN', 'GHS', 'KES', 'CAD', 'USDC', 'USDT', 'EURC', 'PYUSD'];
+export const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'EUR', 'GBP', 'NGN', 'GHS', 'KES', 'CAD', 'USDC', 'USDT', 'EURC', 'PYUSD'];
 
 const LEGACY_CURRENCY_FALLBACK: Record<string, Currency> = {
-  GBP: 'EUR',
   NGN: 'USD',
 };
 
@@ -105,6 +106,7 @@ export const formatCurrencyAmount = (
 const INTL_CURRENCY_CODE: Record<Currency, string> = {
   USD: 'USD',
   EUR: 'EUR',
+  GBP: 'GBP',
   NGN: 'NGN',
   GHS: 'GHS',
   KES: 'KES',

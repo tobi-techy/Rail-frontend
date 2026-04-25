@@ -7,7 +7,7 @@
  */
 
 import JailMonkey from 'jail-monkey';
-import { Alert, Platform } from 'react-native';
+import { Alert, BackHandler, Platform } from 'react-native';
 import { logger } from '../lib/logger';
 
 export interface SecurityCheckResult {
@@ -26,7 +26,7 @@ export async function checkDeviceSecurity(): Promise<SecurityCheckResult> {
   try {
     const safeCallBoolean = async (
       fn: () => boolean | Promise<boolean> | unknown,
-      fallback = false
+      fallback = true
     ): Promise<boolean> => {
       try {
         const value = fn();
@@ -38,8 +38,10 @@ export async function checkDeviceSecurity(): Promise<SecurityCheckResult> {
         if (typeof resolved === 'boolean') return resolved;
         if (typeof resolved === 'number') return resolved !== 0;
         if (typeof resolved === 'string') return resolved.toLowerCase() === 'true';
+        // SECURITY FIX (NEW-H1): Non-boolean return → assume compromised
         return fallback;
       } catch {
+        // SECURITY FIX (NEW-H1): Per-method hook throwing → assume compromised
         return fallback;
       }
     };
@@ -62,14 +64,16 @@ export async function checkDeviceSecurity(): Promise<SecurityCheckResult> {
       '[deviceSecurity] Security check failed',
       error instanceof Error ? error : new Error(String(error))
     );
-    // Fail open on check error (native module unavailable) but log it
+    // SECURITY FIX (C-4): Fail CLOSED — treat device as compromised when
+    // the native security module is unavailable or throws. An attacker can
+    // hook JailMonkey to throw, so returning isSecure:true here would be a bypass.
     return {
-      isSecure: true,
+      isSecure: false,
       isJailbroken: false,
       isRooted: false,
       isDebuggedMode: false,
       isOnExternalStorage: false,
-      hookDetected: false,
+      hookDetected: true, // Assume tampering when check itself fails
     };
   }
 }
@@ -123,13 +127,17 @@ export async function enforceDeviceSecurity(options?: {
           text: 'Close App',
           style: 'destructive',
           onPress: () => {
-            // Exit the app
             if (options?.onCompromised) {
               options.onCompromised();
             }
+            // SECURITY FIX (NEW-L2): Force exit — Alert alone is dismissable on Android
+            BackHandler.exitApp();
           },
         },
-      ]);
+      ],
+      // SECURITY FIX (NEW-L2): Prevent dismissal by tapping outside
+      { cancelable: false }
+      );
 
       // Prevent app from launching
       return false;
@@ -141,12 +149,14 @@ export async function enforceDeviceSecurity(options?: {
 
 /**
  * Quick check if device is compromised (no UI)
+ * SECURITY FIX (L-4): Fails closed — returns true (compromised) on error
  */
 export function isDeviceCompromised(): boolean {
   if (__DEV__) return false;
   try {
     return JailMonkey.isJailBroken() || JailMonkey.hookDetected();
   } catch {
-    return false;
+    // SECURITY: If the check itself fails, assume compromised
+    return true;
   }
 }

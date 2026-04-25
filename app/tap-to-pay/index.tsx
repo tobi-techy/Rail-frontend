@@ -195,8 +195,8 @@ function IncomingRequest({
 export default function TapToPayScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
-  const railtag = user?.rail_tag || user?.email?.split('@')[0] || 'user';
-  const displayName = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || 'Rail User';
+  const railtag = user?.railTag || user?.email?.split('@')[0] || 'user';
+  const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Rail User';
   const { data: station } = useStation();
   const balance = Math.max(0, parseFloat(station?.spend_balance ?? '0') || 0);
   const maxSend = Math.min(P2P_LIMIT, balance);

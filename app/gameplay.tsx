@@ -1,25 +1,13 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
   FadeInDown,
 } from 'react-native-reanimated';
 import {
   ArrowLeft01Icon,
-  Award01Icon,
-  FireIcon,
   Target01Icon,
-  StarIcon,
-  DiamondIcon,
-  CrownIcon,
-  LockIcon,
-  ArrowRight01Icon,
-  Shield01Icon,
-  Rocket01Icon,
   CheckmarkCircle01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
@@ -35,42 +23,7 @@ import { Skeleton } from '@/components/atoms/Skeleton';
 import type { Achievement, UserChallenge } from '@/api/services/gameplay.service';
 import { AchievementBadge } from '@/components/molecules/AchievementBadge';
 import { StreakRing } from '@/components/molecules/StreakRing';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-const BADGE_ICON: Record<string, any> = {
-  deposit: ArrowRight01Icon,
-  shield: Shield01Icon,
-  flame: FireIcon,
-  star: StarIcon,
-  crown: CrownIcon,
-  diamond: DiamondIcon,
-  trophy: Award01Icon,
-  calendar: Target01Icon,
-  users: CrownIcon,
-  gem: DiamondIcon,
-  badge: Award01Icon,
-};
-const RARITY_BG: Record<string, string> = {
-  common: '#E5E7EB',
-  uncommon: '#DBEAFE',
-  rare: '#EDE9FE',
-  epic: '#FEF3C7',
-  legendary: '#FEE2E2',
-};
-const RARITY_ACCENT: Record<string, string> = {
-  common: '#6B7280',
-  uncommon: '#2563EB',
-  rare: '#7C3AED',
-  epic: '#D97706',
-  legendary: '#FF2E01',
-};
-const STREAK_META: Record<string, { label: string; icon: any }> = {
-  deposit: { label: 'Deposit', icon: ArrowRight01Icon },
-  no_spend: { label: 'No-Spend', icon: Shield01Icon },
-  stash_growth: { label: 'Growth', icon: Rocket01Icon },
-  roundup: { label: 'Round-Up', icon: StarIcon },
-};
+import { AchievementDetailSheet } from '@/components/sheets';
 
 // ── (StreakRing component replaces the old heatmap) ─────────────────────
 
@@ -78,6 +31,7 @@ export default function GameplayScreen() {
   const router = useRouter();
   const { impact } = useHaptics();
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const { data: profile, isPending, refetch } = useGameplayProfile();
   const { data: achievementsData } = useAchievements();
   const { data: challengesData } = useChallenges();
@@ -174,7 +128,7 @@ export default function GameplayScreen() {
         </Animated.View>
 
         {/* ── Challenges ───────────────────────────────────────── */}
-        <Animated.View entering={FadeInDown.delay(160).duration(400)} className="mt-8 px-5">
+        <Animated.View entering={FadeInDown.delay(160).duration(400)} className="mt-8 px-2">
           <View className="mb-4 flex-row items-center justify-between">
             <Text className="font-mono text-small tracking-[3px] text-text-tertiary">
               CHALLENGES
@@ -228,7 +182,7 @@ export default function GameplayScreen() {
         </Animated.View>
 
         {/* ── Badges — 3-col circle grid ── */}
-        <Animated.View entering={FadeInDown.delay(260).duration(400)} className="mt-8 px-5">
+        <Animated.View entering={FadeInDown.delay(260).duration(400)} className="mt-8 px-2">
           <View className="mb-4 flex-row items-center justify-between">
             <Text className="font-mono text-small tracking-[3px] text-text-tertiary">BADGES</Text>
             <Text className="font-mono-semibold text-small text-primary">
@@ -237,7 +191,6 @@ export default function GameplayScreen() {
           </View>
           <View className="flex-row flex-wrap">
             {achievements.map((a: Achievement, i: number) => {
-              const IconComp = BADGE_ICON[a.icon] ?? Award01Icon;
               return (
                 <Animated.View
                   key={a.id}
@@ -245,8 +198,11 @@ export default function GameplayScreen() {
                   style={{ width: '33.33%', alignItems: 'center', marginBottom: 20 }}>
                   <AchievementBadge
                     achievement={a}
-                    icon={IconComp}
-                    size="medium"
+                    size="large"
+                    onPress={() => {
+                      impact();
+                      setSelectedAchievement(a);
+                    }}
                   />
                 </Animated.View>
               );
@@ -254,6 +210,12 @@ export default function GameplayScreen() {
           </View>
         </Animated.View>
       </ScrollView>
+
+      <AchievementDetailSheet
+        achievement={selectedAchievement}
+        visible={selectedAchievement !== null}
+        onClose={() => setSelectedAchievement(null)}
+      />
     </SafeAreaView>
   );
 }

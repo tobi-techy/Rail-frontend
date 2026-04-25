@@ -10,6 +10,7 @@ export { KYCVerificationSheet } from './KYCVerificationSheet';
 export { NavigableBottomSheet, useNavigableBottomSheet } from './NavigableBottomSheet';
 export { MoreFundingOptionsSheet } from './MoreFundingOptionsSheet';
 export { SpendBreakdownSheet } from './SpendBreakdownSheet';
+export { AchievementDetailSheet } from './AchievementDetailSheet';
 export type { BottomSheetScreen } from './NavigableBottomSheet';
 export { VirtualAccountSheet } from './VirtualAccountSheet';
 export { PajVerificationSheet } from './PajVerificationSheet';

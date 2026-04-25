@@ -17,12 +17,25 @@ import type {
   AIQuickInsight,
   AIStreamEvent,
   ActionConfirmResponse,
+  ActionReceiptsResponse,
+  CashFlowForecast,
+  FinancialAdvice,
+  FinancialHealth,
+  FinancialTimeline,
+  FinancialPlan,
 } from '../types/ai';
 
 const BASE = '/v1/ai';
 
+function unwrapData<T>(payload: any): T {
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return payload.data as T;
+  }
+  return payload as T;
+}
+
 export const aiService = {
-  /** One-shot chat (no conversation persistence) */
+  /** Main chat. Backend returns conversation_id when persistence is available. */
   async chat(req: AIChatRequest): Promise<AIChatResponse> {
     return apiClient.post<AIChatResponse>(`${BASE}/chat`, req);
   },
@@ -35,18 +48,34 @@ export const aiService = {
     onError: (err: string) => void
   ): AbortController {
     const controller = new AbortController();
-    const { accessToken } = useAuthStore.getState();
+    const { accessToken, csrfToken } = useAuthStore.getState();
     const baseURL = API_CONFIG.baseURL;
 
     (async () => {
       try {
+        // SECURITY FIX (R5-L1): Include CSRF token, request ID, and device fingerprint
+        // to match the protections applied by the Axios interceptor.
+        // NOTE: SSL pinning cannot be applied to raw fetch — this is a documented accepted risk.
+        const { generateRequestId } = await import('@/utils/requestId');
+        let fingerprint = '';
+        try {
+          const { getDeviceFingerprint } = await import('@/utils/deviceFingerprint');
+          fingerprint = await getDeviceFingerprint();
+        } catch {}
+
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+          'X-Requested-With': 'RailApp',
+          'X-Request-ID': generateRequestId(),
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+          ...(fingerprint ? { 'X-Device-Fingerprint': fingerprint } : {}),
+        };
+
         const resp = await fetch(`${baseURL}${BASE}/chat/stream`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          },
+          headers,
           body: JSON.stringify(req),
           signal: controller.signal,
         });
@@ -87,7 +116,9 @@ export const aiService = {
         if (buffer.startsWith('data: ')) {
           const payload = buffer.slice(6).trim();
           if (payload && payload !== '[DONE]') {
-            try { onEvent(JSON.parse(payload) as AIStreamEvent); } catch {}
+            try {
+              onEvent(JSON.parse(payload) as AIStreamEvent);
+            } catch {}
           }
         }
 
@@ -151,6 +182,52 @@ export const aiService = {
     return apiClient.get(`${BASE}/quick-insight?type=${type}`);
   },
 
+  async getFinancialHealth(): Promise<FinancialHealth & { error?: string }> {
+    const payload = await apiClient.get<any>(`${BASE}/financial-health`);
+    return unwrapData<FinancialHealth & { error?: string }>(payload);
+  },
+
+  async getCashFlowForecast(): Promise<{ data: CashFlowForecast }> {
+    return apiClient.get(`${BASE}/cash-flow-forecast`);
+  },
+
+  async getFinancialPlan(): Promise<FinancialPlan & { error?: string }> {
+    const payload = await apiClient.get<any>(`${BASE}/financial-plan`);
+    return unwrapData<FinancialPlan & { error?: string }>(payload);
+  },
+
+  async getActionReceipts(): Promise<{ data: ActionReceiptsResponse }> {
+    return apiClient.get(`${BASE}/action-receipts`);
+  },
+
+  async getFinancialAdvice(params?: {
+    intent?: 'overview' | 'transfer' | 'budget' | 'goal' | 'investment' | 'tax' | 'legal';
+    amount?: number;
+  }): Promise<{ data: FinancialAdvice }> {
+    const query = new URLSearchParams();
+    if (params?.intent) query.set('intent', params.intent);
+    if (typeof params?.amount === 'number' && Number.isFinite(params.amount)) {
+      query.set('amount', String(params.amount));
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return apiClient.get(`${BASE}/financial-advice${suffix}`);
+  },
+
+  async getFinancialTimeline(params?: {
+    days?: number;
+    limit?: number;
+  }): Promise<{ data: FinancialTimeline }> {
+    const query = new URLSearchParams();
+    if (typeof params?.days === 'number' && Number.isFinite(params.days)) {
+      query.set('days', String(params.days));
+    }
+    if (typeof params?.limit === 'number' && Number.isFinite(params.limit)) {
+      query.set('limit', String(params.limit));
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return apiClient.get(`${BASE}/financial-timeline${suffix}`);
+  },
+
   /** Send an image (base64) for AI analysis (receipt scanning, etc.) */
   async analyzeImage(base64Image: string, message?: string): Promise<{ data: AIChatResponse }> {
     return apiClient.post(`${BASE}/chat/image`, {
@@ -165,7 +242,11 @@ export const aiService = {
     return apiClient.get(`${BASE}/report/weekly`);
   },
 
-  async simulate(depositAmount: number, frequency: 'weekly' | 'monthly', durationMonths: number): Promise<{ data: any }> {
+  async simulate(
+    depositAmount: number,
+    frequency: 'weekly' | 'monthly',
+    durationMonths: number
+  ): Promise<{ data: any }> {
     return apiClient.post(`${BASE}/simulate`, {
       deposit_amount: depositAmount,
       deposit_frequency: frequency,
@@ -183,6 +264,14 @@ export const aiService = {
 
   async getGoalProgress(): Promise<{ data: AIChatResponse }> {
     return apiClient.get(`${BASE}/goals/progress`);
+  },
+
+  async sendFeedback(
+    messageId: string,
+    rating: 'positive' | 'negative',
+    comment?: string
+  ): Promise<void> {
+    return apiClient.post(`${BASE}/feedback`, { message_id: messageId, rating, comment });
   },
 };
 

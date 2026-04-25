@@ -66,6 +66,21 @@ const REQUEST_TIMEOUT_MS = 10000; // 10 seconds - SECURITY: Prevents DOS via slo
 const MIN_TIMEOUT_MS = 3000; // 3 seconds minimum
 const MAX_TIMEOUT_MS = 30000; // 30 seconds maximum
 
+/**
+ * SECURITY FIX (M-5): Financial endpoints must NEVER be queued offline.
+ * Replaying stale withdrawals/transfers after reconnect could cause
+ * double-spends or overdrafts if balances have changed.
+ */
+const EXCLUDED_FINANCIAL_PATTERNS = [
+  /\/v1\/withdrawals/,
+  /\/v1\/funding/,
+  /\/v1\/transfers/,
+  /\/v1\/p2p/,
+  /\/v1\/security\/withdrawals/,
+  /\/v1\/stash/,
+  /\/v1\/swap/,
+];
+
 class OfflineQueue {
   private queue: QueuedRequest[] = [];
   private isProcessing = false;
@@ -138,6 +153,16 @@ class OfflineQueue {
   }
 
   async add(request: Omit<QueuedRequest, 'id' | 'timestamp'>) {
+    // SECURITY FIX (M-5): Never queue financial transactions
+    if (EXCLUDED_FINANCIAL_PATTERNS.some((p) => p.test(request.url))) {
+      logger.warn('[OfflineQueue] Rejected financial endpoint from offline queue', {
+        component: 'OfflineQueue',
+        action: 'financial-endpoint-rejected',
+        url: request.url,
+      });
+      throw new Error('Financial transactions cannot be queued offline');
+    }
+
     if (this.queue.length >= MAX_QUEUE_SIZE) {
       const removed = this.queue.shift();
       logger.warn('[OfflineQueue] Queue full - discarding oldest request', {

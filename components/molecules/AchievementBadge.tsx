@@ -1,37 +1,36 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { Image, View, Text, Pressable } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { LockIcon } from '@hugeicons/core-free-icons';
 import type { Achievement } from '@/api/services/gameplay.service';
+import { getAchievementStickerSource } from '@/assets/images/achievements';
 
-const TIER: Record<string, { ring: string; fill: string; label: string }> = {
-  common:    { ring: '#D1D5DB', fill: '#F9FAFB', label: 'Common' },
-  uncommon:  { ring: '#60A5FA', fill: '#EFF6FF', label: 'Uncommon' },
-  rare:      { ring: '#A78BFA', fill: '#F5F3FF', label: 'Rare' },
-  epic:      { ring: '#F59E0B', fill: '#FFFBEB', label: 'Epic' },
-  legendary: { ring: '#FF2E01', fill: '#FFF0ED', label: 'Legendary' },
+const TIER: Record<string, { ring: string; label: string }> = {
+  common: { ring: '#D1D5DB', label: 'Common' },
+  uncommon: { ring: '#60A5FA', label: 'Uncommon' },
+  rare: { ring: '#A78BFA', label: 'Rare' },
+  epic: { ring: '#F59E0B', label: 'Epic' },
+  legendary: { ring: '#FF2E01', label: 'Legendary' },
 };
-
-const LOCKED = { ring: '#E5E7EB', fill: '#F9FAFB' };
 
 interface Props {
   achievement: Achievement;
-  icon: any;
+  icon?: any;
   size?: 'small' | 'medium' | 'large';
   onPress?: () => void;
   earnedPct?: number;
 }
 
-export function AchievementBadge({ achievement, icon, size = 'medium', onPress, earnedPct }: Props) {
+export function AchievementBadge({ achievement, size = 'medium', onPress, earnedPct }: Props) {
   const { unlocked, rarity, name } = achievement;
   const tier = TIER[rarity] ?? TIER.common;
-  const colors = unlocked ? tier : LOCKED;
   const scale = useSharedValue(1);
 
-  const dims = size === 'large' ? 88 : size === 'small' ? 56 : 72;
-  const ringWidth = size === 'large' ? 3 : 2.5;
-  const iconSize = size === 'large' ? 30 : size === 'small' ? 20 : 26;
+  const dims = size === 'large' ? 112 : size === 'small' ? 68 : 90;
+  const stickerSize = size === 'large' ? 112 : size === 'small' ? 68 : 90;
+  const lockSize = size === 'large' ? 28 : size === 'small' ? 18 : 22;
+  const stickerSource = getAchievementStickerSource(achievement.name, achievement.icon);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -44,20 +43,40 @@ export function AchievementBadge({ achievement, icon, size = 'medium', onPress, 
       onPressOut={() => { scale.value = withSpring(1, { damping: 12 }); }}
       style={{ alignItems: 'center' }}>
       <Animated.View style={[{ alignItems: 'center' }, animStyle]}>
-        <View style={{
-          width: dims,
-          height: dims,
-          borderRadius: dims / 2,
-          borderWidth: ringWidth,
-          borderColor: colors.ring,
-          backgroundColor: colors.fill,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          {unlocked ? (
-            <HugeiconsIcon icon={icon} size={iconSize} color={tier.ring} />
-          ) : (
-            <HugeiconsIcon icon={LockIcon} size={iconSize - 6} color="#C4C4C4" />
+        <View
+          style={{
+            width: dims,
+            height: dims,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: dims * 0.34,
+            overflow: 'hidden',
+          }}>
+          <Image
+            source={stickerSource}
+            resizeMode="contain"
+            style={{
+              width: stickerSize,
+              height: stickerSize,
+              opacity: unlocked ? 1 : 0.16,
+              transform: [{ scale: unlocked ? 1 : 0.92 }],
+            }}
+          />
+          {!unlocked && (
+            <View
+              style={{
+                position: 'absolute',
+                width: dims * 1.54,
+                height: dims * 1.44,
+                borderRadius: dims * 1.2,
+                backgroundColor: 'rgba(255,255,255,0.92)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(229,231,235,0.95)',
+              }}>
+              <HugeiconsIcon icon={LockIcon} size={lockSize} color="#9CA3AF" />
+            </View>
           )}
         </View>
       </Animated.View>
@@ -86,7 +105,7 @@ export function AchievementBadge({ achievement, icon, size = 'medium', onPress, 
         {tier.label}
       </Text>
 
-      {earnedPct != null && unlocked && (
+      {earnedPct !== undefined && unlocked && (
         <Text style={{ fontFamily: 'SFMono-Regular', fontSize: 8, color: '#9CA3AF', marginTop: 2 }}>
           {earnedPct}% of users
         </Text>

@@ -19,15 +19,17 @@ import { GorhomBottomSheet, KYCVerificationSheet } from '@/components/sheets';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { Button, Input } from '@/components/ui';
-import { SolanaIcon, MaticIcon, UsdcIcon } from '@/assets/svg';
+import { SolanaIcon, MaticIcon, UsdcIcon, BnbIcon, StarknetIcon } from '@/assets/svg';
 import AvalancheIcon from '@/assets/svg/avalanche.svg';
 import { SUPPORTED_CHAINS } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useKycStore } from '@/stores/kycStore';
 import { isKycInReview } from '@/api/types/kyc';
-import { formatCurrency } from './utils';
-import type { MethodCopy } from './types';
+import { formatCurrency, formatSortCode } from './utils';
+import type { FiatCurrency, MethodCopy } from './types';
 import { cn } from '@/utils/cn';
+import { useWithdrawalLimits } from '@/api/hooks';
+import { WITHDRAWAL_LIMITS } from '@/lib/constants';
 import {
   ArrowDown01Icon,
   ArrowLeft01Icon,
@@ -37,6 +39,7 @@ import {
   CreditCardIcon,
   FuelIcon,
   GiftIcon,
+  InformationCircleIcon,
   InternetIcon,
   MoneyReceiveSquareIcon,
   MoreIcon,
@@ -98,12 +101,17 @@ type WithdrawDetailsSheetProps = {
   onSubmit: () => void;
   visible: boolean;
   // fiat bank details
+  fiatCurrency?: FiatCurrency;
+  onFiatCurrencyChange?: (value: FiatCurrency) => void;
   fiatAccountHolderName?: string;
   onFiatAccountHolderNameChange?: (value: string) => void;
   fiatAccountNumber?: string;
   onFiatAccountNumberChange?: (value: string) => void;
   fiatAccountNumberError?: string;
   didTryFiatAccount?: boolean;
+  fiatBic?: string;
+  onFiatBicChange?: (value: string) => void;
+  fiatBicError?: string;
   category: string;
   onCategoryChange: (value: string) => void;
   narration: string;
@@ -153,15 +161,15 @@ type WithdrawConfirmSheetProps = {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const CeloIconImg = require('@/assets/svg/celo.webp') as ImageSourcePropType;
 const BaseIconImg = require('@/assets/svg/base.jpeg') as ImageSourcePropType;
 
 const CHAIN_ICONS: Record<string, React.ComponentType<any> | ImageSourcePropType> = {
   SOL: SolanaIcon,
   MATIC: MaticIcon,
-  CELO: CeloIconImg,
   BASE: BaseIconImg,
   AVAX: AvalancheIcon,
+  BSC: BnbIcon,
+  STARKNET: StarknetIcon,
 };
 
 const WITHDRAWAL_CATEGORIES = [
@@ -254,7 +262,7 @@ function ChainPill({
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const iconValue = CHAIN_ICONS[chain.chain];
-  const isImageIcon = chain.chain === 'CELO' || chain.chain === 'BASE';
+  const isImageIcon = chain.chain === 'BASE';
   const { selection } = useHaptics();
 
   return (
@@ -424,6 +432,53 @@ function CategoryPicker({ value, onChange }: { value: string; onChange: (v: stri
         </BottomSheetView>
       </BottomSheetModal>
     </>
+  );
+}
+
+const FIAT_CURRENCIES: { value: FiatCurrency; label: string; flag: string }[] = [
+  { value: 'USD', label: 'USD', flag: '🇺🇸' },
+  { value: 'EUR', label: 'EUR', flag: '🇪🇺' },
+  { value: 'GBP', label: 'GBP', flag: '🇬🇧' },
+  { value: 'NGN', label: 'NGN', flag: '🇳🇬' },
+];
+
+function FiatCurrencyPicker({
+  value,
+  onChange,
+}: {
+  value: FiatCurrency;
+  onChange: (v: FiatCurrency) => void;
+}) {
+  const { selection } = useHaptics();
+  return (
+    <View className="mb-4 flex-row gap-2">
+      {FIAT_CURRENCIES.map((c) => {
+        const selected = value === c.value;
+        return (
+          <Pressable
+            key={c.value}
+            onPress={() => {
+              selection();
+              onChange(c.value);
+            }}
+            className={cn(
+              'flex-1 flex-row items-center justify-center gap-1.5 rounded-full py-2.5',
+              selected ? 'bg-gray-900' : 'bg-gray-100'
+            )}
+            accessibilityRole="button"
+            accessibilityLabel={`Select ${c.label}`}>
+            <Text className="text-[14px]">{c.flag}</Text>
+            <Text
+              className={cn(
+                'font-subtitle text-[13px]',
+                selected ? 'text-white' : 'text-gray-600'
+              )}>
+              {c.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -661,6 +716,11 @@ export function WithdrawDetailsSheet({
   onFiatAccountNumberChange,
   fiatAccountNumberError,
   didTryFiatAccount,
+  fiatCurrency = 'USD',
+  onFiatCurrencyChange,
+  fiatBic,
+  onFiatBicChange,
+  fiatBicError,
   category,
   onCategoryChange,
   narration,
@@ -689,40 +749,120 @@ export function WithdrawDetailsSheet({
           {methodCopy.detailHint}
         </Text>
 
-        {/* Fiat: holder name → account number → routing number */}
+        {/* Fiat: currency picker → currency-specific fields */}
         {isFiatMethod && onFiatAccountHolderNameChange && onFiatAccountNumberChange ? (
           <View className="mt-5 gap-4">
-            <Input
-              label="Account holder name"
-              value={fiatAccountHolderName ?? ''}
-              onChangeText={onFiatAccountHolderNameChange}
-              placeholder="Full name on bank account"
-              autoCapitalize="words"
-              autoCorrect={false}
-              className="h-14 rounded-xl"
-            />
-            <Input
-              label="Account number"
-              value={fiatAccountNumber ?? ''}
-              onChangeText={onFiatAccountNumberChange}
-              placeholder="4–17 digit account number"
-              keyboardType="number-pad"
-              autoCorrect={false}
-              className="h-14 rounded-xl"
-              error={didTryFiatAccount ? fiatAccountNumberError : undefined}
-            />
-            <Input
-              label={methodCopy.detailLabel}
-              value={destinationInput}
-              onChangeText={onDestinationChange}
-              placeholder={methodCopy.detailPlaceholder}
-              keyboardType="number-pad"
-              autoCorrect={false}
-              className="h-14 rounded-xl"
-              error={
-                didTryDestination || destinationInput.length > 0 ? destinationError : undefined
-              }
-            />
+            {onFiatCurrencyChange && null /* currency is now set by the home screen chain picker */}
+
+            {fiatCurrency === 'USD' && (
+              <>
+                <Input
+                  label="Account holder name"
+                  value={fiatAccountHolderName ?? ''}
+                  onChangeText={onFiatAccountHolderNameChange}
+                  placeholder="Full name on bank account"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  className="h-14 rounded-xl"
+                />
+                <Input
+                  label="Account number"
+                  value={fiatAccountNumber ?? ''}
+                  onChangeText={onFiatAccountNumberChange}
+                  placeholder="4–17 digit account number"
+                  keyboardType="number-pad"
+                  autoCorrect={false}
+                  className="h-14 rounded-xl"
+                  error={didTryFiatAccount ? fiatAccountNumberError : undefined}
+                />
+                <Input
+                  label="Routing number"
+                  value={destinationInput}
+                  onChangeText={onDestinationChange}
+                  placeholder="9-digit routing number"
+                  keyboardType="number-pad"
+                  autoCorrect={false}
+                  className="h-14 rounded-xl"
+                  error={
+                    didTryDestination || destinationInput.length > 0 ? destinationError : undefined
+                  }
+                />
+              </>
+            )}
+
+            {fiatCurrency === 'EUR' && (
+              <>
+                <Input
+                  label="Account holder name"
+                  value={fiatAccountHolderName ?? ''}
+                  onChangeText={onFiatAccountHolderNameChange}
+                  placeholder="Full name on bank account"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  className="h-14 rounded-xl"
+                />
+                <Input
+                  label="IBAN"
+                  value={destinationInput}
+                  onChangeText={onDestinationChange}
+                  placeholder="e.g. DE89370400440532013000"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  className="h-14 rounded-xl"
+                  error={
+                    didTryDestination || destinationInput.length > 0 ? destinationError : undefined
+                  }
+                />
+                {onFiatBicChange && (
+                  <Input
+                    label="BIC / SWIFT (optional)"
+                    value={fiatBic ?? ''}
+                    onChangeText={onFiatBicChange}
+                    placeholder="e.g. COBADEFFXXX"
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    className="h-14 rounded-xl"
+                    error={fiatBicError}
+                  />
+                )}
+              </>
+            )}
+
+            {fiatCurrency === 'GBP' && (
+              <>
+                <Input
+                  label="Account holder name"
+                  value={fiatAccountHolderName ?? ''}
+                  onChangeText={onFiatAccountHolderNameChange}
+                  placeholder="Full name on bank account"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  className="h-14 rounded-xl"
+                />
+                <Input
+                  label="Sort code"
+                  value={formatSortCode(destinationInput)}
+                  onChangeText={(v) => onDestinationChange(v.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="XX-XX-XX"
+                  keyboardType="number-pad"
+                  autoCorrect={false}
+                  className="h-14 rounded-xl"
+                  error={
+                    didTryDestination || destinationInput.length > 0 ? destinationError : undefined
+                  }
+                />
+                <Input
+                  label="Account number"
+                  value={fiatAccountNumber ?? ''}
+                  onChangeText={onFiatAccountNumberChange}
+                  placeholder="8-digit account number"
+                  keyboardType="number-pad"
+                  autoCorrect={false}
+                  className="h-14 rounded-xl"
+                  error={didTryFiatAccount ? fiatAccountNumberError : undefined}
+                />
+              </>
+            )}
           </View>
         ) : !isMobileWalletFundingFlow ? (
           <View className="mt-5">
@@ -842,6 +982,28 @@ export function WithdrawDetailsSheet({
         />
       </View>
     </GorhomBottomSheet>
+  );
+}
+
+function WithdrawalLimitsInfo() {
+  const { data, isPlaceholderData } = useWithdrawalLimits();
+  if (!data) return null;
+
+  const remaining = Math.max(0, data.daily_limit - data.daily_used);
+  const formattedRemaining = remaining >= 1000
+    ? `$${(remaining / 1000).toFixed(remaining % 1000 === 0 ? 0 : 1)}k`
+    : `$${formatCurrency(remaining)}`;
+
+  return (
+    <View className="mt-3 flex-row items-center gap-1.5 px-1">
+      {isPlaceholderData && (
+        <HugeiconsIcon icon={InformationCircleIcon} size={13} color="#9CA3AF" />
+      )}
+      <Text className="font-body text-[12px] text-gray-400">
+        Daily limit: {formattedRemaining} remaining · Withdrawals today: {data.withdrawals_today} of{' '}
+        {data.max_withdrawals_per_day}
+      </Text>
+    </View>
   );
 }
 
@@ -1074,6 +1236,9 @@ export function WithdrawConfirmSheet({
             </>
           )}
         </View>
+
+        {/* Withdrawal rate limits */}
+        <WithdrawalLimitsInfo />
 
         {/* Actions */}
         <View className="mt-6 flex-row gap-3">

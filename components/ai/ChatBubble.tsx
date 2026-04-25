@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, Pressable } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import type { AIMessage, InsightCard } from '@/api/types/ai';
 import { MarkdownContent } from './MarkdownContent';
 import { TypingText } from './TypingText';
 import { InsightCardView } from './InsightCardView';
-import { MessageActions } from './MessageActions';
 
 interface Props {
   msg: AIMessage;
@@ -13,49 +14,69 @@ interface Props {
   isLatest?: boolean;
   animate?: boolean;
   onDeleteMessage?: () => void;
+  onEdit?: (content: string) => void;
 }
 
-export function ChatBubble({ msg, cards, isLatest, animate, onDeleteMessage }: Props) {
+export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
   const isUser = msg.role === 'user';
   const [typingDone, setTypingDone] = useState(!animate);
+  const [copied, setCopied] = useState(false);
+
+  const handleLongPress = useCallback(async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await Clipboard.setStringAsync(msg.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [msg.content]);
 
   if (isUser) {
     return (
-      <Animated.View entering={FadeIn.duration(150)} style={{ marginBottom: 20, maxWidth: '85%', alignSelf: 'flex-end' }}>
-        <View style={{ backgroundColor: '#1A1A1A', borderRadius: 20, borderBottomRightRadius: 6, paddingHorizontal: 16, paddingVertical: 12 }}>
-          <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 15, color: '#FFFFFF', lineHeight: 22 }}>
-            {msg.content}
-          </Text>
-        </View>
+      <Animated.View entering={FadeIn.duration(150)} className="mb-5 max-w-[88%] self-end">
+        <Pressable
+          onLongPress={handleLongPress}
+          delayLongPress={400}
+          accessibilityRole="text"
+          accessibilityLabel={`Your message: ${msg.content.slice(0, 100)}`}>
+          <View className="rounded-3xl bg-[#EDEDEB] px-5 py-3.5">
+            <Text className="font-body text-[17px] leading-[28px] text-[#1A1A1A]">
+              {msg.content}
+            </Text>
+          </View>
+        </Pressable>
       </Animated.View>
     );
   }
 
   return (
-    <Animated.View entering={FadeIn.duration(200)} style={{ marginBottom: 24, alignSelf: 'flex-start', maxWidth: '95%' }}>
-      {/* Ada label */}
-      <Text style={{ fontFamily: 'SFMono-Medium', fontSize: 11, color: '#FF2E01', letterSpacing: 0.5, marginBottom: 6 }}>
-        ADA
-      </Text>
+    <Animated.View className="mb-6 self-start">
+      <Pressable
+        onLongPress={handleLongPress}
+        delayLongPress={400}
+        accessibilityRole="text"
+        accessibilityLabel={`Miriam: ${msg.content.slice(0, 100)}`}>
+        <View className="py-1">
+          {animate && !typingDone ? (
+            <TypingText text={msg.content} speed={10} onComplete={() => setTypingDone(true)}>
+              {(displayed) => <MarkdownContent content={displayed} />}
+            </TypingText>
+          ) : (
+            <MarkdownContent content={msg.content} />
+          )}
+        </View>
+      </Pressable>
 
-      {/* Message content */}
-      {animate && !typingDone ? (
-        <TypingText text={msg.content} speed={10} onComplete={() => setTypingDone(true)}>
-          {(displayed) => <MarkdownContent content={displayed} />}
-        </TypingText>
-      ) : (
-        <MarkdownContent content={msg.content} />
+      {copied && (
+        <Animated.View entering={FadeIn.duration(100)} className="mt-1 self-start">
+          <Text className="font-body text-xs text-text-tertiary">Copied</Text>
+        </Animated.View>
       )}
 
-      {/* Insight cards */}
-      {(typingDone || !animate) && cards?.map((card, i) => (
-        <InsightCardView key={i} card={card} />
-      ))}
-
-      {/* Actions */}
-      {(typingDone || !animate) && (
-        <MessageActions content={msg.content} onDelete={onDeleteMessage} />
-      )}
+      {(typingDone || !animate) &&
+        cards?.map((card, i) => (
+          <View key={i} className="mt-3">
+            <InsightCardView card={card} />
+          </View>
+        ))}
     </Animated.View>
   );
 }
