@@ -24,6 +24,17 @@ import type {
   FinancialTimeline,
   FinancialPlan,
   NudgeResponse,
+  EnhancedNudgeRequest,
+  EnhancedNudgeResponse,
+  Automation,
+  CreateAutomationRequest,
+  AutomationLog,
+  ReceiptSplitData,
+  SharedGoal,
+  GoalContribution,
+  GoalInvite,
+  GoalMember,
+  CreateSharedGoalRequest,
 } from '../types/ai';
 
 const BASE = '/v1/ai';
@@ -73,6 +84,13 @@ export const aiService = {
         if (fingerprint) xhr.setRequestHeader('X-Device-Fingerprint', fingerprint);
 
         let seenBytes = 0;
+        let settled = false;
+
+        const settle = (fn: () => void) => {
+          if (settled) return;
+          settled = true;
+          fn();
+        };
 
         const parseSSEChunk = (text: string) => {
           const lines = text.split('\n');
@@ -94,15 +112,27 @@ export const aiService = {
           }
           if (xhr.readyState === 4) {
             if (xhr.status >= 200 && xhr.status < 300) {
-              onDone();
-            } else if (xhr.status > 0) {
-              onError(`Stream failed: ${xhr.status}`);
+              settle(onDone);
+            } else if (xhr.status === 0) {
+              if (seenBytes > 0) {
+                settle(onDone);
+              } else {
+                settle(() => onError('Stream connection failed'));
+              }
+            } else {
+              settle(() => onError(`Stream failed: ${xhr.status}`));
             }
           }
         };
 
-        xhr.onerror = () => onError('Stream connection failed');
-        xhr.ontimeout = () => onError('Stream timed out');
+        xhr.onerror = () => {
+          if (seenBytes > 0) {
+            settle(onDone);
+          } else {
+            settle(() => onError('Stream connection failed'));
+          }
+        };
+        xhr.ontimeout = () => settle(() => onError('Stream timed out'));
         xhr.timeout = 120000;
 
         controller.signal.addEventListener('abort', () => xhr.abort());
@@ -267,6 +297,109 @@ export const aiService = {
   async getNudge(screen: string, amount?: string, currency?: string): Promise<NudgeResponse> {
     const res = await apiClient.post<NudgeResponse>(`${BASE}/nudge`, { screen, amount, currency });
     return res as NudgeResponse;
+  },
+
+  /** Enhanced nudge — multi-modal context-aware nudge with actions */
+  async getEnhancedNudge(req: EnhancedNudgeRequest): Promise<EnhancedNudgeResponse> {
+    const res = await apiClient.post<EnhancedNudgeResponse>(`${BASE}/nudge/enhanced`, req);
+    return res as EnhancedNudgeResponse;
+  },
+
+  // ── Automations ────────────────────────────────────────────────
+
+  async createAutomation(req: CreateAutomationRequest): Promise<{ data: Automation }> {
+    return apiClient.post(`${BASE}/automations`, req);
+  },
+
+  async listAutomations(): Promise<{ data: Automation[] }> {
+    return apiClient.get(`${BASE}/automations`);
+  },
+
+  async getAutomation(id: string): Promise<{ data: Automation }> {
+    return apiClient.get(`${BASE}/automations/${id}`);
+  },
+
+  async updateAutomation(
+    id: string,
+    req: Partial<CreateAutomationRequest> & { is_active?: boolean }
+  ): Promise<{ data: Automation }> {
+    return apiClient.patch(`${BASE}/automations/${id}`, req);
+  },
+
+  async deleteAutomation(id: string): Promise<void> {
+    return apiClient.delete(`${BASE}/automations/${id}`);
+  },
+
+  async getAutomationLogs(): Promise<{ data: AutomationLog[] }> {
+    return apiClient.get(`${BASE}/automations/logs`);
+  },
+
+  // ── Receipt Split Tracking ─────────────────────────────────────
+
+  async listSplits(status?: string): Promise<{ data: ReceiptSplitData[] }> {
+    const query = status ? `?status=${status}` : '';
+    return apiClient.get(`${BASE}/receipts/splits${query}`);
+  },
+
+  async getSplit(id: string): Promise<{ data: ReceiptSplitData }> {
+    return apiClient.get(`${BASE}/receipts/splits/${id}`);
+  },
+
+  async sendSplitReminder(splitId: string): Promise<{ reminded: number }> {
+    return apiClient.post(`${BASE}/receipts/splits/${splitId}/remind`);
+  },
+
+  async markParticipantPaid(splitId: string, participantId: string): Promise<void> {
+    return apiClient.post(`${BASE}/receipts/splits/${splitId}/participants/${participantId}/paid`);
+  },
+
+  // ── Shared Goals ───────────────────────────────────────────────
+
+  async createSharedGoal(req: CreateSharedGoalRequest): Promise<{ data: SharedGoal }> {
+    return apiClient.post('/v1/goals/shared', req);
+  },
+
+  async listSharedGoals(): Promise<{ data: SharedGoal[] }> {
+    return apiClient.get('/v1/goals/shared');
+  },
+
+  async getSharedGoal(id: string): Promise<{ data: SharedGoal }> {
+    return apiClient.get(`/v1/goals/shared/${id}`);
+  },
+
+  async contributeToGoal(
+    goalId: string,
+    req: { amount: string; note?: string; source?: string }
+  ): Promise<{ data: GoalContribution }> {
+    return apiClient.post(`/v1/goals/shared/${goalId}/contribute`, req);
+  },
+
+  async inviteToGoal(
+    goalId: string,
+    tags: string[],
+    message?: string
+  ): Promise<{ data: GoalInvite[] }> {
+    return apiClient.post(`/v1/goals/shared/${goalId}/invite`, { tags, message });
+  },
+
+  async getGoalInvites(): Promise<{ data: GoalInvite[] }> {
+    return apiClient.get('/v1/goals/shared/invites');
+  },
+
+  async respondToGoalInvite(inviteId: string, accept: boolean): Promise<void> {
+    return apiClient.post(`/v1/goals/shared/invites/${inviteId}/respond`, { accept });
+  },
+
+  async getGoalLeaderboard(goalId: string): Promise<{ data: GoalMember[] }> {
+    return apiClient.get(`/v1/goals/shared/${goalId}/leaderboard`);
+  },
+
+  async getGoalContributions(goalId: string): Promise<{ data: GoalContribution[] }> {
+    return apiClient.get(`/v1/goals/shared/${goalId}/contributions`);
+  },
+
+  async leaveGoal(goalId: string): Promise<void> {
+    return apiClient.post(`/v1/goals/shared/${goalId}/leave`);
   },
 };
 

@@ -10,16 +10,8 @@ import {
   TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  KeyboardAvoidingView,
-  useKeyboardHandler,
-} from 'react-native-keyboard-controller';
-import Animated, {
-  FadeIn,
-  FadeOut,
-  useSharedValue,
-  runOnJS,
-} from 'react-native-reanimated';
+import { KeyboardAvoidingView, useKeyboardHandler } from 'react-native-keyboard-controller';
+import Animated, { FadeIn, FadeOut, useSharedValue, runOnJS } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { HugeiconsIcon } from '@hugeicons/react-native';
@@ -30,6 +22,9 @@ import {
   Search01Icon,
   Camera01Icon,
   Image01Icon,
+  FlashIcon,
+  Target02Icon,
+  Invoice02Icon,
 } from '@hugeicons/core-free-icons';
 import { useAIChatStore } from '@/stores/aiChatStore';
 import { ChatBubble, InputBar, ThreadRow, MiriamCharacter } from '@/components/ai';
@@ -37,6 +32,7 @@ import { ActionConfirmSheet } from '@/components/ai/ActionConfirmSheet';
 import { ActionSheet } from '@/components/sheets/ActionSheet';
 import type { AIMessage, PendingAction, InsightCard } from '@/api/types/ai';
 import { useSubscription } from '@/api/hooks/useGameplay';
+import { useHaptics } from '@/hooks/useHaptics';
 
 const BG = '#F7F7F2';
 
@@ -86,9 +82,7 @@ function TypingDots() {
 
 function RetryBanner({ onPress }: { onPress: () => void }) {
   return (
-    <Pressable
-      onPress={onPress}
-      className="mt-3 flex-row items-center justify-center gap-2 py-3">
+    <Pressable onPress={onPress} className="mt-3 flex-row items-center justify-center gap-2 py-3">
       <Text className="font-body text-[15px] text-[#B5B5B5]">Failed to send.</Text>
       <Text className="font-body-medium text-[15px] text-[#1A7A6D]">Retry</Text>
     </Pressable>
@@ -131,16 +125,77 @@ function SuggestionChips({
   );
 }
 
+// ─── Feature Action Cards (horizontal scroll, StashCard style) ──
+
+function FeatureCards({ onSend, disabled }: { onSend: (msg: string) => void; disabled?: boolean }) {
+  const { impact } = useHaptics();
+  const sentRef = React.useRef(false);
+
+  const cards = [
+    {
+      label: 'Automations',
+      subtitle: 'Set money rules',
+      icon: FlashIcon,
+      prompt: 'Help me set up an automation',
+    },
+    {
+      label: 'Shared Goals',
+      subtitle: 'Save with friends',
+      icon: Target02Icon,
+      prompt: 'Create a shared goal',
+    },
+    {
+      label: 'Splits',
+      subtitle: 'Track who owes',
+      icon: Invoice02Icon,
+      prompt: 'Show my active splits',
+    },
+  ];
+
+  const handlePress = (prompt: string) => {
+    if (sentRef.current || disabled) return;
+    sentRef.current = true;
+    impact();
+    onSend(prompt);
+  };
+
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
+      {cards.map((card) => (
+        <Pressable
+          key={card.label}
+          onPress={() => handlePress(card.prompt)}
+          disabled={disabled}
+          className="w-[150px] rounded-3xl border border-black/[0.06] bg-white px-4 py-4"
+          style={{ opacity: disabled ? 0.5 : 1 }}
+          accessibilityRole="button"
+          accessibilityLabel={card.label}>
+          <View className="mb-12">
+            <HugeiconsIcon icon={card.icon} size={24} color="#000" />
+          </View>
+          <Text className="font-heading-bold text-[15px] text-text-primary">{card.label}</Text>
+          <Text className="mt-1 font-body text-[12px] text-text-secondary">{card.subtitle}</Text>
+        </Pressable>
+      ))}
+    </ScrollView>
+  );
+}
+
 // ─── Empty State (Miriam centered) ───────────────────────────────
 
 function EmptyChatState({
   onSend,
   suggestions,
   hideForTyping,
+  isStreaming,
 }: {
   onSend: (msg: string) => void;
   suggestions: string[];
   hideForTyping: boolean;
+  isStreaming?: boolean;
 }) {
   if (hideForTyping) return <View className="flex-1" />;
 
@@ -151,12 +206,13 @@ function EmptyChatState({
         <Text className="mt-6 font-mono-bold text-[32px] tracking-tight text-[#1A1A1A]">
           Miriam
         </Text>
-        <Text className="mt-2 font-body text-[16px] text-[#B5B5B5]">
-          Your financial assistant
-        </Text>
+        <Text className="mt-2 font-body text-[16px] text-[#B5B5B5]">Your financial assistant</Text>
       </View>
       <View className="pb-2">
-        <SuggestionChips suggestions={suggestions} onPress={onSend} />
+        <FeatureCards onSend={onSend} disabled={isStreaming} />
+        <View className="mt-3">
+          <SuggestionChips suggestions={suggestions} onPress={onSend} />
+        </View>
       </View>
     </View>
   );
@@ -267,7 +323,7 @@ export default function AIChatScreen() {
       clearPendingAction();
       const confirmMsg: AIMessage = {
         role: 'assistant',
-        content: `✅ Done — ${action.description}`,
+        content: `Done — ${action.description}`,
         created_at: new Date().toISOString(),
       };
       useAIChatStore.setState((s) => ({ messages: [...s.messages, confirmMsg] }));
@@ -392,23 +448,21 @@ export default function AIChatScreen() {
           <Pressable
             onPress={handleBack}
             hitSlop={12}
-            className="w-10 h-10 rounded-full items-center justify-center">
+            className="h-10 w-10 items-center justify-center rounded-full">
             <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#1A1A1A" />
           </Pressable>
-          <Text className="font-mono-bold text-[17px] tracking-wider text-[#1A1A1A]">
-            Miriam
-          </Text>
+          <Text className="font-mono-bold text-[17px] tracking-wider text-[#1A1A1A]">Miriam</Text>
           <View className="flex-row items-center gap-1">
             <Pressable
               onPress={() => setShowThreads(true)}
               hitSlop={12}
-              className="w-10 h-10 rounded-full items-center justify-center">
+              className="h-10 w-10 items-center justify-center rounded-full">
               <HugeiconsIcon icon={Menu01Icon} size={22} color="#1A1A1A" />
             </Pressable>
             <Pressable
               onPress={handleNewThread}
               hitSlop={12}
-              className="w-10 h-10 rounded-full items-center justify-center">
+              className="h-10 w-10 items-center justify-center rounded-full">
               <HugeiconsIcon icon={Add01Icon} size={22} color="#1A1A1A" />
             </Pressable>
           </View>
@@ -420,6 +474,7 @@ export default function AIChatScreen() {
             onSend={handleSend}
             suggestions={smartSuggestions}
             hideForTyping={isKeyboardVisible}
+            isStreaming={isStreaming}
           />
         ) : (
           <FlatList
@@ -471,29 +526,27 @@ export default function AIChatScreen() {
                   setThreadSearch('');
                 }}
                 hitSlop={12}
-                className="w-10 h-10 rounded-full items-center justify-center">
+                className="h-10 w-10 items-center justify-center rounded-full">
                 <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#1A1A1A" />
               </Pressable>
-              <Text className="font-heading-semibold text-[18px] text-[#1A1A1A]">
-                Threads
-              </Text>
+              <Text className="font-heading-semibold text-[18px] text-[#1A1A1A]">Threads</Text>
               <Pressable
                 onPress={handleNewThread}
                 hitSlop={12}
-                className="w-10 h-10 rounded-full items-center justify-center">
+                className="h-10 w-10 items-center justify-center rounded-full">
                 <HugeiconsIcon icon={Add01Icon} size={22} color="#1A1A1A" />
               </Pressable>
             </View>
 
             <View className="mx-5 mb-4">
-              <View className="flex-row items-center rounded-full bg-white px-4 py-3 border border-black/[0.05]">
+              <View className="flex-row items-center rounded-full border border-black/[0.05] bg-white px-4 py-3">
                 <HugeiconsIcon icon={Search01Icon} size={18} color="#B5B5B5" />
                 <TextInput
                   value={threadSearch}
                   onChangeText={setThreadSearch}
                   placeholder="Search threads"
                   placeholderTextColor="#B5B5B5"
-                  className="flex-1 font-body text-[15px] text-[#1A1A1A] ml-2.5"
+                  className="ml-2.5 flex-1 font-body text-[15px] text-[#1A1A1A]"
                 />
               </View>
             </View>
@@ -503,12 +556,12 @@ export default function AIChatScreen() {
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled">
               {filteredConversations.length === 0 ? (
-                <View className="items-center pt-24 px-6">
+                <View className="items-center px-6 pt-24">
                   <MiriamCharacter size={48} emotion="sleepy" animate={false} />
-                  <Text className="mt-4 font-heading-semibold text-[17px] text-[#1A1A1A] text-center">
+                  <Text className="font-heading-semibold mt-4 text-center text-[17px] text-[#1A1A1A]">
                     {threadSearch ? 'No matching threads' : 'No threads yet'}
                   </Text>
-                  <Text className="mt-2 font-body text-[14px] text-[#B5B5B5] text-center">
+                  <Text className="mt-2 text-center font-body text-[14px] text-[#B5B5B5]">
                     {threadSearch
                       ? 'Try a different search term.'
                       : 'Start a conversation with Miriam to see it here.'}

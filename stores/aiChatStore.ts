@@ -240,7 +240,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
         }
       },
       () => {
-        const content = accumulated || "I'm having a moment — try again in a few seconds 🔄";
+        const content = accumulated || "I'm having a moment — try again in a few seconds";
         const assistantMsg: AIMessage = {
           role: 'assistant',
           content,
@@ -267,7 +267,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
           role: 'assistant',
           content: is404
             ? 'Miriam is not available right now — the AI service is being set up on the backend.'
-            : "I'm having a moment — try again in a few seconds 🔄",
+            : "I'm having a moment — try again in a few seconds",
           created_at: new Date().toISOString(),
         };
         set((s) => ({
@@ -293,7 +293,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()((set, get) =
     }
 
     const convId = conversationId ?? state.activeConversationId;
-    const userContent = message ? `📸 ${message}` : '📸 Image uploaded';
+    const userContent = message ? `Image: ${message}` : 'Image uploaded';
     const userMsg: AIMessage = {
       role: 'user',
       content: userContent,

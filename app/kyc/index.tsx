@@ -254,7 +254,7 @@ export default function KycCountryScreen() {
             {/* Search input */}
             <View className="border-b border-gray-100 px-4 pb-4">
               <View className="flex-row items-center rounded-full border border-gray-200 bg-gray-50 px-4 py-3">
-                <Text className="mr-2 text-lg">🔍</Text>
+                <Text className="mr-2 text-lg">Search</Text>
                 <TextInput
                   className="flex-1 font-body text-[15px] text-gray-900"
                   placeholder="Search countries..."
@@ -267,7 +267,7 @@ export default function KycCountryScreen() {
                 />
                 {searchQuery.length > 0 && (
                   <Pressable onPress={() => setSearchQuery('')}>
-                    <Text className="text-gray-400">✕</Text>
+                    <HugeiconsIcon icon={Cancel01Icon} size={16} color="#9CA3AF" />
                   </Pressable>
                 )}
               </View>

@@ -644,7 +644,7 @@ export default function Settings() {
           <SheetRow
             key={c}
             label={CURRENCY_LABELS[c]}
-            value={selectedCurrency === c ? '✓' : undefined}
+            value={selectedCurrency === c ? 'Active' : undefined}
             onPress={() => {
               setCurrency(c);
               closeSheet();

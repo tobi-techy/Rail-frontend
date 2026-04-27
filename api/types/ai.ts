@@ -256,3 +256,188 @@ export interface NudgeResponse {
   severity: 'info' | 'warning' | 'celebration';
   shake: boolean;
 }
+
+// ============= Enhanced Nudge Types =============
+
+export interface EnhancedNudgeRequest {
+  screen: string;
+  amount?: string;
+  currency?: string;
+  time_of_day?: string;
+  day_of_week?: number;
+  days_until_payday?: number;
+  merchant_hint?: string;
+  recent_actions?: string[];
+}
+
+export interface NudgeAction {
+  type: 'transfer' | 'open_screen' | 'confirm';
+  label: string;
+  destination: string;
+  params?: Record<string, any>;
+}
+
+export interface EnhancedNudgeResponse {
+  show: boolean;
+  message?: string;
+  severity: 'info' | 'warning' | 'celebration';
+  shake: boolean;
+  action?: NudgeAction | null;
+  expires_in?: number;
+}
+
+// ============= Automation Types =============
+
+export interface Automation {
+  id: string;
+  user_id: string;
+  name: string;
+  description?: string;
+  trigger_type:
+    | 'schedule'
+    | 'balance_threshold'
+    | 'income_detected'
+    | 'spending_spike'
+    | 'payday'
+    | 'custom';
+  trigger_config: Record<string, any>;
+  action_type:
+    | 'transfer_to_stash'
+    | 'transfer_to_spend'
+    | 'send_p2p'
+    | 'set_budget_alert'
+    | 'pause_card'
+    | 'resume_card'
+    | 'notify'
+    | 'custom';
+  action_config: Record<string, any>;
+  is_active: boolean;
+  last_triggered_at?: string;
+  trigger_count: number;
+  max_triggers_per_day: number;
+  cooldown_minutes: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateAutomationRequest {
+  name: string;
+  description?: string;
+  trigger_type: Automation['trigger_type'];
+  trigger_config: Record<string, any>;
+  action_type: Automation['action_type'];
+  action_config: Record<string, any>;
+  max_triggers_per_day?: number;
+  cooldown_minutes?: number;
+}
+
+export interface AutomationLog {
+  id: string;
+  automation_id: string;
+  user_id: string;
+  status: 'success' | 'failed' | 'skipped';
+  trigger_data?: Record<string, any>;
+  result_data?: Record<string, any>;
+  error_message?: string;
+  executed_at: string;
+}
+
+// ============= Receipt Split Types =============
+
+export interface ReceiptSplitParticipant {
+  id: string;
+  split_id: string;
+  rail_tag: string;
+  participant_user_id?: string;
+  amount: string;
+  status: 'pending' | 'requested' | 'paid' | 'declined' | 'expired';
+  reminder_count: number;
+  last_reminded_at?: string;
+  paid_at?: string;
+  created_at: string;
+}
+
+export interface ReceiptSplitData {
+  id: string;
+  receipt_id: string;
+  user_id: string;
+  split_type: 'equal' | 'custom' | 'by_item';
+  total_amount: string;
+  your_share: string;
+  status: 'pending' | 'partial' | 'collected' | 'expired';
+  message?: string;
+  expires_at?: string;
+  participants: ReceiptSplitParticipant[];
+  created_at: string;
+  updated_at: string;
+}
+
+// ============= Shared Goal Types =============
+
+export interface SharedGoal {
+  id: string;
+  creator_id: string;
+  name: string;
+  description?: string;
+  target_amount: string;
+  current_amount: string;
+  currency: string;
+  deadline?: string;
+  status: 'active' | 'completed' | 'cancelled' | 'expired';
+  visibility: 'private' | 'members' | 'public';
+  icon_name: string;
+  celebration_message?: string;
+  members?: GoalMember[];
+  member_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GoalMember {
+  id: string;
+  goal_id: string;
+  user_id: string;
+  role: 'creator' | 'admin' | 'member';
+  target_contribution?: string;
+  total_contributed: string;
+  status: 'invited' | 'active' | 'left' | 'removed';
+  rail_tag?: string;
+  username?: string;
+  joined_at?: string;
+  created_at: string;
+}
+
+export interface GoalContribution {
+  id: string;
+  goal_id: string;
+  user_id: string;
+  amount: string;
+  note?: string;
+  source: 'manual' | 'automation' | 'roundup' | 'stash_transfer';
+  rail_tag?: string;
+  created_at: string;
+}
+
+export interface GoalInvite {
+  id: string;
+  goal_id: string;
+  inviter_id: string;
+  rail_tag: string;
+  invitee_user_id?: string;
+  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  message?: string;
+  goal_name?: string;
+  inviter_tag?: string;
+  created_at: string;
+  responded_at?: string;
+}
+
+export interface CreateSharedGoalRequest {
+  name: string;
+  description?: string;
+  target_amount: string;
+  currency?: string;
+  deadline?: string;
+  visibility?: string;
+  icon_name?: string;
+}

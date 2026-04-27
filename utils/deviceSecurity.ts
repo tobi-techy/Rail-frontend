@@ -122,21 +122,24 @@ export async function enforceDeviceSecurity(options?: {
     } else {
       // In production, BLOCK the app
       logger.error('[DeviceSecurity] Device security check failed', logContext);
-      Alert.alert('🔒 Security Alert', message, [
-        {
-          text: 'Close App',
-          style: 'destructive',
-          onPress: () => {
-            if (options?.onCompromised) {
-              options.onCompromised();
-            }
-            // SECURITY FIX (NEW-L2): Force exit — Alert alone is dismissable on Android
-            BackHandler.exitApp();
+      Alert.alert(
+        'Security Alert',
+        message,
+        [
+          {
+            text: 'Close App',
+            style: 'destructive',
+            onPress: () => {
+              if (options?.onCompromised) {
+                options.onCompromised();
+              }
+              // SECURITY FIX (NEW-L2): Force exit — Alert alone is dismissable on Android
+              BackHandler.exitApp();
+            },
           },
-        },
-      ],
-      // SECURITY FIX (NEW-L2): Prevent dismissal by tapping outside
-      { cancelable: false }
+        ],
+        // SECURITY FIX (NEW-L2): Prevent dismissal by tapping outside
+        { cancelable: false }
       );
 
       // Prevent app from launching

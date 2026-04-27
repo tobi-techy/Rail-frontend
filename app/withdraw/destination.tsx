@@ -36,6 +36,7 @@ import {
   Add01Icon,
   ArrowRight01Icon,
   Cancel01Icon,
+  Tick02Icon,
 } from '@hugeicons/core-free-icons';
 import { ChainLogo } from '@/components/ChainLogo';
 import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
@@ -324,7 +325,9 @@ export default function DestinationScreen() {
     try {
       const { Passkey } = require('react-native-passkey');
       setNgnPasskeyAvailable(Passkey.isSupported() && Boolean(safeName(user?.email)));
-    } catch { setNgnPasskeyAvailable(false); }
+    } catch {
+      setNgnPasskeyAvailable(false);
+    }
   }, [user?.email]);
   const ngnPasskey = usePasskeyAuthorize({
     email: user?.email,
@@ -576,9 +579,13 @@ export default function DestinationScreen() {
   if (ngnShowConfirm && !ngnShowAuth) {
     if (ngnSubmitting) {
       return (
-        <SafeAreaView className="flex-1 bg-white items-center justify-center" edges={['top', 'bottom']}>
+        <SafeAreaView
+          className="flex-1 items-center justify-center bg-white"
+          edges={['top', 'bottom']}>
           <ActivityIndicator size="small" color="#EA580C" />
-          <Text className="mt-4 font-subtitle text-[17px] text-text-primary">Processing withdrawal…</Text>
+          <Text className="mt-4 font-subtitle text-[17px] text-text-primary">
+            Processing withdrawal…
+          </Text>
         </SafeAreaView>
       );
     }
@@ -600,20 +607,30 @@ export default function DestinationScreen() {
             <View className="mb-3 size-14 items-center justify-center overflow-hidden rounded-full">
               <NgnIcon width={56} height={56} />
             </View>
-            <Text className="font-mono-semibold text-[42px] leading-[46px] text-text-primary" style={{ letterSpacing: -1 }}>
+            <Text
+              className="font-mono-semibold text-[42px] leading-[46px] text-text-primary"
+              style={{ letterSpacing: -1 }}>
               ₦{formatCurrency(numericAmount)}
             </Text>
             {ngnUsdEquivalent > 0 && (
-              <Text className="mt-1 font-body text-[14px] text-text-secondary">≈ ${ngnUsdEquivalent.toFixed(2)} USDC</Text>
+              <Text className="mt-1 font-body text-[14px] text-text-secondary">
+                ≈ ${ngnUsdEquivalent.toFixed(2)} USDC
+              </Text>
             )}
           </View>
 
           {/* Destination card */}
-          <Text className="mb-2 ml-1 font-body text-[12px] uppercase tracking-wider text-text-secondary">Destination</Text>
+          <Text className="mb-2 ml-1 font-body text-[12px] uppercase tracking-wider text-text-secondary">
+            Destination
+          </Text>
           <View className="overflow-hidden rounded-3xl bg-surface">
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-body text-[14px] text-text-secondary">Recipient</Text>
-              <Text className="ml-6 max-w-[60%] text-right font-subtitle text-[14px] text-text-primary" numberOfLines={1}>{ngnAccountName}</Text>
+              <Text
+                className="ml-6 max-w-[60%] text-right font-subtitle text-[14px] text-text-primary"
+                numberOfLines={1}>
+                {ngnAccountName}
+              </Text>
             </View>
             <View className="mx-5 h-px bg-gray-100" />
             <View className="flex-row items-center justify-between px-5 py-4">
@@ -623,7 +640,9 @@ export default function DestinationScreen() {
             <View className="mx-5 h-px bg-gray-100" />
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-body text-[14px] text-text-secondary">Account</Text>
-              <Text className="font-subtitle text-[14px] text-text-primary">{ngnAccountNumber}</Text>
+              <Text className="font-subtitle text-[14px] text-text-primary">
+                {ngnAccountNumber}
+              </Text>
             </View>
             <View className="mx-5 h-px bg-gray-100" />
             <View className="flex-row items-center justify-between px-5 py-4">
@@ -633,30 +652,42 @@ export default function DestinationScreen() {
           </View>
 
           {/* Transaction card */}
-          <Text className="mb-2 ml-1 mt-4 font-body text-[12px] uppercase tracking-wider text-text-secondary">Transaction</Text>
+          <Text className="mb-2 ml-1 mt-4 font-body text-[12px] uppercase tracking-wider text-text-secondary">
+            Transaction
+          </Text>
           <View className="overflow-hidden rounded-3xl bg-surface">
             {offRampRate > 0 && (
               <>
                 <View className="flex-row items-center justify-between px-5 py-4">
                   <Text className="font-body text-[14px] text-text-secondary">Rate</Text>
-                  <Text className="font-subtitle text-[14px] text-text-primary">₦{offRampRate.toLocaleString()}/USD</Text>
+                  <Text className="font-subtitle text-[14px] text-text-primary">
+                    ₦{offRampRate.toLocaleString()}/USD
+                  </Text>
                 </View>
                 <View className="mx-5 h-px bg-gray-100" />
               </>
             )}
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-body text-[14px] text-text-secondary">Rail fee</Text>
-              <Text className="font-subtitle text-[14px] text-text-primary">₦{offRampRate > 0 ? Math.round(railFeeUSD * offRampRate).toLocaleString() : '—'}</Text>
+              <Text className="font-subtitle text-[14px] text-text-primary">
+                ₦{offRampRate > 0 ? Math.round(railFeeUSD * offRampRate).toLocaleString() : '—'}
+              </Text>
             </View>
             <View className="mx-5 h-px bg-gray-100" />
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-subtitle text-[14px] text-text-primary">Total</Text>
-              <Text className="font-subtitle text-[16px] text-text-primary">₦{offRampRate > 0 ? Math.round((ngnUsdEquivalent + railFeeUSD) * offRampRate).toLocaleString() : formatCurrency(numericAmount)}</Text>
+              <Text className="font-subtitle text-[16px] text-text-primary">
+                ₦
+                {offRampRate > 0
+                  ? Math.round((ngnUsdEquivalent + railFeeUSD) * offRampRate).toLocaleString()
+                  : formatCurrency(numericAmount)}
+              </Text>
             </View>
           </View>
 
           <Text className="mt-4 font-body text-[12px] leading-[18px] text-text-secondary">
-            * Please verify bank details. Incorrect details may result in failed or delayed transfers.
+            * Please verify bank details. Incorrect details may result in failed or delayed
+            transfers.
           </Text>
         </ScrollView>
 
@@ -1160,7 +1191,7 @@ export default function DestinationScreen() {
                     className="flex-row items-center gap-2 py-1">
                     <View
                       className={`size-5 items-center justify-center rounded ${ngnSaveBank ? 'bg-[#070914]' : 'border border-[#D4D4D8]'}`}>
-                      {ngnSaveBank && <Text className="text-[10px] text-white">✓</Text>}
+                      {ngnSaveBank && <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFF" />}
                     </View>
                     <Text className="font-body text-[13px] text-text-secondary">
                       Save this recipient
@@ -1321,7 +1352,7 @@ export default function DestinationScreen() {
                 </View>
                 {selected && (
                   <View className="h-5 w-5 items-center justify-center rounded-full bg-[#070914]">
-                    <Text className="font-subtitle text-[10px] text-white">✓</Text>
+                    <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFF" />
                   </View>
                 )}
               </Pressable>
@@ -1367,7 +1398,7 @@ export default function DestinationScreen() {
                 </View>
                 {selected && (
                   <View className="h-5 w-5 items-center justify-center rounded-full bg-[#070914]">
-                    <Text className="font-subtitle text-[10px] text-white">✓</Text>
+                    <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFF" />
                   </View>
                 )}
               </Pressable>

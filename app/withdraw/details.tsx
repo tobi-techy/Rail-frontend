@@ -1,7 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, Pressable, ScrollView, StatusBar,
-  TextInput, KeyboardAvoidingView, Platform,
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -14,23 +20,31 @@ import { useNudge } from '@/hooks/useNudge';
 import { AmbientMiriam } from '@/components/ai/AmbientMiriam';
 
 const CATEGORIES = [
-  { label: 'Transfer', emoji: '💸' },
-  { label: 'Bills', emoji: '🧾' },
-  { label: 'Food', emoji: '🍔' },
-  { label: 'Shopping', emoji: '🛍️' },
-  { label: 'Travel', emoji: '✈️' },
-  { label: 'Savings', emoji: '🏦' },
-  { label: 'Crypto', emoji: '🪙' },
-  { label: 'Other', emoji: '📌' },
+  { label: 'Transfer', icon: 'arrow-move-up-right' },
+  { label: 'Bills', icon: 'invoice-02' },
+  { label: 'Food', icon: 'restaurant-01' },
+  { label: 'Shopping', icon: 'shopping-bag-01' },
+  { label: 'Travel', icon: 'airplane-take-off-01' },
+  { label: 'Savings', icon: 'safe-box' },
+  { label: 'Crypto', icon: 'bitcoin' },
+  { label: 'Other', icon: 'pin-01' },
 ] as const;
 
 export default function DetailsScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
-    method: string; amount: string; isFiatMethod?: string; isCryptoMethod?: string;
-    isAssetTradeMethod?: string; methodTitle?: string; destinationInput?: string;
-    destinationChain?: string; fiatAccountHolderName?: string; fiatAccountNumber?: string;
-    availableBalance?: string; withdrawalLimit?: string;
+    method: string;
+    amount: string;
+    isFiatMethod?: string;
+    isCryptoMethod?: string;
+    isAssetTradeMethod?: string;
+    methodTitle?: string;
+    destinationInput?: string;
+    destinationChain?: string;
+    fiatAccountHolderName?: string;
+    fiatAccountNumber?: string;
+    availableBalance?: string;
+    withdrawalLimit?: string;
   }>();
 
   const numericAmount = parseFloat(params.amount ?? '0') || 0;
@@ -67,16 +81,14 @@ export default function DetailsScreen() {
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-
         <ScrollView
           className="flex-1"
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 24 }}>
-
           {/* Category */}
-          <Animated.View entering={FadeInUp.duration(250)} className="mx-5 mt-5 mb-5">
+          <Animated.View entering={FadeInUp.duration(250)} className="mx-5 mb-5 mt-5">
             <Text className="mb-3 ml-1 font-body text-[13px] text-[#6B7280]">Category</Text>
             <View className="flex-row flex-wrap gap-2">
               {CATEGORIES.map((cat) => {
@@ -89,7 +101,6 @@ export default function DetailsScreen() {
                     style={{
                       backgroundColor: active ? '#111827' : '#FFFFFF',
                     }}>
-                    <Text className="text-[14px]">{cat.emoji}</Text>
                     <Text
                       className="font-body text-[14px]"
                       style={{ color: active ? '#FFFFFF' : '#374151' }}>

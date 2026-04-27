@@ -27,7 +27,7 @@ export function MarketClosedBanner() {
 
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: '📈 Market is now open',
+          title: 'Market is now open',
           body: 'Your investments are live. Check your Stash.',
           data: { type: 'market_open', screen: '/investment-stash' },
         },

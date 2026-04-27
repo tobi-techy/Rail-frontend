@@ -197,7 +197,8 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
                     <Text className="ml-2 font-body text-small text-text-primary">
                       {transaction.fromNetwork.name}
                     </Text>
-                    <HugeiconsIcon icon={ArrowRight01Icon}
+                    <HugeiconsIcon
+                      icon={ArrowRight01Icon}
                       size={14}
                       color={MUTED}
                       strokeWidth={2}
@@ -219,7 +220,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
                   <Label>Fee</Label>
                   <View className="flex-row items-center">
                     <View className="mr-2 h-5 w-5 items-center justify-center rounded-full bg-destructive">
-                      <Text className="text-[10px] text-white">⛽</Text>
+                      <Text className="text-[10px] text-white">Gas</Text>
                     </View>
                     <Text className="font-body text-small text-text-primary">
                       {transaction.fee}
@@ -241,7 +242,12 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
                         {transaction.bridgeProvider.name}
                       </Text>
                     </View>
-                    <HugeiconsIcon icon={ArrowRight01Icon} size={14} color={MUTED} strokeWidth={2} />
+                    <HugeiconsIcon
+                      icon={ArrowRight01Icon}
+                      size={14}
+                      color={MUTED}
+                      strokeWidth={2}
+                    />
                   </View>
                 </View>
               </View>
@@ -250,7 +256,10 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
             {/* Confirm Button */}
             <View className="px-lg pb-lg pt-md">
               <TouchableOpacity
-                onPress={() => { haptics.confirm(); onConfirm(); }}
+                onPress={() => {
+                  haptics.confirm();
+                  onConfirm();
+                }}
                 disabled={isLoading}
                 activeOpacity={0.8}
                 className="items-center rounded-full bg-black py-md">
