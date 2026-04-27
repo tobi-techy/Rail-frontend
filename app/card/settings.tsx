@@ -27,7 +27,19 @@ import { BottomSheet, SettingsSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
 import { WheelPicker } from '@/components/molecules';
 import { Skeleton } from '@/components/atoms/Skeleton';
-import { ArrowLeft01Icon, File01Icon, HelpCircleIcon, Message01Icon, RepeatIcon, BalanceScaleIcon, Scroll01Icon, Shield01Icon, SnowIcon, Sun01Icon, Wallet01Icon } from '@hugeicons/core-free-icons';
+import {
+  ArrowLeft01Icon,
+  File01Icon,
+  HelpCircleIcon,
+  Message01Icon,
+  RepeatIcon,
+  BalanceScaleIcon,
+  Scroll01Icon,
+  Shield01Icon,
+  SnowIcon,
+  Sun01Icon,
+  Wallet01Icon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -259,7 +271,7 @@ export default function CardSettingsScreen() {
               className={`mt-3 rounded-full px-4 py-1.5 ${isFrozen ? 'bg-blue-100' : 'bg-green-100'}`}>
               <Text
                 className={`font-subtitle text-[13px] ${isFrozen ? 'text-blue-700' : 'text-green-700'}`}>
-                {isFrozen ? '❄️  Frozen' : '● Active'}
+                {isFrozen ? 'Frozen' : 'Active'}
               </Text>
             </View>
           </View>
@@ -280,7 +292,11 @@ export default function CardSettingsScreen() {
         <Section title="Card">
           <SettingButton
             icon={
-              isFrozen ? <HugeiconsIcon icon={Sun01Icon} size={22} color="#F59E0B" /> : <HugeiconsIcon icon={SnowIcon} size={22} color="#3B82F6" />
+              isFrozen ? (
+                <HugeiconsIcon icon={Sun01Icon} size={22} color="#F59E0B" />
+              ) : (
+                <HugeiconsIcon icon={SnowIcon} size={22} color="#3B82F6" />
+              )
             }
             label={isFrozen ? 'Unfreeze' : 'Freeze Card'}
             onPress={() => setActiveSheet('freeze')}

@@ -1,5 +1,8 @@
 export { ActionConfirmSheet } from './ActionConfirmSheet';
 export { ChatBubble } from './ChatBubble';
+export { CreateAutomationSheet } from './CreateAutomationSheet';
+export { CreateGoalSheet } from './CreateGoalSheet';
+export { GoalDetailSheet } from './GoalDetailSheet';
 export { InputBar } from './InputBar';
 export { InsightCardView } from './InsightCardView';
 export { MarkdownContent } from './MarkdownContent';

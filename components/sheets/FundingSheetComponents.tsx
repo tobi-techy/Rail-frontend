@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import type { IconComponentType } from '@hugeicons/react-native';
-import { ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, ArrowUp01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { useUIStore } from '@/stores';
 import type { Currency } from '@/stores/uiStore';
@@ -272,7 +272,7 @@ function CurrencySelectorPill({
             </View>
             {currency === c.code && !c.disabled && (
               <View className="h-5 w-5 items-center justify-center rounded-full bg-[#070914]">
-                <Text className="font-subtitle text-[10px] text-white">✓</Text>
+                <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFF" />
               </View>
             )}
           </Pressable>
@@ -298,7 +298,7 @@ function CurrencySelectorPill({
             </View>
             {currency === c.code && (
               <View className="h-5 w-5 items-center justify-center rounded-full bg-[#070914]">
-                <Text className="font-subtitle text-[10px] text-white">✓</Text>
+                <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFF" />
               </View>
             )}
           </Pressable>

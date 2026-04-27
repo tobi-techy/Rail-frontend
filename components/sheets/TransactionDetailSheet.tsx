@@ -29,6 +29,9 @@ import {
   Share01Icon,
   ArrowDown01Icon,
   ArrowUp01Icon,
+  Cancel01Icon,
+  Clock01Icon,
+  Tick02Icon,
 } from '@hugeicons/core-free-icons';
 
 interface TransactionDetailSheetProps {
@@ -185,9 +188,27 @@ const LargeSwapIcon = ({
 
 /* ── Receipt row (used inside the ViewShot capture) ── */
 const ReceiptRow = ({ label, value }: { label: string; value: string }) => (
-  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
-    <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 13, color: '#6B7280' }}>{label}</Text>
-    <Text style={{ fontFamily: 'SFProDisplay-Medium', fontSize: 13, color: '#111827', maxWidth: '55%', textAlign: 'right' }}>{value}</Text>
+  <View
+    style={{
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: '#F3F4F6',
+    }}>
+    <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 13, color: '#6B7280' }}>
+      {label}
+    </Text>
+    <Text
+      style={{
+        fontFamily: 'SFProDisplay-Medium',
+        fontSize: 13,
+        color: '#111827',
+        maxWidth: '55%',
+        textAlign: 'right',
+      }}>
+      {value}
+    </Text>
   </View>
 );
 
@@ -320,13 +341,20 @@ export function TransactionDetailSheet({
 
   // Build extra detail rows for "See More"
   const extraRows: { label: string; value: string; copyable?: boolean }[] = [];
-  if (meta.bankAccountNumber) extraRows.push({ label: 'Account Number', value: String(meta.bankAccountNumber), copyable: true });
+  if (meta.bankAccountNumber)
+    extraRows.push({
+      label: 'Account Number',
+      value: String(meta.bankAccountNumber),
+      copyable: true,
+    });
   if (meta.bankId) {
     const bankName = (pajBanksData?.banks ?? []).find((b) => b.id === meta.bankId)?.name;
     extraRows.push({ label: 'Bank', value: resolvedBankName || String(meta.bankId) });
   }
-  if (meta.rate) extraRows.push({ label: 'Exchange Rate', value: `₦${Number(meta.rate).toLocaleString()}` });
-  if (meta.tokenAmount) extraRows.push({ label: 'USDC Amount', value: `$${Number(meta.tokenAmount).toFixed(2)}` });
+  if (meta.rate)
+    extraRows.push({ label: 'Exchange Rate', value: `₦${Number(meta.rate).toLocaleString()}` });
+  if (meta.tokenAmount)
+    extraRows.push({ label: 'USDC Amount', value: `$${Number(meta.tokenAmount).toFixed(2)}` });
   if (meta.fee) extraRows.push({ label: 'Fee', value: `$${Number(meta.fee).toFixed(2)}` });
   if (meta.chain) extraRows.push({ label: 'Network', value: String(meta.chain) });
   if (meta.depositType) extraRows.push({ label: 'Deposit Type', value: String(meta.depositType) });
@@ -335,7 +363,12 @@ export function TransactionDetailSheet({
   const hasExtra = extraRows.length > 0;
 
   return (
-    <GorhomBottomSheet visible={visible} onClose={() => { setShowMore(false); onClose(); }}>
+    <GorhomBottomSheet
+      visible={visible}
+      onClose={() => {
+        setShowMore(false);
+        onClose();
+      }}>
       {/* Header */}
       <View className="items-center pb-4">
         {renderIcon()}
@@ -357,20 +390,24 @@ export function TransactionDetailSheet({
 
       {/* Primary details */}
       <View className="mt-2 border-t border-surface pt-2">
-        {transaction.title && (
-          <DetailRow label="Description" value={transaction.title} />
-        )}
+        {transaction.title && <DetailRow label="Description" value={transaction.title} />}
 
         {(type === 'send' || type === 'receive') && toAddress && (
           <DetailRow label={type === 'send' ? 'To' : 'From'} value={toAddress} copyable />
         )}
 
-        {type === 'deposit' && (
-          <DetailRow label="Method" value={transaction.subtitle || 'Card'} />
-        )}
+        {type === 'deposit' && <DetailRow label="Method" value={transaction.subtitle || 'Card'} />}
 
         {type === 'withdraw' && (
-          <DetailRow label="To" value={String(meta.bankAccountName || meta.bankAccountNumber || transaction.subtitle || 'Bank Account')} />
+          <DetailRow
+            label="To"
+            value={String(
+              meta.bankAccountName ||
+                meta.bankAccountNumber ||
+                transaction.subtitle ||
+                'Bank Account'
+            )}
+          />
         )}
 
         {type === 'swap' && (
@@ -408,7 +445,12 @@ export function TransactionDetailSheet({
           {showMore && (
             <View className="border-t border-surface pt-1">
               {extraRows.map((row) => (
-                <DetailRow key={row.label} label={row.label} value={row.value} copyable={row.copyable} />
+                <DetailRow
+                  key={row.label}
+                  label={row.label}
+                  value={row.value}
+                  copyable={row.copyable}
+                />
               ))}
             </View>
           )}
@@ -449,27 +491,66 @@ export function TransactionDetailSheet({
 
 /* ── Styled receipt image component ── */
 function ReceiptImage({ transaction, bankName }: { transaction: Transaction; bankName?: string }) {
-  const { type, amount, currency = 'NGN', createdAt, txHash, status, title, subtitle, metadata } = transaction;
+  const {
+    type,
+    amount,
+    currency = 'NGN',
+    createdAt,
+    txHash,
+    status,
+    title,
+    subtitle,
+    metadata,
+  } = transaction;
   const meta = metadata ?? {};
   const isCredit = type === 'deposit' || type === 'receive';
 
   return (
     <View style={{ width: 380, backgroundColor: '#FFFFFF', borderRadius: 20, overflow: 'hidden' }}>
       {/* Green/Red header band */}
-      <View style={{ backgroundColor: status === 'failed' ? '#FEE2E2' : isCredit ? '#ECFDF5' : '#F0F4FF', paddingTop: 32, paddingBottom: 24, alignItems: 'center' }}>
-        {/* Status icon */}
-        <View style={{
-          width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center',
-          backgroundColor: status === 'failed' ? '#EF4444' : status === 'completed' ? '#10B981' : '#F59E0B',
+      <View
+        style={{
+          backgroundColor: status === 'failed' ? '#FEE2E2' : isCredit ? '#ECFDF5' : '#F0F4FF',
+          paddingTop: 32,
+          paddingBottom: 24,
+          alignItems: 'center',
         }}>
-          <Text style={{ fontSize: 28, color: '#FFF' }}>
-            {status === 'failed' ? '✕' : status === 'completed' ? '✓' : '⏳'}
-          </Text>
+        {/* Status icon */}
+        <View
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor:
+              status === 'failed' ? '#EF4444' : status === 'completed' ? '#10B981' : '#F59E0B',
+          }}>
+          <HugeiconsIcon
+            icon={
+              status === 'failed' ? Cancel01Icon : status === 'completed' ? Tick02Icon : Clock01Icon
+            }
+            size={28}
+            color="#FFF"
+          />
         </View>
-        <Text style={{ fontFamily: 'SFProDisplay-Bold', fontSize: 28, color: '#111827', marginTop: 12 }}>
-          {isCredit ? '+' : '−'}{formatAbsAmount(amount)} {currency}
+        <Text
+          style={{
+            fontFamily: 'SFProDisplay-Bold',
+            fontSize: 28,
+            color: '#111827',
+            marginTop: 12,
+          }}>
+          {isCredit ? '+' : '−'}
+          {formatAbsAmount(amount)} {currency}
         </Text>
-        <Text style={{ fontFamily: 'SFProDisplay-Medium', fontSize: 14, color: status === 'failed' ? '#EF4444' : '#10B981', marginTop: 4 }}>
+        <Text
+          style={{
+            fontFamily: 'SFProDisplay-Medium',
+            fontSize: 14,
+            color: status === 'failed' ? '#EF4444' : '#10B981',
+            marginTop: 4,
+          }}>
           {statusLabel(status)}
         </Text>
       </View>
@@ -485,21 +566,57 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
         {!!title && <ReceiptRow label="Description" value={title} />}
         {!!subtitle && <ReceiptRow label="Details" value={subtitle} />}
         <ReceiptRow label="Date" value={formatDateShort(createdAt)} />
-        {!!meta.bankAccountName && <ReceiptRow label="Recipient" value={String(meta.bankAccountName)} />}
-        {!!meta.bankAccountNumber && <ReceiptRow label="Account" value={String(meta.bankAccountNumber)} />}
-        {!!(bankName || meta.bankId) && <ReceiptRow label="Bank" value={bankName || String(meta.bankId)} />}
-        {!!meta.rate && <ReceiptRow label="Rate" value={`₦${Number(meta.rate).toLocaleString()}`} />}
-        {!!meta.tokenAmount && <ReceiptRow label="USDC" value={`$${Number(meta.tokenAmount).toFixed(2)}`} />}
-        {!!meta.fee && Number(meta.fee) > 0 && <ReceiptRow label="Fee" value={`$${Number(meta.fee).toFixed(2)}`} />}
-        {!!txHash && <ReceiptRow label="TX ID" value={txHash.length > 20 ? `${txHash.slice(0, 8)}...${txHash.slice(-8)}` : txHash} />}
+        {!!meta.bankAccountName && (
+          <ReceiptRow label="Recipient" value={String(meta.bankAccountName)} />
+        )}
+        {!!meta.bankAccountNumber && (
+          <ReceiptRow label="Account" value={String(meta.bankAccountNumber)} />
+        )}
+        {!!(bankName || meta.bankId) && (
+          <ReceiptRow label="Bank" value={bankName || String(meta.bankId)} />
+        )}
+        {!!meta.rate && (
+          <ReceiptRow label="Rate" value={`₦${Number(meta.rate).toLocaleString()}`} />
+        )}
+        {!!meta.tokenAmount && (
+          <ReceiptRow label="USDC" value={`$${Number(meta.tokenAmount).toFixed(2)}`} />
+        )}
+        {!!meta.fee && Number(meta.fee) > 0 && (
+          <ReceiptRow label="Fee" value={`$${Number(meta.fee).toFixed(2)}`} />
+        )}
+        {!!txHash && (
+          <ReceiptRow
+            label="TX ID"
+            value={txHash.length > 20 ? `${txHash.slice(0, 8)}...${txHash.slice(-8)}` : txHash}
+          />
+        )}
       </View>
 
       {/* Footer */}
-      <View style={{ alignItems: 'center', paddingVertical: 20, borderTopWidth: 1, borderTopColor: '#F3F4F6', marginHorizontal: 20 }}>
-        <Text style={{ fontFamily: 'SFProDisplay-Bold', fontSize: 15, color: '#111827', letterSpacing: 1 }}>
+      <View
+        style={{
+          alignItems: 'center',
+          paddingVertical: 20,
+          borderTopWidth: 1,
+          borderTopColor: '#F3F4F6',
+          marginHorizontal: 20,
+        }}>
+        <Text
+          style={{
+            fontFamily: 'SFProDisplay-Bold',
+            fontSize: 15,
+            color: '#111827',
+            letterSpacing: 1,
+          }}>
           RAIL MONEY
         </Text>
-        <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
+        <Text
+          style={{
+            fontFamily: 'SFProDisplay-Regular',
+            fontSize: 11,
+            color: '#9CA3AF',
+            marginTop: 2,
+          }}>
           rail.money • {formatDate(createdAt)}
         </Text>
       </View>
@@ -522,5 +639,7 @@ function buildTextReceipt(tx: Transaction): string {
     `Status: ${statusLabel(tx.status)}`,
     '━━━━━━━━━━━━━━━━━━━━━━━━',
     'Sent via Rail Money',
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 }

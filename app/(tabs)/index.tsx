@@ -627,7 +627,16 @@ function DashboardScreen() {
 
   return (
     <View className="flex-1">
-      <AmbientMiriam nudge={nudge} onDismiss={dismissNudge} />
+      <AmbientMiriam
+        nudge={nudge}
+        onDismiss={dismissNudge}
+        onAction={(action) => {
+          dismissNudge();
+          if (action.destination === 'stash') router.push('/investment-stash' as any);
+          else if (action.destination === 'goals') router.push('/shared-goals' as any);
+          else if (action.destination === 'budget') router.push('/ai-chat' as any);
+        }}
+      />
       <ScrollView
         className="min-h-screen flex-1"
         refreshControl={
@@ -670,28 +679,28 @@ function DashboardScreen() {
                 label: 'Fund Stash',
                 icon: SavingsIcon,
                 iconColor: '#16A34A',
-                onPress: () => router.push('/spending-stash/transfer' as never),
+                // onPress: () => router.push('/spending-stash/transfer' as never),
               },
               {
-                id: 'withdraw',
-                label: 'Withdraw',
+                id: 'withdraw Stash',
+                label: 'Withdraw stash',
                 icon: ArrowMoveDownLeftIcon,
                 iconColor: '#EA580C',
-                onPress: () => router.push('/withdraw' as never),
+                // onPress: () => router.push('/withdraw' as never),
               },
               {
-                id: 'swap',
-                label: 'Swap',
+                id: 'Fund Spend',
+                label: 'Fund spend',
                 icon: ArrowDataTransferHorizontalIcon,
                 iconColor: '#2563EB',
-                onPress: () => router.push('/market' as never),
+                // onPress: () => router.push('/market' as never),
               },
               {
-                id: 'invest',
-                label: 'Invest',
+                id: 'Withdraw Spend',
+                label: 'Withdraw spend',
                 icon: ChartIncreaseIcon,
                 iconColor: '#7C3AED',
-                onPress: () => router.push('/investment-stash' as never),
+                // onPress: () => router.push('/investment-stash' as never),
               },
             ]}
           />*/}

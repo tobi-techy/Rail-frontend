@@ -64,7 +64,7 @@ export function FeedbackSheet({ visible, onClose }: Props) {
       <View style={{ paddingBottom: insets.bottom + 16 }}>
         {done ? (
           <View className="items-center py-8">
-            <Text className="mb-2 text-2xl">🎉</Text>
+            <Text className="mb-2 text-2xl">Done</Text>
             <Text className="text-[17px] font-semibold text-black">Thanks for the feedback!</Text>
             <Text className="mt-1 text-[14px] text-black/50">We&apos;ll look into it.</Text>
           </View>

@@ -61,7 +61,7 @@ export function AmbientMiriamBanner({
     if (onAction) {
       onAction();
     } else {
-      router.push('/miriam-hub');
+      router.push('/ai-chat');
     }
   }, [onAction, router]);
 
@@ -111,7 +111,7 @@ export function AmbientMiriamBanner({
                 className="h-5 w-5 shrink-0 items-center justify-center"
                 accessibilityRole="button"
                 accessibilityLabel="Dismiss insight">
-                <Text className="font-body-medium text-xs text-white/50">✕</Text>
+                <Text className="font-body-medium text-xs text-white/50">X</Text>
               </Pressable>
             </View>
           </Pressable>

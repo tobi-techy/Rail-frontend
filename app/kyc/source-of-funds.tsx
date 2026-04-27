@@ -192,7 +192,7 @@ export default function SourceOfFundsScreen() {
 
         <View className="mb-6 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
           <Text className="font-body text-[13px] leading-5 text-blue-800">
-            💡 Your information is securely encrypted and only used for account verification.
+            Your information is securely encrypted and only used for account verification.
           </Text>
         </View>
 

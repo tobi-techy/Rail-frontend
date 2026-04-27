@@ -88,7 +88,11 @@ export function PaymentMethodSelector({
 
             {/* Chevron */}
             <View className="ml-2">
-              <HugeiconsIcon icon={ArrowRight01Icon} size={20} color={isDisabled ? '#CCC' : '#9CA3AF'} />
+              <HugeiconsIcon
+                icon={ArrowRight01Icon}
+                size={20}
+                color={isDisabled ? '#CCC' : '#9CA3AF'}
+              />
             </View>
           </TouchableOpacity>
         );
@@ -98,33 +102,33 @@ export function PaymentMethodSelector({
 }
 
 /**
- * Helper function to get emoji icons for payment methods
- * Maps method IDs to appropriate emojis
+ * Helper function to get icon label for payment methods
+ * Maps method IDs to short text labels (icons rendered via HugeIcons in parent)
  */
 function getIconEmoji(methodId: string): string {
-  const emojiMap: Record<string, string> = {
+  const labelMap: Record<string, string> = {
     // Fiat methods
-    'bank-transfer': '🏦',
-    'apple-pay': '🍎',
-    'google-pay': '🔵',
-    'debit-card': '💳',
-    'credit-card': '💳',
-    'ach-transfer': '⚡',
-    'wire-transfer': '📤',
-    paypal: '🅿️',
+    'bank-transfer': 'BK',
+    'apple-pay': 'AP',
+    'google-pay': 'GP',
+    'debit-card': 'DC',
+    'credit-card': 'CC',
+    'ach-transfer': 'ACH',
+    'wire-transfer': 'WR',
+    paypal: 'PP',
 
     // Crypto methods
-    'usdc-solana': '🪙',
-    'usdt-solana': '🪙',
-    sol: '◎',
-    'usdc-ethereum': '🪙',
-    'usdt-ethereum': '🪙',
-    'usdc-polygon': '🪙',
+    'usdc-solana': 'USDC',
+    'usdt-solana': 'USDT',
+    sol: 'SOL',
+    'usdc-ethereum': 'USDC',
+    'usdt-ethereum': 'USDT',
+    'usdc-polygon': 'USDC',
 
     // Withdrawal methods
-    'crypto-wallet': '👛',
-    'apple-pay-cash': '💰',
+    'crypto-wallet': 'CW',
+    'apple-pay-cash': 'APC',
   };
 
-  return emojiMap[methodId] || '💳';
+  return labelMap[methodId] || 'PM';
 }

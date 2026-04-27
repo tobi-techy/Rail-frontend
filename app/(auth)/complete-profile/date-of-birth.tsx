@@ -75,7 +75,8 @@ export default function DateOfBirth() {
                 Date of Birth
               </Text>
               <Text className="mt-2 font-body text-caption text-black/60">
-                Enter the date of birth shown on your ID. You must be at least {MIN_AGE} to use Rail.
+                Enter the date of birth shown on your ID. You must be at least {MIN_AGE} to use
+                Rail.
               </Text>
               <Text className="mt-8 font-body text-caption text-black/60">
                 Select your date of birth
@@ -88,7 +89,7 @@ export default function DateOfBirth() {
                   transform: [{ scale: pressed ? 0.98 : 1 }],
                 })}>
                 <Text className="flex-1 font-body text-lg text-black">{formatDate(dob)}</Text>
-                <Text className="text-black/40">📅</Text>
+                <Text className="text-black/40">Date</Text>
               </Pressable>
             </View>
           </StaggeredChild>
