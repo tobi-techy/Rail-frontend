@@ -229,7 +229,9 @@ function DashboardScreen() {
     isError: isStationError,
   } = useStation();
   const { data: cardsData } = useCards();
-  const { data: gameplayData, isPending: isGameplayPending } = useGameplayProfile();
+  // Gameplay feature-gated — disabled for now
+  const gameplayData = undefined;
+  const isGameplayPending = false;
   const deposits = useDeposits(10);
   const withdrawals = useWithdrawals(10);
   const pajOrders = usePajOrders();
@@ -369,6 +371,8 @@ function DashboardScreen() {
     [requireFeature]
   );
 
+  // Crypto & Naira: no gate — backend enforces limits
+
   // Funding action lists
   const isSheetFiat =
     sheetCurrency === 'USD' ||
@@ -389,11 +393,10 @@ function DashboardScreen() {
                     label: 'Fund with Naira',
                     sublabel: 'Deposit NGN via bank transfer',
                     icon: <HugeiconsIcon icon={BankIcon} size={20} color="#008751" />,
-                    onPress: () =>
-                      gateFeature(() => {
-                        setShowReceiveSheet(false);
-                        router.push('/fund-naira' as never);
-                      }),
+                    onPress: () => {
+                      setShowReceiveSheet(false);
+                      router.push('/fund-naira' as never);
+                    },
                   },
                 ]
               : [
@@ -414,11 +417,10 @@ function DashboardScreen() {
               label: 'Receive via Crypto',
               sublabel: 'Receive stablecoins via wallet address',
               icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
-              onPress: () =>
-                gateFeature(() => {
-                  setShowReceiveSheet(false);
-                  router.push('/receive' as never);
-                }),
+              onPress: () => {
+                setShowReceiveSheet(false);
+                router.push('/receive' as never);
+              },
             },
           ]
         : [
@@ -427,22 +429,20 @@ function DashboardScreen() {
               label: `Receive ${sheetCurrency}`,
               sublabel: 'Receive via wallet address',
               icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
-              onPress: () =>
-                gateFeature(() => {
-                  setShowReceiveSheet(false);
-                  router.push('/receive' as never);
-                }),
+              onPress: () => {
+                setShowReceiveSheet(false);
+                router.push('/receive' as never);
+              },
             },
             {
               id: 'cross-chain',
               label: 'Deposit from any chain',
               sublabel: 'ETH, Arbitrum, Base, Starknet, BNB & more',
               icon: <HugeiconsIcon icon={InternetIcon} size={20} color="#6366F1" />,
-              onPress: () =>
-                gateFeature(() => {
-                  setShowReceiveSheet(false);
-                  router.push('/fund-crosschain');
-                }),
+              onPress: () => {
+                setShowReceiveSheet(false);
+                router.push('/fund-crosschain');
+              },
             },
           ],
     [sheetCurrency, isSheetFiat, gateFeature]
@@ -457,21 +457,21 @@ function DashboardScreen() {
               label: 'Seed Vault / MWA',
               sublabel: 'Fund with any Solana wallet — Seed Vault on Seeker',
               icon: <SolanaIcon width={28} height={28} />,
-              onPress: () => gateFeature(() => startWithdrawal('mwa-fund', 'fund')),
+              onPress: () => startWithdrawal('mwa-fund', 'fund'),
             },
             {
               id: 'phantom',
               label: 'Phantom',
               sublabel: 'Send USDC from Phantom to Rail',
               icon: <PhantomIcon width={28} height={28} />,
-              onPress: () => gateFeature(() => startWithdrawal('phantom', 'fund')),
+              onPress: () => startWithdrawal('phantom', 'fund'),
             },
             {
               id: 'solflare',
               label: 'Solflare',
               sublabel: 'Send USDC from Solflare to Rail',
               icon: <SolflareIcon width={28} height={28} />,
-              onPress: () => gateFeature(() => startWithdrawal('solflare', 'fund')),
+              onPress: () => startWithdrawal('solflare', 'fund'),
             },
           ]
         : []),
@@ -480,22 +480,19 @@ function DashboardScreen() {
         label: 'Solana Pay',
         sublabel: 'Pay with Solana Pay',
         icon: <SolanaIcon width={28} height={28} />,
-        onPress: () =>
-          gateFeature(() => {
-            setShowReceiveSheet(false);
-            setShowSolanaPayScan(true);
-          }),
+        onPress: () => {
+          setShowReceiveSheet(false);
+          setShowSolanaPayScan(true);
+        },
       },
     ],
-    [isAndroid, startWithdrawal, gateFeature]
+    [isAndroid, startWithdrawal]
   );
 
   const startP2P = useCallback(() => {
-    gateFeature(() => {
-      setShowSendSheet(false);
-      router.push({ pathname: '/withdraw/[method]', params: { method: 'p2p' } } as never);
-    });
-  }, [gateFeature]);
+    setShowSendSheet(false);
+    router.push({ pathname: '/withdraw/[method]', params: { method: 'p2p' } } as never);
+  }, []);
 
   const sendMainActions = useMemo<FundingAction[]>(
     () =>
@@ -508,7 +505,7 @@ function DashboardScreen() {
                     label: 'Withdraw to bank',
                     sublabel: 'Send NGN to Nigerian bank account',
                     icon: <HugeiconsIcon icon={BankIcon} size={20} color="#008751" />,
-                    onPress: () => gateFeature(() => startWithdrawal('fiat')),
+                    onPress: () => startWithdrawal('fiat'),
                   },
                 ]
               : [
@@ -543,7 +540,7 @@ function DashboardScreen() {
               label: `Send ${sheetCurrency}`,
               sublabel: 'Send to wallet address',
               icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
-              onPress: () => gateFeature(() => startWithdrawal('crypto')),
+              onPress: () => startWithdrawal('crypto'),
             },
             {
               id: 'p2p',
@@ -565,7 +562,7 @@ function DashboardScreen() {
               label: 'Send to Wallet',
               sublabel: 'Send stablecoins to wallet address',
               icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
-              onPress: () => gateFeature(() => startWithdrawal('crypto')),
+              onPress: () => startWithdrawal('crypto'),
             },
             ...(Platform.OS === 'ios'
               ? [
@@ -574,11 +571,10 @@ function DashboardScreen() {
                     label: 'Tap to Pay',
                     sublabel: 'Send to someone nearby',
                     icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
-                    onPress: () =>
-                      gateFeature(() => {
-                        setShowSendSheet(false);
-                        router.push('/tap-to-pay' as never);
-                      }),
+                    onPress: () => {
+                      setShowSendSheet(false);
+                      router.push('/tap-to-pay' as never);
+                    },
                   },
                 ]
               : []),
@@ -599,25 +595,24 @@ function DashboardScreen() {
               label: 'Phantom',
               sublabel: 'Send using Phantom wallet',
               icon: <PhantomIcon width={28} height={28} />,
-              onPress: () => gateFeature(() => startWithdrawal('phantom')),
+              onPress: () => startWithdrawal('phantom'),
             },
             {
               id: 'solflare',
               label: 'Solflare',
               sublabel: 'Send using Solflare wallet',
               icon: <SolflareIcon width={28} height={28} />,
-              onPress: () => gateFeature(() => startWithdrawal('solflare')),
+              onPress: () => startWithdrawal('solflare'),
             },
             {
               id: 'solana-pay',
               label: 'Solana Pay',
               sublabel: 'Send with Solana Pay',
               icon: <SolanaIcon width={28} height={28} />,
-              onPress: () =>
-                gateFeature(() => {
-                  setShowSendSheet(false);
-                  setShowSolanaPayScan(true);
-                }),
+              onPress: () => {
+                setShowSendSheet(false);
+                setShowSolanaPayScan(true);
+              },
             },
           ]
         : []),
@@ -741,7 +736,10 @@ function DashboardScreen() {
               getStarted={!hasCard}
               onPress={() => gateFeature(() => setShowCardComingSheet(true))}
             />
-            <GameplayCard data={gameplayData} isLoading={isGameplayPending} className="flex-1" />
+            {/* GameplayCard — feature-gated, re-enable when gameplay is ready */}
+            {false && (
+              <GameplayCard data={gameplayData} isLoading={isGameplayPending} className="flex-1" />
+            )}
           </View>
 
           {!kycApproved && (
