@@ -13,6 +13,7 @@ import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailShe
 import { useActivityFeed } from '@/api/hooks/useActivity';
 import type { ActivityItem } from '@/api/types/activity';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
+import { NgnIcon, UsdcIcon } from '@/assets/svg';
 
 // Convert unified ActivityItem → existing Transaction type for TransactionList/TransactionDetailSheet
 function activityToTransaction(item: ActivityItem): Transaction {
@@ -48,7 +49,9 @@ function activityToTransaction(item: ActivityItem): Transaction {
   if (hasDualCurrency) {
     icon = {
       type: 'swap' as const,
-      swapFromBg: item.direction === 'in' ? '#008751' : '#2775CA', // NGN green or USDC blue
+      SwapFrom: item.direction === 'in' ? NgnIcon : UsdcIcon,
+      SwapTo: item.direction === 'in' ? UsdcIcon : NgnIcon,
+      swapFromBg: item.direction === 'in' ? '#008751' : '#2775CA',
       swapToBg: item.direction === 'in' ? '#2775CA' : '#008751',
     };
   }
