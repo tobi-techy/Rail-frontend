@@ -1,0 +1,588 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  StatusBar,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  SlideInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
+import { Cancel01Icon, Copy01Icon, CheckmarkCircle01Icon, AlertCircleIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Keypad } from '@/components/molecules/Keypad';
+import { Button } from '@/components/ui';
+import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
+import { normalizeAmount } from '@/app/withdraw/method-screen/utils';
+import { usePajRates, usePajOnramp, usePajOrderStatus } from '@/api/hooks';
+import { invalidateQueries } from '@/api/queryClient';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import type { PajOnrampOrder } from '@/api/types/paj';
+
+type Step = 'amount' | 'bank-details' | 'waiting';
+
+const BRAND_RED = '#ff3e00';
+const MAX_INTEGER_DIGITS = 9;
+const MIN_NGN = 500;
+
+export default function FundNairaScreen() {
+  const insets = useSafeAreaInsets();
+  const { showSuccess, showError } = useFeedbackPopup();
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  const [step, setStep] = useState<Step>('amount');
+  const [rawAmount, setRawAmount] = useState('0');
+  const [order, setOrder] = useState<PajOnrampOrder | null>(null);
+
+  const { data: rates } = usePajRates();
+  const onramp = usePajOnramp();
+
+  const onRampRate = rates?.onRampRate?.rate ?? 0;
+
+  // ── Derived amounts ───────────────────────────────────────────────────────
+  const numericAmount = useMemo(() => {
+    const n = parseFloat(rawAmount);
+    return isFinite(n) ? n : 0;
+  }, [rawAmount]);
+
+  const usdEquivalent = useMemo(() => {
+    if (numericAmount <= 0 || onRampRate <= 0) return 0;
+    return numericAmount / onRampRate;
+  }, [numericAmount, onRampRate]);
+
+  const displayAmount = useMemo(() => {
+    const normalized = rawAmount || '0';
+    const hasDecimal = normalized.includes('.');
+    const [intRaw, dec = ''] = normalized.split('.');
+    const intPart = intRaw.replace(/^0+(?=\d)/, '') || '0';
+    const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return hasDecimal ? `${grouped}.${dec}` : grouped;
+  }, [rawAmount]);
+
+  const canContinue = numericAmount >= MIN_NGN;
+
+  // ── Keypad ────────────────────────────────────────────────────────────────
+  const onKeyPress = useCallback((key: string) => {
+    setRawAmount((cur) => {
+      if (key === 'backspace') return cur === '0' ? cur : normalizeAmount(cur.slice(0, -1));
+      if (key === 'decimal') return cur.includes('.') ? cur : `${cur}.`;
+      if (!/^\d$/.test(key)) return cur;
+      if (cur.includes('.')) {
+        const [int, dec = ''] = cur.split('.');
+        return dec.length >= 2 ? cur : `${int}.${dec}${key}`;
+      }
+      const next = (cur === '0' ? key : `${cur}${key}`).replace(/^0+(?=\d)/, '') || '0';
+      return next.length > MAX_INTEGER_DIGITS ? cur : next;
+    });
+  }, []);
+
+  // ── Create onramp order ───────────────────────────────────────────────────
+  const handleContinue = useCallback(async () => {
+    if (!canContinue) return;
+    try {
+      const result = await onramp.mutateAsync({ amount: numericAmount, currency: 'NGN' });
+      setOrder(result);
+      setStep('bank-details');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err: any) {
+      const code = err?.code || err?.error || '';
+      if (code === 'PAJ_VERIFICATION_REQUIRED') {
+        router.push('/paj-verify');
+        return;
+      }
+      showError('Failed to create deposit', err?.message || 'Please try again.');
+    }
+  }, [canContinue, numericAmount, onramp, showError]);
+
+  // ── Proceed to waiting ────────────────────────────────────────────────────
+  const handleTransferred = useCallback(() => {
+    setStep('waiting');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, []);
+
+  // ── Keypad animation ─────────────────────────────────────────────────────
+  const keypadY = useSharedValue(60);
+  useEffect(() => {
+    keypadY.value = withSpring(0, { damping: 18, stiffness: 120 });
+  }, []);
+  const keypadStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: keypadY.value }],
+  }));
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  if (step === 'bank-details' && order) {
+    return <BankDetailsStep order={order} onTransferred={handleTransferred} onClose={() => router.back()} insets={insets} />;
+  }
+
+  if (step === 'waiting' && order) {
+    return <WaitingStep orderId={order.orderId} order={order} onClose={() => router.back()} insets={insets} showSuccess={showSuccess} />;
+  }
+
+  return (
+    <ErrorBoundary>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: BRAND_RED }} edges={['top']}>
+        <StatusBar barStyle="light-content" backgroundColor={BRAND_RED} />
+        <View className="flex-1 px-5">
+          {/* Header */}
+          <Animated.View
+            entering={FadeIn.duration(400)}
+            className="flex-row items-center justify-between pb-2 pt-1">
+            <Pressable
+              className="size-11 items-center justify-center rounded-full bg-white/20"
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel="Close">
+              <HugeiconsIcon icon={Cancel01Icon} size={20} color="#FFFFFF" />
+            </Pressable>
+            <Text className="font-subtitle text-[20px] text-white">Fund with Naira</Text>
+            <View className="size-11" />
+          </Animated.View>
+
+          {/* Amount display */}
+          <View className="flex-1 items-center justify-center px-2">
+            <Text className="font-body text-[13px] text-white/80">Enter amount in Naira</Text>
+            <View className="mt-2">
+              <AnimatedAmount amount={displayAmount} prefix="₦" />
+            </View>
+
+            {/* Info pills */}
+            <Animated.View
+              entering={FadeInUp.delay(200).duration(400)}
+              className="mt-6 flex-row items-center justify-center gap-2">
+              {numericAmount > 0 && onRampRate > 0 && (
+                <Animated.View
+                  entering={FadeIn.springify()}
+                  className="flex-row items-center rounded-full bg-white/20 px-3 py-2">
+                  <Text className="font-body text-[13px] text-white/90">
+                    ≈ ${usdEquivalent.toFixed(2)} USDC
+                  </Text>
+                </Animated.View>
+              )}
+              {onRampRate > 0 && (
+                <View className="flex-row items-center rounded-full bg-white/20 px-3 py-2">
+                  <Text className="font-body text-[13px] text-white/90">
+                    ₦{onRampRate.toLocaleString()}/USD
+                  </Text>
+                </View>
+              )}
+            </Animated.View>
+          </View>
+
+          {/* CTA */}
+          <Animated.View entering={SlideInUp.delay(80).duration(500)} className="pb-3 pt-1">
+            <Button
+              title={onramp.isPending ? 'Creating order...' : 'Continue'}
+              onPress={handleContinue}
+              disabled={!canContinue || onramp.isPending}
+              loading={onramp.isPending}
+              variant="white"
+              className="bg-warm-canvas"
+            />
+            {numericAmount > 0 && numericAmount < MIN_NGN && (
+              <Text className="mt-2 text-center font-body text-[12px] text-white/70">
+                Minimum deposit is ₦{MIN_NGN.toLocaleString()}
+              </Text>
+            )}
+          </Animated.View>
+
+          {/* Keypad */}
+          <Animated.View entering={SlideInUp.delay(100).duration(500)} style={keypadStyle}>
+            <Keypad
+              className="pb-2"
+              onKeyPress={onKeyPress}
+              backspaceIcon="delete"
+              variant="dark"
+              leftKey="decimal"
+            />
+          </Animated.View>
+        </View>
+        <View style={{ paddingBottom: Math.max(insets.bottom, 12) }} />
+      </SafeAreaView>
+    </ErrorBoundary>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Step 2: Bank Details — show virtual account to transfer to
+// ═══════════════════════════════════════════════════════════════════════════
+
+function BankDetailsStep({
+  order,
+  onTransferred,
+  onClose,
+  insets,
+}: {
+  order: PajOnrampOrder;
+  onTransferred: () => void;
+  onClose: () => void;
+  insets: { bottom: number };
+}) {
+  const copyToClipboard = useCallback(async (text: string, label: string) => {
+    await Clipboard.setStringAsync(text);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, []);
+
+  return (
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
+      <StatusBar barStyle="dark-content" />
+      <View className="flex-1 px-6">
+        {/* Header */}
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          className="flex-row items-center justify-between pb-2 pt-1">
+          <Pressable
+            className="size-11 items-center justify-center rounded-full bg-surface"
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close">
+            <HugeiconsIcon icon={Cancel01Icon} size={20} color="#343433" />
+          </Pressable>
+          <Text className="font-subtitle text-[20px] text-text-primary">Transfer Details</Text>
+          <View className="size-11" />
+        </Animated.View>
+
+        {/* Amount summary */}
+        <Animated.View entering={FadeInDown.delay(100).duration(400)} className="mt-6 items-center">
+          <Text className="font-body text-[14px] text-text-secondary">Transfer exactly</Text>
+          <Text className="mt-1 font-mono-semibold text-[40px] text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
+            ₦{order.fiatAmount.toLocaleString()}
+          </Text>
+          <Text className="mt-1 font-body text-[14px] text-text-secondary">
+            ≈ ${order.tokenAmount.toFixed(2)} USDC
+          </Text>
+        </Animated.View>
+
+        {/* Bank details card */}
+        <Animated.View
+          entering={FadeInDown.delay(200).duration(400)}
+          className="mt-8 rounded-3xl border border-stone-surface bg-surface p-5">
+          <BankDetailRow
+            label="Bank"
+            value={order.bank}
+            onCopy={() => copyToClipboard(order.bank, 'Bank')}
+          />
+          <View className="my-3 h-px bg-stone-surface" />
+          <BankDetailRow
+            label="Account Number"
+            value={order.accountNumber}
+            onCopy={() => copyToClipboard(order.accountNumber, 'Account number')}
+            mono
+          />
+          <View className="my-3 h-px bg-stone-surface" />
+          <BankDetailRow
+            label="Account Name"
+            value={order.accountName}
+            onCopy={() => copyToClipboard(order.accountName, 'Account name')}
+          />
+        </Animated.View>
+
+        {/* Instructions */}
+        <Animated.View entering={FadeInDown.delay(300).duration(400)} className="mt-6 px-2">
+          <Text className="text-center font-body text-[13px] leading-5 text-text-secondary">
+            Transfer the exact amount above to this account. Your deposit will be credited automatically once confirmed.
+          </Text>
+        </Animated.View>
+
+        {/* CTA */}
+        <View className="mt-auto pb-4">
+          <Button
+            title="I've sent the money"
+            variant="black"
+            onPress={onTransferred}
+          />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function BankDetailRow({
+  label,
+  value,
+  onCopy,
+  mono,
+}: {
+  label: string;
+  value: string;
+  onCopy: () => void;
+  mono?: boolean;
+}) {
+  return (
+    <View className="flex-row items-center justify-between">
+      <View className="flex-1 mr-3">
+        <Text className="font-body text-[12px] text-text-secondary">{label}</Text>
+        <Text
+          className={`mt-0.5 text-[16px] text-text-primary ${mono ? 'font-mono-semibold' : 'font-subtitle'}`}
+          style={mono ? { fontVariant: ['tabular-nums'], letterSpacing: 1 } : undefined}
+          selectable>
+          {value}
+        </Text>
+      </View>
+      <Pressable
+        className="size-10 items-center justify-center rounded-full bg-warm-canvas"
+        onPress={onCopy}
+        accessibilityRole="button"
+        accessibilityLabel={`Copy ${label}`}>
+        <HugeiconsIcon icon={Copy01Icon} size={18} color="#848281" />
+      </Pressable>
+    </View>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Step 3: Waiting — timeline stepper that polls order status
+// ═══════════════════════════════════════════════════════════════════════════
+
+type TimelineStepStatus = 'done' | 'active' | 'failed' | 'pending';
+
+const STEPS = [
+  {
+    key: 'payment',
+    title: 'Payment received',
+    failTitle: 'Payment not received',
+    desc: (amt: string) => `We received your ₦${amt} bank transfer.`,
+    failDesc: () => 'We haven\'t received your transfer yet. Please check your bank app.',
+  },
+  {
+    key: 'conversion',
+    title: 'Converting to USDC',
+    failTitle: 'Conversion failed',
+    desc: (amt: string) => `Your Naira is being converted to USDC.`,
+    failDesc: () => 'We couldn\'t convert your deposit. Your funds are safe.',
+  },
+  {
+    key: 'credited',
+    title: 'Deposit credited',
+    failTitle: 'Deposit not credited',
+    desc: (amt: string) => `Your USDC has been added to your account.`,
+    failDesc: () => 'Your deposit was not credited. Contact support if you sent the money.',
+  },
+] as const;
+
+function deriveStepStatuses(orderStatus: string | undefined): TimelineStepStatus[] {
+  switch (orderStatus) {
+    case 'COMPLETED':
+      return ['done', 'done', 'done'];
+    case 'FAILED':
+      return ['failed', 'failed', 'failed'];
+    case 'PAID':
+      return ['done', 'active', 'pending'];
+    default: // INIT or undefined
+      return ['active', 'pending', 'pending'];
+  }
+}
+
+function WaitingStep({
+  orderId,
+  order,
+  onClose,
+  insets,
+  showSuccess,
+}: {
+  orderId: string;
+  order: PajOnrampOrder;
+  onClose: () => void;
+  insets: { bottom: number };
+  showSuccess: (title: string, message?: string) => void;
+}) {
+  const { data: status } = usePajOrderStatus(orderId);
+  const isCompleted = status?.status === 'COMPLETED';
+  const isFailed = status?.status === 'FAILED';
+  const isTerminal = isCompleted || isFailed;
+
+  const stepStatuses = useMemo(() => deriveStepStatuses(status?.status), [status?.status]);
+  const fiatDisplay = order.fiatAmount.toLocaleString();
+
+  // Shake animation for terminal states
+  const shakeX = useSharedValue(0);
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shakeX.value }],
+  }));
+
+  useEffect(() => {
+    if (isCompleted) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      invalidateQueries.station();
+      invalidateQueries.wallet();
+      invalidateQueries.funding();
+      invalidateQueries.gameplay();
+    }
+    if (isFailed) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      // Shake the card on failure
+      shakeX.value = withSequence(
+        withTiming(-8, { duration: 50 }),
+        withTiming(8, { duration: 50 }),
+        withTiming(-6, { duration: 50 }),
+        withTiming(6, { duration: 50 }),
+        withTiming(-3, { duration: 50 }),
+        withTiming(0, { duration: 50 }),
+      );
+    }
+    if (isTerminal) {
+      // Double haptic burst for emphasis
+      setTimeout(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      }, 200);
+    }
+  }, [isCompleted, isFailed, isTerminal]);
+
+  const handleDone = useCallback(() => {
+    if (isCompleted) {
+      showSuccess('Deposit successful', 'Your Naira deposit has been credited.');
+    }
+    router.replace('/(tabs)');
+  }, [isCompleted, showSuccess]);
+
+  return (
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
+      <StatusBar barStyle="dark-content" />
+      <View className="flex-1 px-6">
+        {/* Header */}
+        <View className="flex-row items-center justify-between pb-2 pt-1">
+          <View className="size-11" />
+          <Text className="font-subtitle text-[20px] text-text-primary">Deposit Status</Text>
+          <View className="size-11" />
+        </View>
+
+        {/* Hero */}
+        <Animated.View entering={FadeInDown.delay(100).duration(400)} className="mt-8 items-center">
+          <Text className="font-subtitle text-[24px] text-text-primary">
+            {isCompleted ? 'Deposit complete' : isFailed ? 'Something went wrong' : 'We received your request'}
+          </Text>
+          <Text className="mt-2 text-center font-body text-[15px] leading-[22px] text-text-secondary">
+            {isCompleted
+              ? `₦${fiatDisplay} has been converted and credited.`
+              : isFailed
+                ? 'Your deposit could not be processed.'
+                : `Your deposit of ₦${fiatDisplay} is now being processed.`}
+          </Text>
+        </Animated.View>
+
+        {/* Timeline card */}
+        <Animated.View
+          entering={FadeInDown.delay(250).duration(400)}
+          style={cardStyle}
+          className="mt-8 rounded-3xl border border-stone-surface bg-surface px-5 py-6">
+          {STEPS.map((step, i) => {
+            const s = stepStatuses[i];
+            const isLast = i === STEPS.length - 1;
+            return (
+              <TimelineRow
+                key={step.key}
+                status={s}
+                title={s === 'failed' ? step.failTitle : step.title}
+                description={s === 'failed' ? step.failDesc() : step.desc(fiatDisplay)}
+                isLast={isLast}
+                index={i}
+              />
+            );
+          })}
+        </Animated.View>
+
+        {/* Timing hint */}
+        {!isTerminal && (
+          <Animated.View entering={FadeIn.delay(400).duration(300)} className="mt-5 items-center">
+            <View className="rounded-full bg-surface px-4 py-2">
+              <Text className="font-body text-[13px] text-text-secondary">
+                Usually takes 1–5 minutes
+              </Text>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* CTAs */}
+        <View className="mt-auto flex-row gap-3 pb-4">
+          {isFailed ? (
+            <>
+              <View className="flex-1">
+                <Button title="Dismiss" variant="white" onPress={() => router.replace('/(tabs)')} />
+              </View>
+              <View className="flex-1">
+                <Button title="Contact support" variant="black" onPress={handleDone} />
+              </View>
+            </>
+          ) : (
+            <View className="flex-1">
+              <Button
+                title={isCompleted ? 'Done' : 'Back to home'}
+                variant="black"
+                onPress={handleDone}
+              />
+            </View>
+          )}
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+// ── Timeline row with vertical connector line ───────────────────────────
+
+function TimelineRow({
+  status,
+  title,
+  description,
+  isLast,
+  index,
+}: {
+  status: TimelineStepStatus;
+  title: string;
+  description: string;
+  isLast: boolean;
+  index: number;
+}) {
+  const isFailed = status === 'failed';
+  const isDone = status === 'done';
+  const isActive = status === 'active';
+
+  const iconColor = isFailed ? '#EF4444' : isDone ? '#00c454' : '#c6c6c6';
+  const iconBg = isFailed ? '#FEF2F2' : isDone ? '#ECFDF5' : '#f2f0ed';
+  const titleColor = isFailed ? '#EF4444' : '#343433';
+  const lineColor = isDone ? '#00c454' : isFailed ? '#EF4444' : '#E5E7EB';
+
+  return (
+    <Animated.View entering={FadeInDown.delay(300 + index * 100).duration(350)} className="flex-row">
+      {/* Icon column with connector line */}
+      <View className="mr-4 items-center" style={{ width: 32 }}>
+        <View
+          className="size-8 items-center justify-center rounded-full"
+          style={{ backgroundColor: iconBg }}>
+          {isDone && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} color={iconColor} />}
+          {isFailed && <HugeiconsIcon icon={AlertCircleIcon} size={20} color={iconColor} />}
+          {isActive && <ActivityIndicator size="small" color={BRAND_RED} />}
+          {status === 'pending' && (
+            <View className="size-2.5 rounded-full" style={{ backgroundColor: '#c6c6c6' }} />
+          )}
+        </View>
+        {!isLast && (
+          <View className="flex-1 my-1" style={{ width: 2, minHeight: 24, backgroundColor: lineColor, borderRadius: 1 }} />
+        )}
+      </View>
+
+      {/* Content */}
+      <View className={`flex-1 ${isLast ? '' : 'pb-5'}`}>
+        <Text className="font-subtitle text-[15px]" style={{ color: titleColor }}>
+          {title}
+        </Text>
+        <Text className="mt-0.5 font-body text-[13px] leading-[18px] text-text-secondary">
+          {description}
+        </Text>
+      </View>
+    </Animated.View>
+  );
+}
