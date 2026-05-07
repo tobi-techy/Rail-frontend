@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Linking, PermissionsAndroid, Platform } from 'react-native';
 
-function getAndroidPermissions(): string[] {
+type AndroidPermission = Parameters<typeof PermissionsAndroid.check>[0];
+
+function getAndroidPermissions(): AndroidPermission[] {
   if (Platform.OS !== 'android') return [];
   const version = typeof Platform.Version === 'number' ? Platform.Version : 0;
-  const perms: string[] = [PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION];
+  const perms: AndroidPermission[] = [PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION];
   if (version >= 31) {
     perms.push(
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
-      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
     );
   }
   if (version >= 33) {
@@ -42,9 +44,7 @@ export function useNearbyPermissions() {
     if (ANDROID_PERMISSIONS.length === 0) return true;
 
     const result = await PermissionsAndroid.requestMultiple(ANDROID_PERMISSIONS);
-    const allGranted = Object.values(result).every(
-      (v) => v === PermissionsAndroid.RESULTS.GRANTED
-    );
+    const allGranted = Object.values(result).every((v) => v === PermissionsAndroid.RESULTS.GRANTED);
     const anyBlocked = Object.values(result).some(
       (v) => v === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN
     );

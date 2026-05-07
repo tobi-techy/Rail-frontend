@@ -8,8 +8,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
 import { useCallback, useEffect } from 'react';
 import { useHaptics } from '@/hooks/useHaptics';
-import { ArrowLeft01Icon, FingerPrintIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon, FingerPrintIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { logger } from '@/lib/logger';
 
 export default function AuthorizeTransactionScreen() {
@@ -98,7 +98,7 @@ export default function AuthorizeTransactionScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-warm-canvas">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
       <View className="flex-1">
@@ -106,21 +106,21 @@ export default function AuthorizeTransactionScreen() {
         <View className="mt-2 px-6">
           <Pressable
             onPress={() => router.back()}
-            className="h-10 w-10 items-center justify-center rounded-full bg-[#F3F4F6]">
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#070914" strokeWidth={2} />
+            className="h-10 w-10 items-center justify-center rounded-full bg-[#f2f0ed]">
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" strokeWidth={2} />
           </Pressable>
         </View>
 
         {/* Title */}
         <View className="mt-6 px-6">
-          <Text className="font-heading text-[32px] leading-[38px] text-[#070914]">
+          <Text className="font-heading text-[32px] leading-[38px] text-[#343433]">
             Authorize{'\n'}transaction
           </Text>
         </View>
 
         {/* Subtitle */}
         <View className="mt-4 px-6">
-          <Text className="font-body text-[15px] text-[#6B7280]">Enter Your Account Pin</Text>
+          <Text className="font-body text-[15px] text-[#848281]">Enter Your Account Pin</Text>
         </View>
 
         {/* PIN boxes + eye toggle */}
@@ -131,8 +131,8 @@ export default function AuthorizeTransactionScreen() {
               return (
                 <View
                   key={i}
-                  className="h-[56px] w-[56px] items-center justify-center rounded-xl bg-[#F3F4F6]">
-                  {filled && <View className="h-3 w-3 rounded-full bg-[#070914]" />}
+                  className="h-[56px] w-[56px] items-center justify-center rounded-lg bg-[#f2f0ed]">
+                  {filled && <View className="h-3 w-3 rounded-full bg-[#343433]" />}
                 </View>
               );
             })}
@@ -143,7 +143,7 @@ export default function AuthorizeTransactionScreen() {
               disabled={isPasskeyLoading || isLoading}
               className="h-12 w-12 items-center justify-center rounded-full bg-[#EEF2FF]">
               {isPasskeyLoading ? (
-                <ActivityIndicator size="small" color="#070914" />
+                <ActivityIndicator size="small" color="#343433" />
               ) : (
                 <HugeiconsIcon icon={FingerPrintIcon} size={22} color="#6366F1" />
               )}
@@ -154,7 +154,7 @@ export default function AuthorizeTransactionScreen() {
         {/* Error */}
         {authError ? (
           <View className="mt-3 px-6">
-            <Text className="font-body text-[13px] text-red-500">{authError}</Text>
+            <Text className="font-body text-[13px] text-coral-red">{authError}</Text>
           </View>
         ) : null}
 
@@ -180,7 +180,7 @@ export default function AuthorizeTransactionScreen() {
                     }
                   }}
                   className="h-[64px] flex-1 items-center justify-center">
-                  <Text className="font-subtitle text-[28px] text-[#070914]">{n}</Text>
+                  <Text className="font-subtitle text-[28px] text-[#343433]">{n}</Text>
                 </Pressable>
               ))}
             </View>
@@ -196,7 +196,7 @@ export default function AuthorizeTransactionScreen() {
                 }
               }}
               className="h-[64px] flex-1 items-center justify-center">
-              <Text className="font-subtitle text-[28px] text-[#070914]">0</Text>
+              <Text className="font-subtitle text-[28px] text-[#343433]">0</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -205,7 +205,7 @@ export default function AuthorizeTransactionScreen() {
                 }
               }}
               className="h-[64px] flex-1 items-center justify-center">
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#070914" strokeWidth={2} />
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#343433" strokeWidth={2} />
             </Pressable>
           </View>
         </View>
@@ -213,7 +213,7 @@ export default function AuthorizeTransactionScreen() {
         {/* Forgot PIN */}
         <View className="mb-6 items-center">
           <Pressable onPress={() => router.push('/(auth)/forgot-password')}>
-            <Text className="font-body text-[15px] text-[#3B82F6] underline">Forgot PIN?</Text>
+            <Text className="font-body text-[15px] text-[#0090ff] underline">Forgot PIN?</Text>
           </Pressable>
         </View>
       </View>

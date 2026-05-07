@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
-import { FireIcon, Award01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { FireIcon, Award01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { useHaptics } from '@/hooks/useHaptics';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import type { GameplayProfile } from '@/api/services/gameplay.service';
@@ -65,7 +65,7 @@ export const GameplayCard: React.FC<GameplayCardProps> = ({ data, isLoading, cla
             className="mb-2 mt-3 h-1.5 overflow-hidden rounded-full"
             style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
             <View
-              className="h-full rounded-full bg-white"
+              className="h-full rounded-full bg-parchment-card"
               style={{ width: `${Math.min(progressPct, 100)}%` }}
             />
           </View>

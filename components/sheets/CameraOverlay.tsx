@@ -19,8 +19,8 @@ import { CameraView, type CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { SlideInUp } from 'react-native-reanimated';
 import { logger } from '@/lib/logger';
-import { Camera01Icon, Cancel01Icon, Image01Icon, RefreshIcon, ZapIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Camera01Icon, Cancel01Icon, Image01Icon, RefreshIcon, ZapIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 type CaptureSide = 'front' | 'back';
 export type KycDocumentType = 'drivers_license' | 'id_card' | 'residence_permit' | 'passport';
@@ -187,7 +187,7 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
                 <Text className="mt-4 text-center font-subtitle text-[22px] text-white">
                   {permissionDenied ? 'Camera01Icon access denied' : 'Camera01Icon permission needed'}
                 </Text>
-                <Text className="mt-2 text-center font-body text-[14px] leading-6 text-gray-300">
+                <Text className="mt-2 text-center font-body text-[14px] leading-6 text-smoke">
                   {permissionDenied
                     ? 'Camera01Icon permission was denied. Please enable it in Settings to continue.'
                     : 'Allow camera access so you can capture your document securely in-app.'}
@@ -197,18 +197,18 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
                   {permissionDenied ? (
                     <Pressable
                       onPress={() => Linking.openSettings()}
-                      className="rounded-xl bg-white py-3"
+                      className="rounded-lg bg-parchment-card py-3"
                       android_ripple={{ color: '#00000020' }}>
-                      <Text className="text-center font-subtitle text-[16px] text-black">
+                      <Text className="text-center font-subtitle text-[16px] text-charcoal-primary">
                         Open Settings
                       </Text>
                     </Pressable>
                   ) : (
                     <Pressable
                       onPress={() => void requestCameraPermission()}
-                      className="rounded-xl bg-white py-3"
+                      className="rounded-lg bg-parchment-card py-3"
                       android_ripple={{ color: '#00000020' }}>
-                      <Text className="text-center font-subtitle text-[16px] text-black">
+                      <Text className="text-center font-subtitle text-[16px] text-charcoal-primary">
                         Allow camera
                       </Text>
                     </Pressable>
@@ -237,19 +237,19 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
             {cameraPermission?.granted && (
               <Animated.View
                 entering={SlideInUp.delay(300).duration(400)}
-                className="absolute bottom-0 left-0 right-0 rounded-t-[32px] bg-white px-6 pb-12 pt-4">
+                className="absolute bottom-0 left-0 right-0 rounded-t-[32px] bg-parchment-card px-6 pb-12 pt-4">
                 <View className="mb-6 flex-row justify-center">
                   <View className="h-1 w-10 rounded-full bg-slate-200" />
                 </View>
-                <Text className="text-center font-subtitle text-[24px] text-gray-900">{title}</Text>
-                <Text className="mt-3 text-center font-body text-[15px] leading-6 text-gray-500">
+                <Text className="text-center font-subtitle text-[24px] text-charcoal-primary">{title}</Text>
+                <Text className="mt-3 text-center font-body text-[15px] leading-6 text-ash">
                   Take a photo of the {side === 'front' ? 'front' : 'back'} side of your ID.
                   {'\n\n'}
                   All the information should be readable, without any reflections or blur.
                 </Text>
 
                 {!!captureError && (
-                  <Text className="mt-3 text-center font-body text-[13px] text-red-600">
+                  <Text className="mt-3 text-center font-body text-[13px] text-coral-red">
                     {captureError}
                   </Text>
                 )}
@@ -258,13 +258,13 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
                   <Pressable
                     onPress={onTakePhoto}
                     disabled={isCapturing || !cameraPermission?.granted}
-                    className="size-20 items-center justify-center rounded-full border-[3px] border-gray-900 bg-white"
+                    className="size-20 items-center justify-center rounded-full border-[3px] border-gray-900 bg-warm-canvas"
                     accessibilityRole="button"
                     accessibilityLabel="Capture document image">
                     {isCapturing ? (
-                      <ActivityIndicator color="#111827" />
+                      <ActivityIndicator color="#343433" />
                     ) : (
-                      <View className="size-[68px] rounded-full bg-gray-200" />
+                      <View className="size-[68px] rounded-full bg-fog" />
                     )}
                   </Pressable>
                 </View>
@@ -274,7 +274,7 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
                     onPress={() => setCameraFacing((c) => (c === 'back' ? 'front' : 'back'))}
                     accessibilityRole="button"
                     accessibilityLabel="Switch camera">
-                    <Text className="font-body text-[14px] text-gray-600">Switch camera</Text>
+                    <Text className="font-body text-[14px] text-ash">Switch camera</Text>
                   </Pressable>
                   <Pressable
                     onPress={onPickImage}
@@ -288,7 +288,7 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
             )}
           </>
         ) : (
-          <View className="flex-1 bg-white pb-8 pt-14">
+          <View className="flex-1 bg-parchment-card pb-8 pt-14">
             <View className="mb-6 flex-row items-center justify-between px-6">
               <Pressable
                 onPress={() => {
@@ -320,14 +320,14 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
             </View>
 
             <Animated.View entering={SlideInUp.duration(400)} className="mt-8 px-6 pb-2">
-              <Text className="text-center font-subtitle text-[22px] text-gray-900">ID card</Text>
-              <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
+              <Text className="text-center font-subtitle text-[22px] text-charcoal-primary">ID card</Text>
+              <Text className="mt-2 text-center font-body text-[15px] leading-6 text-ash">
                 Make sure that all the information on the document is visible and easy to read
               </Text>
-              <View className="mt-8 gap-y-3">
+              <View className="mt-8 flex-row gap-3">
                 <Pressable
                   onPress={onUsePhoto}
-                  className="rounded-2xl bg-primary py-4"
+                  className="flex-1 rounded-2xl bg-primary py-4"
                   android_ripple={{ color: '#ffffff20' }}>
                   <Text className="text-center font-subtitle text-[17px] text-white">
                     Document is readable
@@ -338,9 +338,9 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
                     setCapturedUri(null);
                     setCapturedBase64(null);
                   }}
-                  className="rounded-2xl bg-slate-100 py-4"
+                  className="flex-1 rounded-2xl bg-slate-100 py-4"
                   android_ripple={{ color: '#00000020' }}>
-                  <Text className="text-center font-subtitle text-[17px] text-gray-900">
+                  <Text className="text-center font-subtitle text-[17px] text-charcoal-primary">
                     Retake photo
                   </Text>
                 </Pressable>

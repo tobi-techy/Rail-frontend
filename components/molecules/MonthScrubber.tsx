@@ -42,16 +42,16 @@ function MonthDot({
         <View
           className={`h-7 w-7 items-center justify-center rounded-full ${
             isSelected
-              ? 'bg-black'
+              ? 'bg-midnight'
               : hasData
-                ? 'border-[1.5px] border-black'
-                : 'border border-gray-200'
+                ? 'border-[1.5px] border-charcoal-primary'
+                : 'border border-fog'
           }`}>
-          {hasData && !isSelected && <View className="h-[5px] w-[5px] rounded-full bg-black" />}
+          {hasData && !isSelected && <View className="h-[5px] w-[5px] rounded-full bg-charcoal-primary" />}
         </View>
         <Text
           className={`mt-[5px] text-center text-[11px] ${
-            isSelected ? 'font-button text-black' : 'font-caption text-gray-400'
+            isSelected ? 'font-button text-charcoal-primary' : 'font-caption text-smoke'
           }`}>
           {label}
         </Text>

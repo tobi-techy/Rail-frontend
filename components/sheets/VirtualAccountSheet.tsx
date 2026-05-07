@@ -10,8 +10,8 @@ import { useVirtualAccounts } from '@/api/hooks/useVirtualAccount';
 import { useKYCStatus } from '@/api/hooks';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import type { VirtualAccount } from '@/api/types/funding';
-import { Copy01Icon, CheckmarkCircle02Icon, Share01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Copy01Icon, CheckmarkCircle02Icon, Share01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const CURRENCY_META: Record<string, { Icon: React.ComponentType<any>; label: string }> = {
   USD: { Icon: UsdIcon, label: 'US Dollar' },
@@ -33,11 +33,11 @@ function CopyRow({ label, value }: { label: string; value: string }) {
   return (
     <Pressable onPress={handleCopy} className="flex-row items-center justify-between py-4 active:opacity-70">
       <View className="flex-1 pr-4">
-        <Text className="font-body text-[13px] text-[#9CA3AF]">{label}</Text>
-        <Text className="mt-1 font-subtitle text-[15px] text-[#070914]" selectable>{value}</Text>
+        <Text className="font-body text-[13px] text-[#848281]">{label}</Text>
+        <Text className="mt-1 font-subtitle text-[15px] text-[#343433]" selectable>{value}</Text>
       </View>
       {copied ? (
-        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} color="#10B981" />
+        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} color="#00ca48" />
       ) : (
         <HugeiconsIcon icon={Copy01Icon} size={18} color="#6366F1" />
       )}
@@ -66,25 +66,25 @@ function AccountCard({ account }: { account: VirtualAccount }) {
 
   return (
     <View>
-      <Text className="mb-3 font-body text-[14px] text-[#9CA3AF]">
+      <Text className="mb-3 font-body text-[14px] text-[#848281]">
         Transfer to these details to fund your account
       </Text>
-      <View className="rounded-2xl bg-[#F9FAFB] px-4">
+      <View className="rounded-2xl bg-[#f8f7f4] px-4">
         {account.beneficiary_name ? (
-          <><CopyRow label="Name" value={account.beneficiary_name} /><View className="h-px bg-[#E5E7EB]" /></>
+          <><CopyRow label="Name" value={account.beneficiary_name} /><View className="h-px bg-[#f2f0ed]" /></>
         ) : null}
         <CopyRow label="Account number" value={account.account_number || '\u2014'} />
         {account.routing_number ? (
-          <><View className="h-px bg-[#E5E7EB]" /><CopyRow label="Routing number" value={account.routing_number} /></>
+          <><View className="h-px bg-[#f2f0ed]" /><CopyRow label="Routing number" value={account.routing_number} /></>
         ) : null}
         {account.bank_name ? (
-          <><View className="h-px bg-[#E5E7EB]" /><CopyRow label="Bank" value={account.bank_name} /></>
+          <><View className="h-px bg-[#f2f0ed]" /><CopyRow label="Bank" value={account.bank_name} /></>
         ) : null}
         {account.bank_address ? (
-          <><View className="h-px bg-[#E5E7EB]" /><CopyRow label="Address" value={account.bank_address} /></>
+          <><View className="h-px bg-[#f2f0ed]" /><CopyRow label="Address" value={account.bank_address} /></>
         ) : null}
         {rails ? (
-          <><View className="h-px bg-[#E5E7EB]" /><CopyRow label="Payment rails" value={rails} /></>
+          <><View className="h-px bg-[#f2f0ed]" /><CopyRow label="Payment rails" value={rails} /></>
         ) : null}
       </View>
       <Pressable
@@ -121,8 +121,8 @@ export function VirtualAccountSheet({ visible, onClose, currency }: VirtualAccou
             <meta.Icon width={48} height={48} />
           </View>
           <View>
-            <Text className="font-subtitle text-[20px] text-[#070914]">{currency} Account</Text>
-            <Text className="font-body text-[13px] text-[#9CA3AF]">{meta.label}</Text>
+            <Text className="font-subtitle text-[20px] text-[#343433]">{currency} Account</Text>
+            <Text className="font-body text-[13px] text-[#848281]">{meta.label}</Text>
           </View>
         </View>
 
@@ -137,10 +137,10 @@ export function VirtualAccountSheet({ visible, onClose, currency }: VirtualAccou
             <View className="mb-4 size-16 items-center justify-center overflow-hidden rounded-full">
               <meta.Icon width={64} height={64} />
             </View>
-            <Text className="mb-1 font-subtitle text-[17px] text-[#070914]">
+            <Text className="mb-1 font-subtitle text-[17px] text-[#343433]">
               No {currency} account yet
             </Text>
-            <Text className="mb-6 text-center font-body text-[13px] text-[#9CA3AF]">
+            <Text className="mb-6 text-center font-body text-[13px] text-[#848281]">
               Create a virtual {meta.label} account to receive deposits.
             </Text>
             <Button title={`Create ${currency} Account`} onPress={() => setShowIntro(true)} variant="orange" />

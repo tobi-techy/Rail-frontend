@@ -1,9 +1,12 @@
 // ============= AI Chat Types =============
 
+export type ToneMode = 'gentle' | 'direct' | 'hard';
+
 export interface AIChatRequest {
   message: string;
   history?: AIMessage[];
   conversation_id?: string;
+  tone_mode?: ToneMode;
   transaction_context?: {
     type: 'card' | 'withdrawal' | 'deposit' | 'p2p' | string;
     amount: string;
@@ -27,7 +30,14 @@ export interface AIMessage {
 }
 
 export interface InsightCard {
-  type: 'stat_grid' | 'chart' | 'breakdown' | 'progress' | 'highlight' | 'alert';
+  type:
+    | 'stat_grid'
+    | 'chart'
+    | 'breakdown'
+    | 'progress'
+    | 'highlight'
+    | 'alert'
+    | 'financial_audit';
   title: string;
   subtitle?: string;
   sentiment?: 'positive' | 'negative' | 'neutral';
@@ -44,7 +54,10 @@ export interface PendingAction {
     | 'send_report'
     | 'set_budget'
     | 'split_receipt'
-    | 'update_financial_profile';
+    | 'update_financial_profile'
+    | 'create_automation'
+    | 'create_obligation_reminder'
+    | 'create_obligation_reminders';
   description: string;
   params: Record<string, any>;
   expires_at: string;
@@ -142,6 +155,28 @@ export interface FinancialHealth {
   data_used: string[];
 }
 
+export interface FinancialAudit {
+  audit_mode: boolean;
+  period: Record<string, any>;
+  intensity: 'gentle' | 'direct' | 'hard' | string;
+  delivery_contract: Record<string, any>;
+  score: Record<string, any>;
+  snapshot: Record<string, any>;
+  the_damage: Record<string, any>;
+  the_pattern: string[];
+  contradictions: Record<string, any>[];
+  top_spending_categories: Record<string, any>[];
+  top_merchants: Record<string, any>[];
+  budget: Record<string, any>;
+  profile: Record<string, any>;
+  obligations: Record<string, any>;
+  recurring: Record<string, any>;
+  risk_flags: Record<string, any>[];
+  do_this_today: Record<string, any>[];
+  warnings: string[];
+  data_used: string[];
+}
+
 export interface CashFlowForecast {
   period: string;
   days_elapsed: number;
@@ -221,6 +256,135 @@ export interface FinancialTimeline {
   events: FinancialTimelineEvent[];
   summary: string;
   data_used: string[];
+}
+
+// ============= Miriam Money Operator Types =============
+
+export type FinancialObligationType =
+  | 'debt'
+  | 'invoice'
+  | 'payroll'
+  | 'insurance'
+  | 'education'
+  | 'rent'
+  | 'family_support'
+  | 'tax'
+  | 'subscription'
+  | 'vendor_bill'
+  | 'other';
+
+export type FinancialObligationCadence =
+  | 'one_time'
+  | 'weekly'
+  | 'biweekly'
+  | 'monthly'
+  | 'quarterly'
+  | 'annual';
+
+export type FinancialObligationPriority = 'critical' | 'high' | 'medium' | 'low';
+
+export interface FinancialObligation {
+  id: string;
+  user_id: string;
+  type: FinancialObligationType;
+  name: string;
+  amount: string;
+  currency: string;
+  cadence: FinancialObligationCadence;
+  due_date?: string | null;
+  due_day?: number | null;
+  priority: FinancialObligationPriority;
+  counterparty?: string | null;
+  status: 'active' | 'paid' | 'paused' | 'cancelled' | string;
+  metadata?: Record<string, any> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateFinancialObligationRequest {
+  type: FinancialObligationType;
+  name: string;
+  amount: string | number;
+  currency: string;
+  cadence: FinancialObligationCadence;
+  due_date?: string;
+  due_day?: number;
+  priority?: FinancialObligationPriority;
+  counterparty?: string;
+  status?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface MoneyOperatingPlanAction {
+  type: string;
+  title: string;
+  description?: string;
+  params: Record<string, any>;
+}
+
+export interface MoneyOperatingPlan {
+  has_profile: boolean;
+  message?: string;
+  required_fields?: string[];
+  profile?: {
+    user_type?: string;
+    residence_country?: string;
+    tax_country?: string;
+    earning_currency?: string;
+    spending_currency?: string;
+    family_support_country?: string;
+    income_frequency?: string;
+  };
+  month?: Record<string, string>;
+  balances?: Record<string, string>;
+  operating_plan?: {
+    safe_spend_today?: string;
+    safe_spend_rest_month?: string;
+    days_left?: number;
+    tax_reserve_target?: string;
+    stash_target?: string;
+    family_support_cap?: string;
+    obligation_coverage?: Record<string, any>;
+    professional_review_note?: string;
+  };
+  obligations?: {
+    count?: number;
+    required_this_month?: string;
+    critical_this_month?: string;
+    by_type?: Record<string, string>;
+    upcoming?: Record<string, any>[];
+    invoice_aging?: Record<string, any>;
+  };
+  fx_context?: Record<string, any>;
+  tax_playbook?: string[];
+  persona_operating_model?: Record<string, any>;
+  risk_flags?: Record<string, any>[];
+  next_actions?: MoneyOperatingPlanAction[];
+  data_used?: string[];
+}
+
+export interface StageOperatingPlanActionRequest {
+  conversation_id?: string | null;
+  type: string;
+  params: Record<string, any>;
+}
+
+export interface StageOperatingPlanActionResponse {
+  conversation_id: string;
+  staged: {
+    action_required?: boolean;
+    pending_action?: PendingAction;
+    error?: string;
+    [key: string]: any;
+  };
+  confirm_url: string;
+  cancel_url: string;
+}
+
+export interface MoneyAcrossBordersReport {
+  persona_context?: Record<string, any>;
+  operating_plan?: MoneyOperatingPlan;
+  professional_review_note?: string;
 }
 
 // SSE stream event types
@@ -316,6 +480,8 @@ export interface Automation {
   trigger_count: number;
   max_triggers_per_day: number;
   cooldown_minutes: number;
+  reauthorization_due_at?: string | null;
+  passcode_session_verified_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -327,6 +493,7 @@ export interface CreateAutomationRequest {
   trigger_config: Record<string, any>;
   action_type: Automation['action_type'];
   action_config: Record<string, any>;
+  acknowledged_future_transfer?: boolean;
   max_triggers_per_day?: number;
   cooldown_minutes?: number;
 }

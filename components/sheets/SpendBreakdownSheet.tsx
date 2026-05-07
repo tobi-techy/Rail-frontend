@@ -10,8 +10,7 @@ import { toNumber } from '@/utils/market';
 import { useUIStore } from '@/stores';
 import { cn } from '@/utils/cn';
 import type { Currency } from '@/stores/uiStore';
-import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowRight01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 interface SpendBreakdownSheetProps {
   visible: boolean;
@@ -63,20 +62,20 @@ function CategoryRow({
     <View
       className={cn(
         'flex-row items-center justify-between py-3',
-        !isLast && 'border-b border-neutral-200'
+        !isLast && 'border-b border-fog'
       )}>
       <View className="flex-row items-center gap-3">
-        <View className="h-10 w-10 items-center justify-center rounded-full bg-neutral-100">
-          <Icon name={iconName} size={20} color="#111827" strokeWidth={1.5} />
+        <View className="h-10 w-10 items-center justify-center rounded-full bg-stone-surface">
+          <Icon name={iconName} size={20} color="#343433" strokeWidth={1.5} />
         </View>
         <View className="gap-1">
-          <Text className="font-body text-base text-neutral-900" numberOfLines={1}>
+          <Text className="font-body text-base text-charcoal-primary" numberOfLines={1}>
             {title}
           </Text>
-          <Text className="font-body text-sm text-neutral-500">{percent}% of spend</Text>
+          <Text className="font-body text-sm text-ash">{percent}% of spend</Text>
         </View>
       </View>
-      <Text className="font-mono text-base tabular-nums text-neutral-900">
+      <Text className="font-mono text-base tabular-nums text-charcoal-primary">
         {isBalanceVisible ? `-${formattedAmount}` : '****'}
       </Text>
     </View>
@@ -103,6 +102,7 @@ export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBr
   );
 
   const totalDisplay = isBalanceVisible ? formatCurrencyAmount(totalSpent, currency) : '****';
+  const showEmpty = !isLoading && categories.length === 0;
 
   const donutSize = 220;
   const donutStroke = 18;
@@ -111,17 +111,15 @@ export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBr
   const donutProgress = showEmpty || totalSpent === 0 ? 0 : 0.97;
   const donutOffset = donutCircumference * (1 - donutProgress);
 
-  const showEmpty = !isLoading && categories.length === 0;
-
   return (
     <GorhomBottomSheet visible={visible} onClose={onClose} showCloseButton={false} dismissible>
       <View className="mt-4 gap-6">
         <View className="gap-1">
-          <Text className="font-body text-sm text-neutral-500">Total spent</Text>
+          <Text className="font-body text-sm text-ash">Total spent</Text>
           {isLoading ? (
             <Skeleton className="h-8 w-32" />
           ) : (
-            <Text className="font-mono-semibold text-2xl tabular-nums text-neutral-900">
+            <Text className="font-mono-semibold text-2xl tabular-nums text-charcoal-primary">
               {totalDisplay}
             </Text>
           )}
@@ -133,7 +131,7 @@ export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBr
               cx={donutSize / 2}
               cy={donutSize / 2}
               r={donutRadius}
-              stroke="#E5E7EB"
+              stroke="#f2f0ed"
               strokeWidth={donutStroke}
               fill="none"
             />
@@ -155,15 +153,15 @@ export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBr
         </View>
 
         <View className="gap-3">
-          <Text className="font-subtitle text-base text-neutral-900">Balance breakdown</Text>
-          <View className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+          <Text className="font-subtitle text-base text-charcoal-primary">Balance breakdown</Text>
+          <View className="overflow-hidden rounded-lg border border-fog bg-warm-canvas">
             {isLoading ? (
               [0, 1, 2].map((i) => (
                 <View
                   key={i}
                   className={cn(
                     'flex-row items-center justify-between py-3',
-                    i !== 2 && 'border-b border-neutral-200'
+                    i !== 2 && 'border-b border-fog'
                   )}>
                   <View className="flex-row items-center gap-3">
                     <Skeleton className="h-10 w-10 rounded-full" />
@@ -177,8 +175,8 @@ export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBr
               ))
             ) : showEmpty ? (
               <View className="gap-2 px-4 py-4">
-                <Text className="font-body text-base text-neutral-900">No spending yet</Text>
-                <Text className="font-body text-sm text-neutral-500">
+                <Text className="font-body text-base text-charcoal-primary">No spending yet</Text>
+                <Text className="font-body text-sm text-ash">
                   Your category breakdown will appear after your first purchase.
                 </Text>
                 {onViewDetails ? (

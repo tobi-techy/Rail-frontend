@@ -3,8 +3,7 @@ import { Tabs } from 'expo-router';
 
 import { TabBar } from '@/components/TabBar';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { Clock01Icon, Home01Icon, Settings01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Clock01Icon, Home01Icon, Settings01Icon, IconComponent } from '@/lib/icons';
 
 export default function TabLayout() {
   return (
@@ -13,33 +12,37 @@ export default function TabLayout() {
         tabBar={(props) => <TabBar {...props} />}
         screenOptions={{
           headerShown: true,
-          headerStyle: { backgroundColor: '#FFFFFF' },
+          headerStyle: { backgroundColor: '#fbfaf9' },
           headerShadowVisible: false,
           headerTitleStyle: { fontFamily: 'SFProDisplay-Bold', fontSize: 28 },
           headerTitleAlign: 'left',
-          sceneStyle: { backgroundColor: '#fff' },
+          sceneStyle: { backgroundColor: '#fbfaf9' },
         }}>
         <Tabs.Screen
           name="index"
           options={{
             title: 'Station',
-            tabBarIcon: ({ color }) => <HugeiconsIcon icon={Home01Icon} size={24} color={color} />,
+            tabBarIcon: ({ color, focused }) => (
+              <IconComponent icon={Home01Icon} size={24} color={color} weight={focused ? 'fill' : 'regular'} />
+            ),
           }}
         />
-        {/* market tab hidden — href: null removes it from tab bar */}
-        {/*<Tabs.Screen  options={{ href: null }} />*/}
         <Tabs.Screen
           name="history"
           options={{
             title: 'Activity',
-            tabBarIcon: ({ color }) => <HugeiconsIcon icon={Clock01Icon} size={24} color={color} />,
+            tabBarIcon: ({ color, focused }) => (
+              <IconComponent icon={Clock01Icon} size={24} color={color} weight={focused ? 'fill' : 'regular'} />
+            ),
           }}
         />
         <Tabs.Screen
           name="settings"
           options={{
             title: 'Settings',
-            tabBarIcon: ({ color }) => <HugeiconsIcon icon={Settings01Icon} size={24} color={color} />,
+            tabBarIcon: ({ color, focused }) => (
+              <IconComponent icon={Settings01Icon} size={24} color={color} weight={focused ? 'fill' : 'regular'} />
+            ),
           }}
         />
       </Tabs>

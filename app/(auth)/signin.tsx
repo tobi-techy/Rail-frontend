@@ -1,21 +1,33 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Pressable, Keyboard, StatusBar, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+  Keyboard,
+  StatusBar,
+  Platform,
+  useWindowDimensions,
+} from 'react-native';
 import type { TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
-import { useLogin } from '@/api/hooks/useAuth';
+import { useAppleSignIn, useGoogleSignIn, useLogin } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { getPostAuthRoute } from '@/utils/onboardingFlow';
 
 import { signinSchema, fieldError } from '@/utils/schemas';
 
 import { isSafeInput } from '@/utils/security';
+import { AppleLogo } from '@/assets/svg';
+import { GoogleLogoIcon, MailboxIcon } from 'phosphor-react-native';
 
 export default function SignIn() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -24,6 +36,10 @@ export default function SignIn() {
   const passwordRef = useRef<TextInput>(null);
   const { mutate: login, isPending } = useLogin();
   const { showError, showWarning } = useFeedbackPopup();
+  const { mutate: appleSignIn } = useAppleSignIn();
+  const { mutate: googleSignIn } = useGoogleSignIn();
+
+
 
   const handleSignIn = () => {
     const result = signinSchema.safeParse({ email, password });
@@ -93,10 +109,10 @@ export default function SignIn() {
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
-              <Text className="font-headline text-auth-title leading-[1.1] text-black">
+              <Text className="font-headline text-auth-title leading-[1.1] text-charcoal-primary">
                 Welcome Back
               </Text>
-              <Text className="mt-2 font-body text-body text-black/60">Sign in to continue</Text>
+              <Text className="mt-2 font-body text-body text-ash">Sign in to continue</Text>
             </View>
           </StaggeredChild>
 
@@ -143,21 +159,72 @@ export default function SignIn() {
                 className="self-end"
                 accessibilityLabel="Forgot Password"
                 accessibilityHint="Navigate to reset your password">
-                <Text className="font-subtitle text-small text-black/50">Forgot Password?</Text>
+                <Text className="font-subtitle text-small text-ash">Forgot Password?</Text>
               </TouchableOpacity>
             </StaggeredChild>
           </View>
 
           <StaggeredChild index={4} delay={120} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
-              <Button title="Sign In" onPress={handleSignIn} loading={isPending} variant="orange" />
+              {/*<Button title="Sign In" onPress={handleSignIn} loading={isPending} variant="orange" />*/}
+              <View className="w-full flex-row items-stretch gap-3">
+                {Platform.OS === 'android' ? (
+                  <Button
+                    title="Sign Up with Google"
+                    leftIcon={<GoogleLogoIcon />}
+                    size="large"
+                    flex
+                    onPress={() => {
+                      googleSignIn(undefined, {
+                        onSuccess: (resp) =>
+                          router.replace(getPostAuthRoute(resp.user?.onboardingStatus) as never),
+                        onError: () =>
+                          showError(
+                            'Google Sign-In Failed',
+                            'Please try again or use email sign in.'
+                          ),
+                      });
+                    }}
+                    variant="white"
+                  />
+                ) : (
+                  <Button
+                    title="Sign In With Apple"
+                    leftIcon={<AppleLogo width={20} height={20} />}
+                    size="large"
+                    flex
+                    onPress={() => {
+                      appleSignIn(undefined, {
+                        onSuccess: (resp) =>
+                          router.replace(getPostAuthRoute(resp.user?.onboardingStatus) as never),
+                        onError: () =>
+                          showError(
+                            'Apple Sign-In Failed',
+                            'Please try again or use email sign in.'
+                          ),
+                      });
+                    }}
+                    variant="white"
+                  />
+                )}
+                <Button
+                  title="Sign In With Mail"
+                  leftIcon={<MailboxIcon size={20} weight="fill" color="#fff" />}
+                  onPress={handleSignIn}
+                  loading={isPending}
+                  variant="orange"
+                  size="large"
+                  flex
+                />
+              </View>
               <TouchableOpacity
                 onPress={() => router.push(ROUTES.AUTH.SIGNUP as never)}
                 className="mt-4"
                 accessibilityLabel="Sign up"
                 accessibilityHint="Navigate to registration">
-                <Text className="text-center font-body text-caption text-black/60">
-                  New to Rail? <Text className="font-subtitle text-black underline">Sign Up</Text>
+                <Text className="text-center font-body text-caption text-ash">
+                  New to Rail?{' '}
+                  <Text className="font-subtitle text-charcoal-primary underline">Sign Up</Text>
                 </Text>
               </TouchableOpacity>
             </View>

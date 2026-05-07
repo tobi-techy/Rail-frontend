@@ -24,6 +24,7 @@ export function useOnboardingBasicComplete() {
         user: state.user
           ? { ...state.user, firstName, lastName, fullName }
           : state.user,
+        hasCompletedOnboarding: true,
         onboardingStatus: response.onboardingStatus ?? 'basic_complete',
       }));
     },

@@ -29,10 +29,10 @@ import { Button } from '@/components/ui';
 import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
 import { normalizeAmount, formatCurrency, formatMaxAmount, toDisplayAmount } from '@/app/withdraw/method-screen/utils';
 import { parseApiError } from '@/utils/apiError';
-import { ArrowLeft01Icon, Wifi01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon, Wifi01Icon, CheckmarkCircle02Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
-const BRAND_COLOR = '#FF2E01';
+const BRAND_COLOR = '#ff3e00';
 const DISCOVERY_TIMEOUT_MS = 20_000;
 const MAX_DIGITS = 9;
 const P2P_LIMIT = 10_000;
@@ -47,10 +47,10 @@ function distanceLabel(meters: number | undefined): string | null {
 }
 
 function distanceColor(meters: number | undefined): string {
-  if (meters == null) return '#10B981';
-  if (meters < 0.15) return '#10B981'; // green — tap range
+  if (meters == null) return '#00ca48';
+  if (meters < 0.15) return '#00ca48'; // green — tap range
   if (meters < 1) return '#F59E0B';    // amber — close
-  return '#9CA3AF';                     // gray — far
+  return '#848281';                     // gray — far
 }
 
 // ── Staggered Pulse Rings ─────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ function PulseRing({ delay = 0, size = 128, haptic = false }: { delay?: number; 
   return (
     <Animated.View
       style={[style, { width: size, height: size, borderRadius: size / 2 }]}
-      className="absolute border-2 border-[#FF2E01]"
+      className="absolute border-2 border-[#ff3e00]"
     />
   );
 }
@@ -134,11 +134,11 @@ function PeerAvatar({
         style={{ width: 76 }}>
         <View className="mb-1.5 h-14 w-14 items-center justify-center rounded-full bg-[#FFF0ED]"
           style={{ shadowColor: BRAND_COLOR, shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 }}>
-          <Text className="font-subtitle text-[20px] text-[#FF2E01]">
+          <Text className="font-subtitle text-[20px] text-[#ff3e00]">
             {peer.displayName.charAt(0).toUpperCase()}
           </Text>
         </View>
-        <Text className="font-subtitle text-[12px] text-[#070914]" numberOfLines={1}>
+        <Text className="font-subtitle text-[12px] text-[#343433]" numberOfLines={1}>
           {peer.displayName.split(' ')[0]}
         </Text>
         {dist && (
@@ -167,22 +167,22 @@ function IncomingRequest({
   return (
     <Animated.View entering={FadeInUp.duration(400)} className="flex-1 items-center justify-center px-6">
       <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-[#FFF0ED]">
-        <Text className="font-heading text-[32px] text-[#FF2E01]">
+        <Text className="font-heading text-[32px] text-[#ff3e00]">
           {senderName.charAt(0).toUpperCase()}
         </Text>
       </View>
-      <Text className="font-subtitle text-[18px] text-[#070914]">{senderName}</Text>
-      <Text className="mt-2 font-body text-[15px] text-[#9CA3AF]">wants to send you</Text>
-      <Text className="font-heading mt-4 text-[48px] text-[#070914]">${amount}</Text>
+      <Text className="font-subtitle text-[18px] text-[#343433]">{senderName}</Text>
+      <Text className="mt-2 font-body text-[15px] text-[#848281]">wants to send you</Text>
+      <Text className="font-heading mt-4 text-[48px] text-[#343433]">${amount}</Text>
       <View className="mt-12 w-full flex-row gap-3">
         <Pressable
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onDecline(); }}
           className="flex-1 items-center rounded-2xl bg-[#FEF2F2] py-4">
-          <Text className="font-subtitle text-[15px] text-[#EF4444]">Decline</Text>
+          <Text className="font-subtitle text-[15px] text-[#ff2b3a]">Decline</Text>
         </Pressable>
         <Pressable
           onPress={() => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); onAccept(); }}
-          className="flex-1 items-center rounded-2xl bg-[#070914] py-4">
+          className="flex-1 items-center rounded-2xl bg-[#343433] py-4">
           <Text className="font-subtitle text-[15px] text-white">Accept</Text>
         </Pressable>
       </View>
@@ -379,14 +379,14 @@ export default function TapToPayScreen() {
   // ── Permissions denied (Android) ────────────────────────────────────────
   if (permStatus === 'denied' || permStatus === 'blocked') {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white px-8">
+      <SafeAreaView className="flex-1 items-center justify-center bg-parchment-card px-8">
         <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-[#FFF0ED]">
-          <HugeiconsIcon icon={Wifi01Icon} size={28} color="#FF2E01" />
+          <HugeiconsIcon icon={Wifi01Icon} size={28} color="#ff3e00" />
         </View>
-        <Text className="text-center font-subtitle text-[18px] text-[#070914]">
+        <Text className="text-center font-subtitle text-[18px] text-[#343433]">
           Permissions required
         </Text>
-        <Text className="mt-2 text-center font-body text-[14px] text-[#9CA3AF]">
+        <Text className="mt-2 text-center font-body text-[14px] text-[#848281]">
           Tap to Pay needs Bluetooth and location access to find nearby users
         </Text>
         {permStatus === 'blocked' ? (
@@ -405,14 +405,14 @@ export default function TapToPayScreen() {
   // ── Not supported ─────────────────────────────────────────────────────────
   if (!isSupported) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white px-8">
+      <SafeAreaView className="flex-1 items-center justify-center bg-parchment-card px-8">
         <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-[#FFF0ED]">
-          <HugeiconsIcon icon={Wifi01Icon} size={28} color="#FF2E01" />
+          <HugeiconsIcon icon={Wifi01Icon} size={28} color="#ff3e00" />
         </View>
-        <Text className="text-center font-subtitle text-[18px] text-[#070914]">
+        <Text className="text-center font-subtitle text-[18px] text-[#343433]">
           Tap to Pay isn't available on this device
         </Text>
-        <Text className="mt-2 text-center font-body text-[14px] text-[#9CA3AF]">
+        <Text className="mt-2 text-center font-body text-[14px] text-[#848281]">
           This feature requires a compatible device
         </Text>
         <Button title="Go back" variant="ghost" className="mt-6" onPress={() => router.back()} />
@@ -423,11 +423,11 @@ export default function TapToPayScreen() {
   // ── Auth screen ───────────────────────────────────────────────────────────
   if (showAuth) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" />
         <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
           <Pressable
-            className="size-11 items-center justify-center rounded-full bg-gray-100"
+            className="size-11 items-center justify-center rounded-full bg-stone-surface"
             onPress={() => setShowAuth(false)}>
             <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111" />
           </Pressable>
@@ -452,13 +452,13 @@ export default function TapToPayScreen() {
   // ── Success ───────────────────────────────────────────────────────────────
   if (success) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white">
+      <SafeAreaView className="flex-1 items-center justify-center bg-warm-canvas">
         <Animated.View entering={FadeInDown.springify().damping(18)} className="items-center px-8">
-          <View className="mb-2 h-20 w-20 items-center justify-center rounded-full bg-[#ECFDF5]">
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={48} color="#10B981" />
+          <View className="mb-2 h-20 w-20 items-center justify-center rounded-full bg-[#f0fdf4]">
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={48} color="#00ca48" />
           </View>
-          <Text className="mt-3 font-subtitle text-[22px] text-[#070914]">Sent!</Text>
-          <Text className="mt-2 text-center font-body text-[15px] text-[#9CA3AF]">
+          <Text className="mt-3 font-subtitle text-[22px] text-[#343433]">Sent!</Text>
+          <Text className="mt-2 text-center font-body text-[15px] text-[#848281]">
             ${formatCurrency(numericAmount)} sent to {selectedPeer?.displayName}
           </Text>
           <Button title="Done" className="mt-10 w-full" onPress={() => { resetFlow(); router.back(); }} />
@@ -470,7 +470,7 @@ export default function TapToPayScreen() {
   // ── Incoming request ──────────────────────────────────────────────────────
   if (incomingRequest) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-warm-canvas">
         <StatusBar barStyle="dark-content" />
         <IncomingRequest
           senderName={incomingRequest.senderName}
@@ -488,7 +488,7 @@ export default function TapToPayScreen() {
     const dist = distanceLabel(peerDist);
 
     return (
-      <SafeAreaView className="flex-1" style={{ backgroundColor: '#FF2E01' }} edges={['top']}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: '#ff3e00' }} edges={['top']}>
         <StatusBar barStyle="light-content" />
         <View className="flex-1 px-5">
           <Animated.View entering={FadeIn.duration(350)} className="flex-row items-center justify-between pb-2 pt-1">
@@ -542,21 +542,21 @@ export default function TapToPayScreen() {
 
   // ── Discovery screen ──────────────────────────────────────────────────────
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-warm-canvas">
       <StatusBar barStyle="dark-content" />
 
       <View className="flex-row items-center gap-4 px-6 pt-3">
         <Pressable
           onPress={() => { stop(); router.back(); }}
-          className="h-10 w-10 items-center justify-center rounded-full bg-[#F3F4F6]">
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#070914" strokeWidth={2} />
+          className="h-10 w-10 items-center justify-center rounded-full bg-[#f2f0ed]">
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" strokeWidth={2} />
         </Pressable>
         <View className="flex-1">
-          <Text className="font-subtitle text-[18px] text-[#070914]">Tap to Pay</Text>
+          <Text className="font-subtitle text-[18px] text-[#343433]">Tap to Pay</Text>
         </View>
         {peers.length > 0 && (
-          <Animated.View entering={FadeIn.duration(300)} className="rounded-full bg-[#ECFDF5] px-3 py-1">
-            <Text className="font-caption text-[11px] text-[#10B981]">
+          <Animated.View entering={FadeIn.duration(300)} className="rounded-full bg-[#f0fdf4] px-3 py-1">
+            <Text className="font-caption text-[11px] text-[#00ca48]">
               {peers.length} nearby
             </Text>
           </Animated.View>
@@ -582,16 +582,16 @@ export default function TapToPayScreen() {
         <PulseRing delay={1400} size={160} />
         <View className="h-40 w-40 items-center justify-center rounded-full bg-[#FFF0ED]"
           style={{ shadowColor: BRAND_COLOR, shadowOpacity: 0.12, shadowRadius: 20, shadowOffset: { width: 0, height: 4 }, elevation: 8 }}>
-          <HugeiconsIcon icon={Wifi01Icon} size={48} color="#FF2E01" />
+          <HugeiconsIcon icon={Wifi01Icon} size={48} color="#ff3e00" />
           {peers.length === 0 && !discoveryTimedOut && (
-            <ActivityIndicator size="small" color="#FF2E01" style={{ position: 'absolute', bottom: -28 }} />
+            <ActivityIndicator size="small" color="#ff3e00" style={{ position: 'absolute', bottom: -28 }} />
           )}
         </View>
 
         {/* Status text */}
         <View className="absolute bottom-24 items-center px-6">
-          <Text className="font-subtitle text-[16px] text-[#070914]">{statusText}</Text>
-          <Text className="mt-1 font-body text-[13px] text-[#9CA3AF]">{subtitleText}</Text>
+          <Text className="font-subtitle text-[16px] text-[#343433]">{statusText}</Text>
+          <Text className="mt-1 font-body text-[13px] text-[#848281]">{subtitleText}</Text>
           {discoveryTimedOut && peers.length === 0 && (
             <Button
               title="Retry"
@@ -613,7 +613,7 @@ export default function TapToPayScreen() {
           entering={FadeInUp.duration(200)}
           exiting={FadeOut.duration(300)}
           className="absolute bottom-10 left-6 right-6 items-center rounded-2xl bg-[#FEF2F2] py-3">
-          <Text className="font-body text-[14px] text-[#EF4444]">Transfer was declined</Text>
+          <Text className="font-body text-[14px] text-[#ff2b3a]">Transfer was declined</Text>
         </Animated.View>
       )}
     </SafeAreaView>

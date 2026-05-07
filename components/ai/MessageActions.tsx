@@ -1,14 +1,14 @@
 import React from 'react';
 import { View, Pressable, Share, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import {
   Copy01Icon,
   Share01Icon,
   ThumbsUpIcon,
   ThumbsDownIcon,
   Delete01Icon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { useAIHaptics } from '@/hooks/useAIHaptics';
 import { aiService } from '@/api/services';
 
@@ -85,7 +85,7 @@ export function MessageActions({ content, messageId, onDelete }: Props) {
           className="p-2 rounded-full"
           accessibilityRole="button"
           accessibilityLabel="Delete message">
-          <HugeiconsIcon icon={Delete01Icon} size={16} color="#EF4444" />
+          <HugeiconsIcon icon={Delete01Icon} size={16} color="#ff2b3a" />
         </Pressable>
       )}
     </View>

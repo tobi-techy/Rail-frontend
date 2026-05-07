@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowLeft01Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon, Cancel01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 interface WithdrawScreenHeaderProps {
   title: string;
@@ -38,15 +38,15 @@ export const WithdrawScreenHeader: React.FC<WithdrawScreenHeaderProps> = ({
   };
 
   return (
-    <View className="flex-row items-center justify-between bg-white px-6 py-4">
+    <View className="flex-row items-center justify-between bg-parchment-card px-6 py-4">
       {showBackButton ? (
         <TouchableOpacity
           onPress={handleBack}
-          className="h-11 w-11 items-center justify-center rounded-full bg-[#F3F4F6]"
+          className="h-11 w-11 items-center justify-center rounded-full bg-[#f2f0ed]"
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Go back">
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color="#111827" strokeWidth={2} />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color="#343433" strokeWidth={2} />
         </TouchableOpacity>
       ) : (
         <View className="w-11" />
@@ -54,17 +54,17 @@ export const WithdrawScreenHeader: React.FC<WithdrawScreenHeaderProps> = ({
 
       <View className="flex-1 items-center">
         <Text className="text-lg font-semibold text-[#0B1120]">{title}</Text>
-        {subtitle && <Text className="mt-1 text-sm text-[#6B7280]">{subtitle}</Text>}
+        {subtitle && <Text className="mt-1 text-sm text-[#848281]">{subtitle}</Text>}
       </View>
 
       {showCloseButton ? (
         <TouchableOpacity
           onPress={handleClose}
-          className="h-11 w-11 items-center justify-center rounded-full bg-[#F3F4F6]"
+          className="h-11 w-11 items-center justify-center rounded-full bg-[#f2f0ed]"
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Close">
-          <HugeiconsIcon icon={Cancel01Icon} size={18} color="#111827" strokeWidth={2} />
+          <HugeiconsIcon icon={Cancel01Icon} size={18} color="#343433" strokeWidth={2} />
         </TouchableOpacity>
       ) : (
         <View className="w-11" />

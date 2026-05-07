@@ -3,15 +3,15 @@ import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import Animated, { useSharedValue, withSpring, useAnimatedStyle } from 'react-native-reanimated';
 import { Icon } from '@/components/atoms/Icon';
 import { useHaptics } from '@/hooks/useHaptics';
-import { ScanEyeIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ScanEyeIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export const C = {
   text: '#000000',
   textSub: '#8E8E93',
   surfaceEl: '#E5E5EA',
-  accent: '#FF2E01',
-  success: '#00C853',
+  accent: '#ff3e00',
+  success: '#00c454',
   warning: '#FF9F0A',
   danger: '#FF453A',
 } as const;
@@ -158,7 +158,7 @@ export function CategoryRow({
           <Text className="mt-0.5 font-caption text-small text-[#8E8E93]">{percentage}%</Text>
         </View>
       </View>
-      {showSep && <View className="ml-[72px] h-px bg-gray-100" />}
+      {showSep && <View className="ml-[72px] h-px bg-stone-surface" />}
     </View>
   );
 }
@@ -214,7 +214,7 @@ export function TxRow({
           )}
         </View>
       </View>
-      {showSep && <View className="ml-[72px] h-px bg-gray-100" />}
+      {showSep && <View className="ml-[72px] h-px bg-stone-surface" />}
     </View>
   );
 }

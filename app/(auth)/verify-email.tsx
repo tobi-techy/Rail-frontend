@@ -126,12 +126,12 @@ export default function VerifyEmail() {
               showsVerticalScrollIndicator={false}>
               <StaggeredChild index={0}>
                 <View className="mb-8 mt-8">
-                  <Text className="font-subtitle text-[34px] text-black">Confirm email</Text>
+                  <Text className="font-subtitle text-[34px] text-charcoal-primary">Confirm email</Text>
                   <View className="mt-4">
-                    <Text className="font-body text-[18px] text-black/60">
+                    <Text className="font-body text-[18px] text-ash">
                       The code has been sent to
                     </Text>
-                    <Text className="mt-1 font-subtitle text-[28px] text-black">
+                    <Text className="mt-1 font-subtitle text-[28px] text-charcoal-primary">
                       {pendingEmail || 'your email'}
                     </Text>
                   </View>
@@ -140,7 +140,7 @@ export default function VerifyEmail() {
 
               <StaggeredChild index={1}>
                 <View className="mb-8">
-                  <Text className="font-body text-base text-black/60">
+                  <Text className="font-body text-base text-ash">
                     Please check your inbox and{'\n'}paste the code from the email below
                   </Text>
                 </View>
@@ -177,12 +177,12 @@ export default function VerifyEmail() {
                         onPress={handleResend}
                         className="py-2"
                         disabled={isResending}>
-                        <Text className="font-body text-base text-black">
+                        <Text className="font-body text-base text-charcoal-primary">
                           {isResending ? 'Resending...' : "Didn't receive the code? Resend"}
                         </Text>
                       </TouchableOpacity>
                     ) : (
-                      <Text className="py-2 font-caption text-base text-black/40">
+                      <Text className="py-2 font-caption text-base text-smoke">
                         Resend code in {resendTimer}s
                       </Text>
                     )}

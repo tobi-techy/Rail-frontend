@@ -66,8 +66,8 @@ import {
 } from '@/components/withdraw/WithdrawalStatusScreen';
 import { WhitelistPrompt } from '@/components/withdraw/WhitelistPrompt';
 import { MFAChallengeSheet } from '@/components/sheets/MFAChallengeSheet';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Cancel01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { usePajRates } from '@/api/hooks/usePaj';
 
 export default function WithdrawAmountScreen() {
@@ -106,6 +106,7 @@ export default function WithdrawAmountScreen() {
   );
 
   const isFiatMethod = selectedMethod === 'fiat';
+  const isNairaFlow = params.asset === 'NGN';
   const isAssetTradeMethod = selectedMethod === 'asset-buy' || selectedMethod === 'asset-sell';
   const isAssetBuyMethod = selectedMethod === 'asset-buy';
   const isCryptoDestinationMethod =
@@ -113,7 +114,7 @@ export default function WithdrawAmountScreen() {
   const isMobileWalletFundingFlow = isFundFlow && isWalletFundingMethod(selectedMethod);
   const isMWAWithdrawMethod = selectedMethod === 'mwa-withdraw';
 
-  const { data: kycStatus, isLoading: isKycStatusLoading } = useKYCStatus(isFiatMethod);
+  const { data: kycStatus, isLoading: isKycStatusLoading } = useKYCStatus(isFiatMethod && !isNairaFlow);
   const isFiatApproved = kycStatus?.status === 'approved';
   const prefilledAssetSymbol = useMemo(() => {
     if (!isAssetTradeMethod) return '';
@@ -131,6 +132,14 @@ export default function WithdrawAmountScreen() {
     params.destinationInput ?? prefilledAssetSymbol
   );
   const [destinationChain, setDestinationChain] = useState(params.destinationChain ?? 'SOL');
+
+  // Sync destination from params when returning from confirm/destination screens
+  useEffect(() => {
+    if (params.destinationInput) setDestinationInput(params.destinationInput);
+  }, [params.destinationInput]);
+  useEffect(() => {
+    if (params.destinationChain) setDestinationChain(params.destinationChain);
+  }, [params.destinationChain]);
   const [didTryDestination, setDidTryDestination] = useState(false);
   const [didTryFiatAccount, setDidTryFiatAccount] = useState(false);
   const [fiatAccountHolderName, setFiatAccountHolderName] = useState(
@@ -225,6 +234,7 @@ export default function WithdrawAmountScreen() {
         withdrawalLimit,
         feeAmount,
         currencySymbol: isNGNAsset ? '₦' : '$',
+        minAmount: isNGNAsset ? 500 : 1,
       }),
     [
       availableBalance,
@@ -640,15 +650,15 @@ export default function WithdrawAmountScreen() {
 
   // ── Early returns ─────────────────────────────────────────────────────────
 
-  if (isFiatMethod && isKycStatusLoading) {
+  if (isFiatMethod && !isNairaFlow && isKycStatusLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white">
+      <SafeAreaView className="flex-1 items-center justify-center bg-warm-canvas">
         <ActivityIndicator size="large" color="#000" />
       </SafeAreaView>
     );
   }
 
-  if (isFiatMethod && !isFiatApproved) {
+  if (isFiatMethod && !isNairaFlow && !isFiatApproved) {
     return (
       <FiatKycRequiredScreen
         kycStatus={kycStatus}
@@ -799,7 +809,7 @@ export default function WithdrawAmountScreen() {
                 )}
                 <Pressable
                   onPress={onMaxPress}
-                  className="rounded-full bg-white px-4 py-2"
+                  className="rounded-full bg-parchment-card px-4 py-2"
                   accessibilityRole="button"
                   accessibilityLabel="Set maximum withdrawal amount">
                   <Text className="font-subtitle text-[13px]" style={{ color: BRAND_RED }}>
@@ -830,7 +840,7 @@ export default function WithdrawAmountScreen() {
               disabled={!canContinue}
               loading={mwaWithdrawal.isLoading}
               variant="white"
-              className="bg-white"
+              className="bg-warm-canvas"
             />
           </Animated.View>
 

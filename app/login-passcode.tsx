@@ -16,6 +16,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { safeName } from '@/app/withdraw/method-screen/utils';
 import { clearAutoFired } from '@/utils/passkeyPromptGuard';
+import { PASSCODE_SESSION_MS } from '@/utils/sessionConstants';
 
 type ProfileNamePayload = {
   firstName?: string;
@@ -79,8 +80,9 @@ export default function LoginPasscodeScreen() {
     });
     if (result.success) {
       setLockoutUntil(null);
+      useAuthStore.getState().updateLastActivity();
       // Grant a passcode session so the session guard doesn't bounce back
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      const expiresAt = new Date(Date.now() + PASSCODE_SESSION_MS).toISOString();
       useAuthStore.getState().setPasscodeSession('biometric-granted', expiresAt);
       SessionManager.schedulePasscodeSessionExpiry(expiresAt);
       router.replace('/(tabs)');
@@ -203,16 +205,19 @@ export default function LoginPasscodeScreen() {
 
   return (
     <ErrorBoundary>
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-warm-canvas">
         <StatusBar barStyle="dark-content" backgroundColor="white" />
         <View className="flex-1">
           <View className="mt-2 flex-row items-center justify-end px-6">
             <TouchableOpacity
-              onPress={() => { impact(Haptics.ImpactFeedbackStyle.Light); router.push('/(auth)/forgot-password'); }}
-              className="flex-row items-center gap-x-2 rounded-full bg-gray-100 px-4 py-2.5"
+              onPress={() => {
+                impact(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/(auth)/forgot-password');
+              }}
+              className="flex-row items-center gap-x-2 rounded-full bg-stone-surface px-4 py-2.5"
               activeOpacity={0.7}>
-              <Icon name="message-circle" size={18} color="#374151" strokeWidth={2} />
-              <Text className="font-body text-caption text-gray-700">Need help?</Text>
+              <Icon name="message-circle" size={18} color="#474645" strokeWidth={2} />
+              <Text className="font-body text-caption text-graphite">Need help?</Text>
             </TouchableOpacity>
           </View>
 
@@ -261,7 +266,12 @@ export default function LoginPasscodeScreen() {
                 <Text className="font-button text-caption text-primary">Switch Account</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => { impact(Haptics.ImpactFeedbackStyle.Light); router.push('/(auth)/signin'); }} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={() => {
+                impact(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/(auth)/signin');
+              }}
+              activeOpacity={0.7}>
               <Text className="font-body text-caption text-text-secondary">Sign in with email</Text>
             </TouchableOpacity>
           </View>

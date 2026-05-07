@@ -5,8 +5,8 @@ import { sanitizeNumber } from '@/utils/sanitizeInput';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import type { Currency } from '@/stores/uiStore';
 import { formatCurrencyAmount, convertFromUsd, type FxRates } from '@/utils/currency';
-import { EyeIcon, ViewOffIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { EyeIcon, ViewOffIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export interface BalanceCardProps extends ViewProps {
   balance?: string;
@@ -36,7 +36,7 @@ function AnimatedBalance({ value, isVisible }: { value: string; isVisible: boole
           fontVariant: ['tabular-nums'],
           fontSize: 60,
           letterSpacing: -3.8,
-          color: '#070914',
+          color: '#343433',
         }}>
         {display}
       </Text>
@@ -79,9 +79,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 accessibilityLabel={isBalanceVisible ? 'Hide balance' : 'Show balance'}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 {isBalanceVisible ? (
-                  <HugeiconsIcon icon={EyeIcon} size={24} color="#757575" strokeWidth={0.9} />
+                  <HugeiconsIcon icon={EyeIcon} size={24} color="#848281" strokeWidth={0.9} />
                 ) : (
-                  <HugeiconsIcon icon={ViewOffIcon} size={24} color="#757575" strokeWidth={0.9} />
+                  <HugeiconsIcon icon={ViewOffIcon} size={24} color="#848281" strokeWidth={0.9} />
                 )}
               </TouchableOpacity>
             </View>

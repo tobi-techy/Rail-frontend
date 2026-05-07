@@ -18,7 +18,7 @@ const SEVERITY_CONFIG: Record<
 > = {
   warning: { emotion: 'sad', bubbleBg: '#FEF3C7', textColor: '#92400E' },
   celebration: { emotion: 'happy', bubbleBg: '#D1FAE5', textColor: '#065F46' },
-  info: { emotion: 'neutral', bubbleBg: '#FFFFFF', textColor: '#1A1A1A' },
+  info: { emotion: 'neutral', bubbleBg: '#FFFFFF', textColor: '#343433' },
 };
 
 export function AmbientMiriam({ nudge, onDismiss, onPress, onAction }: Props) {

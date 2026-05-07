@@ -21,7 +21,7 @@ export function WheelPicker({ items, selectedIndex, onIndexChange }: WheelPicker
       visibleItemCount={5}
       itemHeight={52}
       itemTextStyle={{ fontSize: 17 }}
-      overlayItemStyle={{ backgroundColor: '#F3F4F6', borderRadius: 12 }}
+      overlayItemStyle={{ backgroundColor: '#f2f0ed', borderRadius: 12 }}
     />
   );
 }

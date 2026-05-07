@@ -1,9 +1,8 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import type { HugeiconsProps } from '@hugeicons/react-native';
+import { IconComponent as HugeiconsIcon, type PhosphorIcon } from '@/lib/icons';
 
-export type HugeIconType = HugeiconsProps['icon'];
+export type HugeIconType = PhosphorIcon;
 
 export function MarketCategoryCard({
   title,
@@ -21,7 +20,7 @@ export function MarketCategoryCard({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Open ${title} category`}
-      className="mr-3 w-[152px] rounded-md border border-surface bg-white p-md">
+      className="mr-3 w-[152px] rounded-md border border-surface bg-parchment-card p-md">
       <View className="mb-3 h-10 w-10 items-center justify-center rounded-full bg-surface">
         <HugeiconsIcon icon={Icon} size={20} color="#000000" />
       </View>

@@ -17,8 +17,8 @@ import * as Haptics from 'expo-haptics';
 import { OTPInput, Button } from '@/components/ui';
 import { usePajInitiate, usePajVerify } from '@/api/hooks';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export default function PajVerifyScreen() {
   const [step, setStep] = useState<'initiate' | 'verify'>('initiate');
@@ -106,7 +106,7 @@ export default function PajVerifyScreen() {
   }, [resendTimer, initiate, showInfo, showError]);
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         className="flex-1"
@@ -126,17 +126,17 @@ export default function PajVerifyScreen() {
                 onPress={safeGoBack}
                 accessibilityRole="button"
                 accessibilityLabel="Go back">
-                <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
+                <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
               </Pressable>
             </View>
 
             {step === 'initiate' ? (
               <Animated.View entering={FadeInDown.duration(300)} className="flex-1">
                 <View className="mb-8 mt-6">
-                  <Text className="font-subtitle text-[34px] text-black">
+                  <Text className="font-subtitle text-[34px] text-charcoal-primary">
                     Enable Naira{'\n'}transactions
                   </Text>
-                  <Text className="mt-4 font-body text-[18px] leading-6 text-black/60">
+                  <Text className="mt-4 font-body text-[18px] leading-6 text-ash">
                     To fund or withdraw Naira, we need to verify your identity with our payment
                     partner. You{"'"}ll receive a one-time code.
                   </Text>
@@ -150,7 +150,7 @@ export default function PajVerifyScreen() {
                     loading={initiate.isPending}
                     onPress={handleInitiate}
                   />
-                  <Text className="mt-6 text-center font-body text-[11px] text-[#9CA3AF]">
+                  <Text className="mt-6 text-center font-body text-[11px] text-[#848281]">
                     Powered by Paj Cash
                   </Text>
                 </View>
@@ -158,19 +158,19 @@ export default function PajVerifyScreen() {
             ) : (
               <Animated.View entering={FadeInDown.duration(300)} className="flex-1">
                 <View className="mb-8 mt-6">
-                  <Text className="font-subtitle text-[34px] text-black">Enter code</Text>
+                  <Text className="font-subtitle text-[34px] text-charcoal-primary">Enter code</Text>
                   <View className="mt-4">
-                    <Text className="font-body text-[18px] text-black/60">
+                    <Text className="font-body text-[18px] text-ash">
                       We sent a 4-digit code to
                     </Text>
-                    <Text className="mt-1 font-subtitle text-[28px] text-black">
+                    <Text className="mt-1 font-subtitle text-[28px] text-charcoal-primary">
                       {maskedEmail || 'your email'}
                     </Text>
                   </View>
                 </View>
 
                 <View className="mb-8">
-                  <Text className="mb-4 font-body text-base text-black/60">
+                  <Text className="mb-4 font-body text-base text-ash">
                     Check your inbox and enter the code below
                   </Text>
                   <OTPInput
@@ -195,19 +195,19 @@ export default function PajVerifyScreen() {
 
                   <View className="mt-6 items-center">
                     {resendTimer > 0 ? (
-                      <Text className="py-2 font-caption text-base text-black/40">
+                      <Text className="py-2 font-caption text-base text-smoke">
                         Resend code in {resendTimer}s
                       </Text>
                     ) : (
                       <Pressable onPress={handleResend} disabled={initiate.isPending}>
-                        <Text className="py-2 font-body text-base text-black">
+                        <Text className="py-2 font-body text-base text-charcoal-primary">
                           {initiate.isPending ? 'Resending...' : "Didn't receive the code? Resend"}
                         </Text>
                       </Pressable>
                     )}
                   </View>
 
-                  <Text className="mt-4 text-center font-body text-[11px] text-[#9CA3AF]">
+                  <Text className="mt-4 text-center font-body text-[11px] text-[#848281]">
                     Powered by Paj Cash
                   </Text>
                 </View>

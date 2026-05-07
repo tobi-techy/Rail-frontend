@@ -13,8 +13,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from '@/components/ui';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { ArrowLeft01Icon } from '@/lib/icons';
 import { formatCurrency } from './method-screen/utils';
 import { useNudge } from '@/hooks/useNudge';
 import { AmbientMiriam } from '@/components/ai/AmbientMiriam';
@@ -68,13 +68,13 @@ export default function DetailsScreen() {
       <AmbientMiriam nudge={nudge} onDismiss={dismissNudge} />
 
       {/* Header */}
-      <View className="flex-row items-center justify-between bg-white px-5 pb-3 pt-1">
+      <View className="flex-row items-center justify-between bg-parchment-card px-5 pb-3 pt-1">
         <Pressable
           className="size-10 items-center justify-center rounded-full"
           onPress={() => router.back()}>
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#111827" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" />
         </Pressable>
-        <Text className="font-subtitle text-[17px] text-[#111827]">Details</Text>
+        <Text className="font-subtitle text-[17px] text-[#343433]">Details</Text>
         <View className="size-10" />
       </View>
 
@@ -89,7 +89,7 @@ export default function DetailsScreen() {
           contentContainerStyle={{ paddingBottom: 24 }}>
           {/* Category */}
           <Animated.View entering={FadeInUp.duration(250)} className="mx-5 mb-5 mt-5">
-            <Text className="mb-3 ml-1 font-body text-[13px] text-[#6B7280]">Category</Text>
+            <Text className="mb-3 ml-1 font-body text-[13px] text-[#848281]">Category</Text>
             <View className="flex-row flex-wrap gap-2">
               {CATEGORIES.map((cat) => {
                 const active = category === cat.label;
@@ -99,11 +99,11 @@ export default function DetailsScreen() {
                     onPress={() => setCategory(cat.label)}
                     className="flex-row items-center gap-1.5 rounded-full px-4 py-2.5"
                     style={{
-                      backgroundColor: active ? '#111827' : '#FFFFFF',
+                      backgroundColor: active ? '#343433' : '#FFFFFF',
                     }}>
                     <Text
                       className="font-body text-[14px]"
-                      style={{ color: active ? '#FFFFFF' : '#374151' }}>
+                      style={{ color: active ? '#FFFFFF' : '#474645' }}>
                       {cat.label}
                     </Text>
                   </Pressable>
@@ -114,10 +114,10 @@ export default function DetailsScreen() {
 
           {/* Note */}
           <Animated.View entering={FadeInUp.delay(60).duration(250)} className="mx-5 mb-5">
-            <Text className="mb-2 ml-1 font-body text-[13px] text-[#6B7280]">Note</Text>
-            <View className="rounded-2xl bg-white px-4 py-1">
+            <Text className="mb-2 ml-1 font-body text-[13px] text-[#848281]">Note</Text>
+            <View className="rounded-2xl bg-parchment-card px-4 py-1">
               <TextInput
-                className="py-3 font-body text-[15px] text-[#111827]"
+                className="py-3 font-body text-[15px] text-[#343433]"
                 placeholder="What's this for? (optional)"
                 placeholderTextColor="#C4C4C4"
                 value={narration}
@@ -133,28 +133,28 @@ export default function DetailsScreen() {
 
       {/* Sticky footer with summary */}
       <View
-        className="bg-white px-5 pt-3 shadow-sm"
+        className="bg-parchment-card px-5 pt-3 shadow-sm"
         style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
         {/* Fee breakdown */}
         <View className="mb-3 gap-1.5">
           <View className="flex-row items-center justify-between px-1">
-            <Text className="font-body text-[13px] text-[#9CA3AF]">Amount</Text>
-            <Text className="font-body text-[13px] text-[#111827]">
+            <Text className="font-body text-[13px] text-[#848281]">Amount</Text>
+            <Text className="font-body text-[13px] text-[#343433]">
               ${formatCurrency(numericAmount)}
             </Text>
           </View>
           {feeAmount > 0 && (
             <View className="flex-row items-center justify-between px-1">
-              <Text className="font-body text-[13px] text-[#9CA3AF]">Network fee</Text>
-              <Text className="font-body text-[13px] text-[#111827]">
+              <Text className="font-body text-[13px] text-[#848281]">Network fee</Text>
+              <Text className="font-body text-[13px] text-[#343433]">
                 ${formatCurrency(feeAmount)}
               </Text>
             </View>
           )}
-          <View className="mx-1 my-1 h-px bg-[#F3F4F6]" />
+          <View className="mx-1 my-1 h-px bg-[#f2f0ed]" />
           <View className="flex-row items-center justify-between px-1">
-            <Text className="font-subtitle text-[14px] text-[#111827]">Total</Text>
-            <Text className="font-subtitle text-[16px] text-[#111827]">
+            <Text className="font-subtitle text-[14px] text-[#343433]">Total</Text>
+            <Text className="font-subtitle text-[16px] text-[#343433]">
               ${formatCurrency(totalAmount)}
             </Text>
           </View>

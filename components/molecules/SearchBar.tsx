@@ -62,7 +62,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               className="min-h-[44px] min-w-[44px] items-center justify-center"
               accessibilityRole="button"
               accessibilityLabel="Clear search">
-              <Ionicons name="close" size={18} color="#757575" />
+              <Ionicons name="close" size={18} color="#848281" />
             </TouchableOpacity>
           ) : undefined
         }

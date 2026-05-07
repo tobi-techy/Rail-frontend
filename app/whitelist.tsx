@@ -20,8 +20,8 @@ import {
   ShieldKeyIcon,
   CheckmarkCircle01Icon,
   Clock01Icon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const CHAINS = ['SOL', 'ETH', 'BASE', 'POLYGON', 'ARBITRUM'] as const;
 
@@ -48,7 +48,7 @@ function StatusBadge({ address }: { address: WhitelistedAddress }) {
   }
   return (
     <View className="flex-row items-center rounded-full bg-green-50 px-2.5 py-1">
-      <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#16A34A" />
+      <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#00ca48" />
       <Text className="ml-1 font-caption text-xs text-green-700">Active</Text>
     </View>
   );
@@ -71,9 +71,9 @@ function AddressRow({ item, onDelete }: { item: WhitelistedAddress; onDelete: ()
       <StatusBadge address={item} />
       <Pressable
         onPress={onDelete}
-        className="ml-2 h-9 w-9 items-center justify-center rounded-full bg-red-50"
+        className="ml-2 h-9 w-9 items-center justify-center rounded-full bg-coral-red/10"
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <HugeiconsIcon icon={Delete02Icon} size={16} color="#EF4444" />
+        <HugeiconsIcon icon={Delete02Icon} size={16} color="#ff2b3a" />
       </Pressable>
     </View>
   );
@@ -133,14 +133,14 @@ export default function WhitelistScreen() {
           onPress={() => router.back()}
           className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-surface"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#070914" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
         </Pressable>
         <Text className="flex-1 font-subtitle text-headline-1">Whitelist</Text>
         <Pressable
           onPress={openAddSheet}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <HugeiconsIcon icon={PlusSignIcon} size={20} color="#070914" />
+          <HugeiconsIcon icon={PlusSignIcon} size={20} color="#343433" />
         </Pressable>
       </View>
 
@@ -155,7 +155,7 @@ export default function WhitelistScreen() {
 
         {isLoading && (
           <View className="items-center py-12">
-            <ActivityIndicator color="#6B7280" />
+            <ActivityIndicator color="#848281" />
           </View>
         )}
 
@@ -170,7 +170,7 @@ export default function WhitelistScreen() {
         {!isLoading && !isError && addresses.length === 0 && (
           <View className="bg-surface-secondary items-center rounded-2xl border border-dashed border-neutral-300 py-12">
             <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-surface">
-              <HugeiconsIcon icon={ShieldKeyIcon} size={24} color="#9CA3AF" />
+              <HugeiconsIcon icon={ShieldKeyIcon} size={24} color="#848281" />
             </View>
             <Text className="mb-1 font-subtitle text-base text-text-primary">
               No whitelisted addresses
@@ -201,7 +201,7 @@ export default function WhitelistScreen() {
       {/* Delete confirm sheet */}
       <BottomSheet visible={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
         <Text className="mb-2 font-subtitle text-xl">Remove Address</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           Remove &quot;{deleteTarget?.label || truncateAddress(deleteTarget?.address ?? '')}&quot;
           from your whitelist?
         </Text>
@@ -221,7 +221,7 @@ export default function WhitelistScreen() {
       {/* Add address sheet */}
       <BottomSheet visible={showAddSheet} onClose={() => setShowAddSheet(false)}>
         <Text className="mb-2 font-subtitle text-xl">Add Address</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           New addresses have a 24-hour cooling period before withdrawals are enabled.
         </Text>
 

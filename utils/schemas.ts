@@ -14,8 +14,15 @@ export const emailSchema = z
 export const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
-  .max(128, 'Password is too long')
-  .regex(/[A-Z]|[0-9]|[^a-zA-Z0-9]/, 'Must contain a symbol, number, or upper-case letter');
+  .max(72, 'Password must not exceed 72 characters')
+  .refine((password) => {
+    let complexityCount = 0;
+    if (/[A-Z]/.test(password)) complexityCount++;
+    if (/[a-z]/.test(password)) complexityCount++;
+    if (/[0-9]/.test(password)) complexityCount++;
+    if (/[^a-zA-Z0-9]/.test(password)) complexityCount++;
+    return complexityCount >= 3;
+  }, 'Password must contain at least 3 of: uppercase, lowercase, digit, special character');
 
 export const nameSchema = z
   .string()

@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import {
   View,
   FlatList,
+  Image,
   useWindowDimensions,
   StatusBar,
   NativeScrollEvent,
@@ -70,7 +71,7 @@ const IndicatorBar = memo(function IndicatorBar({
   });
   return (
     <View className="h-1 flex-1 rounded-full bg-white/30">
-      <Animated.View className="h-1 rounded-full bg-white" style={animatedStyle} />
+      <Animated.View className="h-1 rounded-full bg-warm-canvas" style={animatedStyle} />
     </View>
   );
 });
@@ -88,11 +89,17 @@ export default function App() {
   const { mutate: googleSignIn } = useGoogleSignIn();
   const { showError } = useFeedbackPopup();
 
+  // Prefetch all slide images on mount so swiping is instant
+  useEffect(() => {
+    onboardingSlides.forEach((slide) => {
+      const resolved = Image.resolveAssetSource(slide.image);
+      if (resolved?.uri) Image.prefetch(resolved.uri);
+    });
+  }, []);
+
   const footerBottom = Math.max(insets.bottom, 16) + 0.55;
   // buttons height ~108px (2 × large button + gap), content sits 16px above that
-  const contentBottom = footerBottom + 108 + 16;
-  // progress bar sits 12px above content
-  const progressBottom = contentBottom + 80 + 12;
+  const contentBottom = footerBottom + 90 + 0.6;
 
   const clampIndex = useCallback(
     (i: number) => Math.min(onboardingSlides.length - 1, Math.max(0, i)),
@@ -169,19 +176,21 @@ export default function App() {
           onMomentumScrollEnd={onMomentumScrollEnd}
           onScrollToIndexFailed={onScrollToIndexFailed}
           getItemLayout={getItemLayout}
-          initialNumToRender={1}
-          maxToRenderPerBatch={1}
-          windowSize={1}
+          initialNumToRender={2}
+          maxToRenderPerBatch={2}
+          windowSize={3}
           removeClippedSubviews
         />
 
         {/* Slide text — above buttons */}
-        <View className="absolute left-0 right-0 mb-3" style={{ bottom: contentBottom }}>
+        <View className="absolute left-0 right-0" style={{ bottom: contentBottom }}>
           {currentSlide && <SlideContent item={currentSlide} isCompactWidth={isCompactWidth} />}
         </View>
 
         {/* CTA buttons */}
-        <View className="absolute w-full gap-x-2 px-2" style={{ bottom: footerBottom }}>
+        <View
+          className="absolute w-full flex-row items-center gap-x-3 gap-y-3 px-2"
+          style={{ bottom: footerBottom }}>
           {Platform.OS === 'android' ? (
             <Button
               title="Sign Up with Google"
@@ -217,7 +226,7 @@ export default function App() {
             title="Continue with mail"
             size="large"
             onPress={() => router.push('/(auth)/signup')}
-            variant="ghost"
+            variant="orange"
           />
         </View>
       </View>

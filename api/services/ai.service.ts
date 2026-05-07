@@ -20,6 +20,7 @@ import type {
   ActionReceiptsResponse,
   CashFlowForecast,
   FinancialAdvice,
+  FinancialAudit,
   FinancialHealth,
   FinancialTimeline,
   FinancialPlan,
@@ -29,6 +30,12 @@ import type {
   Automation,
   CreateAutomationRequest,
   AutomationLog,
+  CreateFinancialObligationRequest,
+  FinancialObligation,
+  MoneyAcrossBordersReport,
+  MoneyOperatingPlan,
+  StageOperatingPlanActionRequest,
+  StageOperatingPlanActionResponse,
   ReceiptSplitData,
   SharedGoal,
   GoalContribution,
@@ -202,6 +209,20 @@ export const aiService = {
     return unwrapData<FinancialHealth & { error?: string }>(payload);
   },
 
+  async getFinancialAudit(params?: {
+    period?: 'this_month' | 'last_month' | 'last_7_days' | 'last_30_days';
+    intensity?: 'gentle' | 'direct' | 'hard';
+  }): Promise<FinancialAudit & { error?: string }> {
+    const query = new URLSearchParams();
+    if (params?.period) query.set('period', params.period);
+    if (params?.intensity) query.set('intensity', params.intensity);
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    const payload = await apiClient.get<any>(`${BASE}/financial-audit${suffix}`, {
+      timeout: 60000,
+    });
+    return unwrapData<FinancialAudit & { error?: string }>(payload);
+  },
+
   async getCashFlowForecast(): Promise<{ data: CashFlowForecast }> {
     return apiClient.get(`${BASE}/cash-flow-forecast`);
   },
@@ -241,6 +262,25 @@ export const aiService = {
     }
     const suffix = query.toString() ? `?${query.toString()}` : '';
     return apiClient.get(`${BASE}/financial-timeline${suffix}`);
+  },
+
+  async getOperatingPlan(): Promise<MoneyOperatingPlan & { error?: string }> {
+    const payload = await apiClient.get<any>(`${BASE}/operating-plan`, { timeout: 60000 });
+    return unwrapData<MoneyOperatingPlan & { error?: string }>(payload);
+  },
+
+  async stageOperatingPlanAction(
+    req: StageOperatingPlanActionRequest
+  ): Promise<StageOperatingPlanActionResponse> {
+    const payload = await apiClient.post<any>(`${BASE}/operating-plan/actions`, req);
+    return unwrapData<StageOperatingPlanActionResponse>(payload);
+  },
+
+  async getMoneyAcrossBordersReport(): Promise<MoneyAcrossBordersReport & { error?: string }> {
+    const payload = await apiClient.get<any>(`${BASE}/money-across-borders-report`, {
+      timeout: 60000,
+    });
+    return unwrapData<MoneyAcrossBordersReport & { error?: string }>(payload);
   },
 
   /** Send an image (base64) for AI analysis (receipt scanning, etc.) */
@@ -332,6 +372,40 @@ export const aiService = {
 
   async getAutomationLogs(): Promise<{ data: AutomationLog[] }> {
     return apiClient.get(`${BASE}/automations/logs`);
+  },
+
+  // ── Manual Financial Obligations ──────────────────────────────
+
+  async createFinancialObligation(
+    req: CreateFinancialObligationRequest
+  ): Promise<{ data: FinancialObligation }> {
+    return apiClient.post('/v1/financial-obligations', req);
+  },
+
+  async listFinancialObligations(params?: {
+    status?: string;
+    type?: string;
+  }): Promise<{ data: FinancialObligation[] }> {
+    const query = new URLSearchParams();
+    if (params?.status) query.set('status', params.status);
+    if (params?.type) query.set('type', params.type);
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return apiClient.get(`/v1/financial-obligations${suffix}`);
+  },
+
+  async getFinancialObligation(id: string): Promise<{ data: FinancialObligation }> {
+    return apiClient.get(`/v1/financial-obligations/${id}`);
+  },
+
+  async updateFinancialObligation(
+    id: string,
+    req: Partial<CreateFinancialObligationRequest>
+  ): Promise<{ data: FinancialObligation }> {
+    return apiClient.patch(`/v1/financial-obligations/${id}`, req);
+  },
+
+  async deleteFinancialObligation(id: string): Promise<void> {
+    return apiClient.delete(`/v1/financial-obligations/${id}`);
   },
 
   // ── Receipt Split Tracking ─────────────────────────────────────

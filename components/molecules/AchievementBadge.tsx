@@ -1,17 +1,17 @@
 import React from 'react';
 import { Image, View, Text, Pressable } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { LockIcon } from '@hugeicons/core-free-icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { LockIcon } from '@/lib/icons';
 import type { Achievement } from '@/api/services/gameplay.service';
 import { getAchievementStickerSource } from '@/assets/images/achievements';
 
 const TIER: Record<string, { ring: string; label: string }> = {
-  common: { ring: '#D1D5DB', label: 'Common' },
+  common: { ring: '#c6c6c6', label: 'Common' },
   uncommon: { ring: '#60A5FA', label: 'Uncommon' },
   rare: { ring: '#A78BFA', label: 'Rare' },
   epic: { ring: '#F59E0B', label: 'Epic' },
-  legendary: { ring: '#FF2E01', label: 'Legendary' },
+  legendary: { ring: '#ff3e00', label: 'Legendary' },
 };
 
 interface Props {
@@ -27,9 +27,9 @@ export function AchievementBadge({ achievement, size = 'medium', onPress, earned
   const tier = TIER[rarity] ?? TIER.common;
   const scale = useSharedValue(1);
 
-  const dims = size === 'large' ? 112 : size === 'small' ? 68 : 90;
-  const stickerSize = size === 'large' ? 112 : size === 'small' ? 68 : 90;
-  const lockSize = size === 'large' ? 28 : size === 'small' ? 18 : 22;
+  const dims = size === 'large' ? 88 : size === 'small' ? 64 : 76;
+  const stickerSize = size === 'large' ? 72 : size === 'small' ? 52 : 64;
+  const lockSize = size === 'large' ? 24 : size === 'small' ? 16 : 20;
   const stickerSource = getAchievementStickerSource(achievement.name, achievement.icon);
 
   const animStyle = useAnimatedStyle(() => ({
@@ -39,18 +39,21 @@ export function AchievementBadge({ achievement, size = 'medium', onPress, earned
   return (
     <Pressable
       onPress={onPress}
-      onPressIn={() => { scale.value = withSpring(0.92, { damping: 15 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 12 }); }}
-      style={{ alignItems: 'center' }}>
+      onPressIn={() => {
+        scale.value = withSpring(0.92, { damping: 15 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 12 });
+      }}
+      className="items-center">
       <Animated.View style={[{ alignItems: 'center' }, animStyle]}>
         <View
+          className="items-center justify-center overflow-hidden"
           style={{
             width: dims,
             height: dims,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: dims * 0.34,
-            overflow: 'hidden',
+            borderRadius: dims / 2,
+            backgroundColor: unlocked ? `${tier.ring}18` : '#f2f0ed',
           }}>
           <Image
             source={stickerSource}
@@ -58,22 +61,15 @@ export function AchievementBadge({ achievement, size = 'medium', onPress, earned
             style={{
               width: stickerSize,
               height: stickerSize,
-              opacity: unlocked ? 1 : 0.16,
-              transform: [{ scale: unlocked ? 1 : 0.92 }],
+              opacity: unlocked ? 1 : 0.35,
             }}
           />
           {!unlocked && (
             <View
+              className="absolute items-center justify-center rounded-full border border-gray-200 bg-white/90"
               style={{
-                position: 'absolute',
-                width: dims * 1.54,
-                height: dims * 1.44,
-                borderRadius: dims * 1.2,
-                backgroundColor: 'rgba(255,255,255,0.92)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: 'rgba(229,231,235,0.95)',
+                width: lockSize + 18,
+                height: lockSize + 18,
               }}>
               <HugeiconsIcon icon={LockIcon} size={lockSize} color="#9CA3AF" />
             </View>
@@ -83,30 +79,20 @@ export function AchievementBadge({ achievement, size = 'medium', onPress, earned
 
       <Text
         numberOfLines={2}
-        style={{
-          fontFamily: 'SFProDisplay-Medium',
-          fontSize: 11,
-          color: unlocked ? '#1A1A1A' : '#9CA3AF',
-          textAlign: 'center',
-          marginTop: 6,
-          lineHeight: 14,
-        }}>
+        className={`mt-2 text-center font-body-medium text-[11px] leading-[14px] ${
+          unlocked ? 'text-text-primary' : 'text-text-tertiary'
+        }`}>
         {name}
       </Text>
 
-      <Text style={{
-        fontFamily: 'SFMono-Medium',
-        fontSize: 9,
-        color: unlocked ? tier.ring : '#D1D5DB',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginTop: 2,
-      }}>
+      <Text
+        className="mt-1 font-mono-medium text-[9px] uppercase tracking-wide"
+        style={{ color: unlocked ? tier.ring : '#c6c6c6' }}>
         {tier.label}
       </Text>
 
       {earnedPct !== undefined && unlocked && (
-        <Text style={{ fontFamily: 'SFMono-Regular', fontSize: 8, color: '#9CA3AF', marginTop: 2 }}>
+        <Text className="mt-1 font-mono text-[8px] text-text-tertiary">
           {earnedPct}% of users
         </Text>
       )}

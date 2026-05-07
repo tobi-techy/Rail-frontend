@@ -24,4 +24,6 @@ export interface AuthState {
   onboardingStatus: string | null;
   pendingVerificationEmail: string | null;
   lastActivityAt?: string | null;
+  passcodeSessionExpiresAt?: string;
+  appLockExpiresAt?: string;
 }

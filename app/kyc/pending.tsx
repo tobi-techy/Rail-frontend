@@ -21,8 +21,8 @@ import {
   Clock01Icon,
   RefreshIcon,
   MessageIcon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export default function KycPendingScreen() {
   const { resetKycState, localSubmissionPendingAt, setLocalSubmissionPendingAt } = useKycStore();
@@ -117,15 +117,15 @@ export default function KycPendingScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
       <View className="flex-1 items-center justify-center px-8">
         {isError ? (
           <>
-            <HugeiconsIcon icon={CancelCircleIcon} size={56} color="#EF4444" />
-            <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
+            <HugeiconsIcon icon={CancelCircleIcon} size={56} color="#ff2b3a" />
+            <Text className="mt-6 text-center font-display text-[26px] text-charcoal-primary">
               Connection error
             </Text>
-            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
+            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-ash">
               Unable to check your verification status. Please try again later.
             </Text>
             <Pressable
@@ -143,11 +143,11 @@ export default function KycPendingScreen() {
           </>
         ) : status === 'approved' ? (
           <>
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={56} color="#16A34A" />
-            <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={56} color="#00ca48" />
+            <Text className="mt-6 text-center font-display text-[26px] text-charcoal-primary">
               You&apos;re verified
             </Text>
-            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
+            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-ash">
               Your identity has been confirmed. Rail is ready.
             </Text>
             <Pressable
@@ -166,27 +166,27 @@ export default function KycPendingScreen() {
           </>
         ) : status === 'rejected' || status === 'expired' ? (
           <>
-            <HugeiconsIcon icon={CancelCircleIcon} size={56} color="#DC2626" />
-            <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
+            <HugeiconsIcon icon={CancelCircleIcon} size={56} color="#ff2b3a" />
+            <Text className="mt-6 text-center font-display text-[26px] text-charcoal-primary">
               Verification unsuccessful
             </Text>
-            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
+            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-ash">
               {getRejectionMessage()}
             </Text>
-            <View className="mt-6 w-full gap-y-3">
+            <View className="mt-6 w-full flex-row gap-3">
               <Pressable
                 onPress={handleRetry}
-                className="flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-8 py-4"
+                className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-8 py-4"
                 accessibilityRole="button">
                 <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />
                 <Text className="font-subtitle text-[15px] text-white">Try Again</Text>
               </Pressable>
               <Pressable
                 onPress={handleContactSupport}
-                className="flex-row items-center justify-center gap-x-2 rounded-full border border-gray-200 px-8 py-4"
+                className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full border border-fog px-8 py-4"
                 accessibilityRole="button">
-                <HugeiconsIcon icon={MessageIcon} size={18} color="#374151" />
-                <Text className="font-subtitle text-[15px] text-gray-700">Contact Support</Text>
+                <HugeiconsIcon icon={MessageIcon} size={18} color="#474645" />
+                <Text className="font-subtitle text-[15px] text-graphite">Contact Support</Text>
               </Pressable>
             </View>
           </>
@@ -194,26 +194,26 @@ export default function KycPendingScreen() {
           // Timeout state - show retry and support options
           <>
             <HugeiconsIcon icon={Clock01Icon} size={56} color="#F59E0B" />
-            <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
+            <Text className="mt-6 text-center font-display text-[26px] text-charcoal-primary">
               Taking longer than expected
             </Text>
-            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
+            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-ash">
               {getTimeoutMessage()}
             </Text>
-            <View className="mt-6 w-full gap-y-3">
+            <View className="mt-6 w-full flex-row gap-3">
               <Pressable
                 onPress={handleRetry}
-                className="flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-8 py-4"
+                className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-8 py-4"
                 accessibilityRole="button">
                 <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />
                 <Text className="font-subtitle text-[15px] text-white">Start New Verification</Text>
               </Pressable>
               <Pressable
                 onPress={handleContactSupport}
-                className="flex-row items-center justify-center gap-x-2 rounded-full border border-gray-200 px-8 py-4"
+                className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full border border-fog px-8 py-4"
                 accessibilityRole="button">
-                <HugeiconsIcon icon={MessageIcon} size={18} color="#374151" />
-                <Text className="font-subtitle text-[15px] text-gray-700">Contact Support</Text>
+                <HugeiconsIcon icon={MessageIcon} size={18} color="#474645" />
+                <Text className="font-subtitle text-[15px] text-graphite">Contact Support</Text>
               </Pressable>
               <Pressable
                 onPress={() => {
@@ -225,7 +225,7 @@ export default function KycPendingScreen() {
                 }}
                 className="mt-2 py-2"
                 accessibilityRole="button">
-                <Text className="text-center font-body text-[14px] text-gray-500">
+                <Text className="text-center font-body text-[14px] text-ash">
                   Continue to app
                 </Text>
               </Pressable>
@@ -235,12 +235,12 @@ export default function KycPendingScreen() {
           // Still processing
           <>
             <Animated.View style={animatedStyle}>
-              <HugeiconsIcon icon={Clock01Icon} size={56} color="#111827" />
+              <HugeiconsIcon icon={Clock01Icon} size={56} color="#343433" />
             </Animated.View>
-            <Text className="mt-6 text-center font-display text-[26px] text-gray-900">
+            <Text className="mt-6 text-center font-display text-[26px] text-charcoal-primary">
               Verifying your identity
             </Text>
-            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-gray-500">
+            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-ash">
               {getTimeoutMessage()}
             </Text>
             <Pressable
@@ -251,9 +251,9 @@ export default function KycPendingScreen() {
                   router.replace('/(tabs)');
                 }
               }}
-              className="mt-8 rounded-full border border-gray-200 px-8 py-4"
+              className="mt-8 rounded-full border border-fog px-8 py-4"
               accessibilityRole="button">
-              <Text className="font-subtitle text-[15px] text-gray-700">Close</Text>
+              <Text className="font-subtitle text-[15px] text-graphite">Close</Text>
             </Pressable>
           </>
         )}

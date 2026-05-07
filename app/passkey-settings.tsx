@@ -10,8 +10,8 @@ import { usePasskeys, useRegisterPasskey, useDeletePasskey } from '@/api/hooks';
 import type { PasskeyCredential } from '@/api/types';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { ArrowLeft01Icon, Delete02Icon, Key01Icon, PlusSignIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon, Delete02Icon, Key01Icon, PlusSignIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const formatDate = (iso: string | null) => {
   if (!iso) return 'Never';
@@ -32,7 +32,7 @@ function PasskeyRow({
   return (
     <View className="bg-surface-secondary mb-3 flex-row items-center rounded-2xl border border-surface p-4">
       <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-surface">
-        <HugeiconsIcon icon={Key01Icon} size={18} color="#6B7280" />
+        <HugeiconsIcon icon={Key01Icon} size={18} color="#848281" />
       </View>
       <View className="flex-1">
         <Text className="font-subtitle text-body text-text-primary" numberOfLines={1}>
@@ -44,9 +44,9 @@ function PasskeyRow({
       </View>
       <Pressable
         onPress={onDelete}
-        className="ml-2 h-9 w-9 items-center justify-center rounded-full bg-red-50"
+        className="ml-2 h-9 w-9 items-center justify-center rounded-full bg-coral-red/10"
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <HugeiconsIcon icon={Delete02Icon} size={16} color="#EF4444" />
+        <HugeiconsIcon icon={Delete02Icon} size={16} color="#ff2b3a" />
       </Pressable>
     </View>
   );
@@ -71,13 +71,13 @@ export default function PasskeySettingsScreen() {
             onPress={() => router.back()}
             className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-surface"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#070914" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
           </Pressable>
           <Text className="flex-1 font-subtitle text-headline-1">Passkeys</Text>
         </View>
         <View className="flex-1 items-center justify-center px-8">
           <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-surface">
-            <HugeiconsIcon icon={Key01Icon} size={24} color="#9CA3AF" />
+            <HugeiconsIcon icon={Key01Icon} size={24} color="#848281" />
           </View>
           <Text className="mb-2 text-center font-subtitle text-base text-text-primary">
             Passkeys not supported
@@ -171,14 +171,14 @@ export default function PasskeySettingsScreen() {
           onPress={() => router.back()}
           className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-surface"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#070914" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
         </Pressable>
         <Text className="flex-1 font-subtitle text-headline-1">Passkeys</Text>
         <Pressable
           onPress={openRegisterSheet}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <HugeiconsIcon icon={PlusSignIcon} size={20} color="#070914" />
+          <HugeiconsIcon icon={PlusSignIcon} size={20} color="#343433" />
         </Pressable>
       </View>
 
@@ -192,7 +192,7 @@ export default function PasskeySettingsScreen() {
         {/* Loading */}
         {isLoading && (
           <View className="items-center py-12">
-            <ActivityIndicator color="#6B7280" />
+            <ActivityIndicator color="#848281" />
           </View>
         )}
 
@@ -209,7 +209,7 @@ export default function PasskeySettingsScreen() {
         {!isLoading && !isError && credentials.length === 0 && (
           <View className="bg-surface-secondary items-center rounded-2xl border border-dashed border-neutral-300 py-12">
             <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-surface">
-              <HugeiconsIcon icon={Key01Icon} size={24} color="#9CA3AF" />
+              <HugeiconsIcon icon={Key01Icon} size={24} color="#848281" />
             </View>
             <Text className="mb-1 font-subtitle text-base text-text-primary">No passkeys yet</Text>
             <Text className="mb-6 font-body text-sm text-text-secondary">
@@ -245,7 +245,7 @@ export default function PasskeySettingsScreen() {
       {/* Delete confirm sheet */}
       <BottomSheet visible={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
         <Text className="mb-2 font-subtitle text-xl">Remove Passkey</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           Remove &quot;{deleteTarget?.name ?? 'this passkey'}&quot;? You won&apos;t be able to use
           it to sign in.
         </Text>
@@ -265,7 +265,7 @@ export default function PasskeySettingsScreen() {
       {/* Register sheet */}
       <BottomSheet visible={showRegisterSheet} onClose={() => setShowRegisterSheet(false)}>
         <Text className="mb-2 font-subtitle text-xl">Add Passkey</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           Give this passkey a name so you can identify it later (e.g. &quot;iPhone 15&quot;).
         </Text>
 

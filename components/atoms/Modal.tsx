@@ -34,7 +34,7 @@ export const Modal: React.FC<ModalProps> = ({
       onPress={closeOnBackdrop ? onClose : undefined}>
       <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
         <View
-          className={`max-w-[90%] rounded-lg bg-white p-5 ${className || ''}`}
+          className={`max-w-[90%] rounded-lg bg-parchment-card p-5 ${className || ''}`}
           style={[{ maxHeight: '80%' }, style]}>
           {showCloseButton && (
             <TouchableOpacity

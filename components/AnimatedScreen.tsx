@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -41,11 +40,5 @@ export function AnimatedScreen({ children, delay = 0 }: AnimatedScreenProps) {
     ],
   }));
 
-  return <Animated.View style={[styles.container, animatedStyle]}>{children}</Animated.View>;
+  return <Animated.View className="flex-1" style={animatedStyle}>{children}</Animated.View>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});

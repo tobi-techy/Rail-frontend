@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { CheckmarkCircle01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { CheckmarkCircle01Icon, ArrowRight01Icon } from '@/lib/icons';
 
 interface Step {
   label: string;
@@ -26,28 +26,28 @@ export function OnboardingProgressCard({ steps, onPress }: Props) {
       <Pressable
         onPress={onPress}
         style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 16,
+          backgroundColor: '#f8f7f4',
+          borderRadius: 17,
           borderWidth: 1,
-          borderColor: '#F3F4F6',
+          borderColor: '#f2f0ed',
           padding: 16,
           marginBottom: 16,
         }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Text style={{ fontFamily: 'SFProDisplay-Semibold', fontSize: 15, color: '#1A1A1A' }}>
+          <Text style={{ fontFamily: 'SFProDisplay-Semibold', fontSize: 15, color: '#343433' }}>
             Complete your profile
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Text style={{ fontFamily: 'SFMono-Medium', fontSize: 12, color: '#FF2E01' }}>
+            <Text style={{ fontFamily: 'SFMono-Medium', fontSize: 12, color: '#ff3e00' }}>
               {completed}/{total}
             </Text>
-            <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#9CA3AF" />
+            <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#848281" />
           </View>
         </View>
 
         {/* Progress bar */}
-        <View style={{ height: 4, backgroundColor: '#F3F4F6', borderRadius: 2, marginBottom: 14, overflow: 'hidden' }}>
-          <View style={{ height: 4, width: `${progress * 100}%`, backgroundColor: '#FF2E01', borderRadius: 2 }} />
+        <View style={{ height: 4, backgroundColor: '#f2f0ed', borderRadius: 2, marginBottom: 14, overflow: 'hidden' }}>
+          <View style={{ height: 4, width: `${progress * 100}%`, backgroundColor: '#ff3e00', borderRadius: 2 }} />
         </View>
 
         {/* Steps */}
@@ -57,12 +57,12 @@ export function OnboardingProgressCard({ steps, onPress }: Props) {
               <HugeiconsIcon
                 icon={CheckmarkCircle01Icon}
                 size={18}
-                color={step.done ? '#16A34A' : '#D1D5DB'}
+                color={step.done ? '#00ca48' : '#c6c6c6'}
               />
               <Text style={{
                 fontFamily: 'SFProDisplay-Regular',
                 fontSize: 14,
-                color: step.done ? '#9CA3AF' : '#1A1A1A',
+                color: step.done ? '#848281' : '#343433',
                 textDecorationLine: step.done ? 'line-through' : 'none',
               }}>
                 {step.label}

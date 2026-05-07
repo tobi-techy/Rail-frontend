@@ -20,8 +20,8 @@ import {
 import { useKycStore } from '@/stores/kycStore';
 import { useStartDiditSession } from '@/api/hooks/useKYC';
 import { useAuthStore } from '@/stores/authStore';
-import { ArrowLeft01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon, CheckmarkCircle01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const DISCLOSURE_COPY: Record<keyof KycDisclosures, string> = {
   is_control_person: 'I am a control person of a publicly traded company.',
@@ -120,22 +120,22 @@ export default function KycDocumentsScreen() {
 
   return (
     <ErrorBoundary>
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <View className="flex-row items-center justify-between px-4 pb-2 pt-1">
           <Pressable
-            className="size-11 items-center justify-center rounded-full bg-gray-100"
+            className="size-11 items-center justify-center rounded-full bg-stone-surface"
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Go back">
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#111827" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" />
           </Pressable>
-          <Text className="font-subtitle text-[13px] text-gray-500">Step 2 of 3</Text>
+          <Text className="font-subtitle text-[13px] text-ash">Step 2 of 3</Text>
           <View className="size-11" />
         </View>
 
         <View className="px-4">
-          <View className="h-1.5 overflow-hidden rounded-full bg-gray-200">
-            <View className="h-full w-2/3 rounded-full bg-gray-900" />
+          <View className="h-1.5 overflow-hidden rounded-full bg-fog">
+            <View className="h-full w-2/3 rounded-full bg-midnight" />
           </View>
         </View>
 
@@ -145,10 +145,10 @@ export default function KycDocumentsScreen() {
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 180 }}>
-            <Text className="font-display text-[30px] leading-[34px] text-gray-900">
+            <Text className="font-display text-[30px] leading-[34px] text-charcoal-primary">
               Identity details
             </Text>
-            <Text className="mt-2 font-body text-[15px] leading-6 text-gray-600">
+            <Text className="mt-2 font-body text-[15px] leading-6 text-ash">
               Enter your tax identifier and complete the required disclosures. Your ID scan happens
               in the next step.
             </Text>
@@ -170,8 +170,8 @@ export default function KycDocumentsScreen() {
             </View>
 
             {/* Employment status */}
-            <View className="mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-4">
-              <Text className="mb-3 font-subtitle text-[14px] text-gray-900">About you</Text>
+            <View className="mt-6 rounded-2xl border border-fog bg-parchment-card px-4 py-4">
+              <Text className="mb-3 font-subtitle text-[14px] text-charcoal-primary">About you</Text>
               {EMPLOYMENT_STATUS_OPTIONS.map((option, index) => {
                 const selected = employmentStatus === option.value;
                 return (
@@ -179,14 +179,14 @@ export default function KycDocumentsScreen() {
                     key={option.value}
                     onPress={() => setEmploymentStatus(option.value)}
                     className={`flex-row items-center justify-between py-3 ${
-                      index < EMPLOYMENT_STATUS_OPTIONS.length - 1 ? 'border-b border-gray-100' : ''
+                      index < EMPLOYMENT_STATUS_OPTIONS.length - 1 ? 'border-b border-stone-surface' : ''
                     }`}
                     accessibilityRole="button"
                     accessibilityLabel={`Employment status ${option.label}`}>
                     <Text className="font-body text-[14px] text-gray-800">{option.label}</Text>
                     <View
                       className={`size-5 rounded-full border ${
-                        selected ? 'border-gray-900 bg-gray-900' : 'border-gray-300 bg-white'
+                        selected ? 'border-gray-900 bg-midnight' : 'border-fog bg-white'
                       }`}
                     />
                   </Pressable>
@@ -195,9 +195,9 @@ export default function KycDocumentsScreen() {
             </View>
 
             {/* Investing goals */}
-            <View className="mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-4">
-              <Text className="mb-3 font-subtitle text-[14px] text-gray-900">Investing goals</Text>
-              <Text className="mb-3 font-body text-[12px] text-gray-500">
+            <View className="mt-6 rounded-2xl border border-fog bg-parchment-card px-4 py-4">
+              <Text className="mb-3 font-subtitle text-[14px] text-charcoal-primary">Investing goals</Text>
+              <Text className="mb-3 font-body text-[12px] text-ash">
                 Select all that apply.
               </Text>
               {INVESTMENT_PURPOSE_OPTIONS.map((option, index) => {
@@ -208,7 +208,7 @@ export default function KycDocumentsScreen() {
                     onPress={() => toggleInvestmentPurpose(option.value)}
                     className={`flex-row items-center justify-between py-3 ${
                       index < INVESTMENT_PURPOSE_OPTIONS.length - 1
-                        ? 'border-b border-gray-100'
+                        ? 'border-b border-stone-surface'
                         : ''
                     }`}
                     accessibilityRole="checkbox"
@@ -219,7 +219,7 @@ export default function KycDocumentsScreen() {
                     </Text>
                     <View
                       className={`size-5 items-center justify-center rounded ${
-                        selected ? 'bg-gray-900' : 'border border-gray-300 bg-white'
+                        selected ? 'bg-midnight' : 'border border-fog bg-white'
                       }`}>
                       {selected ? <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#FFFFFF" strokeWidth={3} /> : null}
                     </View>
@@ -229,17 +229,17 @@ export default function KycDocumentsScreen() {
             </View>
 
             {/* Regulatory disclosures */}
-            <View className="mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-4">
-              <Text className="mb-2 font-subtitle text-[14px] text-gray-900">
+            <View className="mt-6 rounded-2xl border border-fog bg-parchment-card px-4 py-4">
+              <Text className="mb-2 font-subtitle text-[14px] text-charcoal-primary">
                 Regulatory declarations
               </Text>
-              <Text className="mb-3 font-body text-[12px] text-gray-500">
+              <Text className="mb-3 font-body text-[12px] text-ash">
                 Required for {COUNTRY_LABELS[country]} account compliance.
               </Text>
               {requiredDisclosureKeys.map((key, index) => (
                 <View
                   key={key}
-                  className={`py-3 ${index < requiredDisclosureKeys.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                  className={`py-3 ${index < requiredDisclosureKeys.length - 1 ? 'border-b border-stone-surface' : ''}`}>
                   <Text className="font-body text-[13px] leading-5 text-gray-800">
                     {DISCLOSURE_COPY[key]}
                   </Text>
@@ -252,13 +252,13 @@ export default function KycDocumentsScreen() {
                           key={label}
                           onPress={() => setDisclosure(key, isYes)}
                           className={`min-h-[44px] flex-1 items-center justify-center rounded-full border ${
-                            isActive ? 'border-gray-900 bg-gray-900' : 'border-gray-200 bg-white'
+                            isActive ? 'border-gray-900 bg-midnight' : 'border-fog bg-white'
                           }`}
                           accessibilityRole="button"
                           accessibilityLabel={`Answer ${label} for ${DISCLOSURE_COPY[key]}`}>
                           <Text
                             className={`font-subtitle text-[13px] ${
-                              isActive ? 'text-white' : 'text-gray-700'
+                              isActive ? 'text-white' : 'text-graphite'
                             }`}>
                             {label}
                           </Text>
@@ -276,23 +276,23 @@ export default function KycDocumentsScreen() {
                 setDisclosuresConfirmed(!disclosuresConfirmed);
                 if (submitError) setSubmitError('');
               }}
-              className="mt-6 flex-row items-start gap-3 rounded-2xl bg-gray-100 px-4 py-4"
+              className="mt-6 flex-row items-start gap-3 rounded-2xl bg-stone-surface px-4 py-4"
               accessibilityRole="checkbox"
               accessibilityState={{ checked: disclosuresConfirmed }}
               accessibilityLabel="Confirm KYC declaration">
               <View
                 className={`mt-0.5 size-5 items-center justify-center rounded border ${
-                  disclosuresConfirmed ? 'border-gray-900 bg-gray-900' : 'border-gray-400 bg-white'
+                  disclosuresConfirmed ? 'border-gray-900 bg-midnight' : 'border-gray-400 bg-white'
                 }`}>
                 {disclosuresConfirmed ? <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#FFFFFF" strokeWidth={3} /> : null}
               </View>
-              <Text className="flex-1 font-body text-[12px] leading-5 text-gray-700">
+              <Text className="flex-1 font-body text-[12px] leading-5 text-graphite">
                 I confirm all submitted information is accurate and belongs to me.
               </Text>
             </Pressable>
 
             {!!submitError && (
-              <View className="mt-3 rounded-2xl bg-red-50 px-4 py-3">
+              <View className="mt-3 rounded-2xl bg-coral-red/10 px-4 py-3">
                 <Text className="font-body text-[12px] leading-5 text-red-700">{submitError}</Text>
               </View>
             )}
@@ -300,7 +300,7 @@ export default function KycDocumentsScreen() {
         </KeyboardAvoidingView>
 
         <View
-          className="absolute bottom-0 left-0 right-0 border-t border-gray-100 bg-white px-4 pt-3"
+          className="absolute bottom-0 left-0 right-0 border-t border-stone-surface bg-parchment-card px-4 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           <Button
             title="Continue to ID scan"

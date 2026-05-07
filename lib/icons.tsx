@@ -35,7 +35,6 @@ import {
   Camera,
   CaretDown,
   CaretUp,
-  ChartLineDown,
   ChartLineUp,
   ChartBar,
   Check,
@@ -61,7 +60,6 @@ import {
   Gift,
   GlobeSimple,
   Headphones,
-  House,
   Image,
   Info,
   Invoice,
@@ -73,7 +71,6 @@ import {
   MagnifyingGlass,
   Medal,
   Minus,
-  MinusCircle,
   Money,
   DotsThree,
   DotsThreeOutline,
@@ -83,7 +80,6 @@ import {
   Plus,
   PlusCircle,
   PushPin,
-  QrCode,
   ArrowCounterClockwise,
   Repeat,
   Scan,
@@ -129,7 +125,7 @@ import {
   ImageIcon,
   CameraIcon,
   FileIcon,
-  ImagesIcon
+  ImagesIcon,
 } from 'phosphor-react-native';
 
 // ─── Icon type (matches HugeiconsProps['icon']) ─────────────────────────────
@@ -422,9 +418,12 @@ export { Gift as GiftIcon };
 export { Coffee as Coffee01Icon };
 export { GasPump as FuelIcon };
 export { Sun as Sun01Icon };
+export { Sun as Beach02Icon };
 export { ShoppingBag as ShoppingBag01Icon };
+export { GasPump as Car01Icon };
 export { PaperPlaneTilt as Airplane01Icon };
 export { PaperPlaneTilt as AirplaneTakeOff01Icon };
+export { ImagesIcon as Gif01Icon };
 export { Medal as Award01Icon };
 export { Target as Target01Icon };
 export { Target as Target02Icon };

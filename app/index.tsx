@@ -29,8 +29,11 @@ export default function IndexScreen() {
   }, [hydrated]);
 
   const hasValidAuthSession = Boolean(isAuthenticated && accessToken);
+  const passcodeSessionExpiresAt = useAuthStore((s) => s.passcodeSessionExpiresAt);
+  const appLockExpiresAt = useAuthStore((s) => s.appLockExpiresAt);
+
   const hasValidPasscodeSession = hasValidAuthSession
-    ? !SessionManager.isPasscodeSessionExpired()
+    ? !SessionManager.isAppUnlockExpired()
     : false;
 
   const targetRoute = !hydrated
@@ -41,11 +44,13 @@ export default function IndexScreen() {
         ? getPostAuthRoute(onboardingStatus)
         : hasValidAuthSession && hasPasscode
           ? '/login-passcode'
-          : hasValidAuthSession && !hasPasscode && getPostAuthRoute(onboardingStatus) === ROUTES.TABS
-            // User is authenticated and onboarding is complete but passcode status
-            // may not have synced yet (e.g. right after Apple sign-in).
-            // Route to tabs — the passcode gate on protected routes will handle it.
-            ? ROUTES.TABS as string
+          : hasValidAuthSession &&
+              !hasPasscode &&
+              getPostAuthRoute(onboardingStatus) === ROUTES.TABS
+            ? // User is authenticated and onboarding is complete but passcode status
+              // may not have synced yet (e.g. right after Apple sign-in).
+              // Route to tabs — the passcode gate on protected routes will handle it.
+              (ROUTES.TABS as string)
             : hasValidAuthSession && !hasPasscode
               ? ROUTES.AUTH.CREATE_PASSCODE
               : user && hasPasscode
@@ -58,8 +63,8 @@ export default function IndexScreen() {
     if (targetRoute) {
       router.replace(targetRoute as never);
     }
-  }, [targetRoute]);
+  }, [targetRoute, passcodeSessionExpiresAt, appLockExpiresAt]);
 
   // Keep an orange surface while startup routing resolves.
-  return <View style={{ flex: 1, backgroundColor: '#FF2E01' }} />;
+  return <View style={{ flex: 1, backgroundColor: '#ff3e00' }} />;
 }

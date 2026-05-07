@@ -54,7 +54,7 @@ export default function CreateRailTagScreen() {
   };
 
   const statusColor =
-    availability === 'available' ? '#00C853' : availability === 'taken' ? '#FF2E01' : 'transparent';
+    availability === 'available' ? '#00c454' : availability === 'taken' ? '#ff2b3a' : 'transparent';
 
   const statusText =
     availability === 'available'
@@ -78,28 +78,28 @@ export default function CreateRailTagScreen() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-display text-[32px] leading-[36px] text-black">
+              <Text className="font-display text-[32px] leading-[36px] text-charcoal-primary">
                 Create your RailTag
               </Text>
-              <Text className="mt-2 font-body text-[14px] text-black/60">
+              <Text className="mt-2 font-body text-[14px] text-ash">
                 Your unique handle for sending and receiving money
               </Text>
             </View>
           </StaggeredChild>
 
           <StaggeredChild index={1}>
-            <Text className="mb-2 font-subtitle text-[14px] text-black">RailTag</Text>
-            <View className="flex-row items-center rounded-xl border border-black/10 bg-white/80 px-4 py-3.5">
-              <Text className="font-body text-[16px] text-black/40">@</Text>
+            <Text className="mb-2 font-subtitle text-[14px] text-charcoal-primary">RailTag</Text>
+            <View className="flex-row items-center rounded-lg border border-fog bg-warm-canvas px-4 py-3.5">
+              <Text className="font-body text-[16px] text-smoke">@</Text>
               <TextInput
                 autoFocus
                 autoCapitalize="none"
                 autoCorrect={false}
                 placeholder="yourname"
-                placeholderTextColor="rgba(0,0,0,0.25)"
+                placeholderTextColor="#a7a7a7"
                 value={tag}
                 onChangeText={handleChange}
-                className="flex-1 font-body text-[16px] text-black"
+                className="flex-1 font-body text-[16px] text-charcoal-primary"
                 maxLength={30}
               />
             </View>
@@ -108,7 +108,7 @@ export default function CreateRailTagScreen() {
               style={{ color: statusColor, minHeight: 18 }}>
               {statusText}
             </Text>
-            <Text className="mt-1 font-body text-[12px] text-black/40">
+            <Text className="mt-1 font-body text-[12px] text-smoke">
               Lowercase letters and numbers only · 3–30 characters
             </Text>
           </StaggeredChild>

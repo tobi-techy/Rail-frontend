@@ -9,14 +9,21 @@ import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { useOnboardingBasicComplete } from '@/api/hooks/useOnboarding';
 import { passwordSchema } from '@/utils/schemas';
-import { CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { CheckmarkCircle01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const PASSWORD_RULES = [
-  { label: '8 characters', test: (v: string) => v.length >= 8 },
+  { label: 'At least 8 characters', test: (v: string) => v.length >= 8 },
+  { label: '72 characters or fewer', test: (v: string) => v.length > 0 && v.length <= 72 },
   {
-    label: 'A symbol, number, or upper-case letter',
-    test: (v: string) => /[A-Z]|[0-9]|[^a-zA-Z0-9]/.test(v),
+    label: 'At least 3 of uppercase, lowercase, number, symbol',
+    test: (v: string) => {
+      let complexityCount = 0;
+      if (/[A-Z]/.test(v)) complexityCount++;
+      if (/[a-z]/.test(v)) complexityCount++;
+      if (/[0-9]/.test(v)) complexityCount++;
+      if (/[^a-zA-Z0-9]/.test(v)) complexityCount++;
+      return complexityCount >= 3;
+    },
   },
 ] as const;
 
@@ -81,14 +88,14 @@ export default function CreatePassword() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-display text-[32px] leading-[36px] text-black">
+              <Text className="font-display text-[32px] leading-[36px] text-charcoal-primary">
                 Create a password
               </Text>
             </View>
           </StaggeredChild>
 
           <StaggeredChild index={1}>
-            <Text className="mb-2 font-subtitle text-[14px] text-black">Password</Text>
+            <Text className="mb-2 font-subtitle text-[14px] text-charcoal-primary">Password</Text>
             <InputField
               placeholder="Enter your password"
               value={password}
@@ -108,7 +115,7 @@ export default function CreatePassword() {
                   <View key={rule.label} className="flex-row items-center gap-x-2">
                     <View
                       className={`size-5 items-center justify-center rounded-full ${
-                        passed ? 'bg-black' : 'border border-gray-300 bg-white'
+                        passed ? 'bg-midnight' : 'border border-fog bg-warm-canvas'
                       }`}>
                       {passed && (
                         <HugeiconsIcon
@@ -121,7 +128,7 @@ export default function CreatePassword() {
                     </View>
                     <Text
                       className={`font-body text-[13px] ${
-                        passed ? 'text-black' : 'text-gray-400'
+                        passed ? 'text-charcoal-primary' : 'text-smoke'
                       }`}>
                       {rule.label}
                     </Text>
@@ -131,7 +138,9 @@ export default function CreatePassword() {
             </View>
 
             <View className="mt-6">
-              <Text className="mb-2 font-subtitle text-[14px] text-black">Confirm Password</Text>
+              <Text className="mb-2 font-subtitle text-[14px] text-charcoal-primary">
+                Confirm Password
+              </Text>
               <InputField
                 placeholder="Re-enter your password"
                 value={confirmPassword}

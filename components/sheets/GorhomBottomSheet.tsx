@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Dimensions, Keyboard, Pressable, StyleSheet, View } from 'react-native';
+import { Dimensions, Keyboard, Pressable, View } from 'react-native';
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
@@ -9,8 +9,8 @@ import {
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Cancel01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 interface GorhomBottomSheetProps {
   visible: boolean;
@@ -70,8 +70,8 @@ export function GorhomBottomSheet({
       enablePanDownToClose={dismissible}
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
-      backgroundStyle={styles.background}
-      handleIndicatorStyle={styles.indicator}
+      backgroundStyle={{ backgroundColor: '#fbfaf9', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+      handleIndicatorStyle={{ backgroundColor: '#c6c6c6', width: 36, height: 4, borderRadius: 2, marginTop: 8 }}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize">
@@ -85,12 +85,12 @@ export function GorhomBottomSheet({
           : { style: { paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom, 16) } })}>
         {showCloseButton && (
           <Pressable
-            style={styles.closeButton}
+            className="absolute right-5 top-1 z-10 p-1"
             onPress={() => ref.current?.dismiss()}
             hitSlop={12}
             accessibilityLabel="Close"
             accessibilityRole="button">
-            <HugeiconsIcon icon={Cancel01Icon} size={22} color="#9CA3AF" />
+            <HugeiconsIcon icon={Cancel01Icon} size={22} color="#848281" />
           </Pressable>
         )}
         {children}
@@ -98,25 +98,3 @@ export function GorhomBottomSheet({
     </BottomSheetModal>
   );
 }
-
-const styles = StyleSheet.create({
-  background: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  indicator: {
-    backgroundColor: '#D1D5DB',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 8,
-  },
-  closeButton: {
-    position: 'absolute',
-    right: 20,
-    top: 4,
-    zIndex: 10,
-    padding: 4,
-  },
-});

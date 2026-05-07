@@ -56,22 +56,22 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
 
   const colors = isDark
     ? {
-        border: hasError ? '#F44336' : 'rgba(255,255,255,0.2)',
+        border: hasError ? '#ff2b3a' : 'rgba(255,255,255,0.2)',
         bg: hasError ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.1)',
-        focusBorder: hasError ? '#F44336' : 'rgba(255,255,255,0.5)',
+        focusBorder: hasError ? '#ff2b3a' : 'rgba(255,255,255,0.5)',
         focusBg: 'rgba(255,255,255,0.15)',
-        filledBorder: hasError ? '#F44336' : 'rgba(255,255,255,0.4)',
+        filledBorder: hasError ? '#ff2b3a' : 'rgba(255,255,255,0.4)',
         filledBg: 'rgba(255,255,255,0.1)',
         text: '#FFFFFF',
       }
     : {
-        border: hasError ? '#F44336' : '#F5F5F5',
-        bg: hasError ? '#FFFFFF' : '#F5F5F5',
-        focusBorder: hasError ? '#F44336' : '#1B84FF',
-        focusBg: '#FFFFFF',
-        filledBorder: hasError ? '#F44336' : '#757575',
-        filledBg: '#FFFFFF',
-        text: '#121212',
+        border: hasError ? '#ff2b3a' : '#f2f0ed',
+        bg: hasError ? '#fbfaf9' : '#f2f0ed',
+        focusBorder: hasError ? '#ff2b3a' : '#343433',
+        focusBg: '#fbfaf9',
+        filledBorder: hasError ? '#ff2b3a' : '#848281',
+        filledBg: '#fbfaf9',
+        text: '#343433',
       };
 
   return (
@@ -93,7 +93,7 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
           pinCodeContainerStyle: {
             width: boxSize,
             height: boxSize,
-            borderRadius: 16,
+            borderRadius: 10,
             borderWidth: 2,
             borderColor: colors.border,
             backgroundColor: colors.bg,

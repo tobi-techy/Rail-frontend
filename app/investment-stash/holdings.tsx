@@ -5,13 +5,13 @@ import { router } from 'expo-router';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useInvestmentPositions } from '@/api/hooks/useInvestment';
 import type { InvestmentPositionDetail } from '@/api/types/investment';
-import { ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon, ArrowRight01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const PAGE_SIZE = 20;
 
 function Shimmer({ w, h, radius = 'rounded-lg' }: { w: string; h: string; radius?: string }) {
-  return <View className={`${w} ${h} ${radius} bg-gray-100`} />;
+  return <View className={`${w} ${h} ${radius} bg-stone-surface`} />;
 }
 
 function HoldingRow({
@@ -24,7 +24,7 @@ function HoldingRow({
   onPress: () => void;
 }) {
   const pos = item.unrealized_pnl_percent >= 0;
-  const pnlColor = pos ? 'text-green-600' : 'text-red-600';
+  const pnlColor = pos ? 'text-meadow-green' : 'text-coral-red';
   const sign = pos ? '+' : '';
   return (
     <View>
@@ -33,23 +33,23 @@ function HoldingRow({
         accessibilityRole="button"
         accessibilityLabel={`View ${item.name} details`}
         className="flex-row items-center px-4 py-3.5 active:opacity-70">
-        <View className="mr-3 h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-gray-100">
+        <View className="mr-3 h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-stone-surface">
           {item.logo_url ? (
             <Image source={{ uri: item.logo_url }} className="h-11 w-11" resizeMode="cover" />
           ) : (
-            <Text className="font-button text-sm text-gray-700">{item.symbol[0]}</Text>
+            <Text className="font-button text-sm text-graphite">{item.symbol[0]}</Text>
           )}
         </View>
         <View className="mr-3 flex-1">
-          <Text className="font-button text-[15px] text-gray-900" numberOfLines={1}>
+          <Text className="font-button text-[15px] text-charcoal-primary" numberOfLines={1}>
             {item.name}
           </Text>
-          <Text className="mt-0.5 font-caption text-xs text-gray-400" numberOfLines={1}>
+          <Text className="mt-0.5 font-caption text-xs text-smoke" numberOfLines={1}>
             {item.symbol} · {item.quantity} shares
           </Text>
         </View>
         <View className="items-end">
-          <Text className="font-button text-[15px] text-gray-900">
+          <Text className="font-button text-[15px] text-charcoal-primary">
             {item.market_value.formatted}
           </Text>
           <Text className={`mt-0.5 font-caption text-xs ${pnlColor}`}>
@@ -59,7 +59,7 @@ function HoldingRow({
           </Text>
         </View>
       </Pressable>
-      {showSep && <View className="ml-[72px] h-px bg-gray-100" />}
+      {showSep && <View className="ml-[72px] h-px bg-stone-surface" />}
     </View>
   );
 }
@@ -87,7 +87,7 @@ export default function InvestmentHoldingsScreen() {
   }, [refetch]);
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-warm-canvas">
       <View className="flex-row items-center px-4 pb-1" style={{ paddingTop: insets.top + 8 }}>
         <Pressable
           onPress={() => {
@@ -98,11 +98,11 @@ export default function InvestmentHoldingsScreen() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
           className="mr-1 h-11 w-11 items-center justify-center">
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#111827" strokeWidth={2} />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#343433" strokeWidth={2} />
         </Pressable>
         <View className="flex-1">
-          <Text className="font-button text-[17px] text-gray-900">Holdings</Text>
-          <Text className="font-caption text-xs text-gray-400">
+          <Text className="font-button text-[17px] text-charcoal-primary">Holdings</Text>
+          <Text className="font-caption text-xs text-smoke">
             {totalCount} asset{totalCount === 1 ? '' : 's'}
           </Text>
         </View>
@@ -132,7 +132,7 @@ export default function InvestmentHoldingsScreen() {
             </View>
           ) : (
             <View className="items-center py-12">
-              <Text className="font-caption text-sm text-gray-400">No holdings yet</Text>
+              <Text className="font-caption text-sm text-smoke">No holdings yet</Text>
             </View>
           )
         }
@@ -161,11 +161,11 @@ export default function InvestmentHoldingsScreen() {
                   disabled={!hasPrev || isFetching}
                   accessibilityRole="button"
                   accessibilityLabel="Previous page"
-                  className={`min-h-[44px] flex-row items-center gap-1 rounded-xl bg-gray-100 px-4 py-2.5 ${!hasPrev ? 'opacity-0' : ''}`}>
-                  <HugeiconsIcon icon={ArrowLeft01Icon} size={16} color="#111827" strokeWidth={2} />
-                  <Text className="font-button text-[13px] text-gray-900">Prev</Text>
+                  className={`min-h-[44px] flex-row items-center gap-1 rounded-lg bg-stone-surface px-4 py-2.5 ${!hasPrev ? 'opacity-0' : ''}`}>
+                  <HugeiconsIcon icon={ArrowLeft01Icon} size={16} color="#343433" strokeWidth={2} />
+                  <Text className="font-button text-[13px] text-charcoal-primary">Prev</Text>
                 </Pressable>
-                <Text className="font-caption text-xs text-gray-400">Page {page}</Text>
+                <Text className="font-caption text-xs text-smoke">Page {page}</Text>
                 <Pressable
                   onPress={() => {
                     impact();
@@ -174,13 +174,13 @@ export default function InvestmentHoldingsScreen() {
                   disabled={!hasMore || isFetching}
                   accessibilityRole="button"
                   accessibilityLabel="Next page"
-                  className={`min-h-[44px] flex-row items-center gap-1 rounded-xl bg-gray-100 px-4 py-2.5 ${!hasMore ? 'opacity-0' : ''}`}>
-                  <Text className="font-button text-[13px] text-gray-900">Next</Text>
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#111827" strokeWidth={2} />
+                  className={`min-h-[44px] flex-row items-center gap-1 rounded-lg bg-stone-surface px-4 py-2.5 ${!hasMore ? 'opacity-0' : ''}`}>
+                  <Text className="font-button text-[13px] text-charcoal-primary">Next</Text>
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#343433" strokeWidth={2} />
                 </Pressable>
               </View>
               {isFetching && (
-                <Text className="mt-2 text-center font-caption text-xs text-gray-400">
+                <Text className="mt-2 text-center font-caption text-xs text-smoke">
                   Loading…
                 </Text>
               )}

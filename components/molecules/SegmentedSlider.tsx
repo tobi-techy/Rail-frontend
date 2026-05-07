@@ -34,7 +34,7 @@ export function SegmentedSlider({
   label,
   showPercentage = true,
   activeColor = '#D946EF',
-  inactiveColor = '#E5E5E5',
+  inactiveColor = '#f2f0ed',
   className,
 }: SegmentedSliderProps) {
   const sliderWidth = useSharedValue(0);
@@ -88,9 +88,9 @@ export function SegmentedSlider({
     <View className={className}>
       {(label || showPercentage) && (
         <View className="mb-2 flex-row items-center justify-between">
-          {label && <Text className="text-sm text-neutral-500">{label}</Text>}
+          {label && <Text className="text-sm text-ash">{label}</Text>}
           {showPercentage && (
-            <Text className="text-sm font-medium text-neutral-900">
+            <Text className="text-sm font-medium text-charcoal-primary">
               {Math.round(normalizedValue)}%
             </Text>
           )}

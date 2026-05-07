@@ -36,6 +36,10 @@ export function validatePassword(password: string): ValidationResult {
     return { isValid: false, error: 'Password must be at least 8 characters' };
   }
 
+  if (password.length > 72) {
+    return { isValid: false, error: 'Password must not exceed 72 characters' };
+  }
+
   let complexityCount = 0;
   if (/[A-Z]/.test(password)) complexityCount++;
   if (/[a-z]/.test(password)) complexityCount++;
@@ -43,7 +47,10 @@ export function validatePassword(password: string): ValidationResult {
   if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) complexityCount++;
 
   if (complexityCount < 3) {
-    return { isValid: false, error: 'Password must contain at least 3 of: uppercase, lowercase, digit, special character' };
+    return {
+      isValid: false,
+      error: 'Password must contain at least 3 of: uppercase, lowercase, digit, special character',
+    };
   }
 
   return { isValid: true };

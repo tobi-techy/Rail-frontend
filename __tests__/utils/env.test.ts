@@ -14,6 +14,9 @@ describe('env utility', () => {
   beforeEach(() => {
     jest.resetModules();
     process.env = { ...originalEnv };
+    delete process.env.EXPO_PUBLIC_API_URL;
+    delete process.env.EXPO_PUBLIC_ENV;
+    delete process.env.EXPO_PUBLIC_STAGING_API_URL;
     (global as any).__DEV__ = true;
   });
 
@@ -34,12 +37,10 @@ describe('env utility', () => {
     expect(env.EXPO_PUBLIC_API_URL).toBe(expectedUrl);
   });
 
-  it('should force Railway API URL on physical device in development', () => {
+  it('should force staging API URL on physical device in development', () => {
     process.env.EXPO_PUBLIC_API_URL = 'http://localhost:8080/api';
     const { env } = loadEnvModule(true);
-    expect(env.EXPO_PUBLIC_API_URL).toBe(
-      'https://rail-backend-service-production.up.railway.app/api'
-    );
+    expect(env.EXPO_PUBLIC_API_URL).toBe('https://api-staging.userail.money/api');
   });
 
   it('should default to development environment', () => {
@@ -49,12 +50,23 @@ describe('env utility', () => {
     expect(isDev).toBe(true);
   });
 
-  it('should use configured API URL in non-dev runtime', () => {
+  it('should use configured production-safe API URL in non-dev runtime', () => {
     (global as any).__DEV__ = false;
     process.env.EXPO_PUBLIC_ENV = 'staging';
     process.env.EXPO_PUBLIC_API_URL = 'https://api.example.com/';
     const { env } = loadEnvModule(false);
     expect(env.EXPO_PUBLIC_API_URL).toBe('https://api.example.com');
+    expect(env.EXPO_PUBLIC_ENV).toBe('production');
+  });
+
+  it('should force production API URL when release runtime receives staging config', () => {
+    (global as any).__DEV__ = false;
+    process.env.EXPO_PUBLIC_ENV = 'staging';
+    process.env.EXPO_PUBLIC_API_URL = 'https://api-staging.userail.money/api';
+    const { env, isProd } = loadEnvModule(true);
+    expect(env.EXPO_PUBLIC_API_URL).toBe('https://api.userail.money/api');
+    expect(env.EXPO_PUBLIC_ENV).toBe('production');
+    expect(isProd).toBe(true);
   });
 
   it('should not allow localhost API URL on physical device in non-dev runtime', () => {
@@ -62,8 +74,7 @@ describe('env utility', () => {
     process.env.EXPO_PUBLIC_ENV = 'staging';
     process.env.EXPO_PUBLIC_API_URL = 'http://localhost:8080/api';
     const { env } = loadEnvModule(true);
-    expect(env.EXPO_PUBLIC_API_URL).toBe(
-      'https://rail-backend-service-production.up.railway.app/api'
-    );
+    expect(env.EXPO_PUBLIC_API_URL).toBe('https://api.userail.money/api');
+    expect(env.EXPO_PUBLIC_ENV).toBe('production');
   });
 });

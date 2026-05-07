@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, Text, View } from 'react-native';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { LockIcon, Tick02Icon } from '@hugeicons/core-free-icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { LockIcon, Tick02Icon } from '@/lib/icons';
 
 import type { Achievement } from '@/api/services/gameplay.service';
 import { getAchievementStickerSource } from '@/assets/images/achievements';
@@ -101,24 +101,24 @@ export function AchievementDetailSheet({
             style={{ opacity: isUnlocked ? 1 : 0.18, transform: [{ scale: isUnlocked ? 1 : 0.92 }] }}
           />
           {!isUnlocked && (
-            <View className="absolute h-28 w-28 items-center justify-center rounded-[36px] border border-gray-200 bg-white/95">
-              <HugeiconsIcon icon={LockIcon} size={34} color="#9CA3AF" />
+            <View className="absolute h-28 w-28 items-center justify-center rounded-[36px] border border-fog bg-white/95">
+              <HugeiconsIcon icon={LockIcon} size={34} color="#848281" />
             </View>
           )}
         </View>
 
         <View
           className={`mt-2 flex-row items-center gap-2 rounded-full px-3 py-1 ${
-            isUnlocked ? 'bg-emerald-50' : 'bg-gray-100'
+            isUnlocked ? 'bg-emerald-50' : 'bg-stone-surface'
           }`}>
           <HugeiconsIcon
             icon={isUnlocked ? Tick02Icon : LockIcon}
             size={14}
-            color={isUnlocked ? '#059669' : '#6B7280'}
+            color={isUnlocked ? '#059669' : '#848281'}
           />
           <Text
             className={`font-mono text-[11px] ${
-              isUnlocked ? 'text-emerald-700' : 'text-gray-600'
+              isUnlocked ? 'text-emerald-700' : 'text-ash'
             }`}>
             {isUnlocked ? 'Unlocked' : 'Locked'}
           </Text>
@@ -133,14 +133,14 @@ export function AchievementDetailSheet({
       </View>
 
       <View className="mt-6 gap-4">
-        <View className="rounded-2xl border border-gray-100 bg-white p-4">
+        <View className="rounded-2xl border border-stone-surface bg-parchment-card p-4">
           <Text className="font-subtitle text-base text-text-primary">What it means</Text>
           <Text className="mt-2 font-body text-[15px] leading-5 text-text-secondary">
             {detail.about}
           </Text>
         </View>
 
-        <View className="rounded-2xl border border-gray-100 bg-surface p-4">
+        <View className="rounded-2xl border border-stone-surface bg-surface p-4">
           <Text className="font-subtitle text-base text-text-primary">
             {isUnlocked ? 'How you earned it' : 'How to unlock it'}
           </Text>

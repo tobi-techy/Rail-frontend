@@ -37,7 +37,7 @@ function log(level: LogLevel, message: string, context?: LogContext | Error) {
       data = context ? sanitizeObject(context) : undefined;
     }
 
-    console[level](sanitizedMessage, data ?? '');
+    console[level](sanitizedMessage, data ? JSON.stringify(data, null, 2) : '');
     return;
   }
 

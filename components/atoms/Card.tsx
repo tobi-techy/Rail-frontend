@@ -21,7 +21,7 @@ export const Card: React.FC<CardProps> = ({
   ...props
 }) => (
   <View
-    className={`rounded-md bg-surface shadow-card ${paddingClasses[padding]} ${className || ''}`}
+    className={`rounded-2xl bg-parchment-card shadow-subtle ${paddingClasses[padding]} ${className || ''}`}
     {...props}>
     {children}
   </View>

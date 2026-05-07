@@ -159,6 +159,13 @@ export const queryKeys = {
     list: (params?: unknown) => [...queryKeys.notifications.all, 'list', params] as const,
     unreadCount: () => [...queryKeys.notifications.all, 'unread-count'] as const,
   },
+  ai: {
+    all: ['ai'] as const,
+    operatingPlan: () => [...queryKeys.ai.all, 'operating-plan'] as const,
+    moneyAcrossBorders: () => [...queryKeys.ai.all, 'money-across-borders'] as const,
+    automations: () => [...queryKeys.ai.all, 'automations'] as const,
+    obligations: (params?: unknown) => [...queryKeys.ai.all, 'obligations', params] as const,
+  },
 };
 
 /**
@@ -179,6 +186,7 @@ export const invalidateQueries = {
   passkeys: () => queryClient.invalidateQueries({ queryKey: queryKeys.passkeys.all }),
   notifications: () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
   gameplay: () => queryClient.invalidateQueries({ queryKey: queryKeys.gameplay.all }),
+  ai: () => queryClient.invalidateQueries({ queryKey: queryKeys.ai.all }),
   all: () => queryClient.invalidateQueries(),
 };
 

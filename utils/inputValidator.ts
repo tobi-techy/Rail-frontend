@@ -64,8 +64,8 @@ export function validatePassword(password: string): ValidationResult {
     errors.push('Password must be at least 8 characters');
   }
 
-  if (password.length > 128) {
-    errors.push('Password is too long');
+  if (password.length > 72) {
+    errors.push('Password must not exceed 72 characters');
   }
 
   // Must satisfy at least 3 of 4 complexity categories (matches backend policy)
@@ -76,7 +76,9 @@ export function validatePassword(password: string): ValidationResult {
   if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) complexityCount++;
 
   if (complexityCount < 3) {
-    errors.push('Password must contain at least 3 of: uppercase, lowercase, digit, special character');
+    errors.push(
+      'Password must contain at least 3 of: uppercase, lowercase, digit, special character'
+    );
   }
 
   return {

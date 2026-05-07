@@ -36,8 +36,8 @@ import { AnimatedAmount } from './AnimatedAmount';
 import { parseApiError, isPasscodeSessionError } from '@/utils/apiError';
 import {
   ArrowLeft01Icon, Cancel01Icon, CheckmarkCircle02Icon, Search01Icon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const MAX_DIGITS = 9;
 const P2P_LIMIT = 10_000;
@@ -67,7 +67,7 @@ function initials(r?: P2PRecentRecipient | P2PLookupResponse['user'] | null): st
 function Avatar({ chars, size = 44 }: { chars: string; size?: number }) {
   return (
     <View
-      style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#F3F4F6' }}
+      style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#f2f0ed' }}
       className="items-center justify-center">
       <Text style={{ fontSize: size * 0.38, fontFamily: 'SFProDisplay-Medium', color: '#111' }}>
         {chars}
@@ -94,7 +94,7 @@ function RecipientRow({ name, sub, chars, onPress }: {
 
 function TabSelector({ active, onSelect }: { active: Tab; onSelect: (t: Tab) => void }) {
   return (
-    <View className="mb-4 flex-row rounded-xl bg-surface p-1">
+    <View className="mb-4 flex-row rounded-lg bg-surface p-1">
       {(['railtag', 'email'] as Tab[]).map((t) => (
         <Pressable
           key={t}
@@ -254,7 +254,7 @@ function P2PSendScreenContent() {
   // ── Auth screen ─────────────────────────────────────────────────────────
   if (showAuthScreen) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" />
         <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
           <Pressable className="size-11 items-center justify-center rounded-full bg-surface" onPress={() => setShowAuthScreen(false)}>
@@ -264,8 +264,8 @@ function P2PSendScreenContent() {
           <View className="size-11" />
         </View>
         {!!lockoutUntil && (
-          <View className="mx-5 mt-3 rounded-xl bg-red-50 px-4 py-3">
-            <Text className="font-subtitle text-[13px] text-red-600">Too many attempts. Try again in {lockoutSecondsRemaining}s.</Text>
+          <View className="mx-5 mt-3 rounded-lg bg-coral-red/10 px-4 py-3">
+            <Text className="font-subtitle text-[13px] text-coral-red">Too many attempts. Try again in {lockoutSecondsRemaining}s.</Text>
           </View>
         )}
         <PasscodeInput subtitle="Enter your PIN to confirm this send" length={4} value={passkey.authPasscode} onValueChange={passkey.onAuthPasscodeChange} onComplete={lockoutUntil ? undefined : onPasscodeAuthorize} errorText={passkey.authError} showToggle showFingerprint={passkeyAvailable} onFingerprint={lockoutUntil ? undefined : passkey.onPasskeyAuthorize} autoSubmit variant="light" className="mt-3 flex-1" />
@@ -276,11 +276,11 @@ function P2PSendScreenContent() {
   // ── Success screen ──────────────────────────────────────────────────────
   if (success) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" />
         <Animated.View entering={FadeInDown.springify().damping(18)} className="flex-1 items-center justify-center px-8">
           <View className="mb-6 size-20 items-center justify-center rounded-full bg-green-50">
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={36} color="#10B981" />
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={36} color="#00ca48" />
           </View>
           <Text className="text-center font-subtitle text-[32px] leading-[38px] text-text-primary">
             ${formatCurrency(numericAmount)}{'\n'}sent
@@ -319,7 +319,7 @@ function P2PSendScreenContent() {
               <View className="rounded-full bg-white/20 px-3 py-1.5">
                 <Text className="font-body text-[13px] text-white/90">Balance: ${formatCurrency(balance)}</Text>
               </View>
-              <Pressable className="rounded-full bg-white px-4 py-1.5" onPress={() => setRawAmount(formatMaxAmount(maxSend))}>
+              <Pressable className="rounded-full bg-parchment-card px-4 py-1.5" onPress={() => setRawAmount(formatMaxAmount(maxSend))}>
                 <Text className="font-subtitle text-[13px]" style={{ color: BRAND_RED }}>Max</Text>
               </Pressable>
             </Animated.View>
@@ -339,11 +339,11 @@ function P2PSendScreenContent() {
   // ── Step: Recipient ─────────────────────────────────────────────────────
   if (step === 'recipient') {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
         <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
           <Pressable className="size-11 items-center justify-center rounded-full bg-surface" onPress={() => { setStep('amount'); setQuery(''); setLookupResult(null); }}>
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
           </Pressable>
           <Text className="font-subtitle text-[17px] text-text-primary">Send to</Text>
           <View className="size-11" />
@@ -364,8 +364,8 @@ function P2PSendScreenContent() {
 
             {/* Input */}
             <Animated.View entering={FadeInUp.delay(40).duration(200)} className="mb-2">
-              <View className="flex-row items-center gap-3 rounded-xl border border-[#D4D4D8] px-4" style={{ height: 52 }}>
-                <HugeiconsIcon icon={Search01Icon} size={18} color="#9CA3AF" />
+              <View className="flex-row items-center gap-3 rounded-lg border border-[#f2f0ed] px-4" style={{ height: 52 }}>
+                <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
                 <TextInput
                   className="flex-1 font-body text-[15px] text-text-primary"
                   placeholder={tab === 'railtag' ? '@railtag' : 'Email or phone number'}
@@ -377,9 +377,9 @@ function P2PSendScreenContent() {
                   returnKeyType="search"
                   autoFocus
                 />
-                {isLooking ? <ActivityIndicator size="small" color="#9CA3AF" /> : query.length > 0 ? (
+                {isLooking ? <ActivityIndicator size="small" color="#848281" /> : query.length > 0 ? (
                   <Pressable onPress={() => { setQuery(''); setLookupResult(null); }} hitSlop={8}>
-                    <HugeiconsIcon icon={Cancel01Icon} size={15} color="#9CA3AF" />
+                    <HugeiconsIcon icon={Cancel01Icon} size={15} color="#848281" />
                   </Pressable>
                 ) : null}
               </View>
@@ -441,11 +441,11 @@ function P2PSendScreenContent() {
 
   // ── Step: Note + Send ───────────────────────────────────────────────────
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
         <Pressable className="size-11 items-center justify-center rounded-full bg-surface" onPress={() => { setStep('recipient'); setNote(''); setSubmitError(''); }}>
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
         </Pressable>
         <Text className="font-subtitle text-[17px] text-text-primary">Confirm</Text>
         <View className="size-11" />
@@ -471,7 +471,7 @@ function P2PSendScreenContent() {
           {/* Note input */}
           <Animated.View entering={FadeInUp.delay(40).duration(200)} className="mb-4">
             <Text className="mb-2 font-subtitle text-[13px] text-text-secondary">Note</Text>
-            <View className="rounded-xl border border-[#D4D4D8] px-4 py-1">
+            <View className="rounded-lg border border-[#f2f0ed] px-4 py-1">
               <TextInput
                 ref={noteRef}
                 className="py-3 font-body text-[15px] text-text-primary"
@@ -489,7 +489,7 @@ function P2PSendScreenContent() {
           </Animated.View>
 
           {!selected?.isUser && (
-            <Animated.View entering={FadeIn.duration(200)} className="mb-4 rounded-2xl bg-amber-50 px-4 py-3">
+            <Animated.View entering={FadeIn.duration(200)} className="mb-4 rounded-2xl bg-sunburst-yellow/10 px-4 py-3">
               <Text className="font-body text-[13px] text-amber-700">
                 {selected?.name} isn't on Rail yet. They'll receive an invite to claim your ${formatCurrency(numericAmount)}.
               </Text>
@@ -497,14 +497,14 @@ function P2PSendScreenContent() {
           )}
 
           {submitError ? (
-            <View className="mb-4 rounded-2xl bg-red-50 px-4 py-3">
-              <Text className="font-body text-[13px] text-red-600">{submitError}</Text>
+            <View className="mb-4 rounded-2xl bg-coral-red/10 px-4 py-3">
+              <Text className="font-body text-[13px] text-coral-red">{submitError}</Text>
             </View>
           ) : null}
         </ScrollView>
 
         {/* Sticky footer */}
-        <View className="border-t border-gray-100 bg-white px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
+        <View className="border-t border-stone-surface bg-parchment-card px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           <Button
             title={isSubmitting ? 'Sending...' : `Send $${formatCurrency(numericAmount)}`}
             variant="orange"

@@ -76,7 +76,7 @@ class PushNotificationService {
     } catch (error) {
       logger.error('Failed to get push token', {
         component: 'PushNotifications',
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : error,
       });
       return null;
     }
@@ -123,7 +123,7 @@ class PushNotificationService {
     } catch (error) {
       logger.warn('Failed to register push token', {
         component: 'PushNotifications',
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : error,
       });
     }
   }
@@ -139,7 +139,7 @@ class PushNotificationService {
     } catch (error) {
       logger.error('Failed to unregister push token', {
         component: 'PushNotifications',
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : error,
       });
     }
   }
@@ -226,6 +226,7 @@ class PushNotificationService {
         break;
       case 'miriam_proactive':
       case 'miriam_action_required':
+      case 'automation':
         qc.invalidateQueries({ queryKey: queryKeys.station.all });
         qc.invalidateQueries({ queryKey: queryKeys.wallet.all });
         break;
@@ -297,21 +298,32 @@ class PushNotificationService {
       case 'morning_greeting':
         router.push('/(tabs)' as never);
         break;
+      case 'automation':
       case 'spending_alert':
       case 'budget_pace_alert':
       case 'cash_runway_alert':
       case 'idle_money':
       case 'savings_milestone':
       case 'weekly_digest':
-      case 'month_recap':
-        router.push('/ai-chat' as never);
+      case 'month_recap': {
+        const preloaded = typeof data.preloaded_message === 'string' ? data.preloaded_message : '';
+        if (preloaded) {
+          router.push({ pathname: '/ai-chat', params: { preloaded_message: preloaded } } as any);
+        } else {
+          router.push('/ai-chat' as never);
+        }
         break;
+      }
       case 'miriam_proactive':
-        router.push('/ai-chat' as never);
+      case 'miriam_action_required': {
+        const msg = typeof data.preloaded_message === 'string' ? data.preloaded_message : '';
+        if (msg) {
+          router.push({ pathname: '/ai-chat', params: { preloaded_message: msg } } as any);
+        } else {
+          router.push('/ai-chat' as never);
+        }
         break;
-      case 'miriam_action_required':
-        router.push('/ai-chat' as never);
-        break;
+      }
       default:
         // SECURITY FIX (R4-H1): Validate screen against allowlist to prevent
         // arbitrary navigation via crafted push notification payloads.
@@ -330,7 +342,12 @@ class PushNotificationService {
         ]);
         const target =
           typeof screen === 'string' && SAFE_SCREENS.has(screen) ? screen : '/notifications';
-        router.push(target as any);
+        const preloadedMsg = typeof data.preloaded_message === 'string' ? data.preloaded_message : '';
+        if (target === '/ai-chat' && preloadedMsg) {
+          router.push({ pathname: '/ai-chat', params: { preloaded_message: preloadedMsg } } as any);
+        } else {
+          router.push(target as any);
+        }
     }
   }
 

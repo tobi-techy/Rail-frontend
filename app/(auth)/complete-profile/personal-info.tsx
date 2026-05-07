@@ -48,10 +48,10 @@ export default function PersonalInfo() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-headline-2 text-auth-title leading-[1.1] text-black">
+              <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
                 Personal Info
               </Text>
-              <Text className="mt-2 font-body text-caption text-black/60">
+              <Text className="mt-2 font-body text-caption text-ash">
                 Enter your legal name exactly as it appears on your ID document.
               </Text>
             </View>

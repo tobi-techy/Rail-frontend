@@ -65,3 +65,6 @@ export * from './useGameplay';
 
 // Security hooks
 export * from './useSecurity';
+
+// AI hooks
+export * from './useAI';

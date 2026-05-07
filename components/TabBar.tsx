@@ -6,11 +6,11 @@ import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useHaptics } from '@/hooks/useHaptics';
-import { useFeatureGate } from '@/hooks/useFeatureGate';
+
 import { useAIChatStore } from '@/stores/aiChatStore';
 import { MiriamCharacter } from '@/components/ai';
 
-const ACCENT = '#FF2E01';
+const ACCENT = '#ff3e00';
 
 // ─── Tab Item ────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ function TabBarItem({
       <Animated.View style={animatedStyle}>
         {options.tabBarIcon?.({
           focused: isFocused,
-          color: isFocused ? '#FF2E01' : '#8C8C8C',
+          color: isFocused ? '#ff3e00' : '#848281',
           size: 26,
         })}
       </Animated.View>
@@ -75,7 +75,6 @@ function AIButton() {
   const router = useRouter();
   const { impact } = useHaptics();
   const open = useAIChatStore((s) => s.open);
-  const { requireFeature } = useFeatureGate();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -85,17 +84,9 @@ function AIButton() {
 
   const handlePress = useCallback(() => {
     impact();
-    requireFeature(
-      () => {
-        open();
-        router.push('/ai-chat');
-      },
-      {
-        onProfileRequired: () => router.push('/complete-profile/personal-info'),
-        onKycRequired: () => router.push('/kyc'),
-      }
-    );
-  }, [impact, open, router, requireFeature]);
+    open();
+    router.push('/ai-chat');
+  }, [impact, open, router]);
 
   return (
     <View>
@@ -111,7 +102,7 @@ function AIButton() {
         accessibilityLabel="Miriam AI"
         accessibilityRole="button"
         style={{ width: 64, height: 64 }}>
-          <MiriamCharacter size={64} emotion="sad" animate={true} />
+          <MiriamCharacter size={64} emotion="happy" animate={true} />
       </Pressable>
     </View>
   );

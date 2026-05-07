@@ -85,7 +85,7 @@ export function MFAChallengeSheet({
 
       {requestChallenge.isPending ? (
         <View className="items-center py-8">
-          <ActivityIndicator color="#6B7280" />
+          <ActivityIndicator color="#848281" />
           <Text className="mt-3 font-body text-sm text-text-secondary">Sending code…</Text>
         </View>
       ) : (
@@ -106,7 +106,7 @@ export function MFAChallengeSheet({
 
           {verifyChallenge.isPending && (
             <View className="mt-4 items-center">
-              <ActivityIndicator color="#6B7280" />
+              <ActivityIndicator color="#848281" />
             </View>
           )}
         </>

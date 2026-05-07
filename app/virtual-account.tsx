@@ -19,8 +19,8 @@ import {
   Copy01Icon,
   CheckmarkCircle02Icon,
   Share01Icon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 type Currency = 'USD' | 'EUR';
 const CURRENCIES: Currency[] = ['USD', 'EUR'];
@@ -53,13 +53,13 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       accessibilityRole="button"
       accessibilityLabel={`Copy ${label}`}>
       <View className="flex-1 pr-4">
-        <Text className="font-body text-[13px] text-[#9CA3AF]">{label}</Text>
-        <Text className="mt-1.5 font-subtitle text-[16px] text-[#070914]" selectable>
+        <Text className="font-body text-[13px] text-[#848281]">{label}</Text>
+        <Text className="mt-1.5 font-subtitle text-[16px] text-[#343433]" selectable>
           {value}
         </Text>
       </View>
       {copied ? (
-        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={20} color="#10B981" />
+        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={20} color="#00ca48" />
       ) : (
         <HugeiconsIcon icon={Copy01Icon} size={20} color="#6366F1" />
       )}
@@ -85,18 +85,18 @@ function CurrencyPicker({
           Haptics.selectionAsync();
           setOpen(!open);
         }}
-        className="flex-row items-center gap-2 rounded-full bg-[#F3F4F6] px-3 py-2">
+        className="flex-row items-center gap-2 rounded-full bg-[#f2f0ed] px-3 py-2">
         <View className="size-6 overflow-hidden rounded-full">
           <CountryFlag isoCode={flagCode} size={20} />
         </View>
-        <Text className="font-subtitle text-[14px] text-[#070914]">{selected}</Text>
-        <HugeiconsIcon icon={ArrowDown01Icon} size={14} color="#6B7280" />
+        <Text className="font-subtitle text-[14px] text-[#343433]">{selected}</Text>
+        <HugeiconsIcon icon={ArrowDown01Icon} size={14} color="#848281" />
       </Pressable>
 
       {open && (
         <Animated.View
           entering={FadeInDown.duration(150)}
-          className="absolute right-0 top-12 min-w-[180px] rounded-2xl bg-white py-2"
+          className="absolute right-0 top-12 min-w-[180px] rounded-2xl bg-parchment-card py-2"
           style={{
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 8 },
@@ -114,13 +114,13 @@ function CurrencyPicker({
                   onSelect(c);
                   setOpen(false);
                 }}
-                className={`flex-row items-center gap-3 px-4 py-3 ${selected === c ? 'bg-gray-50' : ''}`}>
+                className={`flex-row items-center gap-3 px-4 py-3 ${selected === c ? 'bg-stone-surface' : ''}`}>
                 <View className="size-7 overflow-hidden rounded-full">
                   <CountryFlag isoCode={cFlagCode} size={22} />
                 </View>
                 <View>
-                  <Text className="font-subtitle text-[14px] text-[#070914]">{c}</Text>
-                  <Text className="font-body text-[12px] text-[#9CA3AF]">{CURRENCY_LABEL[c]}</Text>
+                  <Text className="font-subtitle text-[14px] text-[#343433]">{c}</Text>
+                  <Text className="font-body text-[12px] text-[#848281]">{CURRENCY_LABEL[c]}</Text>
                 </View>
               </Pressable>
             );
@@ -158,11 +158,11 @@ function AccountDetails({ account }: { account: VirtualAccount }) {
     <Animated.View entering={FadeInDown.duration(350)} className="flex-1">
       <View className="px-6">
         {/* Divider card */}
-        <View className="mt-2 rounded-2xl bg-[#F9FAFB] px-5">
+        <View className="mt-2 rounded-2xl bg-[#f8f7f4] px-5">
           {account.beneficiary_name ? (
             <>
               <DetailRow label="Name" value={account.beneficiary_name} />
-              <View className="h-px bg-[#E5E7EB]" />
+              <View className="h-px bg-[#f2f0ed]" />
             </>
           ) : null}
 
@@ -170,33 +170,33 @@ function AccountDetails({ account }: { account: VirtualAccount }) {
 
           {account.routing_number ? (
             <>
-              <View className="h-px bg-[#E5E7EB]" />
+              <View className="h-px bg-[#f2f0ed]" />
               <DetailRow label="Routing number (for wire and ACH)" value={account.routing_number} />
             </>
           ) : null}
 
           {account.bank_name ? (
             <>
-              <View className="h-px bg-[#E5E7EB]" />
+              <View className="h-px bg-[#f2f0ed]" />
               <DetailRow label="Bank name" value={account.bank_name} />
             </>
           ) : null}
 
           {account.bank_address ? (
             <>
-              <View className="h-px bg-[#E5E7EB]" />
+              <View className="h-px bg-[#f2f0ed]" />
               <DetailRow label="Address" value={account.bank_address} />
             </>
           ) : null}
 
           {rails ? (
             <>
-              <View className="h-px bg-[#E5E7EB]" />
+              <View className="h-px bg-[#f2f0ed]" />
               <DetailRow label="Payment rails" value={rails} />
             </>
           ) : null}
 
-          <View className="h-px bg-[#E5E7EB]" />
+          <View className="h-px bg-[#f2f0ed]" />
           <DetailRow label="Account type" value="Checking" />
         </View>
 
@@ -216,13 +216,13 @@ function AccountDetails({ account }: { account: VirtualAccount }) {
 function EmptyState({ currency, onSetup }: { currency: Currency; onSetup: () => void }) {
   return (
     <View className="flex-1 items-center justify-center px-8">
-      <View className="mb-5 size-20 items-center justify-center overflow-hidden rounded-full bg-gray-50">
+      <View className="mb-5 size-20 items-center justify-center overflow-hidden rounded-full bg-stone-surface">
         <CountryFlag isoCode={CURRENCY_ISO[currency]} size={36} />
       </View>
-      <Text className="mb-2 text-center font-subtitle text-[20px] text-[#070914]">
+      <Text className="mb-2 text-center font-subtitle text-[20px] text-[#343433]">
         No {currency} account yet
       </Text>
-      <Text className="mb-8 text-center font-body text-[14px] leading-5 text-[#9CA3AF]">
+      <Text className="mb-8 text-center font-body text-[14px] leading-5 text-[#848281]">
         Create a virtual {CURRENCY_LABEL[currency]} account to receive deposits.
       </Text>
       <Button title={`Create ${currency} Account`} onPress={onSetup} />
@@ -250,7 +250,7 @@ export default function VirtualAccountScreen() {
 
   if (isKycLoading || isAccountsLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-warm-canvas">
         <View className="px-6 pt-4">
           <Skeleton className="mb-6 h-6 w-6 rounded-full" />
           <Skeleton className="mb-2 h-9 w-64" />
@@ -258,7 +258,7 @@ export default function VirtualAccountScreen() {
         </View>
         <View className="mt-8 px-6">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="mb-3 h-16 w-full rounded-xl" />
+            <Skeleton key={i} className="mb-3 h-16 w-full rounded-lg" />
           ))}
         </View>
       </SafeAreaView>
@@ -266,16 +266,16 @@ export default function VirtualAccountScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-warm-canvas">
       {/* Header */}
       <View className="flex-row items-center justify-between px-6 pt-3">
         <Pressable
           onPress={() => router.back()}
           hitSlop={12}
-          className="h-10 w-10 items-center justify-center rounded-full bg-[#F3F4F6]"
+          className="h-10 w-10 items-center justify-center rounded-full bg-[#f2f0ed]"
           accessibilityRole="button"
           accessibilityLabel="Go back">
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#070914" strokeWidth={2} />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" strokeWidth={2} />
         </Pressable>
         <CurrencyPicker selected={selectedCurrency} onSelect={setSelectedCurrency} />
       </View>
@@ -289,11 +289,11 @@ export default function VirtualAccountScreen() {
           }>
           {/* Title */}
           <View className="px-6 pt-6">
-            <Text className="font-headline-1 text-[30px] leading-[36px] text-[#070914]">
+            <Text className="font-headline-1 text-[30px] leading-[36px] text-[#343433]">
               Add money to your{'\n'}
               {selectedCurrency} account
             </Text>
-            <Text className="mt-2 font-body text-[15px] text-[#9CA3AF]">
+            <Text className="mt-2 font-body text-[15px] text-[#848281]">
               Make a transfer to your account details below
             </Text>
           </View>

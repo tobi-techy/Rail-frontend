@@ -7,8 +7,8 @@ import { startVerification, VerificationStatus } from '@didit-protocol/sdk-react
 import { useKycStore } from '@/stores/kycStore';
 import { logger } from '@/lib/logger';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
-import { Alert02Icon, Cancel01Icon, RefreshIcon, MessageIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Alert02Icon, Cancel01Icon, RefreshIcon, MessageIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export default function KycDiditSdkScreen() {
   const { diditSessionToken, setLocalSubmissionPendingAt } = useKycStore();
@@ -139,24 +139,24 @@ export default function KycDiditSdkScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       <View className="flex-row items-center justify-between px-4 pb-2 pt-1">
         <View className="size-11" />
-        <Text className="font-subtitle text-[13px] text-gray-500">Identity verification</Text>
+        <Text className="font-subtitle text-[13px] text-ash">Identity verification</Text>
         <Pressable
           className="size-11 items-center justify-center"
           onPress={handleClose}
           accessibilityRole="button"
           accessibilityLabel="Close identity verification">
-          <HugeiconsIcon icon={Cancel01Icon} size={22} color="#111827" />
+          <HugeiconsIcon icon={Cancel01Icon} size={22} color="#343433" />
         </Pressable>
       </View>
 
       {!initError && (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#111827" />
-          <Text className="mt-4 font-body text-[15px] text-gray-500">Launching verification…</Text>
-          <Text className="mt-2 font-caption text-[13px] text-gray-400">
+          <ActivityIndicator size="large" color="#343433" />
+          <Text className="mt-4 font-body text-[15px] text-ash">Launching verification…</Text>
+          <Text className="mt-2 font-caption text-[13px] text-smoke">
             This may take a moment
           </Text>
         </View>
@@ -165,19 +165,19 @@ export default function KycDiditSdkScreen() {
       {initError && (
         <View className="flex-1 items-center justify-center px-8">
           <View className="mb-6 items-center">
-            <HugeiconsIcon icon={Alert02Icon} size={48} color="#DC2626" />
+            <HugeiconsIcon icon={Alert02Icon} size={48} color="#ff2b3a" />
           </View>
-          <Text className="mb-2 text-center font-display text-[22px] text-gray-900">
+          <Text className="mb-2 text-center font-display text-[22px] text-charcoal-primary">
             {getErrorTitle()}
           </Text>
-          <Text className="mb-8 text-center font-body text-[15px] leading-6 text-gray-600">
+          <Text className="mb-8 text-center font-body text-[15px] leading-6 text-ash">
             {getErrorMessage()}
           </Text>
 
-          <View className="w-full gap-y-3">
+          <View className="w-full flex-row gap-3">
             <Pressable
               onPress={handleRetry}
-              className="flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-6 py-4"
+              className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-6 py-4"
               accessibilityRole="button"
               accessibilityLabel="Try verification again">
               <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />
@@ -186,15 +186,15 @@ export default function KycDiditSdkScreen() {
 
             <Pressable
               onPress={handleContactSupport}
-              className="flex-row items-center justify-center gap-x-2 rounded-full border border-gray-200 px-6 py-4"
+              className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full border border-fog px-6 py-4"
               accessibilityRole="button"
               accessibilityLabel="Contact support">
-              <HugeiconsIcon icon={MessageIcon} size={18} color="#374151" />
-              <Text className="font-subtitle text-[15px] text-gray-700">Contact Support</Text>
+              <HugeiconsIcon icon={MessageIcon} size={18} color="#474645" />
+              <Text className="font-subtitle text-[15px] text-graphite">Contact Support</Text>
             </Pressable>
           </View>
 
-          <Text className="mt-8 text-center font-caption text-[12px] text-gray-500">
+          <Text className="mt-8 text-center font-caption text-[12px] text-ash">
             Having trouble? Our support team is here to help.
           </Text>
         </View>

@@ -10,8 +10,8 @@ import { ROUTES } from '@/constants/routes';
 import { useKYCStatus } from '@/api/hooks';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 import { KYCVerificationSheet } from '@/components/sheets';
-import { ArrowLeft01Icon, Wallet01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon, Wallet01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -43,7 +43,7 @@ function WithdrawOptionCard({
       }}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}>
-      <View className="mb-4 size-12 items-center justify-center rounded-2xl bg-white">{icon}</View>
+      <View className="mb-4 size-12 items-center justify-center rounded-2xl bg-warm-canvas">{icon}</View>
       <Text className="font-subtitle text-[20px] text-text-primary">{title}</Text>
       <Text className="mt-1 font-body text-[14px] text-text-secondary">{subtitle}</Text>
     </AnimatedPressable>
@@ -58,7 +58,7 @@ export default function WithdrawMethodSelectorScreen() {
 
   return (
     <ErrorBoundary>
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
 
         <View className="flex-1 px-5">
@@ -68,7 +68,7 @@ export default function WithdrawMethodSelectorScreen() {
               onPress={() => router.back()}
               accessibilityRole="button"
               accessibilityLabel="Go back">
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
             </Pressable>
           </View>
 
@@ -115,7 +115,7 @@ export default function WithdrawMethodSelectorScreen() {
                 title="Withdraw to Wallet01Icon"
                 subtitle="Send USDC directly to your Solana wallet via MWA — supports Seed Vault on Seeker"
                 onPress={() => router.push('/withdraw/mwa-withdraw' as never)}
-                icon={<HugeiconsIcon icon={Wallet01Icon} size={24} color="#111827" />}
+                icon={<HugeiconsIcon icon={Wallet01Icon} size={24} color="#343433" />}
                 accessibilityLabel="Select MWA wallet withdrawal"
               />
             )}

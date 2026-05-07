@@ -197,6 +197,40 @@ export class SessionManager {
   }
 
   /**
+   * Check whether the app-level unlock has expired.
+   *
+   * This intentionally differs from isPasscodeSessionExpired(): backend passcode
+   * tokens can be consumed by sensitive operations, but the user should only be
+   * routed back to the PIN screen after local inactivity/background grace expires.
+   */
+  static isAppUnlockExpired(): boolean {
+    const { isAuthenticated, lastActivityAt, passcodeSessionExpiresAt, appLockExpiresAt } =
+      useAuthStore.getState();
+
+    if (!isAuthenticated) return false;
+
+    if (appLockExpiresAt) {
+      const expiry = new Date(appLockExpiresAt).getTime();
+      if (Number.isNaN(expiry)) return true;
+      return Date.now() >= expiry;
+    }
+
+    if (lastActivityAt) {
+      const lastActivity = new Date(lastActivityAt).getTime();
+      if (Number.isNaN(lastActivity)) return true;
+      return Date.now() - lastActivity >= PASSCODE_SESSION_MS;
+    }
+
+    if (passcodeSessionExpiresAt) {
+      const expiry = new Date(passcodeSessionExpiresAt).getTime();
+      if (Number.isNaN(expiry)) return true;
+      return Date.now() >= expiry;
+    }
+
+    return true;
+  }
+
+  /**
    * Schedule passcode session expiration check
    * Passcode session lasts 10 minutes of INACTIVITY
    * SECURITY: Validates expiry timestamp to prevent bypass attacks
@@ -256,6 +290,13 @@ export class SessionManager {
     }
 
     this.passcodeSessionTimer = setTimeout(() => {
+      if (!this.isAppUnlockExpired()) {
+        const { appLockExpiresAt, passcodeSessionExpiresAt } = useAuthStore.getState();
+        const nextExpiresAt = appLockExpiresAt || passcodeSessionExpiresAt;
+        if (nextExpiresAt) this.schedulePasscodeSessionExpiry(nextExpiresAt);
+        return;
+      }
+
       logger.debug('[SessionManager] Passcode session expired (scheduled)', {
         component: 'SessionManager',
         action: 'scheduled-expiry',

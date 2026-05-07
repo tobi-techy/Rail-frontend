@@ -39,8 +39,8 @@ import {
   SnowIcon,
   Sun01Icon,
   Wallet01Icon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -263,7 +263,7 @@ export default function CardSettingsScreen() {
                 last4={activeCard.last_4 ?? '••••'}
                 exp={activeCard.expiry ?? '••/••'}
                 currency="USD"
-                accentColor={isFrozen ? '#6B7280' : '#FF6A00'}
+                accentColor={isFrozen ? '#848281' : '#FF6A00'}
                 patternIntensity={0.35}
               />
             </View>
@@ -295,7 +295,7 @@ export default function CardSettingsScreen() {
               isFrozen ? (
                 <HugeiconsIcon icon={Sun01Icon} size={22} color="#F59E0B" />
               ) : (
-                <HugeiconsIcon icon={SnowIcon} size={22} color="#3B82F6" />
+                <HugeiconsIcon icon={SnowIcon} size={22} color="#0090ff" />
               )
             }
             label={isFrozen ? 'Unfreeze' : 'Freeze Card'}
@@ -347,7 +347,7 @@ export default function CardSettingsScreen() {
         <Text className="mb-2 font-subtitle text-xl">
           {isFrozen ? 'Unfreeze Card' : 'Freeze Card'}
         </Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           {isFrozen
             ? 'Reactivate your card to resume spending.'
             : 'Temporarily disable your card. No charges will be processed while frozen.'}
@@ -367,7 +367,7 @@ export default function CardSettingsScreen() {
       {/* Daily limit sheet */}
       <BottomSheet visible={activeSheet === 'limit'} onClose={closeSheet}>
         <Text className="mb-2 font-subtitle text-xl">Daily Limit</Text>
-        <Text className="mb-4 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-4 font-body text-base leading-6 text-ash">
           Set a daily spending limit on your card.
         </Text>
         <WheelPicker
@@ -401,8 +401,8 @@ export default function CardSettingsScreen() {
         <Text className="mb-4 text-center font-body text-sm text-text-secondary">
           Export your card transaction summary for any month.
         </Text>
-        <View className="mb-5 flex-row items-center gap-3 rounded-2xl border border-dashed border-gray-300 px-4 py-4">
-          <HugeiconsIcon icon={File01Icon} size={18} color="#9CA3AF" />
+        <View className="mb-5 flex-row items-center gap-3 rounded-2xl border border-dashed border-fog px-4 py-4">
+          <HugeiconsIcon icon={File01Icon} size={18} color="#848281" />
           <Text className="flex-1 font-body text-sm leading-5 text-text-secondary">
             Statements are available from the 2nd of the following month.
           </Text>
@@ -448,7 +448,7 @@ export default function CardSettingsScreen() {
       {/* Support sheet */}
       <BottomSheet visible={activeSheet === 'support'} onClose={closeSheet}>
         <Text className="mb-2 font-subtitle text-xl">Contact Support</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           Having an issue with your card? Our team is here to help.
         </Text>
         <Button
@@ -465,7 +465,7 @@ export default function CardSettingsScreen() {
       {/* Feedback sheet */}
       <BottomSheet visible={activeSheet === 'feedback'} onClose={closeSheet}>
         <Text className="mb-2 font-subtitle text-xl">Share Feedback</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           Help us improve your card experience.
         </Text>
         <Button
@@ -482,7 +482,7 @@ export default function CardSettingsScreen() {
       {/* Terms sheet */}
       <BottomSheet visible={activeSheet === 'terms'} onClose={closeSheet}>
         <Text className="mb-2 font-subtitle text-xl">Terms & Conditions</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           Review the terms and conditions for your Rail card.
         </Text>
         <Button

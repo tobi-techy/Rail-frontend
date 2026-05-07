@@ -18,12 +18,12 @@ import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { haptics } from '@/utils/haptics';
 import { TransactionDetails } from '@/stores/withdrawalStore';
 import { layout, moderateScale, responsive } from '@/utils/layout';
-import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowRight01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const ANIMATION_DURATION = 200;
 const SPRING_CONFIG = { damping: 20, stiffness: 200 };
-const MUTED = '#6B7280';
+const MUTED = '#848281';
 
 interface ConfirmTransactionModalProps {
   visible: boolean;
@@ -101,7 +101,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
         accessibilityLabel="Close">
         <GestureDetector gesture={pan}>
           <Animated.View
-            className="absolute bottom-0 left-0 right-0 self-center rounded-t-lg bg-white"
+            className="absolute bottom-0 left-0 right-0 self-center rounded-t-lg bg-warm-canvas"
             style={[
               sheetStyle,
               {
@@ -116,7 +116,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
             ]}>
             {/* Drag handle */}
             <View className="items-center pt-md">
-              <View className="h-1 w-10 rounded-full bg-gray-200" />
+              <View className="h-1 w-10 rounded-full bg-fog" />
             </View>
 
             {/* Header */}
@@ -235,7 +235,7 @@ export const ConfirmTransactionModal: React.FC<ConfirmTransactionModalProps> = (
                     <View className="flex-row items-center">
                       <View
                         className="mr-2 h-5 w-5 items-center justify-center rounded-full"
-                        style={{ backgroundColor: '#8B5CF6' }}>
+                        style={{ backgroundColor: '#9f4fff' }}>
                         <Text className="font-button text-[10px] text-white">B</Text>
                       </View>
                       <Text className="font-body text-small text-text-primary">

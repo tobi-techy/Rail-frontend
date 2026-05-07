@@ -10,10 +10,10 @@ import { Skeleton } from '@/components/atoms/Skeleton';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useUIStore } from '@/stores';
 import { CATEGORY_PALETTE } from './components';
-import { ArrowLeft01Icon, RefreshIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon, RefreshIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
-const ACCENT = '#FF2E01';
+const ACCENT = '#ff3e00';
 
 // ── Period pill selector ──────────────────────────────────────────────────────
 
@@ -28,17 +28,17 @@ function PeriodSelector({
   onSelect: (p: Period) => void;
 }) {
   return (
-    <View className="flex-row gap-0.5 self-start rounded-[20px] bg-gray-50 p-1">
+    <View className="flex-row gap-0.5 self-start rounded-[20px] bg-stone-surface p-1">
       {PERIODS.map((p) => {
         const active = p === selected;
         return (
           <Pressable
             key={p}
             onPress={() => onSelect(p)}
-            className={`rounded-2xl px-[18px] py-2 ${active ? 'bg-gray-100' : 'bg-transparent'}`}
+            className={`rounded-2xl px-[18px] py-2 ${active ? 'bg-stone-surface' : 'bg-transparent'}`}
             accessibilityRole="button">
             <Text
-              className={`text-sm ${active ? 'font-button text-black' : 'font-caption text-black/50'}`}>
+              className={`text-sm ${active ? 'font-button text-black' : 'font-caption text-ash'}`}>
               {p}
             </Text>
           </Pressable>
@@ -88,7 +88,7 @@ function MonthlyBarChart({ data }: { data: ChartBar[] }) {
                   width={barW}
                   height={6}
                   r={r}
-                  color="#E5E7EB"
+                  color="#f2f0ed"
                 />
               );
             }
@@ -116,7 +116,7 @@ function MonthlyBarChart({ data }: { data: ChartBar[] }) {
             key={bar.month}
             style={{ width: barW + (i < data.length - 1 ? gap : 0) }}
             className="items-center">
-            <Text className="font-caption text-[11px] text-black/50">{bar.month.slice(0, 3)}</Text>
+            <Text className="font-caption text-[11px] text-ash">{bar.month.slice(0, 3)}</Text>
           </View>
         ))}
       </View>
@@ -130,7 +130,7 @@ function MonthlyBarChart({ data }: { data: ChartBar[] }) {
         ].map(({ color, label }) => (
           <View key={label} className="flex-row items-center gap-1.5">
             <View style={{ backgroundColor: color }} className="h-2 w-2 rounded-full" />
-            <Text className="font-caption text-xs text-black/50">{label}</Text>
+            <Text className="font-caption text-xs text-ash">{label}</Text>
           </View>
         ))}
       </View>
@@ -158,16 +158,16 @@ function CategoryRow({
   return (
     <View>
       <View className="flex-row items-center px-4 py-4">
-        <View className="mr-3.5 h-11 w-11 items-center justify-center rounded-full bg-gray-100">
+        <View className="mr-3.5 h-11 w-11 items-center justify-center rounded-full bg-stone-surface">
           <Icon name={iconName} size={20} color={color} strokeWidth={1.5} />
         </View>
         <View className="flex-1">
-          <Text className="font-button text-base text-black">{title}</Text>
-          <Text className="mt-0.5 font-caption text-[13px] text-black/50">{percentage}%</Text>
+          <Text className="font-button text-base text-charcoal-primary">{title}</Text>
+          <Text className="mt-0.5 font-caption text-[13px] text-ash">{percentage}%</Text>
         </View>
-        <Text className="font-button text-base text-black">-${amount.toFixed(2)}</Text>
+        <Text className="font-button text-base text-charcoal-primary">-${amount.toFixed(2)}</Text>
       </View>
-      {showSep && <View className="ml-[74px] h-px bg-gray-100" />}
+      {showSep && <View className="ml-[74px] h-px bg-stone-surface" />}
     </View>
   );
 }
@@ -219,7 +219,7 @@ export default function SpendingScreen() {
   }, [filteredChart]);
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-warm-canvas">
       {/* Header */}
       <View className="flex-row items-center px-4 pb-1" style={{ paddingTop: insets.top + 8 }}>
         <Pressable
@@ -233,7 +233,7 @@ export default function SpendingScreen() {
           accessibilityLabel="Go back">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#000000" strokeWidth={2} />
         </Pressable>
-        <Text className="font-subtitle text-[17px] text-black">Spend</Text>
+        <Text className="font-subtitle text-[17px] text-charcoal-primary">Spend</Text>
       </View>
 
       <ScrollView
@@ -243,7 +243,7 @@ export default function SpendingScreen() {
         bounces>
         {/* ── Hero ── */}
         <View className="mb-7 mt-2">
-          <Text className="font-caption text-[15px] text-black/50">Spent</Text>
+          <Text className="font-caption text-[15px] text-ash">Spent</Text>
           {isLoading ? (
             <View className="mt-2 gap-2.5">
               <Skeleton style={{ width: 180, height: 56, borderRadius: 12 }} />
@@ -252,7 +252,7 @@ export default function SpendingScreen() {
           ) : (
             <Animated.View entering={FadeIn.duration(200)}>
               <Text
-                className="mt-0.5 font-display text-black"
+                className="mt-0.5 font-display text-charcoal-primary"
                 style={{ fontSize: 56, letterSpacing: -2, lineHeight: 64 }}
                 numberOfLines={1}
                 adjustsFontSizeToFit
@@ -260,7 +260,7 @@ export default function SpendingScreen() {
                 {mask(`$${thisMonthSpend.toFixed(2)}`)}
               </Text>
               <View className="mt-1.5 flex-row items-center gap-3">
-                <Text className="font-caption text-sm text-black/50">{rangeLabel}</Text>
+                <Text className="font-caption text-sm text-ash">{rangeLabel}</Text>
                 {trend !== 'stable' && (
                   <Text className="font-button text-[13px]" style={{ color: trendTextColor }}>
                     {trendLabel}
@@ -303,9 +303,9 @@ export default function SpendingScreen() {
               { label: 'Last month', value: mask(`$${lastMonthSpend.toFixed(2)}`) },
               { label: 'Transactions', value: String(transactionCount) },
             ].map(({ label, value }) => (
-              <View key={label} className="flex-1 rounded-2xl bg-gray-50 p-3.5">
-                <Text className="font-caption text-[11px] text-black/50">{label}</Text>
-                <Text className="mt-1.5 font-button text-[17px] text-black">{value}</Text>
+              <View key={label} className="flex-1 rounded-2xl bg-stone-surface p-3.5">
+                <Text className="font-caption text-[11px] text-ash">{label}</Text>
+                <Text className="mt-1.5 font-button text-[17px] text-charcoal-primary">{value}</Text>
               </View>
             ))}
           </View>
@@ -315,12 +315,12 @@ export default function SpendingScreen() {
         {(isLoading || categories.length > 0) && (
           <View className="mb-4">
             <View className="mb-3.5 flex-row items-center justify-between">
-              <Text className="font-headline text-xl text-black">By Category</Text>
+              <Text className="font-headline text-xl text-charcoal-primary">By Category</Text>
               <Pressable onPress={() => router.push('/card' as never)} accessibilityRole="button">
                 <Text className="font-body text-sm text-[#0A84FF]">Manage</Text>
               </Pressable>
             </View>
-            <View className="overflow-hidden rounded-[20px] bg-gray-50">
+            <View className="overflow-hidden rounded-[20px] bg-stone-surface">
               {isLoading
                 ? [0, 1, 2].map((i) => (
                     <View key={i} className="flex-row items-center gap-3.5 p-4">
@@ -352,19 +352,19 @@ export default function SpendingScreen() {
         {/* ── Round-ups ── */}
         {!isLoading && roundUps?.is_enabled && (
           <Animated.View entering={FadeIn.duration(300)}>
-            <View className="flex-row items-center gap-3.5 rounded-[20px] bg-gray-50 p-4">
+            <View className="flex-row items-center gap-3.5 rounded-[20px] bg-stone-surface p-4">
               <View
                 className="h-11 w-11 items-center justify-center rounded-full"
                 style={{ backgroundColor: `${ACCENT}22` }}>
                 <HugeiconsIcon icon={RefreshIcon} size={20} color={ACCENT} strokeWidth={1.5} />
               </View>
               <View className="flex-1">
-                <Text className="font-button text-base text-black">Round-ups</Text>
-                <Text className="mt-0.5 font-caption text-[13px] text-black/50">
+                <Text className="font-button text-base text-charcoal-primary">Round-ups</Text>
+                <Text className="mt-0.5 font-caption text-[13px] text-ash">
                   {roundUps.transaction_count} transactions
                 </Text>
               </View>
-              <Text className="font-button text-[17px] text-black">
+              <Text className="font-button text-[17px] text-charcoal-primary">
                 {mask(`$${parseFloat(roundUps.total_accumulated).toFixed(2)}`)}
               </Text>
             </View>
@@ -374,9 +374,9 @@ export default function SpendingScreen() {
         {/* ── Available ── */}
         {!isLoading && (
           <View className="mt-7 items-center">
-            <Text className="font-caption text-[13px] text-black/50">Available to spend</Text>
+            <Text className="font-caption text-[13px] text-ash">Available to spend</Text>
             <Text
-              className="mt-1 font-headline text-2xl text-black"
+              className="mt-1 font-headline text-2xl text-charcoal-primary"
               style={{ letterSpacing: -0.5 }}>
               {mask(`$${availableBalance.toFixed(2)}`)}
             </Text>

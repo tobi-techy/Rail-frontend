@@ -18,6 +18,7 @@ export function useFeatureGate() {
   // will have hasCompletedOnboarding=false but a KYC or advanced onboarding status.
   const isLegacyComplete =
     onboardingStatus === 'completed' ||
+    onboardingStatus === 'basic_complete' ||
     onboardingStatus === 'kyc_pending' ||
     onboardingStatus === 'kyc_approved' ||
     onboardingStatus === 'kyc_rejected';
@@ -30,13 +31,13 @@ export function useFeatureGate() {
   const requireFeature = useCallback(
     (
       onApproved: () => void,
-      opts?: { onProfileRequired?: () => void; onKycRequired?: () => void }
+      opts?: { onProfileRequired?: () => void; onKycRequired?: () => void; kycOptional?: boolean }
     ) => {
       if (!isProfileComplete) {
         opts?.onProfileRequired?.();
         return;
       }
-      if (!isKycApproved) {
+      if (!opts?.kycOptional && !isKycApproved) {
         opts?.onKycRequired?.();
         return;
       }

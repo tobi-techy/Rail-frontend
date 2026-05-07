@@ -114,7 +114,7 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
               return (
                 <View
                   key={index}
-                  className={`h-16 w-16 items-center justify-center rounded-full ${isDark ? 'bg-white/20' : 'bg-[#F3F4F6]'}`}>
+                  className={`h-16 w-16 items-center justify-center rounded-full ${isDark ? 'bg-white/20' : 'bg-stone-surface'}`}>
                   {isFilled &&
                     (showPasscode ? (
                       <Text
@@ -139,7 +139,7 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
               <Icon
                 name={showPasscode ? 'eye-off' : 'eye'}
                 size={22}
-                color={isDark ? '#fff' : '#FF5A00'}
+                color={isDark ? '#fff' : '#ff3e00'}
                 strokeWidth={2}
               />
             </TouchableOpacity>
@@ -148,14 +148,14 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
 
         {errorText && (
           <View className="mt-4 flex-row items-center gap-x-2">
-            <Icon name="alert-circle" size={16} color="#F44336" strokeWidth={2} />
+            <Icon name="alert-circle" size={16} color="#ff2b3a" strokeWidth={2} />
             <Text className="font-body text-caption text-destructive">{errorText}</Text>
           </View>
         )}
 
         {successText && (
           <View className="mt-4 flex-row items-center gap-x-2">
-            <Icon name="check-circle" size={16} color="#00C853" strokeWidth={2} />
+            <Icon name="check-circle" size={16} color="#00c454" strokeWidth={2} />
             <Text className="font-body text-caption text-success">{successText}</Text>
           </View>
         )}

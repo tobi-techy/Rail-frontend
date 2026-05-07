@@ -13,8 +13,8 @@ import {
   ArrowDownLeft01Icon,
   ShieldKeyIcon,
   Clock01Icon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const STEPS = [
   {
@@ -46,15 +46,15 @@ export default function KycVerificationIntroScreen() {
   const { track } = useAnalytics();
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
       <View className="flex-1">
         <View className="px-4 pb-2 pt-1">
           <Pressable
-            className="size-11 items-center justify-center rounded-full bg-gray-100"
+            className="size-11 items-center justify-center rounded-full bg-stone-surface"
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Go back">
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#111827" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" />
           </Pressable>
         </View>
 
@@ -62,40 +62,40 @@ export default function KycVerificationIntroScreen() {
           className="flex-1 px-6"
           contentContainerStyle={{ paddingTop: 24, paddingBottom: 16 }}
           showsVerticalScrollIndicator={false}>
-          <Text className="font-display text-[32px] leading-[36px] text-gray-900">
+          <Text className="font-display text-[32px] leading-[36px] text-charcoal-primary">
             Verify your identity
           </Text>
-          <Text className="mt-3 font-body text-[15px] leading-6 text-gray-600">
+          <Text className="mt-3 font-body text-[15px] leading-6 text-ash">
             A one-time check required by financial regulations. Takes under 5 minutes.
           </Text>
 
           {/* What you unlock */}
-          <View className="mt-8 rounded-2xl border border-gray-100 bg-gray-50 p-4">
-            <Text className="mb-3 font-subtitle text-[13px] text-gray-700">
+          <View className="mt-8 rounded-2xl border border-stone-surface bg-stone-surface p-4">
+            <Text className="mb-3 font-subtitle text-[13px] text-graphite">
               What you unlock:
             </Text>
             <View className="flex-row flex-wrap gap-2">
               {FEATURES_UNLOCKED.map((f) => (
                 <View
                   key={f.label}
-                  className="flex-row items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5">
-                  <HugeiconsIcon icon={f.icon} size={14} color="#374151" />
-                  <Text className="font-body text-[13px] text-gray-700">{f.label}</Text>
+                  className="flex-row items-center gap-2 rounded-full border border-fog bg-parchment-card px-3 py-1.5">
+                  <HugeiconsIcon icon={f.icon} size={14} color="#474645" />
+                  <Text className="font-body text-[13px] text-graphite">{f.label}</Text>
                 </View>
               ))}
             </View>
           </View>
 
-          <Text className="mt-8 font-subtitle text-[18px] text-gray-900">How it works</Text>
+          <Text className="mt-8 font-subtitle text-[18px] text-charcoal-primary">How it works</Text>
           <View className="mt-4 gap-y-6">
             {STEPS.map((step) => (
               <View key={step.number} className="flex-row items-start gap-x-4">
-                <View className="size-8 items-center justify-center rounded-full bg-gray-900">
+                <View className="size-8 items-center justify-center rounded-full bg-midnight">
                   <Text className="font-subtitle text-[14px] text-white">{step.number}</Text>
                 </View>
                 <View className="flex-1 pt-0.5">
-                  <Text className="font-subtitle text-[16px] text-gray-900">{step.title}</Text>
-                  <Text className="mt-1 font-body text-[14px] leading-5 text-gray-500">
+                  <Text className="font-subtitle text-[16px] text-charcoal-primary">{step.title}</Text>
+                  <Text className="mt-1 font-body text-[14px] leading-5 text-ash">
                     {step.description}
                   </Text>
                 </View>
@@ -105,15 +105,15 @@ export default function KycVerificationIntroScreen() {
 
           {/* Trust signals */}
           <View className="mt-8 flex-row gap-3">
-            <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-gray-50 px-3 py-2.5">
-              <HugeiconsIcon icon={ShieldKeyIcon} size={15} color="#6B7280" />
-              <Text className="flex-1 font-body text-[12px] leading-4 text-gray-500">
+            <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-stone-surface px-3 py-2.5">
+              <HugeiconsIcon icon={ShieldKeyIcon} size={15} color="#848281" />
+              <Text className="flex-1 font-body text-[12px] leading-4 text-ash">
                 Encrypted & never sold
               </Text>
             </View>
-            <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-gray-50 px-3 py-2.5">
-              <HugeiconsIcon icon={Clock01Icon} size={15} color="#6B7280" />
-              <Text className="flex-1 font-body text-[12px] leading-4 text-gray-500">
+            <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-stone-surface px-3 py-2.5">
+              <HugeiconsIcon icon={Clock01Icon} size={15} color="#848281" />
+              <Text className="flex-1 font-body text-[12px] leading-4 text-ash">
                 Done once, valid forever
               </Text>
             </View>

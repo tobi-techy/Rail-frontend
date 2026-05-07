@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StatusBar, Image, StyleSheet } from 'react-native';
 
-const SPLASH_BG = '#FF2E01';
+const SPLASH_BG = '#ff3e00';
 
 interface SplashScreenProps {
   onMounted?: () => void;

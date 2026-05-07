@@ -105,6 +105,10 @@ export function useWithdrawalSubmit({
       const opts = optionsRef.current;
       const amount = Number(opts.numericAmount.toFixed(2));
       const destination = opts.destinationInput.trim();
+      if (!destination && opts.selectedMethod !== 'p2p' && opts.selectedMethod !== 'railtag' && opts.selectedMethod !== 'email' && opts.selectedMethod !== 'contact') {
+        onError(new Error('Destination address is required'));
+        return;
+      }
       const normalizedCategory = opts.category?.trim();
       const normalizedNarration = opts.narration?.trim();
 
@@ -183,10 +187,11 @@ export function useWithdrawalSubmit({
             ? '' // EUR uses IBAN only
             : (opts.fiatAccountNumber ?? '').replace(/\D/g, ''),
           routing_number: currency === 'EUR'
-            ? destination.replace(/\s/g, '').toUpperCase() // IBAN
+            ? '' // EUR uses iban field
             : currency === 'GBP'
               ? destination.replace(/\D/g, '') // sort code
               : destination.replace(/\D/g, ''), // USD routing number
+          ...(currency === 'EUR' ? { iban: destination.replace(/\s/g, '').toUpperCase() } : {}),
           ...(currency === 'EUR' && opts.fiatBic ? { bic: opts.fiatBic.replace(/\s/g, '').toUpperCase() } : {}),
           category: normalizedCategory,
           narration: normalizedNarration,

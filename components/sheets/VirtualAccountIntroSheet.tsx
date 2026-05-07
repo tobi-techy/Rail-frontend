@@ -8,8 +8,8 @@ import { useCreateVirtualAccount } from '@/api/hooks/useVirtualAccount';
 import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import { BankIcon } from '@/assets/svg/filled';
 import CountryFlag from 'react-native-country-flag';
-import { Building04Icon, ShieldKeyIcon, ZapIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Building04Icon, ShieldKeyIcon, ZapIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 interface VirtualAccountIntroSheetProps {
   visible: boolean;
@@ -20,7 +20,7 @@ interface VirtualAccountIntroSheetProps {
 
 const FEATURES = [
   {
-    icon: <HugeiconsIcon icon={Building04Icon} size={20} color="#3B82F6" />,
+    icon: <HugeiconsIcon icon={Building04Icon} size={20} color="#0090ff" />,
     bg: '#EFF6FF',
     title: 'Your own bank account',
     desc: 'A dedicated USD account in your name, ready for ACH and wire transfers.',
@@ -32,8 +32,8 @@ const FEATURES = [
     desc: 'Deposits auto-convert to USDC and split 70/30 into spend and invest.',
   },
   {
-    icon: <HugeiconsIcon icon={ShieldKeyIcon} size={20} color="#10B981" />,
-    bg: '#ECFDF5',
+    icon: <HugeiconsIcon icon={ShieldKeyIcon} size={20} color="#00ca48" />,
+    bg: '#f0fdf4',
     title: 'Secured by Bridge',
     desc: 'Bank-grade infrastructure with FDIC-eligible custody partners.',
   },
@@ -85,20 +85,20 @@ export function VirtualAccountIntroSheet({
       {/* Header icons */}
       <View className="mb-5 mt-2 items-center">
         <View className="flex-row items-center">
-          <View className="z-10 h-14 w-14 items-center justify-center rounded-full bg-gray-900">
+          <View className="z-10 h-14 w-14 items-center justify-center rounded-full bg-midnight">
             <BankIcon width={26} height={26} color="#fff" />
           </View>
-          <View className="-ml-3 h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-gray-100 bg-white">
+          <View className="-ml-3 h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-stone-surface bg-warm-canvas">
             <CountryFlag isoCode="US" size={40} />
           </View>
         </View>
       </View>
 
       {/* Title */}
-      <Text className="mb-2 text-center font-subtitle text-[22px] leading-7 text-gray-900">
+      <Text className="mb-2 text-center font-subtitle text-[22px] leading-7 text-charcoal-primary">
         Get a virtual {currency} account
       </Text>
-      <Text className="mb-8 text-center font-body text-[15px] leading-[22px] text-gray-400">
+      <Text className="mb-8 text-center font-body text-[15px] leading-[22px] text-smoke">
         Receive bank transfers directly into Rail.{'\n'}Your money starts working immediately.
       </Text>
 
@@ -116,8 +116,8 @@ export function VirtualAccountIntroSheet({
               {f.icon}
             </View>
             <View className="flex-1">
-              <Text className="font-subtitle text-[15px] text-gray-900">{f.title}</Text>
-              <Text className="mt-0.5 font-body text-[13px] leading-[19px] text-gray-400">
+              <Text className="font-subtitle text-[15px] text-charcoal-primary">{f.title}</Text>
+              <Text className="mt-0.5 font-body text-[13px] leading-[19px] text-smoke">
                 {f.desc}
               </Text>
             </View>
@@ -127,15 +127,15 @@ export function VirtualAccountIntroSheet({
 
       {/* Error */}
       {error && !isTosError(error) && (
-        <View className="mb-4 rounded-2xl bg-red-50 px-4 py-3">
-          <Text className="font-body text-[13px] text-red-600">
+        <View className="mb-4 rounded-2xl bg-coral-red/10 px-4 py-3">
+          <Text className="font-body text-[13px] text-coral-red">
             {(error as any)?.message ?? 'Something went wrong. Please try again.'}
           </Text>
         </View>
       )}
 
       {awaitingTos && (
-        <View className="mb-4 rounded-2xl bg-amber-50 px-4 py-3">
+        <View className="mb-4 rounded-2xl bg-sunburst-yellow/10 px-4 py-3">
           <Text className="font-body text-[13px] text-amber-700">
             Accept the Terms of Service in your browser, then return here.
           </Text>
@@ -143,7 +143,7 @@ export function VirtualAccountIntroSheet({
       )}
 
       {/* Disclaimer */}
-      <Text className="mb-4 text-center font-body text-[12px] text-gray-300">
+      <Text className="mb-4 text-center font-body text-[12px] text-smoke">
         *Available to US residents. Not available in NY and AK.
       </Text>
 
@@ -157,7 +157,7 @@ export function VirtualAccountIntroSheet({
 
       {/* Cancel */}
       <TouchableOpacity onPress={onClose} className="mt-3 items-center py-2">
-        <Text className="font-body text-[15px] text-gray-400">Cancel</Text>
+        <Text className="font-body text-[15px] text-smoke">Cancel</Text>
       </TouchableOpacity>
     </GorhomBottomSheet>
   );

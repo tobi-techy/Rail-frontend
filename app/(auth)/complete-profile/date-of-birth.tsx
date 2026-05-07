@@ -71,25 +71,25 @@ export default function DateOfBirth() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-headline-2 text-auth-title leading-[1.1] text-black">
+              <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
                 Date of Birth
               </Text>
-              <Text className="mt-2 font-body text-caption text-black/60">
+              <Text className="mt-2 font-body text-caption text-ash">
                 Enter the date of birth shown on your ID. You must be at least {MIN_AGE} to use
                 Rail.
               </Text>
-              <Text className="mt-8 font-body text-caption text-black/60">
+              <Text className="mt-8 font-body text-caption text-ash">
                 Select your date of birth
               </Text>
               <Pressable
                 onPress={() => setShowPicker(true)}
-                className="mt-2 h-14 w-full flex-row items-center rounded-xl border border-neutral-200 bg-white/5 px-4"
+                className="mt-2 h-14 w-full flex-row items-center rounded-lg border border-fog bg-warm-canvas px-4"
                 style={({ pressed }) => ({
                   opacity: pressed ? 0.7 : 1,
                   transform: [{ scale: pressed ? 0.98 : 1 }],
                 })}>
-                <Text className="flex-1 font-body text-lg text-black">{formatDate(dob)}</Text>
-                <Text className="text-black/40">Date</Text>
+                <Text className="flex-1 font-body text-lg text-charcoal-primary">{formatDate(dob)}</Text>
+                <Text className="text-smoke">Date</Text>
               </Pressable>
             </View>
           </StaggeredChild>
@@ -100,8 +100,8 @@ export default function DateOfBirth() {
                 <DateTimePicker
                   value={dob}
                   mode="date"
-                  textColor="text-black"
-                  accentColor="#FF2E01"
+                  textColor="text-charcoal-primary"
+                  accentColor="#ff3e00"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onChange={onChange}
                   maximumDate={maxDate}

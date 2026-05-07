@@ -3,8 +3,8 @@ import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { AuthScreen } from './AuthScreen';
 import { StaggeredChild } from '@/components';
-import { CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { CheckmarkCircle01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export interface SelectionOption {
   id: string;
@@ -61,15 +61,15 @@ export const SelectionScreen = ({
           <StaggeredChild key={option.id} index={index + 1} delay={40}>
             <Pressable
               onPress={() => setSelected(option.id)}
-              className="flex-row items-center justify-between border-b border-black/10 py-4">
+              className="flex-row items-center justify-between border-b border-fog py-4">
               <View className="flex-1 pr-4">
-                <Text className="font-subtitle text-[16px] text-black">{option.label}</Text>
+                <Text className="font-subtitle text-[16px] text-charcoal-primary">{option.label}</Text>
                 {option.desc && (
-                  <Text className="font-body text-[13px] text-black/50">{option.desc}</Text>
+                  <Text className="font-body text-[13px] text-ash">{option.desc}</Text>
                 )}
               </View>
               {selected === option.id && (
-                <View className="h-6 w-6 items-center justify-center rounded-full bg-black">
+                <View className="h-6 w-6 items-center justify-center rounded-full bg-midnight">
                   <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} color="#fff" strokeWidth={3} />
                 </View>
               )}

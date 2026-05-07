@@ -63,23 +63,23 @@ export const Button = forwardRef<View, ButtonProps>(
     );
 
     const variantStyles = {
-      black: 'bg-black',
-      white: 'bg-white border border-gray-200',
-      orange: 'bg-[#FF2E01]',
-      destructive: 'bg-[#F44336]',
+      black: 'bg-midnight',
+      white: 'bg-parchment-card border border-fog',
+      orange: 'bg-ember-orange',
+      destructive: 'bg-coral-red',
       ghost: 'bg-transparent',
     }[variant];
 
     const textStyles = {
       black: 'text-white',
-      white: 'text-black',
+      white: 'text-charcoal-primary',
       orange: 'text-white',
       destructive: 'text-white',
-      ghost: 'text-gray-400',
+      ghost: 'text-ember-orange',
     }[variant];
 
-    const sizeStyles = size === 'small' ? 'px-6 py-4' : 'px-6 py-5';
-    const textSize = size === 'small' ? 'text-caption' : 'text-lg';
+    const sizeStyles = size === 'small' ? 'px-5 py-2.5' : 'px-6 py-4';
+    const textSize = size === 'small' ? 'text-caption' : 'text-body';
 
     return (
       <Animated.View
@@ -102,7 +102,7 @@ export const Button = forwardRef<View, ButtonProps>(
           } ${className}`}
           {...props}>
           {loading ? (
-            <ActivityIndicator color={variant === 'white' || variant === 'ghost' ? '#000' : '#fff'} size="small" />
+            <ActivityIndicator color={variant === 'white' ? '#343433' : variant === 'ghost' ? '#ff3e00' : '#fff'} size="small" />
           ) : (
             <View className="flex-shrink flex-row items-center">
               {leftIcon && <View className="mr-2 flex-shrink-0">{leftIcon}</View>}

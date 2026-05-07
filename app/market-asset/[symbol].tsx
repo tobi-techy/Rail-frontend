@@ -19,8 +19,8 @@ import { Button } from '@/components/ui';
 import { useUIStore } from '@/stores';
 import { layout, responsive } from '@/utils/layout';
 import type { InvestmentPositionDetail } from '@/api/types/investment';
-import { ArrowLeft01Icon, Notification03Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon, Notification03Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 type RangeKey = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y';
 
@@ -164,7 +164,7 @@ function PositionCard({ position: p }: { position: InvestmentPositionDetail }) {
   const sign = positive ? '+' : '';
   const pnlColor = positive ? 'text-success' : 'text-destructive';
   return (
-    <View className="mx-md mt-md rounded-xl border border-surface bg-surface/40 px-4 py-3">
+    <View className="mx-md mt-md rounded-lg border border-surface bg-surface/40 px-4 py-3">
       <Text className="mb-2 font-subtitle text-caption text-text-secondary">Your position</Text>
       <View className="mb-1 flex-row justify-between">
         <Text className="font-body text-caption text-text-secondary">Market value</Text>
@@ -253,7 +253,7 @@ export default function MarketAssetDetailScreen() {
   const change = instrument ? getEffectiveChange(instrument.quote) : 0;
   const changePct = instrument ? getEffectiveChangePct(instrument.quote) : 0;
   const positive = change >= 0;
-  const lineColor = positive ? '#E83E8C' : '#FF2E01';
+  const lineColor = positive ? '#E83E8C' : '#ff3e00';
   const chartFrameHeight = layout.isSeekerDevice
     ? 300
     : responsive({ default: 260, tall: 292, android: 280 });
@@ -408,7 +408,7 @@ export default function MarketAssetDetailScreen() {
               {isChartLoading ? (
                 <View className="w-full justify-center px-md" style={{ height: chartFrameHeight }}>
                   <Skeleton
-                    className="w-full rounded-xl"
+                    className="w-full rounded-lg"
                     style={{ height: chartFrameHeight - 40 }}
                   />
                 </View>
@@ -425,7 +425,7 @@ export default function MarketAssetDetailScreen() {
                 />
               ) : hasChartError ? (
                 <View
-                  className="mx-md items-center justify-center rounded-xl border border-surface bg-surface/30 px-md"
+                  className="mx-md items-center justify-center rounded-lg border border-surface bg-surface/30 px-md"
                   style={{ height: chartFrameHeight }}>
                   <Text className="text-center font-caption text-caption text-text-primary">
                     Market history is temporarily unavailable.
@@ -440,7 +440,7 @@ export default function MarketAssetDetailScreen() {
                 </View>
               ) : (
                 <View
-                  className="mx-md items-center justify-center rounded-xl border border-surface bg-surface/30 px-md"
+                  className="mx-md items-center justify-center rounded-lg border border-surface bg-surface/30 px-md"
                   style={{ height: chartFrameHeight }}>
                   <Text className="text-center font-caption text-caption text-text-secondary">
                     No market bars were returned for this symbol in the selected range.

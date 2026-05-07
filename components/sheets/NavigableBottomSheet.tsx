@@ -9,8 +9,8 @@ import Animated, {
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { ArrowLeft01Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon, Cancel01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
 
@@ -146,7 +146,7 @@ export function NavigableBottomSheet({
 
         <GestureDetector gesture={pan}>
           <Animated.View
-            className="absolute bottom-6 left-3 right-3 rounded-[34px] bg-white px-6 pt-6"
+            className="absolute bottom-6 left-3 right-3 rounded-[34px] bg-parchment-card px-6 pt-6"
             style={[sheetStyle, { paddingBottom: Math.max(insets.bottom, 10) }]}>
             {/* Header with Navigation */}
             <View className="mb-6 flex-row items-center justify-between">
@@ -168,7 +168,7 @@ export function NavigableBottomSheet({
                   {currentScreen.title}
                 </Text>
                 {currentScreen.subtitle && (
-                  <Text className="mt-1 text-center font-caption text-[13px] leading-4 text-gray-500">
+                  <Text className="mt-1 text-center font-caption text-[13px] leading-4 text-ash">
                     {currentScreen.subtitle}
                   </Text>
                 )}

@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import {
   Tick02Icon,
   InformationCircleIcon,
   Alert02Icon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import type { ConfidenceLevel } from '@/utils/aiTrust';
 
 interface Props {
@@ -22,7 +22,7 @@ const levelConfig: Record<
 > = {
   high: {
     icon: Tick02Icon,
-    color: '#00C853',
+    color: '#00c454',
     bg: '#E8F5E9',
   },
   medium: {
@@ -32,8 +32,8 @@ const levelConfig: Record<
   },
   low: {
     icon: Alert02Icon,
-    color: '#EF4444',
-    bg: '#FEE2E2',
+    color: '#ff2b3a',
+    bg: '#fff1f2',
   },
 };
 

@@ -126,7 +126,7 @@ export function AmbientMiriamBanner({
               borderTopWidth: 10,
               borderLeftColor: 'transparent',
               borderRightColor: 'transparent',
-              borderTopColor: '#1A1A1A',
+              borderTopColor: '#343433',
             }}
           />
         </Animated.View>

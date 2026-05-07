@@ -374,7 +374,7 @@ export function StatePicker({
   const renderItem = ({ item }: { item: Subdivision }) => (
     <Pressable
       onPress={() => handleSelect(item)}
-      className="flex-row items-center justify-between border-b border-black/5 px-5 py-4">
+      className="flex-row items-center justify-between border-b border-fog/40 px-5 py-4">
       <Text className="font-body text-body text-text-primary">{item.name}</Text>
       <Text className="font-body text-body text-text-secondary">{item.code}</Text>
     </Pressable>
@@ -390,8 +390,8 @@ export function StatePicker({
       )}
       <Pressable
         onPress={() => setIsModalVisible(true)}
-        className={`h-[56px] flex-row items-center justify-between rounded-xl border px-4 ${
-          hasError ? 'border-destructive' : isModalVisible ? 'border-black/20' : 'border-[#D4D4D8]'
+        className={`h-[56px] flex-row items-center justify-between rounded-lg border px-4 ${
+          hasError ? 'border-destructive' : isModalVisible ? 'border-fog' : 'border-[#f2f0ed]'
         } bg-white`}>
         <Text
           className={`font-body text-body ${selectedSubdivision ? 'text-text-primary' : 'text-text-secondary'}`}>
@@ -402,8 +402,8 @@ export function StatePicker({
       {hasError && <Text className="mt-1 font-body text-sm text-destructive">{error}</Text>}
 
       <Modal visible={isModalVisible} animationType="slide" presentationStyle="pageSheet">
-        <View className="flex-1 bg-white pt-2">
-          <View className="flex-row items-center justify-between border-b border-black/10 px-4 pb-3">
+        <View className="flex-1 bg-parchment-card pt-2">
+          <View className="flex-row items-center justify-between border-b border-fog px-4 pb-3">
             <Text className="font-headline-3 text-xl text-text-primary">
               Select {subdivisionLabel}
             </Text>

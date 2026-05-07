@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSpendingStash } from '@/api/hooks/useSpending';
 import { toNumber } from '@/utils/market';
-import { ChartDownIcon, ChartUpIcon, MinusSignIcon } from '@hugeicons/core-free-icons';
+import { ChartDownIcon, ChartUpIcon, MinusSignIcon } from '@/lib/icons';
 
 const CATEGORY_ICON_MAP: Record<string, string> = {
   food: 'utensils-crossed',

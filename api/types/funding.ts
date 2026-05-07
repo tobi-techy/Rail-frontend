@@ -77,6 +77,7 @@ export interface InitiateFiatWithdrawalRequest {
   account_holder_name: string;
   account_number: string;
   routing_number: string;
+  iban?: string;
   bic?: string;
   category?: string;
   narration?: string;
@@ -86,6 +87,33 @@ export interface InitiateWithdrawalResponse {
   withdrawal_id: string;
   status: string;
   message: string;
+}
+
+// ============= Early Withdrawal Types =============
+
+export interface EmergencyWithdrawalPreview {
+  amount: string;
+  fee_percent: string;
+  fee_amount: string;
+  net_amount: string;
+  lock_age_days: number;
+  fee_tier: string;
+}
+
+export interface EmergencyWithdrawalResult {
+  amount: string;
+  fee: string;
+  fee_percent: string;
+  net_amount: string;
+  transfer_id: string;
+}
+
+// ============= Fund Stash Types =============
+
+export interface FundStashResult {
+  transfer_id: string;
+  amount: string;
+  status: string;
 }
 
 // ============= Unified Transaction (for history display) =============

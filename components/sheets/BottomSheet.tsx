@@ -19,8 +19,8 @@ import { BlurView } from 'expo-blur';
 import { layout, responsive } from '@/utils/layout';
 import { useHaptics } from '@/hooks/useHaptics';
 import * as Haptics from 'expo-haptics';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Cancel01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
 const KB_SPRING = { damping: 22, stiffness: 280, mass: 0.8 };
@@ -133,7 +133,7 @@ export function BottomSheet({
 
         <GestureDetector gesture={pan}>
           <Animated.View
-            className="absolute bg-white"
+            className="absolute bg-warm-canvas"
             style={[
               sheetStyle,
               {
@@ -152,7 +152,7 @@ export function BottomSheet({
                 hitSlop={12}
                 accessibilityLabel="Close"
                 accessibilityRole="button">
-                <HugeiconsIcon icon={Cancel01Icon} size={24} color="#757575" />
+                <HugeiconsIcon icon={Cancel01Icon} size={24} color="#848281" />
               </Pressable>
             )}
             {children}

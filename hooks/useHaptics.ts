@@ -2,6 +2,15 @@ import { useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { useUIStore } from '@/stores';
 
+type NotificationInput = Haptics.NotificationFeedbackType | 'success' | 'warning' | 'error';
+
+function normalizeNotificationType(type: NotificationInput): Haptics.NotificationFeedbackType {
+  if (type === 'success') return Haptics.NotificationFeedbackType.Success;
+  if (type === 'warning') return Haptics.NotificationFeedbackType.Warning;
+  if (type === 'error') return Haptics.NotificationFeedbackType.Error;
+  return type;
+}
+
 export function useHaptics() {
   const hapticsEnabled = useUIStore((state) => state.hapticsEnabled);
 
@@ -19,9 +28,9 @@ export function useHaptics() {
   }, [hapticsEnabled]);
 
   const notification = useCallback(
-    (type: Haptics.NotificationFeedbackType = Haptics.NotificationFeedbackType.Success) => {
+    (type: NotificationInput = Haptics.NotificationFeedbackType.Success) => {
       if (!hapticsEnabled) return;
-      void Haptics.notificationAsync(type);
+      void Haptics.notificationAsync(normalizeNotificationType(type));
     },
     [hapticsEnabled]
   );

@@ -11,8 +11,8 @@ import type { WalletChain } from '@/api/types';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 import {
   ArrowLeft01Icon, ArrowRight01Icon, Add01Icon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const BRIDGE_CHAINS = SUPPORTED_CHAINS.filter((c) => c.via === 'bridge');
 
@@ -30,7 +30,7 @@ function ChainRow({ config, onPress }: { config: ChainConfig; onPress: () => voi
         <View className="flex-row items-center gap-2">
           <Text className="font-subtitle text-[16px] text-text-primary">{config.shortLabel}</Text>
           {isEVMChain(config.chain) && (
-            <View className="rounded-md bg-gray-100 px-1.5 py-0.5">
+            <View className="rounded-md bg-stone-surface px-1.5 py-0.5">
               <Text className="font-caption text-[10px] text-text-secondary">EVM</Text>
             </View>
           )}
@@ -54,7 +54,7 @@ export default function ReceiveChainSelectScreen() {
 
   return (
     <ErrorBoundary>
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
 
         {/* Header */}
@@ -64,7 +64,7 @@ export default function ReceiveChainSelectScreen() {
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Go back">
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
           </Pressable>
           <Text className="font-subtitle text-[18px] text-text-primary">Receive USDC</Text>
           <View className="size-11" />
@@ -78,16 +78,16 @@ export default function ReceiveChainSelectScreen() {
           <Animated.View entering={FadeInUp.duration(280)} className="mx-5 mb-5">
             <Pressable
               onPress={() => { selection(); router.push('/fund-crosschain'); }}
-              className="overflow-hidden rounded-3xl border border-gray-100"
-              style={{ backgroundColor: '#F9FAFB' }}
+              className="overflow-hidden rounded-3xl border border-stone-surface"
+              style={{ backgroundColor: '#f8f7f4' }}
               accessibilityRole="button">
               {/* Chain icon cluster — decorative top-right */}
               <View className="absolute right-4 top-4 flex-row" style={{ gap: -8 }}>
                 {['SOL', 'ETH', 'BASE', 'ARB', 'OP'].map((chain) => (
                   <View
                     key={chain}
-                    className="size-9 items-center justify-center rounded-full bg-white shadow-sm"
-                    style={{ borderWidth: 1.5, borderColor: '#F3F4F6' }}>
+                    className="size-9 items-center justify-center rounded-full bg-parchment-card shadow-sm"
+                    style={{ borderWidth: 1.5, borderColor: '#f2f0ed' }}>
                     <ChainLogo chain={chain} size={22} />
                   </View>
                 ))}
@@ -101,10 +101,10 @@ export default function ReceiveChainSelectScreen() {
                   Bridge from 10+ networks instantly
                 </Text>
                 <View className="mt-4 flex-row items-center gap-1.5">
-                  <Text className="font-subtitle text-[13px]" style={{ color: '#FF2E01' }}>
+                  <Text className="font-subtitle text-[13px]" style={{ color: '#ff3e00' }}>
                     Try it now
                   </Text>
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={14} color="#FF2E01" />
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={14} color="#ff3e00" />
                 </View>
               </View>
             </Pressable>
@@ -118,13 +118,13 @@ export default function ReceiveChainSelectScreen() {
                 onPress={() => handleChainPress(config.chain)}
               />
               {i < BRIDGE_CHAINS.length - 1 && (
-                <View className="mx-5 h-px bg-gray-100" />
+                <View className="mx-5 h-px bg-stone-surface" />
               )}
             </Animated.View>
           ))}
 
           {/* Divider */}
-          <View className="mx-5 my-2 h-px bg-gray-100" />
+          <View className="mx-5 my-2 h-px bg-stone-surface" />
 
           {/* Other chains row */}
           <Animated.View entering={FadeInUp.delay(BRIDGE_CHAINS.length * 40 + 60).duration(280)}>
@@ -133,8 +133,8 @@ export default function ReceiveChainSelectScreen() {
               className="flex-row items-center px-5 py-4"
               accessibilityRole="button"
               accessibilityLabel="Deposit from other chains">
-              <View className="size-11 items-center justify-center rounded-full bg-gray-100 mr-4">
-                <HugeiconsIcon icon={Add01Icon} size={22} color="#6B7280" />
+              <View className="size-11 items-center justify-center rounded-full bg-stone-surface mr-4">
+                <HugeiconsIcon icon={Add01Icon} size={22} color="#848281" />
               </View>
               <View className="flex-1">
                 <Text className="font-subtitle text-[16px] text-text-primary">Other chains</Text>
@@ -142,7 +142,7 @@ export default function ReceiveChainSelectScreen() {
                   BNB, Starknet, Monad & more
                 </Text>
               </View>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#9CA3AF" />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#848281" />
             </Pressable>
           </Animated.View>
         </ScrollView>

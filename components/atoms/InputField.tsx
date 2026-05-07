@@ -86,13 +86,13 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
     const secondaryTextColorClass = isDark ? 'text-white/70' : 'text-text-secondary';
 
     const borderColor = useMemo(() => {
-      if (!editable) return '#D4D4D4';
-      if (hasError) return '#DC2626';
-      if (focused) return isDark ? '#FFFFFF' : '#111827';
-      return isDark ? 'rgba(255,255,255,0.28)' : '#D4D4D8';
+      if (!editable) return '#c6c6c6';
+      if (hasError) return '#ff2b3a';
+      if (focused) return isDark ? '#FFFFFF' : '#343433';
+      return isDark ? 'rgba(255,255,255,0.28)' : '#f2f0ed';
     }, [editable, focused, hasError, isDark]);
 
-    const backgroundColor = isDark ? 'rgba(255,255,255,0.06)' : editable ? '#FFFFFF' : '#F5F5F5';
+    const backgroundColor = isDark ? 'rgba(255,255,255,0.06)' : editable ? '#fbfaf9' : '#f2f0ed';
 
     const handleFocus = (e: NativeSyntheticEvent<any>) => {
       setFocused(true);
@@ -126,7 +126,7 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
         ) : null}
 
         <View
-          className={`w-full flex-row rounded-xl border px-4 ${
+          className={`w-full flex-row rounded-lg border px-4 ${
             multiline
               ? 'min-h-[110px] items-start py-3'
               : isCompact
@@ -142,7 +142,7 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
             <Ionicons
               name={icon}
               size={20}
-              color={hasError ? '#DC2626' : isDark ? '#FFFFFF' : '#9CA3AF'}
+              color={hasError ? '#ff2b3a' : isDark ? '#FFFFFF' : '#a7a7a7'}
               style={{ marginRight: 10 }}
             />
           ) : null}
@@ -157,7 +157,7 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
             autoCorrect={autoCorrect ?? false}
             secureTextEntry={isPassword && !isPasswordVisible}
             placeholderTextColor={
-              placeholderTextColor ?? (isDark ? 'rgba(255,255,255,0.55)' : '#B3B3B3')
+              placeholderTextColor ?? (isDark ? 'rgba(255,255,255,0.55)' : '#a7a7a7')
             }
             multiline={multiline}
             textAlignVertical={multiline ? 'top' : 'center'}
@@ -182,7 +182,7 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
                   <Ionicons
                     name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
                     size={20}
-                    color={isDark ? '#FFFFFF' : '#6B7280'}
+                    color={isDark ? '#FFFFFF' : '#848281'}
                   />
                 </TouchableOpacity>
               ) : rightIcon && onRightIconPress ? (
@@ -191,7 +191,7 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
                   className="min-h-[44px] min-w-[44px] items-center justify-center"
                   accessibilityRole="button"
                   accessibilityLabel="Input action">
-                  <Ionicons name={rightIcon} size={20} color={isDark ? '#FFFFFF' : '#6B7280'} />
+                  <Ionicons name={rightIcon} size={20} color={isDark ? '#FFFFFF' : '#848281'} />
                 </TouchableOpacity>
               ) : null}
             </View>

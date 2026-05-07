@@ -3,7 +3,7 @@ import { userService } from '@/api/services';
 import { logger } from '@/lib/logger';
 import { ROUTES } from '@/constants/routes';
 import { isOnboardingAppReady, isProfileCompletionRequired } from '@/utils/onboardingFlow';
-import { isAuthSessionInvalidError } from '@/utils/authErrorClassifier';
+import { isAuthSessionInvalidError, summarizeAuthError } from '@/utils/authErrorClassifier';
 import type { RouteConfig, AuthState } from '@/types/routing.types';
 
 export const normalizeRoutePath = (route: string): string =>
@@ -26,7 +26,7 @@ export const validateAccessToken = async (): Promise<boolean> => {
     logger.warn('[Auth] Token validation failed', {
       component: 'routeHelpers',
       action: isSessionInvalid ? 'token-validation-auth-invalid' : 'token-validation-transient',
-      error: error instanceof Error ? error.message : String(error),
+      error: summarizeAuthError(error),
       isSessionInvalid,
     });
 
@@ -103,6 +103,7 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/receive') ||
     pathname.startsWith('/fund-crosschain') ||
     pathname.startsWith('/fund-naira') ||
+    pathname.startsWith('/fund-stash') ||
     pathname.startsWith('/withdraw-naira') ||
     pathname.startsWith('/paj-verify') ||
     pathname.startsWith('/ai-chat') ||
@@ -210,8 +211,8 @@ const handleAuthenticatedUser = (
 
 /**
  * Handles routing for users with stored credentials but no active session
- * Routes to login-passcode if user data exists (passcode session expired)
- * Routes to signin if no user data exists (full session token expired after 7 days)
+ * Routes to login-passcode only when a refresh token is available.
+ * Routes to signin when the full app session is gone and passcode cannot re-authenticate.
  */
 const handleStoredCredentials = (
   authState: AuthState,
@@ -221,23 +222,22 @@ const handleStoredCredentials = (
   const { user, hasPasscode, onboardingStatus } = authState;
   const resolvedOnboardingStatus = onboardingStatus || user?.onboardingStatus;
 
-  // If full 7-day session has expired (no tokens, user data cleared by SessionManager)
-  // Route to signin for full re-authentication
-  if (hasSessionExpired && !user) {
-    logger.info('[RouteHelpers] Session token expired (7 days), redirecting to signin', {
+  if (hasSessionExpired) {
+    logger.info('[RouteHelpers] Session token unavailable, redirecting to signin', {
       component: 'routeHelpers',
       action: 'session-expired-redirect',
     });
-    if (config.inAuthGroup && !config.isOnWelcomeScreen) return null;
+    if (config.inAuthGroup && !isInCriticalAuthFlow(config) && !config.isOnWelcomeScreen) {
+      return null;
+    }
     return ROUTES.AUTH.SIGNIN;
   }
 
   // If already on login-passcode screen, stay there
   if (config.isOnLoginPasscode) return null;
 
-  // CRITICAL FIX: User has passcode and stored credentials but not authenticated
-  // This happens when app backgrounded and passcode session expired
-  // OLD USERS: After closing the app, they must enter passcode to re-auth, not signin
+  // User has a valid refresh token but no active app unlock.
+  // Passcode can restore the authenticated session without showing signin.
   if (user && hasPasscode) {
     logger.info(
       '[RouteHelpers] User has stored credentials with passcode, routing to passcode login',

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput, ScrollView } from 'react-native';
-import { HugeiconsIcon } from '@hugeicons/react-native';
 import {
   Target02Icon,
   Beach02Icon,
@@ -10,9 +9,10 @@ import {
   MortarboardIcon,
   Shield01Icon,
   Gif01Icon,
+  IconComponent as HugeiconsIcon,
   Money01Icon,
   AirplaneTakeOff01Icon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { GorhomBottomSheet } from '@/components/sheets/GorhomBottomSheet';
 import { aiService } from '@/api/services/ai.service';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -104,7 +104,7 @@ export function CreateGoalSheet({ visible, onClose, onCreated }: Props) {
         className="px-5 pb-8 pt-2"
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
-        <Text className="font-heading-bold mb-5 text-lg text-text-primary">New shared goal</Text>
+        <Text className="mb-5 font-heading-bold text-lg text-text-primary">New shared goal</Text>
 
         {/* Icon picker */}
         <View className="mb-5 flex-row flex-wrap gap-2">
@@ -115,13 +115,13 @@ export function CreateGoalSheet({ visible, onClose, onCreated }: Props) {
                 impact();
                 setSelectedIcon(item.name);
               }}
-              className={`h-11 w-11 items-center justify-center rounded-full ${selectedIcon === item.name ? 'border-2 border-primary bg-[#FFF0ED]' : 'bg-[#F5F5F5]'}`}
+              className={`h-11 w-11 items-center justify-center rounded-full ${selectedIcon === item.name ? 'border-2 border-primary bg-[#FFF0ED]' : 'bg-[#f2f0ed]'}`}
               accessibilityRole="button"
               accessibilityLabel={`Select icon ${item.name}`}>
               <HugeiconsIcon
                 icon={item.icon}
                 size={20}
-                color={selectedIcon === item.name ? '#FF2E01' : '#000'}
+                color={selectedIcon === item.name ? '#ff3e00' : '#000'}
               />
             </Pressable>
           ))}
@@ -132,19 +132,19 @@ export function CreateGoalSheet({ visible, onClose, onCreated }: Props) {
           value={name}
           onChangeText={setName}
           placeholder="Goal name (e.g. Ibiza Trip)"
-          placeholderTextColor="#9CA3AF"
-          className="mb-3 rounded-2xl bg-[#F5F5F5] px-4 py-4 font-body text-[15px] text-text-primary"
+          placeholderTextColor="#848281"
+          className="mb-3 rounded-2xl bg-[#f2f0ed] px-4 py-4 font-body text-[15px] text-text-primary"
         />
 
         {/* Amount */}
-        <View className="mb-3 flex-row items-center rounded-2xl bg-[#F5F5F5] px-4 py-4">
+        <View className="mb-3 flex-row items-center rounded-2xl bg-[#f2f0ed] px-4 py-4">
           <Text className="mr-1 font-mono-semibold text-xl text-text-primary">$</Text>
           <TextInput
             value={amount}
             onChangeText={setAmount}
             keyboardType="decimal-pad"
             placeholder="Target amount"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#848281"
             className="flex-1 font-mono-semibold text-xl text-text-primary"
           />
         </View>
@@ -154,8 +154,8 @@ export function CreateGoalSheet({ visible, onClose, onCreated }: Props) {
           value={inviteTags}
           onChangeText={setInviteTags}
           placeholder="Invite friends (rail tags, comma separated)"
-          placeholderTextColor="#9CA3AF"
-          className="mb-6 rounded-2xl bg-[#F5F5F5] px-4 py-4 font-body text-[15px] text-text-primary"
+          placeholderTextColor="#848281"
+          className="mb-6 rounded-2xl bg-[#f2f0ed] px-4 py-4 font-body text-[15px] text-text-primary"
         />
 
         {/* Create button */}

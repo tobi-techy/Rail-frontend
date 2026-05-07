@@ -13,6 +13,7 @@ import {
   normalizeRoutePath,
 } from '@/utils/routeHelpers';
 import { SessionManager } from '@/utils/sessionManager';
+import { BACKGROUND_PASSCODE_GRACE_MS } from '@/utils/sessionConstants';
 
 const LOCAL_ADVANCED_STATUSES = new Set(['kyc_pending', 'kyc_approved', 'completed']);
 
@@ -34,6 +35,8 @@ export function useProtectedRoute() {
     onboardingStatus: useAuthStore((state) => state.onboardingStatus),
     pendingVerificationEmail: useAuthStore((state) => state.pendingVerificationEmail),
     lastActivityAt: useAuthStore((state) => state.lastActivityAt),
+    passcodeSessionExpiresAt: useAuthStore((state) => state.passcodeSessionExpiresAt),
+    appLockExpiresAt: useAuthStore((state) => state.appLockExpiresAt),
   };
 
   const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
@@ -203,6 +206,17 @@ export function useProtectedRoute() {
     const subscription = AppState.addEventListener(
       'change',
       async (nextAppState: AppStateStatus) => {
+        if (nextAppState === 'background') {
+          const state = useAuthStore.getState();
+          if (state.isAuthenticated && state.hasPasscode) {
+            const graceExpiresAt = new Date(
+              Date.now() + BACKGROUND_PASSCODE_GRACE_MS
+            ).toISOString();
+            useAuthStore.setState({ appLockExpiresAt: graceExpiresAt });
+            SessionManager.schedulePasscodeSessionExpiry(graceExpiresAt);
+          }
+        }
+
         if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
           // Only run full foreground logic when returning from background.
           // inactive fires during system dialogs, button taps, sheets — skip those.
@@ -218,12 +232,20 @@ export function useProtectedRoute() {
             action: 'app-foreground',
           });
 
-          // Clear passcode session on resume — forces re-auth via login-passcode
-          if (freshState.isAuthenticated && freshState.hasPasscode) {
+          if (
+            freshState.isAuthenticated &&
+            freshState.hasPasscode &&
+            SessionManager.isAppUnlockExpired()
+          ) {
+            logger.info('[Auth] Background grace elapsed, requiring passcode', {
+              component: 'useProtectedRoute',
+              action: 'background-grace-elapsed',
+            });
             SessionManager.handlePasscodeSessionExpired();
+            appState.current = nextAppState;
+            return;
           }
 
-          // Re-read state after clearing passcode session
           const stateAfterClear = useAuthStore.getState();
 
           if (stateAfterClear.isAuthenticated && stateAfterClear.accessToken) {
@@ -243,11 +265,9 @@ export function useProtectedRoute() {
             }
 
             stateAfterClear.updateLastActivity();
-
-            // Skip refresh if passcode session was cleared (user will be redirected to login-passcode)
-            if (!stateAfterClear.passcodeSessionExpiresAt && stateAfterClear.hasPasscode) {
-              appState.current = nextAppState;
-              return;
+            const appLockExpiresAt = useAuthStore.getState().appLockExpiresAt;
+            if (appLockExpiresAt) {
+              SessionManager.schedulePasscodeSessionExpiry(appLockExpiresAt);
             }
 
             try {
@@ -290,10 +310,12 @@ export function useProtectedRoute() {
       hasPasscode: freshAuthState.hasPasscode,
       pendingVerificationEmail: freshAuthState.pendingVerificationEmail,
       lastActivityAt: freshAuthState.lastActivityAt,
+      passcodeSessionExpiresAt: freshAuthState.passcodeSessionExpiresAt,
+      appLockExpiresAt: freshAuthState.appLockExpiresAt,
     };
 
     const hasValidPasscodeSession = currentAuthState.isAuthenticated
-      ? !SessionManager.isPasscodeSessionExpired()
+      ? !SessionManager.isAppUnlockExpired()
       : false;
 
     const config = buildRouteConfig(segments, pathname);
@@ -344,6 +366,9 @@ export function useProtectedRoute() {
     authState.hasPasscode,
     authState.onboardingStatus,
     authState.pendingVerificationEmail,
+    authState.lastActivityAt,
+    authState.passcodeSessionExpiresAt,
+    authState.appLockExpiresAt,
     pathname,
     segments,
     hasSeenWelcome,

@@ -180,7 +180,7 @@ export function PhoneNumberInput({
   const renderCountryItem = ({ item }: { item: CountryCode }) => (
     <Pressable
       onPress={() => handleCountrySelect(item)}
-      className="flex-row items-center border-b border-black/5 px-5 py-3">
+      className="flex-row items-center border-b border-fog/40 px-5 py-3">
       <Text className="mr-3 text-2xl">{item.flag}</Text>
       <View className="flex-1">
         <Text className="font-body text-body text-text-primary">{item.name}</Text>
@@ -208,7 +208,7 @@ export function PhoneNumberInput({
           <Pressable
             onPress={() => setIsModalVisible(true)}
             className={`mr-1 min-h-[44px] min-w-[44px] flex-row items-center border-r pr-3 ${
-              isDark ? 'border-white/30' : 'border-black/10'
+              isDark ? 'border-white/30' : 'border-fog'
             }`}>
             <Text className="mr-2 text-lg">{selectedCountry.flag}</Text>
             <Text
@@ -219,7 +219,7 @@ export function PhoneNumberInput({
               name="chevron-down"
               size={16}
               color={
-                hasError ? '#F44336' : isDark ? '#FFFFFF' : isModalVisible ? '#111827' : '#757575'
+                hasError ? '#ff2b3a' : isDark ? '#FFFFFF' : isModalVisible ? '#343433' : '#848281'
               }
             />
           </Pressable>
@@ -245,15 +245,15 @@ export function PhoneNumberInput({
       />
 
       <Modal visible={isModalVisible} animationType="slide" presentationStyle="pageSheet">
-        <View className="flex-1 bg-white">
-          <View className="flex-row items-center justify-between border-b border-black/5 px-5 py-4">
+        <View className="flex-1 bg-parchment-card">
+          <View className="flex-row items-center justify-between border-b border-fog/40 px-5 py-4">
             <Text className="font-subtitle text-[30px] text-text-primary">Select Country Code</Text>
             <Pressable onPress={() => setIsModalVisible(false)} className="p-2">
               <Ionicons name="close" size={24} color="#000000" />
             </Pressable>
           </View>
 
-          <View className="border-b border-black/5 px-5 py-3">
+          <View className="border-b border-fog/40 px-5 py-3">
             <InputField
               value={searchQuery}
               onChangeText={setSearchQuery}

@@ -1,12 +1,9 @@
-import React, { Component, useCallback } from 'react';
+import React, { Component, useEffect } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { PinIcon, ArrowUpRight01Icon } from '@hugeicons/core-free-icons';
 import type { InsightCard } from '@/api/types/ai';
 import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
-import { useMiriamHubStore } from '@/stores/miriamHubStore';
-import type { PinnedInsight } from '@/stores/miriamHubStore';
+import { ANALYTICS_EVENTS, useAnalytics } from '@/utils/analytics';
 
 /* ─── Error Boundary ─── */
 
@@ -29,7 +26,7 @@ class InsightCardErrorBoundary extends Component<EBProps, { hasError: boolean }>
   render() {
     if (!this.state.hasError) return this.props.children;
     return (
-      <View className="my-2 rounded-2xl border border-red-100 bg-red-50 p-4">
+      <View className="my-2 rounded-2xl border border-red-100 bg-coral-red/10 p-4">
         <Text className="font-body-medium text-sm text-red-800">
           Unable to display this insight
         </Text>
@@ -40,7 +37,7 @@ class InsightCardErrorBoundary extends Component<EBProps, { hasError: boolean }>
 
 function CardErrorFallback() {
   return (
-    <View className="my-2 rounded-2xl border border-black/[0.08] bg-white p-4">
+    <View className="my-2 rounded-2xl border border-black/[0.08] bg-parchment-card p-4">
       <Text className="font-body text-sm text-text-secondary">Insight unavailable</Text>
     </View>
   );
@@ -50,46 +47,21 @@ function CardErrorFallback() {
 
 function CardContainer({
   children,
-  onPin,
-  isPinned,
   accent = false,
 }: {
   children: React.ReactNode;
-  onPin?: () => void;
-  isPinned?: boolean;
   accent?: boolean;
 }) {
   return (
     <Animated.View entering={FadeInUp.duration(300)} className="my-3">
-      <View className="overflow-hidden rounded-2xl">
-        {onPin && (
-          <View className="absolute right-3 top-3 z-10 flex-row gap-2">
-            <Pressable
-              onPress={onPin}
-              className={`h-8 w-8 items-center justify-center rounded-full ${isPinned ? 'bg-primary' : 'bg-black/[0.06]'}`}
-              accessibilityRole="button"
-              accessibilityLabel={isPinned ? 'Unpin insight' : 'Pin to Miriam Hub'}>
-              <HugeiconsIcon icon={PinIcon} size={16} color={isPinned ? '#FFFFFF' : '#8C8C8C'} />
-            </Pressable>
-          </View>
-        )}
-        {children}
-      </View>
+      <View className="overflow-hidden rounded-2xl">{children}</View>
     </Animated.View>
   );
 }
 
 /* ─── Stat Grid ─── */
 
-function StatGridCard({
-  card,
-  onPin,
-  isPinned,
-}: {
-  card: InsightCard;
-  onPin?: () => void;
-  isPinned?: boolean;
-}) {
+function StatGridCard({ card }: { card: InsightCard }) {
   const stats = (Array.isArray(card.data) ? card.data : card.data?.stats) as
     | { label: string; value: string; change?: string; positive?: boolean; sentiment?: string }[]
     | undefined;
@@ -100,10 +72,10 @@ function StatGridCard({
   }
 
   return (
-    <CardContainer onPin={onPin} isPinned={isPinned}>
+    <CardContainer>
       <View className="py-2">
         {card.title && (
-          <Text className="font-heading-semibold mb-3 text-base text-text-primary">
+          <Text className="mb-3 font-heading-semibold text-base text-text-primary">
             {card.title}
           </Text>
         )}
@@ -114,7 +86,7 @@ function StatGridCard({
               <Text className="font-heading-semibold text-lg text-text-primary">{s.value}</Text>
               {s.change && (
                 <Text
-                  className={`mt-0.5 font-body-medium text-xs ${s.positive || s.sentiment === 'positive' ? 'text-success' : 'text-red-500'}`}>
+                  className={`mt-0.5 font-body-medium text-xs ${s.positive || s.sentiment === 'positive' ? 'text-success' : 'text-coral-red'}`}>
                   {s.change}
                 </Text>
               )}
@@ -128,15 +100,7 @@ function StatGridCard({
 
 /* ─── Chart (Bar / Line) ─── */
 
-function ChartCard({
-  card,
-  onPin,
-  isPinned,
-}: {
-  card: InsightCard;
-  onPin?: () => void;
-  isPinned?: boolean;
-}) {
+function ChartCard({ card }: { card: InsightCard }) {
   const raw = (card.data?.points ??
     card.data?.data ??
     (Array.isArray(card.data) ? card.data : undefined)) as
@@ -147,17 +111,17 @@ function ChartCard({
     return <CardErrorFallback />;
   }
 
-  const barData = raw.map((d) => ({ label: d.label, value: d.value, frontColor: '#FF2E01' }));
+  const barData = raw.map((d) => ({ label: d.label, value: d.value, frontColor: '#ff3e00' }));
   const isBar =
     (card.data?.chartType as string) === 'bar' ||
     (card.data?.chart_type as string) === 'bar' ||
     raw.length <= 7;
 
   return (
-    <CardContainer onPin={onPin} isPinned={isPinned}>
+    <CardContainer>
       <View className="py-2">
         {card.title && (
-          <Text className="font-heading-semibold mb-3 text-base text-text-primary">
+          <Text className="mb-3 font-heading-semibold text-base text-text-primary">
             {card.title}
           </Text>
         )}
@@ -177,9 +141,9 @@ function ChartCard({
             <LineChart
               data={raw.map((d) => ({ label: d.label, value: d.value }))}
               height={140}
-              color="#FF2E01"
+              color="#ff3e00"
               thickness={2.5}
-              dataPointsColor="#FF2E01"
+              dataPointsColor="#ff3e00"
               dataPointsRadius={3}
               yAxisTextStyle={{ fontSize: 10, color: '#8C8C8C' }}
               hideRules
@@ -193,15 +157,7 @@ function ChartCard({
 
 /* ─── Breakdown ─── */
 
-function BreakdownCard({
-  card,
-  onPin,
-  isPinned,
-}: {
-  card: InsightCard;
-  onPin?: () => void;
-  isPinned?: boolean;
-}) {
+function BreakdownCard({ card }: { card: InsightCard }) {
   const items = (Array.isArray(card.data) ? card.data : card.data?.items) as
     | { label: string; value?: string; amount?: number; percent?: number; color?: string }[]
     | undefined;
@@ -210,7 +166,7 @@ function BreakdownCard({
     return <CardErrorFallback />;
   }
 
-  const COLORS = ['#FF2E01', '#FF6B4A', '#FFB199', '#1A7A6D', '#4ECDC4', '#95E1D3', '#8C8C8C'];
+  const COLORS = ['#ff3e00', '#FF6B4A', '#FFB199', '#1A7A6D', '#4ECDC4', '#95E1D3', '#8C8C8C'];
   const pieData = items.map((item, i) => ({
     value:
       item.amount !== undefined && item.amount !== null
@@ -222,10 +178,10 @@ function BreakdownCard({
   const total = pieData.reduce((s, d) => s + d.value, 0);
 
   return (
-    <CardContainer onPin={onPin} isPinned={isPinned}>
+    <CardContainer>
       <View className="py-2">
         {card.title && (
-          <Text className="font-heading-semibold mb-4 text-base text-text-primary">
+          <Text className="mb-4 font-heading-semibold text-base text-text-primary">
             {card.title}
           </Text>
         )}
@@ -272,15 +228,7 @@ function BreakdownCard({
 
 /* ─── Progress ─── */
 
-function ProgressCard({
-  card,
-  onPin,
-  isPinned,
-}: {
-  card: InsightCard;
-  onPin?: () => void;
-  isPinned?: boolean;
-}) {
+function ProgressCard({ card }: { card: InsightCard }) {
   const goal = card.data?.goal as string;
   const current = card.data?.current as number | undefined;
   const target = card.data?.target as number | undefined;
@@ -293,10 +241,10 @@ function ProgressCard({
   const pct = Math.min(Math.max(current / target, 0), 1);
 
   return (
-    <CardContainer onPin={onPin} isPinned={isPinned} accent={card.data?.accent as boolean}>
+    <CardContainer accent={card.data?.accent as boolean}>
       <View className="p-4">
         {card.title && (
-          <Text className="font-heading-semibold mb-2 text-base text-text-primary">
+          <Text className="mb-2 font-heading-semibold text-base text-text-primary">
             {card.title}
           </Text>
         )}
@@ -306,7 +254,7 @@ function ProgressCard({
             {Math.round(pct * 100)}%
           </Text>
         </View>
-        <View className="h-2 overflow-hidden rounded-full bg-gray-100">
+        <View className="h-2 overflow-hidden rounded-full bg-stone-surface">
           <View className="h-full rounded-full bg-primary" style={{ width: `${pct * 100}%` }} />
         </View>
         <Text className="mt-1.5 font-body text-xs text-text-tertiary">
@@ -319,19 +267,11 @@ function ProgressCard({
 
 /* ─── Alert ─── */
 
-function AlertCard({
-  card,
-  onPin,
-  isPinned,
-}: {
-  card: InsightCard;
-  onPin?: () => void;
-  isPinned?: boolean;
-}) {
+function AlertCard({ card }: { card: InsightCard }) {
   const severity = (card.data?.severity as string) ?? 'info';
   const bgMap: Record<string, string> = {
-    high: 'bg-red-50',
-    medium: 'bg-amber-50',
+    high: 'bg-coral-red/10',
+    medium: 'bg-sunburst-yellow/10',
     low: 'bg-blue-50',
     info: 'bg-white',
   };
@@ -347,22 +287,13 @@ function AlertCard({
       <View className={`rounded-2xl ${bgMap[severity]} ${borderMap[severity]} border p-4`}>
         {card.title && (
           <Text
-            className={`font-heading-semibold mb-1 text-base ${severity === 'high' ? 'text-red-800' : severity === 'medium' ? 'text-amber-800' : 'text-text-primary'}`}>
+            className={`mb-1 font-heading-semibold text-base ${severity === 'high' ? 'text-red-800' : severity === 'medium' ? 'text-amber-800' : 'text-text-primary'}`}>
             {card.title}
           </Text>
         )}
         <Text className="font-body text-sm text-text-secondary">
           {card.data?.description as string}
         </Text>
-        {onPin && (
-          <Pressable
-            onPress={onPin}
-            className="absolute right-3 top-3 h-8 w-8 items-center justify-center rounded-full bg-white/80"
-            accessibilityRole="button"
-            accessibilityLabel="Pin to Miriam Hub">
-            <HugeiconsIcon icon={PinIcon} size={16} color={isPinned ? '#FF2E01' : '#8C8C8C'} />
-          </Pressable>
-        )}
       </View>
     </Animated.View>
   );
@@ -370,20 +301,12 @@ function AlertCard({
 
 /* ─── Highlight ─── */
 
-function HighlightCard({
-  card,
-  onPin,
-  isPinned,
-}: {
-  card: InsightCard;
-  onPin?: () => void;
-  isPinned?: boolean;
-}) {
+function HighlightCard({ card }: { card: InsightCard }) {
   const emoji = card.data?.emoji as string;
   const label = card.data?.label as string;
 
   return (
-    <CardContainer onPin={onPin} isPinned={isPinned} accent>
+    <CardContainer accent>
       <View className="flex-row items-start gap-3 p-4">
         {emoji && <Text className="text-2xl">{emoji}</Text>}
         <View className="flex-1">
@@ -397,36 +320,216 @@ function HighlightCard({
   );
 }
 
+/* ─── Financial Audit ─── */
+
+type AuditMetric = { label?: string; value?: string; sentiment?: string };
+type AuditItem = Record<string, any>;
+
+function asArray<T = AuditItem>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
+function formatLabel(value: unknown) {
+  return String(value ?? '')
+    .replace(/_/g, ' ')
+    .trim();
+}
+
+function formatMoney(value: unknown) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '$0.00';
+  return raw.startsWith('$') ? raw : `$${raw}`;
+}
+
+function toneClass(sentiment?: string) {
+  if (sentiment === 'positive') return 'text-success';
+  if (sentiment === 'negative') return 'text-coral-red';
+  return 'text-text-primary';
+}
+
+function AuditSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View className="border-t border-black/[0.06] pt-3">
+      <Text className="mb-2 font-body-medium text-xs text-text-secondary">{title}</Text>
+      {children}
+    </View>
+  );
+}
+
+function FinancialAuditCard({ card }: { card: InsightCard }) {
+  const { track } = useAnalytics();
+  const data = (card.data ?? {}) as Record<string, any>;
+  const score = (data.score ?? {}) as Record<string, any>;
+  const damage = (data.damage ?? {}) as Record<string, any>;
+  const metrics = asArray<AuditMetric>(data.metrics).slice(0, 4);
+  const contradictions = asArray(data.contradictions).slice(0, 3);
+  const topCategories = asArray(data.top_categories).slice(0, 4);
+  const risks = asArray(data.risk_flags).slice(0, 3);
+  const actions = asArray(data.next_actions).slice(0, 3);
+  const patterns = asArray<string>(data.patterns).slice(0, 3);
+  const totalScore = Number(score.total ?? 0);
+
+  useEffect(() => {
+    track(ANALYTICS_EVENTS.FINANCIAL_AUDIT_RENDERED, {
+      score: totalScore,
+      sentiment: card.sentiment ?? 'neutral',
+      action_count: actions.length,
+      risk_count: risks.length,
+    });
+  }, [actions.length, card.sentiment, risks.length, totalScore, track]);
+
+  return (
+    <CardContainer>
+      <View className="gap-4 py-2">
+        <View className="flex-row items-start justify-between gap-4">
+          <View className="flex-1">
+            <Text className="font-heading-semibold text-base text-text-primary">
+              {card.title || 'Miriam Audit'}
+            </Text>
+            <Text className="mt-1 font-body text-sm text-text-secondary">
+              {formatLabel(score.status ?? card.subtitle)}
+            </Text>
+          </View>
+          <View className="items-end">
+            <Text className={`font-heading-semibold text-2xl ${toneClass(card.sentiment)}`}>
+              {totalScore}
+            </Text>
+            <Text className="font-body text-xs text-text-secondary">/100</Text>
+          </View>
+        </View>
+
+        {metrics.length > 0 && (
+          <View className="flex-row flex-wrap gap-y-3">
+            {metrics.map((metric, index) => (
+              <View key={`${metric.label}-${index}`} className="w-1/2 pr-4">
+                <Text className="font-body text-xs text-text-secondary">{metric.label}</Text>
+                <Text
+                  className={`mt-0.5 font-body-medium text-[15px] ${toneClass(metric.sentiment)}`}>
+                  {metric.value}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {damage.primary_issue && (
+          <AuditSection title="The read">
+            <Text className="font-body text-sm leading-5 text-text-primary">
+              {String(damage.primary_issue)}
+            </Text>
+          </AuditSection>
+        )}
+
+        {topCategories.length > 0 && (
+          <AuditSection title="Top leaks">
+            <View className="gap-2.5">
+              {topCategories.map((item, index) => {
+                const amount = Number.parseFloat(String(item.total ?? '0')) || 0;
+                const max = Number.parseFloat(String(topCategories[0]?.total ?? '0')) || 1;
+                const width = Math.max(6, Math.min(100, (amount / max) * 100));
+                return (
+                  <View key={`${item.category}-${index}`} className="gap-1.5">
+                    <View className="flex-row items-center justify-between gap-3">
+                      <Text
+                        className="flex-1 font-body text-sm text-text-primary"
+                        numberOfLines={1}>
+                        {formatLabel(item.category)}
+                      </Text>
+                      <Text className="font-body-medium text-sm tabular-nums text-text-primary">
+                        {formatMoney(item.total)}
+                      </Text>
+                    </View>
+                    <View className="h-1 overflow-hidden rounded-full bg-black/[0.06]">
+                      <View
+                        className="h-full rounded-full bg-text-primary"
+                        style={{ width: `${width}%` }}
+                      />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </AuditSection>
+        )}
+
+        {contradictions.length > 0 && (
+          <AuditSection title="Contradictions">
+            <View className="gap-2">
+              {contradictions.map((item, index) => (
+                <Text
+                  key={`${item.code}-${index}`}
+                  className="font-body text-sm leading-5 text-text-primary">
+                  {String(item.take || item.reality || item.claim)}
+                </Text>
+              ))}
+            </View>
+          </AuditSection>
+        )}
+
+        {patterns.length > 0 && (
+          <AuditSection title="Pattern">
+            <View className="gap-2">
+              {patterns.map((pattern, index) => (
+                <Text
+                  key={`${pattern}-${index}`}
+                  className="font-body text-sm leading-5 text-text-secondary">
+                  {pattern}
+                </Text>
+              ))}
+            </View>
+          </AuditSection>
+        )}
+
+        {risks.length > 0 && (
+          <AuditSection title="Risks">
+            <View className="gap-2">
+              {risks.map((risk, index) => (
+                <View key={`${risk.code}-${index}`} className="flex-row justify-between gap-3">
+                  <Text className="flex-1 font-body text-sm text-text-primary">
+                    {String(risk.title ?? risk.code)}
+                  </Text>
+                  <Text className="font-body text-sm text-text-secondary">
+                    {formatLabel(risk.severity)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </AuditSection>
+        )}
+
+        {actions.length > 0 && (
+          <AuditSection title="Do this today">
+            <View className="gap-2">
+              {actions.map((action, index) => (
+                <Pressable
+                  key={`${action.title}-${index}`}
+                  onPress={() =>
+                    track(ANALYTICS_EVENTS.FINANCIAL_AUDIT_ACTION_TAPPED, {
+                      action_title: String(action.title ?? ''),
+                      action_index: index,
+                      score: totalScore,
+                    })
+                  }
+                  className="min-h-10 flex-row gap-2"
+                  accessibilityRole="button"
+                  accessibilityLabel={`Audit action ${index + 1}`}>
+                  <Text className="font-body-medium text-sm text-text-secondary">{index + 1}.</Text>
+                  <Text className="flex-1 font-body text-sm leading-5 text-text-primary">
+                    {String(action.title)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </AuditSection>
+        )}
+      </View>
+    </CardContainer>
+  );
+}
+
 /* ─── Main Export ─── */
 
-export function InsightCardView({
-  card,
-  onPin,
-  isPinned,
-}: {
-  card: InsightCard;
-  onPin?: () => void;
-  isPinned?: boolean;
-}) {
-  const { pinInsight, unpinInsight } = useMiriamHubStore();
-
-  const handlePin = useCallback(() => {
-    if (isPinned) {
-      // Find the pinned insight id to unpin
-      const pinned = useMiriamHubStore
-        .getState()
-        .pinnedInsights.find((p) => p.card.type === card.type && p.card.title === card.title);
-      if (pinned) unpinInsight(pinned.id);
-    } else {
-      const newInsight: PinnedInsight = {
-        id: `pin-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        card,
-        pinnedAt: new Date().toISOString(),
-      };
-      pinInsight(newInsight);
-    }
-  }, [isPinned, card, pinInsight, unpinInsight]);
-
+export function InsightCardView({ card }: { card: InsightCard }) {
   const Wrap = ({ children }: { children: React.ReactNode }) => (
     <InsightCardErrorBoundary cardType={card.type}>{children}</InsightCardErrorBoundary>
   );
@@ -435,37 +538,43 @@ export function InsightCardView({
     case 'stat_grid':
       return (
         <Wrap>
-          <StatGridCard card={card} onPin={handlePin} isPinned={isPinned} />
+          <StatGridCard card={card} />
         </Wrap>
       );
     case 'chart':
       return (
         <Wrap>
-          <ChartCard card={card} onPin={handlePin} isPinned={isPinned} />
+          <ChartCard card={card} />
         </Wrap>
       );
     case 'breakdown':
       return (
         <Wrap>
-          <BreakdownCard card={card} onPin={handlePin} isPinned={isPinned} />
+          <BreakdownCard card={card} />
         </Wrap>
       );
     case 'progress':
       return (
         <Wrap>
-          <ProgressCard card={card} onPin={handlePin} isPinned={isPinned} />
+          <ProgressCard card={card} />
         </Wrap>
       );
     case 'alert':
       return (
         <Wrap>
-          <AlertCard card={card} onPin={handlePin} isPinned={isPinned} />
+          <AlertCard card={card} />
         </Wrap>
       );
     case 'highlight':
       return (
         <Wrap>
-          <HighlightCard card={card} onPin={handlePin} isPinned={isPinned} />
+          <HighlightCard card={card} />
+        </Wrap>
+      );
+    case 'financial_audit':
+      return (
+        <Wrap>
+          <FinancialAuditCard card={card} />
         </Wrap>
       );
     default:

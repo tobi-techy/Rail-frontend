@@ -1,31 +1,20 @@
 import React from 'react';
 import { View, ViewProps } from 'react-native';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import type { HugeiconsProps } from '@hugeicons/react-native';
-import * as Icons from '@hugeicons/core-free-icons';
+import { IconComponent, resolveIcon, type PhosphorIcon } from '@/lib/icons';
+import type { IconWeight } from 'phosphor-react-native';
 
-export type HugeIconType = HugeiconsProps['icon'];
+export type HugeIconType = PhosphorIcon;
 
 export interface IconProps extends Omit<ViewProps, 'children'> {
-  icon?: HugeIconType;
+  icon?: PhosphorIcon;
   name?: string;
   size?: number;
   color?: string;
+  fill?: string;
   className?: string;
   testID?: string;
   strokeWidth?: number;
-}
-
-// Kebab-case string -> hugeicons icon lookup
-function resolveIconByName(name: string): HugeIconType {
-  // Convert kebab-case to PascalCase + "Icon" suffix
-  const pascal =
-    name
-      .split(/[-_\s]+/)
-      .filter(Boolean)
-      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-      .join('') + 'Icon';
-  return (Icons as any)[pascal] ?? Icons.HelpCircleIcon;
+  weight?: IconWeight;
 }
 
 export const Icon: React.FC<IconProps> = ({
@@ -33,20 +22,21 @@ export const Icon: React.FC<IconProps> = ({
   name,
   size = 24,
   color = '#000000',
+  fill,
   className,
   testID,
   style,
-  strokeWidth = 1.5,
+  weight = 'regular',
   ...props
 }) => {
-  const resolvedIcon = icon ?? (name ? resolveIconByName(name) : Icons.HelpCircleIcon);
+  const resolvedIcon = icon ?? (name ? resolveIcon(name) : resolveIcon('HelpCircleIcon'));
   return (
     <View
       style={[{ alignItems: 'center', justifyContent: 'center' }, style]}
       className={className}
       testID={testID}
       {...props}>
-      <HugeiconsIcon icon={resolvedIcon} size={size} color={color} strokeWidth={strokeWidth} />
+      <IconComponent icon={resolvedIcon} size={size} color={color} fill={fill} weight={weight} />
     </View>
   );
 };

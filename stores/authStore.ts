@@ -6,7 +6,7 @@ import type { User as ApiUser } from '../api/types';
 import gleap from '@/utils/gleap';
 import { secureStorage } from '../utils/secureStorage';
 import { safeError, sanitizeForLog } from '../utils/logSanitizer';
-import { isAuthSessionInvalidError } from '../utils/authErrorClassifier';
+import { isAuthSessionInvalidError, summarizeAuthError } from '../utils/authErrorClassifier';
 import { logger } from '../lib/logger';
 import {
   INACTIVITY_LIMIT_MS,
@@ -90,10 +90,12 @@ interface AuthState {
   currentOnboardingStep: string | null;
   registrationData: RegistrationData;
   pendingVerificationEmail: string | null;
+  _pendingPasscode: string | null;
   hasPasscode: boolean;
   isBiometricEnabled: boolean;
   passcodeSessionToken?: string;
   passcodeSessionExpiresAt?: string;
+  appLockExpiresAt?: string;
   loginAttempts: number;
   lockoutUntil: string | null;
   isLoading: boolean;
@@ -103,9 +105,7 @@ interface AuthState {
 interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  deleteAccount: (
-    reason?: string
-  ) => Promise<{ funds_swept: string; sweep_tx_hash?: string }>;
+  deleteAccount: (reason?: string) => Promise<{ funds_swept: string; sweep_tx_hash?: string }>;
   register: (email: string) => Promise<void>;
   refreshSession: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
@@ -150,10 +150,12 @@ const initialState: AuthState = {
   onboardingStatus: null,
   currentOnboardingStep: null,
   pendingVerificationEmail: null,
+  _pendingPasscode: null,
   hasPasscode: false,
   isBiometricEnabled: false,
   passcodeSessionToken: undefined,
   passcodeSessionExpiresAt: undefined,
+  appLockExpiresAt: undefined,
   loginAttempts: 0,
   lockoutUntil: null,
   isLoading: false,
@@ -303,10 +305,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           await authService.logout();
         } catch (error) {
           logoutFailed = true;
-          logger.error('[AuthStore] Backend logout failed', {
+          // Don't let API logout failure prevent local logout
+          logger.warn('[AuthStore] Backend logout failed, continuing with local logout', {
             component: 'AuthStore',
             action: 'logout-api-error',
-            error: error instanceof Error ? error.message : String(error),
+            error: error instanceof Error ? error.message : JSON.stringify(error),
           });
         }
         try {
@@ -469,7 +472,14 @@ export const useAuthStore = create<AuthState & AuthActions>()(
                 error: retryError instanceof Error ? retryError.message : 'Session refresh failed',
                 isLoading: false,
               });
-              if (isAuthSessionInvalidError(retryError)) get().logout();
+              if (isAuthSessionInvalidError(retryError)) {
+                logger.warn('[AuthStore] Retried refresh token rejected; clearing local session', {
+                  component: 'AuthStore',
+                  action: 'refresh-retry-auth-invalid',
+                  error: summarizeAuthError(retryError),
+                });
+                get().clearSession();
+              }
               throw retryError;
             }
           }
@@ -479,11 +489,12 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             isLoading: false,
           });
           if (isAuthSessionInvalidError(error)) {
-            logger.warn('[AuthStore] Session refresh rejected; logging out', {
+            logger.warn('[AuthStore] Session refresh rejected; clearing local session', {
               component: 'AuthStore',
               action: 'refresh-auth-invalid',
+              error: summarizeAuthError(error),
             });
-            get().logout();
+            get().clearSession();
           }
           throw error;
         }
@@ -497,11 +508,16 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       updateLastActivity: () => {
         const now = Date.now();
         const currentExpiry = get().tokenExpiresAt ? new Date(get().tokenExpiresAt!).getTime() : 0;
+        const state = get();
         set({
           lastActivityAt: new Date(now).toISOString(),
           tokenExpiresAt: new Date(
             Math.max(currentExpiry, now + INACTIVITY_LIMIT_MS)
           ).toISOString(),
+          appLockExpiresAt:
+            state.isAuthenticated && state.hasPasscode
+              ? new Date(now + PASSCODE_SESSION_MS).toISOString()
+              : state.appLockExpiresAt,
         });
       },
 
@@ -526,10 +542,14 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           tokenExpiresAt: null,
           passcodeSessionToken: undefined,
           passcodeSessionExpiresAt: undefined,
+          appLockExpiresAt: undefined,
         }),
 
       clearPasscodeSession: () =>
-        set({ passcodeSessionToken: undefined, passcodeSessionExpiresAt: undefined }),
+        set({
+          passcodeSessionToken: undefined,
+          passcodeSessionExpiresAt: undefined,
+        }),
 
       checkPasscodeSessionExpiry: () => {
         const { passcodeSessionToken, passcodeSessionExpiresAt, isAuthenticated, lastActivityAt } =
@@ -553,7 +573,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
 
       setPasscodeSession: (token, expiresAt) =>
-        set({ passcodeSessionToken: token, passcodeSessionExpiresAt: expiresAt }),
+        set({
+          passcodeSessionToken: token,
+          passcodeSessionExpiresAt: expiresAt,
+          appLockExpiresAt: new Date(Date.now() + PASSCODE_SESSION_MS).toISOString(),
+        }),
 
       setUser: (user) => set({ user, isAuthenticated: true }),
 
@@ -611,6 +635,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
               tokenExpiresAt: expiresAt,
               passcodeSessionToken: response.passcodeSessionToken,
               passcodeSessionExpiresAt: response.passcodeSessionExpiresAt,
+              appLockExpiresAt: new Date(Date.now() + PASSCODE_SESSION_MS).toISOString(),
             });
           }
           return response.verified;
@@ -641,6 +666,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           lastActivityAt: null,
           passcodeSessionToken: undefined,
           passcodeSessionExpiresAt: undefined,
+          appLockExpiresAt: undefined,
           error: null,
         });
       },
@@ -664,6 +690,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         isBiometricEnabled: state.isBiometricEnabled,
         passcodeSessionToken: state.passcodeSessionToken,
         passcodeSessionExpiresAt: state.passcodeSessionExpiresAt,
+        appLockExpiresAt: state.appLockExpiresAt,
         loginAttempts: state.loginAttempts,
         lockoutUntil: state.lockoutUntil,
         hasAcknowledgedDisclaimer: state.hasAcknowledgedDisclaimer,

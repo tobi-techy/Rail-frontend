@@ -5,14 +5,25 @@
   },
   "build": {
     "development": {
+      "environment": "development",
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENV": "staging",
+        "EXPO_PUBLIC_API_URL": "https://api-staging.userail.money/api"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "environment": "production",
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://api.userail.money/api"
+      }
     },
     "testflight": {
       "extends": "production",
+      "environment": "production",
       "distribution": "store",
       "channel": "testflight",
       "autoIncrement": true,
@@ -22,6 +33,7 @@
       }
     },
     "production": {
+      "environment": "production",
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_ENV": "production",

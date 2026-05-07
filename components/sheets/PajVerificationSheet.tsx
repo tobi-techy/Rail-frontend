@@ -75,8 +75,8 @@ export function PajVerificationSheet({ visible, onClose, onVerified }: PajVerifi
             Enable NGN transactions
           </Text>
           <Text className="mb-6 font-body text-[14px] leading-5 text-text-secondary">
-            To fund or withdraw Naira, we need to verify your identity with our payment partner.
-            You{"'"}ll receive a one-time verification code.
+            To fund or withdraw Naira, we need to verify your identity with our payment partner. You
+            {"'"}ll receive a one-time verification code.
           </Text>
 
           <Button
@@ -86,7 +86,7 @@ export function PajVerificationSheet({ visible, onClose, onVerified }: PajVerifi
             onPress={handleInitiate}
           />
 
-          <Text className="mt-4 text-center font-body text-[11px] text-[#9CA3AF]">
+          <Text className="mt-4 text-center font-body text-[11px] text-[#848281]">
             Powered by Paj Cash
           </Text>
         </View>
@@ -100,10 +100,9 @@ export function PajVerificationSheet({ visible, onClose, onVerified }: PajVerifi
           </Text>
 
           <OTPInput
+            key={otp ? 'otp-active' : 'otp-empty'}
             length={4}
-            value={otp}
-            onChange={handleOTPComplete}
-            disabled={verify.isPending}
+            onComplete={handleOTPComplete}
           />
 
           <View className="mt-6">
@@ -117,7 +116,7 @@ export function PajVerificationSheet({ visible, onClose, onVerified }: PajVerifi
             />
           </View>
 
-          <Text className="mt-4 text-center font-body text-[11px] text-[#9CA3AF]">
+          <Text className="mt-4 text-center font-body text-[11px] text-[#848281]">
             Powered by Paj Cash
           </Text>
         </View>

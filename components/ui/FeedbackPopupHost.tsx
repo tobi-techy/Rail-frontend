@@ -18,13 +18,13 @@ const typeStyles = {
     icon: 'checkmark-circle' as const,
     iconColor: '#15803D',
     iconBgColor: '#DCFCE7',
-    accentColor: '#22C55E',
+    accentColor: '#00ca48',
   },
   error: {
     icon: 'alert-circle' as const,
     iconColor: '#B91C1C',
-    iconBgColor: '#FEE2E2',
-    accentColor: '#EF4444',
+    iconBgColor: '#fff1f2',
+    accentColor: '#ff2b3a',
   },
   warning: {
     icon: 'warning' as const,
@@ -36,7 +36,7 @@ const typeStyles = {
     icon: 'information-circle' as const,
     iconColor: '#1D4ED8',
     iconBgColor: '#DBEAFE',
-    accentColor: '#3B82F6',
+    accentColor: '#0090ff',
   },
 };
 
@@ -130,7 +130,7 @@ export function FeedbackPopupHost() {
             left: 14,
             right: 14,
             borderWidth: 1,
-            borderColor: '#E5E7EB',
+            borderColor: '#f2f0ed',
             backgroundColor: '#FFFFFF',
             borderRadius: 20,
             paddingVertical: 12,
@@ -169,13 +169,13 @@ export function FeedbackPopupHost() {
           </View>
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text
-              className="text-[15px] text-black"
+              className="text-[15px] text-charcoal-primary"
               style={{ fontFamily: 'SFProDisplay-Semibold' }}>
               {popup.title}
             </Text>
             {popup.message ? (
               <Text
-                className="mt-1 text-[13px] text-black/70"
+                className="mt-1 text-[13px] text-graphite"
                 style={{ fontFamily: 'SFProDisplay-Regular' }}>
                 {popup.message}
               </Text>
@@ -187,7 +187,7 @@ export function FeedbackPopupHost() {
               hitSlop={6}
               style={{ marginLeft: 10, alignSelf: 'center' }}>
               <Text
-                style={{ fontFamily: 'SFProDisplay-Semibold', fontSize: 13, color: '#111827' }}>
+                style={{ fontFamily: 'SFProDisplay-Semibold', fontSize: 13, color: '#343433' }}>
                 {popup.action.label}
               </Text>
             </Pressable>

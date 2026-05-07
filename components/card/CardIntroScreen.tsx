@@ -13,8 +13,8 @@ import {
   SnowIcon,
   FingerPrintIcon,
   Tag01Icon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -55,7 +55,7 @@ function CardStack() {
     <View className="items-center justify-center" style={{ height: cardHeight + 40 }}>
       {/* Back card (white) */}
       <View
-        className="absolute rounded-2xl bg-gray-100"
+        className="absolute rounded-2xl bg-stone-surface"
         style={{
           width: cardWidth,
           height: cardHeight,
@@ -72,7 +72,7 @@ function CardStack() {
         }}>
         <View className="absolute left-5 top-8">
           <Text
-            className="font-subtitle text-sm text-gray-400"
+            className="font-subtitle text-sm text-smoke"
             style={{ transform: [{ rotate: '-90deg' }, { translateX: -30 }, { translateY: -20 }] }}>
             $yourname
           </Text>
@@ -123,18 +123,18 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
   const [showLearnMore, setShowLearnMore] = useState(false);
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center px-4 pt-2">
         <Pressable
           onPress={() => router.back()}
           className="size-11 items-center justify-center"
           hitSlop={8}>
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#111827" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#343433" />
         </Pressable>
         <View className="px-5 pt-1">
-          <Text className="font-headline text-3xl text-gray-900">Free Debit Card</Text>
-          <Text className="mt-1 font-body text-base text-gray-400">With Instant Discounts</Text>
+          <Text className="font-headline text-3xl text-charcoal-primary">Free Debit Card</Text>
+          <Text className="mt-1 font-body text-base text-smoke">With Instant Discounts</Text>
         </View>
       </View>
 
@@ -171,10 +171,10 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
           contentContainerStyle={{ paddingBottom: 40 }}>
           {/* Header */}
           <View className="mb-6">
-            <Text className="font-headline text-[26px] leading-[32px] text-gray-900">
+            <Text className="font-headline text-[26px] leading-[32px] text-charcoal-primary">
               Rail Debit Card
             </Text>
-            <Text className="mt-1.5 font-body text-sm text-gray-400">
+            <Text className="mt-1.5 font-body text-sm text-smoke">
               A free virtual Visa linked to your spend balance.
             </Text>
           </View>
@@ -218,23 +218,23 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
             },
             {
               icon: Tag01Icon,
-              bg: '#F3F4F6',
-              color: '#374151',
+              bg: '#f2f0ed',
+              color: '#474645',
               title: 'Zero Fees',
               body: 'No annual fee, no issuance fee. Completely free.',
             },
           ].map((item, i, arr) => (
             <View
               key={item.title}
-              className={`flex-row gap-4 py-4 ${i < arr.length - 1 ? 'border-b border-gray-100' : ''}`}>
+              className={`flex-row gap-4 py-4 ${i < arr.length - 1 ? 'border-b border-stone-surface' : ''}`}>
               <View
-                className="mt-0.5 h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                className="mt-0.5 h-10 w-10 shrink-0 items-center justify-center rounded-lg"
                 style={{ backgroundColor: item.bg }}>
                 <HugeiconsIcon icon={item.icon} size={20} color={item.color} strokeWidth={1.5} />
               </View>
               <View className="flex-1">
-                <Text className="font-button text-[15px] text-gray-900">{item.title}</Text>
-                <Text className="mt-0.5 font-body text-[13px] leading-5 text-gray-400">
+                <Text className="font-button text-[15px] text-charcoal-primary">{item.title}</Text>
+                <Text className="mt-0.5 font-body text-[13px] leading-5 text-smoke">
                   {item.body}
                 </Text>
               </View>

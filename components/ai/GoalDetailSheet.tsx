@@ -1,10 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable, TextInput, FlatList } from 'react-native';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { View, Text, Pressable, TextInput } from 'react-native';
 import {
   Add01Icon,
   Award01Icon,
-  UserMultiple02Icon,
   Target02Icon,
   Beach02Icon,
   Home01Icon,
@@ -13,9 +11,10 @@ import {
   MortarboardIcon,
   Shield01Icon,
   Gif01Icon,
+  IconComponent as HugeiconsIcon,
   Money01Icon,
   AirplaneTakeOff01Icon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { GorhomBottomSheet } from '@/components/sheets/GorhomBottomSheet';
 import { aiService } from '@/api/services/ai.service';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -74,7 +73,7 @@ function ContributionRow({ item }: { item: GoalContribution }) {
         </Text>
         <Text className="font-body text-[11px] text-text-tertiary">{timeAgo}</Text>
       </View>
-      <Text className="font-mono-semibold text-[14px] text-[#00C853]">
+      <Text className="font-mono-semibold text-[14px] text-[#00c454]">
         +$
         {Number(parseFloat(item.amount)).toLocaleString('en-US', {
           minimumFractionDigits: 0,
@@ -123,7 +122,7 @@ export function GoalDetailSheet({ goal, visible, onClose, onRefresh }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [goal, amount]);
+  }, [amount, goal, notification, onRefresh, showPopup]);
 
   if (!goal) return null;
 
@@ -137,7 +136,7 @@ export function GoalDetailSheet({ goal, visible, onClose, onRefresh }: Props) {
       <View className="flex-1 px-5 pb-8 pt-2">
         {/* Header */}
         <View className="mb-5 items-center">
-          <View className="mb-2 h-16 w-16 items-center justify-center rounded-full bg-[#F5F5F5]">
+          <View className="mb-2 h-16 w-16 items-center justify-center rounded-full bg-[#f2f0ed]">
             <HugeiconsIcon
               icon={GOAL_ICONS[goal.icon_name] || Target02Icon}
               size={28}
@@ -151,7 +150,7 @@ export function GoalDetailSheet({ goal, visible, onClose, onRefresh }: Props) {
         </View>
 
         {/* Progress */}
-        <View className="mb-5 rounded-3xl bg-[#F5F5F5] p-5">
+        <View className="mb-5 rounded-3xl bg-[#f2f0ed] p-5">
           <View className="mb-2 flex-row justify-between">
             <Text className="font-mono-semibold text-2xl text-text-primary">
               $
@@ -168,7 +167,7 @@ export function GoalDetailSheet({ goal, visible, onClose, onRefresh }: Props) {
               })}
             </Text>
           </View>
-          <View className="h-3 overflow-hidden rounded-full bg-white">
+          <View className="h-3 overflow-hidden rounded-full bg-warm-canvas">
             <View
               className="h-full rounded-full bg-primary"
               style={{ width: `${Math.min(progress, 100)}%` }}
@@ -195,7 +194,7 @@ export function GoalDetailSheet({ goal, visible, onClose, onRefresh }: Props) {
             <Text className="font-heading-bold text-[15px] text-white">Contribute</Text>
           </Pressable>
         ) : (
-          <View className="mb-5 rounded-3xl bg-[#F5F5F5] p-5">
+          <View className="mb-5 rounded-3xl bg-[#f2f0ed] p-5">
             <Text className="mb-3 font-body text-[12px] text-text-secondary">
               Amount to contribute
             </Text>
@@ -206,7 +205,7 @@ export function GoalDetailSheet({ goal, visible, onClose, onRefresh }: Props) {
                 onChangeText={setAmount}
                 keyboardType="decimal-pad"
                 placeholder="0"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#848281"
                 className="flex-1 font-mono-semibold text-3xl text-text-primary"
                 autoFocus
               />
@@ -240,7 +239,7 @@ export function GoalDetailSheet({ goal, visible, onClose, onRefresh }: Props) {
           <View className="mb-5">
             <View className="mb-2 flex-row items-center">
               <HugeiconsIcon icon={Award01Icon} size={16} color="#000" />
-              <Text className="font-heading-bold ml-2 text-[14px] text-text-primary">
+              <Text className="ml-2 font-heading-bold text-[14px] text-text-primary">
                 Leaderboard
               </Text>
             </View>
@@ -253,7 +252,7 @@ export function GoalDetailSheet({ goal, visible, onClose, onRefresh }: Props) {
         {/* Recent activity */}
         {contributions && contributions.length > 0 && (
           <View>
-            <Text className="font-heading-bold mb-2 text-[14px] text-text-primary">Activity</Text>
+            <Text className="mb-2 font-heading-bold text-[14px] text-text-primary">Activity</Text>
             {contributions.slice(0, 10).map((c) => (
               <ContributionRow key={c.id} item={c} />
             ))}

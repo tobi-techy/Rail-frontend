@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Text, View, RefreshControl, TextInput, Pressable, ScrollView } from 'react-native';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { Search01Icon } from '@hugeicons/core-free-icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { Search01Icon } from '@/lib/icons';
 import { TransactionList } from '@/components/molecules/TransactionList';
 import type {
   Transaction,
@@ -138,22 +138,22 @@ export default function History() {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: '#F5F5F5',
+            backgroundColor: '#f2f0ed',
             borderRadius: 12,
             paddingHorizontal: 12,
             height: 40,
           }}>
-          <HugeiconsIcon icon={Search01Icon} size={18} color="#9CA3AF" />
+          <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
           <TextInput
             value={search}
             onChangeText={setSearch}
             placeholder="Search transactions..."
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#a7a7a7"
             style={{
               flex: 1,
               fontFamily: 'SFProDisplay-Regular',
               fontSize: 15,
-              color: '#1A1A1A',
+              color: '#343433',
               marginLeft: 8,
             }}
           />
@@ -179,13 +179,13 @@ export default function History() {
               paddingHorizontal: 16,
               paddingVertical: 8,
               borderRadius: 20,
-              backgroundColor: activeFilter === f.id ? '#1A1A1A' : '#F5F5F5',
+              backgroundColor: activeFilter === f.id ? '#121212' : '#f2f0ed',
             }}>
             <Text
               style={{
                 fontFamily: 'SFProDisplay-Medium',
                 fontSize: 13,
-                color: activeFilter === f.id ? '#FFF' : '#6B7280',
+                color: activeFilter === f.id ? '#FFF' : '#848281',
               }}>
               {f.label}
             </Text>

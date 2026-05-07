@@ -4,8 +4,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from '@/components/ui';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { ArrowLeft01Icon } from '@/lib/icons';
 import { isEVMChain, getChainConfig } from '@/utils/chains';
 import { ChainLogo } from '@/components/ChainLogo';
 import { useUIStore } from '@/stores';
@@ -50,7 +50,7 @@ export default function ConfirmScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
       {/* Header */}
@@ -58,7 +58,7 @@ export default function ConfirmScreen() {
         <Pressable
           className="size-11 items-center justify-center rounded-full bg-surface"
           onPress={() => router.back()}>
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
         </Pressable>
         <Text className="font-subtitle text-[17px] text-text-primary">Review</Text>
         <View className="size-11" />
@@ -192,7 +192,7 @@ export default function ConfirmScreen() {
 
       {/* Sticky footer */}
       <View
-        className="flex-row gap-3 border-t border-gray-100 bg-white px-5 pt-3"
+        className="flex-row gap-3 border-t border-stone-surface bg-parchment-card px-5 pt-3"
         style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
         <View className="flex-1">
           <Button title="Cancel" variant="ghost" onPress={() => router.back()} />
@@ -219,5 +219,5 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 function Sep() {
-  return <View className="mx-5 h-px bg-gray-100" />;
+  return <View className="mx-5 h-px bg-stone-surface" />;
 }

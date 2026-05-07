@@ -24,7 +24,6 @@ import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { ROUTES } from '@/constants/routes';
 import { useStation, useKYCStatus } from '@/api/hooks';
-import { useGameplayProfile } from '@/api/hooks/useGameplay';
 import { useCards } from '@/api/hooks/useCard';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
 import {
@@ -54,12 +53,10 @@ import {
   SavingsIcon,
   UserGroupIcon,
   Wallet01Icon,
-  ArrowMoveDownLeftIcon,
   ArrowDataTransferHorizontalIcon,
   ChartIncreaseIcon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { ExpandableActionMenu } from '@/components/molecules/ExpandableActionMenu';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { OnboardingProgressCard } from '@/components/molecules/OnboardingProgressCard';
 
 import { useNudge } from '@/hooks/useNudge';
@@ -101,9 +98,9 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const CreditSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View className="mb-6">
-    <Text className="mb-2 font-button text-[15px] text-black">{title}</Text>
+    <Text className="mb-2 font-button text-[15px] text-charcoal-primary">{title}</Text>
     {typeof children === 'string' ? (
-      <Text className="font-body text-[14px] leading-[22px] text-black/70">{children}</Text>
+      <Text className="font-body text-[14px] leading-[22px] text-ash">{children}</Text>
     ) : (
       children
     )}
@@ -112,8 +109,8 @@ const CreditSection = ({ title, children }: { title: string; children: React.Rea
 
 const CreditBullet = ({ children }: { children: React.ReactNode }) => (
   <View className="mb-2 flex-row">
-    <Text className="mr-3 font-body text-[14px] text-black/40">•</Text>
-    <Text className="flex-1 font-body text-[14px] leading-[22px] text-black/70">{children}</Text>
+    <Text className="mr-3 font-body text-[14px] text-smoke">•</Text>
+    <Text className="flex-1 font-body text-[14px] leading-[22px] text-ash">{children}</Text>
   </View>
 );
 
@@ -123,7 +120,7 @@ function FundingRow({ action, isLast }: { action: FundingAction; isLast: boolean
   return (
     <AnimatedPressable
       style={animStyle}
-      className={`flex-row items-center justify-between py-3.5${isLast ? '' : ' border-b border-gray-100'}`}
+      className={`flex-row items-center justify-between py-3.5${isLast ? '' : ' border-b border-stone-surface'}`}
       onPress={action.comingSoon ? undefined : action.onPress}
       onPressIn={() => {
         if (!action.comingSoon) scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
@@ -133,7 +130,7 @@ function FundingRow({ action, isLast }: { action: FundingAction; isLast: boolean
       }}
       disabled={action.comingSoon}>
       <View className={`flex-1 flex-row items-center${action.comingSoon ? ' opacity-40' : ''}`}>
-        <View className="mr-4 h-11 w-11 items-center justify-center rounded-full bg-gray-100">
+        <View className="mr-4 h-11 w-11 items-center justify-center rounded-full bg-stone-surface">
           {action.icon}
         </View>
         <View className="flex-1">
@@ -146,11 +143,11 @@ function FundingRow({ action, isLast }: { action: FundingAction; isLast: boolean
         </View>
       </View>
       {action.comingSoon ? (
-        <View className="rounded-full bg-gray-100 px-2 py-0.5">
-          <Text className="font-caption text-[11px] text-gray-400">Soon</Text>
+        <View className="rounded-full bg-stone-surface px-2 py-0.5">
+          <Text className="font-caption text-[11px] text-smoke">Soon</Text>
         </View>
       ) : (
-        <HugeiconsIcon icon={ArrowRight01Icon} size={20} color="#9CA3AF" />
+        <HugeiconsIcon icon={ArrowRight01Icon} size={20} color="#848281" />
       )}
     </AnimatedPressable>
   );
@@ -304,7 +301,7 @@ function DashboardScreen() {
       headerRight: () => (
         <View className="flex-row items-center gap-x-4 pr-md">
           <Pressable onPress={() => gleap.open()} hitSlop={8}>
-            <HugeiconsIcon icon={Message01Icon} size={22} color="#111" strokeWidth={1.8} />
+            <HugeiconsIcon icon={Message01Icon} size={22} color="#343433" strokeWidth={1.8} />
           </Pressable>
           <NotificationBell />
         </View>
@@ -422,6 +419,16 @@ function DashboardScreen() {
                 router.push('/receive' as never);
               },
             },
+            {
+              id: 'fund-stash',
+              label: 'Fund Stash',
+              sublabel: 'Move spend balance into your stash',
+              icon: <HugeiconsIcon icon={SavingsIcon} size={20} color="#00ca48" />,
+              onPress: () => {
+                setShowReceiveSheet(false);
+                router.push('/fund-stash' as never);
+              },
+            },
           ]
         : [
             {
@@ -442,6 +449,16 @@ function DashboardScreen() {
               onPress: () => {
                 setShowReceiveSheet(false);
                 router.push('/fund-crosschain');
+              },
+            },
+            {
+              id: 'fund-stash',
+              label: 'Fund Stash',
+              sublabel: 'Move spend balance into your stash',
+              icon: <HugeiconsIcon icon={SavingsIcon} size={20} color="#00ca48" />,
+              onPress: () => {
+                setShowReceiveSheet(false);
+                router.push('/fund-stash' as never);
               },
             },
           ],
@@ -530,8 +547,18 @@ function DashboardScreen() {
               id: 'p2p',
               label: 'Send to People',
               sublabel: 'Via RailTag, email, or phone',
-              icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#FF2E01" />,
+              icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#ff3e00" />,
               onPress: startP2P,
+            },
+            {
+              id: 'withdraw-stash',
+              label: 'Withdraw from Stash',
+              sublabel: 'Move funds out of your investment stash',
+              icon: <HugeiconsIcon icon={ChartIncreaseIcon} size={20} color="#ff3e00" />,
+              onPress: () => {
+                setShowSendSheet(false);
+                router.push('/withdraw/early-withdraw' as never);
+              },
             },
           ]
         : [
@@ -546,8 +573,18 @@ function DashboardScreen() {
               id: 'p2p',
               label: 'Send to People',
               sublabel: 'Via RailTag, email, or phone',
-              icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#FF2E01" />,
+              icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#ff3e00" />,
               onPress: startP2P,
+            },
+            {
+              id: 'withdraw-stash',
+              label: 'Withdraw from Stash',
+              sublabel: 'Move funds out of your investment stash',
+              icon: <HugeiconsIcon icon={ChartIncreaseIcon} size={20} color="#ff3e00" />,
+              onPress: () => {
+                setShowSendSheet(false);
+                router.push('/withdraw/early-withdraw' as never);
+              },
             },
           ],
     [startWithdrawal, startP2P, sheetCurrency, isSheetFiat, gateFeature]
@@ -647,7 +684,7 @@ function DashboardScreen() {
           />
 
           {isStationError && !isStationPending && (
-            <Text className="mb-2 text-center font-body text-[12px] text-red-400">
+            <Text className="mb-2 text-center font-body text-[12px] text-coral-red">
               Unable to load balance — pull to refresh
             </Text>
           )}
@@ -667,38 +704,6 @@ function DashboardScreen() {
               size="small"
               variant="white"
             />
-            {/*<ExpandableActionMenu
-            items={[
-              {
-                id: 'fund-stash',
-                label: 'Fund Stash',
-                icon: SavingsIcon,
-                iconColor: '#16A34A',
-                // onPress: () => router.push('/spending-stash/transfer' as never),
-              },
-              {
-                id: 'withdraw Stash',
-                label: 'Withdraw stash',
-                icon: ArrowMoveDownLeftIcon,
-                iconColor: '#EA580C',
-                // onPress: () => router.push('/withdraw' as never),
-              },
-              {
-                id: 'Fund Spend',
-                label: 'Fund spend',
-                icon: ArrowDataTransferHorizontalIcon,
-                iconColor: '#2563EB',
-                // onPress: () => router.push('/market' as never),
-              },
-              {
-                id: 'Withdraw Spend',
-                label: 'Withdraw spend',
-                icon: ChartIncreaseIcon,
-                iconColor: '#7C3AED',
-                // onPress: () => router.push('/investment-stash' as never),
-              },
-            ]}
-          />*/}
           </View>
 
           <View className="mt-5 flex-row gap-3">
@@ -709,7 +714,7 @@ function DashboardScreen() {
               icon={
                 <HugeiconsIcon icon={CreditCardIcon} size={26} color="white" strokeWidth={1.8} />
               }
-              cardColor="#FF2E01"
+              cardColor="#ff3e00"
               className="flex-1"
               isLoading={isStationPending}
               onPress={() => gateFeature(() => setShowSpendBreakdown(true))}
@@ -739,59 +744,6 @@ function DashboardScreen() {
             {/* GameplayCard — feature-gated, re-enable when gameplay is ready */}
             {false && (
               <GameplayCard data={gameplayData} isLoading={isGameplayPending} className="flex-1" />
-            )}
-          </View>
-
-          {!kycApproved && (
-            <OnboardingProgressCard
-              steps={[
-                { label: 'Create account', done: true },
-                { label: 'Verify identity (KYC)', done: kycApproved },
-                {
-                  label: 'Make first deposit',
-                  done: parseFloat(station?.total_balance ?? '0') > 0,
-                },
-                { label: 'Set up Rail Card', done: hasCard },
-              ]}
-              onPress={() => {
-                if (!kycApproved) setShowKYCSheet(true);
-                else router.push('/card' as never);
-              }}
-            />
-          )}
-
-          <View className="py-5">
-            {transactions.length === 0 ? (
-              <View className="items-center justify-center rounded-3xl bg-white px-5 py-8">
-                <TransactionsEmptyIllustration width={220} height={140} />
-                <Text className="mt-4 text-center font-subtitle text-headline-2 text-gray-900">
-                  No transactions yet
-                </Text>
-                <Text className="mt-2 text-center font-body text-base text-gray-500">
-                  Your activity will show up here once you receive or send funds.
-                </Text>
-              </View>
-            ) : (
-              <>
-                <View className="mb-3 flex-row items-center justify-between">
-                  <Text className="font-subtitle text-subtitle text-text-primary">
-                    Recent Activity
-                  </Text>
-                  <Pressable
-                    onPress={() => router.push('/(tabs)/history' as never)}
-                    accessibilityRole="button"
-                    accessibilityLabel="See all transactions"
-                    className="min-h-[44px] flex-row items-center">
-                    <Text className="font-caption text-caption text-text-secondary">See all</Text>
-                    <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#757575" />
-                  </Pressable>
-                </View>
-                <TransactionList
-                  transactions={transactions}
-                  onTransactionPress={setSelectedTransaction}
-                  scrollEnabled={false}
-                />
-              </>
             )}
           </View>
         </View>
@@ -863,8 +815,8 @@ function DashboardScreen() {
           visible={showMicroLoanSheet}
           onClose={() => setShowMicroLoanSheet(false)}>
           <View className="px-5">
-            <Text className="font-subtitle text-[20px] text-[#070914]">Rail Credit</Text>
-            <Text className="mt-1 font-body text-[14px] text-[#9CA3AF]">
+            <Text className="font-subtitle text-[20px] text-charcoal-primary">Rail Credit</Text>
+            <Text className="mt-1 font-body text-[14px] text-ash">
               Spend beyond your balance. Repay automatically.
             </Text>
             <View className="mt-5">
@@ -887,8 +839,8 @@ function DashboardScreen() {
                 repayment behavior, and how much Rail can safely lend. New users start with a
                 conservative limit that grows as you use Rail consistently.
               </CreditSection>
-              <View className="mb-4 rounded-2xl bg-[#F9FAFB] p-4">
-                <Text className="font-body text-[13px] leading-[20px] text-[#9CA3AF]">
+              <View className="mb-4 rounded-2xl bg-parchment-card p-4">
+                <Text className="font-body text-[13px] leading-[20px] text-ash">
                   Rail Credit is designed for short-term liquidity — not long-term debt. Advances
                   are automatically repaid from your next deposit. Only spend what you can repay.
                 </Text>
@@ -900,8 +852,8 @@ function DashboardScreen() {
           visible={showCardComingSheet}
           onClose={() => setShowCardComingSheet(false)}>
           <View className="px-5">
-            <Text className="font-subtitle text-[20px] text-[#070914]">Rail Card</Text>
-            <Text className="mt-1 font-body text-[14px] text-[#9CA3AF]">
+            <Text className="font-subtitle text-[20px] text-charcoal-primary">Rail Card</Text>
+            <Text className="mt-1 font-body text-[14px] text-ash">
               Your USDC balance. Anywhere Visa is accepted.
             </Text>
             <View className="mt-5">
@@ -923,8 +875,8 @@ function DashboardScreen() {
                 automatically to your stash — earning yield while you spend. Small amounts,
                 compounded over time, add up.
               </CreditSection>
-              <View className="mb-4 rounded-2xl bg-[#F9FAFB] p-4">
-                <Text className="font-body text-[13px] leading-[20px] text-[#9CA3AF]">
+              <View className="mb-4 rounded-2xl bg-parchment-card p-4">
+                <Text className="font-body text-[13px] leading-[20px] text-ash">
                   Rail Card is coming soon. You&apos;ll be notified when it&apos;s available for
                   your account. KYC verification is required to activate the card.
                 </Text>

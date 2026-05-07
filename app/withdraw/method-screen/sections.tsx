@@ -50,8 +50,8 @@ import {
   UserIcon,
   UserMultiple02Icon,
   Wallet01Icon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 type FiatKycRequiredScreenProps = {
   kycStatus: any;
@@ -173,16 +173,16 @@ const CHAIN_ICONS: Record<string, React.ComponentType<any> | ImageSourcePropType
 };
 
 const WITHDRAWAL_CATEGORIES = [
-  { label: 'Transfer', icon: MoneyReceiveSquareIcon, color: '#3B82F6' },
-  { label: 'Bills', icon: CreditCardIcon, color: '#EF4444' },
+  { label: 'Transfer', icon: MoneyReceiveSquareIcon, color: '#0090ff' },
+  { label: 'Bills', icon: CreditCardIcon, color: '#ff2b3a' },
   { label: 'Food', icon: Coffee01Icon, color: '#F97316' },
-  { label: 'Shopping', icon: ShoppingBag01Icon, color: '#8B5CF6' },
+  { label: 'Shopping', icon: ShoppingBag01Icon, color: '#9f4fff' },
   { label: 'Travel', icon: Airplane01Icon, color: '#06B6D4' },
-  { label: 'Savings', icon: Wallet01Icon, color: '#10B981' },
+  { label: 'Savings', icon: Wallet01Icon, color: '#00ca48' },
   { label: 'Crypto', icon: InternetIcon, color: '#6366F1' },
   { label: 'Friends', icon: UserMultiple02Icon, color: '#EC4899' },
   { label: 'Gifts', icon: GiftIcon, color: '#F59E0B' },
-  { label: 'Other', icon: MoreIcon, color: '#6B7280' },
+  { label: 'Other', icon: MoreIcon, color: '#848281' },
 ] as const;
 
 const maskAccountNumber = (value?: string) => {
@@ -270,7 +270,7 @@ function ChainPill({
       style={[
         animStyle,
         {
-          backgroundColor: selected ? chain.color + '18' : '#F3F4F6',
+          backgroundColor: selected ? chain.color + '18' : '#f2f0ed',
           borderWidth: selected ? 1.5 : 1,
           borderColor: selected ? chain.color : 'transparent',
         },
@@ -303,13 +303,13 @@ function ChainPill({
             React.createElement(iconValue as React.ComponentType<any>, { width: 22, height: 22 })
           ) : null}
         </View>
-        <View className="absolute -bottom-1 -right-1 size-5 items-center justify-center rounded-full bg-white shadow-sm">
+        <View className="absolute -bottom-1 -right-1 size-5 items-center justify-center rounded-full bg-parchment-card shadow-sm">
           <UsdcIcon width={13} height={13} />
         </View>
       </View>
       <Text
         className="font-subtitle text-[12px]"
-        style={{ color: selected ? chain.color : '#374151' }}>
+        style={{ color: selected ? chain.color : '#474645' }}>
         {chain.shortLabel}
       </Text>
     </AnimatedPressable>
@@ -370,7 +370,7 @@ function CategoryPicker({ value, onChange }: { value: string; onChange: (v: stri
     <>
       <Pressable
         onPress={open}
-        className="h-14 flex-row items-center justify-between rounded-xl border border-gray-200 bg-white px-4"
+        className="h-14 flex-row items-center justify-between rounded-lg border border-fog bg-parchment-card px-4"
         accessibilityRole="button"
         accessibilityLabel={`Category: ${value}`}>
         <View className="flex-row items-center gap-3">
@@ -381,7 +381,7 @@ function CategoryPicker({ value, onChange }: { value: string; onChange: (v: stri
           </View>
           <Text className="font-body text-[15px] text-text-primary">{value}</Text>
         </View>
-        <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#9CA3AF" />
+        <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#848281" />
       </Pressable>
 
       <BottomSheetModal
@@ -394,7 +394,7 @@ function CategoryPicker({ value, onChange }: { value: string; onChange: (v: stri
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
         }}
-        handleIndicatorStyle={{ backgroundColor: '#D1D5DB', width: 36 }}>
+        handleIndicatorStyle={{ backgroundColor: '#c6c6c6', width: 36 }}>
         <BottomSheetView style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           <Text className="px-6 pb-3 pt-1 font-subtitle text-[18px] text-text-primary">
             Select category
@@ -408,7 +408,7 @@ function CategoryPicker({ value, onChange }: { value: string; onChange: (v: stri
                   onChange(item.label);
                   pickerRef.current?.dismiss();
                 }}
-                className="flex-row items-center gap-4 px-6 py-3.5 active:bg-gray-50"
+                className="flex-row items-center gap-4 px-6 py-3.5 active:bg-stone-surface"
                 accessibilityRole="button"
                 accessibilityLabel={`Select ${item.label}`}>
                 <View
@@ -463,7 +463,7 @@ function FiatCurrencyPicker({
             }}
             className={cn(
               'flex-1 flex-row items-center justify-center gap-1.5 rounded-full py-2.5',
-              selected ? 'bg-gray-900' : 'bg-gray-100'
+              selected ? 'bg-midnight' : 'bg-stone-surface'
             )}
             accessibilityRole="button"
             accessibilityLabel={`Select ${c.label}`}>
@@ -471,7 +471,7 @@ function FiatCurrencyPicker({
             <Text
               className={cn(
                 'font-subtitle text-[13px]',
-                selected ? 'text-white' : 'text-gray-600'
+                selected ? 'text-white' : 'text-ash'
               )}>
               {c.label}
             </Text>
@@ -512,82 +512,85 @@ export function FiatKycRequiredScreen({
   return (
     <ErrorBoundary>
       <>
-        <SafeAreaView className="flex-1 bg-white">
+        <SafeAreaView className="flex-1 bg-warm-canvas">
           <StatusBar barStyle="dark-content" backgroundColor="white" />
           <View className="flex-row items-center px-5 pb-4 pt-2">
             <TouchableOpacity onPress={() => router.back()} hitSlop={12} className="mr-4 p-1">
               <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#111" />
             </TouchableOpacity>
-            <Text className="font-subtitle text-lg text-gray-900">Withdraw</Text>
+            <Text className="font-subtitle text-lg text-charcoal-primary">Withdraw</Text>
           </View>
           <View className="flex-1 justify-center px-6">
             {isPending ? (
               <>
-                <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
+                <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-sunburst-yellow/10">
                   <HugeiconsIcon icon={ShieldEnergyIcon} size={32} color="#F59E0B" />
                 </View>
-                <Text className="mb-2 font-subtitle text-xl text-gray-900">
+                <Text className="mb-2 font-subtitle text-xl text-charcoal-primary">
                   Verification in Progress
                 </Text>
-                <Text className="mb-8 font-body text-sm text-gray-500">
+                <Text className="mb-8 font-body text-sm text-ash">
                   Your identity verification is being processed. This usually takes a few minutes.
                 </Text>
-                <View className="w-full gap-y-3">
-                  <Button title="Check Status" onPress={onCloseKycSheet} />
+                <View className="w-full flex-row gap-3">
+                  <Button title="Check Status" onPress={onCloseKycSheet} flex />
                   <Button
                     title="Use Crypto Instead"
                     variant="white"
                     onPress={() => router.replace('/withdraw/crypto' as never)}
+                    flex
                   />
                 </View>
               </>
             ) : (
               <>
-                <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-amber-50">
+                <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-sunburst-yellow/10">
                   <HugeiconsIcon icon={ShieldEnergyIcon} size={32} color="#F59E0B" />
                 </View>
-                <Text className="mb-2 font-subtitle text-xl text-gray-900">
+                <Text className="mb-2 font-subtitle text-xl text-charcoal-primary">
                   One-time verification needed
                 </Text>
-                <Text className="mb-6 font-body text-sm leading-5 text-gray-500">
+                <Text className="mb-6 font-body text-sm leading-5 text-ash">
                   To send money to your bank account, we're required by financial regulations to
                   verify your identity. It takes under 5 minutes and only needs to be done once.
                 </Text>
-                <View className="mb-8 gap-y-3 rounded-2xl border border-gray-100 bg-gray-50 p-4">
-                  <Text className="font-subtitle text-[13px] text-gray-700">
+                <View className="mb-8 gap-y-3 rounded-2xl border border-stone-surface bg-stone-surface p-4">
+                  <Text className="font-subtitle text-[13px] text-graphite">
                     Once verified, you can:
                   </Text>
                   <View className="flex-row items-center gap-3">
-                    <HugeiconsIcon icon={Building04Icon} size={16} color="#6B7280" />
-                    <Text className="font-body text-[13px] text-gray-600">
+                    <HugeiconsIcon icon={Building04Icon} size={16} color="#848281" />
+                    <Text className="font-body text-[13px] text-ash">
                       Withdraw to your bank account
                     </Text>
                   </View>
                   <View className="flex-row items-center gap-3">
-                    <HugeiconsIcon icon={CreditCardIcon} size={16} color="#6B7280" />
-                    <Text className="font-body text-[13px] text-gray-600">
+                    <HugeiconsIcon icon={CreditCardIcon} size={16} color="#848281" />
+                    <Text className="font-body text-[13px] text-ash">
                       Get a Rail Debit Card
                     </Text>
                   </View>
                   <View className="flex-row items-center gap-3">
-                    <HugeiconsIcon icon={MoneyReceiveSquareIcon} size={16} color="#6B7280" />
-                    <Text className="font-body text-[13px] text-gray-600">
+                    <HugeiconsIcon icon={MoneyReceiveSquareIcon} size={16} color="#848281" />
+                    <Text className="font-body text-[13px] text-ash">
                       Deposit from your bank
                     </Text>
                   </View>
                 </View>
-                <View className="w-full gap-y-3">
+                <View className="w-full flex-row gap-3">
                   <Button
                     title={hasStartedKyc ? 'Continue Verification' : 'Verify Identity — 5 min'}
                     onPress={handleVerificationPress}
+                    flex
                   />
                   <Button
                     title="Use Crypto Instead"
                     variant="white"
                     onPress={() => router.replace('/withdraw/crypto' as never)}
+                    flex
                   />
                 </View>
-                <Text className="mt-4 text-center font-body text-[11px] text-gray-400">
+                <Text className="mt-4 text-center font-body text-[11px] text-smoke">
                   Your data is encrypted and never sold to third parties.
                 </Text>
               </>
@@ -632,12 +635,12 @@ export function AuthorizeScreen({
 
   return (
     <ErrorBoundary>
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-warm-canvas">
         <StatusBar barStyle="dark-content" backgroundColor="white" />
 
         <View className="px-4 pt-2">
           <TouchableOpacity
-            className="size-11 items-center justify-center rounded-full bg-gray-100"
+            className="size-11 items-center justify-center rounded-full bg-stone-surface"
             onPress={onClose}
             activeOpacity={0.7}
             accessibilityRole="button"
@@ -655,15 +658,15 @@ export function AuthorizeScreen({
           )}
 
           {isLockedOut && lockoutSecondsRemaining !== undefined && (
-            <View className="mt-3 rounded-xl bg-red-50 px-4 py-3">
-              <Text className="font-subtitle text-sm text-red-600">
+            <View className="mt-3 rounded-lg bg-coral-red/10 px-4 py-3">
+              <Text className="font-subtitle text-sm text-coral-red">
                 Too many failed attempts. Try again in {lockoutSecondsRemaining}s.
               </Text>
             </View>
           )}
 
           {!isLockedOut && pinAttemptsRemaining !== undefined && pinAttemptsRemaining <= 3 && (
-            <View className="mt-3 rounded-xl bg-amber-50 px-4 py-3">
+            <View className="mt-3 rounded-lg bg-sunburst-yellow/10 px-4 py-3">
               <Text className="font-body text-sm text-amber-700">
                 {pinAttemptsRemaining} attempt{pinAttemptsRemaining !== 1 ? 's' : ''} remaining
                 before lockout.
@@ -763,7 +766,7 @@ export function WithdrawDetailsSheet({
                   placeholder="Full name on bank account"
                   autoCapitalize="words"
                   autoCorrect={false}
-                  className="h-14 rounded-xl"
+                  className="h-14 rounded-lg"
                 />
                 <Input
                   label="Account number"
@@ -772,7 +775,7 @@ export function WithdrawDetailsSheet({
                   placeholder="4–17 digit account number"
                   keyboardType="number-pad"
                   autoCorrect={false}
-                  className="h-14 rounded-xl"
+                  className="h-14 rounded-lg"
                   error={didTryFiatAccount ? fiatAccountNumberError : undefined}
                 />
                 <Input
@@ -782,7 +785,7 @@ export function WithdrawDetailsSheet({
                   placeholder="9-digit routing number"
                   keyboardType="number-pad"
                   autoCorrect={false}
-                  className="h-14 rounded-xl"
+                  className="h-14 rounded-lg"
                   error={
                     didTryDestination || destinationInput.length > 0 ? destinationError : undefined
                   }
@@ -799,7 +802,7 @@ export function WithdrawDetailsSheet({
                   placeholder="Full name on bank account"
                   autoCapitalize="words"
                   autoCorrect={false}
-                  className="h-14 rounded-xl"
+                  className="h-14 rounded-lg"
                 />
                 <Input
                   label="IBAN"
@@ -808,7 +811,7 @@ export function WithdrawDetailsSheet({
                   placeholder="e.g. DE89370400440532013000"
                   autoCapitalize="characters"
                   autoCorrect={false}
-                  className="h-14 rounded-xl"
+                  className="h-14 rounded-lg"
                   error={
                     didTryDestination || destinationInput.length > 0 ? destinationError : undefined
                   }
@@ -821,7 +824,7 @@ export function WithdrawDetailsSheet({
                     placeholder="e.g. COBADEFFXXX"
                     autoCapitalize="characters"
                     autoCorrect={false}
-                    className="h-14 rounded-xl"
+                    className="h-14 rounded-lg"
                     error={fiatBicError}
                   />
                 )}
@@ -837,7 +840,7 @@ export function WithdrawDetailsSheet({
                   placeholder="Full name on bank account"
                   autoCapitalize="words"
                   autoCorrect={false}
-                  className="h-14 rounded-xl"
+                  className="h-14 rounded-lg"
                 />
                 <Input
                   label="Sort code"
@@ -846,7 +849,7 @@ export function WithdrawDetailsSheet({
                   placeholder="XX-XX-XX"
                   keyboardType="number-pad"
                   autoCorrect={false}
-                  className="h-14 rounded-xl"
+                  className="h-14 rounded-lg"
                   error={
                     didTryDestination || destinationInput.length > 0 ? destinationError : undefined
                   }
@@ -858,7 +861,7 @@ export function WithdrawDetailsSheet({
                   placeholder="8-digit account number"
                   keyboardType="number-pad"
                   autoCorrect={false}
-                  className="h-14 rounded-xl"
+                  className="h-14 rounded-lg"
                   error={didTryFiatAccount ? fiatAccountNumberError : undefined}
                 />
               </>
@@ -874,7 +877,7 @@ export function WithdrawDetailsSheet({
               autoCapitalize={isAssetTradeMethod ? 'characters' : 'none'}
               autoCorrect={false}
               keyboardType="default"
-              className="h-14 rounded-xl"
+              className="h-14 rounded-lg"
               error={
                 didTryDestination || destinationInput.length > 0 ? destinationError : undefined
               }
@@ -895,7 +898,7 @@ export function WithdrawDetailsSheet({
             placeholder="Add a note (optional)"
             multiline
             numberOfLines={3}
-            className="rounded-xl"
+            className="rounded-lg"
           />
         </View>
 
@@ -970,7 +973,7 @@ export function WithdrawDetailsSheet({
         </View>
 
         {fundingError ? (
-          <Text className="mt-3 font-body text-[13px] text-red-600">{fundingError}</Text>
+          <Text className="mt-3 font-body text-[13px] text-coral-red">{fundingError}</Text>
         ) : null}
 
         <Button
@@ -997,9 +1000,9 @@ function WithdrawalLimitsInfo() {
   return (
     <View className="mt-3 flex-row items-center gap-1.5 px-1">
       {isPlaceholderData && (
-        <HugeiconsIcon icon={InformationCircleIcon} size={13} color="#9CA3AF" />
+        <HugeiconsIcon icon={InformationCircleIcon} size={13} color="#848281" />
       )}
-      <Text className="font-body text-[12px] text-gray-400">
+      <Text className="font-body text-[12px] text-smoke">
         Daily limit: {formattedRemaining} remaining · Withdrawals today: {data.withdrawals_today} of{' '}
         {data.max_withdrawals_per_day}
       </Text>
@@ -1072,7 +1075,7 @@ export function WithdrawConfirmSheet({
             <Text style={{ fontVariant: ['tabular-nums'] }}>${formatCurrency(numericAmount)}</Text>
           </Text>
           <View className="mt-1 flex-row items-center gap-1">
-            <HugeiconsIcon icon={Building04Icon} size={13} color="#9CA3AF" />
+            <HugeiconsIcon icon={Building04Icon} size={13} color="#848281" />
             <Text className="font-body text-[13px] text-text-secondary">{methodTitle}</Text>
           </View>
         </View>
@@ -1088,14 +1091,14 @@ export function WithdrawConfirmSheet({
                   {fiatAccountHolderName || '—'}
                 </Text>
               </View>
-              <View className="mx-4 h-px bg-gray-100" />
+              <View className="mx-4 h-px bg-stone-surface" />
               <View className="flex-row items-center justify-between px-4 py-3.5">
                 <Text className="font-body text-[14px] text-text-secondary">Account number</Text>
                 <Text className="font-subtitle text-[14px] text-text-primary">
                   {maskedAccount || '—'}
                 </Text>
               </View>
-              <View className="mx-4 h-px bg-gray-100" />
+              <View className="mx-4 h-px bg-stone-surface" />
               <View className="flex-row items-center justify-between px-4 py-3.5">
                 <Text className="font-body text-[14px] text-text-secondary">Routing number</Text>
                 <Text className="font-subtitle text-[14px] text-text-primary">
@@ -1124,17 +1127,17 @@ export function WithdrawConfirmSheet({
                       onPress={() => Clipboard.setString(destinationAddress)}
                       hitSlop={8}
                       className="ml-3">
-                      <HugeiconsIcon icon={Copy01Icon} size={15} color="#9CA3AF" />
+                      <HugeiconsIcon icon={Copy01Icon} size={15} color="#848281" />
                     </Pressable>
                   ) : null}
                 </View>
               </View>
               {chainLabel && (
                 <>
-                  <View className="mx-4 h-px bg-gray-100" />
+                  <View className="mx-4 h-px bg-stone-surface" />
                   <View className="flex-row items-center justify-between px-4 py-3.5">
                     <View className="flex-row items-center gap-2">
-                      <HugeiconsIcon icon={InternetIcon} size={15} color="#6B7280" />
+                      <HugeiconsIcon icon={InternetIcon} size={15} color="#848281" />
                       <Text className="font-body text-[14px] text-text-secondary">Network</Text>
                     </View>
                     <Text className="font-subtitle text-[14px] text-text-primary">
@@ -1151,7 +1154,7 @@ export function WithdrawConfirmSheet({
             <>
               <View className="flex-row items-center justify-between px-4 py-3.5">
                 <View className="flex-row items-center gap-2">
-                  <HugeiconsIcon icon={UserIcon} size={15} color="#6B7280" />
+                  <HugeiconsIcon icon={UserIcon} size={15} color="#848281" />
                   <Text className="font-body text-[14px] text-text-secondary">Recipient</Text>
                 </View>
                 <View className="items-end">
@@ -1167,7 +1170,7 @@ export function WithdrawConfirmSheet({
               </View>
               {note ? (
                 <>
-                  <View className="mx-4 h-px bg-gray-100" />
+                  <View className="mx-4 h-px bg-stone-surface" />
                   <View className="flex-row items-center justify-between px-4 py-3.5">
                     <Text className="font-body text-[14px] text-text-secondary">Note</Text>
                     <Text
@@ -1183,12 +1186,12 @@ export function WithdrawConfirmSheet({
 
           {!isP2PMethod && (
             <>
-              <View className="mx-4 h-px bg-gray-100" />
+              <View className="mx-4 h-px bg-stone-surface" />
               <View className="flex-row items-center justify-between px-4 py-3.5">
                 <Text className="font-body text-[14px] text-text-secondary">From</Text>
                 <Text className="font-subtitle text-[14px] text-text-primary">{fromLabel}</Text>
               </View>
-              <View className="mx-4 h-px bg-gray-100" />
+              <View className="mx-4 h-px bg-stone-surface" />
               <View className="flex-row items-center justify-between px-4 py-3.5">
                 <Text className="font-body text-[14px] text-text-secondary">To</Text>
                 <Text
@@ -1197,34 +1200,34 @@ export function WithdrawConfirmSheet({
                   {toLabel}
                 </Text>
               </View>
-              <View className="mx-4 h-px bg-gray-100" />
+              <View className="mx-4 h-px bg-stone-surface" />
               <View className="flex-row items-center justify-between px-4 py-3.5">
                 <View className="flex-row items-center gap-2">
-                  <HugeiconsIcon icon={FuelIcon} size={15} color="#6B7280" />
+                  <HugeiconsIcon icon={FuelIcon} size={15} color="#848281" />
                   <Text className="font-body text-[14px] text-text-secondary">Fees</Text>
                 </View>
                 <Text className="font-subtitle text-[14px] text-text-primary">
                   ${formatCurrency(feeAmount)}
                 </Text>
               </View>
-              <View className="mx-4 h-px bg-gray-100" />
+              <View className="mx-4 h-px bg-stone-surface" />
               <View className="flex-row items-center justify-between px-4 py-3.5">
                 <View className="flex-row items-center gap-2">
-                  <HugeiconsIcon icon={Building04Icon} size={15} color="#6B7280" />
+                  <HugeiconsIcon icon={Building04Icon} size={15} color="#848281" />
                   <Text className="font-body text-[14px] text-text-secondary">Total cost</Text>
                 </View>
                 <Text className="font-subtitle text-[14px] text-text-primary">
                   ${formatCurrency(resolvedTotal)}
                 </Text>
               </View>
-              <View className="mx-4 h-px bg-gray-100" />
+              <View className="mx-4 h-px bg-stone-surface" />
               <View className="flex-row items-center justify-between px-4 py-3.5">
                 <Text className="font-body text-[14px] text-text-secondary">Category</Text>
                 <Text className="font-subtitle text-[14px] text-text-primary">
                   {category || 'Transfer'}
                 </Text>
               </View>
-              <View className="mx-4 h-px bg-gray-100" />
+              <View className="mx-4 h-px bg-stone-surface" />
               <View className="flex-row items-center justify-between px-4 py-3.5">
                 <Text className="font-body text-[14px] text-text-secondary">Narration</Text>
                 <Text
@@ -1269,7 +1272,7 @@ export function WithdrawSubmissionSheet({
           </View>
         ) : (
           <View className="size-16 items-center justify-center rounded-full bg-green-100">
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={28} color="#10B981" />
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={28} color="#00ca48" />
           </View>
         )}
         <Text className="mt-5 text-center font-subtitle text-[30px] leading-[36px] text-text-primary">

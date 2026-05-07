@@ -12,8 +12,8 @@ import {
   ArrowDown01Icon,
   ArrowLeft01Icon,
   CheckmarkCircle01Icon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export default function KycAboutYouScreen() {
   const insets = useSafeAreaInsets();
@@ -45,88 +45,88 @@ export default function KycAboutYouScreen() {
 
   return (
     <ErrorBoundary>
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <View className="flex-row items-center justify-between px-4 pb-2 pt-1">
           <Pressable
-            className="size-11 items-center justify-center rounded-full bg-gray-100"
+            className="size-11 items-center justify-center rounded-full bg-stone-surface"
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Go back">
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#111827" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" />
           </Pressable>
-          <Text className="font-subtitle text-[13px] text-gray-500">Step 3 of 4</Text>
+          <Text className="font-subtitle text-[13px] text-ash">Step 3 of 4</Text>
           <View className="size-11" />
         </View>
 
         <View className="px-4">
-          <View className="h-1.5 overflow-hidden rounded-full bg-gray-200">
-            <View className="h-full w-3/4 rounded-full bg-gray-900" />
+          <View className="h-1.5 overflow-hidden rounded-full bg-fog">
+            <View className="h-full w-3/4 rounded-full bg-midnight" />
           </View>
         </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 120 }}>
-          <Text className="font-display text-[30px] leading-[34px] text-gray-900">
+          <Text className="font-display text-[30px] leading-[34px] text-charcoal-primary">
             Just a few more questions
           </Text>
-          <Text className="mt-2 font-body text-[15px] leading-6 text-gray-600">
+          <Text className="mt-2 font-body text-[15px] leading-6 text-ash">
             Financial regulations require us to collect this information.
           </Text>
 
           {/* Employment Status */}
           <View className="mt-8">
-            <Text className="mb-2 font-subtitle text-[14px] text-gray-900">Employment Status</Text>
+            <Text className="mb-2 font-subtitle text-[14px] text-charcoal-primary">Employment Status</Text>
             <Pressable
               onPress={() => setShowEmployment(true)}
-              className="flex-row items-center justify-between rounded-2xl border border-gray-200 px-4 py-4"
+              className="flex-row items-center justify-between rounded-2xl border border-fog px-4 py-4"
               accessibilityRole="button"
               accessibilityLabel="Select employment status">
               <Text
                 className={`flex-1 font-body text-[15px] ${
-                  employmentStatus ? 'text-gray-900' : 'text-gray-400'
+                  employmentStatus ? 'text-charcoal-primary' : 'text-smoke'
                 }`}
                 numberOfLines={1}>
                 {employmentLabel}
               </Text>
-              <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#9CA3AF" />
+              <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#848281" />
             </Pressable>
           </View>
 
           {/* Investment Purpose - Now Optional */}
           <View className="mt-6">
             <View className="flex-row items-center justify-between">
-              <Text className="mb-2 font-subtitle text-[14px] text-gray-900">
+              <Text className="mb-2 font-subtitle text-[14px] text-charcoal-primary">
                 Purpose of account
               </Text>
-              <Text className="font-caption text-[12px] text-gray-400">Optional</Text>
+              <Text className="font-caption text-[12px] text-smoke">Optional</Text>
             </View>
             <Pressable
               onPress={() => setShowPurpose(true)}
-              className="flex-row items-center justify-between rounded-2xl border border-gray-200 px-4 py-4"
+              className="flex-row items-center justify-between rounded-2xl border border-fog px-4 py-4"
               accessibilityRole="button"
               accessibilityLabel="Select investment goals">
               <Text
                 className={`flex-1 font-body text-[15px] ${
-                  investmentPurposes.length > 0 ? 'text-gray-900' : 'text-gray-400'
+                  investmentPurposes.length > 0 ? 'text-charcoal-primary' : 'text-smoke'
                 }`}
                 numberOfLines={1}>
                 {purposeLabel}
               </Text>
-              <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#9CA3AF" />
+              <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#848281" />
             </Pressable>
             {investmentPurposes.length > 0 && (
               <Pressable
                 onPress={() => clearInvestmentPurposes()}
                 className="mt-2 flex-row items-center gap-x-1">
-                <Text className="font-caption text-[12px] text-gray-500">Clear selection</Text>
+                <Text className="font-caption text-[12px] text-ash">Clear selection</Text>
               </Pressable>
             )}
           </View>
         </ScrollView>
 
         <View
-          className="absolute bottom-0 left-0 right-0 border-t border-gray-100 bg-white px-4 pt-3"
+          className="absolute bottom-0 left-0 right-0 border-t border-stone-surface bg-parchment-card px-4 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           <Button
             title="Continue"
@@ -141,7 +141,7 @@ export default function KycAboutYouScreen() {
             className="mt-2 py-2"
             accessibilityRole="button"
             accessibilityLabel="Skip investment goals">
-            <Text className="text-center font-body text-[14px] text-gray-500">
+            <Text className="text-center font-body text-[14px] text-ash">
               Skip investment goals
             </Text>
           </Pressable>
@@ -152,7 +152,7 @@ export default function KycAboutYouScreen() {
           visible={showEmployment}
           onClose={() => setShowEmployment(false)}
           showCloseButton={false}>
-          <Text className="mb-4 font-display text-[22px] text-gray-900">Employment status</Text>
+          <Text className="mb-4 font-display text-[22px] text-charcoal-primary">Employment status</Text>
           {EMPLOYMENT_STATUS_OPTIONS.map((option, index) => {
             const selected = employmentStatus === option.value;
             return (
@@ -163,15 +163,15 @@ export default function KycAboutYouScreen() {
                   setShowEmployment(false);
                 }}
                 className={`flex-row items-center justify-between py-4 ${
-                  index < EMPLOYMENT_STATUS_OPTIONS.length - 1 ? 'border-b border-gray-100' : ''
+                  index < EMPLOYMENT_STATUS_OPTIONS.length - 1 ? 'border-b border-stone-surface' : ''
                 }`}
                 accessibilityRole="button">
-                <Text className="font-body text-[16px] text-gray-900">{option.label}</Text>
+                <Text className="font-body text-[16px] text-charcoal-primary">{option.label}</Text>
                 {selected && (
                   <HugeiconsIcon
                     icon={CheckmarkCircle01Icon}
                     size={20}
-                    color="#111827"
+                    color="#343433"
                     strokeWidth={2.5}
                   />
                 )}
@@ -188,8 +188,8 @@ export default function KycAboutYouScreen() {
           visible={showPurpose}
           onClose={() => setShowPurpose(false)}
           showCloseButton={false}>
-          <Text className="mb-1 font-display text-[22px] text-gray-900">Purpose of account</Text>
-          <Text className="mb-4 font-body text-[13px] text-gray-500">
+          <Text className="mb-1 font-display text-[22px] text-charcoal-primary">Purpose of account</Text>
+          <Text className="mb-4 font-body text-[13px] text-ash">
             Select all that apply (optional)
           </Text>
           {INVESTMENT_PURPOSE_OPTIONS.map((option, index) => {
@@ -199,14 +199,14 @@ export default function KycAboutYouScreen() {
                 key={option.value}
                 onPress={() => toggleInvestmentPurpose(option.value)}
                 className={`flex-row items-center justify-between py-4 ${
-                  index < INVESTMENT_PURPOSE_OPTIONS.length - 1 ? 'border-b border-gray-100' : ''
+                  index < INVESTMENT_PURPOSE_OPTIONS.length - 1 ? 'border-b border-stone-surface' : ''
                 }`}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: selected }}>
-                <Text className="flex-1 font-body text-[16px] text-gray-900">{option.label}</Text>
+                <Text className="flex-1 font-body text-[16px] text-charcoal-primary">{option.label}</Text>
                 <View
                   className={`size-6 items-center justify-center rounded ${
-                    selected ? 'bg-gray-900' : 'border border-gray-300'
+                    selected ? 'bg-midnight' : 'border border-fog'
                   }`}>
                   {selected && (
                     <HugeiconsIcon

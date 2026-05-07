@@ -7,9 +7,11 @@ import CreditCardIcon from '@/assets/Icons/credit-card-8.svg';
 import ZapIcon from '@/assets/Icons/waterfall-chart-4.svg';
 import LoyaltyIcon from '@/assets/Icons/loyalty-14.svg';
 import { useKycStore } from '@/stores/kycStore';
+import { useAuthStore } from '@/stores/authStore';
+import { ROUTES } from '@/constants/routes';
 import { BottomSheet } from '@/components/sheets';
-import { ArrowUpRight01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowUpRight01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 type Banner = {
   id: string;
@@ -120,7 +122,21 @@ export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBanne
     disclosuresConfirmed ||
     diditSessionToken !== null;
 
+  const hasCompletedOnboarding = useAuthStore((s) => s.hasCompletedOnboarding);
+  const onboardingStatus = useAuthStore((s) => s.onboardingStatus);
+  const isProfileComplete =
+    hasCompletedOnboarding ||
+    onboardingStatus === 'completed' ||
+    onboardingStatus === 'basic_complete' ||
+    onboardingStatus === 'kyc_pending' ||
+    onboardingStatus === 'kyc_approved' ||
+    onboardingStatus === 'kyc_rejected';
+
   const handleKycPress = () => {
+    if (!isProfileComplete) {
+      router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never);
+      return;
+    }
     if (hasStartedKyc) {
       const state = useKycStore.getState();
       const screen = getKycProgressScreen(state);
@@ -208,7 +224,7 @@ export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBanne
                 width: i === activeIndex ? 16 : 6,
                 height: 6,
                 borderRadius: 3,
-                backgroundColor: i === activeIndex ? '#FF2E01' : '#E5E7EB',
+                backgroundColor: i === activeIndex ? '#ff3e00' : '#f2f0ed',
               }}
             />
           ))}
@@ -221,25 +237,25 @@ export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBanne
         showCloseButton={false}
         dismissible>
         <View className="items-center">
-          <View className="h-1 w-10 rounded-full bg-neutral-200" />
+          <View className="h-1 w-10 rounded-full bg-fog" />
         </View>
         <View className="mt-4 gap-6">
           <View className="items-start gap-2">
             <View className="rounded-full bg-[#FBBF24]/10 px-3 py-1">
               <Text className="font-subtitle text-[12px] text-[#F59E0B]">Coming soon</Text>
             </View>
-            <Text className="font-subtitle text-xl text-neutral-900">Conductor</Text>
-            <Text className="font-body text-sm text-neutral-500">
+            <Text className="font-subtitle text-xl text-charcoal-primary">Conductor</Text>
+            <Text className="font-body text-sm text-ash">
               Conductor is Rail&apos;s copy-investing feature. Allocate small amounts to follow top
               investors and Rail mirrors their buy and sell decisions automatically.
             </Text>
           </View>
 
           <View className="gap-2">
-            <Text className="font-subtitle text-base text-neutral-900">How it works</Text>
-            <Text className="font-body text-sm text-neutral-500">1. Pick a conductor.</Text>
-            <Text className="font-body text-sm text-neutral-500">2. Allocate funds.</Text>
-            <Text className="font-body text-sm text-neutral-500">
+            <Text className="font-subtitle text-base text-charcoal-primary">How it works</Text>
+            <Text className="font-body text-sm text-ash">1. Pick a conductor.</Text>
+            <Text className="font-body text-sm text-ash">2. Allocate funds.</Text>
+            <Text className="font-body text-sm text-ash">
               3. Rail follows their trades for you.
             </Text>
           </View>

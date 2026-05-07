@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { ShieldKeyIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ShieldKeyIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 interface WhitelistPromptProps {
   address: string;
@@ -22,10 +22,10 @@ export function WhitelistPrompt({ address, chain, onWhitelist, onDismiss }: Whit
         withdrawals.
       </Text>
       <View className="flex-row gap-3">
-        <Pressable onPress={onDismiss} className="flex-1 items-center rounded-xl py-3">
+        <Pressable onPress={onDismiss} className="flex-1 items-center rounded-lg py-3">
           <Text className="font-subtitle text-sm text-text-secondary">Cancel</Text>
         </Pressable>
-        <Pressable onPress={onWhitelist} className="flex-1 items-center rounded-xl bg-black py-3">
+        <Pressable onPress={onWhitelist} className="flex-1 items-center rounded-lg bg-black py-3">
           <Text className="font-subtitle text-sm text-white">Whitelist Address</Text>
         </Pressable>
       </View>

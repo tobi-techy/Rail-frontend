@@ -16,7 +16,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button, Input } from '@/components/ui';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import {
   ArrowLeft01Icon,
   CheckmarkCircle02Icon,
@@ -37,7 +37,7 @@ import {
   ArrowRight01Icon,
   Cancel01Icon,
   Tick02Icon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { ChainLogo } from '@/components/ChainLogo';
 import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
 import {
@@ -115,16 +115,16 @@ async function saveFiatRecipient(r: Omit<FiatRecipient, 'id' | 'lastUsed'>): Pro
 }
 
 const CATEGORIES: { label: string; icon: any; color: string }[] = [
-  { label: 'Transfer', icon: MoneyReceiveSquareIcon, color: '#3B82F6' },
-  { label: 'Bills', icon: CreditCardIcon, color: '#EF4444' },
+  { label: 'Transfer', icon: MoneyReceiveSquareIcon, color: '#0090ff' },
+  { label: 'Bills', icon: CreditCardIcon, color: '#ff2b3a' },
   { label: 'Food', icon: Coffee01Icon, color: '#F97316' },
-  { label: 'Shopping', icon: ShoppingBag01Icon, color: '#8B5CF6' },
+  { label: 'Shopping', icon: ShoppingBag01Icon, color: '#9f4fff' },
   { label: 'Travel', icon: Airplane01Icon, color: '#06B6D4' },
-  { label: 'Savings', icon: Wallet01Icon, color: '#10B981' },
+  { label: 'Savings', icon: Wallet01Icon, color: '#00ca48' },
   { label: 'Crypto', icon: InternetIcon, color: '#6366F1' },
   { label: 'Friends', icon: UserMultiple02Icon, color: '#EC4899' },
   { label: 'Gifts', icon: GiftIcon, color: '#F59E0B' },
-  { label: 'Other', icon: MoreIcon, color: '#6B7280' },
+  { label: 'Other', icon: MoreIcon, color: '#848281' },
 ];
 
 const initials = (name: string) => {
@@ -580,7 +580,7 @@ export default function DestinationScreen() {
     if (ngnSubmitting) {
       return (
         <SafeAreaView
-          className="flex-1 items-center justify-center bg-white"
+          className="flex-1 items-center justify-center bg-warm-canvas"
           edges={['top', 'bottom']}>
           <ActivityIndicator size="small" color="#EA580C" />
           <Text className="mt-4 font-subtitle text-[17px] text-text-primary">
@@ -590,13 +590,13 @@ export default function DestinationScreen() {
       );
     }
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" />
         <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-surface"
             onPress={() => setNgnShowConfirm(false)}>
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
           </Pressable>
           <Text className="font-subtitle text-[17px] text-text-primary">Review</Text>
           <View className="size-11" />
@@ -632,19 +632,19 @@ export default function DestinationScreen() {
                 {ngnAccountName}
               </Text>
             </View>
-            <View className="mx-5 h-px bg-gray-100" />
+            <View className="mx-5 h-px bg-stone-surface" />
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-body text-[14px] text-text-secondary">Bank</Text>
               <Text className="font-subtitle text-[14px] text-text-primary">{ngnBank?.name}</Text>
             </View>
-            <View className="mx-5 h-px bg-gray-100" />
+            <View className="mx-5 h-px bg-stone-surface" />
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-body text-[14px] text-text-secondary">Account</Text>
               <Text className="font-subtitle text-[14px] text-text-primary">
                 {ngnAccountNumber}
               </Text>
             </View>
-            <View className="mx-5 h-px bg-gray-100" />
+            <View className="mx-5 h-px bg-stone-surface" />
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-body text-[14px] text-text-secondary">Source</Text>
               <Text className="font-subtitle text-[14px] text-text-primary">Spend Wallet</Text>
@@ -664,7 +664,7 @@ export default function DestinationScreen() {
                     ₦{offRampRate.toLocaleString()}/USD
                   </Text>
                 </View>
-                <View className="mx-5 h-px bg-gray-100" />
+                <View className="mx-5 h-px bg-stone-surface" />
               </>
             )}
             <View className="flex-row items-center justify-between px-5 py-4">
@@ -673,7 +673,7 @@ export default function DestinationScreen() {
                 ₦{offRampRate > 0 ? Math.round(railFeeUSD * offRampRate).toLocaleString() : '—'}
               </Text>
             </View>
-            <View className="mx-5 h-px bg-gray-100" />
+            <View className="mx-5 h-px bg-stone-surface" />
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-subtitle text-[14px] text-text-primary">Total</Text>
               <Text className="font-subtitle text-[16px] text-text-primary">
@@ -692,7 +692,7 @@ export default function DestinationScreen() {
         </ScrollView>
 
         <View
-          className="flex-row gap-3 border-t border-gray-100 bg-white px-5 pt-3"
+          className="flex-row gap-3 border-t border-stone-surface bg-parchment-card px-5 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           <View className="flex-1">
             <Button title="Cancel" variant="ghost" onPress={() => setNgnShowConfirm(false)} />
@@ -708,7 +708,7 @@ export default function DestinationScreen() {
   // ═══════════════════════════════════════════════════════════════════════
   if (ngnShowAuth) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" />
         <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
           <Pressable
@@ -742,13 +742,13 @@ export default function DestinationScreen() {
   // ═══════════════════════════════════════════════════════════════════════
   if (isFiatMethod && flowStep === 'recipients') {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" />
         <View className="px-5 pb-2 pt-1">
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-surface"
             onPress={() => router.back()}>
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
           </Pressable>
         </View>
 
@@ -768,13 +768,13 @@ export default function DestinationScreen() {
           {/* Search */}
           <Animated.View entering={FadeInUp.delay(60).duration(250)} className="mt-6">
             <View
-              className="flex-row items-center gap-3 rounded-2xl bg-[#F3F4F6] px-4"
+              className="flex-row items-center gap-3 rounded-2xl bg-[#f2f0ed] px-4"
               style={{ height: 52 }}>
-              <HugeiconsIcon icon={Search01Icon} size={18} color="#9CA3AF" />
+              <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
               <TextInput
                 className="flex-1 font-body text-[15px] text-text-primary"
                 placeholder="Search by account name"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#848281"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoCapitalize="none"
@@ -782,7 +782,7 @@ export default function DestinationScreen() {
               />
               {searchQuery.length > 0 && (
                 <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
-                  <HugeiconsIcon icon={Cancel01Icon} size={15} color="#9CA3AF" />
+                  <HugeiconsIcon icon={Cancel01Icon} size={15} color="#848281" />
                 </Pressable>
               )}
             </View>
@@ -791,7 +791,7 @@ export default function DestinationScreen() {
           {/* New recipient */}
           <Animated.View entering={FadeInUp.delay(100).duration(250)} className="mt-5">
             <Pressable
-              className="flex-row items-center justify-between rounded-2xl bg-[#F9FAFB] px-4 py-4"
+              className="flex-row items-center justify-between rounded-2xl bg-[#f8f7f4] px-4 py-4"
               onPress={() => {
                 setFiatAccountHolderName('');
                 setFiatAccountNumber('');
@@ -802,18 +802,18 @@ export default function DestinationScreen() {
                 setFlowStep('form');
               }}>
               <View className="flex-row items-center gap-3">
-                <View className="size-11 items-center justify-center rounded-full bg-[#3B82F6]">
+                <View className="size-11 items-center justify-center rounded-full bg-[#0090ff]">
                   <HugeiconsIcon icon={Add01Icon} size={20} color="#fff" />
                 </View>
                 <Text className="font-subtitle text-[15px] text-text-primary">
                   Send to a new recipient
                 </Text>
               </View>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#9CA3AF" />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#848281" />
             </Pressable>
           </Animated.View>
 
-          <View className="my-5 h-px bg-gray-100" />
+          <View className="my-5 h-px bg-stone-surface" />
 
           {/* Recent Recipients */}
           <Animated.View entering={FadeInUp.delay(140).duration(250)}>
@@ -906,14 +906,14 @@ export default function DestinationScreen() {
   // Form screen (fiat new recipient / crypto destination)
   // ═══════════════════════════════════════════════════════════════════════
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
       <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
         <Pressable
           className="size-11 items-center justify-center rounded-full bg-surface"
           onPress={() => (isFiatMethod ? setFlowStep('recipients') : router.back())}>
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111827" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
         </Pressable>
       </View>
 
@@ -969,7 +969,7 @@ export default function DestinationScreen() {
                 error={showError ? destinationError : undefined}
                 rightAccessory={
                   <Pressable hitSlop={8}>
-                    <HugeiconsIcon icon={ScanIcon} size={20} color="#9CA3AF" />
+                    <HugeiconsIcon icon={ScanIcon} size={20} color="#848281" />
                   </Pressable>
                 }
                 onFocus={() => handleInputFocus(0)}
@@ -986,7 +986,7 @@ export default function DestinationScreen() {
                   selection();
                   setChainSheetOpen(true);
                 }}
-                className="flex-row items-center justify-between rounded-xl border border-[#D4D4D8] px-4 py-3.5">
+                className="flex-row items-center justify-between rounded-lg border border-[#f2f0ed] px-4 py-3.5">
                 <View className="flex-row items-center gap-3">
                   <View className="relative size-8 items-center justify-center">
                     <View
@@ -994,7 +994,7 @@ export default function DestinationScreen() {
                       style={{ backgroundColor: selectedChain.color + '14' }}>
                       <ChainLogo chain={destinationChain} size={18} />
                     </View>
-                    <View className="absolute -bottom-1 -right-1 size-4 items-center justify-center rounded-full bg-white">
+                    <View className="absolute -bottom-1 -right-1 size-4 items-center justify-center rounded-full bg-warm-canvas">
                       <CurrencyIcon width={12} height={12} />
                     </View>
                   </View>
@@ -1008,7 +1008,7 @@ export default function DestinationScreen() {
                     </Text>
                   </View>
                 </View>
-                <HugeiconsIcon icon={ArrowDown01Icon} size={18} color="#9CA3AF" />
+                <HugeiconsIcon icon={ArrowDown01Icon} size={18} color="#848281" />
               </Pressable>
             </Animated.View>
           )}
@@ -1144,12 +1144,12 @@ export default function DestinationScreen() {
                         selection();
                         setNgnBankSheetOpen(true);
                       }}
-                      className="flex-row items-center justify-between rounded-xl border border-[#D4D4D8] px-4 py-3.5">
+                      className="flex-row items-center justify-between rounded-lg border border-[#f2f0ed] px-4 py-3.5">
                       <Text
-                        className={`font-body text-[15px] ${ngnBank ? 'text-text-primary' : 'text-[#9CA3AF]'}`}>
+                        className={`font-body text-[15px] ${ngnBank ? 'text-text-primary' : 'text-[#848281]'}`}>
                         {ngnBank?.name ?? 'Select bank'}
                       </Text>
-                      <HugeiconsIcon icon={ArrowDown01Icon} size={18} color="#9CA3AF" />
+                      <HugeiconsIcon icon={ArrowDown01Icon} size={18} color="#848281" />
                     </Pressable>
                   </View>
                   <Input
@@ -1172,14 +1172,14 @@ export default function DestinationScreen() {
                   {ngnAccountName ? (
                     <Animated.View
                       entering={FadeIn.duration(200)}
-                      className="flex-row items-center gap-2 rounded-xl bg-[#F0FDF4] px-4 py-3">
-                      <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} color="#16A34A" />
-                      <Text className="flex-1 font-subtitle text-[14px] text-[#16A34A]">
+                      className="flex-row items-center gap-2 rounded-lg bg-[#F0FDF4] px-4 py-3">
+                      <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} color="#00ca48" />
+                      <Text className="flex-1 font-subtitle text-[14px] text-[#00ca48]">
                         {ngnAccountName}
                       </Text>
                     </Animated.View>
                   ) : pajResolve.isPending ? (
-                    <View className="flex-row items-center gap-2 rounded-xl bg-[#F9FAFB] px-4 py-3">
+                    <View className="flex-row items-center gap-2 rounded-lg bg-[#f8f7f4] px-4 py-3">
                       <Text className="font-body text-[13px] text-text-secondary">
                         Resolving account…
                       </Text>
@@ -1190,7 +1190,7 @@ export default function DestinationScreen() {
                     onPress={() => setNgnSaveBank(!ngnSaveBank)}
                     className="flex-row items-center gap-2 py-1">
                     <View
-                      className={`size-5 items-center justify-center rounded ${ngnSaveBank ? 'bg-[#070914]' : 'border border-[#D4D4D8]'}`}>
+                      className={`size-5 items-center justify-center rounded ${ngnSaveBank ? 'bg-[#343433]' : 'border border-[#f2f0ed]'}`}>
                       {ngnSaveBank && <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFF" />}
                     </View>
                     <Text className="font-body text-[13px] text-text-secondary">
@@ -1202,7 +1202,7 @@ export default function DestinationScreen() {
             </Animated.View>
           )}
 
-          <View className="my-2 h-px bg-gray-100" />
+          <View className="my-2 h-px bg-stone-surface" />
 
           {/* Category picker */}
           <Animated.View entering={FadeInUp.delay(120).duration(250)} className="mb-4 mt-4">
@@ -1212,7 +1212,7 @@ export default function DestinationScreen() {
                 selection();
                 setCategorySheetOpen(true);
               }}
-              className="flex-row items-center justify-between rounded-xl border border-[#D4D4D8] px-4 py-3.5">
+              className="flex-row items-center justify-between rounded-lg border border-[#f2f0ed] px-4 py-3.5">
               <View className="flex-row items-center gap-3">
                 <View
                   className="size-8 items-center justify-center rounded-full"
@@ -1227,7 +1227,7 @@ export default function DestinationScreen() {
                   {selectedCategory.label}
                 </Text>
               </View>
-              <HugeiconsIcon icon={ArrowDown01Icon} size={18} color="#9CA3AF" />
+              <HugeiconsIcon icon={ArrowDown01Icon} size={18} color="#848281" />
             </Pressable>
           </Animated.View>
 
@@ -1250,7 +1250,7 @@ export default function DestinationScreen() {
 
       {/* Sticky footer — outside KeyboardAvoidingView so it stays at screen bottom */}
       <View
-        className="border-t border-gray-100 bg-white px-5 pt-3"
+        className="border-t border-stone-surface bg-parchment-card px-5 pt-3"
         style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
         <View className="mb-3 gap-1.5">
           <View className="flex-row items-center justify-between px-1">
@@ -1285,7 +1285,7 @@ export default function DestinationScreen() {
               </Text>
             </View>
           )}
-          <View className="mx-1 my-1 h-px bg-gray-100" />
+          <View className="mx-1 my-1 h-px bg-stone-surface" />
           <View className="flex-row items-center justify-between px-1">
             <Text className="font-subtitle text-[14px] text-text-primary">Total</Text>
             <Text className="font-subtitle text-[16px] text-text-primary">
@@ -1308,14 +1308,14 @@ export default function DestinationScreen() {
         visible={chainSheetOpen}
         onClose={() => setChainSheetOpen(false)}
         showCloseButton={false}>
-        <Text className="font-subtitle text-[20px] text-[#070914]">Select Network</Text>
-        <Text className="mb-5 font-body text-[13px] text-[#9CA3AF]">
+        <Text className="font-subtitle text-[20px] text-[#343433]">Select Network</Text>
+        <Text className="mb-5 font-body text-[13px] text-[#848281]">
           Choose the network to withdraw {assetLabel} on
         </Text>
 
         {/* Bridge-native chains */}
         {withdrawalChains.some((c) => c.via === 'bridge') && (
-          <Text className="mb-2 font-caption text-[11px] uppercase tracking-wider text-[#9CA3AF]">
+          <Text className="mb-2 font-caption text-[11px] uppercase tracking-wider text-[#848281]">
             Networks
           </Text>
         )}
@@ -1331,7 +1331,7 @@ export default function DestinationScreen() {
                   setDestinationChain(chain.chain);
                   setChainSheetOpen(false);
                 }}
-                className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#F3F4F6] bg-white px-4 py-3.5 active:bg-[#F9FAFB]">
+                className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f2f0ed] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]">
                 <View
                   className="size-9 items-center justify-center rounded-full"
                   style={{ backgroundColor: chain.color + '14' }}>
@@ -1339,19 +1339,19 @@ export default function DestinationScreen() {
                 </View>
                 <View className="flex-1">
                   <View className="flex-row items-center gap-2">
-                    <Text className="font-subtitle text-[15px] text-[#070914]">{chain.label}</Text>
+                    <Text className="font-subtitle text-[15px] text-[#343433]">{chain.label}</Text>
                     {isEVMChain(chain.chain) && (
-                      <View className="rounded-md bg-[#F3F4F6] px-1.5 py-0.5">
-                        <Text className="font-caption text-[10px] text-[#9CA3AF]">EVM</Text>
+                      <View className="rounded-md bg-[#f2f0ed] px-1.5 py-0.5">
+                        <Text className="font-caption text-[10px] text-[#848281]">EVM</Text>
                       </View>
                     )}
                   </View>
-                  <Text className="font-body text-[13px] text-[#9CA3AF]">
+                  <Text className="font-body text-[13px] text-[#848281]">
                     {assetLabel} · {chain.shortLabel}
                   </Text>
                 </View>
                 {selected && (
-                  <View className="h-5 w-5 items-center justify-center rounded-full bg-[#070914]">
+                  <View className="h-5 w-5 items-center justify-center rounded-full bg-[#343433]">
                     <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFF" />
                   </View>
                 )}
@@ -1361,7 +1361,7 @@ export default function DestinationScreen() {
 
         {/* ChainRails-routed chains */}
         {withdrawalChains.some((c) => c.via === 'chainrails') && (
-          <Text className="mb-2 mt-3 font-caption text-[11px] uppercase tracking-wider text-[#9CA3AF]">
+          <Text className="mb-2 mt-3 font-caption text-[11px] uppercase tracking-wider text-[#848281]">
             Cross-chain
           </Text>
         )}
@@ -1377,7 +1377,7 @@ export default function DestinationScreen() {
                   setDestinationChain(chain.chain);
                   setChainSheetOpen(false);
                 }}
-                className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#F3F4F6] bg-white px-4 py-3.5 active:bg-[#F9FAFB]">
+                className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f2f0ed] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]">
                 <View
                   className="size-9 items-center justify-center rounded-full"
                   style={{ backgroundColor: chain.color + '14' }}>
@@ -1385,19 +1385,19 @@ export default function DestinationScreen() {
                 </View>
                 <View className="flex-1">
                   <View className="flex-row items-center gap-2">
-                    <Text className="font-subtitle text-[15px] text-[#070914]">{chain.label}</Text>
+                    <Text className="font-subtitle text-[15px] text-[#343433]">{chain.label}</Text>
                     {isEVMChain(chain.chain) && (
-                      <View className="rounded-md bg-[#F3F4F6] px-1.5 py-0.5">
-                        <Text className="font-caption text-[10px] text-[#9CA3AF]">EVM</Text>
+                      <View className="rounded-md bg-[#f2f0ed] px-1.5 py-0.5">
+                        <Text className="font-caption text-[10px] text-[#848281]">EVM</Text>
                       </View>
                     )}
                   </View>
-                  <Text className="font-body text-[13px] text-[#9CA3AF]">
+                  <Text className="font-body text-[13px] text-[#848281]">
                     {assetLabel} · {chain.shortLabel}
                   </Text>
                 </View>
                 {selected && (
-                  <View className="h-5 w-5 items-center justify-center rounded-full bg-[#070914]">
+                  <View className="h-5 w-5 items-center justify-center rounded-full bg-[#343433]">
                     <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFF" />
                   </View>
                 )}
@@ -1427,7 +1427,7 @@ export default function DestinationScreen() {
                   setCategorySheetOpen(false);
                 }}
                 className="flex-row items-center gap-4 rounded-2xl px-4 py-3.5 active:bg-surface"
-                style={selected ? { backgroundColor: '#F9FAFB' } : undefined}>
+                style={selected ? { backgroundColor: '#f8f7f4' } : undefined}>
                 <View
                   className="size-10 items-center justify-center rounded-full"
                   style={{ backgroundColor: cat.color + '18' }}>
@@ -1438,7 +1438,7 @@ export default function DestinationScreen() {
                   {cat.label}
                 </Text>
                 {selected && (
-                  <HugeiconsIcon icon={CheckmarkCircle02Icon} size={20} color="#111827" />
+                  <HugeiconsIcon icon={CheckmarkCircle02Icon} size={20} color="#343433" />
                 )}
               </Pressable>
             );
@@ -1457,17 +1457,17 @@ export default function DestinationScreen() {
         snapPoints={['70%']}>
         <Text className="font-subtitle text-[20px] text-text-primary">Select Bank</Text>
         <View
-          className="mb-4 mt-4 flex-row items-center gap-3 rounded-2xl bg-[#F3F4F6] px-4"
+          className="mb-4 mt-4 flex-row items-center gap-3 rounded-2xl bg-[#f2f0ed] px-4"
           style={{ height: 48 }}>
-          <HugeiconsIcon icon={Search01Icon} size={18} color="#9CA3AF" />
+          <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
           <BottomSheetTextInput
             className="flex-1 font-body text-[15px] text-text-primary"
             placeholder="Search banks"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#848281"
             value={ngnBankSearch}
             onChangeText={setNgnBankSearch}
             autoCorrect={false}
-            style={{ flex: 1, fontFamily: 'SFProDisplay-Regular', fontSize: 15, color: '#070914' }}
+            style={{ flex: 1, fontFamily: 'SFProDisplay-Regular', fontSize: 15, color: '#343433' }}
           />
         </View>
         <ScrollView
@@ -1484,8 +1484,8 @@ export default function DestinationScreen() {
                 setNgnAccountName('');
                 setNgnBankSheetOpen(false);
               }}
-              className="flex-row items-center gap-3 rounded-xl px-2 py-3 active:bg-[#F9FAFB]">
-              <View className="size-9 items-center justify-center rounded-full bg-[#F3F4F6]">
+              className="flex-row items-center gap-3 rounded-lg px-2 py-3 active:bg-[#f8f7f4]">
+              <View className="size-9 items-center justify-center rounded-full bg-[#f2f0ed]">
                 <Text className="font-subtitle text-[12px] text-text-secondary">
                   {bank.name.slice(0, 2).toUpperCase()}
                 </Text>

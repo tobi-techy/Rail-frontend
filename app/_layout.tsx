@@ -31,7 +31,7 @@ import '../global.css';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const SPLASH_BG = '#FF2E01';
+const SPLASH_BG = '#ff3e00';
 const SPLASH_MIN_DURATION_MS = 2500;
 const SPLASH_MAX_DURATION_MS = 4000;
 
@@ -61,7 +61,7 @@ function AppNavigator() {
     <Stack
       initialRouteName="index"
       screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FFFFFF' } }}>
-      <Stack.Screen name="index" options={{ contentStyle: { backgroundColor: '#FF2E01' } }} />
+      <Stack.Screen name="index" options={{ contentStyle: { backgroundColor: '#ff3e00' } }} />
       <Stack.Screen
         name="login-passcode"
         options={{ contentStyle: { backgroundColor: '#FFFFFF' } }}
@@ -156,7 +156,23 @@ function AppNavigator() {
         options={{
           headerShown: false,
           animation: 'slide_from_bottom',
-          contentStyle: { backgroundColor: '#FF2E01' },
+          contentStyle: { backgroundColor: '#ff3e00' },
+        }}
+      />
+      <Stack.Screen
+        name="fund-stash"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_bottom',
+          contentStyle: { backgroundColor: '#ff3e00' },
+        }}
+      />
+      <Stack.Screen
+        name="fund-naira"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_bottom',
+          contentStyle: { backgroundColor: '#ff3e00' },
         }}
       />
       <Stack.Screen
@@ -194,7 +210,7 @@ export default function Layout() {
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
-      setIsBlurred(s === 'background');
+      setIsBlurred(s !== 'active');
       focusManager.setFocused(s === 'active');
     });
     focusManager.setFocused(AppState.currentState === 'active');

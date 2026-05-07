@@ -2,8 +2,8 @@ import React, { useCallback } from 'react';
 import { Image, Linking, Pressable, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import type { MarketNewsItem } from '@/api/types';
-import { Tag01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Tag01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const toRelativeTime = (iso: string): string => {
   const date = new Date(iso);
@@ -62,7 +62,7 @@ export function MarketNewsCard({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Open news: ${item.title}`}
-      className={`rounded-md border border-surface bg-white ${compact ? 'mb-2 p-3' : 'mb-3 p-md'}`}>
+      className={`rounded-md border border-surface bg-parchment-card ${compact ? 'mb-2 p-3' : 'mb-3 p-md'}`}>
       <View className="mb-2 flex-row items-center justify-between">
         <Text className="font-caption text-caption text-text-secondary">
           {item.source || 'News'}

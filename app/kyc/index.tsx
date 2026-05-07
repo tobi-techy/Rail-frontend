@@ -19,8 +19,8 @@ import {
   ArrowRight01Icon,
   Cancel01Icon,
   CheckmarkCircle01Icon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import CountryFlag from 'react-native-country-flag';
 
 const ISO2_TO_KYC: Record<string, Country> = {
@@ -135,7 +135,7 @@ export default function KycCountryScreen() {
 
   return (
     <ErrorBoundary>
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <View className="flex-row items-center justify-between px-4 pb-2 pt-1">
           <View className="size-11" />
           <Pressable
@@ -149,7 +149,7 @@ export default function KycCountryScreen() {
             }}
             accessibilityRole="button"
             accessibilityLabel="Close verification">
-            <HugeiconsIcon icon={Cancel01Icon} size={22} color="#111827" />
+            <HugeiconsIcon icon={Cancel01Icon} size={22} color="#343433" />
           </Pressable>
         </View>
 
@@ -157,71 +157,71 @@ export default function KycCountryScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 160 }}>
           <View className="mb-6">
-            <Text className="font-subtitle text-[13px] text-gray-500">Step 1 of 4</Text>
-            <View className="mt-3 h-1.5 overflow-hidden rounded-full bg-gray-200">
-              <View className="h-full w-1/4 rounded-full bg-gray-900" />
+            <Text className="font-subtitle text-[13px] text-ash">Step 1 of 4</Text>
+            <View className="mt-3 h-1.5 overflow-hidden rounded-full bg-fog">
+              <View className="h-full w-1/4 rounded-full bg-midnight" />
             </View>
           </View>
 
           <View>
-            <Text className="font-display text-[30px] leading-[34px] text-gray-900">
+            <Text className="font-display text-[30px] leading-[34px] text-charcoal-primary">
               Verify your identity
             </Text>
-            <Text className="mt-2 font-body text-[15px] leading-6 text-gray-600">
+            <Text className="mt-2 font-body text-[15px] leading-6 text-ash">
               Select the country that issued your ID. We use this to tailor your KYC requirements.
             </Text>
           </View>
 
           <View className="mt-6">
-            <Text className="mb-2 font-subtitle text-[13px] text-gray-500">Issuing country</Text>
+            <Text className="mb-2 font-subtitle text-[13px] text-ash">Issuing country</Text>
             <Pressable
               onPress={() => setShowCountryPicker(true)}
-              className="flex-row items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-4"
+              className="flex-row items-center justify-between rounded-2xl border border-fog bg-parchment-card px-4 py-4"
               accessibilityRole="button"
               accessibilityLabel="Select issuing country">
               <View className="flex-row items-center gap-3">
                 <CountryFlag isoCode={KYC_TO_ISO2[currentCountry.code] || 'US'} size={24} />
                 <View>
-                  <Text className="font-subtitle text-[16px] text-gray-900">
+                  <Text className="font-subtitle text-[16px] text-charcoal-primary">
                     {COUNTRY_LABELS[country]}
                   </Text>
-                  <Text className="mt-1 font-body text-[12px] text-gray-500">
+                  <Text className="mt-1 font-body text-[12px] text-ash">
                     {COUNTRY_HELP_TEXT[country]}
                   </Text>
                 </View>
               </View>
-              <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#6B7280" />
+              <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#848281" />
             </Pressable>
           </View>
 
-          <View className="mt-6 rounded-2xl border border-gray-200 bg-white px-4 py-4">
-            <Text className="mb-3 font-subtitle text-[14px] text-gray-900">Accepted documents</Text>
+          <View className="mt-6 rounded-2xl border border-fog bg-parchment-card px-4 py-4">
+            <Text className="mb-3 font-subtitle text-[14px] text-charcoal-primary">Accepted documents</Text>
             {requirements.acceptedDocuments.map((document, index) => (
               <View
                 key={document.type}
                 className={`flex-row items-center justify-between py-3 ${
                   index < requirements.acceptedDocuments.length - 1
-                    ? 'border-b border-gray-100'
+                    ? 'border-b border-stone-surface'
                     : ''
                 }`}>
                 <View className="flex-1 pr-4">
-                  <Text className="font-subtitle text-[14px] text-gray-900">{document.label}</Text>
-                  <Text className="mt-1 font-body text-[12px] text-gray-500">
+                  <Text className="font-subtitle text-[14px] text-charcoal-primary">{document.label}</Text>
+                  <Text className="mt-1 font-body text-[12px] text-ash">
                     {document.description}
                   </Text>
                 </View>
-                <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#9CA3AF" />
+                <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#848281" />
               </View>
             ))}
           </View>
 
-          <Text className="mt-6 font-body text-[12px] leading-5 text-gray-500">
+          <Text className="mt-6 font-body text-[12px] leading-5 text-ash">
             Need another issuing country? Contact support and we&apos;ll enable it for your account.
           </Text>
         </ScrollView>
 
         <View
-          className="absolute bottom-0 left-0 right-0 border-t border-gray-100 bg-white px-4 pt-3"
+          className="absolute bottom-0 left-0 right-0 border-t border-stone-surface bg-parchment-card px-4 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           <Button title="Continue" onPress={() => router.push('/kyc/tax-id')} variant="orange" />
         </View>
@@ -234,9 +234,9 @@ export default function KycCountryScreen() {
             setShowCountryPicker(false);
             setSearchQuery('');
           }}>
-          <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-            <View className="flex-row items-center justify-between border-b border-gray-100 px-4 py-4">
-              <Text className="font-subtitle text-[18px] text-gray-900">
+          <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
+            <View className="flex-row items-center justify-between border-b border-stone-surface px-4 py-4">
+              <Text className="font-subtitle text-[18px] text-charcoal-primary">
                 Select issuing country
               </Text>
               <Pressable
@@ -247,18 +247,18 @@ export default function KycCountryScreen() {
                 className="size-11 items-center justify-center"
                 accessibilityRole="button"
                 accessibilityLabel="Close country picker">
-                <HugeiconsIcon icon={Cancel01Icon} size={22} color="#111827" />
+                <HugeiconsIcon icon={Cancel01Icon} size={22} color="#343433" />
               </Pressable>
             </View>
 
             {/* Search input */}
-            <View className="border-b border-gray-100 px-4 pb-4">
-              <View className="flex-row items-center rounded-full border border-gray-200 bg-gray-50 px-4 py-3">
+            <View className="border-b border-stone-surface px-4 pb-4">
+              <View className="flex-row items-center rounded-full border border-fog bg-stone-surface px-4 py-3">
                 <Text className="mr-2 text-lg">Search</Text>
                 <TextInput
-                  className="flex-1 font-body text-[15px] text-gray-900"
+                  className="flex-1 font-body text-[15px] text-charcoal-primary"
                   placeholder="Search countries..."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor="#848281"
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   autoCapitalize="none"
@@ -267,12 +267,12 @@ export default function KycCountryScreen() {
                 />
                 {searchQuery.length > 0 && (
                   <Pressable onPress={() => setSearchQuery('')}>
-                    <HugeiconsIcon icon={Cancel01Icon} size={16} color="#9CA3AF" />
+                    <HugeiconsIcon icon={Cancel01Icon} size={16} color="#848281" />
                   </Pressable>
                 )}
               </View>
               {searchQuery.length > 0 && filteredCountries.length === 0 && (
-                <Text className="mt-2 font-body text-[14px] text-gray-500">
+                <Text className="mt-2 font-body text-[14px] text-ash">
                   No countries found. Contact support for additional options.
                 </Text>
               )}
@@ -289,21 +289,21 @@ export default function KycCountryScreen() {
                       setShowCountryPicker(false);
                       setSearchQuery('');
                     }}
-                    className={`flex-row items-center justify-between border-b border-gray-100 px-4 py-4 ${
-                      selected ? 'bg-gray-50' : 'bg-white'
+                    className={`flex-row items-center justify-between border-b border-stone-surface px-4 py-4 ${
+                      selected ? 'bg-stone-surface' : 'bg-white'
                     }`}
                     accessibilityRole="button"
                     accessibilityLabel={`Choose ${COUNTRY_LABELS[item.code]}`}>
                     <View className="flex-row items-center gap-3">
                       <CountryFlag isoCode={KYC_TO_ISO2[item.code] || 'US'} size={20} />
                       <View>
-                        <Text className="font-subtitle text-[15px] text-gray-900">
+                        <Text className="font-subtitle text-[15px] text-charcoal-primary">
                           {COUNTRY_LABELS[item.code]}
                         </Text>
                       </View>
                     </View>
                     {selected ? (
-                      <View className="size-6 items-center justify-center rounded-full bg-gray-900">
+                      <View className="size-6 items-center justify-center rounded-full bg-midnight">
                         <HugeiconsIcon
                           icon={CheckmarkCircle01Icon}
                           size={14}
@@ -312,7 +312,7 @@ export default function KycCountryScreen() {
                         />
                       </View>
                     ) : (
-                      <View className="size-6 rounded-full border border-gray-300" />
+                      <View className="size-6 rounded-full border border-fog" />
                     )}
                   </Pressable>
                 );

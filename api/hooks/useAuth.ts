@@ -9,6 +9,7 @@ import { authService, passcodeService } from '../services';
 import { queryKeys, invalidateQueries } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
 import { useAnalytics, ANALYTICS_EVENTS } from '../../utils/analytics';
+import { SESSION_DURATION_MS, PASSCODE_SESSION_MS } from '../../utils/sessionConstants';
 import type {
   LoginRequest,
   RegisterRequest,
@@ -19,13 +20,10 @@ import type {
   VerifyResetCodeRequest,
 } from '../types';
 
-const TOKEN_EXPIRY_DAYS = 7;
+const getSessionExpiryIso = (sessionExpiresAt?: string): string => {
+  if (sessionExpiresAt) return new Date(sessionExpiresAt).toISOString();
 
-const getTokenExpiryIso = (expiresAt?: string): string => {
-  if (expiresAt) return new Date(expiresAt).toISOString();
-
-  const now = new Date();
-  return new Date(now.getTime() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  return new Date(Date.now() + SESSION_DURATION_MS).toISOString();
 };
 
 const syncPasscodeStatus = async () => {
@@ -43,8 +41,7 @@ const syncPasscodeStatus = async () => {
  * The user already proved identity via credentials — requiring passcode again is redundant.
  */
 const grantPostLoginPasscodeSession = () => {
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + 10 * 60 * 1000); // 10 minutes
+  const expiresAt = new Date(Date.now() + PASSCODE_SESSION_MS);
   useAuthStore.getState().setPasscodeSession('login-granted', expiresAt.toISOString());
 };
 
@@ -69,7 +66,7 @@ export function useLogin() {
         onboardingStatus: response.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,
-        tokenExpiresAt: getTokenExpiryIso(response.expiresAt),
+        tokenExpiresAt: getSessionExpiryIso(response.sessionExpiresAt),
       });
 
       // Grant passcode session BEFORE syncing status so routing doesn't bounce to /login-passcode
@@ -154,7 +151,7 @@ export function useVerifyCode() {
       }
 
       const now = new Date();
-      const tokenExpiresAt = getTokenExpiryIso(response.expiresAt);
+      const tokenExpiresAt = getSessionExpiryIso(response.sessionExpiresAt);
       const refreshToken = response.refreshToken || useAuthStore.getState().refreshToken;
 
       useAuthStore.setState({
@@ -294,7 +291,7 @@ export function useAppleSignIn() {
         onboardingStatus: response.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,
-        tokenExpiresAt: response.expiresAt,
+        tokenExpiresAt: getSessionExpiryIso(response.sessionExpiresAt),
       });
 
       grantPostLoginPasscodeSession();
@@ -376,7 +373,7 @@ export function useGoogleSignIn() {
         onboardingStatus: response.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,
-        tokenExpiresAt: response.expiresAt,
+        tokenExpiresAt: getSessionExpiryIso(response.sessionExpiresAt),
       });
 
       grantPostLoginPasscodeSession();

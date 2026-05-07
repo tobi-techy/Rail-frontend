@@ -15,8 +15,8 @@ import { useCards, useCardTransactions, useUnfreezeCard } from '@/api/hooks/useC
 import { queryKeys } from '@/api/queryClient';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import type { CardTransaction } from '@/api/types/card';
-import { EyeIcon, Settings01Icon, SnowIcon, ViewOffIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { EyeIcon, Settings01Icon, SnowIcon, ViewOffIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 function mapCardTransaction(tx: CardTransaction): Transaction {
   const isCredit = tx.type === 'refund' || tx.type === 'reversal';
@@ -42,7 +42,7 @@ function mapCardTransaction(tx: CardTransaction): Transaction {
     merchant: tx.merchant_name ?? undefined,
     status: statusMap[tx.status] ?? 'pending',
     createdAt: new Date(tx.created_at),
-    icon: { type: 'icon' as const, iconName: 'credit-card', bgColor: '#F3F4F6' },
+    icon: { type: 'icon' as const, iconName: 'credit-card', bgColor: '#f2f0ed' },
   };
 }
 
@@ -65,10 +65,10 @@ function CircleAction({
           onPress();
         }}
         activeOpacity={0.7}
-        className="mb-2 h-14 w-14 items-center justify-center rounded-full bg-gray-100">
+        className="mb-2 h-14 w-14 items-center justify-center rounded-full bg-stone-surface">
         {icon}
       </TouchableOpacity>
-      <Text className="font-body text-[12px] text-gray-500">{label}</Text>
+      <Text className="font-body text-[12px] text-ash">{label}</Text>
     </Animated.View>
   );
 }
@@ -132,7 +132,7 @@ const CardMainScreen = () => {
   }, [activeCard, unfreezeCard, showSuccess, showError]);
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
@@ -140,12 +140,12 @@ const CardMainScreen = () => {
         <View className="px-5">
           {/* Header */}
           <View className="flex-row items-center justify-between pb-2 pt-1">
-            <Text className="font-headline text-headline-3 text-gray-900">Card</Text>
+            <Text className="font-headline text-headline-3 text-charcoal-primary">Card</Text>
             <TouchableOpacity
               onPress={handleSettings}
               activeOpacity={0.7}
-              className="h-9 w-9 items-center justify-center rounded-full bg-gray-100">
-              <HugeiconsIcon icon={Settings01Icon} size={18} color="#374151" strokeWidth={1.8} />
+              className="h-9 w-9 items-center justify-center rounded-full bg-stone-surface">
+              <HugeiconsIcon icon={Settings01Icon} size={18} color="#474645" strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
 
@@ -167,7 +167,7 @@ const CardMainScreen = () => {
                 last4={activeCard?.last_4 ?? '••••'}
                 exp={activeCard?.expiry ?? '••/••'}
                 currency="USD"
-                accentColor={isFrozen ? '#6B7280' : '#FF6A00'}
+                accentColor={isFrozen ? '#848281' : '#FF6A00'}
                 patternIntensity={0.35}
               />
             </View>
@@ -185,12 +185,12 @@ const CardMainScreen = () => {
             <TouchableOpacity
               onPress={handleUnfreeze}
               activeOpacity={0.8}
-              className="mt-4 flex-row items-center justify-between rounded-xl bg-blue-50 px-4 py-3">
+              className="mt-4 flex-row items-center justify-between rounded-lg bg-blue-50 px-4 py-3">
               <View className="flex-row items-center">
-                <HugeiconsIcon icon={SnowIcon} size={18} color="#3B82F6" />
+                <HugeiconsIcon icon={SnowIcon} size={18} color="#0090ff" />
                 <Text className="ml-2 font-subtitle text-sm text-blue-700">Card is frozen</Text>
               </View>
-              <Text className="font-subtitle text-sm text-blue-600">Tap to unfreeze</Text>
+              <Text className="font-subtitle text-sm text-sky-blue">Tap to unfreeze</Text>
             </TouchableOpacity>
           )}
 
@@ -218,7 +218,7 @@ const CardMainScreen = () => {
 
           {/* Transactions */}
           <View className="mt-7">
-            <Text className="mb-3 font-headline text-headline-3 text-gray-900">Transactions</Text>
+            <Text className="mb-3 font-headline text-headline-3 text-charcoal-primary">Transactions</Text>
             {isLoading ? (
               <View>
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -227,8 +227,8 @@ const CardMainScreen = () => {
               </View>
             ) : transactions.length === 0 ? (
               <View className="items-center py-10">
-                <Text className="font-body text-body text-gray-400">No transactions yet</Text>
-                <Text className="mt-1 font-body text-caption text-gray-300">
+                <Text className="font-body text-body text-smoke">No transactions yet</Text>
+                <Text className="mt-1 font-body text-caption text-smoke">
                   Use your card to see activity here
                 </Text>
               </View>

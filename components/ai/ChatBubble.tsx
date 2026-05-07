@@ -40,7 +40,7 @@ export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
           accessibilityRole="text"
           accessibilityLabel={`Your message: ${content.slice(0, 100)}`}>
           <View className="rounded-3xl bg-[#EDEDEB] px-5 py-3.5">
-            <Text className="font-body text-[17px] leading-[28px] text-[#1A1A1A]">{content}</Text>
+            <Text className="font-body text-[17px] leading-[28px] text-[#343433]">{content}</Text>
           </View>
         </Pressable>
       </Animated.View>

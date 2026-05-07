@@ -9,8 +9,8 @@ import {
   Mail01Icon,
   MailAtSign01Icon,
   UserGroupIcon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 interface FundingOption {
   id: string;
@@ -48,7 +48,7 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
             id: 'railtag',
             label: 'RailTag',
             sublabel: 'Instant send to any @rail user',
-            icon: <HugeiconsIcon icon={MailAtSign01Icon} size={20} color="#FF2E01" />,
+            icon: <HugeiconsIcon icon={MailAtSign01Icon} size={20} color="#ff3e00" />,
             iconBg: '#FFF0ED',
             onPress: () => openMethodFlow('railtag'),
           },
@@ -65,7 +65,7 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
             label: 'Contact',
             sublabel: 'Pick from your phone contacts',
             icon: <HugeiconsIcon icon={UserGroupIcon} size={20} color="#059669" />,
-            iconBg: '#ECFDF5',
+            iconBg: '#f0fdf4',
             onPress: () => openMethodFlow('contact'),
           },
         ]
@@ -146,13 +146,13 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
                 activeOpacity={0.6}>
                 <View className="flex-row items-center gap-3">
                   <View
-                    className="h-10 w-10 items-center justify-center rounded-xl"
+                    className="h-10 w-10 items-center justify-center rounded-lg"
                     style={{ backgroundColor: option.iconBg }}>
                     {option.icon}
                   </View>
                   <View>
                     <Text
-                      className={`font-subtitle text-[15px] ${option.comingSoon ? 'text-gray-400' : 'text-text-primary'}`}>
+                      className={`font-subtitle text-[15px] ${option.comingSoon ? 'text-smoke' : 'text-text-primary'}`}>
                       {option.label}
                     </Text>
                     <Text className="font-body text-[12px] text-text-secondary">
@@ -161,8 +161,8 @@ export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingO
                   </View>
                 </View>
                 {option.comingSoon ? (
-                  <View className="rounded-full bg-gray-200 px-2 py-0.5">
-                    <Text className="font-body text-[11px] text-gray-400">Soon</Text>
+                  <View className="rounded-full bg-fog px-2 py-0.5">
+                    <Text className="font-body text-[11px] text-smoke">Soon</Text>
                   </View>
                 ) : (
                   <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#C4C4C4" />

@@ -4,7 +4,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
 import ViewShot from 'react-native-view-shot';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { Transaction, TransactionType, SvgComponent } from '../molecules/TransactionItem';
 import { resolveTransactionAssetIcon } from '@/utils/transactionIcon';
 import { formatAbsAmount } from '@/utils/transactionFormat';
@@ -32,7 +32,7 @@ import {
   Cancel01Icon,
   Clock01Icon,
   Tick02Icon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 
 interface TransactionDetailSheetProps {
   visible: boolean;
@@ -103,10 +103,10 @@ const DetailRow = ({
 const LARGE_ICON_SIZE = 48;
 
 const WITHDRAWAL_BADGE: Record<string, { icon: any; bg: string }> = {
-  fiat: { icon: CreditCardIcon, bg: '#3B82F6' },
-  card: { icon: CreditCardIcon, bg: '#3B82F6' },
-  crypto: { icon: Wallet01Icon, bg: '#8B5CF6' },
-  p2p: { icon: Mail01Icon, bg: '#10B981' },
+  fiat: { icon: CreditCardIcon, bg: '#0090ff' },
+  card: { icon: CreditCardIcon, bg: '#0090ff' },
+  crypto: { icon: Wallet01Icon, bg: '#9f4fff' },
+  p2p: { icon: Mail01Icon, bg: '#00ca48' },
 };
 
 const LargeTokenIcon = ({
@@ -130,7 +130,7 @@ const LargeTokenIcon = ({
       overflow: 'hidden',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: bgColor || '#1B84FF',
+      backgroundColor: bgColor || '#0090ff',
     }}>
     {Token ? (
       <Token
@@ -180,7 +180,7 @@ const LargeSwapIcon = ({
     </View>
     <View
       className="absolute bottom-0 right-0 h-9 w-9 items-center justify-center rounded-full border-2 border-white"
-      style={{ backgroundColor: toBg || '#1B84FF' }}>
+      style={{ backgroundColor: toBg || '#0090ff' }}>
       {SwapTo && <SwapTo width={20} height={20} />}
     </View>
   </View>
@@ -194,16 +194,16 @@ const ReceiptRow = ({ label, value }: { label: string; value: string }) => (
       justifyContent: 'space-between',
       paddingVertical: 10,
       borderBottomWidth: 1,
-      borderBottomColor: '#F3F4F6',
+      borderBottomColor: '#f2f0ed',
     }}>
-    <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 13, color: '#6B7280' }}>
+    <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 13, color: '#848281' }}>
       {label}
     </Text>
     <Text
       style={{
         fontFamily: 'SFProDisplay-Medium',
         fontSize: 13,
-        color: '#111827',
+        color: '#343433',
         maxWidth: '55%',
         textAlign: 'right',
       }}>
@@ -322,7 +322,7 @@ export function TransactionDetailSheet({
     }
 
     const badge = withdrawalMethod
-      ? (WITHDRAWAL_BADGE[withdrawalMethod] ?? { Icon: Tag01Icon, bg: '#6B7280' })
+      ? (WITHDRAWAL_BADGE[withdrawalMethod] ?? { Icon: Tag01Icon, bg: '#848281' })
       : null;
 
     return (
@@ -472,8 +472,8 @@ export function TransactionDetailSheet({
       {/* Share receipt button */}
       <TouchableOpacity
         onPress={handleShareReceipt}
-        className="mt-3 flex-row items-center justify-center gap-2 rounded-full border border-gray-200 py-3">
-        <HugeiconsIcon icon={Share01Icon} size={18} color="#6B7280" />
+        className="mt-3 flex-row items-center justify-center gap-2 rounded-full border border-fog py-3">
+        <HugeiconsIcon icon={Share01Icon} size={18} color="#848281" />
         <Text className="font-subtitle text-caption text-text-secondary">Share Receipt</Text>
       </TouchableOpacity>
 
@@ -510,7 +510,7 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
       {/* Green/Red header band */}
       <View
         style={{
-          backgroundColor: status === 'failed' ? '#FEE2E2' : isCredit ? '#ECFDF5' : '#F0F4FF',
+          backgroundColor: status === 'failed' ? '#fff1f2' : isCredit ? '#f0fdf4' : '#F0F4FF',
           paddingTop: 32,
           paddingBottom: 24,
           alignItems: 'center',
@@ -524,7 +524,7 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor:
-              status === 'failed' ? '#EF4444' : status === 'completed' ? '#10B981' : '#F59E0B',
+              status === 'failed' ? '#ff2b3a' : status === 'completed' ? '#00ca48' : '#F59E0B',
           }}>
           <HugeiconsIcon
             icon={
@@ -538,7 +538,7 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
           style={{
             fontFamily: 'SFProDisplay-Bold',
             fontSize: 28,
-            color: '#111827',
+            color: '#343433',
             marginTop: 12,
           }}>
           {isCredit ? '+' : '−'}
@@ -548,7 +548,7 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
           style={{
             fontFamily: 'SFProDisplay-Medium',
             fontSize: 14,
-            color: status === 'failed' ? '#EF4444' : '#10B981',
+            color: status === 'failed' ? '#ff2b3a' : '#00ca48',
             marginTop: 4,
           }}>
           {statusLabel(status)}
@@ -557,7 +557,7 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
 
       {/* Divider with notch effect */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 20 }}>
-        <View style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
+        <View style={{ flex: 1, height: 1, backgroundColor: '#f2f0ed' }} />
       </View>
 
       {/* Details */}
@@ -598,14 +598,14 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
           alignItems: 'center',
           paddingVertical: 20,
           borderTopWidth: 1,
-          borderTopColor: '#F3F4F6',
+          borderTopColor: '#f2f0ed',
           marginHorizontal: 20,
         }}>
         <Text
           style={{
             fontFamily: 'SFProDisplay-Bold',
             fontSize: 15,
-            color: '#111827',
+            color: '#343433',
             letterSpacing: 1,
           }}>
           RAIL MONEY
@@ -614,7 +614,7 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
           style={{
             fontFamily: 'SFProDisplay-Regular',
             fontSize: 11,
-            color: '#9CA3AF',
+            color: '#848281',
             marginTop: 2,
           }}>
           rail.money • {formatDate(createdAt)}

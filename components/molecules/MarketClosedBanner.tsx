@@ -2,8 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useMarketStatus } from '@/api/hooks/useInvestment';
-import { Clock01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Clock01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export function MarketClosedBanner() {
   const { data: market } = useMarketStatus();

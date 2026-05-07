@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ViewProps } from 'react-native';
 import { useKeypadFeedback } from '@/hooks/useKeypadFeedback';
-import { Delete01Icon, FingerPrintIcon, Key01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Delete01Icon, FingerPrintIcon, Key01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const BACKSPACE_KEY = 'backspace';
 const FINGERPRINT_KEY = 'fingerprint';

@@ -32,9 +32,9 @@ interface StashCardProps {
 }
 
 const BADGE_COLORS: Record<StashCardBadge['color'], { bg: string; text: string; dot: string }> = {
-  green: { bg: '#ECFDF3', text: '#15803D', dot: '#22C55E' },
-  red: { bg: '#FEF2F2', text: '#B91C1C', dot: '#EF4444' },
-  gray: { bg: '#F3F4F6', text: '#374151', dot: '#9CA3AF' },
+  green: { bg: '#ECFDF3', text: '#00ca48', dot: '#00ca48' },
+  red: { bg: '#FEF2F2', text: '#ff2b3a', dot: '#ff2b3a' },
+  gray: { bg: '#f2f0ed', text: '#474645', dot: '#a7a7a7' },
 };
 
 export const StashCard: React.FC<StashCardProps> = ({
@@ -63,7 +63,7 @@ export const StashCard: React.FC<StashCardProps> = ({
   return (
     <AnimatedPressable
       style={[animStyle, isColored ? { backgroundColor: cardColor } : undefined]}
-      className={`flex-1 rounded-3xl ${isColored ? '' : 'border border-gray-200 bg-white'} px-4 py-4 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
+      className={`flex-1 rounded-3xl ${isColored ? '' : 'border border-fog bg-parchment-card'} px-4 py-4 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
       onPress={() => {
         impact();
         onPress?.();
@@ -95,7 +95,7 @@ export const StashCard: React.FC<StashCardProps> = ({
         <View>
           <Text
             className="font-subtitle text-lg text-white"
-            style={{ color: isColored ? 'white' : '#FF2E01' }}>
+            style={{ color: isColored ? 'white' : '#ff3e00' }}>
             {typeof getStarted === 'string' ? getStarted : 'Get started'}
           </Text>
           <Text

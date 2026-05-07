@@ -1,20 +1,40 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Linking } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSequence, withTiming, withDelay } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { TransactionDetails } from '@/stores/withdrawalStore';
-import { useHaptics } from '@/hooks/useHaptics';
-import { ArrowRight01Icon, LinkSquare01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowRight01Icon, LinkSquare01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { Confetti } from '@/components/atoms/Confetti';
 
 interface TransactionSuccessViewProps {
   transaction: TransactionDetails | null;
 }
 
 export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ transaction }) => {
-  const { notification } = useHaptics();
+  const shakeX = useSharedValue(0);
+
+  const shakeStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shakeX.value }],
+  }));
 
   useEffect(() => {
-    notification();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Heavy haptic burst sequence — feels like the phone is celebrating
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 150);
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 300);
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 450);
+
+    // Shake the screen
+    shakeX.value = withDelay(50, withSequence(
+      withTiming(-6, { duration: 40 }),
+      withTiming(6, { duration: 40 }),
+      withTiming(-5, { duration: 40 }),
+      withTiming(5, { duration: 40 }),
+      withTiming(-3, { duration: 40 }),
+      withTiming(3, { duration: 40 }),
+      withTiming(0, { duration: 40 }),
+    ));
   }, []);
   if (!transaction) return null;
 
@@ -27,7 +47,10 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
   };
 
   return (
-    <ScrollView className="flex-1 bg-white px-6" showsVerticalScrollIndicator={false}>
+    <View className="flex-1">
+      <Confetti count={60} />
+      <Animated.View style={[{ flex: 1 }, shakeStyle]}>
+        <ScrollView className="flex-1 bg-parchment-card px-6" showsVerticalScrollIndicator={false}>
       {/* View on Explorer Link */}
       <TouchableOpacity
         onPress={handleViewOnExplorer}
@@ -36,8 +59,8 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
         accessibilityRole="link"
         accessibilityLabel="View transaction on Solscan"
         accessibilityHint="Opens in browser">
-        <Text className="mr-1 font-body-medium text-[12px] text-[#8B5CF6]">View on Solscan</Text>
-        <HugeiconsIcon icon={LinkSquare01Icon} size={12} color="#8B5CF6" strokeWidth={2} />
+        <Text className="mr-1 font-body-medium text-[12px] text-[#9f4fff]">View on Solscan</Text>
+        <HugeiconsIcon icon={LinkSquare01Icon} size={12} color="#9f4fff" strokeWidth={2} />
       </TouchableOpacity>
 
       {/* Amount & Status */}
@@ -46,11 +69,11 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
           {transaction.usdAmount}
         </Text>
         <View className="mb-3 flex-row items-center">
-          <Text className="mr-3 font-body-medium text-[16px] text-[#6B7280]">
+          <Text className="mr-3 font-body-medium text-[16px] text-[#848281]">
             {transaction.amount}
           </Text>
-          <View className="flex-row items-center rounded-full bg-[#10B981] px-3 py-1">
-            <View className="mr-2 h-2 w-2 rounded-full bg-white" />
+          <View className="flex-row items-center rounded-full bg-[#00ca48] px-3 py-1">
+            <View className="mr-2 h-2 w-2 rounded-full bg-warm-canvas" />
             <Text className="font-body-bold text-[11px] text-white">Successful</Text>
           </View>
         </View>
@@ -62,11 +85,11 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
           <Text className="text-lg font-bold text-white">$</Text>
         </View>
         <View className="mx-4 flex-row items-center">
-          <View className="h-0.5 w-8 bg-[#E5E7EB]" />
-          <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#6B7280" className="mx-1" />
-          <View className="h-0.5 w-8 bg-[#E5E7EB]" />
+          <View className="h-0.5 w-8 bg-[#f2f0ed]" />
+          <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#848281" className="mx-1" />
+          <View className="h-0.5 w-8 bg-[#f2f0ed]" />
         </View>
-        <View className="h-12 w-12 items-center justify-center rounded-full bg-[#8B5CF6]">
+        <View className="h-12 w-12 items-center justify-center rounded-full bg-[#9f4fff]">
           <Text className="font-semibold text-white">
             {transaction.recipientName.charAt(0).toUpperCase()}
           </Text>
@@ -78,7 +101,7 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
         {/* Timestamp */}
         {transaction.timestamp && (
           <View className="mb-5">
-            <Text className="text-center font-body-medium text-[12px] text-[#6B7280]">
+            <Text className="text-center font-body-medium text-[12px] text-[#848281]">
               {transaction.timestamp}
             </Text>
           </View>
@@ -86,14 +109,14 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
 
         {/* From */}
         <View className="mb-4">
-          <Text className="mb-2 font-body-medium text-[12px] text-[#6B7280]">From</Text>
+          <Text className="mb-2 font-body-medium text-[12px] text-[#848281]">From</Text>
           <View className="flex-row items-center justify-between">
             <Text className="font-body-medium text-[14px] text-[#0B1120]">
               {transaction.fromAccount}
             </Text>
-            <View className="flex-row items-center rounded-lg bg-white px-2 py-1">
-              <View className="mr-1 h-1 w-1 rounded-full bg-[#6B7280]" />
-              <Text className="font-body-medium text-[11px] text-[#6B7280]">
+            <View className="flex-row items-center rounded-lg bg-parchment-card px-2 py-1">
+              <View className="mr-1 h-1 w-1 rounded-full bg-[#848281]" />
+              <Text className="font-body-medium text-[11px] text-[#848281]">
                 {transaction.fromAddress}
               </Text>
             </View>
@@ -102,14 +125,14 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
 
         {/* Receiving Address */}
         <View className="mb-4">
-          <Text className="mb-2 font-body-medium text-[12px] text-[#6B7280]">
+          <Text className="mb-2 font-body-medium text-[12px] text-[#848281]">
             Receiving address
           </Text>
           <View className="flex-row items-center justify-between">
             <Text className="font-body-medium text-[14px] text-[#0B1120]">
               {transaction.recipientName}
             </Text>
-            <Text className="rounded-lg bg-white px-2 py-1 font-body-medium text-[11px] text-[#6B7280]">
+            <Text className="rounded-lg bg-parchment-card px-2 py-1 font-body-medium text-[11px] text-[#848281]">
               {transaction.recipientAddress}
             </Text>
           </View>
@@ -117,10 +140,10 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
 
         {/* Token */}
         <View className="mb-4">
-          <Text className="mb-2 font-body-medium text-[12px] text-[#6B7280]">Token</Text>
+          <Text className="mb-2 font-body-medium text-[12px] text-[#848281]">Token</Text>
           <View className="flex-row items-center justify-between">
             <Text className="font-body-bold text-[14px] text-[#0B1120]">{transaction.amount}</Text>
-            <Text className="font-body-medium text-[12px] text-[#6B7280]">
+            <Text className="font-body-medium text-[12px] text-[#848281]">
               {transaction.usdAmount}
             </Text>
           </View>
@@ -128,7 +151,7 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
 
         {/* Network */}
         <View className="mb-4">
-          <Text className="mb-2 font-body-medium text-[12px] text-[#6B7280]">Network</Text>
+          <Text className="mb-2 font-body-medium text-[12px] text-[#848281]">Network</Text>
           <View className="flex-row items-center">
             <View className="h-7 w-7 items-center justify-center rounded-full bg-[#14F195]">
               <Text className="font-body-bold text-[11px] text-[#0B1120]">S</Text>
@@ -139,7 +162,7 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
             <HugeiconsIcon
               icon={ArrowRight01Icon}
               size={14}
-              color="#6B7280"
+              color="#848281"
               strokeWidth={2}
               style={{ marginHorizontal: 8 }}
             />
@@ -154,9 +177,9 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
 
         {/* Fee */}
         <View className="mb-4">
-          <Text className="mb-2 font-body-medium text-[12px] text-[#6B7280]">Fee</Text>
+          <Text className="mb-2 font-body-medium text-[12px] text-[#848281]">Fee</Text>
           <View className="flex-row items-center">
-            <View className="mr-2 h-5 w-5 items-center justify-center rounded-full bg-red-500">
+            <View className="mr-2 h-5 w-5 items-center justify-center rounded-full bg-coral-red/100">
               <Text className="text-[10px] text-white">Gas</Text>
             </View>
             <Text className="font-body-medium text-[12px] text-[#0B1120]">{transaction.fee}</Text>
@@ -165,10 +188,10 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
 
         {/* Bridge Provider */}
         <View>
-          <Text className="mb-2 font-body-medium text-[12px] text-[#6B7280]">Bridge provider</Text>
+          <Text className="mb-2 font-body-medium text-[12px] text-[#848281]">Bridge provider</Text>
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center">
-              <View className="mr-2 h-5 w-5 items-center justify-center rounded-full bg-[#8B5CF6]">
+              <View className="mr-2 h-5 w-5 items-center justify-center rounded-full bg-[#9f4fff]">
                 <Text className="font-body-bold text-[10px] text-white">B</Text>
               </View>
               <Text className="font-body-medium text-[12px] text-[#0B1120]">
@@ -179,5 +202,7 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
         </View>
       </View>
     </ScrollView>
+      </Animated.View>
+    </View>
   );
 };

@@ -13,6 +13,8 @@ import { emailSchema, resetPasswordSchema, fieldError } from '@/utils/schemas';
 
 type Step = 'email' | 'otp' | 'password';
 
+const normalizeEmail = (value: string) => value.trim().toLowerCase();
+
 export default function ForgotPassword() {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -32,47 +34,90 @@ export default function ForgotPassword() {
   const { mutate: resetPassword, isPending: isResetting } = useResetPassword();
   const { showError, showSuccess } = useFeedbackPopup();
 
+  const sendResetCode = useCallback(
+    (targetEmail: string, options?: { isResend?: boolean }) => {
+      if (isSending) return;
+
+      setOtpError('');
+      setResetToken('');
+      setPassword('');
+      setConfirmPassword('');
+      setPasswordError('');
+      setConfirmError('');
+      Keyboard.dismiss();
+
+      forgotPassword(
+        { email: targetEmail },
+        {
+          onSuccess: () => {
+            otpRef.current?.clear?.();
+            setStep('otp');
+            if (options?.isResend) {
+              showSuccess('Code sent', 'Check your email for a new reset code.');
+            }
+          },
+          onError: (e: any) => showError('Failed', e?.message || 'Could not send reset code'),
+        }
+      );
+    },
+    [forgotPassword, isSending, showError, showSuccess]
+  );
+
   // Step 1: Send OTP
   const handleSendCode = useCallback(() => {
+    if (isSending) return;
+
     const result = emailSchema.safeParse(email);
     if (!result.success) {
       setEmailError(result.error.issues[0]?.message ?? 'Enter a valid email');
       return;
     }
+    setEmail(result.data);
     setEmailError('');
-    Keyboard.dismiss();
-    forgotPassword(
-      { email: result.data },
-      {
-        onSuccess: () => setStep('otp'),
-        onError: (e: any) => showError('Failed', e?.message || 'Could not send reset code'),
-      }
-    );
-  }, [email, forgotPassword, showError]);
+    sendResetCode(result.data);
+  }, [email, isSending, sendResetCode]);
+
+  const handleResendCode = useCallback(() => {
+    const targetEmail = normalizeEmail(email);
+    if (!targetEmail || isSending || isVerifying) return;
+    sendResetCode(targetEmail, { isResend: true });
+  }, [email, isSending, isVerifying, sendResetCode]);
 
   // Step 2: Verify OTP
   const handleVerifyCode = useCallback(
     (code: string) => {
+      if (isVerifying || code.length !== 6) return;
+
       setOtpError('');
       verifyCode(
-        { email: email.trim().toLowerCase(), code },
+        { email: normalizeEmail(email), code },
         {
           onSuccess: (res) => {
+            if (!res?.reset_token) {
+              setOtpError('Could not verify code. Please request a new one.');
+              otpRef.current?.clear?.();
+              showError('Failed', 'Could not verify code. Please request a new one.');
+              return;
+            }
             setResetToken(res.reset_token);
+            setPassword('');
+            setConfirmPassword('');
             setStep('password');
           },
           onError: () => {
             setOtpError('Invalid or expired code');
-            otpRef.current?.clear();
+            otpRef.current?.clear?.();
           },
         }
       );
     },
-    [email, verifyCode]
+    [email, isVerifying, showError, verifyCode]
   );
 
   // Step 3: Set new password
   const handleResetPassword = useCallback(() => {
+    if (isResetting) return;
+
     const result = resetPasswordSchema.safeParse({ password, confirmPassword });
     if (!result.success) {
       setPasswordError(fieldError(result.error, 'password'));
@@ -82,17 +127,38 @@ export default function ForgotPassword() {
     setPasswordError('');
     setConfirmError('');
     Keyboard.dismiss();
+
+    if (!resetToken) {
+      setPassword('');
+      setConfirmPassword('');
+      setStep('otp');
+      showError('Code expired', 'Please verify a new reset code.');
+      return;
+    }
+
     resetPassword(
       { token: resetToken, password },
       {
         onSuccess: () => {
+          setResetToken('');
+          setPassword('');
+          setConfirmPassword('');
           showSuccess('Password updated', 'Sign in with your new password.');
           router.replace(ROUTES.AUTH.SIGNIN as never);
         },
-        onError: (e: any) => showError('Failed', e?.message || 'Could not reset password'),
+        onError: (e: any) => {
+          const message = e?.message || 'Could not reset password';
+          if (e?.code === 'INVALID_TOKEN') {
+            setResetToken('');
+            setPassword('');
+            setConfirmPassword('');
+            setStep('otp');
+          }
+          showError('Failed', message);
+        },
       }
     );
-  }, [password, confirmPassword, resetToken, resetPassword, showSuccess, showError]);
+  }, [password, confirmPassword, resetToken, resetPassword, isResetting, showSuccess, showError]);
 
   return (
     <AuthGradient>
@@ -108,10 +174,10 @@ export default function ForgotPassword() {
             <>
               <StaggeredChild index={0}>
                 <View className="mb-8 mt-4">
-                  <Text className="font-headline-2 text-auth-title leading-[1.1] text-black">
+                  <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
                     Forgot password
                   </Text>
-                  <Text className="mt-2 font-body text-base text-black/60">
+                  <Text className="mt-2 font-body text-base text-ash">
                     Enter your email and we&apos;ll send you a 6-digit code to reset your password.
                   </Text>
                 </View>
@@ -131,12 +197,17 @@ export default function ForgotPassword() {
               </StaggeredChild>
               <StaggeredChild index={2} delay={80} style={{ marginTop: 'auto' }}>
                 <View className="pt-8">
-                  <Button title="Send code" onPress={handleSendCode} loading={isSending} variant="orange" />
+                  <Button
+                    title="Send code"
+                    onPress={handleSendCode}
+                    loading={isSending}
+                    variant="orange"
+                  />
                   <Pressable
                     className="mt-6 items-center"
                     onPress={() => router.replace(ROUTES.AUTH.SIGNIN as never)}>
-                    <Text className="font-body text-caption text-black/60">
-                      Remember it? <Text className="text-black underline">Sign in</Text>
+                    <Text className="font-body text-caption text-ash">
+                      Remember it? <Text className="text-charcoal-primary underline">Sign in</Text>
                     </Text>
                   </Pressable>
                 </View>
@@ -148,12 +219,14 @@ export default function ForgotPassword() {
           {step === 'otp' && (
             <>
               <Animated.View entering={FadeInDown.duration(300)} className="mb-8 mt-4">
-                <Text className="font-headline-2 text-auth-title leading-[1.1] text-black">
+                <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
                   Enter code
                 </Text>
-                <Text className="mt-2 font-body text-base text-black/60">
+                <Text className="mt-2 font-body text-base text-ash">
                   We sent a 6-digit code to{' '}
-                  <Text className="font-subtitle text-black">{email.trim().toLowerCase()}</Text>
+                  <Text className="font-subtitle text-charcoal-primary">
+                    {email.trim().toLowerCase()}
+                  </Text>
                 </Text>
               </Animated.View>
               <Animated.View entering={FadeIn.delay(150).duration(300)}>
@@ -167,19 +240,31 @@ export default function ForgotPassword() {
               </Animated.View>
               {isVerifying && (
                 <Animated.View entering={FadeIn.duration(200)} className="mt-4">
-                  <Text className="text-center font-body text-[13px] text-black/50">
-                    Verifying…
-                  </Text>
+                  <Text className="text-center font-body text-[13px] text-smoke">Verifying…</Text>
                 </Animated.View>
               )}
               <View style={{ marginTop: 'auto' }} className="pt-8">
+                <Pressable onPress={handleResendCode} disabled={isSending || isVerifying}>
+                  <Text className="text-center font-body text-[14px] text-ash">
+                    Didn&apos;t get it?{' '}
+                    <Text className="text-charcoal-primary underline">
+                      {isSending ? 'Sending...' : 'Resend code'}
+                    </Text>
+                  </Text>
+                </Pressable>
                 <Pressable
+                  className="mt-4"
                   onPress={() => {
                     setStep('email');
                     setOtpError('');
+                    setResetToken('');
+                    setPassword('');
+                    setConfirmPassword('');
+                    otpRef.current?.clear?.();
                   }}>
-                  <Text className="text-center font-body text-[14px] text-black/60">
-                    Didn&apos;t get it? <Text className="text-black underline">Resend code</Text>
+                  <Text className="text-center font-body text-[14px] text-ash">
+                    Wrong email?{' '}
+                    <Text className="text-charcoal-primary underline">Change email</Text>
                   </Text>
                 </Pressable>
               </View>
@@ -190,10 +275,10 @@ export default function ForgotPassword() {
           {step === 'password' && (
             <>
               <Animated.View entering={FadeInDown.duration(300)} className="mb-8 mt-4">
-                <Text className="font-headline-2 text-auth-title leading-[1.1] text-black">
+                <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
                   New password
                 </Text>
-                <Text className="mt-2 font-body text-base text-black/60">
+                <Text className="mt-2 font-body text-base text-ash">
                   Choose a strong password for your account.
                 </Text>
               </Animated.View>

@@ -30,9 +30,9 @@ export default function KycTosScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      <View className="flex-row items-center justify-between border-b border-gray-100 px-4 py-3">
-        <Text className="font-subtitle text-base text-gray-900">Terms of Service</Text>
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
+      <View className="flex-row items-center justify-between border-b border-stone-surface px-4 py-3">
+        <Text className="font-subtitle text-base text-charcoal-primary">Terms of Service</Text>
         <Pressable
           onPress={handleDone}
           className="rounded-full bg-primary px-4 py-1.5"

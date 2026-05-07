@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { View, Text, Pressable, ActivityIndicator, Keyboard, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Keyboard } from 'react-native';
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
@@ -8,8 +8,8 @@ import {
 } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { Search01Icon, BankIcon, Cancel01Icon } from '@hugeicons/core-free-icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { Search01Icon, BankIcon, Cancel01Icon } from '@/lib/icons';
 import type { PajBank } from '@/api/types/paj';
 
 interface BankPickerSheetProps {
@@ -62,12 +62,12 @@ export function BankPickerSheet({ visible, onClose, banks, loading, onSelect }: 
   const renderItem = useCallback(
     ({ item }: { item: PajBank }) => (
       <Pressable
-        className="flex-row items-center px-5 py-3.5 active:bg-[#F9FAFB]"
+        className="flex-row items-center px-5 py-4 active:bg-stone-surface"
         onPress={() => handleSelect(item)}>
-        <View className="mr-3 size-10 items-center justify-center rounded-full bg-[#F3F4F6]">
-          <HugeiconsIcon icon={BankIcon} size={18} color="#6B7280" />
+        <View className="mr-4 size-11 items-center justify-center rounded-full bg-stone-surface">
+          <HugeiconsIcon icon={BankIcon} size={20} color="#848281" />
         </View>
-        <Text className="flex-1 font-body text-[15px] text-text-primary">{item.name}</Text>
+        <Text className="flex-1 font-body text-body text-text-primary">{item.name}</Text>
       </Pressable>
     ),
     [handleSelect]
@@ -81,33 +81,33 @@ export function BankPickerSheet({ visible, onClose, banks, loading, onSelect }: 
       enablePanDownToClose
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
-      backgroundStyle={styles.background}
-      handleIndicatorStyle={styles.indicator}
+      backgroundStyle={{ backgroundColor: '#fbfaf9', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+      handleIndicatorStyle={{ backgroundColor: '#c6c6c6', width: 36, height: 4, borderRadius: 2, marginTop: 8 }}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize">
-      <View className="px-5 pb-3">
+      <View className="px-5 pb-4">
         <View className="flex-row items-center justify-between">
           <View>
-            <Text className="font-subtitle text-[20px] text-text-primary">Bank List</Text>
-            <Text className="mt-1 font-body text-[14px] text-text-secondary">
+            <Text className="font-heading text-heading text-text-primary">Bank List</Text>
+            <Text className="mt-1 font-body text-caption text-text-secondary">
               Choose a bank to send money to
             </Text>
           </View>
           <Pressable
-            className="size-8 items-center justify-center rounded-full bg-[#F3F4F6]"
+            className="size-9 items-center justify-center rounded-full bg-stone-surface"
             onPress={() => ref.current?.dismiss()}
             hitSlop={12}>
-            <HugeiconsIcon icon={Cancel01Icon} size={18} color="#9CA3AF" />
+            <HugeiconsIcon icon={Cancel01Icon} size={18} color="#848281" />
           </Pressable>
         </View>
 
-        <View className="mt-4 flex-row items-center rounded-xl bg-[#F3F4F6] px-3 py-2.5">
-          <HugeiconsIcon icon={Search01Icon} size={18} color="#9CA3AF" />
+        <View className="mt-4 flex-row items-center rounded-full bg-stone-surface px-4 py-3">
+          <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
           <BottomSheetTextInput
-            className="ml-2 flex-1 font-body text-[15px] text-text-primary"
+            className="ml-2.5 flex-1 font-body text-body text-text-primary"
             placeholder="Search bank"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#a7a7a7"
             value={search}
             onChangeText={setSearch}
             autoCorrect={false}
@@ -117,8 +117,8 @@ export function BankPickerSheet({ visible, onClose, banks, loading, onSelect }: 
 
       {loading ? (
         <View className="items-center py-12">
-          <ActivityIndicator color="#FF2E01" />
-          <Text className="mt-2 font-body text-[13px] text-[#9CA3AF]">Loading banks...</Text>
+          <ActivityIndicator color="#343433" />
+          <Text className="mt-3 font-body text-caption text-text-secondary">Loading banks...</Text>
         </View>
       ) : (
         <BottomSheetFlatList
@@ -140,8 +140,3 @@ export function BankPickerSheet({ visible, onClose, banks, loading, onSelect }: 
     </BottomSheetModal>
   );
 }
-
-const styles = StyleSheet.create({
-  background: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
-  indicator: { backgroundColor: '#D1D5DB', width: 36, height: 4, borderRadius: 2, marginTop: 8 },
-});

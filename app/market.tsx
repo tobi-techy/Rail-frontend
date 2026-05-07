@@ -13,8 +13,8 @@ import { MarketNewsCard } from '@/components/market/MarketNewsCard';
 import { useHaptics } from '@/hooks/useHaptics';
 import { MarketCategoryCard } from '@/components/market/MarketCategoryCard';
 import { useMarketFilters, SORT_OPTIONS, TYPE_OPTIONS } from '@/hooks/useMarketFilters';
-import { ArrowRight01Icon, BarChartIcon, Cancel01Icon, ChartUpIcon, DollarCircleIcon, FilterIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowRight01Icon, BarChartIcon, Cancel01Icon, ChartUpIcon, DollarCircleIcon, FilterIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -274,7 +274,7 @@ export default function MarketScreen() {
               ))}
             </View>
           ) : marketExploreQuery.isError ? (
-            <View className="rounded-md border border-surface bg-white p-md">
+            <View className="rounded-md border border-surface bg-parchment-card p-md">
               <Text className="font-subtitle text-body text-text-primary">
                 Unable to load assets
               </Text>
@@ -299,7 +299,7 @@ export default function MarketScreen() {
               </View>
             </View>
           ) : (
-            <View className="rounded-md border border-surface bg-white p-md">
+            <View className="rounded-md border border-surface bg-parchment-card p-md">
               <Text className="font-subtitle text-body text-text-primary">No assets available</Text>
               <Text className="mt-1 font-caption text-caption text-text-secondary">
                 Try changing filters or open full explorer.
@@ -318,13 +318,13 @@ export default function MarketScreen() {
           </View>
 
           {marketNewsQuery.isPending && marketNewsItems.length === 0 ? (
-            <View className="rounded-md border border-surface bg-white p-md">
+            <View className="rounded-md border border-surface bg-parchment-card p-md">
               <Text className="font-caption text-caption text-text-secondary">
                 Loading latest market news…
               </Text>
             </View>
           ) : marketNewsQuery.isError && marketNewsItems.length === 0 ? (
-            <View className="rounded-md border border-surface bg-white p-md">
+            <View className="rounded-md border border-surface bg-parchment-card p-md">
               <Text className="font-subtitle text-body text-text-primary">
                 Unable to load market news
               </Text>
@@ -348,7 +348,7 @@ export default function MarketScreen() {
               )}
             </>
           ) : (
-            <View className="rounded-md border border-surface bg-white p-md">
+            <View className="rounded-md border border-surface bg-parchment-card p-md">
               <Text className="font-subtitle text-body text-text-primary">No market news yet</Text>
               <Text className="mt-1 font-caption text-caption text-text-secondary">
                 Fresh stories will appear here shortly.

@@ -1,11 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
-import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import type { HugeiconsProps } from '@hugeicons/react-native';
+import { ArrowRight01Icon, type PhosphorIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
-type HugeIconType = HugeiconsProps['icon'];
+type HugeIconType = PhosphorIcon;
 
 interface ActionItem {
   id: string;
@@ -57,7 +56,7 @@ export function ActionSheet({
         )}
         <Text className="font-subtitle text-xl text-text-primary">{title}</Text>
         {subtitle && (
-          <Text className="mt-1 font-caption text-sm leading-5 text-gray-500">{subtitle}</Text>
+          <Text className="mt-1 font-caption text-sm leading-5 text-ash">{subtitle}</Text>
         )}
       </View>
 
@@ -72,20 +71,20 @@ export function ActionSheet({
           return (
             <TouchableOpacity
               key={action.id}
-              className="flex-row items-center justify-between rounded-2xl px-0 py-3.5 active:bg-gray-50"
+              className="flex-row items-center justify-between rounded-2xl px-0 py-3.5 active:bg-stone-surface"
               onPress={() => handleActionPress(action)}
               activeOpacity={0.6}>
               <View className="flex-1 flex-row items-center">
                 <View
                   className="mr-4 h-11 w-11 items-center justify-center rounded-full"
-                  style={{ backgroundColor: action.iconBgColor ?? '#F5F5F5' }}>
+                  style={{ backgroundColor: action.iconBgColor ?? '#f2f0ed' }}>
                   {isElement
                     ? Icon
                     : isHugeIcon(Icon) && (
                         <HugeiconsIcon
                           icon={Icon}
                           size={22}
-                          color={action.iconColor ?? '#1B84FF'}
+                          color={action.iconColor ?? '#0090ff'}
                         />
                       )}
                 </View>
@@ -105,7 +104,7 @@ export function ActionSheet({
                 </View>
               )}
 
-              <HugeiconsIcon icon={ArrowRight01Icon} size={20} color="#9CA3AF" />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={20} color="#848281" />
             </TouchableOpacity>
           );
         })}

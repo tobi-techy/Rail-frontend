@@ -269,20 +269,20 @@ function BankDetailsStep({
         {/* Bank details card */}
         <Animated.View
           entering={FadeInDown.delay(200).duration(400)}
-          className="mt-8 rounded-3xl border border-stone-surface bg-surface p-5">
+          className="mt-8 rounded-3xl bg-stone-surface px-5 py-5">
           <BankDetailRow
             label="Bank"
             value={order.bank}
             onCopy={() => copyToClipboard(order.bank, 'Bank')}
           />
-          <View className="my-3 h-px bg-stone-surface" />
+          <View className="my-4 h-px bg-fog/40" />
           <BankDetailRow
             label="Account Number"
             value={order.accountNumber}
             onCopy={() => copyToClipboard(order.accountNumber, 'Account number')}
             mono
           />
-          <View className="my-3 h-px bg-stone-surface" />
+          <View className="my-4 h-px bg-fog/40" />
           <BankDetailRow
             label="Account Name"
             value={order.accountName}
@@ -323,17 +323,17 @@ function BankDetailRow({
 }) {
   return (
     <View className="flex-row items-center justify-between">
-      <View className="flex-1 mr-3">
-        <Text className="font-body text-[12px] text-text-secondary">{label}</Text>
+      <View className="mr-3 flex-1">
+        <Text className="font-caption text-caption text-text-secondary">{label}</Text>
         <Text
-          className={`mt-0.5 text-[16px] text-text-primary ${mono ? 'font-mono-semibold' : 'font-subtitle'}`}
-          style={mono ? { fontVariant: ['tabular-nums'], letterSpacing: 1 } : undefined}
+          className={`mt-1 text-[16px] text-text-primary ${mono ? 'font-mono-semibold' : 'font-subtitle'}`}
+          style={mono ? { fontVariant: ['tabular-nums'], letterSpacing: 0.5 } : undefined}
           selectable>
           {value}
         </Text>
       </View>
       <Pressable
-        className="size-10 items-center justify-center rounded-full bg-warm-canvas"
+        className="size-10 items-center justify-center rounded-full bg-warm-canvas active:bg-fog/30"
         onPress={onCopy}
         accessibilityRole="button"
         accessibilityLabel={`Copy ${label}`}>
@@ -477,7 +477,7 @@ function WaitingStep({
         <Animated.View
           entering={FadeInDown.delay(250).duration(400)}
           style={cardStyle}
-          className="mt-8 rounded-3xl border border-stone-surface bg-surface px-5 py-6">
+          className="mt-8 rounded-3xl bg-stone-surface px-5 py-6">
           {STEPS.map((step, i) => {
             const s = stepStatuses[i];
             const isLast = i === STEPS.length - 1;
@@ -550,36 +550,42 @@ function TimelineRow({
   const isDone = status === 'done';
   const isActive = status === 'active';
 
-  const iconColor = isFailed ? '#EF4444' : isDone ? '#00c454' : '#c6c6c6';
-  const iconBg = isFailed ? '#FEF2F2' : isDone ? '#ECFDF5' : '#f2f0ed';
-  const titleColor = isFailed ? '#EF4444' : '#343433';
-  const lineColor = isDone ? '#00c454' : isFailed ? '#EF4444' : '#E5E7EB';
+  const iconColor = isFailed ? '#ff2b3a' : isDone ? '#ff3e00' : '#c6c6c6';
+  const titleColor = isFailed ? '#ff2b3a' : '#343433';
+  const lineColor = isDone ? '#c6c6c6' : '#f2f0ed';
 
   return (
     <Animated.View entering={FadeInDown.delay(300 + index * 100).duration(350)} className="flex-row">
       {/* Icon column with connector line */}
-      <View className="mr-4 items-center" style={{ width: 32 }}>
-        <View
-          className="size-8 items-center justify-center rounded-full"
-          style={{ backgroundColor: iconBg }}>
-          {isDone && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} color={iconColor} />}
-          {isFailed && <HugeiconsIcon icon={AlertCircleIcon} size={20} color={iconColor} />}
-          {isActive && <ActivityIndicator size="small" color={BRAND_RED} />}
-          {status === 'pending' && (
-            <View className="size-2.5 rounded-full" style={{ backgroundColor: '#c6c6c6' }} />
-          )}
-        </View>
+      <View className="mr-4 items-center" style={{ width: 24 }}>
+        {isActive ? (
+          <View className="size-6 items-center justify-center">
+            <ActivityIndicator size="small" color={BRAND_RED} />
+          </View>
+        ) : isDone ? (
+          <View className="size-6 items-center justify-center">
+            <HugeiconsIcon icon={CheckmarkCircle01Icon} size={22} color={iconColor} />
+          </View>
+        ) : isFailed ? (
+          <View className="size-6 items-center justify-center">
+            <HugeiconsIcon icon={AlertCircleIcon} size={22} color={iconColor} />
+          </View>
+        ) : (
+          <View className="size-6 items-center justify-center">
+            <View className="size-2 rounded-full bg-fog" />
+          </View>
+        )}
         {!isLast && (
-          <View className="flex-1 my-1" style={{ width: 2, minHeight: 24, backgroundColor: lineColor, borderRadius: 1 }} />
+          <View className="my-1 flex-1" style={{ width: 2, minHeight: 20, backgroundColor: lineColor, borderRadius: 1 }} />
         )}
       </View>
 
       {/* Content */}
       <View className={`flex-1 ${isLast ? '' : 'pb-5'}`}>
-        <Text className="font-subtitle text-[15px]" style={{ color: titleColor }}>
+        <Text className="font-subtitle text-body" style={{ color: titleColor }}>
           {title}
         </Text>
-        <Text className="mt-0.5 font-body text-[13px] leading-[18px] text-text-secondary">
+        <Text className="mt-0.5 font-body text-caption leading-[18px] text-text-secondary">
           {description}
         </Text>
       </View>

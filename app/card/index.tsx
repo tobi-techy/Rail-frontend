@@ -35,36 +35,36 @@ export default function CardScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 items-center justify-center bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
         <ActivityIndicator size="small" color="#000" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 items-center justify-center bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
-        <Text className="mb-4 font-body text-[15px] text-gray-500">Unable to load card</Text>
+        <Text className="mb-4 font-body text-[15px] text-ash">Unable to load card</Text>
         <Pressable onPress={() => refetch()} className="rounded-full bg-black px-5 py-3">
           <Text className="font-subtitle text-white">Retry</Text>
         </Pressable>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (!hasCard) {
     return (
-      <View className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
         <CardIntroScreen onCreateCard={handleCreateCard} loading={createCard.isPending} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-warm-canvas">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <CardMainScreen />
     </View>

@@ -82,12 +82,12 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
       style={style}
       {...props}>
       <View
-        className="w-full rounded-[28px] border border-[#EEF1F8] bg-white px-4 py-5"
+        className="w-full rounded-3xl border border-fog bg-parchment-card px-4 py-5"
         style={{
-          shadowColor: '#1E1A3E',
-          shadowOpacity: 0.06,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 12 },
+          shadowColor: '#000',
+          shadowOpacity: 0.04,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 1 },
           elevation: 3,
         }}>
         <View className="flex-row items-start justify-between">
@@ -114,8 +114,8 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
             )}
           </LinearGradient>
 
-          <View className="rounded-full bg-[#F4F5FA] px-3 py-1">
-            <Text className="font-body-medium text-[12px] text-[#5A5D72]">{basketLabel}</Text>
+          <View className="rounded-full bg-stone-surface px-3 py-1">
+            <Text className="font-body-medium text-[12px] text-ash">{basketLabel}</Text>
           </View>
         </View>
 
@@ -126,11 +126,11 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
             </Text>
             <View className="mt-2 flex-row items-center">
               <View
-                className={`mr-2 h-2 w-2 rounded-full ${isPositive ? 'bg-[#1BC773]' : 'bg-[#FB088F]'}`}
+                className={`mr-2 h-2 w-2 rounded-full ${isPositive ? 'bg-meadow-green' : 'bg-coral-red'}`}
                 accessibilityLabel={isPositive ? 'Positive performance' : 'Negative performance'}
               />
               <Text
-                className={`font-body-medium text-[14px] ${isPositive ? 'text-[#1E1A3E]' : 'text-[#FB088F]'}`}>
+                className={`font-body-medium text-[14px] ${isPositive ? 'text-charcoal-primary' : 'text-coral-red'}`}>
                 {isPositive ? '↑' : '↓'} {performanceLabel}
               </Text>
             </View>
@@ -141,7 +141,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
               {tokenLogos.slice(0, 3).map((src, index) => (
                 <View
                   key={`${id}-token-${index}`}
-                  className="h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-white"
+                  className="h-8 w-8 items-center justify-center rounded-full border-2 border-parchment-card bg-parchment-card"
                   style={{
                     marginLeft: index > 0 ? -10 : 0,
                     zIndex: 3 - index,
@@ -151,7 +151,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
               ))}
               {tokenLogos.length > 3 && (
                 <View
-                  className="h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#949FFF]"
+                  className="h-8 w-8 items-center justify-center rounded-full border-2 border-parchment-card bg-sky-blue"
                   style={{ marginLeft: -10 }}>
                   <Text className="font-body-bold text-[12px] text-white">
                     +{tokenLogos.length - 3}

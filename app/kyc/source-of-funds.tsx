@@ -6,8 +6,8 @@ import { useKycStore } from '@/stores/kycStore';
 import { useStartDiditSession } from '@/api/hooks/useKYC';
 import type { TransformedApiError } from '@/api/types';
 import type { KycDisclosures } from '@/api/types/kyc';
-import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const SOURCE_OF_FUNDS = [
   { value: 'salary', label: 'Salary / Employment' },
@@ -64,13 +64,13 @@ function OptionRow({
     <Pressable
       onPress={onPress}
       className={`mb-2 flex-row items-center justify-between rounded-2xl border px-4 py-3.5 ${
-        selected ? 'border-black bg-black' : 'border-gray-200 bg-white'
+        selected ? 'border-midnight bg-black' : 'border-fog bg-white'
       }`}>
-      <Text className={`font-body text-[15px] ${selected ? 'text-white' : 'text-gray-900'}`}>
+      <Text className={`font-body text-[15px] ${selected ? 'text-white' : 'text-charcoal-primary'}`}>
         {label}
       </Text>
       <View
-        className={`size-5 rounded-full border-2 ${selected ? 'border-white bg-white' : 'border-gray-300'}`}
+        className={`size-5 rounded-full border-2 ${selected ? 'border-white bg-white' : 'border-fog'}`}
       />
     </Pressable>
   );
@@ -165,19 +165,19 @@ export default function SourceOfFundsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
       <View className="flex-row items-center px-4 pb-2 pt-1">
         <Pressable
           onPress={() => router.back()}
           className="size-11 items-center justify-center"
           accessibilityRole="button">
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#111827" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#343433" />
         </Pressable>
       </View>
 
       <View className="px-4 pb-2">
-        <View className="h-1.5 overflow-hidden rounded-full bg-gray-200">
-          <View className="h-full w-full rounded-full bg-gray-900" />
+        <View className="h-1.5 overflow-hidden rounded-full bg-fog">
+          <View className="h-full w-full rounded-full bg-midnight" />
         </View>
       </View>
 
@@ -185,8 +185,8 @@ export default function SourceOfFundsScreen() {
         className="flex-1 px-5"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}>
-        <Text className="mb-1 font-display text-[28px] text-gray-900">About your funds</Text>
-        <Text className="mb-6 font-body text-[15px] leading-6 text-gray-500">
+        <Text className="mb-1 font-display text-[28px] text-charcoal-primary">About your funds</Text>
+        <Text className="mb-6 font-body text-[15px] leading-6 text-ash">
           This helps our financial partner verify your account and comply with regulations.
         </Text>
 
@@ -196,7 +196,7 @@ export default function SourceOfFundsScreen() {
           </Text>
         </View>
 
-        <Text className="mb-3 font-subtitle text-[13px] uppercase tracking-wide text-gray-400">
+        <Text className="mb-3 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
           Source of funds
         </Text>
         {SOURCE_OF_FUNDS.map((o) => (
@@ -208,7 +208,7 @@ export default function SourceOfFundsScreen() {
           />
         ))}
 
-        <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-gray-400">
+        <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
           Expected monthly deposits
         </Text>
         {MONTHLY_PAYMENTS.map((o) => (
@@ -220,7 +220,7 @@ export default function SourceOfFundsScreen() {
           />
         ))}
 
-        <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-gray-400">
+        <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
           Account purpose
         </Text>
         {ACCOUNT_PURPOSE.map((o) => (
@@ -234,7 +234,7 @@ export default function SourceOfFundsScreen() {
 
         {purpose === 'other' && (
           <TextInput
-            className="mb-2 mt-2 rounded-2xl border border-gray-200 px-4 py-3.5 font-body text-[15px] text-gray-900"
+            className="mb-2 mt-2 rounded-2xl border border-fog px-4 py-3.5 font-body text-[15px] text-charcoal-primary"
             placeholder="Please describe"
             placeholderTextColor="#9ca3af"
             value={purposeOther}
@@ -242,7 +242,7 @@ export default function SourceOfFundsScreen() {
           />
         )}
 
-        <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-gray-400">
+        <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
           Most recent occupation
         </Text>
         {OCCUPATIONS.map((o) => (
@@ -254,10 +254,10 @@ export default function SourceOfFundsScreen() {
           />
         ))}
 
-        <View className="mt-6 flex-row items-center justify-between rounded-2xl border border-gray-200 px-4 py-3.5">
+        <View className="mt-6 flex-row items-center justify-between rounded-2xl border border-fog px-4 py-3.5">
           <View className="flex-1 pr-4">
-            <Text className="font-body text-[15px] text-gray-900">Acting as intermediary?</Text>
-            <Text className="mt-0.5 font-body text-[13px] text-gray-400">
+            <Text className="font-body text-[15px] text-charcoal-primary">Acting as intermediary?</Text>
+            <Text className="mt-0.5 font-body text-[13px] text-smoke">
               Are you transacting on behalf of another person or entity?
             </Text>
           </View>
@@ -270,7 +270,7 @@ export default function SourceOfFundsScreen() {
         </View>
 
         {!!submitError && (
-          <View className="mt-3 rounded-2xl bg-red-50 px-4 py-3">
+          <View className="mt-3 rounded-2xl bg-coral-red/10 px-4 py-3">
             <Text className="font-body text-[12px] leading-5 text-red-700">{submitError}</Text>
           </View>
         )}
@@ -280,9 +280,9 @@ export default function SourceOfFundsScreen() {
         <Pressable
           onPress={handleContinue}
           disabled={!canContinue}
-          className={`items-center rounded-full py-4 ${canContinue ? 'bg-primary' : 'bg-gray-200'}`}>
+          className={`items-center rounded-full py-4 ${canContinue ? 'bg-primary' : 'bg-fog'}`}>
           <Text
-            className={`font-subtitle text-[16px] ${canContinue ? 'text-white' : 'text-gray-400'}`}>
+            className={`font-subtitle text-[16px] ${canContinue ? 'text-white' : 'text-smoke'}`}>
             {startSession.isPending ? 'Starting verification…' : 'Continue'}
           </Text>
         </Pressable>

@@ -3,13 +3,11 @@ import { View, Text } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withTiming,
   withRepeat,
   withSequence,
+  withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
 
 interface Props {
   currentStreak: number;
@@ -40,12 +38,12 @@ export function StreakRing({ activeDates }: Props) {
   useEffect(() => {
     todayPulse.value = withRepeat(
       withSequence(
-        withTiming(1.3, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.15, { duration: 800, easing: Easing.inOut(Easing.ease) }),
         withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
     );
-  }, []);
+  }, [todayPulse]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: todayPulse.value }],
@@ -53,29 +51,42 @@ export function StreakRing({ activeDates }: Props) {
 
   return (
     <View>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, paddingHorizontal: 4 }}>
+      <View className="mb-2 flex-row justify-between px-1">
         {days.map((d, i) => (
-          <Text key={i} style={{ fontFamily: 'SFMono-Medium', fontSize: 10, color: '#9CA3AF', width: 28, textAlign: 'center' }}>{d}</Text>
+          <Text
+            key={i}
+            className="w-8 text-center font-mono-medium text-[10px] text-text-tertiary">
+            {d}
+          </Text>
         ))}
       </View>
       {weeks.map((week, wi) => (
-        <View key={wi} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, paddingHorizontal: 4 }}>
+        <View key={wi} className="mb-2 flex-row justify-between px-1">
           {week.map((day, di) => {
             const dot = (
-              <View style={{
-                width: 28, height: 28, borderRadius: 14,
-                backgroundColor: day.active ? '#FF2E01' : 'transparent',
-                borderWidth: day.active ? 0 : 1.5,
-                borderColor: day.active ? 'transparent' : '#E5E7EB',
-                alignItems: 'center', justifyContent: 'center',
-              }}>
-                {day.active && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} color="#FFFFFF" />}
-              </View>
+              <View
+                className={`h-8 w-8 items-center justify-center rounded-full ${
+                  day.active
+                    ? 'bg-primary'
+                    : 'border-2 border-gray-200 bg-transparent'
+                }`}
+              />
             );
             if (day.isToday) {
-              return <Animated.View key={di} style={[{ width: 28, alignItems: 'center' }, pulseStyle]}>{dot}</Animated.View>;
+              return (
+                <Animated.View
+                  key={di}
+                  className="w-8 items-center"
+                  style={pulseStyle}>
+                  {dot}
+                </Animated.View>
+              );
             }
-            return <View key={di} style={{ width: 28, alignItems: 'center' }}>{dot}</View>;
+            return (
+              <View key={di} className="w-8 items-center">
+                {dot}
+              </View>
+            );
           })}
         </View>
       ))}

@@ -13,13 +13,12 @@ import Animated, {
   FadeIn,
   FadeInDown,
 } from 'react-native-reanimated';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
+import { IconComponent as HugeiconsIcon, Cancel01Icon } from '@/lib/icons';
 import { useVoiceSession, VoiceState } from '@/hooks/useVoiceSession';
 import { MiriamCharacter } from '@/components/ai/MiriamCharacter';
 import { useFeedbackPopupStore } from '@/stores/feedbackPopupStore';
 import { useHaptics } from '@/hooks/useHaptics';
-import type { MiriamEmotion } from '@/components/ai/MiriamCharacter';
+import type { MiriamEmotion, MiriamFacing } from '@/components/ai/MiriamCharacter';
 
 const STATE_EMOTIONS: Record<VoiceState, MiriamEmotion> = {
   idle: 'neutral',
@@ -28,6 +27,15 @@ const STATE_EMOTIONS: Record<VoiceState, MiriamEmotion> = {
   thinking: 'thinking',
   speaking: 'happy',
   error: 'sad',
+};
+
+const STATE_FACING: Record<VoiceState, MiriamFacing> = {
+  idle: 'front',
+  connecting: 'right',
+  listening: 'left',
+  thinking: 'right',
+  speaking: 'front',
+  error: 'left',
 };
 
 const STATE_LABELS: Record<VoiceState, string> = {
@@ -83,7 +91,7 @@ function MiriamReactive({ state }: { state: VoiceState }) {
       scale.value = withSpring(1);
       translateY.value = withSpring(0);
     }
-  }, [state]);
+  }, [scale, state, translateY]);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }, { translateY: translateY.value }],
@@ -91,7 +99,12 @@ function MiriamReactive({ state }: { state: VoiceState }) {
 
   return (
     <Animated.View style={animStyle} className="items-center">
-      <MiriamCharacter size={160} emotion={STATE_EMOTIONS[state]} animate />
+      <MiriamCharacter
+        size={160}
+        emotion={STATE_EMOTIONS[state]}
+        facing={STATE_FACING[state]}
+        animate
+      />
     </Animated.View>
   );
 }
@@ -108,7 +121,7 @@ export default function VoiceModeScreen() {
     return () => {
       disconnect();
     };
-  }, []);
+  }, [connect, disconnect]);
 
   useEffect(() => {
     if (error) {
@@ -119,7 +132,7 @@ export default function VoiceModeScreen() {
         action: { label: 'Retry', onPress: () => connect() },
       });
     }
-  }, [error]);
+  }, [connect, error, showPopup]);
 
   const handleClose = () => {
     impact();
@@ -131,7 +144,7 @@ export default function VoiceModeScreen() {
 
   return (
     <View
-      className="flex-1 bg-white"
+      className="flex-1 bg-warm-canvas"
       style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 py-3">
@@ -140,7 +153,7 @@ export default function VoiceModeScreen() {
         <Pressable
           onPress={handleClose}
           hitSlop={12}
-          className="h-10 w-10 items-center justify-center rounded-full bg-[#F5F5F5]"
+          className="h-10 w-10 items-center justify-center rounded-full bg-[#f2f0ed]"
           accessibilityRole="button"
           accessibilityLabel="Close voice mode">
           <HugeiconsIcon icon={Cancel01Icon} size={18} color="#000" />
@@ -180,7 +193,7 @@ export default function VoiceModeScreen() {
       <View className="items-center pb-8">
         <Pressable
           onPress={handleClose}
-          className="rounded-full bg-[#F5F5F5] px-8 py-4"
+          className="rounded-full bg-[#f2f0ed] px-8 py-4"
           accessibilityRole="button"
           accessibilityLabel="End voice session">
           <Text className="font-heading-bold text-[15px] text-text-primary">End</Text>

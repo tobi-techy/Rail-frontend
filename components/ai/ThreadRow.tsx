@@ -1,8 +1,8 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { MoreHorizontalIcon } from '@hugeicons/core-free-icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { MoreHorizontalIcon } from '@/lib/icons';
 import type { AIConversation } from '@/api/types/ai';
 
 function relativeDateLabel(iso: string): string {
@@ -68,7 +68,7 @@ export function ThreadRow({ conv, onPress, onDelete }: Props) {
   }
 
   const renderRightActions = () => (
-    <View className="bg-red-500 justify-center px-6">
+    <View className="bg-coral-red/100 justify-center px-6">
       <Text className="font-body-medium text-white text-[15px]">Delete</Text>
     </View>
   );
@@ -91,7 +91,7 @@ export function ThreadRow({ conv, onPress, onDelete }: Props) {
         {/* Title row with three-dot menu */}
         <View className="flex-row items-start justify-between">
           <Text
-            className="font-heading-semibold text-[17px] text-[#1A1A1A] flex-1 mr-3 leading-[24px]"
+            className="font-heading-semibold text-[17px] text-[#343433] flex-1 mr-3 leading-[24px]"
             numberOfLines={3}>
             {title}
           </Text>

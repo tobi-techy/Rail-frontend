@@ -10,8 +10,8 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { UsdcIcon } from '@/assets/svg';
 import { ChainLogo } from '@/components/ChainLogo';
 import type { WalletChain } from '@/api/types';
-import { CheckmarkCircle01Icon, Copy01Icon, RefreshIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { CheckmarkCircle01Icon, Copy01Icon, RefreshIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 interface CryptoReceiveSheetProps {
   visible: boolean;
@@ -69,7 +69,7 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
           style={{ backgroundColor: chainConfig.color + '18' }}>
           <ChainLogo chain={chain} size={28} />
         </View>
-        <View className="absolute -bottom-1 -right-1 size-5 items-center justify-center rounded-full bg-white shadow-sm">
+        <View className="absolute -bottom-1 -right-1 size-5 items-center justify-center rounded-full bg-parchment-card shadow-sm">
           <TokenBadge width={14} height={14} />
         </View>
       </View>
@@ -116,10 +116,10 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
                 selection();
                 refetch();
               }}
-              className="flex-row items-center gap-2 rounded-full bg-gray-100 px-5 py-2.5"
+              className="flex-row items-center gap-2 rounded-full bg-stone-surface px-5 py-2.5"
               hitSlop={8}>
-              <HugeiconsIcon icon={RefreshIcon} size={16} color="#374151" />
-              <Text className="font-subtitle text-sm text-gray-700">Retry</Text>
+              <HugeiconsIcon icon={RefreshIcon} size={16} color="#474645" />
+              <Text className="font-subtitle text-sm text-graphite">Retry</Text>
             </Pressable>
           )}
         </View>

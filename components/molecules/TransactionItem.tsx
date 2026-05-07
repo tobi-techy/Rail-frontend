@@ -7,8 +7,8 @@ import { MaskedBalance } from './MaskedBalance';
 import { resolveTransactionAssetIcon } from '@/utils/transactionIcon';
 import { formatTransactionAmount } from '@/utils/transactionFormat';
 import type { SvgComponent } from '@/utils/transactionIcon';
-import { ArrowDownLeft01Icon, ArrowUpRight01Icon, CreditCardIcon, DollarCircleIcon, Mail01Icon, MinusSignIcon, PlusSignIcon, RepeatIcon, Tag01Icon, Wallet01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowDownLeft01Icon, ArrowUpRight01Icon, CreditCardIcon, DollarCircleIcon, Mail01Icon, MinusSignIcon, PlusSignIcon, RepeatIcon, Tag01Icon, Wallet01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export type TransactionType = 'send' | 'receive' | 'swap' | 'deposit' | 'withdraw';
 export type TransactionStatus = 'completed' | 'pending' | 'failed';
@@ -67,9 +67,9 @@ const TokenIcon = ({
       width: ICON_SIZE,
       height: ICON_SIZE,
       borderRadius: ICON_SIZE / 2,
-      backgroundColor: bgColor || '#1B84FF',
+      backgroundColor: bgColor || '#0090ff',
       borderWidth: withBorder ? 1 : 0,
-      borderColor: '#E6E8EC',
+      borderColor: '#f2f0ed',
       overflow: 'hidden',
       alignItems: 'center',
       justifyContent: 'center',
@@ -92,7 +92,7 @@ const ACTION_ICON_MAP: Record<string, any> = {
 
 const ActionIcon = ({ name }: { name: string }) => (
   <View className="h-12 w-12 items-center justify-center rounded-full border border-surface bg-background-main">
-    <HugeiconsIcon icon={ACTION_ICON_MAP[name] ?? ArrowUpRight01Icon} size={22} color="#757575" />
+    <HugeiconsIcon icon={ACTION_ICON_MAP[name] ?? ArrowUpRight01Icon} size={22} color="#848281" />
   </View>
 );
 
@@ -115,7 +115,7 @@ const SwapIcon = ({
     </View>
     <View
       className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full border-2 border-background-main"
-      style={{ backgroundColor: toBg || '#1B84FF' }}>
+      style={{ backgroundColor: toBg || '#0090ff' }}>
       {SwapTo && <SwapTo width={18} height={18} />}
     </View>
   </View>
@@ -130,17 +130,17 @@ const DEFAULT_ICONS: Record<TransactionType, string> = {
 };
 
 const WITHDRAWAL_BADGE: Record<string, { icon: any; bg: string }> = {
-  fiat: { icon: CreditCardIcon, bg: '#3B82F6' },
-  card: { icon: CreditCardIcon, bg: '#3B82F6' },
-  crypto: { icon: Wallet01Icon, bg: '#8B5CF6' },
-  p2p: { icon: Mail01Icon, bg: '#10B981' },
+  fiat: { icon: CreditCardIcon, bg: '#0090ff' },
+  card: { icon: CreditCardIcon, bg: '#0090ff' },
+  crypto: { icon: Wallet01Icon, bg: '#9f4fff' },
+  p2p: { icon: Mail01Icon, bg: '#00ca48' },
 };
 
 const WithdrawalBadge = ({ method }: { method: string }) => {
-  const badge = WITHDRAWAL_BADGE[method] ?? { icon: Tag01Icon, bg: '#6B7280' };
+  const badge = WITHDRAWAL_BADGE[method] ?? { icon: Tag01Icon, bg: '#848281' };
   return (
     <View
-      className="absolute -bottom-0.5 -right-0.5 h-5 w-5 items-center justify-center rounded-full border-2 border-white"
+      className="absolute -bottom-0.5 -right-0.5 h-5 w-5 items-center justify-center rounded-full border-2 border-warm-canvas"
       style={{ backgroundColor: badge.bg }}>
       <HugeiconsIcon icon={badge.icon} size={10} color="#fff" strokeWidth={2.5} />
     </View>
@@ -174,7 +174,7 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
       />
     ) : (
       <View className="h-12 w-12 items-center justify-center rounded-full bg-surface">
-        <HugeiconsIcon icon={ACTION_ICON_MAP[DEFAULT_ICONS[type]] ?? ArrowUpRight01Icon} size={24} color="#121212" />
+        <HugeiconsIcon icon={ACTION_ICON_MAP[DEFAULT_ICONS[type]] ?? ArrowUpRight01Icon} size={24} color="#343433" />
       </View>
     );
   }

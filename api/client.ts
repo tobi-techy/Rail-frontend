@@ -12,6 +12,7 @@ import { generateRequestId } from '../utils/requestId';
 import { useAuthStore } from '../stores/authStore';
 import { sslPinningAdapter, SSL_PINNING_ACTIVE } from './sslPinningAdapter';
 import { getDeviceFingerprint } from '../utils/deviceFingerprint';
+import { isAuthSessionInvalidError, summarizeAuthError } from '../utils/authErrorClassifier';
 
 /**
  * SSL Certificate Pinning Configuration
@@ -89,11 +90,7 @@ function isAuthEndpoint(url?: string): boolean {
 
   // SECURITY FIX (R3-L3): Use exact match only — endsWith could match
   // unintended paths like /v1/admin/auth/login, skipping CSRF protection.
-  return AUTH_ENDPOINTS.some(
-    (endpoint) =>
-      path === endpoint ||
-      rawPath === endpoint
-  );
+  return AUTH_ENDPOINTS.some((endpoint) => path === endpoint || rawPath === endpoint);
 }
 
 function isPasscodeProtectedEndpoint(method?: string, url?: string): boolean {
@@ -104,6 +101,9 @@ function isPasscodeProtectedEndpoint(method?: string, url?: string): boolean {
   const normalizedMethod = method.toUpperCase();
   if (normalizedMethod === 'POST' && /^\/v1\/withdrawals(?:\/(?:crypto|fiat))?$/.test(path))
     return true;
+  if (normalizedMethod === 'POST' && path === '/v1/withdrawals/emergency/to-spending')
+    return true;
+  if (normalizedMethod === 'POST' && path === '/v1/funding/stash') return true;
   if (normalizedMethod === 'POST' && path === '/v1/funding/paj/offramp') return true;
   if (normalizedMethod === 'POST' && path === '/v1/security/ip-whitelist') return true;
   if (normalizedMethod === 'POST' && path === '/v1/security/withdrawals/confirm') return true;
@@ -154,7 +154,7 @@ function getOrCreateRefreshPromise(): Promise<void> {
         logger.error('[API Client] Token refresh failed', {
           component: 'ApiClient',
           action: 'refresh-failure',
-          error: err instanceof Error ? err.message : String(err),
+          error: summarizeAuthError(err),
         });
         throw err;
       })
@@ -331,8 +331,16 @@ axiosInstance.interceptors.response.use(
     if (statusCode === 401 && !originalRequest._retry && !isAuthEndpoint(originalRequest.url)) {
       originalRequest._retry = true;
 
-      const { isAuthenticated, refreshToken, clearSession, clearPasscodeSession } =
+      const { isAuthenticated, refreshToken, accessToken, clearSession, clearPasscodeSession } =
         useAuthStore.getState();
+
+      // If the access token in the store is different from the one that got 401,
+      // another auth flow (passkey/passcode) already replaced it — just retry with the new token.
+      const failedToken = originalRequest.headers?.Authorization?.toString().replace('Bearer ', '');
+      if (failedToken && accessToken && failedToken !== accessToken) {
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return axiosInstance.request(originalRequest);
+      }
 
       // SECURITY: If this is a passcode-protected endpoint returning 401,
       // the passcode session is invalid and should be cleared
@@ -378,26 +386,25 @@ axiosInstance.interceptors.response.use(
           logger.error('[API Client] Token refresh error', {
             component: 'ApiClient',
             action: 'refresh-error',
-            error: refreshError instanceof Error ? refreshError.message : String(refreshError),
+            error: summarizeAuthError(refreshError),
           });
 
-          // Only clear session if refresh token is invalid (401 from refresh endpoint)
-          // Network errors should NOT clear session - user may still have valid tokens
-          const isRefreshEndpoint = isAuthEndpoint(originalRequest.url);
-          const isInvalidTokenError = error.response?.status === 401 && isRefreshEndpoint;
+          // Clear only when the refresh response itself proves the auth session is invalid.
+          // Network/server failures keep the local session so the app can retry later.
+          const isInvalidRefreshSession = isAuthSessionInvalidError(refreshError);
 
-          if (isInvalidTokenError) {
+          if (isInvalidRefreshSession) {
             logger.debug('[API Client] Clearing session due to invalid refresh token', {
               component: 'ApiClient',
               action: 'clear-session-invalid-token',
+              error: summarizeAuthError(refreshError),
             });
             clearSession();
           } else {
-            logger.debug('[API Client] Not clearing session - network error or non-refresh 401', {
+            logger.debug('[API Client] Not clearing session - refresh failure is transient', {
               component: 'ApiClient',
               action: 'skip-clear-session',
-              isRefreshEndpoint,
-              status: error.response?.status,
+              error: summarizeAuthError(refreshError),
             });
           }
 

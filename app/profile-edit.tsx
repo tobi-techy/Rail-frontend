@@ -10,8 +10,8 @@ import { useKycStore } from '@/stores/kycStore';
 import { useUpdateProfile } from '@/api/hooks/useUser';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { profileEditSchema, fieldError } from '@/utils/schemas';
-import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const COUNTRY_NAMES: Record<string, string> = {
   US: 'United States',
@@ -335,7 +335,7 @@ export default function ProfileEdit() {
             <Text className="mb-1.5 font-caption text-caption text-text-secondary">
               Email {isEmailLocked && '(locked)'}
             </Text>
-            <View className="rounded-xl border border-surface bg-surface px-4 py-4">
+            <View className="rounded-lg border border-surface bg-surface px-4 py-4">
               <Text className="font-body text-body text-text-secondary">{user?.email}</Text>
             </View>
           </View>

@@ -1,12 +1,21 @@
 import React from 'react';
 import {
-  SolanaIcon, EthereumIcon, BaseIcon, ArbitrumIcon, OptimismIcon,
-  MaticIcon, AvalancheIcon, BnbIcon, StarknetIcon, LiskIcon,
+  SolanaIcon,
+  EthereumIcon,
+  BaseIcon,
+  ArbitrumIcon,
+  OptimismIcon,
+  MaticIcon,
+  AvalancheIcon,
+  BnbIcon,
+  StarknetIcon,
+  LiskIcon,
 } from '@/assets/svg';
 import { getChainConfig } from '@/utils/chains';
 import { Text } from 'react-native';
+import type { SvgProps } from 'react-native-svg';
 
-const CHAIN_SVG: Record<string, React.ComponentType<{ width: number; height: number }>> = {
+const CHAIN_SVG: Record<string, React.ComponentType<SvgProps>> = {
   SOL: SolanaIcon,
   ETH: EthereumIcon,
   BASE: BaseIcon,
@@ -26,7 +35,13 @@ export function ChainLogo({ chain, size = 28 }: { chain: string; size?: number }
   // Fallback: short text label in chain color
   const config = getChainConfig(chain as any);
   return (
-    <Text style={{ fontSize: size * 0.36, fontWeight: '700', color: config.color, letterSpacing: -0.5 }}>
+    <Text
+      style={{
+        fontSize: size * 0.36,
+        fontWeight: '700',
+        color: config.color,
+        letterSpacing: -0.5,
+      }}>
       {config.shortLabel.slice(0, 4)}
     </Text>
   );

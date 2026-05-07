@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  Alert,
-  ActivityIndicator,
-  Image,
-  ImageBackground,
-} from 'react-native';
+import { View, Text, Pressable, Alert, ActivityIndicator, ImageBackground } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -16,8 +8,12 @@ import Animated, {
   withSpring,
   FadeInDown,
 } from 'react-native-reanimated';
-import { Cancel01Icon, CheckmarkCircle01Icon, LockIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import {
+  Cancel01Icon,
+  CheckmarkCircle01Icon,
+  IconComponent as HugeiconsIcon,
+  LockIcon,
+} from '@/lib/icons';
 import {
   useSubscription,
   useSubscribeMutation,
@@ -118,8 +114,8 @@ export default function SubscriptionScreen() {
               </Pressable>
             </View>
             <Animated.View entering={FadeInDown.duration(350)}>
-              <View className="mt-1 self-start rounded-sm bg-[#00C853] px-2.5 py-1">
-                <Text className="font-mono-bold text-[10px] text-black">PRO</Text>
+              <View className="mt-1 self-start rounded-sm bg-[#00c454] px-2.5 py-1">
+                <Text className="font-mono-bold text-[10px] text-charcoal-primary">PRO</Text>
               </View>
               <Text className="mt-3 font-heading text-[30px] leading-[1.05] text-white">
                 Unlock your{'\n'}full potential.
@@ -131,11 +127,11 @@ export default function SubscriptionScreen() {
           <Animated.View entering={FadeInDown.delay(80).duration(400)}>
             <View className="mb-2 flex-row items-center">
               <View className="flex-1" />
-              <Text className="w-14 text-center font-mono text-[9px] tracking-[1.5px] text-gray-600">
+              <Text className="w-14 text-center font-mono text-[9px] tracking-[1.5px] text-ash">
                 FREE
               </Text>
-              <View className="w-14 items-center rounded-sm bg-[#00C853] py-0.5">
-                <Text className="font-mono-bold text-[9px] text-black">PRO</Text>
+              <View className="w-14 items-center rounded-sm bg-[#00c454] py-0.5">
+                <Text className="font-mono-bold text-[9px] text-charcoal-primary">PRO</Text>
               </View>
             </View>
             {ROWS.map(([feature, free, pro], i) => (
@@ -143,13 +139,13 @@ export default function SubscriptionScreen() {
                 <Text className="flex-1 font-body text-[12px] text-gray-300">{feature}</Text>
                 <View className="w-14 items-center">
                   {free ? (
-                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={15} color="#00C853" />
+                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={15} color="#00c454" />
                   ) : (
                     <HugeiconsIcon icon={LockIcon} size={11} color="#4B5563" />
                   )}
                 </View>
                 <View className="w-14 items-center">
-                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={15} color="#00C853" />
+                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={15} color="#00c454" />
                 </View>
               </View>
             ))}
@@ -159,8 +155,8 @@ export default function SubscriptionScreen() {
           <Animated.View entering={FadeInDown.delay(180).duration(400)} className="pb-2">
             {isPro && sub ? (
               <>
-                <View className="mb-4 self-center rounded-full bg-[#00C853]/15 px-4 py-1.5">
-                  <Text className="font-mono-medium text-small text-[#00C853]">
+                <View className="mb-4 self-center rounded-full bg-[#00c454]/15 px-4 py-1.5">
+                  <Text className="font-mono-medium text-small text-[#00c454]">
                     {sub.status === 'cancelled' ? 'Active until period end' : "You're Pro"}
                   </Text>
                 </View>
@@ -172,9 +168,7 @@ export default function SubscriptionScreen() {
                     {cancelMutation.isPending ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
-                      <Text className="font-button text-body text-gray-400">
-                        Cancel subscription
-                      </Text>
+                      <Text className="font-button text-body text-smoke">Cancel subscription</Text>
                     )}
                   </Pressable>
                 )}
@@ -190,7 +184,7 @@ export default function SubscriptionScreen() {
                     }}
                     className={`rounded-full px-5 py-2.5 ${billing === 'monthly' ? 'bg-white' : 'bg-white/[0.06]'}`}>
                     <Text
-                      className={`font-button text-small ${billing === 'monthly' ? 'text-black' : 'text-gray-400'}`}>
+                      className={`font-button text-small ${billing === 'monthly' ? 'text-black' : 'text-smoke'}`}>
                       Monthly
                     </Text>
                   </Pressable>
@@ -201,12 +195,14 @@ export default function SubscriptionScreen() {
                     }}
                     className={`flex-row items-center gap-2 rounded-full px-5 py-2.5 ${billing === 'yearly' ? 'bg-white' : 'bg-white/[0.06]'}`}>
                     <Text
-                      className={`font-button text-small ${billing === 'yearly' ? 'text-black' : 'text-gray-400'}`}>
+                      className={`font-button text-small ${billing === 'yearly' ? 'text-black' : 'text-smoke'}`}>
                       Yearly
                     </Text>
                     {billing === 'yearly' && (
-                      <View className="rounded-full bg-[#00C853] px-2 py-0.5">
-                        <Text className="font-mono-bold text-[9px] text-black">-17%</Text>
+                      <View className="rounded-full bg-[#00c454] px-2 py-0.5">
+                        <Text className="font-mono-bold text-[9px] text-charcoal-primary">
+                          -17%
+                        </Text>
                       </View>
                     )}
                   </Pressable>
@@ -220,29 +216,29 @@ export default function SubscriptionScreen() {
                         <Text className="font-mono-bold text-[40px] leading-none text-white">
                           $4
                         </Text>
-                        <Text className="mb-1 font-mono-semibold text-headline-3 text-gray-500">
+                        <Text className="mb-1 font-mono-semibold text-headline-3 text-ash">
                           .99
                         </Text>
-                        <Text className="mb-1.5 ml-1 font-body text-small text-gray-600">/mo</Text>
+                        <Text className="mb-1.5 ml-1 font-body text-small text-ash">/mo</Text>
                       </>
                     ) : (
                       <>
                         <Text className="font-mono-bold text-[40px] leading-none text-white">
                           $49
                         </Text>
-                        <Text className="mb-1 font-mono-semibold text-headline-3 text-gray-500">
+                        <Text className="mb-1 font-mono-semibold text-headline-3 text-ash">
                           .99
                         </Text>
-                        <Text className="mb-1.5 ml-1 font-body text-small text-gray-600">/yr</Text>
+                        <Text className="mb-1.5 ml-1 font-body text-small text-ash">/yr</Text>
                       </>
                     )}
                   </View>
                   {billing === 'yearly' ? (
-                    <Text className="mt-1 font-mono text-[11px] text-gray-500">
-                      $4.17/mo · <Text className="text-[#00C853]">Save $9.89</Text>
+                    <Text className="mt-1 font-mono text-[11px] text-ash">
+                      $4.17/mo · <Text className="text-[#00c454]">Save $9.89</Text>
                     </Text>
                   ) : (
-                    <Text className="mt-1 font-mono text-[11px] text-gray-500">
+                    <Text className="mt-1 font-mono text-[11px] text-ash">
                       $59.88/yr at monthly price
                     </Text>
                   )}
@@ -251,7 +247,7 @@ export default function SubscriptionScreen() {
                 {/* CTA */}
                 <AnimatedPressable
                   style={btnStyle}
-                  className="mt-3 items-center rounded-full bg-white py-4"
+                  className="mt-3 items-center rounded-full bg-parchment-card py-4"
                   onPress={handleSubscribe}
                   onPressIn={() => {
                     btnScale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
@@ -263,10 +259,12 @@ export default function SubscriptionScreen() {
                   {subscribeMutation.isPending ? (
                     <ActivityIndicator color="#000" />
                   ) : (
-                    <Text className="font-button text-button-lg text-black">Subscribe to Pro</Text>
+                    <Text className="font-button text-button-lg text-charcoal-primary">
+                      Subscribe to Pro
+                    </Text>
                   )}
                 </AnimatedPressable>
-                <Text className="mt-2.5 text-center font-body text-[10px] text-gray-600">
+                <Text className="mt-2.5 text-center font-body text-[10px] text-ash">
                   From your spend balance · Cancel anytime
                 </Text>
               </>

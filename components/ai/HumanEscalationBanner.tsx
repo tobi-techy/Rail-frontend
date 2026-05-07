@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, Pressable, Linking } from 'react-native';
 import Animated, { FadeInUp, FadeOut } from 'react-native-reanimated';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import {
   CustomerServiceIcon,
   Cancel01Icon,
   ArrowRight01Icon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 
 interface Props {
   reason: string;
@@ -19,7 +19,7 @@ export function HumanEscalationBanner({ reason, onEscalate, onDismiss }: Props) 
     <Animated.View
       entering={FadeInUp.duration(300)}
       exiting={FadeOut.duration(200)}
-      className="bg-blue-50 rounded-xl border border-blue-100 p-3.5 mt-3">
+      className="bg-blue-50 rounded-lg border border-blue-100 p-3.5 mt-3">
       <View className="flex-row items-start gap-2.5">
         <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center shrink-0">
           <HugeiconsIcon icon={CustomerServiceIcon} size={16} color="#2196F3" />
@@ -28,7 +28,7 @@ export function HumanEscalationBanner({ reason, onEscalate, onDismiss }: Props) 
           <Text className="font-body-medium text-sm text-blue-800">
             This action may need human review
           </Text>
-          <Text className="font-body text-xs text-blue-600 mt-0.5">{reason}</Text>
+          <Text className="font-body text-xs text-sky-blue mt-0.5">{reason}</Text>
           <View className="flex-row gap-3 mt-2.5">
             <Pressable
               onPress={() => {
@@ -39,7 +39,7 @@ export function HumanEscalationBanner({ reason, onEscalate, onDismiss }: Props) 
               accessibilityRole="button"
               accessibilityLabel="Escalate to support">
               <Text className="font-body-medium text-xs text-primary">Get help</Text>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={12} color="#FF2E01" />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={12} color="#ff3e00" />
             </Pressable>
             <Pressable
               onPress={onDismiss}

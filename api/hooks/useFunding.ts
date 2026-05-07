@@ -106,3 +106,44 @@ export function useInitiateFiatWithdrawal() {
     },
   });
 }
+
+// Early withdrawal: preview fee
+export function useEmergencyPreview(amount: string, enabled = false) {
+  return useQuery({
+    queryKey: ['emergency-preview', amount],
+    queryFn: () => fundingService.getEmergencyPreview(amount),
+    enabled: enabled && parseFloat(amount) > 0,
+    staleTime: 10_000,
+  });
+}
+
+// Early withdrawal: stash → spending
+export function useEmergencyStashToSpending() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (amount: string) => fundingService.emergencyStashToSpending(amount),
+    onSuccess: () => refreshPostWithdrawalQueries(queryClient),
+  });
+}
+
+// Fund stash: spending → stash
+export function useFundStash() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (amount: string) => fundingService.fundStash(amount),
+    onSuccess: async (_data, amount) => {
+      const num = Number(amount || 0);
+      if (Number.isFinite(num) && num > 0) {
+        queryClient.setQueryData(queryKeys.station.home(), (prev: StationResponse | undefined) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            spend_balance: toMoneyString(toNumber(prev.spend_balance) - num),
+            invest_balance: toMoneyString(toNumber(prev.invest_balance) + num),
+          };
+        });
+      }
+      await refreshPostWithdrawalQueries(queryClient);
+    },
+  });
+}

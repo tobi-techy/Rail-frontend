@@ -13,15 +13,15 @@ interface InvestmentDisclaimerSheetProps {
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View className="mb-6">
-    <Text className="mb-2 font-button text-[15px] text-black">{title}</Text>
-    <Text className="font-body text-[14px] leading-[22px] text-black/70">{children}</Text>
+    <Text className="mb-2 font-button text-[15px] text-charcoal-primary">{title}</Text>
+    <Text className="font-body text-[14px] leading-[22px] text-graphite">{children}</Text>
   </View>
 );
 
 const BulletPoint = ({ children }: { children: React.ReactNode }) => (
   <View className="mb-2 flex-row">
-    <Text className="mr-3 font-body text-[14px] text-black/40">•</Text>
-    <Text className="flex-1 font-body text-[14px] leading-[22px] text-black/70">{children}</Text>
+    <Text className="mr-3 font-body text-[14px] text-smoke">•</Text>
+    <Text className="flex-1 font-body text-[14px] leading-[22px] text-graphite">{children}</Text>
   </View>
 );
 
@@ -56,8 +56,8 @@ export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDiscl
       <View className="max-h-[80vh]">
         {/* Header */}
         <View className="mb-6">
-          <Text className="text-center font-subtitle text-[24px] text-black">How Rail Works</Text>
-          <Text className="mt-2 text-center font-body text-[14px] leading-[20px] text-black/50">
+          <Text className="text-center font-subtitle text-[24px] text-charcoal-primary">How Rail Works</Text>
+          <Text className="mt-2 text-center font-body text-[14px] leading-[20px] text-ash">
             Understanding your automated wealth system
           </Text>
         </View>
@@ -92,7 +92,7 @@ export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDiscl
           </Section>
 
           <View className="mb-6">
-            <Text className="mb-3 font-button text-[15px] text-black">Understanding Risk</Text>
+            <Text className="mb-3 font-button text-[15px] text-charcoal-primary">Understanding Risk</Text>
             <BulletPoint>
               The value of your investments can go up or down — this is completely normal and part
               of how markets work
@@ -133,7 +133,7 @@ export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDiscl
           </Section>
 
           <View className="mb-4 rounded-2xl bg-black/[0.03] p-4">
-            <Text className="font-body text-[13px] leading-[20px] text-black/60">
+            <Text className="font-body text-[13px] leading-[20px] text-ash">
               By tapping &quot;I Understand&quot; below, you acknowledge that: (1) investing
               involves risk and you may lose money, (2) Rail does not provide financial advice, (3)
               past performance does not guarantee future results, and (4) you are responsible for

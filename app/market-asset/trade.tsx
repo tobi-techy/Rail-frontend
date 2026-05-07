@@ -7,8 +7,8 @@ import { Keypad } from '@/components/molecules/Keypad';
 import { Button } from '@/components/ui';
 import { getEffectivePrice } from '@/utils/market';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
-import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 type OrderSide = 'buy' | 'sell';
 type KeypadInput =

@@ -10,8 +10,8 @@ import type { MarketExploreQueryParams, MarketInstrumentType } from '@/api/types
 import { useUIStore } from '@/stores';
 import { sanitizeAssets } from '@/utils/market';
 import { MarketAssetRow } from '@/components/market/MarketAssetRow';
-import { ArrowLeft01Icon, Cancel01Icon, FilterIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowLeft01Icon, Cancel01Icon, FilterIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 type TypeFilter = 'all' | MarketInstrumentType;
 type SortFilter = 'symbol' | 'top_movers' | 'top_traded';

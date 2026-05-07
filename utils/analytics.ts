@@ -11,44 +11,44 @@ import { logger } from '@/lib/logger';
  * Hook to access PostHog analytics
  */
 export function useAnalytics() {
-   const posthog = usePostHog();
-   const user = useAuthStore((s) => s.user);
+  const posthog = usePostHog();
+  const user = useAuthStore((s) => s.user);
 
-   if (!posthog && __DEV__) {
-     logger.warn('[Analytics] PostHog instance not available', {
-       component: 'Analytics',
-       action: 'posthog-not-initialized',
-     });
-   }
+  if (!posthog && __DEV__) {
+    logger.warn('[Analytics] PostHog instance not available', {
+      component: 'Analytics',
+      action: 'posthog-not-initialized',
+    });
+  }
 
-   return {
-     /**
-      * Track a custom event
-      */
-     track: (eventName: string, properties?: Record<string, any>) => {
-       try {
-         if (!posthog) {
-           logger.error('[Analytics] PostHog not initialized, cannot track event', {
-             component: 'Analytics',
-             action: 'posthog-null',
-             eventName,
-           });
-           return;
-         }
+  return {
+    /**
+     * Track a custom event
+     */
+    track: (eventName: string, properties?: Record<string, any>) => {
+      try {
+        if (!posthog) {
+          logger.error('[Analytics] PostHog not initialized, cannot track event', {
+            component: 'Analytics',
+            action: 'posthog-null',
+            eventName,
+          });
+          return;
+        }
 
-         posthog.capture(eventName, properties);
-         if (__DEV__) {
-           logger.debug(`[Analytics] Event tracked: ${eventName}`, properties);
-         }
-       } catch (error) {
-         logger.error('[Analytics] Failed to track event', {
-           component: 'Analytics',
-           action: 'track-event-failed',
-           eventName,
-           error: error instanceof Error ? error.message : String(error),
-         });
-       }
-     },
+        posthog.capture(eventName, properties);
+        if (__DEV__) {
+          logger.debug(`[Analytics] Event tracked: ${eventName}`, properties);
+        }
+      } catch (error) {
+        logger.error('[Analytics] Failed to track event', {
+          component: 'Analytics',
+          action: 'track-event-failed',
+          eventName,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
 
     /**
      * Track screen view
@@ -190,6 +190,9 @@ export const ANALYTICS_EVENTS = {
   HELP_REQUESTED: 'help_requested',
   SETTINGS_OPENED: 'settings_opened',
   TRANSACTION_HISTORY_VIEWED: 'transaction_history_viewed',
+  FINANCIAL_AUDIT_REQUESTED: 'financial_audit_requested',
+  FINANCIAL_AUDIT_RENDERED: 'financial_audit_rendered',
+  FINANCIAL_AUDIT_ACTION_TAPPED: 'financial_audit_action_tapped',
 } as const;
 
 // ── Property Names (Constants) ──────────────────────────

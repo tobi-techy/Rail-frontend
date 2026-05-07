@@ -19,8 +19,8 @@ import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { SOLANA_MAINNET_CHAIN } from '@/utils/chains';
 import { parseSolanaPayUrl, type SolanaPayRequest } from '@/utils/solanaPayUrl';
 import { DEFAULT_MAINNET_USDC_MINT, type SupportedFundingWallet } from '@/services/solanaFunding';
-import { AlertCircleIcon, Cancel01Icon, ScanIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { AlertCircleIcon, Cancel01Icon, ScanIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 interface SolanaPayScanSheetProps {
   visible: boolean;
@@ -157,7 +157,7 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
               <Text className="mt-4 text-center font-subtitle text-xl text-white">
                 {permissionDenied ? 'Camera access denied' : 'Camera permission needed'}
               </Text>
-              <Text className="mt-2 text-center font-body text-sm text-gray-300">
+              <Text className="mt-2 text-center font-body text-sm text-smoke">
                 {permissionDenied
                   ? 'Enable camera access in Settings to scan Solana Pay QR codes.'
                   : 'Allow camera access to scan Solana Pay QR codes.'}
@@ -166,16 +166,16 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
                 {permissionDenied ? (
                   <Pressable
                     onPress={() => Linking.openSettings()}
-                    className="rounded-xl bg-white py-3">
-                    <Text className="text-center font-subtitle text-base text-black">
+                    className="rounded-lg bg-parchment-card py-3">
+                    <Text className="text-center font-subtitle text-base text-charcoal-primary">
                       Open Settings
                     </Text>
                   </Pressable>
                 ) : (
                   <Pressable
                     onPress={() => void requestPermission()}
-                    className="rounded-xl bg-white py-3">
-                    <Text className="text-center font-subtitle text-base text-black">
+                    className="rounded-lg bg-parchment-card py-3">
+                    <Text className="text-center font-subtitle text-base text-charcoal-primary">
                       Allow camera
                     </Text>
                   </Pressable>
@@ -220,7 +220,7 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
       </View>
 
       {/* Amount */}
-      <View className="mb-4 items-center rounded-2xl bg-gray-50 py-6">
+      <View className="mb-4 items-center rounded-2xl bg-stone-surface py-6">
         {request?.amount ? (
           <>
             <Text className="font-headline text-[40px] leading-none text-text-primary">
@@ -237,7 +237,7 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
       </View>
 
       {/* Recipient */}
-      <View className="mb-6 flex-row items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
+      <View className="mb-6 flex-row items-center justify-between rounded-lg bg-stone-surface px-4 py-3">
         <Text className="font-body text-sm text-text-secondary">To</Text>
         <Text className="font-mono text-sm text-text-primary">
           {request?.label ? `${request.label} · ` : ''}
@@ -246,15 +246,15 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
       </View>
 
       {!!error && (
-        <View className="mb-4 flex-row items-start gap-2 rounded-xl bg-red-50 px-4 py-3">
+        <View className="mb-4 flex-row items-start gap-2 rounded-lg bg-coral-red/10 px-4 py-3">
           <HugeiconsIcon
             icon={AlertCircleIcon}
             size={16}
-            color="#EF4444"
+            color="#ff2b3a"
             style={{ marginTop: 1 }}
           />
           <View className="flex-1">
-            <Text className="font-body text-sm text-red-600">{error}</Text>
+            <Text className="font-body text-sm text-coral-red">{error}</Text>
             {walletMissing && (
               <Pressable
                 onPress={() => {
@@ -282,14 +282,14 @@ export function SolanaPayScanSheet({ visible, onClose, onConfirmed }: SolanaPayS
           <Pressable
             onPress={() => void handleSend('phantom')}
             disabled={!request?.amount || !isUsdc}
-            className="flex-row items-center gap-3 rounded-2xl border border-gray-200 px-4 py-4 active:opacity-70">
+            className="flex-row items-center gap-3 rounded-2xl border border-fog px-4 py-4 active:opacity-70">
             <PhantomIcon width={32} height={32} />
             <Text className="font-subtitle text-base text-text-primary">Phantom</Text>
           </Pressable>
           <Pressable
             onPress={() => void handleSend('solflare')}
             disabled={!request?.amount || !isUsdc}
-            className="flex-row items-center gap-3 rounded-2xl border border-gray-200 px-4 py-4 active:opacity-70">
+            className="flex-row items-center gap-3 rounded-2xl border border-fog px-4 py-4 active:opacity-70">
             <SolflareIcon width={32} height={32} />
             <Text className="font-subtitle text-base text-text-primary">Solflare</Text>
           </Pressable>

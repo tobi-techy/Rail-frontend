@@ -6,13 +6,13 @@ const markdownStyles = StyleSheet.create({
   body: {
     fontFamily: 'SFProDisplay-Regular',
     fontSize: 17,
-    color: '#1A1A1A',
+    color: '#343433',
     lineHeight: 28,
   },
   heading1: {
     fontFamily: 'SFProDisplay-Bold',
     fontSize: 28,
-    color: '#1A1A1A',
+    color: '#343433',
     marginTop: 22,
     marginBottom: 12,
     letterSpacing: -0.4,
@@ -20,7 +20,7 @@ const markdownStyles = StyleSheet.create({
   heading2: {
     fontFamily: 'SFProDisplay-Bold',
     fontSize: 24,
-    color: '#1A1A1A',
+    color: '#343433',
     marginTop: 20,
     marginBottom: 10,
     letterSpacing: -0.3,
@@ -28,13 +28,13 @@ const markdownStyles = StyleSheet.create({
   heading3: {
     fontFamily: 'SFProDisplay-Semibold',
     fontSize: 20,
-    color: '#1A1A1A',
+    color: '#343433',
     marginTop: 16,
     marginBottom: 8,
   },
   strong: {
     fontFamily: 'SFProDisplay-Bold',
-    color: '#1A1A1A',
+    color: '#343433',
   },
   em: {
     fontStyle: 'italic',
@@ -42,8 +42,8 @@ const markdownStyles = StyleSheet.create({
   code_inline: {
     fontFamily: 'SFMono-Bold',
     fontSize: 16,
-    backgroundColor: '#F0F0ED',
-    color: '#1A1A1A',
+    backgroundColor: '#f2f0ed',
+    color: '#343433',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -51,8 +51,8 @@ const markdownStyles = StyleSheet.create({
   fence: {
     fontFamily: 'SFMono-Regular',
     fontSize: 15,
-    backgroundColor: '#1A1A1A',
-    color: '#E5E7EB',
+    backgroundColor: '#343433',
+    color: '#f2f0ed',
     padding: 14,
     borderRadius: 12,
     marginVertical: 10,
@@ -60,7 +60,7 @@ const markdownStyles = StyleSheet.create({
   },
   blockquote: {
     borderLeftWidth: 2,
-    borderLeftColor: '#D4D4D0',
+    borderLeftColor: '#c6c6c6',
     paddingLeft: 14,
     marginVertical: 8,
     backgroundColor: 'transparent',
@@ -68,7 +68,7 @@ const markdownStyles = StyleSheet.create({
     paddingRight: 0,
   },
   link: {
-    color: '#1A7A6D',
+    color: '#0090ff',
     textDecorationLine: 'none' as const,
   },
   paragraph: {
@@ -87,14 +87,14 @@ const markdownStyles = StyleSheet.create({
   bullet_list_icon: {
     fontFamily: 'SFProDisplay-Regular',
     fontSize: 17,
-    color: '#1A1A1A',
+    color: '#343433',
     marginRight: 8,
     lineHeight: 28,
   },
   ordered_list_icon: {
     fontFamily: 'SFMono-Bold',
     fontSize: 17,
-    color: '#1A1A1A',
+    color: '#343433',
     marginRight: 10,
     lineHeight: 28,
   },
@@ -111,12 +111,12 @@ const markdownStyles = StyleSheet.create({
     marginVertical: 8,
   },
   thead: {
-    backgroundColor: '#F7F7F2',
+    backgroundColor: '#f2f0ed',
   },
   th: {
     fontFamily: 'SFProDisplay-Semibold',
     fontSize: 14,
-    color: '#1A1A1A',
+    color: '#343433',
     padding: 10,
     borderRightWidth: 1,
     borderRightColor: 'rgba(0,0,0,0.04)',
@@ -124,7 +124,7 @@ const markdownStyles = StyleSheet.create({
   td: {
     fontFamily: 'SFProDisplay-Regular',
     fontSize: 15,
-    color: '#1A1A1A',
+    color: '#343433',
     padding: 10,
     borderRightWidth: 1,
     borderRightColor: 'rgba(0,0,0,0.04)',

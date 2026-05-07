@@ -18,10 +18,10 @@ import { Button } from '@/components/ui';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
 import { normalizeAmount } from '@/app/withdraw/method-screen/utils';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Cancel01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
-const BRAND_COLOR = '#FF2E01';
+const BRAND_COLOR = '#ff3e00';
 const MAX_INTEGER_DIGITS = 7;
 
 export default function FundCrosschainScreen() {

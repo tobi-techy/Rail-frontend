@@ -4,8 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { logger } from '../lib/logger';
 import { safeError } from '../utils/logSanitizer';
 import { Sentry } from '../lib/sentry';
-import { Alert02Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Alert02Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -140,7 +140,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fbfaf9',
   },
   content: {
     flex: 1,
@@ -152,25 +152,26 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#0A0A0A',
+    fontFamily: 'SFProDisplay-Bold',
+    color: '#343433',
     marginBottom: 12,
     lineHeight: 34,
   },
   message: {
     fontSize: 16,
-    color: '#6B7280',
+    fontFamily: 'SFProDisplay-Regular',
+    color: '#848281',
     lineHeight: 24,
   },
   devBox: {
     marginTop: 24,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: '#fff1f2',
     padding: 12,
     borderRadius: 10,
   },
   devText: {
     fontSize: 11,
-    color: '#991B1B',
+    color: '#ff2b3a',
     fontFamily: 'SFMono-Regular',
   },
   footer: {
@@ -178,14 +179,14 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   button: {
-    backgroundColor: '#0A0A0A',
-    paddingVertical: 18,
-    borderRadius: 100,
+    backgroundColor: '#121212',
+    paddingVertical: 16,
+    borderRadius: 32,
     alignItems: 'center',
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontFamily: 'SFProDisplay-Semibold',
     color: '#FFFFFF',
   },
 });

@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import type { PaymentMethod } from '@/constants/depositOptions';
-import { ArrowRight01Icon, LockIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+import { ArrowRight01Icon, LockIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 interface PaymentMethodSelectorProps {
   methods: PaymentMethod[];
@@ -53,14 +53,14 @@ export function PaymentMethodSelector({
             activeOpacity={isDisabled ? 1 : 0.6}
             className={`mb-2 flex-row items-center justify-between rounded-2xl p-4 ${
               isSelected
-                ? 'border-2 border-blue-500 bg-blue-50'
-                : 'border border-gray-200 bg-gray-50'
+                ? 'border-2 border-sky-blue bg-[#EFF6FF]'
+                : 'border border-fog bg-stone-surface'
             } ${isDisabled ? 'opacity-50' : ''}`}>
             <View className="flex-1 flex-row items-center">
               {/* Icon Background */}
               <View
                 className="mr-4 h-14 w-14 items-center justify-center rounded-2xl"
-                style={{ backgroundColor: method.backgroundColor || '#F5F5F5' }}>
+                style={{ backgroundColor: method.backgroundColor || '#f2f0ed' }}>
                 {isDisabled && (
                   <View className="absolute z-10 h-full w-full items-center justify-center rounded-2xl bg-black/10" />
                 )}
@@ -78,7 +78,7 @@ export function PaymentMethodSelector({
                       <Text className="font-button text-[10px] text-pink-600">{method.badge}</Text>
                     </View>
                   )}
-                  {isDisabled && <HugeiconsIcon icon={LockIcon} size={14} color="#999" />}
+                  {isDisabled && <HugeiconsIcon icon={LockIcon} size={14} color="#a7a7a7" />}
                 </View>
                 <Text className="mt-1 font-caption text-[12px] text-text-secondary">
                   {method.description}
@@ -91,7 +91,7 @@ export function PaymentMethodSelector({
               <HugeiconsIcon
                 icon={ArrowRight01Icon}
                 size={20}
-                color={isDisabled ? '#CCC' : '#9CA3AF'}
+                color={isDisabled ? '#c6c6c6' : '#848281'}
               />
             </View>
           </TouchableOpacity>

@@ -40,8 +40,8 @@ import {
   SmartPhone01Icon,
   UserGroupIcon,
   ViewOffIcon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react-native';
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { useHaptics } from '@/hooks/useHaptics';
 import * as Haptics from 'expo-haptics';
 
@@ -479,13 +479,13 @@ export default function Settings() {
 
         <Section title="Account">
           <SettingButton
-            icon={<HugeiconsIcon icon={Logout01Icon} size={22} color="#F44336" />}
+            icon={<HugeiconsIcon icon={Logout01Icon} size={22} color="#ff2b3a" />}
             label="Logout"
             danger
             onPress={() => setActiveSheet('logout')}
           />
           <SettingButton
-            icon={<HugeiconsIcon icon={Delete02Icon} size={22} color="#F44336" />}
+            icon={<HugeiconsIcon icon={Delete02Icon} size={22} color="#ff2b3a" />}
             label="Delete Account"
             danger
             onPress={() => setActiveSheet('delete')}
@@ -496,11 +496,11 @@ export default function Settings() {
       {/* Spend */}
       <GorhomBottomSheet visible={activeSheet === 'allocation'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Base/Active Split</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           Set how new deposits are split between Base and Active allocations.
         </Text>
         {allocationFeedback && (
-          <View className="mb-4 rounded-xl border border-neutral-200 bg-neutral-100 p-3">
+          <View className="mb-4 rounded-lg border border-fog bg-stone-surface p-3">
             <Text className="font-caption text-caption text-text-secondary">
               {allocationFeedback}
             </Text>
@@ -514,7 +514,7 @@ export default function Settings() {
           step={1}
           label="Base Allocation"
           segments={49}
-          activeColor="#8B5CF6"
+          activeColor="#9f4fff"
         />
         <View className="my-4 flex-row justify-between">
           <View className="items-center">
@@ -557,7 +557,7 @@ export default function Settings() {
 
       <GorhomBottomSheet visible={activeSheet === 'limits'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Spending Limits</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           Set your daily spending limit to help manage your expenses.
         </Text>
         <SegmentedSlider
@@ -628,9 +628,9 @@ export default function Settings() {
             onPress={() => void refreshCurrencyRates({ forceRefresh: true })}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             {isCurrencyRatesRefreshing ? (
-              <ActivityIndicator size="small" color="#111827" />
+              <ActivityIndicator size="small" color="#343433" />
             ) : (
-              <HugeiconsIcon icon={RefreshIcon} size={16} color="#111827" />
+              <HugeiconsIcon icon={RefreshIcon} size={16} color="#343433" />
             )}
           </Pressable>
         </View>
@@ -658,7 +658,7 @@ export default function Settings() {
         <Text className="mb-2 font-subtitle text-xl">
           {hasPasscodeConfigured ? 'Update PIN' : 'Create PIN'}
         </Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           Enter a 4-digit PIN used to unlock sensitive actions on your account.
         </Text>
         <View className="gap-3">
@@ -714,7 +714,7 @@ export default function Settings() {
       {/* Account */}
       <GorhomBottomSheet visible={activeSheet === 'logout'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Log Out</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           Are you sure you want to log out? You&apos;ll need to sign in again to access your
           account.
         </Text>
@@ -734,14 +734,14 @@ export default function Settings() {
         <Text className="mb-6 font-subtitle text-xl text-text-primary">Delete Account</Text>
         <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-10">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-red-100">
-            <HugeiconsIcon icon={Delete02Icon} size={32} color="#EF4444" />
+            <HugeiconsIcon icon={Delete02Icon} size={32} color="#ff2b3a" />
           </View>
         </View>
-        <Text className="mb-4 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-4 font-body text-base leading-6 text-ash">
           Deleting your account will permanently remove it from the device. If you continue, you
           will not be able to recover, access or perform any other action with this account in Rail.
         </Text>
-        <Text className="mb-4 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-4 font-body text-base leading-6 text-ash">
           Any remaining funds in your account will be transferred to our company treasury before
           deletion.
         </Text>
