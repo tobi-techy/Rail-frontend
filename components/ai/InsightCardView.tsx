@@ -341,6 +341,22 @@ function formatMoney(value: unknown) {
   return raw.startsWith('$') ? raw : `$${raw}`;
 }
 
+function parseMoney(value: unknown) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  const cleaned = String(value ?? '').replace(/[^0-9.-]/g, '');
+  const parsed = Number.parseFloat(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function compactMoney(value: unknown) {
+  const amount = parseMoney(value);
+  const sign = amount < 0 ? '-' : '';
+  const absolute = Math.abs(amount);
+  if (absolute >= 1_000_000) return `${sign}$${(absolute / 1_000_000).toFixed(1)}M`;
+  if (absolute >= 1_000) return `${sign}$${(absolute / 1_000).toFixed(1)}K`;
+  return `${sign}$${absolute.toFixed(0)}`;
+}
+
 function toneClass(sentiment?: string) {
   if (sentiment === 'positive') return 'text-success';
   if (sentiment === 'negative') return 'text-coral-red';
@@ -361,13 +377,33 @@ function FinancialAuditCard({ card }: { card: InsightCard }) {
   const data = (card.data ?? {}) as Record<string, any>;
   const score = (data.score ?? {}) as Record<string, any>;
   const damage = (data.damage ?? {}) as Record<string, any>;
+  const snapshot = (data.snapshot ?? {}) as Record<string, any>;
+  const period = (data.period ?? {}) as Record<string, any>;
+  const coverage = (data.data_coverage ?? {}) as Record<string, any>;
   const metrics = asArray<AuditMetric>(data.metrics).slice(0, 4);
   const contradictions = asArray(data.contradictions).slice(0, 3);
   const topCategories = asArray(data.top_categories).slice(0, 4);
   const risks = asArray(data.risk_flags).slice(0, 3);
   const actions = asArray(data.next_actions).slice(0, 3);
   const patterns = asArray<string>(data.patterns).slice(0, 3);
+  const monthlyTrend = asArray<Record<string, any>>(data.monthly_trend).slice(-6);
   const totalScore = Number(score.total ?? 0);
+  const moneyIn = parseMoney(snapshot.money_in);
+  const digitalOut = parseMoney(snapshot.digital_money_out);
+  const cashOut = parseMoney(snapshot.receipt_cash_out);
+  const totalOut = parseMoney(snapshot.total_money_out);
+  const donutData = [
+    moneyIn > 0 ? { value: moneyIn, color: '#1A7A6D', text: '' } : null,
+    digitalOut > 0 ? { value: digitalOut, color: '#FF3E00', text: '' } : null,
+    cashOut > 0 ? { value: cashOut, color: '#FFB199', text: '' } : null,
+  ].filter(Boolean) as { value: number; color: string; text: string }[];
+  const trendData = monthlyTrend
+    .map((month) => ({
+      label: String(month.label ?? month.month ?? '').split(' ')[0],
+      value: parseMoney(month.money_out),
+      frontColor: '#FF3E00',
+    }))
+    .filter((item) => item.value > 0);
 
   useEffect(() => {
     track(ANALYTICS_EVENTS.FINANCIAL_AUDIT_RENDERED, {
@@ -389,6 +425,13 @@ function FinancialAuditCard({ card }: { card: InsightCard }) {
             <Text className="mt-1 font-body text-sm text-text-secondary">
               {formatLabel(score.status ?? card.subtitle)}
             </Text>
+            {(period.label || coverage.months_analyzed) && (
+              <Text className="mt-1 font-body text-xs text-text-secondary">
+                {period.label
+                  ? String(period.label)
+                  : `${coverage.months_analyzed} months analyzed`}
+              </Text>
+            )}
           </View>
           <View className="items-end">
             <Text className={`font-heading-semibold text-2xl ${toneClass(card.sentiment)}`}>
@@ -410,6 +453,79 @@ function FinancialAuditCard({ card }: { card: InsightCard }) {
               </View>
             ))}
           </View>
+        )}
+
+        {(donutData.length > 0 || trendData.length > 0) && (
+          <AuditSection title="Audit view">
+            <View className="gap-4">
+              {donutData.length > 0 && (
+                <View className="flex-row items-center gap-4">
+                  <PieChart
+                    data={donutData}
+                    donut
+                    radius={46}
+                    innerRadius={31}
+                    innerCircleColor="#FFFFFF"
+                    centerLabelComponent={() => (
+                      <View className="items-center">
+                        <Text className="font-body-medium text-sm text-text-primary">
+                          {compactMoney(totalOut)}
+                        </Text>
+                        <Text className="font-body text-[10px] text-text-secondary">out</Text>
+                      </View>
+                    )}
+                  />
+                  <View className="flex-1 gap-2">
+                    {[
+                      { label: 'Money in', value: moneyIn, color: '#1A7A6D' },
+                      { label: 'Digital out', value: digitalOut, color: '#FF3E00' },
+                      { label: 'Cash receipts', value: cashOut, color: '#FFB199' },
+                    ]
+                      .filter((item) => item.value > 0)
+                      .map((item) => (
+                        <View key={item.label} className="flex-row items-center gap-2">
+                          <View
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <Text className="flex-1 font-body text-xs text-text-secondary">
+                            {item.label}
+                          </Text>
+                          <Text className="font-body-medium text-xs tabular-nums text-text-primary">
+                            {compactMoney(item.value)}
+                          </Text>
+                        </View>
+                      ))}
+                  </View>
+                </View>
+              )}
+
+              {trendData.length > 1 && (
+                <View>
+                  <View className="mb-2 flex-row items-center justify-between">
+                    <Text className="font-body text-xs text-text-secondary">Monthly money out</Text>
+                    {coverage.average_monthly_money_out && (
+                      <Text className="font-body-medium text-xs tabular-nums text-text-primary">
+                        Avg {compactMoney(coverage.average_monthly_money_out)}
+                      </Text>
+                    )}
+                  </View>
+                  <BarChart
+                    data={trendData}
+                    height={120}
+                    barWidth={18}
+                    spacing={12}
+                    barBorderRadius={5}
+                    hideRules
+                    hideYAxisText
+                    xAxisLabelTextStyle={{ fontSize: 10, color: '#8C8C8C' }}
+                    yAxisTextStyle={{ fontSize: 10, color: '#8C8C8C' }}
+                    noOfSections={3}
+                  />
+                </View>
+              )}
+            </View>
+          </AuditSection>
         )}
 
         {damage.primary_issue && (

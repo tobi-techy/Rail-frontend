@@ -210,7 +210,14 @@ export const aiService = {
   },
 
   async getFinancialAudit(params?: {
-    period?: 'this_month' | 'last_month' | 'last_7_days' | 'last_30_days';
+    period?:
+      | 'last_90_days'
+      | 'last_6_months'
+      | 'last_12_months'
+      | 'this_month'
+      | 'last_month'
+      | 'last_7_days'
+      | 'last_30_days';
     intensity?: 'gentle' | 'direct' | 'hard';
   }): Promise<FinancialAudit & { error?: string }> {
     const query = new URLSearchParams();

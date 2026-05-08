@@ -164,6 +164,8 @@ export interface FinancialAudit {
   snapshot: Record<string, any>;
   the_damage: Record<string, any>;
   the_pattern: string[];
+  data_coverage?: Record<string, any>;
+  monthly_trend?: Record<string, any>[];
   contradictions: Record<string, any>[];
   top_spending_categories: Record<string, any>[];
   top_merchants: Record<string, any>[];

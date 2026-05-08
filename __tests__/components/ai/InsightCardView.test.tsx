@@ -32,6 +32,19 @@ describe('InsightCardView financial audit card', () => {
       sentiment: 'negative',
       data: {
         score: { total: 42, status: 'needs_attention' },
+        period: { label: 'Last 90 days (Feb 6 to May 7, 2026)' },
+        data_coverage: { months_analyzed: 3, average_monthly_money_out: '410.00' },
+        snapshot: {
+          money_in: '1500.00',
+          digital_money_out: '1160.00',
+          receipt_cash_out: '70.00',
+          total_money_out: '1230.00',
+        },
+        monthly_trend: [
+          { label: 'Feb 2026', money_out: '320.00', net_flow: '80.00' },
+          { label: 'Mar 2026', money_out: '430.00', net_flow: '-30.00' },
+          { label: 'Apr 2026', money_out: '480.00', net_flow: '-120.00' },
+        ],
         damage: { primary_issue: 'Eating out is carrying the damage this month.' },
         metrics: [{ label: 'Net flow', value: '-$120.00', sentiment: 'negative' }],
         top_categories: [{ category: 'food_delivery', total: '240.00' }],
@@ -48,6 +61,10 @@ describe('InsightCardView financial audit card', () => {
 
     expect(getByText('Miriam Audit')).toBeTruthy();
     expect(getByText('needs attention')).toBeTruthy();
+    expect(getByText('Last 90 days (Feb 6 to May 7, 2026)')).toBeTruthy();
+    expect(getByText('Money in')).toBeTruthy();
+    expect(getByText('Monthly money out')).toBeTruthy();
+    expect(getByText('Avg $410')).toBeTruthy();
     expect(getByText('Eating out is carrying the damage this month.')).toBeTruthy();
     expect(getByText('Freeze food delivery for 7 days')).toBeTruthy();
     expect(mockTrack).toHaveBeenCalledWith(ANALYTICS_EVENTS.FINANCIAL_AUDIT_RENDERED, {
