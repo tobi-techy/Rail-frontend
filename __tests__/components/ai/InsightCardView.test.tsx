@@ -82,4 +82,34 @@ describe('InsightCardView financial audit card', () => {
       score: 42,
     });
   });
+
+  it('renders raw financial audit payload keys from the API/tool result', () => {
+    const card: InsightCard = {
+      type: 'financial_audit',
+      title: 'Miriam Audit',
+      sentiment: 'neutral',
+      data: {
+        score: { total: 68, status: 'stable' },
+        period: { label: 'Last 6 months' },
+        data_coverage: { months_analyzed: 6 },
+        snapshot: {
+          money_in: '5000.00',
+          digital_money_out: '3200.00',
+          receipt_cash_out: '400.00',
+          total_money_out: '3600.00',
+        },
+        the_damage: { primary_issue: 'Subscriptions and transfers are doing the most damage.' },
+        the_pattern: ['Money is leaving faster on weekends.'],
+        top_spending_categories: [{ category: 'subscriptions', total: '600.00' }],
+        do_this_today: [{ title: 'Cancel two unused subscriptions' }],
+      },
+    };
+
+    const { getByText } = render(<InsightCardView card={card} />);
+
+    expect(getByText('Subscriptions and transfers are doing the most damage.')).toBeTruthy();
+    expect(getByText('Money is leaving faster on weekends.')).toBeTruthy();
+    expect(getByText('subscriptions')).toBeTruthy();
+    expect(getByText('Cancel two unused subscriptions')).toBeTruthy();
+  });
 });

@@ -9,6 +9,7 @@ type AmountErrorInput = {
   feeAmount?: number;
   currencySymbol?: string;
   minAmount?: number;
+  minAmountLabel?: string;
 };
 
 type DestinationErrorInput = {
@@ -82,9 +83,11 @@ export const getAmountError = ({
   feeAmount = 0,
   currencySymbol = '$',
   minAmount = 1,
+  minAmountLabel = 'withdrawal',
 }: AmountErrorInput) => {
   if (numericAmount <= 0) return `Enter an amount greater than ${currencySymbol}0.00.`;
-  if (numericAmount < minAmount) return `Minimum withdrawal is ${currencySymbol}${formatCurrency(minAmount)}.`;
+  if (numericAmount < minAmount)
+    return `Minimum ${minAmountLabel} is ${currencySymbol}${formatCurrency(minAmount)}.`;
   if (numericAmount > withdrawalLimit) {
     return `This amount is above your ${limitLabel.toLowerCase()} of ${currencySymbol}${formatCurrency(withdrawalLimit)}.`;
   }

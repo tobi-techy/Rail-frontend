@@ -9,15 +9,15 @@ import {
   ActivityIndicator,
   Platform,
   TextInput,
-  Keyboard,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Passkey } from 'react-native-passkey';
 import { Button, Input } from '@/components/ui';
-import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import {
+  IconComponent as HugeiconsIcon,
   ArrowLeft01Icon,
   CheckmarkCircle02Icon,
   ArrowDown01Icon,
@@ -40,12 +40,7 @@ import {
 } from '@/lib/icons';
 import { ChainLogo } from '@/components/ChainLogo';
 import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
-import {
-  SUPPORTED_CHAINS,
-  isEVMChain,
-  getChainConfig,
-  getWithdrawalChainsForCurrency,
-} from '@/utils/chains';
+import { isEVMChain, getChainConfig, getWithdrawalChainsForCurrency } from '@/utils/chains';
 import { GorhomBottomSheet } from '@/components/sheets/GorhomBottomSheet';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -68,11 +63,9 @@ import {
   usePajOfframp,
   usePajSavedBanks,
   usePajAddBankAccount,
-  usePajOrderStatus,
 } from '@/api/hooks/usePaj';
 import { useVerifyPasscode } from '@/api/hooks';
 import type { PajBank, PajSavedBankAccount } from '@/api/types/paj';
-import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import {
   WithdrawalStatusScreen,
   type WithdrawalStatusType,
@@ -82,6 +75,7 @@ import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
 import { NgnIcon } from '@/assets/svg';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { parseApiError } from '@/utils/apiError';
+import { AmbientMiriamNudge } from '@/components/ai/AmbientMiriamNudge';
 
 const FIAT_RECIPIENTS_KEY = 'rail:fiat_recent_recipients';
 
@@ -127,11 +121,6 @@ const CATEGORIES: { label: string; icon: any; color: string }[] = [
   { label: 'Other', icon: MoreIcon, color: '#848281' },
 ];
 
-const initials = (name: string) => {
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase();
-};
-
 type FlowStep = 'recipients' | 'form';
 
 export default function DestinationScreen() {
@@ -171,7 +160,6 @@ export default function DestinationScreen() {
     return 0.5;
   };
   const feeAmountBase = getFee();
-  const totalAmountBase = numericAmount + feeAmountBase;
 
   const storeCurrency = useUIStore((s) => s.currency);
   const currencyCode = params.currency ?? storeCurrency;
@@ -231,10 +219,10 @@ export default function DestinationScreen() {
   const { data: pajRates } = usePajRates();
   const { data: pajBanksData, error: pajBanksError } = usePajBanks();
   const { data: pajSavedBanks } = usePajSavedBanks();
-  const pajResolve = usePajResolveBankAccount();
+  const { mutate: resolveBankAccount, isPending: isResolvingBankAccount } =
+    usePajResolveBankAccount();
   const pajOfframp = usePajOfframp();
   const pajAddBank = usePajAddBankAccount();
-  const { showSuccess, showError: showErrorPopup } = useFeedbackPopup();
   const [ngnBank, setNgnBank] = useState<PajBank | null>(null);
   const [ngnAccountNumber, setNgnAccountNumber] = useState('');
   const [ngnAccountName, setNgnAccountName] = useState('');
@@ -249,10 +237,10 @@ export default function DestinationScreen() {
   const [ngnShowConfirm, setNgnShowConfirm] = useState(false);
   const [ngnPinAttempts, setNgnPinAttempts] = useState(0);
   const [ngnLockoutUntil, setNgnLockoutUntil] = useState<number | null>(null);
-  const [ngnLockoutSeconds, setNgnLockoutSeconds] = useState(0);
+  const [, setNgnLockoutSeconds] = useState(0);
   const user = useAuthStore((s) => s.user as { email?: string } | undefined);
   const { mutate: verifyPasscode, isPending: isPasscodeVerifying } = useVerifyPasscode();
-  const pajBanks: PajBank[] = pajBanksData?.banks ?? [];
+  const pajBanks = useMemo<PajBank[]>(() => pajBanksData?.banks ?? [], [pajBanksData?.banks]);
   const savedBanksList: PajSavedBankAccount[] = (pajSavedBanks as any)?.accounts ?? [];
   const offRampRate = pajRates?.offRampRate?.rate ?? 0;
   const railFeeUSD = pajRates?.railFee ?? 0.02;
@@ -307,27 +295,12 @@ export default function DestinationScreen() {
     } finally {
       setNgnSubmitting(false);
     }
-  }, [
-    ngnBank,
-    ngnSaveBank,
-    ngnAccountNumber,
-    numericAmount,
-    ngnAmount,
-    pajOfframp,
-    pajAddBank,
-    showSuccess,
-    showErrorPopup,
-  ]);
+  }, [ngnBank, ngnSaveBank, ngnAccountNumber, numericAmount, pajOfframp, pajAddBank]);
 
   const ngnPasskeyScope = `ngn-offramp:${safeName(user?.email) || 'unknown'}:${numericAmount.toFixed(2)}`;
   const [ngnPasskeyAvailable, setNgnPasskeyAvailable] = useState(false);
   useEffect(() => {
-    try {
-      const { Passkey } = require('react-native-passkey');
-      setNgnPasskeyAvailable(Passkey.isSupported() && Boolean(safeName(user?.email)));
-    } catch {
-      setNgnPasskeyAvailable(false);
-    }
+    setNgnPasskeyAvailable(Passkey.isSupported() && Boolean(safeName(user?.email)));
   }, [user?.email]);
   const ngnPasskey = usePasskeyAuthorize({
     email: user?.email,
@@ -386,7 +359,7 @@ export default function DestinationScreen() {
       return;
     }
     let stale = false;
-    pajResolve.mutate(
+    resolveBankAccount(
       { bankId: ngnBank.id, accountNumber: ngnAccountNumber },
       {
         onSuccess: (d) => {
@@ -400,7 +373,7 @@ export default function DestinationScreen() {
     return () => {
       stale = true;
     };
-  }, [isNGN, ngnBank?.id, ngnAccountNumber]);
+  }, [isNGN, ngnBank, ngnAccountNumber, resolveBankAccount]);
 
   // Redirect to Paj verify if session needed
   useEffect(() => {
@@ -518,14 +491,7 @@ export default function DestinationScreen() {
     canContinue,
     isNGN,
     ngnBank,
-    ngnAccountNumber,
-    ngnSaveBank,
-    ngnAmount,
-    numericAmount,
-    pajOfframp,
-    pajAddBank,
-    showSuccess,
-    showErrorPopup,
+    ngnPasskey,
     destinationInput,
     destinationChain,
     fiatAccountHolderName,
@@ -592,6 +558,13 @@ export default function DestinationScreen() {
     return (
       <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" />
+        <AmbientMiriamNudge
+          screen="withdraw_ngn_review"
+          amount={params.amount}
+          currency="NGN"
+          merchantHint="naira bank withdrawal review"
+          recentActions={['review_ngn_withdrawal']}
+        />
         <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-surface"
@@ -744,6 +717,13 @@ export default function DestinationScreen() {
     return (
       <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" />
+        <AmbientMiriamNudge
+          screen="withdraw_recipient"
+          amount={params.amount}
+          currency={currencyCode}
+          merchantHint="bank withdrawal recipient"
+          recentActions={['choose_bank_recipient']}
+        />
         <View className="px-5 pb-2 pt-1">
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-surface"
@@ -908,6 +888,13 @@ export default function DestinationScreen() {
   return (
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <AmbientMiriamNudge
+        screen="withdraw_destination"
+        amount={params.amount}
+        currency={currencyCode}
+        merchantHint={isFiatMethod ? 'bank withdrawal recipient' : 'wallet withdrawal address'}
+        recentActions={[isFiatMethod ? 'choose_bank_recipient' : 'enter_wallet_address']}
+      />
 
       <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
         <Pressable
@@ -1178,7 +1165,7 @@ export default function DestinationScreen() {
                         {ngnAccountName}
                       </Text>
                     </Animated.View>
-                  ) : pajResolve.isPending ? (
+                  ) : isResolvingBankAccount ? (
                     <View className="flex-row items-center gap-2 rounded-lg bg-[#f8f7f4] px-4 py-3">
                       <Text className="font-body text-[13px] text-text-secondary">
                         Resolving account…

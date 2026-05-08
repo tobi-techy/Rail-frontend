@@ -10,8 +10,8 @@ import { ROUTES } from '@/constants/routes';
 import { useKYCStatus } from '@/api/hooks';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 import { KYCVerificationSheet } from '@/components/sheets';
-import { ArrowLeft01Icon, Wallet01Icon } from '@/lib/icons';
-import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { ArrowLeft01Icon, Wallet01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { AmbientMiriamNudge } from '@/components/ai/AmbientMiriamNudge';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -43,7 +43,9 @@ function WithdrawOptionCard({
       }}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}>
-      <View className="mb-4 size-12 items-center justify-center rounded-2xl bg-warm-canvas">{icon}</View>
+      <View className="mb-4 size-12 items-center justify-center rounded-2xl bg-warm-canvas">
+        {icon}
+      </View>
       <Text className="font-subtitle text-[20px] text-text-primary">{title}</Text>
       <Text className="mt-1 font-body text-[14px] text-text-secondary">{subtitle}</Text>
     </AnimatedPressable>
@@ -60,6 +62,7 @@ export default function WithdrawMethodSelectorScreen() {
     <ErrorBoundary>
       <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
+        <AmbientMiriamNudge screen="withdraw_method" />
 
         <View className="flex-1 px-5">
           <View className="flex-row items-center pb-2 pt-1">
@@ -90,7 +93,8 @@ export default function WithdrawMethodSelectorScreen() {
                     router.push('/withdraw/fiat' as never);
                   },
                   {
-                    onProfileRequired: () => router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never),
+                    onProfileRequired: () =>
+                      router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never),
                     onKycRequired: () => setShowKYCSheet(true),
                   }
                 )

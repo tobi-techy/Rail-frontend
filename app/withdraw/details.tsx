@@ -13,11 +13,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from '@/components/ui';
-import { IconComponent as HugeiconsIcon } from '@/lib/icons';
-import { ArrowLeft01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon, ArrowLeft01Icon } from '@/lib/icons';
 import { formatCurrency } from './method-screen/utils';
-import { useNudge } from '@/hooks/useNudge';
-import { AmbientMiriam } from '@/components/ai/AmbientMiriam';
+import { AmbientMiriamNudge } from '@/components/ai/AmbientMiriamNudge';
 
 const CATEGORIES = [
   { label: 'Transfer', icon: 'arrow-move-up-right' },
@@ -53,7 +51,6 @@ export default function DetailsScreen() {
 
   const [category, setCategory] = useState('Transfer');
   const [narration, setNarration] = useState('');
-  const { nudge, dismiss: dismissNudge } = useNudge('withdraw', params.amount, 'USDC');
 
   const onContinue = useCallback(() => {
     router.push({
@@ -65,7 +62,7 @@ export default function DetailsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-[#F8F9FB]" edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FB" />
-      <AmbientMiriam nudge={nudge} onDismiss={dismissNudge} />
+      <AmbientMiriamNudge screen="withdraw_details" amount={params.amount} currency="USDC" />
 
       {/* Header */}
       <View className="flex-row items-center justify-between bg-parchment-card px-5 pb-3 pt-1">

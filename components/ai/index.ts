@@ -12,3 +12,4 @@ export { ThreadRow } from './ThreadRow';
 export { TypingText } from './TypingText';
 export { MiriamCharacter } from './MiriamCharacter';
 export type { MiriamEmotion, MiriamFacing } from './MiriamCharacter';
+export { AmbientMiriamNudge } from './AmbientMiriamNudge';

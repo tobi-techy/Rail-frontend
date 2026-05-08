@@ -2,13 +2,10 @@ import { View, Text, ScrollView, RefreshControl, Pressable, Platform } from 'rea
 import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { router, useNavigation, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
-import { PhantomIcon, SolflareIcon, SolanaIcon, VisaLogo, VisaWhite } from '@/assets/svg';
+import { PhantomIcon, SolflareIcon, SolanaIcon, VisaWhite } from '@/assets/svg';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { StashCard } from '@/components/molecules/StashCard';
 import { GameplayCard } from '@/components/molecules/GameplayCard';
-import { TransactionList } from '@/components/molecules/TransactionList';
 import { NotificationBell } from '@/components/molecules/NotificationBell';
 import { Button } from '@/components/ui';
 import {
@@ -26,14 +23,7 @@ import { ROUTES } from '@/constants/routes';
 import { useStation, useKYCStatus } from '@/api/hooks';
 import { useCards } from '@/api/hooks/useCard';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
-import {
-  normalizeWithdrawals,
-  depositToTransaction,
-  withdrawalToTransaction,
-  pajOrderToTransaction,
-} from '@/utils/transactionNormalizer';
 import { useAuthStore } from '@/stores/authStore';
-import { usePajOrders } from '@/api/hooks/usePaj';
 import { useUIStore } from '@/stores';
 import type { Currency } from '@/stores/uiStore';
 import { invalidateQueries } from '@/api/queryClient';
@@ -43,24 +33,19 @@ import type { Transaction } from '@/components/molecules/TransactionItem';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
   ArrowDownLeft01Icon,
-  ArrowRight01Icon,
   ArrowUpRight01Icon,
   BankIcon,
-  Money01Icon,
   CreditCardIcon,
   InternetIcon,
   Message01Icon,
   SavingsIcon,
   UserGroupIcon,
   Wallet01Icon,
-  ArrowDataTransferHorizontalIcon,
   ChartIncreaseIcon,
+  IconComponent as HugeiconsIcon,
 } from '@/lib/icons';
-import { IconComponent as HugeiconsIcon } from '@/lib/icons';
-import { OnboardingProgressCard } from '@/components/molecules/OnboardingProgressCard';
 
-import { useNudge } from '@/hooks/useNudge';
-import { AmbientMiriam } from '@/components/ai/AmbientMiriam';
+import { AmbientMiriamNudge } from '@/components/ai/AmbientMiriamNudge';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -94,8 +79,6 @@ interface FundingAction {
   comingSoon?: boolean;
 }
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 const CreditSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View className="mb-6">
     <Text className="mb-2 font-button text-[15px] text-charcoal-primary">{title}</Text>
@@ -113,55 +96,6 @@ const CreditBullet = ({ children }: { children: React.ReactNode }) => (
     <Text className="flex-1 font-body text-[14px] leading-[22px] text-ash">{children}</Text>
   </View>
 );
-
-function FundingRow({ action, isLast }: { action: FundingAction; isLast: boolean }) {
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  return (
-    <AnimatedPressable
-      style={animStyle}
-      className={`flex-row items-center justify-between py-3.5${isLast ? '' : ' border-b border-stone-surface'}`}
-      onPress={action.comingSoon ? undefined : action.onPress}
-      onPressIn={() => {
-        if (!action.comingSoon) scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
-      }}
-      disabled={action.comingSoon}>
-      <View className={`flex-1 flex-row items-center${action.comingSoon ? ' opacity-40' : ''}`}>
-        <View className="mr-4 h-11 w-11 items-center justify-center rounded-full bg-stone-surface">
-          {action.icon}
-        </View>
-        <View className="flex-1">
-          <Text className="font-subtitle text-base text-text-primary">{action.label}</Text>
-          {action.sublabel && (
-            <Text className="mt-0.5 font-caption text-[12px] text-text-secondary">
-              {action.sublabel}
-            </Text>
-          )}
-        </View>
-      </View>
-      {action.comingSoon ? (
-        <View className="rounded-full bg-stone-surface px-2 py-0.5">
-          <Text className="font-caption text-[11px] text-smoke">Soon</Text>
-        </View>
-      ) : (
-        <HugeiconsIcon icon={ArrowRight01Icon} size={20} color="#848281" />
-      )}
-    </AnimatedPressable>
-  );
-}
-
-function FundingOptionsList({ actions }: { actions: FundingAction[] }) {
-  return (
-    <View style={{ paddingBottom: 4 }}>
-      {actions.map((action, i) => (
-        <FundingRow key={action.id} action={action} isLast={i === actions.length - 1} />
-      ))}
-    </View>
-  );
-}
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
@@ -188,8 +122,6 @@ function DashboardScreen() {
   const [showCardComingSheet, setShowCardComingSheet] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showVirtualAccountSheet, setShowVirtualAccountSheet] = useState(false);
-  const { nudge, dismiss: dismissNudge } = useNudge('home');
-
   // Local currency for send/receive sheets — does NOT affect balance card
   const [sheetCurrency, setSheetCurrency] = useState<Currency>('USD');
   const onSheetCurrencyChange = useCallback((c: Currency) => setSheetCurrency(c), []);
@@ -203,8 +135,8 @@ function DashboardScreen() {
     setShowSendSheet(true);
   }, []);
 
-  const receiveNav = { reset: (_?: string) => {}, navigateTo: () => {} }; // placeholder
-  const sendNav = { reset: (_?: string) => {}, navigateTo: () => {} }; // placeholder
+  const receiveNav = useMemo(() => ({ reset: (_?: string) => {}, navigateTo: () => {} }), []);
+  const sendNav = useMemo(() => ({ reset: (_?: string) => {}, navigateTo: () => {} }), []);
 
   // Disclaimer
   const hasAcknowledgedDisclaimer = useAuthStore((s) => s.hasAcknowledgedDisclaimer);
@@ -231,7 +163,6 @@ function DashboardScreen() {
   const isGameplayPending = false;
   const deposits = useDeposits(10);
   const withdrawals = useWithdrawals(10);
-  const pajOrders = usePajOrders();
   const { data: kycStatus, refetch: refetchKYC } = useKYCStatus();
 
   // Refetch KYC status every time this screen comes into focus
@@ -242,16 +173,8 @@ function DashboardScreen() {
     }, [refetchKYC])
   );
 
-  const userFirstName = useAuthStore((s) => s.user?.firstName);
-  const userLastName = useAuthStore((s) => s.user?.lastName);
-  const userEmail = useAuthStore((s) => s.user?.email);
   const selectedCurrency = useUIStore((s) => s.currency);
   const currencyRates = useUIStore((s) => s.currencyRates);
-
-  const avatarName = useMemo(
-    () => [userFirstName, userLastName].filter(Boolean).join(' ') || userEmail || 'Rail User',
-    [userFirstName, userLastName, userEmail]
-  );
 
   // Reset sheet nav on close
   useEffect(() => {
@@ -319,17 +242,6 @@ function DashboardScreen() {
   const stash = hasData
     ? splitDollars(station?.invest_balance ?? '0', selectedCurrency, currencyRates)
     : { dollars: '---', cents: '' };
-
-  const transactions = useMemo(() => {
-    const rows: Transaction[] = [
-      ...(deposits.data?.deposits ?? []).map(depositToTransaction),
-      ...normalizeWithdrawals(withdrawals.data).map(withdrawalToTransaction),
-      ...(pajOrders.data?.orders ?? []).map(pajOrderToTransaction),
-    ];
-    return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 3);
-  }, [deposits.data, withdrawals.data, pajOrders.data]);
-
-  const kycApproved = kycStatus?.status === 'approved' && kycStatus?.verified === true;
 
   const hasCard = Boolean(cardsData?.cards && cardsData.cards.length > 0);
 
@@ -659,16 +571,7 @@ function DashboardScreen() {
 
   return (
     <View className="flex-1">
-      <AmbientMiriam
-        nudge={nudge}
-        onDismiss={dismissNudge}
-        onAction={(action) => {
-          dismissNudge();
-          if (action.destination === 'stash') router.push('/investment-stash' as any);
-          else if (action.destination === 'goals') router.push('/shared-goals' as any);
-          else if (action.destination === 'budget') router.push('/ai-chat' as any);
-        }}
-      />
+      <AmbientMiriamNudge screen="home" />
       <ScrollView
         className="min-h-screen flex-1"
         refreshControl={

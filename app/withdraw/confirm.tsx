@@ -4,23 +4,32 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from '@/components/ui';
-import { IconComponent as HugeiconsIcon } from '@/lib/icons';
-import { ArrowLeft01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon, ArrowLeft01Icon } from '@/lib/icons';
 import { isEVMChain, getChainConfig } from '@/utils/chains';
 import { ChainLogo } from '@/components/ChainLogo';
 import { useUIStore } from '@/stores';
 import { getCurrencyConfig } from '@/utils/currencyConfig';
 import { formatCurrency, formatSortCode } from './method-screen/utils';
+import { AmbientMiriamNudge } from '@/components/ai/AmbientMiriamNudge';
 
 export default function ConfirmScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
-    method: string; amount: string; isFiatMethod?: string; isCryptoMethod?: string;
-    methodTitle?: string; destinationInput?: string; destinationChain?: string;
-    fiatAccountHolderName?: string; fiatAccountNumber?: string;
-    fiatCurrency?: string; fiatBic?: string;
-    category?: string; narration?: string;
-    availableBalance?: string; withdrawalLimit?: string;
+    method: string;
+    amount: string;
+    isFiatMethod?: string;
+    isCryptoMethod?: string;
+    methodTitle?: string;
+    destinationInput?: string;
+    destinationChain?: string;
+    fiatAccountHolderName?: string;
+    fiatAccountNumber?: string;
+    fiatCurrency?: string;
+    fiatBic?: string;
+    category?: string;
+    narration?: string;
+    availableBalance?: string;
+    withdrawalLimit?: string;
     currency?: string;
   }>();
 
@@ -52,6 +61,12 @@ export default function ConfirmScreen() {
   return (
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <AmbientMiriamNudge
+        screen="withdraw_confirm"
+        amount={params.amount}
+        currency={params.currency ?? storeCurrency}
+        recentActions={['review_withdrawal']}
+      />
 
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
@@ -70,14 +85,14 @@ export default function ConfirmScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         contentContainerStyle={{ paddingBottom: 24 }}>
-
         {/* Amount hero */}
         <Animated.View entering={FadeInUp.duration(250)} className="items-center py-8">
           <View className="mb-3 size-14 items-center justify-center rounded-full bg-surface">
             <CurrencyIcon width={32} height={32} />
           </View>
           <Text className="font-subtitle text-[42px] leading-[46px] text-text-primary">
-            {prefix}{formatCurrency(numericAmount)}
+            {prefix}
+            {formatCurrency(numericAmount)}
           </Text>
           <Text className="mt-1 font-body text-[14px] text-text-secondary">{assetLabel}</Text>
         </Animated.View>
@@ -101,7 +116,8 @@ export default function ConfirmScreen() {
                       <ChainLogo chain={params.destinationChain ?? 'SOL'} size={12} />
                     </View>
                     <Text className="font-subtitle text-[14px] text-text-primary">
-                      {chainConfig.label}{isEVMChain(chainConfig.chain) ? ' (EVM)' : ''}
+                      {chainConfig.label}
+                      {isEVMChain(chainConfig.chain) ? ' (EVM)' : ''}
                     </Text>
                   </View>
                 </View>
@@ -115,7 +131,10 @@ export default function ConfirmScreen() {
                 <Sep />
                 {params.fiatCurrency === 'EUR' ? (
                   <>
-                    <DetailRow label="IBAN" value={maskAddr(params.destinationInput ?? '') || '—'} />
+                    <DetailRow
+                      label="IBAN"
+                      value={maskAddr(params.destinationInput ?? '') || '—'}
+                    />
                     {params.fiatBic ? (
                       <>
                         <Sep />
@@ -125,21 +144,31 @@ export default function ConfirmScreen() {
                   </>
                 ) : params.fiatCurrency === 'GBP' ? (
                   <>
-                    <DetailRow label="Sort code" value={formatSortCode(params.destinationInput ?? '')} />
+                    <DetailRow
+                      label="Sort code"
+                      value={formatSortCode(params.destinationInput ?? '')}
+                    />
                     <Sep />
                     <DetailRow
                       label="Account"
-                      value={params.fiatAccountNumber ? `••••${params.fiatAccountNumber.slice(-4)}` : '—'}
+                      value={
+                        params.fiatAccountNumber ? `••••${params.fiatAccountNumber.slice(-4)}` : '—'
+                      }
                     />
                   </>
                 ) : (
                   <>
                     <DetailRow
                       label="Account"
-                      value={params.fiatAccountNumber ? `••••${params.fiatAccountNumber.slice(-4)}` : '—'}
+                      value={
+                        params.fiatAccountNumber ? `••••${params.fiatAccountNumber.slice(-4)}` : '—'
+                      }
                     />
                     <Sep />
-                    <DetailRow label="Routing" value={maskAddr(params.destinationInput ?? '') || '—'} />
+                    <DetailRow
+                      label="Routing"
+                      value={maskAddr(params.destinationInput ?? '') || '—'}
+                    />
                   </>
                 )}
                 <Sep />
@@ -174,7 +203,8 @@ export default function ConfirmScreen() {
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-subtitle text-[14px] text-text-primary">Total</Text>
               <Text className="font-subtitle text-[16px] text-text-primary">
-                {prefix}{formatCurrency(totalAmount)} {assetLabel}
+                {prefix}
+                {formatCurrency(totalAmount)} {assetLabel}
               </Text>
             </View>
           </View>

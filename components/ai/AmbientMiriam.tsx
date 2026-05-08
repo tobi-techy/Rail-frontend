@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Pressable, useWindowDimensions } from 'react-native';
+import { Text, Pressable, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutRight } from 'react-native-reanimated';
 import { MiriamCharacter } from '@/components/ai/MiriamCharacter';
 import type { NudgeResponse, NudgeAction } from '@/api/types/ai';
@@ -33,7 +33,7 @@ export function AmbientMiriam({ nudge, onDismiss, onPress, onAction }: Props) {
         if (timerRef.current) clearTimeout(timerRef.current);
       };
     }
-  }, [nudge]);
+  }, [nudge, onDismiss]);
 
   if (!nudge?.show || !nudge.message) return null;
 
@@ -51,14 +51,9 @@ export function AmbientMiriam({ nudge, onDismiss, onPress, onAction }: Props) {
         onPress={onPress ?? onDismiss}
         onLongPress={onDismiss}
         delayLongPress={300}
-        className="mr-2 flex-1 rounded-2xl px-4 py-3"
+        className="mr-2 flex-1 rounded-2xl border border-stone-surface px-4 py-3"
         style={{
           backgroundColor: config.bubbleBg,
-          shadowColor: '#000',
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 4,
         }}
         accessibilityRole="alert"
         accessibilityLabel={`Miriam says: ${nudge.message}`}>

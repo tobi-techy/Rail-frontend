@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, StatusBar, Text, Pressable, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -26,11 +26,8 @@ import {
   formatCurrency,
   formatMaxAmount,
   getAmountError,
-  getDestinationError,
-  getFiatAccountNumberError,
   getFlowLabels,
   normalizeAmount,
-  sanitizeDestinationInput,
   toDisplayAmount,
 } from '@/app/withdraw/method-screen/utils';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
@@ -66,15 +63,20 @@ import {
 } from '@/components/withdraw/WithdrawalStatusScreen';
 import { WhitelistPrompt } from '@/components/withdraw/WhitelistPrompt';
 import { MFAChallengeSheet } from '@/components/sheets/MFAChallengeSheet';
-import { Cancel01Icon } from '@/lib/icons';
-import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { AmbientMiriamNudge } from '@/components/ai/AmbientMiriamNudge';
+import { Cancel01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { usePajRates } from '@/api/hooks/usePaj';
+import {
+  MIN_CRYPTO_TRANSACTION_AMOUNT_USD,
+  MIN_NGN_TRANSACTION_AMOUNT,
+} from '@/constants/transactionLimits';
 
 export default function WithdrawAmountScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user as ProfileNamePayload | undefined);
   const { showError, showSuccess } = useFeedbackPopup();
-  const { data: station, refetch: refetchStation } = useStation();
+  const { data: station } = useStation();
+  const storeCurrency = useUIStore((s) => s.currency);
   const { data: passkeys, isLoading: isPasskeysLoading } = usePasskeys();
   const { mutateAsync: registerPasskey, isPending: isRegisteringPasskey } = useRegisterPasskey();
   const params = useLocalSearchParams<{
@@ -114,7 +116,9 @@ export default function WithdrawAmountScreen() {
   const isMobileWalletFundingFlow = isFundFlow && isWalletFundingMethod(selectedMethod);
   const isMWAWithdrawMethod = selectedMethod === 'mwa-withdraw';
 
-  const { data: kycStatus, isLoading: isKycStatusLoading } = useKYCStatus(isFiatMethod && !isNairaFlow);
+  const { data: kycStatus, isLoading: isKycStatusLoading } = useKYCStatus(
+    isFiatMethod && !isNairaFlow
+  );
   const isFiatApproved = kycStatus?.status === 'approved';
   const prefilledAssetSymbol = useMemo(() => {
     if (!isAssetTradeMethod) return '';
@@ -125,9 +129,9 @@ export default function WithdrawAmountScreen() {
   }, [isAssetTradeMethod, params.symbol]);
 
   const [rawAmount, setRawAmount] = useState('0');
-  const [didTryContinue, setDidTryContinue] = useState(false);
+  const [, setDidTryContinue] = useState(false);
   // Step-based flow state — restored from params when returning from confirm screen
-  const [currentStep, setCurrentStep] = useState<WithdrawalStep>('amount');
+  const [, setCurrentStep] = useState<WithdrawalStep>('amount');
   const [destinationInput, setDestinationInput] = useState(
     params.destinationInput ?? prefilledAssetSymbol
   );
@@ -140,20 +144,13 @@ export default function WithdrawAmountScreen() {
   useEffect(() => {
     if (params.destinationChain) setDestinationChain(params.destinationChain);
   }, [params.destinationChain]);
-  const [didTryDestination, setDidTryDestination] = useState(false);
-  const [didTryFiatAccount, setDidTryFiatAccount] = useState(false);
-  const [fiatAccountHolderName, setFiatAccountHolderName] = useState(
-    params.fiatAccountHolderName ?? ''
-  );
-  const [fiatAccountNumber, setFiatAccountNumber] = useState(params.fiatAccountNumber ?? '');
-  const [fiatCurrency, setFiatCurrency] = useState<FiatCurrency>(
-    (params.fiatCurrency as FiatCurrency) ?? 'USD'
-  );
-  const [fiatBic, setFiatBic] = useState(params.fiatBic ?? '');
-  const [category, setCategory] = useState(params.category ?? 'Transfer');
-  const [narration, setNarration] = useState(params.narration ?? '');
+  const [fiatAccountHolderName] = useState(params.fiatAccountHolderName ?? '');
+  const [fiatAccountNumber] = useState(params.fiatAccountNumber ?? '');
+  const [fiatCurrency] = useState<FiatCurrency>((params.fiatCurrency as FiatCurrency) ?? 'USD');
+  const [fiatBic] = useState(params.fiatBic ?? '');
+  const [category] = useState(params.category ?? 'Transfer');
+  const [narration] = useState(params.narration ?? '');
   const [isAuthorizeScreenVisible, setIsAuthorizeScreenVisible] = useState(false);
-  const [isConfirmSheetVisible, setIsConfirmSheetVisible] = useState(false);
   const [isSubmissionSheetVisible, setIsSubmissionSheetVisible] = useState(false);
   const [withdrawalStatus, setWithdrawalStatus] = useState<WithdrawalStatusType | null>(null);
   const [withdrawalErrorMsg, setWithdrawalErrorMsg] = useState('');
@@ -222,8 +219,6 @@ export default function WithdrawAmountScreen() {
     if (destinationChain === 'SOL' || !destinationChain) return 0.1;
     return 0.5;
   }, [numericAmount, isFiatMethod, asset, destinationChain, railFeeUSD]);
-  const totalAmount = useMemo(() => numericAmount + feeAmount, [feeAmount, numericAmount]);
-
   const amountError = useMemo(
     () =>
       getAmountError({
@@ -234,7 +229,8 @@ export default function WithdrawAmountScreen() {
         withdrawalLimit,
         feeAmount,
         currencySymbol: isNGNAsset ? '₦' : '$',
-        minAmount: isNGNAsset ? 500 : 1,
+        minAmount: isNGNAsset ? MIN_NGN_TRANSACTION_AMOUNT : MIN_CRYPTO_TRANSACTION_AMOUNT_USD,
+        minAmountLabel: isFundFlow ? 'funding' : 'withdrawal',
       }),
     [
       availableBalance,
@@ -246,38 +242,28 @@ export default function WithdrawAmountScreen() {
       isNGNAsset,
     ]
   );
-  const destinationError = useMemo(
-    () =>
-      getDestinationError({
-        destinationInput,
-        isAssetTradeMethod,
-        isCryptoDestinationMethod,
-        isFiatMethod,
-        isMobileWalletFundingFlow,
-        destinationChain,
-        fiatCurrency,
-      }),
-    [
-      destinationInput,
-      isAssetTradeMethod,
-      isCryptoDestinationMethod,
-      isFiatMethod,
-      isMobileWalletFundingFlow,
-      destinationChain,
-      fiatCurrency,
+  const nudgeCurrency = isCryptoDestinationMethod ? 'USDC' : asset || storeCurrency;
+  const liveAmountNudgeHint = useMemo(() => {
+    const issue = amountError ? ` Current validation issue: ${amountError}` : '';
+    return [
+      `${isFundFlow ? 'funding' : 'withdrawal'} amount entry`,
+      `available balance ${isNGNAsset ? 'NGN' : 'USD'} ${formatCurrency(availableBalance)}`,
+      `method limit ${isNGNAsset ? 'NGN' : 'USD'} ${formatCurrency(maxWithdrawable)}`,
+      `estimated fee ${isNGNAsset ? 'NGN' : 'USD'} ${formatCurrency(feeAmount)}`,
+      issue,
     ]
+      .filter(Boolean)
+      .join('; ');
+  }, [amountError, availableBalance, feeAmount, isFundFlow, isNGNAsset, maxWithdrawable]);
+  const liveAmountActions = useMemo(
+    () => [
+      'typing_withdrawal_amount',
+      amountError ? 'amount_has_validation_error' : 'amount_valid',
+      numericAmount >= maxWithdrawable * 0.8 ? 'near_withdrawal_limit' : 'within_withdrawal_limit',
+    ],
+    [amountError, maxWithdrawable, numericAmount]
   );
-
   const canContinue = numericAmount > 0 && !amountError;
-
-  const fiatAccountNumberError = useMemo(
-    () => getFiatAccountNumberError(fiatAccountNumber, fiatCurrency),
-    [fiatAccountNumber, fiatCurrency]
-  );
-
-  const canSaveDestination =
-    !destinationError &&
-    (!isFiatMethod || (fiatAccountHolderName.trim().length >= 2 && !fiatAccountNumberError));
 
   // Lockout countdown
   useEffect(() => {
@@ -305,7 +291,7 @@ export default function WithdrawAmountScreen() {
   useEffect(() => {
     headerOpacity.value = withTiming(1, { duration: 400 });
     keypadTranslateY.value = withSpring(0, { ...gentleSpring, damping: 18 });
-  }, []);
+  }, [headerOpacity, keypadTranslateY]);
 
   useEffect(() => {
     if (Number(rawAmount) > 0) {
@@ -315,7 +301,7 @@ export default function WithdrawAmountScreen() {
       pillsScale.value = withSpring(0.9, gentleSpring);
       pillsOpacity.value = withTiming(0.7, { duration: 200 });
     }
-  }, [rawAmount]);
+  }, [pillsOpacity, pillsScale, rawAmount]);
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({ opacity: headerOpacity.value }));
   const keypadAnimatedStyle = useAnimatedStyle(() => ({
@@ -378,6 +364,7 @@ export default function WithdrawAmountScreen() {
 
   const txFingerprint = `${selectedMethod}:${numericAmount.toFixed(2)}`;
   const passkeyPromptScope = `withdraw-authorize:${safeName(user?.email) || 'unknown'}:${txFingerprint}`;
+  const passkeyRef = useRef<ReturnType<typeof usePasskeyAuthorize> | null>(null);
 
   const onSubmitAuthorizedWithdrawal = useCallback(() => {
     if (isMWAWithdrawMethod) {
@@ -390,7 +377,9 @@ export default function WithdrawAmountScreen() {
       onError: (err: unknown) => {
         if (isPasscodeSessionError(err)) {
           setIsAuthorizeScreenVisible(true);
-          passkey.setAuthError('Authorization expired. Confirm with passkey or PIN to continue.');
+          passkeyRef.current?.setAuthError(
+            'Authorization expired. Confirm with passkey or PIN to continue.'
+          );
           return;
         }
         // Security: intercept whitelist and MFA step-up errors
@@ -413,7 +402,7 @@ export default function WithdrawAmountScreen() {
         setWithdrawalStatus('failed');
       },
     });
-  }, [withdrawal, openSubmissionSheet, isFundFlow, isMWAWithdrawMethod, mwaWithdrawal]); // passkey ref resolved below
+  }, [withdrawal, openSubmissionSheet, isFundFlow, isMWAWithdrawMethod, mwaWithdrawal]);
 
   const passkey = usePasskeyAuthorize({
     email: user?.email,
@@ -421,6 +410,7 @@ export default function WithdrawAmountScreen() {
     autoTrigger: isAuthorizeScreenVisible && passkeyAvailable,
     onAuthorized: onSubmitAuthorizedWithdrawal,
   });
+  passkeyRef.current = passkey;
 
   const isAuthorizing = isPasscodeVerifying || passkey.isPasskeyLoading || isRegisteringPasskey;
   const authorizingTitle = isRegisteringPasskey ? 'Creating passkey...' : undefined;
@@ -548,7 +538,7 @@ export default function WithdrawAmountScreen() {
         detailHint: methodCopy.detailHint,
         availableBalance: String(availableBalance),
         withdrawalLimit: String(maxWithdrawable),
-        currency: isCryptoDestinationMethod ? 'USDC' : asset || useUIStore.getState().currency,
+        currency: nudgeCurrency,
       },
     });
   }, [
@@ -565,6 +555,7 @@ export default function WithdrawAmountScreen() {
     methodCopy,
     availableBalance,
     maxWithdrawable,
+    nudgeCurrency,
   ]);
 
   const MAX_PIN_ATTEMPTS = 5;
@@ -623,7 +614,6 @@ export default function WithdrawAmountScreen() {
     setRawAmount('0');
     setDestinationInput('');
     setDidTryContinue(false);
-    setDidTryDestination(false);
     funding.reset();
   }, [funding]);
 
@@ -756,6 +746,17 @@ export default function WithdrawAmountScreen() {
     <ErrorBoundary>
       <SafeAreaView className="flex-1" style={{ backgroundColor: BRAND_RED }} edges={['top']}>
         <StatusBar barStyle="light-content" backgroundColor={BRAND_RED} />
+        <AmbientMiriamNudge
+          screen="withdraw_amount_live"
+          amount={numericAmount > 0 ? numericAmount.toFixed(2) : undefined}
+          currency={nudgeCurrency}
+          enabled={numericAmount > 0}
+          debounceMs={650}
+          cooldownMs={6_500}
+          cooldownScope="screen"
+          merchantHint={liveAmountNudgeHint}
+          recentActions={liveAmountActions}
+        />
 
         <View className="flex-1 px-5">
           <Animated.View
