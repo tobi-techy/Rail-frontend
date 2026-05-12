@@ -10,6 +10,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import * as SplashScreen from 'expo-splash-screen';
 import { initSentry } from '@/lib/sentry';
 import { initGlobalErrorHandlers, logger } from '@/lib/logger';
+import { initMixpanel } from '@/utils/mixpanel';
 import { validateEnvironmentVariables } from '@/utils/envValidator';
 import { useFonts } from '@/hooks/useFonts';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
@@ -37,6 +38,7 @@ const SPLASH_MAX_DURATION_MS = 4000;
 
 initSentry();
 initGlobalErrorHandlers();
+initMixpanel();
 
 const envValidation = validateEnvironmentVariables();
 if (!envValidation.isValid && !__DEV__) {

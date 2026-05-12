@@ -1,11 +1,12 @@
 /**
  * Analytics Utility
- * Centralized event tracking for PostHog
+ * Centralized event tracking for PostHog + Mixpanel
  */
 
 import { usePostHog } from 'posthog-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/lib/logger';
+import { mpTrack, mpIdentify, mpSetProfile } from '@/utils/mixpanel';
 
 /**
  * Hook to access PostHog analytics
@@ -37,6 +38,7 @@ export function useAnalytics() {
         }
 
         posthog.capture(eventName, properties);
+        mpTrack(eventName, properties);
         if (__DEV__) {
           logger.debug(`[Analytics] Event tracked: ${eventName}`, properties);
         }
@@ -93,6 +95,8 @@ export function useAnalytics() {
         }
 
         posthog.identify(userId, properties);
+        mpIdentify(userId);
+        if (properties) mpSetProfile(properties);
         if (__DEV__) {
           logger.debug(`[Analytics] User identified: ${userId}`, properties);
         }

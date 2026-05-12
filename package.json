@@ -102,6 +102,7 @@
     "expo-video": "~3.0.16",
     "expo-web-browser": "~15.0.10",
     "jail-monkey": "^2.8.0",
+    "mixpanel-react-native": "^3.3.0",
     "moti": "^0.30.0",
     "nativewind": "^4.0.1",
     "phosphor-react-native": "^3.0.6",
