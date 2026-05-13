@@ -26,7 +26,7 @@ export async function initMixpanel(): Promise<void> {
   }
   try {
     mixpanel = new Mixpanel(MIXPANEL_TOKEN, true);
-    await mixpanel.init();
+    await mixpanel.init(undefined, { serverURL: 'https://api-eu.mixpanel.com' });
     mixpanel.registerSuperProperties({ platform: Platform.OS });
     if (__DEV__) logger.debug('[Mixpanel] Initialized');
   } catch (error) {

@@ -16,6 +16,7 @@ import { useFonts } from '@/hooks/useFonts';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { useBiometricLock } from '@/hooks/useBiometricLock';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useForceUpdate } from '@/hooks/useForceUpdate';
 import { enforceDeviceSecurity } from '@/utils/deviceSecurity';
 import { initEncryption } from '@/utils/encryption';
 import { SplashScreen as CustomSplash } from '@/components/SplashScreen';
@@ -52,6 +53,7 @@ if (!envValidation.isValid && !__DEV__) {
 function AppReadyTracker() {
   const posthog = usePostHog();
   usePushNotifications(); // Initialize push notifications
+  useForceUpdate(); // Check for app updates
   useEffect(() => {
     posthog?.capture('app_opened', { platform: Platform.OS });
   }, [posthog]);
