@@ -1,51 +1,78 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import React, { useState, useRef, useCallback } from 'react';
+import { View, Text, Image, Dimensions, FlatList, Pressable } from 'react-native';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Button } from '@/components/ui';
+import * as WebBrowser from 'expo-web-browser';
 import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import { logger } from '@/lib/logger';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const SLIDE_WIDTH = SCREEN_WIDTH - 48; // padding
 
 interface InvestmentDisclaimerSheetProps {
   visible: boolean;
   onAccept: () => void;
 }
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <View className="mb-6">
-    <Text className="mb-2 font-button text-[15px] text-charcoal-primary">{title}</Text>
-    <Text className="font-body text-[14px] leading-[22px] text-graphite">{children}</Text>
-  </View>
-);
-
-const BulletPoint = ({ children }: { children: React.ReactNode }) => (
-  <View className="mb-2 flex-row">
-    <Text className="mr-3 font-body text-[14px] text-smoke">•</Text>
-    <Text className="flex-1 font-body text-[14px] leading-[22px] text-graphite">{children}</Text>
-  </View>
-);
+const slides = [
+  {
+    image: require('@/assets/images/onboard-slide-1.png'),
+    title: 'Money Splits Automatically',
+    description:
+      'Every deposit is instantly split — 70% to Spend, 30% to Stash. No buttons, no decisions. Your money starts working the moment it arrives.',
+  },
+  {
+    image: require('@/assets/images/onboard-slide-2.png'),
+    title: 'Stash Earns Yield',
+    description:
+      'Your 30% stash earns yield automatically, backed by US Treasuries. No staking, no claiming — it just grows while you do nothing.',
+  },
+  {
+    image: require('@/assets/images/onboard-slide-3.png'),
+    title: 'Spend With Your Card',
+    description:
+      'Use your Rail card anywhere Visa is accepted. Round-ups from purchases go straight to your stash for extra growth.',
+  },
+  {
+    image: require('@/assets/images/onboard-slide-4.png'),
+    title: 'Investing Involves Risk',
+    description:
+      'The value of investments can go up or down. Rail does not provide financial advice. Past performance does not guarantee future results.',
+  },
+];
 
 export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDisclaimerSheetProps) {
+  const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
 
-  const handleAccept = async () => {
-    setLoading(true);
-    try {
-      const res = await virtualAccountService.getTOSLink();
-      const url = res?.tos_link;
-      if (url) {
-        await WebBrowser.openAuthSessionAsync(url);
+  const isLastSlide = activeIndex === slides.length - 1;
+
+  const handleNext = useCallback(async () => {
+    if (!isLastSlide) {
+      flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
+      setActiveIndex(activeIndex + 1);
+    } else {
+      setLoading(true);
+      try {
+        const res = await virtualAccountService.getTOSLink();
+        const url = res?.tos_link;
+        if (url) await WebBrowser.openAuthSessionAsync(url);
+      } catch (error) {
+        logger.warn('[Disclaimer] Failed to open Bridge TOS', {
+          component: 'InvestmentDisclaimerSheet',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      } finally {
+        setLoading(false);
+        onAccept();
       }
-    } catch (error) {
-      logger.warn('[Disclaimer] Failed to open Bridge TOS', {
-        component: 'InvestmentDisclaimerSheet',
-        error: error instanceof Error ? error.message : String(error),
-      });
-    } finally {
-      setLoading(false);
-      onAccept();
     }
-  };
+  }, [activeIndex, isLastSlide, onAccept]);
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems?.[0]) setActiveIndex(viewableItems[0].index ?? 0);
+  }).current;
 
   return (
     <GorhomBottomSheet
@@ -53,98 +80,65 @@ export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDiscl
       onClose={onAccept}
       showCloseButton={false}
       dismissible={false}>
-      <View className="max-h-[80vh]">
-        {/* Header */}
-        <View className="mb-6">
-          <Text className="text-center font-subtitle text-[24px] text-charcoal-primary">How Rail Works</Text>
-          <Text className="mt-2 text-center font-body text-[14px] leading-[20px] text-ash">
-            Understanding your automated wealth system
-          </Text>
+      <View>
+        <FlatList
+          ref={flatListRef}
+          data={slides}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
+          keyExtractor={(_, i) => String(i)}
+          renderItem={({ item }) => (
+            <View style={{ width: SLIDE_WIDTH, alignItems: 'center' }}>
+              <Image
+                source={item.image}
+                style={{ width: SLIDE_WIDTH, height: 220, borderRadius: 16 }}
+                resizeMode="cover"
+              />
+              <Text className="mt-5 text-center font-subtitle text-[22px] text-charcoal-primary">
+                {item.title}
+              </Text>
+              <Text className="mt-2 px-2 text-center font-body text-[15px] leading-[22px] text-graphite">
+                {item.description}
+              </Text>
+            </View>
+          )}
+        />
+
+        {/* Dots */}
+        <View className="mt-5 flex-row items-center justify-center gap-2">
+          {slides.map((_, i) => (
+            <View
+              key={i}
+              className={`h-2 rounded-full ${i === activeIndex ? 'w-6 bg-charcoal-primary' : 'w-2 bg-ash/30'}`}
+            />
+          ))}
         </View>
 
-        {/* Scrollable Content */}
-        <ScrollView
-          className="max-h-[50vh]"
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-          contentContainerStyle={{ paddingBottom: 8 }}>
-          <Section title="Automatic Investment">
-            When you add money to Rail, it immediately goes to work. Every deposit is automatically
-            split: 70% goes to Base Rail for stability and capital preservation, while 30% goes to
-            Active Rail for growth through diversified investments. This happens instantly — no
-            buttons to press, no decisions to make.
-          </Section>
-
-          <Section title="The Rail Split Explained">
-            Base Rail (70%) keeps your money stable and accessible. It&apos;s designed for lower
-            volatility and liquidity when you need it. Active Rail (30%) is where growth happens —
-            your money is automatically invested into a diversified portfolio of assets managed by
-            our system. This split applies to every deposit and is designed to balance safety with
-            growth.
-          </Section>
-
-          <Section title="Following Conductors">
-            Conductors are verified professional investors who create and manage Tracks — curated
-            investment strategies you can follow. When you follow a Track, a portion of your Active
-            Rail automatically mirrors the Conductor&apos;s moves. You can browse different Tracks,
-            see their performance history, and follow or unfollow at any time. Your positions update
-            automatically when the Conductor makes changes.
-          </Section>
-
-          <View className="mb-6">
-            <Text className="mb-3 font-button text-[15px] text-charcoal-primary">Understanding Risk</Text>
-            <BulletPoint>
-              The value of your investments can go up or down — this is completely normal and part
-              of how markets work
-            </BulletPoint>
-            <BulletPoint>
-              Past performance of any investment, Track, or Conductor does not guarantee future
-              results
-            </BulletPoint>
-            <BulletPoint>
-              Only add money you&apos;re comfortable not accessing immediately — investing works
-              best over time
-            </BulletPoint>
-            <BulletPoint>
-              Diversification helps manage risk but cannot eliminate it entirely
-            </BulletPoint>
-            <BulletPoint>
-              Market conditions change daily based on economic factors beyond anyone&apos;s control
-            </BulletPoint>
-            <BulletPoint>
-              You can withdraw your money anytime, but short-term withdrawals may mean missing
-              growth opportunities
-            </BulletPoint>
-          </View>
-
-          <Section title="What Rail Does">
-            Rail is an automated wealth system. We provide the infrastructure, the investment
-            engine, and the tools to help your money grow. We handle the complexity of investing so
-            you don&apos;t have to think about asset allocation, market timing, or portfolio
-            rebalancing.
-          </Section>
-
-          <Section title="What Rail Doesn't Do">
-            Rail is not a financial advisor and does not provide personalized financial advice. We
-            don&apos;t tell you how much to invest, when to invest, or whether investing is right
-            for your personal situation. The system operates based on rules and algorithms, not
-            individual recommendations. All investment decisions — including choosing to use Rail —
-            are ultimately yours.
-          </Section>
-
-          <View className="mb-4 rounded-2xl bg-black/[0.03] p-4">
-            <Text className="font-body text-[13px] leading-[20px] text-ash">
-              By tapping &quot;I Understand&quot; below, you acknowledge that: (1) investing
-              involves risk and you may lose money, (2) Rail does not provide financial advice, (3)
-              past performance does not guarantee future results, and (4) you are responsible for
-              your own investment decisions.
-            </Text>
-          </View>
-        </ScrollView>
-
-        {/* Accept Button */}
-        <View className="mt-4 pt-2">
-          <Button title={loading ? 'Opening Terms…' : 'I Understand'} onPress={handleAccept} disabled={loading} />
+        {/* Buttons */}
+        <View className="mt-6 flex-row gap-3">
+          {isLastSlide ? (
+            <>
+              <Pressable
+                onPress={onAccept}
+                className="flex-1 items-center justify-center rounded-full border border-ash/20 py-4">
+                <Text className="font-button text-[15px] text-charcoal-primary">Maybe later</Text>
+              </Pressable>
+              <View className="flex-1">
+                <Button
+                  title={loading ? 'Opening…' : 'I Understand'}
+                  onPress={handleNext}
+                  disabled={loading}
+                />
+              </View>
+            </>
+          ) : (
+            <View className="flex-1">
+              <Button title="Next" onPress={handleNext} />
+            </View>
+          )}
         </View>
       </View>
     </GorhomBottomSheet>
