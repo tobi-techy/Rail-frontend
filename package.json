@@ -50,6 +50,7 @@
     "@gorhom/bottom-sheet": "^5.2.8",
     "@hugeicons/core-free-icons": "^4.0.0",
     "@hugeicons/react-native": "^1.0.13",
+    "@mixpanel/react-native-session-replay": "^1.2.0",
     "@quidone/react-native-wheel-picker": "^1.6.1",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",

@@ -4,6 +4,11 @@
  */
 
 import { Mixpanel } from 'mixpanel-react-native';
+import {
+  MPSessionReplay,
+  MPSessionReplayConfig,
+  MPSessionReplayMask,
+} from '@mixpanel/react-native-session-replay';
 import { Platform } from 'react-native';
 import { logger } from '@/lib/logger';
 
@@ -32,6 +37,29 @@ export async function initMixpanel(): Promise<void> {
 }
 
 /**
+ * Initialize Session Replay. Call after user is identified.
+ */
+export async function initSessionReplay(distinctId: string): Promise<void> {
+  if (!MIXPANEL_TOKEN || !distinctId) return;
+  try {
+    const config = new MPSessionReplayConfig({
+      wifiOnly: false,
+      autoStartRecording: true,
+      recordingSessionsPercent: 100,
+      autoMaskedViews: [MPSessionReplayMask.Text, MPSessionReplayMask.Image],
+      flushInterval: 10,
+      enableLogging: __DEV__,
+    });
+    await MPSessionReplay.initialize(MIXPANEL_TOKEN, distinctId, config);
+    if (__DEV__) logger.debug('[Mixpanel] Session Replay initialized');
+  } catch (error) {
+    logger.error('[Mixpanel] Session Replay init failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
  * Track an event in Mixpanel.
  */
 export function mpTrack(event: string, properties?: Record<string, any>): void {
@@ -51,18 +79,42 @@ export function mpIdentify(userId: string): void {
   if (!mixpanel) return;
   try {
     mixpanel.identify(userId);
+    // Start session replay once user is identified
+    initSessionReplay(userId);
+    MPSessionReplay.identify(userId).catch(() => {});
   } catch (error) {
     logger.error('[Mixpanel] Identify failed', { userId, error });
   }
 }
 
 /**
- * Set user profile properties.
+ * Set user profile properties. Maps common keys to Mixpanel reserved properties.
  */
 export function mpSetProfile(properties: Record<string, any>): void {
   if (!mixpanel) return;
   try {
-    mixpanel.getPeople().set(properties);
+    const mapped: Record<string, any> = {};
+    for (const [key, value] of Object.entries(properties)) {
+      switch (key) {
+        case 'email':
+          mapped['$email'] = value;
+          break;
+        case 'first_name':
+        case 'firstName':
+          mapped['$first_name'] = value;
+          break;
+        case 'last_name':
+        case 'lastName':
+          mapped['$last_name'] = value;
+          break;
+        case 'name':
+          mapped['$name'] = value;
+          break;
+        default:
+          mapped[key] = value;
+      }
+    }
+    mixpanel.getPeople().set(mapped);
   } catch (error) {
     logger.error('[Mixpanel] Set profile failed', { error });
   }
@@ -110,6 +162,7 @@ export function mpSetSuperProperties(properties: Record<string, any>): void {
 export function mpReset(): void {
   if (!mixpanel) return;
   try {
+    MPSessionReplay.stopRecording().catch(() => {});
     mixpanel.reset();
   } catch (error) {
     logger.error('[Mixpanel] Reset failed', { error });
