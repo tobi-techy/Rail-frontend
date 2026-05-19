@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Image } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import type { AIMessage, InsightCard } from '@/api/types/ai';
 import { MarkdownContent } from './MarkdownContent';
@@ -20,6 +20,7 @@ interface Props {
 export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
   const isUser = msg.role === 'user';
   const content = msg.content ?? '';
+  const imageUrl = msg.image_url ?? msg.metadata?.image_url;
   const [typingDone, setTypingDone] = useState(!animate);
   const [copied, setCopied] = useState(false);
 
@@ -39,8 +40,19 @@ export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
           delayLongPress={400}
           accessibilityRole="text"
           accessibilityLabel={`Your message: ${content.slice(0, 100)}`}>
+          {imageUrl ? (
+            <View className="mb-1.5 overflow-hidden rounded-2xl">
+              <Image
+                source={{ uri: imageUrl }}
+                className="h-48 w-full rounded-2xl"
+                resizeMode="cover"
+              />
+            </View>
+          ) : null}
           <View className="rounded-3xl bg-[#EDEDEB] px-5 py-3.5">
-            <Text className="font-body text-[17px] leading-[28px] text-[#343433]">{content}</Text>
+            <Text className="font-body text-[17px] leading-[28px] text-[#343433]">
+              {content.replace(/^Image:\s*/i, '')}
+            </Text>
           </View>
         </Pressable>
       </Animated.View>

@@ -37,6 +37,7 @@ interface AIChatState {
   messageQueue: QueuedMessage[];
   streamAbortController: AbortController | null;
   connectionStatus: 'online' | 'offline' | 'streaming';
+  streamingPhase: string;
   lastError: string | null;
   retryCount: number;
 }
@@ -84,6 +85,7 @@ const initialState: AIChatState = {
   messageQueue: [],
   streamAbortController: null,
   connectionStatus: 'online',
+  streamingPhase: '',
   lastError: null,
   retryCount: 0,
 };
@@ -230,6 +232,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
           pendingAction: null,
           overCeiling: false,
           lastError: null,
+          streamingPhase: 'Thinking...',
           connectionStatus: 'streaming',
         }));
 
@@ -250,10 +253,11 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
             switch (event.type) {
               case 'token':
                 accumulated += event.content;
-                set({ streamedContent: accumulated });
+                set({ streamedContent: accumulated, streamingPhase: 'Writing...' });
                 break;
               case 'tool_result':
-                // Keep Miriam typing dots visible during tool execution
+                // Show what tool Miriam is using
+                set({ streamingPhase: `Using ${event.data.tool.replace(/_/g, ' ')}...` });
                 break;
               case 'cards':
                 finalCards = event.data;
@@ -286,6 +290,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
               pendingAction: finalPending,
               isStreaming: false,
               streamedContent: '',
+              streamingPhase: '',
               overCeiling: hitCeiling,
               activeConversationId: resolvedConvId ?? s.activeConversationId,
               connectionStatus: 'online',
@@ -307,6 +312,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
               messages: [...s.messages, errorMsg],
               isStreaming: false,
               streamedContent: '',
+              streamingPhase: '',
               lastError: err,
               connectionStatus: 'online',
               streamAbortController: null,
@@ -326,10 +332,11 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
         }
 
         const convId = conversationId ?? state.activeConversationId;
-        const userContent = message ? `Image: ${message}` : 'Image uploaded';
+        const userContent = message || 'Analyze this receipt';
         const userMsg: AIMessage = {
           role: 'user',
           content: userContent,
+          image_url: `data:image/jpeg;base64,${base64Image}`,
           created_at: new Date().toISOString(),
         };
 
@@ -342,7 +349,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
         }));
 
         try {
-          const res = await aiService.analyzeImage(base64Image, message);
+          const res = await aiService.analyzeImage(base64Image, message, convId ?? undefined);
           const response = res.data;
 
           const assistantMsg: AIMessage = {

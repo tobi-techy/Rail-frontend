@@ -22,6 +22,7 @@ export interface AIMessage {
   conversation_id?: string;
   role: 'user' | 'assistant';
   content: string;
+  image_url?: string; // base64 or URI for receipt/image messages
   token_count?: number;
   estimated_cost_usd?: string;
   model?: string;
@@ -37,7 +38,13 @@ export interface InsightCard {
     | 'progress'
     | 'highlight'
     | 'alert'
-    | 'financial_audit';
+    | 'financial_audit'
+    | 'tip'
+    | 'subscription_audit'
+    | 'runway'
+    | 'deposit_pattern'
+    | 'yield_summary'
+    | 'comparison';
   title: string;
   subtitle?: string;
   sentiment?: 'positive' | 'negative' | 'neutral';
@@ -57,7 +64,11 @@ export interface PendingAction {
     | 'update_financial_profile'
     | 'create_automation'
     | 'create_obligation_reminder'
-    | 'create_obligation_reminders';
+    | 'create_obligation_reminders'
+    | 'mark_obligation_paid'
+    | 'protect_subscription'
+    | 'mark_subscription_cancelled'
+    | 'ignore_subscription';
   description: string;
   params: Record<string, any>;
   expires_at: string;

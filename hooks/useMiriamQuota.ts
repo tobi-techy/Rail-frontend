@@ -26,13 +26,13 @@ interface QuotaState {
 
 const FREE_TIER: Record<MiriamFeature, { enabled: boolean; limit?: number }> = {
   chat: { enabled: true, limit: 10 },
-  voice: { enabled: false },
-  image_analysis: { enabled: false },
+  voice: { enabled: true },
+  image_analysis: { enabled: true },
   pinned_insights: { enabled: true, limit: 1 },
   automations: { enabled: false },
   impact_dashboard: { enabled: false },
   advanced_forecasts: { enabled: false },
-  receipt_scanning: { enabled: false },
+  receipt_scanning: { enabled: true },
   tax_summary: { enabled: false },
   human_escalation: { enabled: false },
 };
