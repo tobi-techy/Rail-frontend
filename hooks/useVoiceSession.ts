@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
+import { Platform } from 'react-native';
 import { AudioModule, createAudioPlayer } from 'expo-audio';
 import { File, Paths } from 'expo-file-system';
 import { useAuthStore } from '@/stores/authStore';
@@ -29,14 +30,9 @@ export function useVoiceSession() {
   const wsRef = useRef<WebSocket | null>(null);
   const activeRef = useRef(false);
   const stateRef = useRef<VoiceState>('idle');
-
-  // Playback
-  const playQueueRef = useRef<string[]>([]);
-  const isDrainingRef = useRef(false);
-  const cancelDrainRef = useRef(false);
-  const playerRef = useRef<ReturnType<typeof createAudioPlayer> | null>(null);
-  const fileCounterRef = useRef(0);
-  const replyPendingRef = useRef(false);
+  const audioQueueRef = useRef<string[]>([]);
+  const isPlayingRef = useRef(false);
+  const fileIdRef = useRef(0);
 
   const setVoiceState = useCallback((s: VoiceState) => {
     stateRef.current = s;
@@ -45,22 +41,14 @@ export function useVoiceSession() {
 
   const cleanup = useCallback(() => {
     activeRef.current = false;
-    cancelDrainRef.current = true;
-    playQueueRef.current = [];
-    isDrainingRef.current = false;
-    replyPendingRef.current = false;
+    audioQueueRef.current = [];
+    isPlayingRef.current = false;
     try {
       LiveAudioStream?.stop();
     } catch {}
     try {
       LiveAudioStream?.removeAllListeners?.();
     } catch {}
-    if (playerRef.current) {
-      try {
-        playerRef.current.remove();
-      } catch {}
-      playerRef.current = null;
-    }
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -70,84 +58,72 @@ export function useVoiceSession() {
     setResponseText('');
   }, [setVoiceState]);
 
-  // --- Playback ---
-  const drainPlayQueue = useCallback(async () => {
-    if (isDrainingRef.current) return;
-    isDrainingRef.current = true;
-    cancelDrainRef.current = false;
-
-    while (playQueueRef.current.length > 0 && !cancelDrainRef.current) {
-      const batch = playQueueRef.current.splice(0, 3);
-      const pcmBase64 = batch.join('');
-      if (!pcmBase64) continue;
-
-      const padding = pcmBase64.endsWith('==') ? 2 : pcmBase64.endsWith('=') ? 1 : 0;
-      const pcmBytes = Math.floor((pcmBase64.length * 3) / 4) - padding;
-      const wavBase64 = wavHeader(pcmBytes, 24000, 1, 16) + pcmBase64;
-
-      const idx = fileCounterRef.current++;
-      const file = new File(Paths.cache, `v_${idx}.wav`);
-
+  // Play a single WAV file and resolve when done
+  const playWav = useCallback((wavBase64: string): Promise<void> => {
+    return new Promise((resolve) => {
       try {
+        const id = fileIdRef.current++;
+        const filePath = `${Paths.cache}/voice_${id}.wav`;
+        const file = new File(filePath);
         file.write(wavBase64, { encoding: 'base64' });
 
-        const player = createAudioPlayer(file.uri);
-        playerRef.current = player;
+        const player = createAudioPlayer(filePath);
+        const sub = player.addListener('playbackStatusUpdate', (status) => {
+          if (status.didJustFinish) {
+            sub.remove();
+            player.remove();
+            try {
+              file.delete();
+            } catch {}
+            resolve();
+          }
+        });
         player.play();
 
-        // Wait for playback to finish
-        await new Promise<void>((resolve) => {
-          const sub = player.addListener('playbackStatusUpdate', (status: any) => {
-            if (status.didJustFinish || (!status.playing && status.currentTime > 0)) {
-              sub.remove();
-              resolve();
-            }
-          });
-          // Safety timeout
-          setTimeout(() => {
-            sub.remove();
-            resolve();
-          }, 8000);
-        });
-
-        player.remove();
-        playerRef.current = null;
-        try {
-          file.delete();
-        } catch {}
-      } catch {
-        try {
-          file.delete();
-        } catch {}
-        playerRef.current = null;
+        // Safety timeout - 15s max per chunk
+        setTimeout(() => {
+          sub.remove();
+          try {
+            player.remove();
+          } catch {}
+          try {
+            file.delete();
+          } catch {}
+          resolve();
+        }, 15000);
+      } catch (e) {
+        if (__DEV__) console.warn('[voice] playWav error:', e);
+        resolve();
       }
-
-      if (cancelDrainRef.current) break;
-    }
-
-    isDrainingRef.current = false;
-    if (!replyPendingRef.current && playQueueRef.current.length === 0 && activeRef.current) {
-      setVoiceState('listening');
-    }
-  }, [setVoiceState]);
-
-  const flushPlayback = useCallback(() => {
-    cancelDrainRef.current = true;
-    playQueueRef.current = [];
-    if (playerRef.current) {
-      try {
-        playerRef.current.pause();
-      } catch {}
-      try {
-        playerRef.current.remove();
-      } catch {}
-      playerRef.current = null;
-    }
-    isDrainingRef.current = false;
+    });
   }, []);
 
-  // --- Events ---
-  const handleServerEvent = useCallback(
+  // Drain audio queue sequentially
+  const drainQueue = useCallback(async () => {
+    if (isPlayingRef.current) return;
+    isPlayingRef.current = true;
+
+    while (audioQueueRef.current.length > 0 && activeRef.current) {
+      // Batch up to 5 chunks for smoother playback (fewer file writes)
+      const batch = audioQueueRef.current.splice(0, 5);
+      const combinedPcm = batch.join('');
+      if (!combinedPcm) continue;
+
+      // Build WAV
+      const padding = combinedPcm.endsWith('==') ? 2 : combinedPcm.endsWith('=') ? 1 : 0;
+      const pcmBytes = Math.floor((combinedPcm.length * 3) / 4) - padding;
+      const header = wavHeaderBase64(pcmBytes, 24000, 1, 16);
+      await playWav(header + combinedPcm);
+    }
+
+    isPlayingRef.current = false;
+    if (activeRef.current && stateRef.current === 'speaking') {
+      setVoiceState('listening');
+    }
+  }, [playWav, setVoiceState]);
+
+  // Handle events from backend
+  const handleEvent = useCallback(
     (event: VoiceEvent) => {
       switch (event.type) {
         case 'session.ready':
@@ -159,8 +135,8 @@ export function useVoiceSession() {
         case 'input.speech.started':
           setVoiceState('listening');
           setResponseText('');
-          replyPendingRef.current = false;
-          flushPlayback();
+          // Barge-in: clear queue
+          audioQueueRef.current = [];
           break;
 
         case 'input.speech.stopped':
@@ -173,14 +149,12 @@ export function useVoiceSession() {
 
         case 'reply.started':
           setVoiceState('speaking');
-          replyPendingRef.current = true;
-          cancelDrainRef.current = false;
           break;
 
         case 'reply.audio':
           if (event.data) {
-            playQueueRef.current.push(event.data);
-            drainPlayQueue();
+            audioQueueRef.current.push(event.data);
+            drainQueue();
           }
           break;
 
@@ -189,13 +163,10 @@ export function useVoiceSession() {
           break;
 
         case 'reply.done':
-          replyPendingRef.current = false;
           if (event.status === 'interrupted') {
-            flushPlayback();
-            setVoiceState('listening');
-          } else if (!isDrainingRef.current) {
-            setVoiceState('listening');
+            audioQueueRef.current = [];
           }
+          if (!isPlayingRef.current) setVoiceState('listening');
           break;
 
         case 'session.error':
@@ -204,10 +175,10 @@ export function useVoiceSession() {
           break;
       }
     },
-    [setVoiceState, drainPlayQueue, flushPlayback]
+    [setVoiceState, drainQueue]
   );
 
-  // --- Connect ---
+  // Connect
   const connect = useCallback(async () => {
     cleanup();
     setVoiceState('connecting');
@@ -221,13 +192,17 @@ export function useVoiceSession() {
     }
 
     if (!LiveAudioStream) {
-      setError('Voice requires a native app build. Please update the app.');
+      setError('Voice requires a native app build');
       setVoiceState('error');
       return;
     }
 
-    await AudioModule.setAudioModeAsync({ playsInSilentMode: true });
+    // Enable playback in silent mode + allow mixing
+    await AudioModule.setAudioModeAsync({
+      playsInSilentMode: true,
+    });
 
+    // Init mic: PCM16 24kHz mono
     LiveAudioStream.init({
       sampleRate: 24000,
       channels: 1,
@@ -237,12 +212,14 @@ export function useVoiceSession() {
       bufferSize: 4800,
     });
 
-    LiveAudioStream.on('data', (base64: string) => {
+    // Stream mic to backend
+    LiveAudioStream.on('data', (base64Pcm: string) => {
       const ws = wsRef.current;
       if (!ws || ws.readyState !== WebSocket.OPEN || !activeRef.current) return;
-      ws.send(JSON.stringify({ type: 'input.audio', audio: base64 }));
+      ws.send(JSON.stringify({ type: 'input.audio', audio: base64Pcm }));
     });
 
+    // WebSocket
     const httpBase = API_CONFIG.baseURL;
     const wsBase = httpBase.replace(/^http/, 'ws');
     const token = useAuthStore.getState().accessToken;
@@ -250,16 +227,20 @@ export function useVoiceSession() {
 
     const ws = new WebSocket(url);
     wsRef.current = ws;
-    ws.onopen = () => {};
+
+    ws.onopen = () => {
+      if (__DEV__) console.log('[voice] ws connected');
+    };
     ws.onmessage = (e) => {
       try {
-        handleServerEvent(JSON.parse(e.data));
+        handleEvent(JSON.parse(e.data));
       } catch (err) {
-        if (__DEV__) console.warn('[voice] parse error:', err);
+        if (__DEV__) console.warn('[voice] parse:', err);
       }
     };
-    ws.onerror = () => {
-      setError('Voice connection failed');
+    ws.onerror = (e) => {
+      if (__DEV__) console.warn('[voice] ws error:', e);
+      setError('Connection failed');
       setVoiceState('error');
     };
     ws.onclose = () => {
@@ -267,12 +248,9 @@ export function useVoiceSession() {
       try {
         LiveAudioStream?.stop();
       } catch {}
-      try {
-        LiveAudioStream?.removeAllListeners?.();
-      } catch {}
       if (stateRef.current !== 'error') setVoiceState('idle');
     };
-  }, [cleanup, handleServerEvent, setVoiceState]);
+  }, [cleanup, handleEvent, setVoiceState]);
 
   const disconnect = useCallback(() => {
     cleanup();
@@ -296,7 +274,8 @@ export function useVoiceSession() {
   };
 }
 
-function wavHeader(dataSize: number, sr: number, ch: number, bits: number): string {
+// WAV header (44 bytes) as base64
+function wavHeaderBase64(dataSize: number, sr: number, ch: number, bits: number): string {
   const buf = new ArrayBuffer(44);
   const v = new DataView(buf);
   const s = (o: number, t: string) => {
@@ -315,8 +294,8 @@ function wavHeader(dataSize: number, sr: number, ch: number, bits: number): stri
   v.setUint16(34, bits, true);
   s(36, 'data');
   v.setUint32(40, dataSize, true);
-  let bin = '';
   const bytes = new Uint8Array(buf);
+  let bin = '';
   for (let i = 0; i < 44; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin);
 }
