@@ -1,14 +1,18 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { Platform } from 'react-native';
-import { AudioModule, createAudioPlayer } from 'expo-audio';
-import { File, Paths } from 'expo-file-system';
+import {
+  initialize,
+  playPCMData,
+  toggleRecording,
+  tearDown,
+  requestMicrophonePermissionsAsync,
+  useExpoTwoWayAudioEventListener,
+  type MicrophoneDataCallback,
+  type VolumeLevelCallback,
+} from '@speechmatics/expo-two-way-audio';
+import { requireNativeModule } from 'expo-modules-core';
+import { Buffer } from 'buffer';
 import { useAuthStore } from '@/stores/authStore';
 import { API_CONFIG } from '@/api/config';
-
-let LiveAudioStream: any = null;
-try {
-  LiveAudioStream = require('react-native-live-audio-stream').default;
-} catch {}
 
 export type VoiceState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'error';
 
@@ -21,33 +25,147 @@ interface VoiceEvent {
   [key: string]: any;
 }
 
+interface ExpoTwoWayAudioNativeModule {
+  stopPlayback?: () => void;
+}
+
+const twoWayAudioNative = requireNativeModule<ExpoTwoWayAudioNativeModule>('ExpoTwoWayAudio');
+
+// Fast base64 decode
+function base64ToBytes(b64: string): Uint8Array {
+  return Uint8Array.from(Buffer.from(b64, 'base64'));
+}
+
+// Fast base64 encode for mic data (Uint8Array → base64)
+function bytesToBase64(bytes: Uint8Array): string {
+  return Buffer.from(bytes).toString('base64');
+}
+
+function splitCaptionTokens(text: string): string[] {
+  return text.match(/\S+\s*/g) ?? [];
+}
+
+function estimateCaptionDurationMs(text: string, audioDurationMs: number, audioStartedAt: number) {
+  const tokenCount = Math.max(splitCaptionTokens(text).length, 1);
+  const naturalDurationMs = Math.min(Math.max(tokenCount * 115, 500), 5000);
+  if (!audioDurationMs || !audioStartedAt) return naturalDurationMs;
+
+  const elapsedPlaybackMs = Date.now() - audioStartedAt;
+  const remainingPlaybackMs = audioDurationMs - elapsedPlaybackMs;
+  if (remainingPlaybackMs > 300) return Math.min(Math.max(remainingPlaybackMs, 500), 5000);
+
+  return naturalDurationMs;
+}
+
 export function useVoiceSession() {
   const [state, setState] = useState<VoiceState>('idle');
   const [transcript, setTranscript] = useState('');
   const [responseText, setResponseText] = useState('');
   const [error, setError] = useState('');
+  const [inputVolume, setInputVolume] = useState(0);
+  const [outputVolume, setOutputVolume] = useState(0);
 
   const wsRef = useRef<WebSocket | null>(null);
   const activeRef = useRef(false);
   const stateRef = useRef<VoiceState>('idle');
-  const audioQueueRef = useRef<string[]>([]);
-  const isPlayingRef = useRef(false);
-  const fileIdRef = useRef(0);
+  const canPlayReplyAudioRef = useRef(false);
+  const captionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const speakingSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const replyAudioStartedAtRef = useRef(0);
+  const replyAudioDurationMsRef = useRef(0);
 
   const setVoiceState = useCallback((s: VoiceState) => {
     stateRef.current = s;
     setState(s);
   }, []);
 
+  const flushPlayback = useCallback(() => {
+    canPlayReplyAudioRef.current = false;
+    if (captionTimerRef.current) {
+      clearInterval(captionTimerRef.current);
+      captionTimerRef.current = null;
+    }
+    if (speakingSettleTimerRef.current) {
+      clearTimeout(speakingSettleTimerRef.current);
+      speakingSettleTimerRef.current = null;
+    }
+    setOutputVolume(0);
+    try {
+      twoWayAudioNative.stopPlayback?.();
+    } catch {}
+  }, []);
+
+  const revealAgentCaption = useCallback((text: string, durationMs?: number) => {
+    if (captionTimerRef.current) {
+      clearInterval(captionTimerRef.current);
+      captionTimerRef.current = null;
+    }
+
+    const tokens = splitCaptionTokens(text);
+    if (tokens.length === 0) {
+      setResponseText('');
+      return;
+    }
+
+    const totalDurationMs = durationMs ?? Math.min(Math.max(tokens.length * 115, 500), 5000);
+    const stepMs = Math.max(35, Math.floor(totalDurationMs / tokens.length));
+    let index = 0;
+
+    setResponseText('');
+    captionTimerRef.current = setInterval(() => {
+      index += 1;
+      setResponseText(tokens.slice(0, index).join('').trimEnd());
+      if (index >= tokens.length && captionTimerRef.current) {
+        clearInterval(captionTimerRef.current);
+        captionTimerRef.current = null;
+      }
+    }, stepMs);
+  }, []);
+
+  // Stream mic PCM to backend — native is patched to 24kHz PCM16 mono.
+  useExpoTwoWayAudioEventListener(
+    'onMicrophoneData',
+    useCallback<MicrophoneDataCallback>((event) => {
+      const ws = wsRef.current;
+      if (!ws || ws.readyState !== WebSocket.OPEN || !activeRef.current) return;
+      const b64 = bytesToBase64(event.data);
+      ws.send(JSON.stringify({ type: 'input.audio', audio: b64 }));
+    }, [])
+  );
+
+  // Volume level feedback for UI animations
+  useExpoTwoWayAudioEventListener(
+    'onInputVolumeLevelData',
+    useCallback<VolumeLevelCallback>((event) => {
+      setInputVolume(event.data);
+    }, [])
+  );
+
+  useExpoTwoWayAudioEventListener(
+    'onOutputVolumeLevelData',
+    useCallback<VolumeLevelCallback>((event) => {
+      setOutputVolume(event.data);
+    }, [])
+  );
+
   const cleanup = useCallback(() => {
     activeRef.current = false;
-    audioQueueRef.current = [];
-    isPlayingRef.current = false;
+    canPlayReplyAudioRef.current = false;
+    if (captionTimerRef.current) {
+      clearInterval(captionTimerRef.current);
+      captionTimerRef.current = null;
+    }
+    if (speakingSettleTimerRef.current) {
+      clearTimeout(speakingSettleTimerRef.current);
+      speakingSettleTimerRef.current = null;
+    }
+    replyAudioStartedAtRef.current = 0;
+    replyAudioDurationMsRef.current = 0;
     try {
-      LiveAudioStream?.stop();
+      toggleRecording(false);
     } catch {}
     try {
-      LiveAudioStream?.removeAllListeners?.();
+      tearDown();
     } catch {}
     if (wsRef.current) {
       wsRef.current.close();
@@ -56,87 +174,26 @@ export function useVoiceSession() {
     setVoiceState('idle');
     setTranscript('');
     setResponseText('');
+    setInputVolume(0);
+    setOutputVolume(0);
   }, [setVoiceState]);
 
-  // Play a single WAV file and resolve when done
-  const playWav = useCallback((wavBase64: string): Promise<void> => {
-    return new Promise((resolve) => {
-      try {
-        const id = fileIdRef.current++;
-        const filePath = `${Paths.cache}/voice_${id}.wav`;
-        const file = new File(filePath);
-        file.write(wavBase64, { encoding: 'base64' });
-
-        const player = createAudioPlayer(filePath);
-        const sub = player.addListener('playbackStatusUpdate', (status) => {
-          if (status.didJustFinish) {
-            sub.remove();
-            player.remove();
-            try {
-              file.delete();
-            } catch {}
-            resolve();
-          }
-        });
-        player.play();
-
-        // Safety timeout - 15s max per chunk
-        setTimeout(() => {
-          sub.remove();
-          try {
-            player.remove();
-          } catch {}
-          try {
-            file.delete();
-          } catch {}
-          resolve();
-        }, 15000);
-      } catch (e) {
-        if (__DEV__) console.warn('[voice] playWav error:', e);
-        resolve();
-      }
-    });
-  }, []);
-
-  // Drain audio queue sequentially
-  const drainQueue = useCallback(async () => {
-    if (isPlayingRef.current) return;
-    isPlayingRef.current = true;
-
-    while (audioQueueRef.current.length > 0 && activeRef.current) {
-      // Batch up to 5 chunks for smoother playback (fewer file writes)
-      const batch = audioQueueRef.current.splice(0, 5);
-      const combinedPcm = batch.join('');
-      if (!combinedPcm) continue;
-
-      // Build WAV
-      const padding = combinedPcm.endsWith('==') ? 2 : combinedPcm.endsWith('=') ? 1 : 0;
-      const pcmBytes = Math.floor((combinedPcm.length * 3) / 4) - padding;
-      const header = wavHeaderBase64(pcmBytes, 24000, 1, 16);
-      await playWav(header + combinedPcm);
-    }
-
-    isPlayingRef.current = false;
-    if (activeRef.current && stateRef.current === 'speaking') {
-      setVoiceState('listening');
-    }
-  }, [playWav, setVoiceState]);
-
-  // Handle events from backend
+  // Handle events from backend (AssemblyAI via proxy)
   const handleEvent = useCallback(
     (event: VoiceEvent) => {
       switch (event.type) {
         case 'session.ready':
           setVoiceState('listening');
           activeRef.current = true;
-          LiveAudioStream?.start();
+          // Start mic — native AEC handles echo cancellation
+          toggleRecording(true);
           break;
 
         case 'input.speech.started':
+        case 'rail.playback.flush':
+          flushPlayback();
           setVoiceState('listening');
           setResponseText('');
-          // Barge-in: clear queue
-          audioQueueRef.current = [];
           break;
 
         case 'input.speech.stopped':
@@ -144,29 +201,85 @@ export function useVoiceSession() {
           break;
 
         case 'transcript.user':
+        case 'transcript.user.delta':
           setTranscript(event.text ?? '');
           break;
 
         case 'reply.started':
+          canPlayReplyAudioRef.current = true;
+          replyAudioStartedAtRef.current = 0;
+          replyAudioDurationMsRef.current = 0;
+          if (captionTimerRef.current) {
+            clearInterval(captionTimerRef.current);
+            captionTimerRef.current = null;
+          }
+          setResponseText('');
           setVoiceState('speaking');
           break;
 
         case 'reply.audio':
-          if (event.data) {
-            audioQueueRef.current.push(event.data);
-            drainQueue();
+          if (event.data && canPlayReplyAudioRef.current) {
+            try {
+              const audioBytes = base64ToBytes(event.data);
+              if (!replyAudioStartedAtRef.current) replyAudioStartedAtRef.current = Date.now();
+              replyAudioDurationMsRef.current += (audioBytes.byteLength / 2 / 24000) * 1000;
+              playPCMData(audioBytes);
+            } catch {
+              setError('Audio playback failed');
+              setVoiceState('error');
+            }
           }
           break;
 
         case 'transcript.agent':
-          setResponseText(event.text ?? '');
+          if (event.interrupted) {
+            flushPlayback();
+            setResponseText(event.text ?? '');
+          } else {
+            const text = event.text ?? '';
+            revealAgentCaption(
+              text,
+              estimateCaptionDurationMs(
+                text,
+                replyAudioDurationMsRef.current,
+                replyAudioStartedAtRef.current
+              )
+            );
+          }
+          break;
+
+        case 'rail.transcript.agent.sync':
+          if (event.text) {
+            if (captionTimerRef.current) break;
+            revealAgentCaption(event.text, event.duration_ms ?? event.estimated_duration_ms);
+          }
+          break;
+
+        case 'rail.voice.audio_missing':
+          canPlayReplyAudioRef.current = true;
+          setVoiceState('speaking');
           break;
 
         case 'reply.done':
           if (event.status === 'interrupted') {
-            audioQueueRef.current = [];
+            flushPlayback();
+          } else {
+            canPlayReplyAudioRef.current = false;
+            const elapsedPlaybackMs = replyAudioStartedAtRef.current
+              ? Date.now() - replyAudioStartedAtRef.current
+              : 0;
+            const remainingPlaybackMs = Math.min(
+              Math.max(replyAudioDurationMsRef.current - elapsedPlaybackMs, 0),
+              5000
+            );
+            if (speakingSettleTimerRef.current) clearTimeout(speakingSettleTimerRef.current);
+            speakingSettleTimerRef.current = setTimeout(() => {
+              speakingSettleTimerRef.current = null;
+              if (stateRef.current === 'speaking') setVoiceState('listening');
+            }, remainingPlaybackMs);
           }
-          if (!isPlayingRef.current) setVoiceState('listening');
+          if (event.status === 'interrupted' && stateRef.current === 'speaking')
+            setVoiceState('listening');
           break;
 
         case 'session.error':
@@ -175,51 +288,35 @@ export function useVoiceSession() {
           break;
       }
     },
-    [setVoiceState, drainQueue]
+    [flushPlayback, revealAgentCaption, setVoiceState]
   );
 
-  // Connect
+  // Connect to voice session
   const connect = useCallback(async () => {
     cleanup();
     setVoiceState('connecting');
     setError('');
 
-    const permission = await AudioModule.requestRecordingPermissionsAsync();
+    const permission = await requestMicrophonePermissionsAsync();
     if (!permission.granted) {
       setError('Microphone permission required');
       setVoiceState('error');
       return;
     }
 
-    if (!LiveAudioStream) {
-      setError('Voice requires a native app build');
+    // Initialize native audio engine:
+    // - AVAudioEngine with .playAndRecord + .defaultToSpeaker
+    // - Voice processing (AEC + noise reduction)
+    // - PCM16 24kHz mono (patched from 16kHz)
+    try {
+      await initialize();
+    } catch {
+      setError('Failed to initialize audio');
       setVoiceState('error');
       return;
     }
 
-    // Enable playback in silent mode + allow mixing
-    await AudioModule.setAudioModeAsync({
-      playsInSilentMode: true,
-    });
-
-    // Init mic: PCM16 24kHz mono
-    LiveAudioStream.init({
-      sampleRate: 24000,
-      channels: 1,
-      bitsPerSample: 16,
-      audioSource: 6,
-      wavFile: '',
-      bufferSize: 4800,
-    });
-
-    // Stream mic to backend
-    LiveAudioStream.on('data', (base64Pcm: string) => {
-      const ws = wsRef.current;
-      if (!ws || ws.readyState !== WebSocket.OPEN || !activeRef.current) return;
-      ws.send(JSON.stringify({ type: 'input.audio', audio: base64Pcm }));
-    });
-
-    // WebSocket
+    // Connect WebSocket to backend voice proxy
     const httpBase = API_CONFIG.baseURL;
     const wsBase = httpBase.replace(/^http/, 'ws');
     const token = useAuthStore.getState().accessToken;
@@ -228,25 +325,19 @@ export function useVoiceSession() {
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
-    ws.onopen = () => {
-      if (__DEV__) console.log('[voice] ws connected');
-    };
     ws.onmessage = (e) => {
       try {
         handleEvent(JSON.parse(e.data));
-      } catch (err) {
-        if (__DEV__) console.warn('[voice] parse:', err);
-      }
+      } catch {}
     };
-    ws.onerror = (e) => {
-      if (__DEV__) console.warn('[voice] ws error:', e);
+    ws.onerror = () => {
       setError('Connection failed');
       setVoiceState('error');
     };
     ws.onclose = () => {
       activeRef.current = false;
       try {
-        LiveAudioStream?.stop();
+        toggleRecording(false);
       } catch {}
       if (stateRef.current !== 'error') setVoiceState('idle');
     };
@@ -268,34 +359,10 @@ export function useVoiceSession() {
     transcript,
     responseText,
     error,
+    inputVolume,
+    outputVolume,
     connect,
     disconnect,
     isActive: state !== 'idle' && state !== 'error',
   };
-}
-
-// WAV header (44 bytes) as base64
-function wavHeaderBase64(dataSize: number, sr: number, ch: number, bits: number): string {
-  const buf = new ArrayBuffer(44);
-  const v = new DataView(buf);
-  const s = (o: number, t: string) => {
-    for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i));
-  };
-  s(0, 'RIFF');
-  v.setUint32(4, 36 + dataSize, true);
-  s(8, 'WAVE');
-  s(12, 'fmt ');
-  v.setUint32(16, 16, true);
-  v.setUint16(20, 1, true);
-  v.setUint16(22, ch, true);
-  v.setUint32(24, sr, true);
-  v.setUint32(28, sr * ch * (bits / 8), true);
-  v.setUint16(32, ch * (bits / 8), true);
-  v.setUint16(34, bits, true);
-  s(36, 'data');
-  v.setUint32(40, dataSize, true);
-  const bytes = new Uint8Array(buf);
-  let bin = '';
-  for (let i = 0; i < 44; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
 }
