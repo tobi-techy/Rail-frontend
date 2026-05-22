@@ -1,4 +1,5 @@
 import { z } from 'zod/v4';
+import { validatePostalCodeForCountry } from '@/utils/postalCodeValidation';
 
 // ── Primitives ────────────────────────────────────────────────────────────────
 
@@ -85,13 +86,24 @@ export const personalInfoSchema = z.object({
   lastName: nameSchema.describe('Last name'),
 });
 
-export const addressSchema = z.object({
-  street: z.string().trim().min(1, 'Street address is required').max(200),
-  city: z.string().trim().min(1, 'City is required').max(100),
-  state: z.string().trim().min(1, 'State is required').max(100),
-  postalCode: postalCodeSchema,
-  country: z.string().min(1, 'Country is required'),
-});
+export const addressSchema = z
+  .object({
+    street: z.string().trim().min(1, 'Street address is required').max(200),
+    city: z.string().trim().min(1, 'City is required').max(100),
+    state: z.string().trim().min(1, 'State is required').max(100),
+    postalCode: postalCodeSchema,
+    country: z.string().min(1, 'Country is required'),
+  })
+  .superRefine((address, ctx) => {
+    const postalCodeResult = validatePostalCodeForCountry(address.postalCode, address.country);
+    if (!postalCodeResult.isValid) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['postalCode'],
+        message: postalCodeResult.message ?? 'Enter a valid postal code.',
+      });
+    }
+  });
 
 export const profileEditSchema = z.object({
   firstName: nameSchema.optional().or(z.literal('')),

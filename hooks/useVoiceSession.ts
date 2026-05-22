@@ -1,14 +1,172 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+import {
+  initialize,
+  playPCMData,
+  toggleRecording,
+  tearDown,
+  requestMicrophonePermissionsAsync,
+  useExpoTwoWayAudioEventListener,
+  type MicrophoneDataCallback,
+  type VolumeLevelCallback,
+} from '@speechmatics/expo-two-way-audio';
+import { requireNativeModule } from 'expo-modules-core';
+import { Buffer } from 'buffer';
 import { useAuthStore } from '@/stores/authStore';
 import { API_CONFIG } from '@/api/config';
+import { logger } from '@/lib/logger';
+import { safeError, sanitizeForLog } from '@/utils/logSanitizer';
 
 export type VoiceState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'error';
 
 interface VoiceEvent {
   type: string;
+  data?: string;
+  text?: string;
+  status?: string;
+  message?: string;
   [key: string]: any;
+}
+
+interface ExpoTwoWayAudioNativeModule {
+  stopPlayback?: () => void;
+}
+
+const twoWayAudioNative = requireNativeModule<ExpoTwoWayAudioNativeModule>('ExpoTwoWayAudio');
+
+// Audio constants
+const SAMPLE_RATE = 24000; // 24kHz PCM16 mono
+const BYTES_PER_SAMPLE = 2;
+// Pre-buffer enough audio to keep native playback ahead of network/JS timer jitter.
+const PRE_BUFFER_MS = 220;
+const PRE_BUFFER_BYTES = Math.ceil((SAMPLE_RATE * BYTES_PER_SAMPLE * PRE_BUFFER_MS) / 1000);
+const DRAIN_INTERVAL_MS = 30;
+const DRAIN_CHUNK_MS = 80;
+const DRAIN_CHUNK_BYTES = Math.ceil((SAMPLE_RATE * BYTES_PER_SAMPLE * DRAIN_CHUNK_MS) / 1000);
+
+// Helpers
+function base64ToBytes(b64: string): Uint8Array {
+  return Uint8Array.from(Buffer.from(b64, 'base64'));
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  return Buffer.from(bytes).toString('base64');
+}
+
+function splitCaptionTokens(text: string): string[] {
+  return text.match(/\S+\s*/g) ?? [];
+}
+
+function estimateCaptionDurationMs(text: string, audioDurationMs: number, audioStartedAt: number) {
+  const tokenCount = Math.max(splitCaptionTokens(text).length, 1);
+  const naturalDurationMs = Math.min(Math.max(tokenCount * 115, 500), 5000);
+  if (!audioDurationMs || !audioStartedAt) return naturalDurationMs;
+  const elapsedPlaybackMs = Date.now() - audioStartedAt;
+  const remainingPlaybackMs = audioDurationMs - elapsedPlaybackMs;
+  if (remainingPlaybackMs > 300) return Math.min(Math.max(remainingPlaybackMs, 500), 5000);
+  return naturalDurationMs;
+}
+
+function safeVoiceErrorMessage(err: unknown) {
+  if (err instanceof Error && err.message) return sanitizeForLog(err.message);
+  if (typeof err === 'string') return sanitizeForLog(err);
+  return 'Unknown voice audio error';
+}
+
+/**
+ * Jitter buffer: accumulates incoming PCM chunks and drains them at a steady
+ * rate to the native audio player. This eliminates crackling caused by uneven
+ * network delivery of audio packets.
+ */
+class AudioJitterBuffer {
+  private buffer: Uint8Array[] = [];
+  private totalBytes = 0;
+  private drainTimer: ReturnType<typeof setInterval> | null = null;
+  private preBufferReached = false;
+  private playing = false;
+
+  start() {
+    this.stop();
+    this.buffer = [];
+    this.totalBytes = 0;
+    this.preBufferReached = false;
+    this.playing = true;
+
+    this.drainTimer = setInterval(() => this.drain(), DRAIN_INTERVAL_MS);
+  }
+
+  push(chunk: Uint8Array) {
+    if (!this.playing) return;
+    this.buffer.push(chunk);
+    this.totalBytes += chunk.byteLength;
+  }
+
+  private drain() {
+    if (!this.playing) return;
+
+    // Wait for pre-buffer to fill before starting playback
+    if (!this.preBufferReached) {
+      if (this.totalBytes >= PRE_BUFFER_BYTES) {
+        this.preBufferReached = true;
+      } else {
+        return; // Still accumulating
+      }
+    }
+
+    if (this.buffer.length === 0) return;
+
+    // Merge buffered chunks into a single drain-sized chunk for smooth playback
+    const bytesToDrain = Math.min(DRAIN_CHUNK_BYTES, this.totalBytes);
+    const merged = new Uint8Array(bytesToDrain);
+    let offset = 0;
+
+    while (offset < bytesToDrain && this.buffer.length > 0) {
+      const chunk = this.buffer[0];
+      const needed = bytesToDrain - offset;
+
+      if (chunk.byteLength <= needed) {
+        merged.set(chunk, offset);
+        offset += chunk.byteLength;
+        this.buffer.shift();
+        this.totalBytes -= chunk.byteLength;
+      } else {
+        // Partial chunk: take what we need, leave the rest
+        merged.set(chunk.subarray(0, needed), offset);
+        this.buffer[0] = chunk.subarray(needed);
+        this.totalBytes -= needed;
+        offset += needed;
+      }
+    }
+
+    if (offset > 0) {
+      const toPlay = offset === bytesToDrain ? merged : merged.subarray(0, offset);
+      try {
+        playPCMData(toPlay);
+      } catch (err) {
+        const message = safeVoiceErrorMessage(err);
+        safeError('[VoiceSession] Native playback failed', err);
+        logger.error('[VoiceSession] Native playback failed', {
+          component: 'useVoiceSession',
+          action: 'play-pcm-data',
+          error: message,
+        });
+      }
+    }
+  }
+
+  stop() {
+    this.playing = false;
+    if (this.drainTimer) {
+      clearInterval(this.drainTimer);
+      this.drainTimer = null;
+    }
+    this.buffer = [];
+    this.totalBytes = 0;
+    this.preBufferReached = false;
+  }
+
+  get bufferedMs(): number {
+    return (this.totalBytes / BYTES_PER_SAMPLE / SAMPLE_RATE) * 1000;
+  }
 }
 
 export function useVoiceSession() {
@@ -16,50 +174,308 @@ export function useVoiceSession() {
   const [transcript, setTranscript] = useState('');
   const [responseText, setResponseText] = useState('');
   const [error, setError] = useState('');
-  const wsRef = useRef<WebSocket | null>(null);
-  const recordingRef = useRef<Audio.Recording | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
-  const audioChunksRef = useRef<string[]>([]);
+  const [inputVolume, setInputVolume] = useState(0);
+  const [outputVolume, setOutputVolume] = useState(0);
 
-  const cleanup = useCallback(async () => {
-    if (recordingRef.current) {
-      try { await recordingRef.current.stopAndUnloadAsync(); } catch {}
-      recordingRef.current = null;
+  const wsRef = useRef<WebSocket | null>(null);
+  const activeRef = useRef(false);
+  const stateRef = useRef<VoiceState>('idle');
+  const canPlayReplyAudioRef = useRef(false);
+  const captionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const speakingSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const replyAudioStartedAtRef = useRef(0);
+  const replyAudioDurationMsRef = useRef(0);
+  const jitterBufferRef = useRef(new AudioJitterBuffer());
+  const micMutedRef = useRef(false);
+
+  const setVoiceState = useCallback((s: VoiceState) => {
+    stateRef.current = s;
+    setState(s);
+  }, []);
+
+  const muteMic = useCallback(() => {
+    if (!micMutedRef.current) {
+      micMutedRef.current = true;
     }
-    if (soundRef.current) {
-      try { await soundRef.current.unloadAsync(); } catch {}
-      soundRef.current = null;
+  }, []);
+
+  const unmuteMic = useCallback(() => {
+    if (micMutedRef.current) {
+      micMutedRef.current = false;
     }
+  }, []);
+
+  const flushPlayback = useCallback(() => {
+    canPlayReplyAudioRef.current = false;
+    jitterBufferRef.current.stop();
+    if (captionTimerRef.current) {
+      clearInterval(captionTimerRef.current);
+      captionTimerRef.current = null;
+    }
+    if (speakingSettleTimerRef.current) {
+      clearTimeout(speakingSettleTimerRef.current);
+      speakingSettleTimerRef.current = null;
+    }
+    setOutputVolume(0);
+    try {
+      twoWayAudioNative.stopPlayback?.();
+    } catch {}
+    // Unmute mic after flushing playback
+    unmuteMic();
+  }, [unmuteMic]);
+
+  const revealAgentCaption = useCallback((text: string, durationMs?: number) => {
+    if (captionTimerRef.current) {
+      clearInterval(captionTimerRef.current);
+      captionTimerRef.current = null;
+    }
+
+    const tokens = splitCaptionTokens(text);
+    if (tokens.length === 0) {
+      setResponseText('');
+      return;
+    }
+
+    const totalDurationMs = durationMs ?? Math.min(Math.max(tokens.length * 115, 500), 5000);
+    const stepMs = Math.max(35, Math.floor(totalDurationMs / tokens.length));
+    let index = 0;
+
+    setResponseText('');
+    captionTimerRef.current = setInterval(() => {
+      index += 1;
+      setResponseText(tokens.slice(0, index).join('').trimEnd());
+      if (index >= tokens.length && captionTimerRef.current) {
+        clearInterval(captionTimerRef.current);
+        captionTimerRef.current = null;
+      }
+    }, stepMs);
+  }, []);
+
+  // Stream mic PCM to backend — muted during playback to prevent echo/artifacts
+  useExpoTwoWayAudioEventListener(
+    'onMicrophoneData',
+    useCallback<MicrophoneDataCallback>((event) => {
+      const ws = wsRef.current;
+      if (!ws || ws.readyState !== WebSocket.OPEN || !activeRef.current) return;
+      // Duck mic during playback to prevent echo artifacts
+      if (micMutedRef.current) return;
+      const b64 = bytesToBase64(event.data);
+      ws.send(JSON.stringify({ type: 'input.audio', audio: b64 }));
+    }, [])
+  );
+
+  useExpoTwoWayAudioEventListener(
+    'onInputVolumeLevelData',
+    useCallback<VolumeLevelCallback>((event) => {
+      setInputVolume(event.data);
+    }, [])
+  );
+
+  useExpoTwoWayAudioEventListener(
+    'onOutputVolumeLevelData',
+    useCallback<VolumeLevelCallback>((event) => {
+      setOutputVolume(event.data);
+    }, [])
+  );
+
+  const cleanup = useCallback(() => {
+    activeRef.current = false;
+    canPlayReplyAudioRef.current = false;
+    micMutedRef.current = false;
+    jitterBufferRef.current.stop();
+    if (captionTimerRef.current) {
+      clearInterval(captionTimerRef.current);
+      captionTimerRef.current = null;
+    }
+    if (speakingSettleTimerRef.current) {
+      clearTimeout(speakingSettleTimerRef.current);
+      speakingSettleTimerRef.current = null;
+    }
+    replyAudioStartedAtRef.current = 0;
+    replyAudioDurationMsRef.current = 0;
+    try {
+      toggleRecording(false);
+    } catch {}
+    try {
+      tearDown();
+    } catch {}
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
-    setState('idle');
+    setVoiceState('idle');
     setTranscript('');
     setResponseText('');
-    audioChunksRef.current = [];
-  }, []);
+    setInputVolume(0);
+    setOutputVolume(0);
+  }, [setVoiceState]);
 
+  // Handle events from backend
+  const handleEvent = useCallback(
+    (event: VoiceEvent) => {
+      switch (event.type) {
+        case 'session.ready':
+          // Mic already recording from connect(); just confirm listening state
+          setVoiceState('listening');
+          activeRef.current = true;
+          break;
+
+        case 'input.speech.started':
+        case 'rail.playback.flush':
+          flushPlayback();
+          setVoiceState('listening');
+          setResponseText('');
+          break;
+
+        case 'input.speech.stopped':
+          setVoiceState('thinking');
+          break;
+
+        case 'transcript.user':
+        case 'transcript.user.delta':
+          setTranscript(event.text ?? '');
+          break;
+
+        case 'reply.started':
+          canPlayReplyAudioRef.current = true;
+          replyAudioStartedAtRef.current = 0;
+          replyAudioDurationMsRef.current = 0;
+          if (captionTimerRef.current) {
+            clearInterval(captionTimerRef.current);
+            captionTimerRef.current = null;
+          }
+          setResponseText('');
+          setVoiceState('speaking');
+          // Mute mic during playback to prevent echo/feedback artifacts
+          muteMic();
+          // Start jitter buffer for smooth audio drain
+          jitterBufferRef.current.start();
+          break;
+
+        case 'reply.audio':
+          if (event.data && canPlayReplyAudioRef.current) {
+            try {
+              const audioBytes = base64ToBytes(event.data);
+              if (!replyAudioStartedAtRef.current) replyAudioStartedAtRef.current = Date.now();
+              replyAudioDurationMsRef.current +=
+                (audioBytes.byteLength / BYTES_PER_SAMPLE / SAMPLE_RATE) * 1000;
+              // Push to jitter buffer instead of playing immediately
+              jitterBufferRef.current.push(audioBytes);
+            } catch {
+              setError('Audio playback failed');
+              setVoiceState('error');
+            }
+          }
+          break;
+
+        case 'transcript.agent':
+          if (event.interrupted) {
+            flushPlayback();
+            setResponseText(event.text ?? '');
+          } else {
+            const text = event.text ?? '';
+            revealAgentCaption(
+              text,
+              estimateCaptionDurationMs(
+                text,
+                replyAudioDurationMsRef.current,
+                replyAudioStartedAtRef.current
+              )
+            );
+          }
+          break;
+
+        case 'rail.transcript.agent.sync':
+          if (event.text) {
+            if (captionTimerRef.current) break;
+            revealAgentCaption(event.text, event.duration_ms ?? event.estimated_duration_ms);
+          }
+          break;
+
+        case 'rail.voice.audio_missing':
+          canPlayReplyAudioRef.current = true;
+          setVoiceState('speaking');
+          break;
+
+        case 'reply.done':
+          if (event.status === 'interrupted') {
+            flushPlayback();
+          } else {
+            canPlayReplyAudioRef.current = false;
+            // Let the jitter buffer drain remaining audio before transitioning
+            const elapsedPlaybackMs = replyAudioStartedAtRef.current
+              ? Date.now() - replyAudioStartedAtRef.current
+              : 0;
+            const remainingPlaybackMs = Math.min(
+              Math.max(replyAudioDurationMsRef.current - elapsedPlaybackMs, 0),
+              5000
+            );
+            // Add buffer drain time
+            const bufferDrainMs = jitterBufferRef.current.bufferedMs;
+            const totalSettleMs = remainingPlaybackMs + bufferDrainMs + 80; // +80ms safety margin
+
+            if (speakingSettleTimerRef.current) clearTimeout(speakingSettleTimerRef.current);
+            speakingSettleTimerRef.current = setTimeout(() => {
+              speakingSettleTimerRef.current = null;
+              jitterBufferRef.current.stop();
+              unmuteMic();
+              if (stateRef.current === 'speaking') setVoiceState('listening');
+            }, totalSettleMs);
+          }
+          if (event.status === 'interrupted' && stateRef.current === 'speaking')
+            setVoiceState('listening');
+          break;
+
+        case 'session.error':
+          setError(event.message ?? 'Voice error');
+          setVoiceState('error');
+          break;
+      }
+    },
+    [flushPlayback, muteMic, unmuteMic, revealAgentCaption, setVoiceState]
+  );
+
+  // Connect to voice session
   const connect = useCallback(async () => {
-    await cleanup();
-    setState('connecting');
+    cleanup();
+    setVoiceState('connecting');
     setError('');
 
-    // Request mic permission
-    const { granted } = await Audio.requestPermissionsAsync();
-    if (!granted) {
+    const permission = await requestMicrophonePermissionsAsync();
+    if (!permission.granted) {
       setError('Microphone permission required');
-      setState('error');
+      setVoiceState('error');
       return;
     }
 
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: false,
-    });
+    try {
+      await initialize();
+    } catch {
+      setError('Failed to initialize audio');
+      setVoiceState('error');
+      return;
+    }
 
-    // Build WebSocket URL
+    // Start recording immediately so the user can speak as soon as the screen appears.
+    // Mic data is only forwarded once the WebSocket is open (checked in onMicrophoneData).
+    try {
+      toggleRecording(true);
+      activeRef.current = true;
+      setVoiceState('listening');
+    } catch (err) {
+      activeRef.current = false;
+      setVoiceState('error');
+      const message = safeVoiceErrorMessage(err);
+      setError('Failed to start microphone');
+      safeError('[VoiceSession] Failed to start recorder', err);
+      logger.error('[VoiceSession] Failed to start recorder', {
+        component: 'useVoiceSession',
+        action: 'toggle-recording-start',
+        error: message,
+      });
+      return;
+    }
+
     const httpBase = API_CONFIG.baseURL;
     const wsBase = httpBase.replace(/^http/, 'ws');
     const token = useAuthStore.getState().accessToken;
@@ -68,206 +484,42 @@ export function useVoiceSession() {
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
-    ws.onopen = () => {
-      setState('listening');
-      startRecording();
-    };
-
     ws.onmessage = (e) => {
       try {
-        const event: VoiceEvent = JSON.parse(e.data);
-        handleServerEvent(event);
+        handleEvent(JSON.parse(e.data));
       } catch {}
     };
-
     ws.onerror = () => {
-      setError('Voice connection failed');
-      setState('error');
+      setError('Connection failed');
+      setVoiceState('error');
     };
-
     ws.onclose = () => {
-      if (state !== 'idle') setState('idle');
-    };
-  }, [cleanup]);
-
-  const handleServerEvent = useCallback((event: VoiceEvent) => {
-    switch (event.type) {
-      case 'session.created':
-      case 'session.updated':
-        break;
-
-      case 'input_audio_buffer.speech_started':
-        setState('listening');
-        setResponseText('');
-        audioChunksRef.current = [];
-        break;
-
-      case 'input_audio_buffer.speech_stopped':
-        setState('thinking');
-        break;
-
-      case 'conversation.item.input_audio_transcription.completed':
-        setTranscript(event.transcript ?? '');
-        break;
-
-      case 'response.audio_transcript.delta':
-        setResponseText((prev) => prev + (event.delta ?? ''));
-        break;
-
-      case 'response.audio.delta':
-        // Collect audio chunks for playback
-        if (event.delta) {
-          audioChunksRef.current.push(event.delta);
-          setState('speaking');
-        }
-        break;
-
-      case 'response.audio.done':
-        playAudioResponse();
-        break;
-
-      case 'response.done':
-        setState('listening');
-        break;
-
-      case 'error':
-        setError(event.error?.message ?? 'Voice error');
-        setState('error');
-        break;
-    }
-  }, []);
-
-  const startRecording = useCallback(async () => {
-    try {
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync({
-        ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
-        android: {
-          ...Audio.RecordingOptionsPresets.HIGH_QUALITY.android,
-          extension: '.wav',
-          outputFormat: Audio.AndroidOutputFormat.DEFAULT,
-          audioEncoder: Audio.AndroidAudioEncoder.DEFAULT,
-          sampleRate: 24000,
-          numberOfChannels: 1,
-          bitRate: 384000,
-        },
-        ios: {
-          ...Audio.RecordingOptionsPresets.HIGH_QUALITY.ios,
-          extension: '.wav',
-          outputFormat: Audio.IOSOutputFormat.LINEARPCM,
-          audioQuality: Audio.IOSAudioQuality.HIGH,
-          sampleRate: 24000,
-          numberOfChannels: 1,
-          bitRate: 384000,
-          linearPCMBitDepth: 16,
-          linearPCMIsBigEndian: false,
-          linearPCMIsFloat: false,
-        },
-        web: {},
-      });
-
-      // Stream audio chunks to WebSocket via status updates
-      recording.setOnRecordingStatusUpdate((status) => {
-        if (status.isRecording && status.metering !== null) {
-          // expo-av doesn't give raw PCM in status updates on RN
-          // We use a polling approach instead
-        }
-      });
-
-      await recording.startAsync();
-      recordingRef.current = recording;
-
-      // Poll and send audio chunks every 250ms
-      pollAndSendAudio();
-    } catch {
-      setError('Failed to start recording');
-      setState('error');
-    }
-  }, []);
-
-  const pollAndSendAudio = useCallback(async () => {
-    const sendChunk = async () => {
-      const recording = recordingRef.current;
-      const ws = wsRef.current;
-      if (!recording || !ws || ws.readyState !== WebSocket.OPEN) return;
-
+      activeRef.current = false;
       try {
-        // Stop current recording, get URI, send, restart
-        await recording.stopAndUnloadAsync();
-        const uri = recording.getURI();
-
-        if (uri) {
-          // Read file as base64 and send
-          const base64 = await FileSystem.readAsStringAsync(uri, {
-            encoding: 'base64',
-          });
-
-          ws.send(JSON.stringify({
-            type: 'input_audio_buffer.append',
-            audio: base64,
-          }));
-        }
-
-        // Start new recording segment
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          const newRecording = new Audio.Recording();
-          await newRecording.prepareToRecordAsync({
-            ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
-            ios: {
-              ...Audio.RecordingOptionsPresets.HIGH_QUALITY.ios,
-              extension: '.wav',
-              outputFormat: Audio.IOSOutputFormat.LINEARPCM,
-              sampleRate: 24000,
-              numberOfChannels: 1,
-              bitRate: 384000,
-              linearPCMBitDepth: 16,
-              linearPCMIsBigEndian: false,
-              linearPCMIsFloat: false,
-            },
-            android: {
-              ...Audio.RecordingOptionsPresets.HIGH_QUALITY.android,
-              extension: '.wav',
-              sampleRate: 24000,
-              numberOfChannels: 1,
-              bitRate: 384000,
-            },
-            web: {},
-          });
-          await newRecording.startAsync();
-          recordingRef.current = newRecording;
-
-          // Schedule next chunk
-          setTimeout(sendChunk, 250);
-        }
-      } catch {
-        // Recording may have been cleaned up
-      }
+        toggleRecording(false);
+      } catch {}
+      if (stateRef.current !== 'error') setVoiceState('idle');
     };
+  }, [cleanup, handleEvent, setVoiceState]);
 
-    setTimeout(sendChunk, 250);
-  }, []);
-
-  const playAudioResponse = useCallback(async () => {
-    // For now, audio playback from base64 PCM chunks requires native module
-    // The transcript is displayed as text fallback
-    // TODO: Implement PCM16 base64 → audio playback
-    audioChunksRef.current = [];
-  }, []);
-
-  const disconnect = useCallback(async () => {
-    await cleanup();
+  const disconnect = useCallback(() => {
+    cleanup();
   }, [cleanup]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => { cleanup(); };
-  }, []);
+  useEffect(
+    () => () => {
+      cleanup();
+    },
+    [cleanup]
+  );
 
   return {
     state,
     transcript,
     responseText,
     error,
+    inputVolume,
+    outputVolume,
     connect,
     disconnect,
     isActive: state !== 'idle' && state !== 'error',

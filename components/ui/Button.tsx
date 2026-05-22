@@ -78,7 +78,7 @@ export const Button = forwardRef<View, ButtonProps>(
       ghost: 'text-ember-orange',
     }[variant];
 
-    const sizeStyles = size === 'small' ? 'px-5 py-2.5' : 'px-6 py-4';
+    const sizeStyles = size === 'small' ? 'min-h-[44px] px-5 py-3' : 'min-h-[58px] px-7 py-[17px]';
     const textSize = size === 'small' ? 'text-caption' : 'text-body';
 
     return (
@@ -97,20 +97,23 @@ export const Button = forwardRef<View, ButtonProps>(
           accessibilityRole="button"
           accessibilityState={{ disabled: disabled || loading, busy: loading }}
           accessibilityLabel={loading ? `${title}, loading` : title}
-          className={`flex-row items-center justify-center rounded-full ${variantStyles} ${sizeStyles} ${
+          className={`flex-row items-center justify-center overflow-hidden rounded-full ${variantStyles} ${sizeStyles} ${
             disabled ? 'opacity-50' : ''
           } ${className}`}
           {...props}>
           {loading ? (
-            <ActivityIndicator color={variant === 'white' ? '#343433' : variant === 'ghost' ? '#ff3e00' : '#fff'} size="small" />
+            <ActivityIndicator
+              color={variant === 'white' ? '#343433' : variant === 'ghost' ? '#ff3e00' : '#fff'}
+              size="small"
+            />
           ) : (
-            <View className="flex-shrink flex-row items-center">
+            <View className="max-w-full flex-shrink flex-row items-center justify-center">
               {leftIcon && <View className="mr-2 flex-shrink-0">{leftIcon}</View>}
               <Text
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.75}
-                className={`flex-shrink font-button ${textSize} ${textStyles}`}>
+                className={`min-w-0 flex-shrink text-center font-button ${textSize} ${textStyles}`}>
                 {title}
               </Text>
               {rightIcon && <View className="ml-2 flex-shrink-0">{rightIcon}</View>}

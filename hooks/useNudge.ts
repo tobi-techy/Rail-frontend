@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import { aiService } from '@/api/services/ai.service';
 import type { NudgeResponse, NudgeAction } from '@/api/types/ai';
 
@@ -23,6 +23,7 @@ export type NudgeOptions = {
   daysUntilPayday?: number;
   debounceMs?: number;
   enabled?: boolean;
+  fallbackNudge?: EnhancedNudge | null;
   cooldownMs?: number;
   cooldownScope?: 'context' | 'screen';
   merchantHint?: string;
@@ -46,6 +47,7 @@ export function useNudge(
   const daysUntilPayday = options?.daysUntilPayday;
   const debounceMs = options?.debounceMs ?? 0;
   const enabled = options?.enabled ?? true;
+  const fallbackNudge = options?.fallbackNudge;
   const cooldownMs = options?.cooldownMs ?? COOLDOWN_MS;
   const cooldownScope = options?.cooldownScope ?? 'context';
   const merchantHint = options?.merchantHint;
@@ -71,10 +73,15 @@ export function useNudge(
   useEffect(() => {
     if (!enabled) {
       setLoading(false);
+      setNudge(null);
       return;
     }
 
     const timer = setTimeout(() => {
+      if (fallbackNudge?.show && fallbackNudge.message) {
+        setNudge(fallbackNudge);
+      }
+
       const lastFetch = lastFetchMap.get(cooldownKey) ?? 0;
       if (Date.now() - lastFetch < cooldownMs) return;
 
@@ -102,6 +109,8 @@ export function useNudge(
             if (res.shake) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
             }
+          } else if (fallbackNudge?.show && fallbackNudge.message) {
+            setNudge(fallbackNudge);
           }
         })
         .catch(() => {
@@ -113,10 +122,16 @@ export function useNudge(
               if (res.shake) {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
               }
+            } else if (fallbackNudge?.show && fallbackNudge.message) {
+              setNudge(fallbackNudge);
             }
           });
         })
-        .catch(() => {})
+        .catch(() => {
+          if (mountedRef.current && requestId === requestSeqRef.current && fallbackNudge?.show) {
+            setNudge(fallbackNudge);
+          }
+        })
         .finally(() => {
           if (mountedRef.current && requestId === requestSeqRef.current) setLoading(false);
         });
@@ -134,6 +149,7 @@ export function useNudge(
     daysUntilPayday,
     debounceMs,
     enabled,
+    fallbackNudge,
     merchantHint,
     recentActionsKey,
     screen,

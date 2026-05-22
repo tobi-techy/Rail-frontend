@@ -19,7 +19,6 @@ Use:
 Avoid:
 
 - Pixar storyboard on cream paper.
-- Playful illustrated characters inhabiting a warm off-white world.
 - Adventure-game, mascot-led, storybook, toy-like, or cartoon fintech styling.
 - Decorative character scenes or cute visual metaphors for money.
 - Heavy gradients as the main brand signal.
@@ -52,56 +51,54 @@ Images should reinforce precision and trust. When the app needs a visual, defaul
 - Abstract money-flow maps built from lines, dots, numbers, and labels.
 - Security and identity visuals built from grids, masks, keys, and account patterns.
 
-Do not generate or commission character illustration, mascot scenes, cozy editorial drawings, clay/3D characters, Pixar-like lighting, or cream-paper storyboards. Rail can be warm through color and spacing; it should be serious through composition, typography, and subject matter.
-
 ## Color System
 
 ### Core Neutrals
 
-| Token | Hex | Usage |
-| --- | --- | --- |
-| `warm-canvas` | `#fbfaf9` | Default app background |
-| `stone-surface` | `#f2f0ed` | Grouped panels, inputs, subtle sections |
-| `parchment-card` | `#f8f7f4` | Cards and elevated warm surfaces |
-| `graphite` | `#474645` | Secondary strong text |
-| `charcoal-primary` | `#343433` | Primary text |
-| `midnight` | `#121212` | High-emphasis dark surfaces |
-| `obsidian` | `#000000` | Max contrast, primary dark buttons |
-| `ash` | `#848281` | Secondary text |
-| `fog` | `#c6c6c6` | Dividers and disabled borders |
-| `smoke` | `#a7a7a7` | Tertiary text |
-| `pepper` | `#282624` | Dark elevated surfaces |
+| Token              | Hex       | Usage                                   |
+| ------------------ | --------- | --------------------------------------- |
+| `warm-canvas`      | `#fbfaf9` | Default app background                  |
+| `stone-surface`    | `#f2f0ed` | Grouped panels, inputs, subtle sections |
+| `parchment-card`   | `#f8f7f4` | Cards and elevated warm surfaces        |
+| `graphite`         | `#474645` | Secondary strong text                   |
+| `charcoal-primary` | `#343433` | Primary text                            |
+| `midnight`         | `#121212` | High-emphasis dark surfaces             |
+| `obsidian`         | `#000000` | Max contrast, primary dark buttons      |
+| `ash`              | `#848281` | Secondary text                          |
+| `fog`              | `#c6c6c6` | Dividers and disabled borders           |
+| `smoke`            | `#a7a7a7` | Tertiary text                           |
+| `pepper`           | `#282624` | Dark elevated surfaces                  |
 
 ### Accents
 
-| Token | Hex | Usage |
-| --- | --- | --- |
-| `ember-orange` | `#ff3e00` | Primary brand accent and main CTAs |
-| `meadow-green` | `#00ca48` | Positive money movement and growth |
-| `sky-blue` | `#0090ff` | Links, information, selected utility states |
-| `sunburst-yellow` | `#ffbb26` | Warnings, highlights, rewards |
-| `deep-amber` | `#d48f00` | Warning text on light yellow surfaces |
-| `ocean-blue` | `#0086fc` | Charts and secondary blue actions |
-| `ice-blue` | `#64c6ff` | Soft blue visual accents |
-| `spearmint` | `#00c978` | Alternate positive accent |
-| `flamingo` | `#ff58ae` | Limited expressive accent |
-| `violet-pop` | `#9f4fff` | Limited expressive accent |
-| `coral-red` | `#ff2b3a` | Errors and destructive states |
-| `valid-green` | `#00c454` | Validation and successful completion |
+| Token             | Hex       | Usage                                       |
+| ----------------- | --------- | ------------------------------------------- |
+| `ember-orange`    | `#ff3e00` | Primary brand accent and main CTAs          |
+| `meadow-green`    | `#00ca48` | Positive money movement and growth          |
+| `sky-blue`        | `#0090ff` | Links, information, selected utility states |
+| `sunburst-yellow` | `#ffbb26` | Warnings, highlights, rewards               |
+| `deep-amber`      | `#d48f00` | Warning text on light yellow surfaces       |
+| `ocean-blue`      | `#0086fc` | Charts and secondary blue actions           |
+| `ice-blue`        | `#64c6ff` | Soft blue visual accents                    |
+| `spearmint`       | `#00c978` | Alternate positive accent                   |
+| `flamingo`        | `#ff58ae` | Limited expressive accent                   |
+| `violet-pop`      | `#9f4fff` | Limited expressive accent                   |
+| `coral-red`       | `#ff2b3a` | Errors and destructive states               |
+| `valid-green`     | `#00c454` | Validation and successful completion        |
 
 ### Semantic Mapping
 
-| Semantic token | Color |
-| --- | --- |
-| `primary` | `ember-orange` |
-| `background-main` | `warm-canvas` |
-| `background-surface` | `stone-surface` |
-| `surface` | `stone-surface` |
-| `text-primary` | `charcoal-primary` |
-| `text-secondary` | `ash` |
-| `text-tertiary` | `smoke` |
-| `success` | `meadow-green` |
-| `destructive` / `error` | `coral-red` |
+| Semantic token          | Color              |
+| ----------------------- | ------------------ |
+| `primary`               | `ember-orange`     |
+| `background-main`       | `warm-canvas`      |
+| `background-surface`    | `stone-surface`    |
+| `surface`               | `stone-surface`    |
+| `text-primary`          | `charcoal-primary` |
+| `text-secondary`        | `ash`              |
+| `text-tertiary`         | `smoke`            |
+| `success`               | `meadow-green`     |
+| `destructive` / `error` | `coral-red`        |
 
 Color rules:
 
@@ -115,30 +112,30 @@ Color rules:
 
 Rail uses the fonts already bundled in the app.
 
-| Token | Font | Usage |
-| --- | --- | --- |
-| `font-display` | SF Pro Display Bold | Brand moments and large headlines |
-| `font-heading` | SF Pro Display Bold | Screen titles |
-| `font-heading-semibold` | SF Pro Display Semibold | Dense section titles |
-| `font-subtitle` | SF Pro Display Semibold | Card titles and row labels |
-| `font-body` | SF Pro Display Regular | Body copy |
-| `font-body-medium` | SF Pro Display Medium | Emphasized body copy |
-| `font-button` | SF Pro Display Semibold | Button labels |
-| `font-caption` | SF Pro Display Regular | Labels and metadata |
-| `font-mono` | SF Mono Regular | Codes and ASCII visuals |
-| `font-numeric` | SF Mono Medium | Balances, prices, and account data |
-| `font-mono-semibold` | SF Mono Semibold | Strong numeric emphasis |
+| Token                   | Font                    | Usage                              |
+| ----------------------- | ----------------------- | ---------------------------------- |
+| `font-display`          | SF Pro Display Bold     | Brand moments and large headlines  |
+| `font-heading`          | SF Pro Display Bold     | Screen titles                      |
+| `font-heading-semibold` | SF Pro Display Semibold | Dense section titles               |
+| `font-subtitle`         | SF Pro Display Semibold | Card titles and row labels         |
+| `font-body`             | SF Pro Display Regular  | Body copy                          |
+| `font-body-medium`      | SF Pro Display Medium   | Emphasized body copy               |
+| `font-button`           | SF Pro Display Semibold | Button labels                      |
+| `font-caption`          | SF Pro Display Regular  | Labels and metadata                |
+| `font-mono`             | SF Mono Regular         | Codes and ASCII visuals            |
+| `font-numeric`          | SF Mono Medium          | Balances, prices, and account data |
+| `font-mono-semibold`    | SF Mono Semibold        | Strong numeric emphasis            |
 
 Type scale:
 
-| Token | Size | Line height | Usage |
-| --- | --- | --- | --- |
-| `display` | 68px | 1.09 | Rare brand display moments |
-| `heading-lg` | 44px | 1.09 | Hero headings |
-| `heading` | 23px | 1.2 | Screen and sheet headings |
-| `heading-sm` | 19px | 1.38 | Section headings |
-| `body` | 15px | 1.47 | Default body copy |
-| `caption` | 12px | 1.58 | Labels and metadata |
+| Token        | Size | Line height | Usage                      |
+| ------------ | ---- | ----------- | -------------------------- |
+| `display`    | 68px | 1.09        | Rare brand display moments |
+| `heading-lg` | 44px | 1.09        | Hero headings              |
+| `heading`    | 23px | 1.2         | Screen and sheet headings  |
+| `heading-sm` | 19px | 1.38        | Section headings           |
+| `body`       | 15px | 1.47        | Default body copy          |
+| `caption`    | 12px | 1.58        | Labels and metadata        |
 
 Typography rules:
 
@@ -153,87 +150,99 @@ Typography rules:
 Spacing follows a 4px grid with semantic app tokens:
 
 | Token | Value |
-| --- | --- |
-| `xs` | 4px |
-| `sm` | 8px |
-| `md` | 16px |
-| `lg` | 24px |
-| `xl` | 32px |
-| `xxl` | 48px |
+| ----- | ----- |
+| `xs`  | 4px   |
+| `sm`  | 8px   |
+| `md`  | 16px  |
+| `lg`  | 24px  |
+| `xl`  | 32px  |
+| `xxl` | 48px  |
 
 Family-inspired radius tokens:
 
-| Token | Value | Usage |
-| --- | --- | --- |
-| `sm` | 2px | Hairline pills and tight badges |
-| `md` | 6px | Compact controls |
-| `lg` | 10px | Inputs and small cards |
-| `2xl` | 17px | Standard cards |
-| `3xl` | 24px | Sheets, large cards, bottom panels |
-| `3xl-2` | 32px | Hero panels |
-| `3xl-3` | 40px | Rare large containers |
-| `full` | 72px | Pills, avatars, circular controls |
+| Token   | Value | Usage                              |
+| ------- | ----- | ---------------------------------- |
+| `sm`    | 2px   | Hairline pills and tight badges    |
+| `md`    | 6px   | Compact controls                   |
+| `lg`    | 10px  | Inputs and small cards             |
+| `2xl`   | 17px  | Standard cards                     |
+| `3xl`   | 24px  | Sheets, large cards, bottom panels |
+| `3xl-2` | 32px  | Hero panels                        |
+| `3xl-3` | 40px  | Rare large containers              |
+| `full`  | 72px  | Pills, avatars, circular controls  |
 
 Elevation should be quiet. Prefer subtle borders and inset strokes over heavy shadows. Use stronger shadows only for modals and raised overlays.
 
 ## Components
 
 ### Primary CTA Button (Pill Dark)
+
 **Role:** Main conversion action — 'Get Started', 'Download on iOS'
 
 Background #121212, text #ffffff, border-radius 32px, padding 0px 14px. Inter 14px weight 500-600. The near-black pill floats against #fbfaf9 canvas as the site's only dark punch. Hover state likely lightens to #343433 via 0.2s ease transition.
 
 ### Secondary CTA Button (Pill Light)
+
 **Role:** Alternative actions — 'Log In', 'Watch the Video'
 
 Background #f6f4ef (warm cream), text #121212, border-radius 32px, padding 0px 14px. Inter 14px weight 500. Creates a paired hierarchy with the dark pill without competing — same shape, inverted warmth.
 
 ### Ghost Text Link Button
+
 **Role:** Inline navigation links — 'Watch the demo', section CTAs
 
 Background transparent, text color #ff3e00 (Ember Orange), border-radius 0px, padding 4px 0px. No border. Inter 14-15px weight 500. The underline-less orange text link is the signature inline action — orange on cream reads as warm urgency without a button shell.
 
 ### Outlined Navigation Button
+
 **Role:** Tertiary actions in nav or contextual contexts
 
 Background transparent, text #474645 (Graphite), border 1px solid #474645, border-radius 12px, padding 12px 32px 12px 12px. Inter 14px weight 500. Used for modal-adjacent actions that need definition without weight.
 
 ### Feature Card (White)
+
 **Role:** Primary content cards — feature descriptions, testimonials
 
 Background white (display-p3 1 1 1), border via inset box-shadow: color(display-p3 0.949 0.941 0.929) 0px 0px 0px 1px inset (warm stone border, ~#f2f0ed), border-radius 10px, padding 32px all sides. The inset shadow technique keeps borders off-layout-flow — cards look hand-placed on the canvas.
 
 ### Feature Card (Warm Cream)
+
 **Role:** Secondary content panels — screenshot containers, demo previews
 
 Background #f8f7f4 (display-p3 0.984 0.980 0.976), no box-shadow, border-radius 12px, padding 0px 22.8px 14px 22.8px. Slightly sunken into the page — the warm tint against #fbfaf9 creates a 1-level depth shift without any shadow.
 
 ### Dark Phone Mockup Card
+
 **Role:** Product screenshot showcase — wallet UI demonstrations
 
 Background #000000, border-radius 24px (top) 0px 0px 24px (bottom), box-shadow rgba(0,0,0,0.15) 0px 0px 24px 0px, padding 4px 0px 4px 4px. The only true drop shadow on the page — reserved for the product hero moment, making the dark phone pop off the cream background.
 
 ### Testimonial Card
+
 **Role:** Social proof — Twitter/X quotes in 'Friends of Family' section
 
 Background white, border via inset stone shadow (same as Feature Card White), border-radius 10px, padding 32px. Contains avatar (circular, ~40px), handle in Inter 13px #848281, body in Inter 15px #474645, X logo icon in top-right. Horizontally scrolling or grid-arranged.
 
 ### Illustration Character
+
 **Role:** Decorative brand mascots — blob creatures, emoji animals scattered in hero
 
 Flat illustrated characters using brand palette: Ember Orange, Meadow Green, Sky Blue, Sunburst Yellow, Flamingo. Contained in 72px radius rounded containers or free-floating. No shadow, no border. Characters have expressive faces (dot eyes, smile curves) and stick limbs. Sized 60-120px, clustered around headline.
 
 ### Navigation Bar
+
 **Role:** Sticky top navigation
 
 Background #fbfaf9 (canvas), height ~64px, box-shadow rgba(0,0,0,0.04) 0px 0px 0px 1px (barely-there outline). Logo left, nav links center in Inter 14px #343433 weight 500, 'Log In' ghost pill and 'Get Started' dark pill right. Dropdown chevrons on Developers/Resources.
 
 ### Section Heading
+
 **Role:** Page section titles
 
 Family typeface 500 at 68px with -2.11px letter-spacing and line-height 1.09 for hero. Inter 600 at 44px with -1.14px letter-spacing for sub-section heads. Color #343433 or #121212. Always left-aligned or centered — no right-aligned headlines.
 
 ### Colored Action Badge
+
 **Role:** Transaction type labels inside wallet UI mockups — Send, Receive, Purchase
 
 Circular icon badge: background in brand color (Meadow Green for Receive, Flamingo for Purchase), icon in white, border-radius 40px, ~40px diameter. Acts as the only iconographic navigation within the dark phone card context.
@@ -241,6 +250,7 @@ Circular icon badge: background in brand color (Meadow Green for Receive, Flamin
 ## Do's and Don'ts
 
 ### Do
+
 - Use #fbfaf9 as page background — never pure white (#ffffff) at canvas level; the warm cream cast is the foundation of the tactile feel.
 - Apply the inset stone border (box-shadow: color(display-p3 0.949 0.941 0.929) 0px 0px 0px 1px inset) on all white cards instead of a CSS border property — keeps cards off-layout-flow.
 - Use border-radius 32px for all pill buttons (both #121212 dark and #f6f4ef light variants) — the pill shape is non-negotiable for interactive elements.
@@ -250,9 +260,9 @@ Circular icon badge: background in brand color (Meadow Green for Receive, Flamin
 - Space illustration characters asymmetrically around hero text — overlap the headline bounding box with characters to create depth through layering, not z-index stacking.
 
 ### Don't
+
 - Don't use drop shadows on content cards — the inset warm-stone border is the only surface definition mechanism; shadows appear only on the dark phone mockup and hover-elevated states.
 - Don't use pure #ffffff as a page background — it breaks the warm cream identity; #fbfaf9 is the minimum warmth threshold.
-- Don't use the illustration characters as pure decoration at small sizes — below 60px they lose their expressive faces and become abstract blobs.
 - Don't mix Inter weight 700+ with the Family display typeface — the site uses Inter max weight 600; heavier weights fight the custom font's personality.
 - Don't apply Ember Orange (#ff3e00) to more than one UI element per viewport — its rarity is what creates urgency; overuse collapses the hierarchy.
 - Don't use border-radius below 10px on cards — the minimum card radius is 10px; anything sharper breaks the soft-edged system.
@@ -260,13 +270,13 @@ Circular icon badge: background in brand color (Meadow Green for Receive, Flamin
 
 ## Surfaces
 
-| Level | Name | Value | Purpose |
-|-------|------|-------|---------|
-| 1 | Canvas | `#fbfaf9` | Page background — warm off-white with a faint cream cast, not pure white |
-| 2 | Card Surface | `#ffffff` | White card faces with a warm inset stone border — floats 1px above canvas visually |
-| 3 | Recessed Panel | `#f8f7f4` | Screenshot and demo container backgrounds — slightly warmer than white, sits below card level |
-| 4 | Stone Tint | `#f2f0ed` | Button backgrounds (secondary), inset border reference color, hover states on cream |
-| 5 | Dark Shell | `#000000` | Phone mockup cards — full inversion for product showcase moments |
+| Level | Name           | Value     | Purpose                                                                                       |
+| ----- | -------------- | --------- | --------------------------------------------------------------------------------------------- |
+| 1     | Canvas         | `#fbfaf9` | Page background — warm off-white with a faint cream cast, not pure white                      |
+| 2     | Card Surface   | `#ffffff` | White card faces with a warm inset stone border — floats 1px above canvas visually            |
+| 3     | Recessed Panel | `#f8f7f4` | Screenshot and demo container backgrounds — slightly warmer than white, sits below card level |
+| 4     | Stone Tint     | `#f2f0ed` | Button backgrounds (secondary), inset border reference color, hover states on cream           |
+| 5     | Dark Shell     | `#000000` | Phone mockup cards — full inversion for product showcase moments                              |
 
 ## Elevation
 
@@ -286,6 +296,7 @@ Max-width ~1200px centered on the warm canvas. Hero is full-viewport with center
 ## Agent Prompt Guide
 
 **Quick Color Reference**
+
 - Page background: #fbfaf9 (warm cream, never pure white)
 - Primary text: #474645 (Graphite)
 - Heading text: #343433 (Charcoal Primary)
@@ -375,8 +386,12 @@ Motion personality is 'expressive' with 0.2s ease as the base duration (123 inst
   --color-valid-green: #00c454;
 
   /* Typography — Font Families */
-  --font-family: 'Family', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-inter: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family:
+    'Family', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
+  --font-inter:
+    'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
 
   /* Typography — Scale */
   --text-caption: 12px;
@@ -494,8 +509,12 @@ Motion personality is 'expressive' with 0.2s ease as the base duration (123 inst
   --color-valid-green: #00c454;
 
   /* Typography */
-  --font-family: 'Family', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-inter: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family:
+    'Family', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
+  --font-inter:
+    'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
 
   /* Typography — Scale */
   --text-caption: 12px;

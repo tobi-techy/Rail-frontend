@@ -15,6 +15,36 @@ import type {
   DeleteAccountRequest,
   User,
 } from '../types';
+import { useAuthStore } from '../../stores/authStore';
+
+/**
+ * Get TOS acceptance status from backend
+ */
+export function useTOSStatus() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  return useQuery({
+    queryKey: queryKeys.user.tos(),
+    queryFn: () => userService.getTOSStatus(),
+    enabled: isAuthenticated,
+    staleTime: Infinity,
+  });
+}
+
+/**
+ * Accept TOS mutation
+ */
+export function useAcceptTOS() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => userService.acceptTOS(),
+    onSuccess: () => {
+      queryClient.setQueryData(queryKeys.user.tos(), {
+        accepted: true,
+        accepted_at: new Date().toISOString(),
+      });
+    },
+  });
+}
 
 /**
  * Get user profile

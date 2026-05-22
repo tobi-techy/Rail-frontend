@@ -16,8 +16,8 @@ const SEVERITY_CONFIG: Record<
   string,
   { emotion: MiriamEmotion; bubbleBg: string; textColor: string }
 > = {
-  warning: { emotion: 'sad', bubbleBg: '#FEF3C7', textColor: '#92400E' },
-  celebration: { emotion: 'happy', bubbleBg: '#D1FAE5', textColor: '#065F46' },
+  warning: { emotion: 'sad', bubbleBg: '#FFFFFF', textColor: '#92400E' },
+  celebration: { emotion: 'happy', bubbleBg: '#FFFFFF', textColor: '#065F46' },
   info: { emotion: 'neutral', bubbleBg: '#FFFFFF', textColor: '#343433' },
 };
 
@@ -43,7 +43,7 @@ export function AmbientMiriam({ nudge, onDismiss, onPress, onAction }: Props) {
     <Animated.View
       entering={SlideInRight.duration(300).springify().damping(18)}
       exiting={SlideOutRight.duration(200)}
-      className="absolute right-4 top-2 z-30 flex-row items-start"
+      className="absolute right-4 top-20 z-30 flex-row items-start"
       style={{ maxWidth: width * 0.85 }}
       pointerEvents="box-none">
       {/* Speech bubble */}

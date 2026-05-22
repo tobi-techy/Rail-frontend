@@ -30,7 +30,7 @@ export const GameplayCard: React.FC<GameplayCardProps> = ({ data, isLoading, cla
 
   return (
     <AnimatedPressable
-      style={[animStyle, { backgroundColor: '#1E3A5F' }]}
+      style={[animStyle, { backgroundColor: '#121212' }]}
       className={`rounded-3xl px-4 py-4 ${className ?? ''}`}
       onPress={() => {
         impact();
@@ -48,7 +48,7 @@ export const GameplayCard: React.FC<GameplayCardProps> = ({ data, isLoading, cla
         <HugeiconsIcon icon={Award01Icon} size={20} color="white" strokeWidth={1.8} />
         {streakCount > 0 && (
           <View className="flex-row items-center gap-1 rounded-full bg-white/15 px-2 py-0.5">
-            <HugeiconsIcon icon={FireIcon} size={12} color="#FF2E01" />
+            <HugeiconsIcon icon={FireIcon} size={12} color="#ff3e00" />
             <Text className="font-mono-medium text-[11px] text-white">{streakCount}</Text>
           </View>
         )}

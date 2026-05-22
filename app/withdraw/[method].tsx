@@ -188,7 +188,9 @@ export default function WithdrawAmountScreen() {
         ? station?.broker_cash
         : selectedMethod === 'asset-sell'
           ? station?.invest_balance
-          : station?.spend_balance;
+          : isFiatMethod
+            ? station?.total_balance
+            : station?.spend_balance;
     const parsed = Number.parseFloat(source ?? '');
     const usdBalance = Number.isFinite(parsed) && parsed >= 0 ? parsed : FALLBACK_AVAILABLE_BALANCE;
     return isNGNAsset && ngnRate > 0 ? usdBalance * ngnRate : usdBalance;
@@ -197,6 +199,8 @@ export default function WithdrawAmountScreen() {
     station?.broker_cash,
     station?.invest_balance,
     station?.spend_balance,
+    station?.total_balance,
+    isFiatMethod,
     isNGNAsset,
     ngnRate,
   ]);
@@ -263,6 +267,34 @@ export default function WithdrawAmountScreen() {
     ],
     [amountError, maxWithdrawable, numericAmount]
   );
+  const liveAmountFallbackNudge = useMemo(() => {
+    if (numericAmount <= 0) return null;
+    if (amountError) {
+      return {
+        show: true,
+        message: amountError,
+        severity: 'warning' as const,
+        shake: false,
+        expires_in: 10,
+      };
+    }
+    if (maxWithdrawable > 0 && numericAmount >= maxWithdrawable * 0.8) {
+      return {
+        show: true,
+        message: `That is close to your ${methodCopy.limitLabel.toLowerCase()}. Keep enough room for fees and anything due next.`,
+        severity: 'warning' as const,
+        shake: false,
+        expires_in: 10,
+      };
+    }
+    return {
+      show: true,
+      message: `I am watching this ${isFundFlow ? 'funding' : 'withdrawal'} as you type. Current amount: ${isNGNAsset ? '₦' : '$'}${formatCurrency(numericAmount)}.`,
+      severity: 'info' as const,
+      shake: false,
+      expires_in: 8,
+    };
+  }, [amountError, isFundFlow, isNGNAsset, maxWithdrawable, methodCopy.limitLabel, numericAmount]);
   const canContinue = numericAmount > 0 && !amountError;
 
   // Lockout countdown
@@ -752,6 +784,7 @@ export default function WithdrawAmountScreen() {
           currency={nudgeCurrency}
           enabled={numericAmount > 0}
           debounceMs={650}
+          fallbackNudge={liveAmountFallbackNudge}
           cooldownMs={6_500}
           cooldownScope="screen"
           merchantHint={liveAmountNudgeHint}

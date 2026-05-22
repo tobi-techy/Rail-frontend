@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Image, ActivityIndicator } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import type { AIMessage, InsightCard } from '@/api/types/ai';
 import { MarkdownContent } from './MarkdownContent';
@@ -20,6 +20,7 @@ interface Props {
 export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
   const isUser = msg.role === 'user';
   const content = msg.content ?? '';
+  const imageUrl = msg.image_url ?? msg.metadata?.image_url;
   const [typingDone, setTypingDone] = useState(!animate);
   const [copied, setCopied] = useState(false);
 
@@ -39,8 +40,17 @@ export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
           delayLongPress={400}
           accessibilityRole="text"
           accessibilityLabel={`Your message: ${content.slice(0, 100)}`}>
+          {imageUrl ? (
+            <ImageWithLoader uri={imageUrl} />
+          ) : msg.metadata?.hasImage ? (
+            <View className="mb-1.5 h-52 w-52 items-center justify-center overflow-hidden rounded-2xl bg-[#1c1c1e]">
+              <ActivityIndicator size="small" color="#ffffff" />
+            </View>
+          ) : null}
           <View className="rounded-3xl bg-[#EDEDEB] px-5 py-3.5">
-            <Text className="font-body text-[17px] leading-[28px] text-[#343433]">{content}</Text>
+            <Text className="font-body text-[17px] leading-[28px] text-[#343433]">
+              {content.replace(/^Image:\s*/i, '')}
+            </Text>
           </View>
         </Pressable>
       </Animated.View>
@@ -88,5 +98,24 @@ export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
           </View>
         ))}
     </Animated.View>
+  );
+}
+
+function ImageWithLoader({ uri }: { uri: string }) {
+  const [loading, setLoading] = useState(true);
+  return (
+    <View className="mb-1.5 h-52 w-52 overflow-hidden rounded-2xl bg-[#1c1c1e]">
+      {loading && (
+        <View className="absolute inset-0 z-10 items-center justify-center">
+          <ActivityIndicator size="small" color="#ffffff" />
+        </View>
+      )}
+      <Image
+        source={{ uri }}
+        className="h-full w-full"
+        resizeMode="cover"
+        onLoad={() => setLoading(false)}
+      />
+    </View>
   );
 }

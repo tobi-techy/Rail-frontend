@@ -13,6 +13,7 @@ import {
   KYCVerificationSheet,
   GorhomBottomSheet,
   SpendBreakdownSheet,
+  StashPerformanceSheet,
   VirtualAccountSheet,
 } from '@/components/sheets';
 import { SheetHeader, ExpandableOptionList } from '@/components/sheets/FundingSheetComponents';
@@ -20,7 +21,8 @@ import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailShe
 import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { ROUTES } from '@/constants/routes';
-import { useStation, useKYCStatus } from '@/api/hooks';
+import { getKycResumeRoute } from '@/utils/onboardingFlow';
+import { useStation, useKYCStatus, useTOSStatus, useAcceptTOS } from '@/api/hooks';
 import { useCards } from '@/api/hooks/useCard';
 import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
 import { useAuthStore } from '@/stores/authStore';
@@ -44,8 +46,6 @@ import {
   ChartIncreaseIcon,
   IconComponent as HugeiconsIcon,
 } from '@/lib/icons';
-
-import { AmbientMiriamNudge } from '@/components/ai/AmbientMiriamNudge';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -77,7 +77,11 @@ interface FundingAction {
   icon: React.ReactNode;
   onPress: () => void;
   comingSoon?: boolean;
+  badge?: string;
+  disabled?: boolean;
 }
+
+const PEOPLE_TRANSFER_FEATURES_ENABLED = false;
 
 const CreditSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View className="mb-6">
@@ -119,6 +123,7 @@ function DashboardScreen() {
   const [showKYCSheet, setShowKYCSheet] = useState(false);
   const [showMicroLoanSheet, setShowMicroLoanSheet] = useState(false);
   const [showSpendBreakdown, setShowSpendBreakdown] = useState(false);
+  const [showStashPerformance, setShowStashPerformance] = useState(false);
   const [showCardComingSheet, setShowCardComingSheet] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showVirtualAccountSheet, setShowVirtualAccountSheet] = useState(false);
@@ -139,16 +144,19 @@ function DashboardScreen() {
   const sendNav = useMemo(() => ({ reset: (_?: string) => {}, navigateTo: () => {} }), []);
 
   // Disclaimer
-  const hasAcknowledgedDisclaimer = useAuthStore((s) => s.hasAcknowledgedDisclaimer);
-  const setHasAcknowledgedDisclaimer = useAuthStore((s) => s.setHasAcknowledgedDisclaimer);
+  const { data: tosStatus } = useTOSStatus();
+  const { mutate: acceptTOS } = useAcceptTOS();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
 
   useEffect(() => {
-    if (hasAcknowledgedDisclaimer || !isAuthenticated) return;
-    const t = setTimeout(() => setShowDisclaimer(true), 800);
-    return () => clearTimeout(t);
-  }, [hasAcknowledgedDisclaimer, isAuthenticated]);
+    if (!isAuthenticated || tosStatus?.accepted) return;
+    // Only show once we know the status (not while loading)
+    if (tosStatus && !tosStatus.accepted) {
+      const t = setTimeout(() => setShowDisclaimer(true), 800);
+      return () => clearTimeout(t);
+    }
+  }, [tosStatus, isAuthenticated]);
 
   // Data
   const {
@@ -268,7 +276,8 @@ function DashboardScreen() {
         onProfileRequired: () => {
           setShowSendSheet(false);
           setShowReceiveSheet(false);
-          router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never);
+          const resumeRoute = getKycResumeRoute(useAuthStore.getState().currentOnboardingStep);
+          router.push(resumeRoute as never);
         },
         onKycRequired: () => {
           setShowSendSheet(false);
@@ -458,9 +467,13 @@ function DashboardScreen() {
             {
               id: 'p2p',
               label: 'Send to People',
-              sublabel: 'Via RailTag, email, or phone',
+              sublabel: PEOPLE_TRANSFER_FEATURES_ENABLED
+                ? 'Via RailTag, email, or phone'
+                : 'Paused for review',
               icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#ff3e00" />,
               onPress: startP2P,
+              disabled: !PEOPLE_TRANSFER_FEATURES_ENABLED,
+              badge: !PEOPLE_TRANSFER_FEATURES_ENABLED ? 'Paused' : undefined,
             },
             {
               id: 'withdraw-stash',
@@ -484,9 +497,13 @@ function DashboardScreen() {
             {
               id: 'p2p',
               label: 'Send to People',
-              sublabel: 'Via RailTag, email, or phone',
+              sublabel: PEOPLE_TRANSFER_FEATURES_ENABLED
+                ? 'Via RailTag, email, or phone'
+                : 'Paused for review',
               icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#ff3e00" />,
               onPress: startP2P,
+              disabled: !PEOPLE_TRANSFER_FEATURES_ENABLED,
+              badge: !PEOPLE_TRANSFER_FEATURES_ENABLED ? 'Paused' : undefined,
             },
             {
               id: 'withdraw-stash',
@@ -518,12 +535,14 @@ function DashboardScreen() {
                   {
                     id: 'tap-to-pay',
                     label: 'Tap to Pay',
-                    sublabel: 'Send to someone nearby',
+                    sublabel: 'Paused for review',
                     icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
                     onPress: () => {
                       setShowSendSheet(false);
                       router.push('/tap-to-pay' as never);
                     },
+                    disabled: true,
+                    badge: 'Paused',
                   },
                 ]
               : []),
@@ -571,7 +590,6 @@ function DashboardScreen() {
 
   return (
     <View className="flex-1">
-      <AmbientMiriamNudge screen="home" />
       <ScrollView
         className="min-h-screen flex-1"
         refreshControl={
@@ -620,7 +638,7 @@ function DashboardScreen() {
               cardColor="#ff3e00"
               className="flex-1"
               isLoading={isStationPending}
-              onPress={() => gateFeature(() => setShowSpendBreakdown(true))}
+              // onPress={() => setShowSpendBreakdown(true)}
             />
             <StashCard
               title="Stash"
@@ -630,6 +648,7 @@ function DashboardScreen() {
               cardColor="#0A7A3B"
               className="flex-1"
               isLoading={isStationPending}
+              // onPress={() => setShowStashPerformance(true)}}
             />
           </View>
           <View className="mt-3 flex-row gap-3">
@@ -683,6 +702,10 @@ function DashboardScreen() {
             router.push('/spending-stash');
           }}
         />
+        <StashPerformanceSheet
+          visible={showStashPerformance}
+          onClose={() => setShowStashPerformance(false)}
+        />
         <KYCVerificationSheet
           visible={showKYCSheet}
           onClose={() => setShowKYCSheet(false)}
@@ -691,7 +714,7 @@ function DashboardScreen() {
         <InvestmentDisclaimerSheet
           visible={showDisclaimer}
           onAccept={() => {
-            setHasAcknowledgedDisclaimer(true);
+            acceptTOS();
             setShowDisclaimer(false);
           }}
         />

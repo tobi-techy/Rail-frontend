@@ -428,47 +428,34 @@ export function TransactionDetailSheet({
       </View>
 
       {/* See More expandable */}
-      {hasExtra && (
-        <>
-          <TouchableOpacity
-            onPress={() => setShowMore(!showMore)}
-            className="mt-1 flex-row items-center justify-center gap-1 py-2">
-            <Text className="font-subtitle text-[13px] text-primary">
-              {showMore ? 'See Less' : 'See More'}
-            </Text>
-            <HugeiconsIcon
-              icon={showMore ? ArrowUp01Icon : ArrowDown01Icon}
-              size={14}
-              color="#1B84FF"
+      {hasExtra && !showMore && (
+        <TouchableOpacity
+          onPress={() => setShowMore(true)}
+          className="mt-1 flex-row items-center justify-center gap-1 py-2">
+          <Text className="font-subtitle text-[13px] text-primary">See More</Text>
+          <HugeiconsIcon icon={ArrowDown01Icon} size={14} color="#1B84FF" />
+        </TouchableOpacity>
+      )}
+      {hasExtra && showMore && (
+        <View className="border-t border-surface pt-1">
+          {extraRows.map((row) => (
+            <DetailRow
+              key={row.label}
+              label={row.label}
+              value={row.value}
+              copyable={row.copyable}
             />
+          ))}
+          <TouchableOpacity
+            onPress={() => setShowMore(false)}
+            className="mt-1 flex-row items-center justify-center gap-1 py-2">
+            <Text className="font-subtitle text-[13px] text-primary">See Less</Text>
+            <HugeiconsIcon icon={ArrowUp01Icon} size={14} color="#1B84FF" />
           </TouchableOpacity>
-          {showMore && (
-            <View className="border-t border-surface pt-1">
-              {extraRows.map((row) => (
-                <DetailRow
-                  key={row.label}
-                  label={row.label}
-                  value={row.value}
-                  copyable={row.copyable}
-                />
-              ))}
-            </View>
-          )}
-        </>
+        </View>
       )}
 
       {/* Cancel */}
-      {isCancellable && (
-        <TouchableOpacity
-          onPress={handleCancel}
-          disabled={cancelWithdrawal.isPending}
-          className="mt-4 items-center py-3">
-          <Text className="font-subtitle text-body text-destructive">
-            {cancelWithdrawal.isPending ? 'Cancelling…' : 'Cancel Withdrawal'}
-          </Text>
-        </TouchableOpacity>
-      )}
-
       {/* Share receipt button */}
       <TouchableOpacity
         onPress={handleShareReceipt}

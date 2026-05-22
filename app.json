@@ -49,7 +49,10 @@
       "@react-native-google-signin/google-signin",
       "expo-localization",
       "expo-notifications",
-      "@didit-protocol/sdk-react-native"
+      "@didit-protocol/sdk-react-native",
+      "@sentry/react-native",
+      "expo-sharing",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -58,6 +61,15 @@
     "orientation": "portrait",
     "icon": "./assets/app-icon/app-icon.png",
     "userInterfaceStyle": "light",
+    "androidStatusBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#FFFFFF",
+      "translucent": false
+    },
+    "androidNavigationBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#FFFFFF"
+    },
     "assetBundlePatterns": ["**/*"],
     "splash": {
       "image": "./assets/app-icon/logo-transparent.png",
@@ -101,13 +113,13 @@
         "backgroundColor": "#FF2E01"
       },
       "package": "com.railmoney.rail",
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.VIBRATE"
+        "android.permission.RECEIVE_BOOT_COMPLETED"
       ]
     },
     "extra": {

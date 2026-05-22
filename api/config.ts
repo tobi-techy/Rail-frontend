@@ -9,15 +9,15 @@ export const API_CONFIG = {
 
 export const ENDPOINTS = {
   AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    LOGOUT: '/auth/logout',
-    REFRESH: '/auth/refresh',
-    VERIFY_EMAIL: '/auth/verify-email',
-    VERIFY_CODE: '/auth/verify-code',
-    RESEND_CODE: '/auth/resend-code',
-    FORGOT_PASSWORD: '/auth/forgot-password',
-    RESET_PASSWORD: '/auth/reset-password',
+    LOGIN: '/v1/auth/login',
+    REGISTER: '/v1/auth/register',
+    LOGOUT: '/v1/auth/logout',
+    REFRESH: '/v1/auth/refresh',
+    VERIFY_EMAIL: '/v1/auth/verify-email',
+    VERIFY_CODE: '/v1/auth/verify-code',
+    RESEND_CODE: '/v1/auth/resend-code',
+    FORGOT_PASSWORD: '/v1/auth/forgot-password',
+    RESET_PASSWORD: '/v1/auth/reset-password',
   },
   WALLET: {
     BALANCE: '/v1/balances',

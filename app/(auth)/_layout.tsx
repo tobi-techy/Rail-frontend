@@ -46,6 +46,7 @@ export default function AuthLayout() {
           <Stack.Screen name="create-railtag" />
           <Stack.Screen name="forgot-password" />
           <Stack.Screen name="complete-profile" />
+          <Stack.Screen name="complete-kyc" />
         </Stack>
       </View>
     </ErrorBoundary>

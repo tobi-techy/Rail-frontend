@@ -56,8 +56,15 @@ function resolveDevApiUrl(rawApiUrl: string): string {
   const normalizedCandidate = normalizeUrl(rawApiUrl);
 
   if (!Device.isDevice) {
-    // Simulators/emulators should keep localhost defaults for local backend testing.
-    return normalizedCandidate ?? SIMULATOR_API_URL;
+    // On simulators, use the configured URL if it points to a real server;
+    // only fall back to localhost when no remote URL is configured.
+    if (normalizedCandidate) {
+      const parsed = new URL(normalizedCandidate);
+      if (!isLocalhostHost(parsed.hostname) && !isPlaceholderHost(parsed.hostname)) {
+        return normalizedCandidate;
+      }
+    }
+    return SIMULATOR_API_URL;
   }
 
   if (normalizedCandidate) {

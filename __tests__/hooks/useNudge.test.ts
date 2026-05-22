@@ -113,4 +113,28 @@ describe('useNudge', () => {
 
     jest.useRealTimers();
   });
+
+  it('shows a local fallback when the backend stays silent', async () => {
+    mockAIService.getEnhancedNudge.mockResolvedValue({
+      show: false,
+      severity: 'info',
+      shake: false,
+    });
+
+    const { result } = renderHook(() =>
+      useNudge('withdraw_live_fallback_test', '25.00', 'USD', {
+        fallbackNudge: {
+          show: true,
+          message: 'I am watching this withdrawal as you type.',
+          severity: 'info',
+          shake: false,
+          expires_in: 8,
+        },
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.nudge?.message).toBe('I am watching this withdrawal as you type.');
+    });
+  });
 });

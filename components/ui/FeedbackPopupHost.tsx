@@ -16,26 +16,26 @@ const DEFAULT_DURATION = 3200;
 const typeStyles = {
   success: {
     icon: 'checkmark-circle' as const,
-    iconColor: '#15803D',
-    iconBgColor: '#DCFCE7',
+    iconColor: '#00ca48',
+    iconBgColor: '#ecfdf3',
     accentColor: '#00ca48',
   },
   error: {
     icon: 'alert-circle' as const,
-    iconColor: '#B91C1C',
+    iconColor: '#ff2b3a',
     iconBgColor: '#fff1f2',
     accentColor: '#ff2b3a',
   },
   warning: {
     icon: 'warning' as const,
-    iconColor: '#B45309',
-    iconBgColor: '#FEF3C7',
-    accentColor: '#F59E0B',
+    iconColor: '#d48f00',
+    iconBgColor: '#fff7df',
+    accentColor: '#ffbb26',
   },
   info: {
     icon: 'information-circle' as const,
-    iconColor: '#1D4ED8',
-    iconBgColor: '#DBEAFE',
+    iconColor: '#0090ff',
+    iconBgColor: '#e7f5ff',
     accentColor: '#0090ff',
   },
 };
@@ -186,8 +186,7 @@ export function FeedbackPopupHost() {
               onPress={() => hidePopup(popup.action?.onPress)}
               hitSlop={6}
               style={{ marginLeft: 10, alignSelf: 'center' }}>
-              <Text
-                style={{ fontFamily: 'SFProDisplay-Semibold', fontSize: 13, color: '#343433' }}>
+              <Text style={{ fontFamily: 'SFProDisplay-Semibold', fontSize: 13, color: '#343433' }}>
                 {popup.action.label}
               </Text>
             </Pressable>

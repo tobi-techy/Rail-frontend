@@ -177,7 +177,7 @@ export default function VoiceModeScreen() {
         ) : null}
       </View>
 
-      {/* Miriam character - center */}
+      {/* Rail AI mark - center */}
       <View className="items-center py-10">
         <MiriamReactive state={state} />
         {label ? (

@@ -14,8 +14,9 @@ export default function TabLayout() {
           headerShown: true,
           headerStyle: { backgroundColor: '#fbfaf9' },
           headerShadowVisible: false,
-          headerTitleStyle: { fontFamily: 'SFProDisplay-Bold', fontSize: 28 },
+          headerTitleStyle: { fontFamily: 'SFProDisplay-Bold', fontSize: 28, width: '100%' },
           headerTitleAlign: 'left',
+          headerTitleContainerStyle: { width: '60%' },
           sceneStyle: { backgroundColor: '#fbfaf9' },
         }}>
         <Tabs.Screen
@@ -23,7 +24,12 @@ export default function TabLayout() {
           options={{
             title: 'Station',
             tabBarIcon: ({ color, focused }) => (
-              <IconComponent icon={Home01Icon} size={24} color={color} weight={focused ? 'fill' : 'regular'} />
+              <IconComponent
+                icon={Home01Icon}
+                size={24}
+                color={color}
+                weight={focused ? 'fill' : 'regular'}
+              />
             ),
           }}
         />
@@ -32,7 +38,12 @@ export default function TabLayout() {
           options={{
             title: 'Activity',
             tabBarIcon: ({ color, focused }) => (
-              <IconComponent icon={Clock01Icon} size={24} color={color} weight={focused ? 'fill' : 'regular'} />
+              <IconComponent
+                icon={Clock01Icon}
+                size={24}
+                color={color}
+                weight={focused ? 'fill' : 'regular'}
+              />
             ),
           }}
         />
@@ -41,7 +52,12 @@ export default function TabLayout() {
           options={{
             title: 'Settings',
             tabBarIcon: ({ color, focused }) => (
-              <IconComponent icon={Settings01Icon} size={24} color={color} weight={focused ? 'fill' : 'regular'} />
+              <IconComponent
+                icon={Settings01Icon}
+                size={24}
+                color={color}
+                weight={focused ? 'fill' : 'regular'}
+              />
             ),
           }}
         />

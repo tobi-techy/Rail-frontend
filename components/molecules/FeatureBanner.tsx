@@ -9,6 +9,7 @@ import LoyaltyIcon from '@/assets/Icons/loyalty-14.svg';
 import { useKycStore } from '@/stores/kycStore';
 import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/constants/routes';
+import { getKycResumeRoute } from '@/utils/onboardingFlow';
 import { BottomSheet } from '@/components/sheets';
 import { ArrowUpRight01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
@@ -62,7 +63,12 @@ function BannerCard({ b, cardWidth }: { b: Banner; cardWidth: number }) {
         <View
           style={{ backgroundColor: b.iconColor + '22' }}
           className="h-7 w-7 items-center justify-center rounded-full">
-          <HugeiconsIcon icon={ArrowUpRight01Icon} size={14} color={b.iconColor} strokeWidth={2.5} />
+          <HugeiconsIcon
+            icon={ArrowUpRight01Icon}
+            size={14}
+            color={b.iconColor}
+            strokeWidth={2.5}
+          />
         </View>
       </View>
     </TouchableOpacity>
@@ -134,7 +140,8 @@ export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBanne
 
   const handleKycPress = () => {
     if (!isProfileComplete) {
-      router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never);
+      const resumeRoute = getKycResumeRoute(useAuthStore.getState().currentOnboardingStep);
+      router.push(resumeRoute as never);
       return;
     }
     if (hasStartedKyc) {

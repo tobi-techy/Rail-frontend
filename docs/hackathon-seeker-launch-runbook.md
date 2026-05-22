@@ -41,7 +41,7 @@ From repo root:
 scripts/build-seeker-release-apk.sh
 
 # iOS TestFlight
-xcodebuild -workspace ios/rail.xcworkspace -scheme rail -configuration Release -archivePath build/rail.xcarchive archive
+xcodebuild -workspace ios/RailMoney.xcworkspace -scheme RailMoney -configuration Release -archivePath build/RailMoney.xcarchive archive
 ```
 
 Notes:
@@ -49,6 +49,7 @@ Notes:
 - If signing env vars are present, the script uses them.
 - Otherwise it uses `android/gradle.properties`.
 - Release build intentionally fails if signing vars are missing.
+- The local Seeker build defaults to staging API + Solana devnet. Override `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_SOLANA_RPC_URL`, and `EXPO_PUBLIC_SOLANA_USDC_MINT` before running the script when building against another environment.
 
 ## Seeker Smoke Test Checklist
 
@@ -84,15 +85,15 @@ CLI path:
 
 ```bash
 npm install --global @solana-mobile/dapp-store-cli
-dapp-store --version
-dapp-store login
+export DAPP_STORE_API_KEY=<portal-api-key>
 
-# First app submission
-dapp-store publish create-app --new-app-manifest <path-to-app-manifest>
-
-# Next versions
-dapp-store publish submit-version --version-manifest <path-to-version-manifest>
+dapp-store \
+  --apk-file android/app/build/outputs/apk/release/app-release.apk \
+  --keypair <path-to-solana-keypair.json> \
+  --whats-new "Rail Money Android test build"
 ```
+
+The CLI matches the app from the APK package name (`com.railmoney.rail`), so there is no separate app/version manifest file to maintain for this flow.
 
 ## Demo Script (Short)
 

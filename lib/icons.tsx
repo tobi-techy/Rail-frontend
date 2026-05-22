@@ -16,115 +16,112 @@
 import React from 'react';
 import type { IconProps as PhosphorIconProps, IconWeight } from 'phosphor-react-native';
 import {
-  ArrowDown,
-  ArrowDownLeft,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  ArrowUpRight,
-  ArrowsLeftRight,
-  ArrowBendDownLeft,
-  ArrowBendUpRight,
-  ArrowLineDown,
-  Backspace,
-  Bank,
-  Bell,
-  BellRinging,
-  Buildings,
-  Calendar,
-  Camera,
-  CaretDown,
-  CaretUp,
-  ChartLineUp,
-  ChartBar,
-  Check,
-  CheckCircle,
-  Clock,
-  Coffee,
-  Coin,
-  Copy,
-  CreditCard,
-  Crown,
-  CurrencyCircleDollar,
-  Diamond,
-  Envelope,
-  Eye,
-  EyeSlash,
-  File,
-  Fingerprint,
-  Fire,
-  Flag,
-  Funnel,
-  GasPump,
-  Gear,
-  Gift,
-  GlobeSimple,
-  Headphones,
-  Image,
-  Info,
-  Invoice,
-  Key,
-  Lightning,
-  Link,
-  Lock,
-  LockKey,
-  MagnifyingGlass,
-  Medal,
-  Minus,
-  Money,
-  DotsThree,
-  DotsThreeOutline,
-  Notification,
-  PaperPlaneTilt,
-  PiggyBank,
-  Plus,
-  PlusCircle,
-  PushPin,
-  ArrowCounterClockwise,
-  Repeat,
-  Scan,
-  Scroll,
-  Share,
-  Shield,
-  ShieldCheck,
-  ShoppingBag,
-  Snowflake,
-  Star,
-  Sun,
-  Swap,
-  Tag,
-  Target,
-  ThumbsDown,
-  ThumbsUp,
-  Trash,
-  TrendDown,
-  TrendUp,
-  User,
-  Users,
-  UsersThree,
-  Wallet,
-  Warning,
-  WarningCircle,
-  WifiHigh,
-  X,
-  XCircle,
-  ChatText,
-  Microphone,
-  DeviceMobile,
-  Binoculars,
-  ShieldStar,
-  Scales,
-  GraduationCap,
-  MapPin,
-  ListBullets,
-  At,
-  Phone,
-  CaretRight,
+  ArrowDownIcon,
+  ArrowDownLeftIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ArrowUpIcon,
+  ArrowUpRightIcon,
+  ArrowsLeftRightIcon,
+  ArrowBendDownLeftIcon,
+  ArrowBendUpRightIcon,
+  ArrowLineDownIcon,
+  BackspaceIcon,
+  BankIcon as PhBankIcon,
+  BellIcon,
+  BellRingingIcon,
+  BuildingsIcon,
+  CalendarIcon,
+  CameraIcon as PhCameraIcon,
+  CaretDownIcon,
+  CaretUpIcon,
+  ChartLineUpIcon,
+  ChartBarIcon,
+  CheckIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  CoffeeIcon,
+  CoinIcon as PhCoinIcon,
+  CopyIcon,
+  CreditCardIcon as PhCreditCardIcon,
+  CrownIcon as PhCrownIcon,
+  CurrencyCircleDollarIcon,
+  DiamondIcon as PhDiamondIcon,
+  EnvelopeIcon,
+  EyeIcon as PhEyeIcon,
+  EyeSlashIcon,
+  FileIcon as PhFileIcon,
+  FingerprintIcon,
+  FireIcon as PhFireIcon,
+  FlagIcon,
+  FunnelIcon,
+  GasPumpIcon,
+  GearIcon,
+  GiftIcon as PhGiftIcon,
+  GlobeSimpleIcon,
+  HeadphonesIcon as PhHeadphonesIcon,
+  ImageIcon as PhImageIcon,
+  InfoIcon,
+  InvoiceIcon as PhInvoiceIcon,
+  KeyIcon,
+  LightningIcon,
+  LinkIcon,
+  LockIcon as PhLockIcon,
+  LockKeyIcon,
+  MagnifyingGlassIcon,
+  MedalIcon,
+  MinusIcon,
+  MoneyIcon,
+  DotsThreeIcon,
+  DotsThreeOutlineIcon,
+  NotificationIcon,
+  PaperPlaneTiltIcon,
+  PiggyBankIcon,
+  PlusIcon,
+  PlusCircleIcon,
+  PushPinIcon,
+  ArrowCounterClockwiseIcon,
+  RepeatIcon as PhRepeatIcon,
+  ScanIcon as PhScanIcon,
+  ScrollIcon,
+  ShareIcon,
+  ShieldIcon,
+  ShieldCheckIcon,
+  ShoppingBagIcon,
+  SnowflakeIcon,
+  StarIcon,
+  SunIcon,
+  SwapIcon as PhSwapIcon,
+  TagIcon,
+  TargetIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+  TrashIcon,
+  TrendDownIcon,
+  TrendUpIcon,
+  UserIcon as PhUserIcon,
+  UsersIcon,
+  UsersThreeIcon,
+  WalletIcon,
+  WarningIcon,
+  WarningCircleIcon,
+  WifiHighIcon,
+  XIcon,
+  XCircleIcon,
+  ChatTextIcon,
+  MicrophoneIcon,
+  DeviceMobileIcon,
+  BinocularsIcon,
+  ShieldStarIcon,
+  ScalesIcon,
+  GraduationCapIcon,
+  MapPinIcon as PhMapPinIcon,
+  ListBulletsIcon,
+  AtIcon,
+  PhoneIcon as PhPhoneIcon,
+  CaretRightIcon,
   HouseSimpleIcon,
   BuildingIcon,
-  ImageIcon,
-  CameraIcon,
-  FileIcon,
   ImagesIcon,
 } from 'phosphor-react-native';
 
@@ -138,157 +135,157 @@ export type HugeiconsProps = { icon: PhosphorIcon; size?: number; color?: string
 // ─── HugeIcon name → Phosphor component mapping ────────────────────────────
 export const iconMap: Record<string, PhosphorIcon> = {
   // Arrows & navigation
-  ArrowDown01Icon: ArrowDown,
-  ArrowDownLeft01Icon: ArrowDownLeft,
-  ArrowLeft01Icon: ArrowLeft,
-  ArrowRight01Icon: ArrowRight,
-  ArrowUp01Icon: ArrowUp,
-  ArrowUpRight01Icon: ArrowUpRight,
-  ArrowLeftRightIcon: ArrowsLeftRight,
-  ArrowDataTransferHorizontalIcon: ArrowsLeftRight,
-  ArrowMoveDownLeftIcon: ArrowBendDownLeft,
-  ArrowMoveUpRightIcon: ArrowBendUpRight,
-  ArrowLineDown01Icon: ArrowLineDown,
+  ArrowDown01Icon: ArrowDownIcon,
+  ArrowDownLeft01Icon: ArrowDownLeftIcon,
+  ArrowLeft01Icon: ArrowLeftIcon,
+  ArrowRight01Icon: ArrowRightIcon,
+  ArrowUp01Icon: ArrowUpIcon,
+  ArrowUpRight01Icon: ArrowUpRightIcon,
+  ArrowLeftRightIcon: ArrowsLeftRightIcon,
+  ArrowDataTransferHorizontalIcon: ArrowsLeftRightIcon,
+  ArrowMoveDownLeftIcon: ArrowBendDownLeftIcon,
+  ArrowMoveUpRightIcon: ArrowBendUpRightIcon,
+  ArrowLineDown01Icon: ArrowLineDownIcon,
 
   // Actions
-  Cancel01Icon: X,
-  CancelCircleIcon: XCircle,
-  Delete01Icon: Backspace,
-  Delete02Icon: Trash,
-  Copy01Icon: Copy,
-  Share01Icon: Share,
-  RefreshIcon: ArrowCounterClockwise,
-  RepeatIcon: Repeat,
-  PlusSignIcon: Plus,
-  MinusSignIcon: Minus,
-  Add01Icon: PlusCircle,
-  FilterIcon: Funnel,
-  Search01Icon: MagnifyingGlass,
-  ScanIcon: Scan,
-  ScanEyeIcon: Binoculars,
-  Menu01Icon: ListBullets,
+  Cancel01Icon: XIcon,
+  CancelCircleIcon: XCircleIcon,
+  Delete01Icon: BackspaceIcon,
+  Delete02Icon: TrashIcon,
+  Copy01Icon: CopyIcon,
+  Share01Icon: ShareIcon,
+  RefreshIcon: ArrowCounterClockwiseIcon,
+  RepeatIcon: PhRepeatIcon,
+  PlusSignIcon: PlusIcon,
+  MinusSignIcon: MinusIcon,
+  Add01Icon: PlusCircleIcon,
+  FilterIcon: FunnelIcon,
+  Search01Icon: MagnifyingGlassIcon,
+  ScanIcon: PhScanIcon,
+  ScanEyeIcon: BinocularsIcon,
+  Menu01Icon: ListBulletsIcon,
 
   // Status & feedback
-  CheckmarkCircle01Icon: CheckCircle,
-  CheckmarkCircle02Icon: CheckCircle,
-  CheckUnread01Icon: Check,
-  Tick02Icon: Check,
-  Alert02Icon: Warning,
-  AlertCircleIcon: WarningCircle,
-  InformationCircleIcon: Info,
-  HelpCircleIcon: Info,
+  CheckmarkCircle01Icon: CheckCircleIcon,
+  CheckmarkCircle02Icon: CheckCircleIcon,
+  CheckUnread01Icon: CheckIcon,
+  Tick02Icon: CheckIcon,
+  Alert02Icon: WarningIcon,
+  AlertCircleIcon: WarningCircleIcon,
+  InformationCircleIcon: InfoIcon,
+  HelpCircleIcon: InfoIcon,
 
   // Finance & money
-  Money01Icon: Money,
-  MoneyReceiveSquareIcon: Money,
-  DollarCircleIcon: CurrencyCircleDollar,
-  CreditCardIcon: CreditCard,
-  BankIcon: Bank,
-  Wallet01Icon: Wallet,
-  SavingsIcon: PiggyBank,
-  CoinIcon: Coin,
-  InvoiceIcon: Invoice,
-  Invoice02Icon: Invoice,
+  Money01Icon: MoneyIcon,
+  MoneyReceiveSquareIcon: MoneyIcon,
+  DollarCircleIcon: CurrencyCircleDollarIcon,
+  CreditCardIcon: PhCreditCardIcon,
+  BankIcon: PhBankIcon,
+  Wallet01Icon: WalletIcon,
+  SavingsIcon: PiggyBankIcon,
+  CoinIcon: PhCoinIcon,
+  InvoiceIcon: PhInvoiceIcon,
+  Invoice02Icon: PhInvoiceIcon,
 
   // Charts & data
-  ChartUpIcon: TrendUp,
-  ChartDownIcon: TrendDown,
-  ChartIncreaseIcon: ChartLineUp,
-  BarChartIcon: ChartBar,
+  ChartUpIcon: TrendUpIcon,
+  ChartDownIcon: TrendDownIcon,
+  ChartIncreaseIcon: ChartLineUpIcon,
+  BarChartIcon: ChartBarIcon,
 
   // Communication
-  Message01Icon: ChatText,
-  MessageIcon: ChatText,
-  Mail01Icon: Envelope,
-  MailAtSign01Icon: At,
-  Notification01Icon: Notification,
-  Notification03Icon: Bell,
-  BellDotIcon: BellRinging,
+  Message01Icon: ChatTextIcon,
+  MessageIcon: ChatTextIcon,
+  Mail01Icon: EnvelopeIcon,
+  MailAtSign01Icon: AtIcon,
+  Notification01Icon: NotificationIcon,
+  Notification03Icon: BellIcon,
+  BellDotIcon: BellRingingIcon,
 
   // Security
-  LockIcon: Lock,
-  LockPasswordIcon: LockKey,
-  ShieldKeyIcon: ShieldCheck,
-  Shield01Icon: Shield,
-  ShieldEnergyIcon: ShieldStar,
-  Key01Icon: Key,
-  FingerPrintIcon: Fingerprint,
+  LockIcon: PhLockIcon,
+  LockPasswordIcon: LockKeyIcon,
+  ShieldKeyIcon: ShieldCheckIcon,
+  Shield01Icon: ShieldIcon,
+  ShieldEnergyIcon: ShieldStarIcon,
+  Key01Icon: KeyIcon,
+  FingerPrintIcon: FingerprintIcon,
 
   // User & people
-  UserIcon: User,
-  UserGroupIcon: Users,
-  UserMultiple02Icon: UsersThree,
+  UserIcon: PhUserIcon,
+  UserGroupIcon: UsersIcon,
+  UserMultiple02Icon: UsersThreeIcon,
 
   // Home & buildings
   Home01Icon: HouseSimpleIcon,
   Building04Icon: BuildingIcon,
 
   // Media & files
-  Image01Icon: ImageIcon,
-  Camera01Icon: CameraIcon,
-  File01Icon: FileIcon,
+  Image01Icon: PhImageIcon,
+  Camera01Icon: PhCameraIcon,
+  File01Icon: PhFileIcon,
   Gif01Icon: ImagesIcon,
-  Scroll01Icon: Scroll,
+  Scroll01Icon: ScrollIcon,
 
   // Settings & tools
-  Settings01Icon: Gear,
-  Clock01Icon: Clock,
-  Calendar03Icon: Calendar,
+  Settings01Icon: GearIcon,
+  Clock01Icon: ClockIcon,
+  Calendar03Icon: CalendarIcon,
 
   // Misc
-  EyeIcon: Eye,
-  ViewOffIcon: EyeSlash,
-  FireIcon: Fire,
-  SnowIcon: Snowflake,
-  ZapIcon: Lightning,
-  FlashIcon: Lightning,
-  InternetIcon: GlobeSimple,
-  Wifi01Icon: WifiHigh,
-  Tag01Icon: Tag,
-  PinIcon: PushPin,
-  LinkSquare01Icon: Link,
-  MoreHorizontalIcon: DotsThree,
-  MoreIcon: DotsThreeOutline,
-  SmartPhone01Icon: DeviceMobile,
-  Mic01Icon: Microphone,
-  HeadphonesIcon: Headphones,
+  EyeIcon: PhEyeIcon,
+  ViewOffIcon: EyeSlashIcon,
+  FireIcon: PhFireIcon,
+  SnowIcon: SnowflakeIcon,
+  ZapIcon: LightningIcon,
+  FlashIcon: LightningIcon,
+  InternetIcon: GlobeSimpleIcon,
+  Wifi01Icon: WifiHighIcon,
+  Tag01Icon: TagIcon,
+  PinIcon: PushPinIcon,
+  LinkSquare01Icon: LinkIcon,
+  MoreHorizontalIcon: DotsThreeIcon,
+  MoreIcon: DotsThreeOutlineIcon,
+  SmartPhone01Icon: DeviceMobileIcon,
+  Mic01Icon: MicrophoneIcon,
+  HeadphonesIcon: PhHeadphonesIcon,
 
   // Lifestyle
-  CrownIcon: Crown,
-  DiamondIcon: Diamond,
-  GiftIcon: Gift,
-  CoffeeIcon: Coffee,
-  Coffee01Icon: Coffee,
-  FuelIcon: GasPump,
-  Sun01Icon: Sun,
-  Beach02Icon: Sun,
-  ShoppingBag01Icon: ShoppingBag,
-  Car01Icon: GasPump,
-  Airplane01Icon: PaperPlaneTilt,
-  AirplaneTakeOff01Icon: PaperPlaneTilt,
+  CrownIcon: PhCrownIcon,
+  DiamondIcon: PhDiamondIcon,
+  GiftIcon: PhGiftIcon,
+  CoffeeIcon: CoffeeIcon,
+  Coffee01Icon: CoffeeIcon,
+  FuelIcon: GasPumpIcon,
+  Sun01Icon: SunIcon,
+  Beach02Icon: SunIcon,
+  ShoppingBag01Icon: ShoppingBagIcon,
+  Car01Icon: GasPumpIcon,
+  Airplane01Icon: PaperPlaneTiltIcon,
+  AirplaneTakeOff01Icon: PaperPlaneTiltIcon,
 
   // Achievements & rewards
-  Award01Icon: Medal,
-  Target01Icon: Target,
-  Target02Icon: Target,
-  Star01Icon: Star,
-  LoyaltyIcon: Star,
-  MortarboardIcon: GraduationCap,
+  Award01Icon: MedalIcon,
+  Target01Icon: TargetIcon,
+  Target02Icon: TargetIcon,
+  Star01Icon: StarIcon,
+  LoyaltyIcon: StarIcon,
+  MortarboardIcon: GraduationCapIcon,
 
   // Profile & account
-  Logout01Icon: ArrowLeft,
-  CustomerServiceIcon: Headphones,
-  BalanceScaleIcon: Scales,
-  MapPinIcon: MapPin,
-  PhoneIcon: Phone,
+  Logout01Icon: ArrowLeftIcon,
+  CustomerServiceIcon: PhHeadphonesIcon,
+  BalanceScaleIcon: ScalesIcon,
+  MapPinIcon: PhMapPinIcon,
+  PhoneIcon: PhPhoneIcon,
 
   // Swap / transfer
-  SwapIcon: Swap,
+  SwapIcon: PhSwapIcon,
 };
 
 // ─── Fallback: returns X icon if no mapping found ───────────────────────────
 export function resolveIcon(name: string): PhosphorIcon {
-  return iconMap[name] ?? X;
+  return iconMap[name] ?? XIcon;
 }
 
 // ─── Drop-in HugeiconsIcon replacement ──────────────────────────────────────
@@ -324,120 +321,120 @@ export function IconComponent({
 // These are the Phosphor components themselves, keyed by HugeIcon names.
 // Usage: import { Cancel01Icon } from '@/lib/icons';
 
-export const ArrowDown01Icon = ArrowDown;
-export const ArrowDownLeft01Icon = ArrowDownLeft;
-export const ArrowLeft01Icon = ArrowLeft;
-export const ArrowRight01Icon = ArrowRight;
-export const ArrowUp01Icon = ArrowUp;
-export const ArrowUpRight01Icon = ArrowUpRight;
-export const ArrowLeftRightIcon = ArrowsLeftRight;
-export const ArrowDataTransferHorizontalIcon = ArrowsLeftRight;
-export const ArrowMoveDownLeftIcon = ArrowBendDownLeft;
-export const ArrowMoveUpRightIcon = ArrowBendUpRight;
-export const Cancel01Icon = X;
-export const CancelCircleIcon = XCircle;
-export const Delete01Icon = Backspace;
-export const Delete02Icon = Trash;
-export const Copy01Icon = Copy;
-export const Share01Icon = Share;
-export const RefreshIcon = ArrowCounterClockwise;
-export const RepeatIcon = Repeat;
-export const PlusSignIcon = Plus;
-export const MinusSignIcon = Minus;
-export const Add01Icon = PlusCircle;
-export const FilterIcon = Funnel;
-export const Search01Icon = MagnifyingGlass;
-export const ScanIcon = Scan;
-export const ScanEyeIcon = Binoculars;
-export const Menu01Icon = ListBullets;
-export const CheckmarkCircle01Icon = CheckCircle;
-export const CheckmarkCircle02Icon = CheckCircle;
-export const CheckUnread01Icon = Check;
-export const Tick02Icon = Check;
-export const Alert02Icon = Warning;
-export const AlertCircleIcon = WarningCircle;
-export const InformationCircleIcon = Info;
-export const HelpCircleIcon = Info;
-export const Money01Icon = Money;
-export const MoneyReceiveSquareIcon = Money;
-export const DollarCircleIcon = CurrencyCircleDollar;
-export { CreditCard as CreditCardIcon };
-export { Bank as BankIcon };
-export { Wallet as Wallet01Icon };
-export { PiggyBank as SavingsIcon };
-export { Coin as CoinIcon };
-export { Invoice as Invoice02Icon };
-export const ChartUpIcon = TrendUp;
-export const ChartDownIcon = TrendDown;
-export const ChartIncreaseIcon = ChartLineUp;
-export { ChartBar as BarChartIcon };
-export const Message01Icon = ChatText;
-export const MessageIcon = ChatText;
-export const Mail01Icon = Envelope;
-export const MailAtSign01Icon = At;
-export const Notification03Icon = Bell;
-export const BellDotIcon = BellRinging;
-export { Lock as LockIcon };
-export { LockKey as LockPasswordIcon };
-export const ShieldKeyIcon = ShieldCheck;
-export const Shield01Icon = Shield;
-export const ShieldEnergyIcon = ShieldStar;
-export { Key as Key01Icon };
-export { Fingerprint as FingerPrintIcon };
-export { User as UserIcon };
-export { Users as UserGroupIcon };
-export { UsersThree as UserMultiple02Icon };
+export const ArrowDown01Icon = ArrowDownIcon;
+export const ArrowDownLeft01Icon = ArrowDownLeftIcon;
+export const ArrowLeft01Icon = ArrowLeftIcon;
+export const ArrowRight01Icon = ArrowRightIcon;
+export const ArrowUp01Icon = ArrowUpIcon;
+export const ArrowUpRight01Icon = ArrowUpRightIcon;
+export const ArrowLeftRightIcon = ArrowsLeftRightIcon;
+export const ArrowDataTransferHorizontalIcon = ArrowsLeftRightIcon;
+export const ArrowMoveDownLeftIcon = ArrowBendDownLeftIcon;
+export const ArrowMoveUpRightIcon = ArrowBendUpRightIcon;
+export const Cancel01Icon = XIcon;
+export const CancelCircleIcon = XCircleIcon;
+export const Delete01Icon = BackspaceIcon;
+export const Delete02Icon = TrashIcon;
+export const Copy01Icon = CopyIcon;
+export const Share01Icon = ShareIcon;
+export const RefreshIcon = ArrowCounterClockwiseIcon;
+export const RepeatIcon = PhRepeatIcon;
+export const PlusSignIcon = PlusIcon;
+export const MinusSignIcon = MinusIcon;
+export const Add01Icon = PlusCircleIcon;
+export const FilterIcon = FunnelIcon;
+export const Search01Icon = MagnifyingGlassIcon;
+export const ScanIcon = PhScanIcon;
+export const ScanEyeIcon = BinocularsIcon;
+export const Menu01Icon = ListBulletsIcon;
+export const CheckmarkCircle01Icon = CheckCircleIcon;
+export const CheckmarkCircle02Icon = CheckCircleIcon;
+export const CheckUnread01Icon = CheckIcon;
+export const Tick02Icon = CheckIcon;
+export const Alert02Icon = WarningIcon;
+export const AlertCircleIcon = WarningCircleIcon;
+export const InformationCircleIcon = InfoIcon;
+export const HelpCircleIcon = InfoIcon;
+export const Money01Icon = MoneyIcon;
+export const MoneyReceiveSquareIcon = MoneyIcon;
+export const DollarCircleIcon = CurrencyCircleDollarIcon;
+export { PhCreditCardIcon as CreditCardIcon };
+export { PhBankIcon as BankIcon };
+export { WalletIcon as Wallet01Icon };
+export { PiggyBankIcon as SavingsIcon };
+export { PhCoinIcon as CoinIcon };
+export { PhInvoiceIcon as Invoice02Icon };
+export const ChartUpIcon = TrendUpIcon;
+export const ChartDownIcon = TrendDownIcon;
+export const ChartIncreaseIcon = ChartLineUpIcon;
+export { ChartBarIcon as BarChartIcon };
+export const Message01Icon = ChatTextIcon;
+export const MessageIcon = ChatTextIcon;
+export const Mail01Icon = EnvelopeIcon;
+export const MailAtSign01Icon = AtIcon;
+export const Notification03Icon = BellIcon;
+export const BellDotIcon = BellRingingIcon;
+export { PhLockIcon as LockIcon };
+export { LockKeyIcon as LockPasswordIcon };
+export const ShieldKeyIcon = ShieldCheckIcon;
+export const Shield01Icon = ShieldIcon;
+export const ShieldEnergyIcon = ShieldStarIcon;
+export { KeyIcon as Key01Icon };
+export { FingerprintIcon as FingerPrintIcon };
+export { PhUserIcon as UserIcon };
+export { UsersIcon as UserGroupIcon };
+export { UsersThreeIcon as UserMultiple02Icon };
 export { HouseSimpleIcon as Home01Icon };
-export { Buildings as Building04Icon };
-export { Image as Image01Icon };
-export { Camera as Camera01Icon };
-export { File as File01Icon };
-export { Scroll as Scroll01Icon };
-export { Gear as Settings01Icon };
-export { Clock as Clock01Icon };
-export { Calendar as Calendar03Icon };
-export { Eye as EyeIcon };
-export { EyeSlash as ViewOffIcon };
-export { Fire as FireIcon };
-export { Snowflake as SnowIcon };
-export { Lightning as ZapIcon };
-export { Lightning as FlashIcon };
-export { GlobeSimple as InternetIcon };
-export { WifiHigh as Wifi01Icon };
-export { Tag as Tag01Icon };
-export { PushPin as PinIcon };
-export { Link as LinkSquare01Icon };
-export { DotsThree as MoreHorizontalIcon };
-export { DotsThreeOutline as MoreIcon };
-export { DeviceMobile as SmartPhone01Icon };
-export { Microphone as Mic01Icon };
-export { Headphones as HeadphonesIcon };
-export { Crown as CrownIcon };
-export { Diamond as DiamondIcon };
-export { Gift as GiftIcon };
-export { Coffee as Coffee01Icon };
-export { GasPump as FuelIcon };
-export { Sun as Sun01Icon };
-export { Sun as Beach02Icon };
-export { ShoppingBag as ShoppingBag01Icon };
-export { GasPump as Car01Icon };
-export { PaperPlaneTilt as Airplane01Icon };
-export { PaperPlaneTilt as AirplaneTakeOff01Icon };
+export { BuildingsIcon as Building04Icon };
+export { PhImageIcon as Image01Icon };
+export { PhCameraIcon as Camera01Icon };
+export { PhFileIcon as File01Icon };
+export { ScrollIcon as Scroll01Icon };
+export { GearIcon as Settings01Icon };
+export { ClockIcon as Clock01Icon };
+export { CalendarIcon as Calendar03Icon };
+export { PhEyeIcon as EyeIcon };
+export { EyeSlashIcon as ViewOffIcon };
+export { PhFireIcon as FireIcon };
+export { SnowflakeIcon as SnowIcon };
+export { LightningIcon as ZapIcon };
+export { LightningIcon as FlashIcon };
+export { GlobeSimpleIcon as InternetIcon };
+export { WifiHighIcon as Wifi01Icon };
+export { TagIcon as Tag01Icon };
+export { PushPinIcon as PinIcon };
+export { LinkIcon as LinkSquare01Icon };
+export { DotsThreeIcon as MoreHorizontalIcon };
+export { DotsThreeOutlineIcon as MoreIcon };
+export { DeviceMobileIcon as SmartPhone01Icon };
+export { MicrophoneIcon as Mic01Icon };
+export { PhHeadphonesIcon as HeadphonesIcon };
+export { PhCrownIcon as CrownIcon };
+export { PhDiamondIcon as DiamondIcon };
+export { PhGiftIcon as GiftIcon };
+export { CoffeeIcon as Coffee01Icon };
+export { GasPumpIcon as FuelIcon };
+export { SunIcon as Sun01Icon };
+export { SunIcon as Beach02Icon };
+export { ShoppingBagIcon as ShoppingBag01Icon };
+export { GasPumpIcon as Car01Icon };
+export { PaperPlaneTiltIcon as Airplane01Icon };
+export { PaperPlaneTiltIcon as AirplaneTakeOff01Icon };
 export { ImagesIcon as Gif01Icon };
-export { Medal as Award01Icon };
-export { Target as Target01Icon };
-export { Target as Target02Icon };
-export { GraduationCap as MortarboardIcon };
-export { ArrowLeft as Logout01Icon };
-export { Headphones as CustomerServiceIcon };
-export { Scales as BalanceScaleIcon };
-export { Swap as SwapIcon };
-export { CaretDown as ArrowDown01IconAlt };
-export { CaretUp as ArrowUp01IconAlt };
-export { CaretRight as ArrowRight01IconAlt };
+export { MedalIcon as Award01Icon };
+export { TargetIcon as Target01Icon };
+export { TargetIcon as Target02Icon };
+export { GraduationCapIcon as MortarboardIcon };
+export { ArrowLeftIcon as Logout01Icon };
+export { PhHeadphonesIcon as CustomerServiceIcon };
+export { ScalesIcon as BalanceScaleIcon };
+export { PhSwapIcon as SwapIcon };
+export { CaretDownIcon as ArrowDown01IconAlt };
+export { CaretUpIcon as ArrowUp01IconAlt };
+export { CaretRightIcon as ArrowRight01IconAlt };
 
 // Additional missing exports
-export { Warning as Alert01Icon };
-export { Flag as Flag01Icon };
-export { ThumbsUp as ThumbsUpIcon };
-export { ThumbsDown as ThumbsDownIcon };
+export { WarningIcon as Alert01Icon };
+export { FlagIcon as Flag01Icon };
+export { ThumbsUpIcon as ThumbsUpIcon };
+export { ThumbsDownIcon as ThumbsDownIcon };

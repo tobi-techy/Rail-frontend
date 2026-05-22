@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export interface GradientCardProps {
   title: string;
@@ -21,7 +20,7 @@ export const GradientCard: React.FC<GradientCardProps> = ({
   amount,
   amountSubtitle,
   icon,
-  backgroundColor = '#FF6B35',
+  backgroundColor = '#ff3e00',
   gradientColors,
   onPress,
   onMenuPress,
@@ -30,7 +29,7 @@ export const GradientCard: React.FC<GradientCardProps> = ({
   className,
 }) => {
   const Container: any = onPress ? Pressable : View;
-  const colors = gradientColors || [backgroundColor, backgroundColor];
+  const surfaceColor = gradientColors?.[0] || backgroundColor;
 
   return (
     <Container
@@ -41,11 +40,9 @@ export const GradientCard: React.FC<GradientCardProps> = ({
       accessibilityLabel={onPress ? `${title}: ${amount}` : undefined}
       accessibilityState={{ disabled: disabled || !onPress }}
       className={`overflow-hidden rounded-lg ${className || ''}`}>
-      <LinearGradient
-        colors={colors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        className={`flex-1 p-lg ${disabled ? 'opacity-60' : ''}`}>
+      <View
+        className={`flex-1 p-lg ${disabled ? 'opacity-60' : ''}`}
+        style={{ backgroundColor: surfaceColor }}>
         {/* Header with icon and menu */}
         <View className="mb-lg flex-row items-center justify-between">
           <View className="h-10 w-10 items-center justify-center rounded-full bg-white/30">
@@ -65,16 +62,14 @@ export const GradientCard: React.FC<GradientCardProps> = ({
         {/* Amount section */}
         <View>
           <Text className="font-mono-semibold text-white">{amount}</Text>
-          {amountSubtitle && (
-            <Text className="font-body text-white/80">{amountSubtitle}</Text>
-          )}
+          {amountSubtitle && <Text className="font-body text-white/80">{amountSubtitle}</Text>}
         </View>
 
         {/* Title section */}
         <View className="mt-auto">
           <Text className="font-body text-white/80">{title}</Text>
         </View>
-      </LinearGradient>
+      </View>
     </Container>
   );
 };

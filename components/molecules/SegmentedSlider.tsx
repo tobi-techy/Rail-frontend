@@ -7,7 +7,7 @@ import Animated, {
   runOnJS,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import { useHaptics } from '@/hooks/useHaptics';
 
 interface SegmentedSliderProps {
@@ -33,7 +33,7 @@ export function SegmentedSlider({
   segments = 50,
   label,
   showPercentage = true,
-  activeColor = '#D946EF',
+  activeColor = '#ff3e00',
   inactiveColor = '#f2f0ed',
   className,
 }: SegmentedSliderProps) {

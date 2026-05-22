@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, Pressable, Share, ActivityIndicator } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { UsdIcon, EurIcon, NgnIcon } from '@/assets/svg';
 import { VirtualAccountIntroSheet } from './VirtualAccountIntroSheet';
@@ -31,10 +31,14 @@ function CopyRow({ label, value }: { label: string; value: string }) {
   }, [value, label, showInfo]);
 
   return (
-    <Pressable onPress={handleCopy} className="flex-row items-center justify-between py-4 active:opacity-70">
+    <Pressable
+      onPress={handleCopy}
+      className="flex-row items-center justify-between py-4 active:opacity-70">
       <View className="flex-1 pr-4">
         <Text className="font-body text-[13px] text-[#848281]">{label}</Text>
-        <Text className="mt-1 font-subtitle text-[15px] text-[#343433]" selectable>{value}</Text>
+        <Text className="mt-1 font-subtitle text-[15px] text-[#343433]" selectable>
+          {value}
+        </Text>
       </View>
       {copied ? (
         <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} color="#00ca48" />
@@ -60,7 +64,9 @@ function AccountCard({ account }: { account: VirtualAccount }) {
       account.routing_number ? `Routing Number: ${account.routing_number}` : '',
       account.bank_name ? `Bank: ${account.bank_name}` : '',
       rails ? `Payment Rails: ${rails}` : '',
-    ].filter(Boolean).join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
     Share.share({ message: lines });
   }, [account, rails]);
 
@@ -71,20 +77,35 @@ function AccountCard({ account }: { account: VirtualAccount }) {
       </Text>
       <View className="rounded-2xl bg-[#f8f7f4] px-4">
         {account.beneficiary_name ? (
-          <><CopyRow label="Name" value={account.beneficiary_name} /><View className="h-px bg-[#f2f0ed]" /></>
+          <>
+            <CopyRow label="Name" value={account.beneficiary_name} />
+            <View className="h-px bg-[#f2f0ed]" />
+          </>
         ) : null}
         <CopyRow label="Account number" value={account.account_number || '\u2014'} />
         {account.routing_number ? (
-          <><View className="h-px bg-[#f2f0ed]" /><CopyRow label="Routing number" value={account.routing_number} /></>
+          <>
+            <View className="h-px bg-[#f2f0ed]" />
+            <CopyRow label="Routing number" value={account.routing_number} />
+          </>
         ) : null}
         {account.bank_name ? (
-          <><View className="h-px bg-[#f2f0ed]" /><CopyRow label="Bank" value={account.bank_name} /></>
+          <>
+            <View className="h-px bg-[#f2f0ed]" />
+            <CopyRow label="Bank" value={account.bank_name} />
+          </>
         ) : null}
         {account.bank_address ? (
-          <><View className="h-px bg-[#f2f0ed]" /><CopyRow label="Address" value={account.bank_address} /></>
+          <>
+            <View className="h-px bg-[#f2f0ed]" />
+            <CopyRow label="Address" value={account.bank_address} />
+          </>
         ) : null}
         {rails ? (
-          <><View className="h-px bg-[#f2f0ed]" /><CopyRow label="Payment rails" value={rails} /></>
+          <>
+            <View className="h-px bg-[#f2f0ed]" />
+            <CopyRow label="Payment rails" value={rails} />
+          </>
         ) : null}
       </View>
       <Pressable
@@ -109,7 +130,10 @@ export function VirtualAccountSheet({ visible, onClose, currency }: VirtualAccou
   const isApproved = kycStatus?.status === 'approved';
   const { data: accountsData, isLoading, refetch } = useVirtualAccounts(isApproved);
   const accounts = useMemo(() => accountsData?.virtual_accounts ?? [], [accountsData]);
-  const account = useMemo(() => accounts.find((a) => a.currency === currency), [accounts, currency]);
+  const account = useMemo(
+    () => accounts.find((a) => a.currency === currency),
+    [accounts, currency]
+  );
   const meta = CURRENCY_META[currency] || CURRENCY_META.USD;
 
   return (
@@ -143,7 +167,11 @@ export function VirtualAccountSheet({ visible, onClose, currency }: VirtualAccou
             <Text className="mb-6 text-center font-body text-[13px] text-[#848281]">
               Create a virtual {meta.label} account to receive deposits.
             </Text>
-            <Button title={`Create ${currency} Account`} onPress={() => setShowIntro(true)} variant="orange" />
+            <Button
+              title={`Create ${currency} Account`}
+              onPress={() => setShowIntro(true)}
+              variant="orange"
+            />
           </View>
         )}
       </GorhomBottomSheet>
@@ -152,7 +180,10 @@ export function VirtualAccountSheet({ visible, onClose, currency }: VirtualAccou
         visible={showIntro}
         onClose={() => setShowIntro(false)}
         currency={currency}
-        onSuccess={() => { setShowIntro(false); refetch(); }}
+        onSuccess={() => {
+          setShowIntro(false);
+          refetch();
+        }}
       />
     </>
   );

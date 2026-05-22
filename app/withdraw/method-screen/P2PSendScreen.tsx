@@ -6,14 +6,27 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform,
-  Pressable, ScrollView, StatusBar, Text, TextInput, View,
+  ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, {
-  FadeIn, FadeInDown, FadeInUp,
-  useAnimatedStyle, useSharedValue, withSpring, withTiming,
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useStation, useVerifyPasscode } from '@/api/hooks';
@@ -23,7 +36,11 @@ import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { useAuthStore } from '@/stores/authStore';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
 import {
-  safeName, formatCurrency, formatMaxAmount, normalizeAmount, toDisplayAmount,
+  safeName,
+  formatCurrency,
+  formatMaxAmount,
+  normalizeAmount,
+  toDisplayAmount,
 } from './utils';
 import { WithdrawConfirmSheet } from './sections';
 import {
@@ -34,9 +51,7 @@ import {
 import { BRAND_RED, gentleSpring, springConfig } from './constants';
 import { AnimatedAmount } from './AnimatedAmount';
 import { parseApiError, isPasscodeSessionError } from '@/utils/apiError';
-import {
-  ArrowLeft01Icon, Cancel01Icon, CheckmarkCircle02Icon, Search01Icon,
-} from '@/lib/icons';
+import { ArrowLeft01Icon, Cancel01Icon, CheckmarkCircle02Icon, Search01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const MAX_DIGITS = 9;
@@ -76,8 +91,16 @@ function Avatar({ chars, size = 44 }: { chars: string; size?: number }) {
   );
 }
 
-function RecipientRow({ name, sub, chars, onPress }: {
-  name: string; sub?: string; chars: string; onPress: () => void;
+function RecipientRow({
+  name,
+  sub,
+  chars,
+  onPress,
+}: {
+  name: string;
+  sub?: string;
+  chars: string;
+  onPress: () => void;
 }) {
   return (
     <Pressable
@@ -162,23 +185,38 @@ function P2PSendScreenContent() {
     if (!lockoutUntil) return;
     const tick = setInterval(() => {
       const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
-      if (remaining <= 0) { setLockoutUntil(null); setLockoutSecondsRemaining(0); setPinAttempts(0); }
-      else setLockoutSecondsRemaining(remaining);
+      if (remaining <= 0) {
+        setLockoutUntil(null);
+        setLockoutSecondsRemaining(0);
+        setPinAttempts(0);
+      } else setLockoutSecondsRemaining(remaining);
     }, 1000);
     return () => clearInterval(tick);
   }, [lockoutUntil]);
 
   // load recents
-  useEffect(() => { p2pService.getRecentRecipients().then(setRecents).catch(() => {}); }, []);
+  useEffect(() => {
+    p2pService
+      .getRecentRecipients()
+      .then(setRecents)
+      .catch(() => {});
+  }, []);
 
   // debounced lookup
   useEffect(() => {
-    if (query.length < 2) { setLookupResult(null); return; }
+    if (query.length < 2) {
+      setLookupResult(null);
+      return;
+    }
     const t = setTimeout(async () => {
       setIsLooking(true);
-      try { setLookupResult(await p2pService.lookup(query.trim())); }
-      catch { setLookupResult(null); }
-      finally { setIsLooking(false); }
+      try {
+        setLookupResult(await p2pService.lookup(query.trim()));
+      } catch {
+        setLookupResult(null);
+      } finally {
+        setIsLooking(false);
+      }
     }, 380);
     return () => clearTimeout(t);
   }, [query]);
@@ -189,51 +227,92 @@ function P2PSendScreenContent() {
     setIsSubmitting(true);
     setSubmitError('');
     try {
-      await p2pService.send({ identifier: selected.identifier, amount: numericAmount.toFixed(2), note: note.trim() || undefined });
+      await p2pService.send({
+        identifier: selected.identifier,
+        amount: numericAmount.toFixed(2),
+        note: note.trim() || undefined,
+      });
       setSuccess(true);
     } catch (e: unknown) {
-      if (isPasscodeSessionError(e)) { setShowAuthScreen(true); passkey.setAuthError('Authorization expired.'); return; }
+      if (isPasscodeSessionError(e)) {
+        setShowAuthScreen(true);
+        passkey.setAuthError('Authorization expired.');
+        return;
+      }
       setSubmitError(parseApiError(e, 'Send failed. Please try again.'));
-    } finally { setIsSubmitting(false); }
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [selected, numericAmount, note]);
 
   const passkeyPromptScope = `p2p-send:${safeName(user?.email) || 'unknown'}:${numericAmount.toFixed(2)}`;
-  const passkey = usePasskeyAuthorize({ email: user?.email, passkeyPromptScope, autoTrigger: showAuthScreen && passkeyAvailable, onAuthorized: doSend });
+  const passkey = usePasskeyAuthorize({
+    email: user?.email,
+    passkeyPromptScope,
+    autoTrigger: showAuthScreen && passkeyAvailable,
+    onAuthorized: doSend,
+  });
 
-  const onPasscodeAuthorize = useCallback((code: string) => {
-    if (isPasscodeVerifying || isSubmitting || lockoutUntil) return;
-    passkey.setAuthError('');
-    verifyPasscode({ passcode: code }, {
-      onSuccess: (result) => {
-        if (!result.verified) {
-          const next = pinAttempts + 1;
-          setPinAttempts(next);
-          if (next >= 5) { setLockoutUntil(Date.now() + 30_000); setLockoutSecondsRemaining(30); passkey.setAuthError('Too many attempts. Try again in 30s.'); }
-          else passkey.setAuthError(`Invalid PIN. ${5 - next} left.`);
-          passkey.onAuthPasscodeChange('');
-          return;
+  const onPasscodeAuthorize = useCallback(
+    (code: string) => {
+      if (isPasscodeVerifying || isSubmitting || lockoutUntil) return;
+      passkey.setAuthError('');
+      verifyPasscode(
+        { passcode: code },
+        {
+          onSuccess: (result) => {
+            if (!result.verified) {
+              const next = pinAttempts + 1;
+              setPinAttempts(next);
+              if (next >= 5) {
+                setLockoutUntil(Date.now() + 30_000);
+                setLockoutSecondsRemaining(30);
+                passkey.setAuthError('Too many attempts. Try again in 30s.');
+              } else passkey.setAuthError(`Invalid PIN. ${5 - next} left.`);
+              passkey.onAuthPasscodeChange('');
+              return;
+            }
+            setPinAttempts(0);
+            setLockoutUntil(null);
+            setShowAuthScreen(false);
+            void doSend();
+          },
+          onError: (err: unknown) => {
+            passkey.setAuthError(parseApiError(err, 'Failed to verify PIN.'));
+            passkey.onAuthPasscodeChange('');
+          },
         }
-        setPinAttempts(0); setLockoutUntil(null); setShowAuthScreen(false); void doSend();
-      },
-      onError: (err: unknown) => { passkey.setAuthError(parseApiError(err, 'Failed to verify PIN.')); passkey.onAuthPasscodeChange(''); },
-    });
-  }, [isPasscodeVerifying, isSubmitting, lockoutUntil, doSend, passkey, pinAttempts, verifyPasscode]);
+      );
+    },
+    [isPasscodeVerifying, isSubmitting, lockoutUntil, doSend, passkey, pinAttempts, verifyPasscode]
+  );
 
-  const onConfirmSend = useCallback(() => { setShowConfirmSheet(false); passkey.setAuthError(''); passkey.onAuthPasscodeChange(''); setShowAuthScreen(true); }, [passkey]);
+  const onConfirmSend = useCallback(() => {
+    setShowConfirmSheet(false);
+    passkey.setAuthError('');
+    passkey.onAuthPasscodeChange('');
+    setShowAuthScreen(true);
+  }, [passkey]);
 
   // keypad
-  const onKey = useCallback((key: string) => {
-    setRawAmount((cur) => {
-      if (key === 'backspace') return cur === '0' ? cur : normalizeAmount(cur.slice(0, -1));
-      if (key === 'decimal') return cur.includes('.') ? cur : `${cur}.`;
-      if (!/^\d$/.test(key)) return cur;
-      if (cur.includes('.')) { const [i, d = ''] = cur.split('.'); return d.length >= 2 ? cur : `${i}.${d}${key}`; }
-      const next = (cur === '0' ? key : `${cur}${key}`).replace(/^0+(?=\d)/, '') || '0';
-      if (next.length > MAX_DIGITS) return cur;
-      if (maxSend > 0 && parseFloat(next) > maxSend) return formatMaxAmount(maxSend);
-      return next;
-    });
-  }, [maxSend]);
+  const onKey = useCallback(
+    (key: string) => {
+      setRawAmount((cur) => {
+        if (key === 'backspace') return cur === '0' ? cur : normalizeAmount(cur.slice(0, -1));
+        if (key === 'decimal') return cur.includes('.') ? cur : `${cur}.`;
+        if (!/^\d$/.test(key)) return cur;
+        if (cur.includes('.')) {
+          const [i, d = ''] = cur.split('.');
+          return d.length >= 2 ? cur : `${i}.${d}${key}`;
+        }
+        const next = (cur === '0' ? key : `${cur}${key}`).replace(/^0+(?=\d)/, '') || '0';
+        if (next.length > MAX_DIGITS) return cur;
+        if (maxSend > 0 && parseFloat(next) > maxSend) return formatMaxAmount(maxSend);
+        return next;
+      });
+    },
+    [maxSend]
+  );
 
   const pickRecipient = useCallback((r: Recipient) => {
     Keyboard.dismiss();
@@ -246,10 +325,18 @@ function P2PSendScreenContent() {
   const pillsScale = useSharedValue(0.9);
   const pillsOpacity = useSharedValue(0);
   useEffect(() => {
-    if (numericAmount > 0) { pillsScale.value = withSpring(1, springConfig); pillsOpacity.value = withTiming(1, { duration: 250 }); }
-    else { pillsScale.value = withSpring(0.9, gentleSpring); pillsOpacity.value = withTiming(0.5, { duration: 200 }); }
+    if (numericAmount > 0) {
+      pillsScale.value = withSpring(1, springConfig);
+      pillsOpacity.value = withTiming(1, { duration: 250 });
+    } else {
+      pillsScale.value = withSpring(0.9, gentleSpring);
+      pillsOpacity.value = withTiming(0.5, { duration: 200 });
+    }
   }, [rawAmount]);
-  const pillsStyle = useAnimatedStyle(() => ({ transform: [{ scale: pillsScale.value }], opacity: pillsOpacity.value }));
+  const pillsStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pillsScale.value }],
+    opacity: pillsOpacity.value,
+  }));
 
   // ── Auth screen ─────────────────────────────────────────────────────────
   if (showAuthScreen) {
@@ -257,7 +344,9 @@ function P2PSendScreenContent() {
       <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" />
         <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
-          <Pressable className="size-11 items-center justify-center rounded-full bg-surface" onPress={() => setShowAuthScreen(false)}>
+          <Pressable
+            className="size-11 items-center justify-center rounded-full bg-surface"
+            onPress={() => setShowAuthScreen(false)}>
             <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111" />
           </Pressable>
           <Text className="font-subtitle text-[17px] text-text-primary">Confirm Send</Text>
@@ -265,10 +354,25 @@ function P2PSendScreenContent() {
         </View>
         {!!lockoutUntil && (
           <View className="mx-5 mt-3 rounded-lg bg-coral-red/10 px-4 py-3">
-            <Text className="font-subtitle text-[13px] text-coral-red">Too many attempts. Try again in {lockoutSecondsRemaining}s.</Text>
+            <Text className="font-subtitle text-[13px] text-coral-red">
+              Too many attempts. Try again in {lockoutSecondsRemaining}s.
+            </Text>
           </View>
         )}
-        <PasscodeInput subtitle="Enter your PIN to confirm this send" length={4} value={passkey.authPasscode} onValueChange={passkey.onAuthPasscodeChange} onComplete={lockoutUntil ? undefined : onPasscodeAuthorize} errorText={passkey.authError} showToggle showFingerprint={passkeyAvailable} onFingerprint={lockoutUntil ? undefined : passkey.onPasskeyAuthorize} autoSubmit variant="light" className="mt-3 flex-1" />
+        <PasscodeInput
+          subtitle="Enter your PIN to confirm this send"
+          length={4}
+          value={passkey.authPasscode}
+          onValueChange={passkey.onAuthPasscodeChange}
+          onComplete={lockoutUntil ? undefined : onPasscodeAuthorize}
+          errorText={passkey.authError}
+          showToggle
+          showFingerprint={passkeyAvailable}
+          onFingerprint={lockoutUntil ? undefined : passkey.onPasskeyAuthorize}
+          autoSubmit
+          variant="light"
+          className="mt-3 flex-1"
+        />
       </SafeAreaView>
     );
   }
@@ -278,19 +382,26 @@ function P2PSendScreenContent() {
     return (
       <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" />
-        <Animated.View entering={FadeInDown.springify().damping(18)} className="flex-1 items-center justify-center px-8">
+        <Animated.View
+          entering={FadeInDown.springify().damping(18)}
+          className="flex-1 items-center justify-center px-8">
           <View className="mb-6 size-20 items-center justify-center rounded-full bg-green-50">
             <HugeiconsIcon icon={CheckmarkCircle02Icon} size={36} color="#00ca48" />
           </View>
           <Text className="text-center font-subtitle text-[32px] leading-[38px] text-text-primary">
-            ${formatCurrency(numericAmount)}{'\n'}sent
+            ${formatCurrency(numericAmount)}
+            {'\n'}sent
           </Text>
           <Text className="mt-3 text-center font-body text-[15px] text-text-secondary">
-            {selected?.isUser ? `${selected.name} will receive it instantly.` : `${selected?.name} will get an invite to claim it.`}
+            {selected?.isUser
+              ? `${selected.name} will receive it instantly.`
+              : `${selected?.name} will get an invite to claim it.`}
           </Text>
           {note ? (
             <View className="mt-4 rounded-2xl bg-surface px-5 py-3">
-              <Text className="text-center font-body text-[14px] text-text-secondary">&quot;{note}&quot;</Text>
+              <Text className="text-center font-body text-[14px] text-text-secondary">
+                &quot;{note}&quot;
+              </Text>
             </View>
           ) : null}
           <Button title="Done" className="mt-10 w-full" onPress={() => router.back()} />
@@ -305,8 +416,12 @@ function P2PSendScreenContent() {
       <SafeAreaView className="flex-1" style={{ backgroundColor: BRAND_RED }} edges={['top']}>
         <StatusBar barStyle="light-content" backgroundColor={BRAND_RED} />
         <View className="flex-1 px-5">
-          <Animated.View entering={FadeIn.duration(350)} className="flex-row items-center justify-between pb-2 pt-1">
-            <Pressable className="size-11 items-center justify-center rounded-full bg-white/20" onPress={() => router.back()}>
+          <Animated.View
+            entering={FadeIn.duration(350)}
+            className="flex-row items-center justify-between pb-2 pt-1">
+            <Pressable
+              className="size-11 items-center justify-center rounded-full bg-white/20"
+              onPress={() => router.back()}>
               <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#fff" />
             </Pressable>
             <Text className="font-subtitle text-[17px] text-white">Send to People</Text>
@@ -317,18 +432,35 @@ function P2PSendScreenContent() {
             <AnimatedAmount amount={toDisplayAmount(rawAmount)} />
             <Animated.View style={pillsStyle} className="mt-5 flex-row items-center gap-2">
               <View className="rounded-full bg-white/20 px-3 py-1.5">
-                <Text className="font-body text-[13px] text-white/90">Balance: ${formatCurrency(balance)}</Text>
+                <Text className="font-body text-[13px] text-white/90">
+                  Balance: ${formatCurrency(balance)}
+                </Text>
               </View>
-              <Pressable className="rounded-full bg-parchment-card px-4 py-1.5" onPress={() => setRawAmount(formatMaxAmount(maxSend))}>
-                <Text className="font-subtitle text-[13px]" style={{ color: BRAND_RED }}>Max</Text>
+              <Pressable
+                className="rounded-full bg-parchment-card px-4 py-1.5"
+                onPress={() => setRawAmount(formatMaxAmount(maxSend))}>
+                <Text className="font-subtitle text-[13px]" style={{ color: BRAND_RED }}>
+                  Max
+                </Text>
               </Pressable>
             </Animated.View>
           </View>
           <Animated.View entering={FadeInUp.delay(100).duration(400)} className="pb-3 pt-1">
-            <Button title="Continue" onPress={() => setStep('recipient')} disabled={!amountOk} variant="white" />
+            <Button
+              title="Continue"
+              onPress={() => setStep('recipient')}
+              disabled={!amountOk}
+              variant="white"
+            />
           </Animated.View>
           <Animated.View entering={FadeInUp.delay(120).duration(400)}>
-            <Keypad className="pb-2" onKeyPress={onKey} backspaceIcon="delete" variant="dark" leftKey="decimal" />
+            <Keypad
+              className="pb-2"
+              onKeyPress={onKey}
+              backspaceIcon="delete"
+              variant="dark"
+              leftKey="decimal"
+            />
           </Animated.View>
         </View>
         <View style={{ paddingBottom: Math.max(insets.bottom, 12) }} />
@@ -342,29 +474,52 @@ function P2PSendScreenContent() {
       <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
         <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
-          <Pressable className="size-11 items-center justify-center rounded-full bg-surface" onPress={() => { setStep('amount'); setQuery(''); setLookupResult(null); }}>
+          <Pressable
+            className="size-11 items-center justify-center rounded-full bg-surface"
+            onPress={() => {
+              setStep('amount');
+              setQuery('');
+              setLookupResult(null);
+            }}>
             <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
           </Pressable>
           <Text className="font-subtitle text-[17px] text-text-primary">Send to</Text>
           <View className="size-11" />
         </View>
 
-        <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <ScrollView className="flex-1 px-5" keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <ScrollView
+            className="flex-1 px-5"
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            showsVerticalScrollIndicator={false}>
             {/* Amount pill */}
-            <Animated.View entering={FadeInUp.duration(200)} className="mt-3 mb-5">
+            <Animated.View entering={FadeInUp.duration(200)} className="mb-5 mt-3">
               <View className="flex-row items-center justify-between rounded-2xl bg-surface px-4 py-3">
                 <Text className="font-body text-[13px] text-text-secondary">Sending</Text>
-                <Text className="font-subtitle text-[16px] text-text-primary">${formatCurrency(numericAmount)}</Text>
+                <Text className="font-subtitle text-[16px] text-text-primary">
+                  ${formatCurrency(numericAmount)}
+                </Text>
               </View>
             </Animated.View>
 
             {/* Tab selector */}
-            <TabSelector active={tab} onSelect={(t) => { setTab(t); setQuery(''); setLookupResult(null); }} />
+            <TabSelector
+              active={tab}
+              onSelect={(t) => {
+                setTab(t);
+                setQuery('');
+                setLookupResult(null);
+              }}
+            />
 
             {/* Input */}
             <Animated.View entering={FadeInUp.delay(40).duration(200)} className="mb-2">
-              <View className="flex-row items-center gap-3 rounded-lg border border-[#f2f0ed] px-4" style={{ height: 52 }}>
+              <View
+                className="flex-row items-center gap-3 rounded-lg border border-[#f2f0ed] px-4"
+                style={{ height: 52 }}>
                 <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
                 <TextInput
                   className="flex-1 font-body text-[15px] text-text-primary"
@@ -377,8 +532,15 @@ function P2PSendScreenContent() {
                   returnKeyType="search"
                   autoFocus
                 />
-                {isLooking ? <ActivityIndicator size="small" color="#848281" /> : query.length > 0 ? (
-                  <Pressable onPress={() => { setQuery(''); setLookupResult(null); }} hitSlop={8}>
+                {isLooking ? (
+                  <ActivityIndicator size="small" color="#848281" />
+                ) : query.length > 0 ? (
+                  <Pressable
+                    onPress={() => {
+                      setQuery('');
+                      setLookupResult(null);
+                    }}
+                    hitSlop={8}>
                     <HugeiconsIcon icon={Cancel01Icon} size={15} color="#848281" />
                   </Pressable>
                 ) : null}
@@ -387,7 +549,9 @@ function P2PSendScreenContent() {
 
             {/* Helper text */}
             <Text className="mb-5 ml-1 font-body text-[12px] text-text-secondary">
-              {tab === 'railtag' ? 'RailTags can be found under Profile in the app.' : 'Enter the email or phone number they signed up with.'}
+              {tab === 'railtag'
+                ? 'RailTags can be found under Profile in the app.'
+                : 'Enter the email or phone number they signed up with.'}
             </Text>
 
             {/* Continue button */}
@@ -398,14 +562,28 @@ function P2PSendScreenContent() {
                     name={displayName(lookupResult.user)}
                     sub={lookupResult.user.railTag}
                     chars={initials(lookupResult.user)}
-                    onPress={() => pickRecipient({ identifier: query.trim(), name: displayName(lookupResult.user), chars: initials(lookupResult.user), isUser: true })}
+                    onPress={() =>
+                      pickRecipient({
+                        identifier: query.trim(),
+                        name: displayName(lookupResult.user),
+                        chars: initials(lookupResult.user),
+                        isUser: true,
+                      })
+                    }
                   />
                 ) : (
                   <RecipientRow
                     name={query.trim()}
                     sub={lookupResult.message ?? "Not on Rail yet — they'll get an invite"}
                     chars={(query.trim()[0] ?? '?').toUpperCase()}
-                    onPress={() => pickRecipient({ identifier: query.trim(), name: query.trim(), chars: (query.trim()[0] ?? '?').toUpperCase(), isUser: false })}
+                    onPress={() =>
+                      pickRecipient({
+                        identifier: query.trim(),
+                        name: query.trim(),
+                        chars: (query.trim()[0] ?? '?').toUpperCase(),
+                        isUser: false,
+                      })
+                    }
                   />
                 )}
               </Animated.View>
@@ -421,7 +599,14 @@ function P2PSendScreenContent() {
                     name={displayName(r)}
                     sub={r.railTag}
                     chars={initials(r)}
-                    onPress={() => pickRecipient({ identifier: r.railTag ?? r.recipientId, name: displayName(r), chars: initials(r), isUser: true })}
+                    onPress={() =>
+                      pickRecipient({
+                        identifier: r.railTag ?? r.recipientId,
+                        name: displayName(r),
+                        chars: initials(r),
+                        isUser: true,
+                      })
+                    }
                   />
                 ))}
               </Animated.View>
@@ -429,7 +614,9 @@ function P2PSendScreenContent() {
 
             {!query && recents.length === 0 && (
               <View className="mt-8 items-center">
-                <Text className="font-body text-[14px] text-text-secondary">Search above to find someone.</Text>
+                <Text className="font-body text-[14px] text-text-secondary">
+                  Search above to find someone.
+                </Text>
               </View>
             )}
             <View style={{ height: 32 }} />
@@ -444,25 +631,42 @@ function P2PSendScreenContent() {
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
-        <Pressable className="size-11 items-center justify-center rounded-full bg-surface" onPress={() => { setStep('recipient'); setNote(''); setSubmitError(''); }}>
+        <Pressable
+          className="size-11 items-center justify-center rounded-full bg-surface"
+          onPress={() => {
+            setStep('recipient');
+            setNote('');
+            setSubmitError('');
+          }}>
           <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
         </Pressable>
         <Text className="font-subtitle text-[17px] text-text-primary">Confirm</Text>
         <View className="size-11" />
       </View>
 
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView className="flex-1 px-5" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          className="flex-1 px-5"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
           {/* Recipient card */}
-          <Animated.View entering={FadeInUp.duration(200)} className="mt-4 mb-6">
+          <Animated.View entering={FadeInUp.duration(200)} className="mb-6 mt-4">
             <View className="flex-row items-center gap-4 rounded-2xl bg-surface px-5 py-4">
               <Avatar chars={selected?.chars ?? '?'} size={48} />
               <View className="flex-1">
-                <Text className="font-subtitle text-[16px] text-text-primary">{selected?.name}</Text>
-                <Text className="font-body text-[13px] text-text-secondary">{selected?.identifier}</Text>
+                <Text className="font-subtitle text-[16px] text-text-primary">
+                  {selected?.name}
+                </Text>
+                <Text className="font-body text-[13px] text-text-secondary">
+                  {selected?.identifier}
+                </Text>
               </View>
               <View className="items-end">
-                <Text className="font-subtitle text-[18px] text-text-primary">${formatCurrency(numericAmount)}</Text>
+                <Text className="font-subtitle text-[18px] text-text-primary">
+                  ${formatCurrency(numericAmount)}
+                </Text>
                 <Text className="font-body text-[12px] text-text-secondary">USDC</Text>
               </View>
             </View>
@@ -489,9 +693,12 @@ function P2PSendScreenContent() {
           </Animated.View>
 
           {!selected?.isUser && (
-            <Animated.View entering={FadeIn.duration(200)} className="mb-4 rounded-2xl bg-sunburst-yellow/10 px-4 py-3">
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              className="mb-4 rounded-2xl bg-sunburst-yellow/10 px-4 py-3">
               <Text className="font-body text-[13px] text-amber-700">
-                {selected?.name} isn't on Rail yet. They'll receive an invite to claim your ${formatCurrency(numericAmount)}.
+                {selected?.name} is not on Rail yet. They will receive an invite to claim your $
+                {formatCurrency(numericAmount)}.
               </Text>
             </Animated.View>
           )}
@@ -504,7 +711,9 @@ function P2PSendScreenContent() {
         </ScrollView>
 
         {/* Sticky footer */}
-        <View className="border-t border-stone-surface bg-parchment-card px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
+        <View
+          className="border-t border-stone-surface bg-parchment-card px-5 pt-3"
+          style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           <Button
             title={isSubmitting ? 'Sending...' : `Send $${formatCurrency(numericAmount)}`}
             variant="orange"

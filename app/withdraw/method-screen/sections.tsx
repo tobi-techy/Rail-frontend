@@ -468,11 +468,7 @@ function FiatCurrencyPicker({
             accessibilityRole="button"
             accessibilityLabel={`Select ${c.label}`}>
             <Text className="text-[14px]">{c.flag}</Text>
-            <Text
-              className={cn(
-                'font-subtitle text-[13px]',
-                selected ? 'text-white' : 'text-ash'
-              )}>
+            <Text className={cn('font-subtitle text-[13px]', selected ? 'text-white' : 'text-ash')}>
               {c.label}
             </Text>
           </Pressable>
@@ -551,7 +547,7 @@ export function FiatKycRequiredScreen({
                   One-time verification needed
                 </Text>
                 <Text className="mb-6 font-body text-sm leading-5 text-ash">
-                  To send money to your bank account, we're required by financial regulations to
+                  To send money to your bank account, we are required by financial regulations to
                   verify your identity. It takes under 5 minutes and only needs to be done once.
                 </Text>
                 <View className="mb-8 gap-y-3 rounded-2xl border border-stone-surface bg-stone-surface p-4">
@@ -566,15 +562,11 @@ export function FiatKycRequiredScreen({
                   </View>
                   <View className="flex-row items-center gap-3">
                     <HugeiconsIcon icon={CreditCardIcon} size={16} color="#848281" />
-                    <Text className="font-body text-[13px] text-ash">
-                      Get a Rail Debit Card
-                    </Text>
+                    <Text className="font-body text-[13px] text-ash">Get a Rail Debit Card</Text>
                   </View>
                   <View className="flex-row items-center gap-3">
                     <HugeiconsIcon icon={MoneyReceiveSquareIcon} size={16} color="#848281" />
-                    <Text className="font-body text-[13px] text-ash">
-                      Deposit from your bank
-                    </Text>
+                    <Text className="font-body text-[13px] text-ash">Deposit from your bank</Text>
                   </View>
                 </View>
                 <View className="w-full flex-row gap-3">
@@ -993,9 +985,10 @@ function WithdrawalLimitsInfo() {
   if (!data) return null;
 
   const remaining = Math.max(0, data.daily_limit - data.daily_used);
-  const formattedRemaining = remaining >= 1000
-    ? `$${(remaining / 1000).toFixed(remaining % 1000 === 0 ? 0 : 1)}k`
-    : `$${formatCurrency(remaining)}`;
+  const formattedRemaining =
+    remaining >= 1000
+      ? `$${(remaining / 1000).toFixed(remaining % 1000 === 0 ? 0 : 1)}k`
+      : `$${formatCurrency(remaining)}`;
 
   return (
     <View className="mt-3 flex-row items-center gap-1.5 px-1">

@@ -5,7 +5,7 @@ import { OTPInput } from '@/components/ui/OTPInput';
 import { Button } from '@/components/ui';
 import { useRequestMFAChallenge, useVerifyMFAChallenge } from '@/api/hooks/useSecurity';
 import { useHaptics } from '@/hooks/useHaptics';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import type { MFAChallengeType } from '@/api/types/security';
 
 interface MFAChallengeSheetProps {

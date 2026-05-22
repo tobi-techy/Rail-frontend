@@ -88,6 +88,9 @@ export default function App() {
   const { mutate: appleSignIn } = useAppleSignIn();
   const { mutate: googleSignIn } = useGoogleSignIn();
   const { showError } = useFeedbackPopup();
+  const footerHorizontalPadding = width < 380 ? 16 : 20;
+  const footerGap = 12;
+  const buttonHeight = 58;
 
   // Prefetch all slide images on mount so swiping is instant
   useEffect(() => {
@@ -97,9 +100,9 @@ export default function App() {
     });
   }, []);
 
-  const footerBottom = Math.max(insets.bottom, 16) + 0.55;
-  // buttons height ~108px (2 × large button + gap), content sits 16px above that
-  const contentBottom = footerBottom + 90 + 0.6;
+  const footerBottom = Math.max(insets.bottom, 16);
+  const footerHeight = buttonHeight;
+  const contentBottom = footerBottom + footerHeight + (height < 700 ? 12 : 16);
 
   const clampIndex = useCallback(
     (i: number) => Math.min(onboardingSlides.length - 1, Math.max(0, i)),
@@ -189,11 +192,11 @@ export default function App() {
 
         {/* CTA buttons */}
         <View
-          className="absolute w-full flex-row items-center gap-x-3 gap-y-3 px-2"
-          style={{ bottom: footerBottom }}>
+          className="absolute w-full flex-row items-stretch gap-3"
+          style={{ bottom: footerBottom, paddingHorizontal: footerHorizontalPadding }}>
           {Platform.OS === 'android' ? (
             <Button
-              title="Sign Up with Google"
+              title="Google"
               leftIcon={<GoogleLogo />}
               size="large"
               onPress={() => {
@@ -205,10 +208,11 @@ export default function App() {
                 });
               }}
               variant="white"
+              flex
             />
           ) : (
             <Button
-              title="Sign Up with Apple"
+              title="Apple"
               leftIcon={<AppleLogo width={20} height={20} />}
               size="large"
               onPress={() => {
@@ -220,13 +224,15 @@ export default function App() {
                 });
               }}
               variant="white"
+              flex
             />
           )}
           <Button
-            title="Continue with mail"
+            title="Email"
             size="large"
             onPress={() => router.push('/(auth)/signup')}
             variant="orange"
+            flex
           />
         </View>
       </View>

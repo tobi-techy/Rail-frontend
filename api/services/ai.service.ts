@@ -127,7 +127,13 @@ export const aiService = {
                 settle(() => onError('Stream connection failed'));
               }
             } else {
-              settle(() => onError(`Stream failed: ${xhr.status}`));
+              // If we already received streamed data, treat as success
+              // (backend may close connection after streaming completes)
+              if (seenBytes > 0) {
+                settle(onDone);
+              } else {
+                settle(() => onError(`Stream failed: ${xhr.status}`));
+              }
             }
           }
         };
@@ -291,12 +297,17 @@ export const aiService = {
   },
 
   /** Send an image (base64) for AI analysis (receipt scanning, etc.) */
-  async analyzeImage(base64Image: string, message?: string): Promise<{ data: AIChatResponse }> {
+  async analyzeImage(
+    base64Image: string,
+    message?: string,
+    conversationId?: string
+  ): Promise<{ data: AIChatResponse }> {
     return apiClient.post(
       `${BASE}/chat/image`,
       {
         image: base64Image,
         message: message ?? 'Analyze this image',
+        conversation_id: conversationId ?? '',
       },
       { timeout: 120000 }
     );

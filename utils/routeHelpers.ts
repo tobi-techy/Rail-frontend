@@ -67,7 +67,8 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_PASSCODE) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CONFIRM_PASSCODE) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_RAILTAG) ||
-    pathname.startsWith('/complete-profile/'),
+    pathname.startsWith('/complete-profile/') ||
+    pathname.startsWith('/complete-kyc/'),
   inTabsGroup: segments[0] === '(tabs)',
   inAppGroup:
     segments[0] === '(tabs)' ||
@@ -110,11 +111,13 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/miriam-hub') ||
     pathname.startsWith('/voice-mode') ||
     pathname.startsWith('/tap-to-pay') ||
+    pathname.startsWith('/receipt-scanner') ||
     pathname.startsWith('/kyc') ||
     pathname.startsWith('/card') ||
     pathname.startsWith('/gameplay') ||
     pathname.startsWith('/subscription') ||
-    pathname.startsWith('/complete-profile'),
+    pathname.startsWith('/complete-profile') ||
+    pathname.startsWith('/complete-kyc'),
   isOnWelcomeScreen: pathname === '/' || pathname === normalizeRoutePath(ROUTES.INTRO),
   isOnLoginPasscode: pathname === '/login-passcode',
   isOnVerifyEmail: pathname === normalizeRoutePath(ROUTES.AUTH.VERIFY_EMAIL),
@@ -122,6 +125,7 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
   isOnConfirmPasscode: pathname === normalizeRoutePath(ROUTES.AUTH.CONFIRM_PASSCODE),
   isOnCreateRailTag: pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_RAILTAG),
   isOnCompleteProfile: pathname.startsWith('/complete-profile/'),
+  isOnCompleteKyc: pathname.startsWith('/complete-kyc/'),
 });
 
 /**
@@ -134,7 +138,8 @@ export const isInCriticalAuthFlow = (config: RouteConfig): boolean => {
     config.isOnCreatePasscode ||
     config.isOnConfirmPasscode ||
     config.isOnCreateRailTag ||
-    config.isOnCompleteProfile
+    config.isOnCompleteProfile ||
+    config.isOnCompleteKyc
   );
 };
 
@@ -174,6 +179,11 @@ const handleAuthenticatedUser = (
     return ROUTES.AUTH.CREATE_PASSCODE;
   }
 
+  // If user is in the complete-kyc flow, let them stay there
+  if (config.isOnCompleteKyc) {
+    return null;
+  }
+
   // If on passcode screen and session is valid -> go to dashboard
   if (config.isOnLoginPasscode) {
     if (hasValidPasscodeSession) {
@@ -191,7 +201,8 @@ const handleAuthenticatedUser = (
     !config.isOnCreatePasscode &&
     !config.isOnConfirmPasscode &&
     !config.isOnCreateRailTag &&
-    !config.isOnCompleteProfile
+    !config.isOnCompleteProfile &&
+    !config.isOnCompleteKyc
   ) {
     logger.info('[RouteHelpers] Passcode session missing/expired, redirecting to login-passcode', {
       component: 'routeHelpers',

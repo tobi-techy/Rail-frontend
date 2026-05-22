@@ -12,6 +12,7 @@ import { initSentry } from '@/lib/sentry';
 import { initGlobalErrorHandlers, logger } from '@/lib/logger';
 import { initMixpanel } from '@/utils/mixpanel';
 import { validateEnvironmentVariables } from '@/utils/envValidator';
+import { configureAndroidVisualBaseline } from '@/utils/androidVisualBaseline';
 import { useFonts } from '@/hooks/useFonts';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { useBiometricLock } from '@/hooks/useBiometricLock';
@@ -40,6 +41,7 @@ const SPLASH_MAX_DURATION_MS = 4000;
 initSentry();
 initGlobalErrorHandlers();
 initMixpanel();
+configureAndroidVisualBaseline();
 
 const envValidation = validateEnvironmentVariables();
 if (!envValidation.isValid && !__DEV__) {
@@ -61,6 +63,9 @@ function AppReadyTracker() {
 }
 
 function AppNavigator() {
+  useProtectedRoute();
+  useBiometricLock();
+
   return (
     <Stack
       initialRouteName="index"
@@ -209,9 +214,6 @@ export default function Layout() {
   const refreshCurrencyRates = useUIStore((s) => s.refreshCurrencyRates);
   const [isBlurred, setIsBlurred] = useState(AppState.currentState !== 'active');
 
-  useProtectedRoute();
-  useBiometricLock();
-
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       setIsBlurred(s !== 'active');
@@ -288,38 +290,30 @@ export default function Layout() {
     });
   }, [showSplash]);
 
-  if (showSplash) {
-    return (
-      <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
-        <CustomSplash onMounted={onCustomSplashReady} />
-      </View>
-    );
-  }
-
-  if (!fontsLoaded && !fontError) {
-    return <View style={{ flex: 1, backgroundColor: SPLASH_BG }} />;
-  }
+  const isReady = !showSplash && (fontsLoaded || !!fontError);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
         <ErrorBoundary>
-          <StatusBar barStyle="dark-content" />
+          <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
           <KeyboardProvider>
             <QueryClientProvider client={queryClient}>
               <SafeAreaProvider style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
                 <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
                   <PostHogProvider
                     apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
+                    autocapture={{ captureScreens: false }}
                     options={{
                       host: 'https://us.i.posthog.com',
+                      disabled: __DEV__,
                       // SECURITY FIX (C-3): Only enable session replay when key is configured.
                       // Mask all images to prevent capturing sensitive financial data (balances, QR codes).
                       enableSessionReplay: !!process.env.EXPO_PUBLIC_POSTHOG_API_KEY,
                       sessionReplayConfig: { maskAllTextInputs: true, maskAllImages: true },
                     }}>
                     <PostHogSurveyProvider>
-                      <AppReadyTracker />
+                      {isReady && <AppReadyTracker />}
                       <AppNavigator />
                       <FeedbackPopupHost />
                       {isBlurred && (
@@ -333,6 +327,11 @@ export default function Layout() {
           </KeyboardProvider>
         </ErrorBoundary>
       </BottomSheetModalProvider>
+      {((!fontsLoaded && !fontError) || showSplash) && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: SPLASH_BG, zIndex: 999 }]}>
+          <CustomSplash onMounted={onCustomSplashReady} />
+        </View>
+      )}
     </GestureHandlerRootView>
   );
 }

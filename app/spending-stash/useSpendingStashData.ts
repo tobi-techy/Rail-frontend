@@ -53,7 +53,7 @@ export function useSpendingStashData() {
   const monthlyChart = useMemo(() => data?.monthly_chart ?? [], [data?.monthly_chart]);
 
   const TrendIcon = trend === 'up' ? ChartUpIcon : trend === 'down' ? ChartDownIcon : MinusSignIcon;
-  const trendColor = trend === 'up' ? '#B91C1C' : trend === 'down' ? '#15803D' : '#6B7280';
+  const trendColor = trend === 'up' ? '#ff2b3a' : trend === 'down' ? '#00ca48' : '#848281';
 
   return {
     isLoading,
