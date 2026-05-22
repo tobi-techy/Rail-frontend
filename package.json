@@ -39,7 +39,8 @@
     "test:docker": "docker-compose exec app-dev bun test",
     "typecheck": "tsc --noEmit",
     "validate": "bun run typecheck && bun run lint && bun run test",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "bash scripts/patch-audio.sh"
   },
   "dependencies": {
     "@chainrails/react-native": "0.0.13",
@@ -67,6 +68,7 @@
     "@solana-mobile/mobile-wallet-adapter-protocol-web3js": "^2.2.5",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
+    "@speechmatics/expo-two-way-audio": "^0.1.2",
     "@tanstack/react-query": "^5.90.5",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",

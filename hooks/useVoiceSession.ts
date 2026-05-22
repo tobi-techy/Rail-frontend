@@ -31,12 +31,21 @@ interface ExpoTwoWayAudioNativeModule {
 
 const twoWayAudioNative = requireNativeModule<ExpoTwoWayAudioNativeModule>('ExpoTwoWayAudio');
 
-// Fast base64 decode
+// Audio constants
+const SAMPLE_RATE = 24000; // 24kHz PCM16 mono
+const BYTES_PER_SAMPLE = 2;
+// Pre-buffer enough audio to keep native playback ahead of network/JS timer jitter.
+const PRE_BUFFER_MS = 220;
+const PRE_BUFFER_BYTES = Math.ceil((SAMPLE_RATE * BYTES_PER_SAMPLE * PRE_BUFFER_MS) / 1000);
+const DRAIN_INTERVAL_MS = 30;
+const DRAIN_CHUNK_MS = 80;
+const DRAIN_CHUNK_BYTES = Math.ceil((SAMPLE_RATE * BYTES_PER_SAMPLE * DRAIN_CHUNK_MS) / 1000);
+
+// Helpers
 function base64ToBytes(b64: string): Uint8Array {
   return Uint8Array.from(Buffer.from(b64, 'base64'));
 }
 
-// Fast base64 encode for mic data (Uint8Array → base64)
 function bytesToBase64(bytes: Uint8Array): string {
   return Buffer.from(bytes).toString('base64');
 }
@@ -49,12 +58,99 @@ function estimateCaptionDurationMs(text: string, audioDurationMs: number, audioS
   const tokenCount = Math.max(splitCaptionTokens(text).length, 1);
   const naturalDurationMs = Math.min(Math.max(tokenCount * 115, 500), 5000);
   if (!audioDurationMs || !audioStartedAt) return naturalDurationMs;
-
   const elapsedPlaybackMs = Date.now() - audioStartedAt;
   const remainingPlaybackMs = audioDurationMs - elapsedPlaybackMs;
   if (remainingPlaybackMs > 300) return Math.min(Math.max(remainingPlaybackMs, 500), 5000);
-
   return naturalDurationMs;
+}
+
+/**
+ * Jitter buffer: accumulates incoming PCM chunks and drains them at a steady
+ * rate to the native audio player. This eliminates crackling caused by uneven
+ * network delivery of audio packets.
+ */
+class AudioJitterBuffer {
+  private buffer: Uint8Array[] = [];
+  private totalBytes = 0;
+  private drainTimer: ReturnType<typeof setInterval> | null = null;
+  private preBufferReached = false;
+  private playing = false;
+
+  start() {
+    this.stop();
+    this.buffer = [];
+    this.totalBytes = 0;
+    this.preBufferReached = false;
+    this.playing = true;
+
+    this.drainTimer = setInterval(() => this.drain(), DRAIN_INTERVAL_MS);
+  }
+
+  push(chunk: Uint8Array) {
+    if (!this.playing) return;
+    this.buffer.push(chunk);
+    this.totalBytes += chunk.byteLength;
+  }
+
+  private drain() {
+    if (!this.playing) return;
+
+    // Wait for pre-buffer to fill before starting playback
+    if (!this.preBufferReached) {
+      if (this.totalBytes >= PRE_BUFFER_BYTES) {
+        this.preBufferReached = true;
+      } else {
+        return; // Still accumulating
+      }
+    }
+
+    if (this.buffer.length === 0) return;
+
+    // Merge buffered chunks into a single drain-sized chunk for smooth playback
+    const bytesToDrain = Math.min(DRAIN_CHUNK_BYTES, this.totalBytes);
+    const merged = new Uint8Array(bytesToDrain);
+    let offset = 0;
+
+    while (offset < bytesToDrain && this.buffer.length > 0) {
+      const chunk = this.buffer[0];
+      const needed = bytesToDrain - offset;
+
+      if (chunk.byteLength <= needed) {
+        merged.set(chunk, offset);
+        offset += chunk.byteLength;
+        this.buffer.shift();
+        this.totalBytes -= chunk.byteLength;
+      } else {
+        // Partial chunk: take what we need, leave the rest
+        merged.set(chunk.subarray(0, needed), offset);
+        this.buffer[0] = chunk.subarray(needed);
+        this.totalBytes -= needed;
+        offset += needed;
+      }
+    }
+
+    if (offset > 0) {
+      const toPlay = offset === bytesToDrain ? merged : merged.subarray(0, offset);
+      try {
+        playPCMData(toPlay);
+      } catch {}
+    }
+  }
+
+  stop() {
+    this.playing = false;
+    if (this.drainTimer) {
+      clearInterval(this.drainTimer);
+      this.drainTimer = null;
+    }
+    this.buffer = [];
+    this.totalBytes = 0;
+    this.preBufferReached = false;
+  }
+
+  get bufferedMs(): number {
+    return (this.totalBytes / BYTES_PER_SAMPLE / SAMPLE_RATE) * 1000;
+  }
 }
 
 export function useVoiceSession() {
@@ -73,14 +169,29 @@ export function useVoiceSession() {
   const speakingSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const replyAudioStartedAtRef = useRef(0);
   const replyAudioDurationMsRef = useRef(0);
+  const jitterBufferRef = useRef(new AudioJitterBuffer());
+  const micMutedRef = useRef(false);
 
   const setVoiceState = useCallback((s: VoiceState) => {
     stateRef.current = s;
     setState(s);
   }, []);
 
+  const muteMic = useCallback(() => {
+    if (!micMutedRef.current) {
+      micMutedRef.current = true;
+    }
+  }, []);
+
+  const unmuteMic = useCallback(() => {
+    if (micMutedRef.current) {
+      micMutedRef.current = false;
+    }
+  }, []);
+
   const flushPlayback = useCallback(() => {
     canPlayReplyAudioRef.current = false;
+    jitterBufferRef.current.stop();
     if (captionTimerRef.current) {
       clearInterval(captionTimerRef.current);
       captionTimerRef.current = null;
@@ -93,7 +204,9 @@ export function useVoiceSession() {
     try {
       twoWayAudioNative.stopPlayback?.();
     } catch {}
-  }, []);
+    // Unmute mic after flushing playback
+    unmuteMic();
+  }, [unmuteMic]);
 
   const revealAgentCaption = useCallback((text: string, durationMs?: number) => {
     if (captionTimerRef.current) {
@@ -122,18 +235,19 @@ export function useVoiceSession() {
     }, stepMs);
   }, []);
 
-  // Stream mic PCM to backend — native is patched to 24kHz PCM16 mono.
+  // Stream mic PCM to backend — muted during playback to prevent echo/artifacts
   useExpoTwoWayAudioEventListener(
     'onMicrophoneData',
     useCallback<MicrophoneDataCallback>((event) => {
       const ws = wsRef.current;
       if (!ws || ws.readyState !== WebSocket.OPEN || !activeRef.current) return;
+      // Duck mic during playback to prevent echo artifacts
+      if (micMutedRef.current) return;
       const b64 = bytesToBase64(event.data);
       ws.send(JSON.stringify({ type: 'input.audio', audio: b64 }));
     }, [])
   );
 
-  // Volume level feedback for UI animations
   useExpoTwoWayAudioEventListener(
     'onInputVolumeLevelData',
     useCallback<VolumeLevelCallback>((event) => {
@@ -151,6 +265,8 @@ export function useVoiceSession() {
   const cleanup = useCallback(() => {
     activeRef.current = false;
     canPlayReplyAudioRef.current = false;
+    micMutedRef.current = false;
+    jitterBufferRef.current.stop();
     if (captionTimerRef.current) {
       clearInterval(captionTimerRef.current);
       captionTimerRef.current = null;
@@ -178,15 +294,14 @@ export function useVoiceSession() {
     setOutputVolume(0);
   }, [setVoiceState]);
 
-  // Handle events from backend (AssemblyAI via proxy)
+  // Handle events from backend
   const handleEvent = useCallback(
     (event: VoiceEvent) => {
       switch (event.type) {
         case 'session.ready':
+          // Mic already recording from connect(); just confirm listening state
           setVoiceState('listening');
           activeRef.current = true;
-          // Start mic — native AEC handles echo cancellation
-          toggleRecording(true);
           break;
 
         case 'input.speech.started':
@@ -215,6 +330,10 @@ export function useVoiceSession() {
           }
           setResponseText('');
           setVoiceState('speaking');
+          // Mute mic during playback to prevent echo/feedback artifacts
+          muteMic();
+          // Start jitter buffer for smooth audio drain
+          jitterBufferRef.current.start();
           break;
 
         case 'reply.audio':
@@ -222,8 +341,10 @@ export function useVoiceSession() {
             try {
               const audioBytes = base64ToBytes(event.data);
               if (!replyAudioStartedAtRef.current) replyAudioStartedAtRef.current = Date.now();
-              replyAudioDurationMsRef.current += (audioBytes.byteLength / 2 / 24000) * 1000;
-              playPCMData(audioBytes);
+              replyAudioDurationMsRef.current +=
+                (audioBytes.byteLength / BYTES_PER_SAMPLE / SAMPLE_RATE) * 1000;
+              // Push to jitter buffer instead of playing immediately
+              jitterBufferRef.current.push(audioBytes);
             } catch {
               setError('Audio playback failed');
               setVoiceState('error');
@@ -265,6 +386,7 @@ export function useVoiceSession() {
             flushPlayback();
           } else {
             canPlayReplyAudioRef.current = false;
+            // Let the jitter buffer drain remaining audio before transitioning
             const elapsedPlaybackMs = replyAudioStartedAtRef.current
               ? Date.now() - replyAudioStartedAtRef.current
               : 0;
@@ -272,11 +394,17 @@ export function useVoiceSession() {
               Math.max(replyAudioDurationMsRef.current - elapsedPlaybackMs, 0),
               5000
             );
+            // Add buffer drain time
+            const bufferDrainMs = jitterBufferRef.current.bufferedMs;
+            const totalSettleMs = remainingPlaybackMs + bufferDrainMs + 80; // +80ms safety margin
+
             if (speakingSettleTimerRef.current) clearTimeout(speakingSettleTimerRef.current);
             speakingSettleTimerRef.current = setTimeout(() => {
               speakingSettleTimerRef.current = null;
+              jitterBufferRef.current.stop();
+              unmuteMic();
               if (stateRef.current === 'speaking') setVoiceState('listening');
-            }, remainingPlaybackMs);
+            }, totalSettleMs);
           }
           if (event.status === 'interrupted' && stateRef.current === 'speaking')
             setVoiceState('listening');
@@ -288,7 +416,7 @@ export function useVoiceSession() {
           break;
       }
     },
-    [flushPlayback, revealAgentCaption, setVoiceState]
+    [flushPlayback, muteMic, unmuteMic, revealAgentCaption, setVoiceState]
   );
 
   // Connect to voice session
@@ -304,10 +432,6 @@ export function useVoiceSession() {
       return;
     }
 
-    // Initialize native audio engine:
-    // - AVAudioEngine with .playAndRecord + .defaultToSpeaker
-    // - Voice processing (AEC + noise reduction)
-    // - PCM16 24kHz mono (patched from 16kHz)
     try {
       await initialize();
     } catch {
@@ -316,7 +440,14 @@ export function useVoiceSession() {
       return;
     }
 
-    // Connect WebSocket to backend voice proxy
+    // Start recording immediately so the user can speak as soon as the screen appears.
+    // Mic data is only forwarded once the WebSocket is open (checked in onMicrophoneData).
+    try {
+      toggleRecording(true);
+      activeRef.current = true;
+      setVoiceState('listening');
+    } catch {}
+
     const httpBase = API_CONFIG.baseURL;
     const wsBase = httpBase.replace(/^http/, 'ws');
     const token = useAuthStore.getState().accessToken;
