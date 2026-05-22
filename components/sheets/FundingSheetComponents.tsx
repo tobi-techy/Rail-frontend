@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Image } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import { IconComponent as HugeiconsIcon, type PhosphorIcon } from '@/lib/icons';
 import { ArrowDown01Icon, ArrowUp01Icon, Tick02Icon } from '@/lib/icons';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
@@ -28,6 +28,7 @@ export type FundingOption = {
   subtitle: string;
   onPress: () => void;
   badge?: string;
+  disabled?: boolean;
 };
 
 export function OptionCard({ option, index }: { option: FundingOption; index: number }) {
@@ -37,11 +38,15 @@ export function OptionCard({ option, index }: { option: FundingOption; index: nu
     <Animated.View entering={FadeInDown.duration(300).delay(index * 60)}>
       <Pressable
         onPress={() => {
+          if (option.disabled) return;
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           option.onPress();
         }}
+        disabled={option.disabled}
         className="mb-3 flex-row items-center gap-4 rounded-2xl border border-[#f2f0ed] bg-parchment-card px-4 py-5 active:bg-[#f8f7f4]"
+        style={option.disabled ? { opacity: 0.45 } : undefined}
         accessibilityRole="button"
+        accessibilityState={{ disabled: option.disabled }}
         accessibilityLabel={option.title}>
         <View className="w-8 items-center justify-center">
           {isHugeIcon ? (
@@ -52,7 +57,7 @@ export function OptionCard({ option, index }: { option: FundingOption; index: nu
               strokeWidth={1.8}
             />
           ) : (
-            option.icon as React.ReactNode
+            (option.icon as React.ReactNode)
           )}
         </View>
         <View className="flex-1">
@@ -79,6 +84,8 @@ type ExpandableAction = {
   sublabel?: string;
   icon: React.ReactNode;
   onPress: () => void;
+  badge?: string;
+  disabled?: boolean;
 };
 
 export function ExpandableOptionList({
@@ -89,7 +96,14 @@ export function ExpandableOptionList({
   more: ExpandableAction[];
 }) {
   const [expanded, setExpanded] = useState(false);
-  const visible = expanded ? [...main, ...more] : main;
+
+  // Show first 2 active (non-disabled) options; push disabled + remaining into expandable
+  const active = main.filter((a) => !a.disabled);
+  const paused = main.filter((a) => a.disabled);
+  const initialVisible = active.slice(0, 2);
+  const hiddenActions = [...active.slice(2), ...paused, ...more];
+
+  const visible = expanded ? [...initialVisible, ...hiddenActions] : initialVisible;
 
   return (
     <>
@@ -103,10 +117,12 @@ export function ExpandableOptionList({
             title: action.label,
             subtitle: action.sublabel ?? '',
             onPress: action.onPress,
+            badge: action.badge,
+            disabled: action.disabled,
           }}
         />
       ))}
-      {more.length > 0 && (
+      {hiddenActions.length > 0 && (
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

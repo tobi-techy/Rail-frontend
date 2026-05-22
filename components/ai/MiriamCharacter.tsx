@@ -577,8 +577,6 @@ export function MiriamCharacter({
             },
             faceAnim,
           ]}>
-
-
           {/* Left Eye */}
           <Animated.View
             style={[

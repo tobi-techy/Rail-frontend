@@ -80,10 +80,7 @@ export const StashCard: React.FC<StashCardProps> = ({
       accessibilityLabel={onPress ? `${title}: ${amount}${amountCents || ''}` : undefined}
       accessibilityState={{ disabled }}>
       {/* Top row: icon + dot */}
-      <View className="mb-16 flex-row items-start justify-between">
-        {/* Icon in frosted circle */}
-        <View>{icon}</View>
-      </View>
+      <View className="mb-16 flex-row items-start justify-between">{icon}</View>
 
       {/* Bottom: amount + title */}
       {isLoading ? (

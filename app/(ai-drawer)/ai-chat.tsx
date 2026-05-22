@@ -17,6 +17,7 @@ import {
   Invoice02Icon,
   Target01Icon,
   Wallet01Icon,
+  Cancel01Icon,
   IconComponent as HugeiconsIcon,
   type PhosphorIcon,
 } from '@/lib/icons';
@@ -249,24 +250,24 @@ function EmptyChatState({
   });
 
   return (
-    <View className="flex-1 px-6 pt-10">
-      <View className="flex-1 justify-center">
-        <MiriamCharacter size={agentMode ? 56 : 88} emotion="happy" animate />
-        <Text className="mt-6 font-body-medium text-[20px] leading-[28px] text-charcoal-primary">
+    <View className="flex-1 px-6 pt-6">
+      <View>
+        <MiriamCharacter size={agentMode ? 48 : 72} emotion="happy" animate />
+        <Text className="mt-4 font-body-medium text-[18px] leading-[26px] text-charcoal-primary">
           {agentMode
-            ? 'Agent mode is ready. Give Miriam a task: audit spending, build a plan, organize obligations, or set money rules.'
+            ? 'Pick a task below, then tell me what you need.'
             : "Hey, I'm Miriam. I can audit your spending, plan the month, or catch the leaks."}
         </Text>
         {!agentMode && (
-          <View className="mt-6 gap-3">
+          <View className="mt-5 gap-2.5">
             {cleanSuggestions.slice(0, 3).map((suggestion) => (
               <Pressable
                 key={suggestion}
                 onPress={() => onSend(suggestion)}
-                className="self-start rounded-2xl border border-fog/40 px-4 py-3"
+                className="self-start rounded-2xl border border-fog/40 px-4 py-2.5"
                 accessibilityRole="button"
                 accessibilityLabel={suggestion}>
-                <Text className="font-body text-[16px] text-charcoal-primary" numberOfLines={1}>
+                <Text className="font-body text-[15px] text-charcoal-primary" numberOfLines={1}>
                   {suggestion}
                 </Text>
               </Pressable>
@@ -343,13 +344,21 @@ export default function AIChatScreen() {
   const [attachedImage, setAttachedImage] = useState<{ uri: string; base64: string } | null>(null);
   const [showImageSheet, setShowImageSheet] = useState(false);
 
-  // Pick up scanned receipt when returning from scanner
+  // Pick up scanned receipt when returning from scanner (check once per render cycle)
+  const scannedRef = useRef(false);
   useEffect(() => {
-    if (lastScannedReceipt) {
+    if (lastScannedReceipt && !scannedRef.current) {
+      scannedRef.current = true;
       setAttachedImage(lastScannedReceipt);
       clearScannedReceipt();
+      // Reset flag after a tick so future scans work
+      setTimeout(() => {
+        scannedRef.current = false;
+      }, 500);
     }
   });
+
+  const [activeAgentAction, setActiveAgentAction] = useState<AgentAction | null>(null);
 
   const handleSend = useCallback(
     async (
@@ -358,9 +367,20 @@ export default function AIChatScreen() {
       source: 'prompt' | 'agent_mode' | 'preloaded' = 'prompt'
     ) => {
       const trimmed = msg.trim();
-      if (!trimmed && !image) return;
+      if (!trimmed && !image && !activeAgentAction) return;
+
+      // If agent action is active, prepend its prompt as context
+      let finalMsg = trimmed;
+      if (activeAgentAction) {
+        finalMsg = trimmed ? `[${activeAgentAction.label}] ${trimmed}` : activeAgentAction.prompt;
+        if (activeAgentAction.toneMode) {
+          setTonePreference(activeAgentAction.toneMode);
+        }
+        setActiveAgentAction(null);
+      }
+
       setAgentMode(false);
-      const toneMode = trimmed ? inferToneModeFromPrompt(trimmed) : undefined;
+      const toneMode = finalMsg ? inferToneModeFromPrompt(finalMsg) : undefined;
       if (toneMode) {
         setTonePreference(toneMode);
       }
@@ -375,7 +395,7 @@ export default function AIChatScreen() {
         setAttachedImage(null);
         await sendImage(
           image.base64,
-          trimmed || 'Analyze this receipt and extract the transaction details.'
+          finalMsg || 'Analyze this receipt and extract the transaction details.'
         );
         return;
       }
@@ -383,18 +403,26 @@ export default function AIChatScreen() {
       let convId = activeConversationId;
       if (!convId) {
         try {
-          convId = await createConversation(trimmed.slice(0, 50));
+          convId = await createConversation(finalMsg.slice(0, 50));
         } catch {
-          await sendMessage(trimmed, undefined, { toneMode });
+          await sendMessage(finalMsg, undefined, { toneMode });
           setEditText('');
           return;
         }
       }
 
-      await sendMessage(trimmed, convId, { toneMode });
+      await sendMessage(finalMsg, convId, { toneMode });
       setEditText('');
     },
-    [activeConversationId, createConversation, sendMessage, sendImage, setTonePreference, track]
+    [
+      activeConversationId,
+      activeAgentAction,
+      createConversation,
+      sendMessage,
+      sendImage,
+      setTonePreference,
+      track,
+    ]
   );
 
   const handleAgentPick = useCallback(
@@ -402,10 +430,14 @@ export default function AIChatScreen() {
       if (action.toneMode) {
         setTonePreference(action.toneMode);
       }
-      handleSend(action.prompt, undefined, 'agent_mode');
+      setActiveAgentAction(action);
     },
-    [handleSend, setTonePreference]
+    [setTonePreference]
   );
+
+  const handleClearAgentAction = useCallback(() => {
+    setActiveAgentAction(null);
+  }, []);
 
   // Auto-send preloaded message from notification deep-link
   const preloadHandled = useRef(false);
@@ -600,11 +632,24 @@ export default function AIChatScreen() {
 
         {/* ── Input ── */}
         <View className="pb-2" style={{ paddingBottom: insets.bottom + 4 }}>
-          {agentMode && !isKeyboardVisible && (
+          {agentMode && !isKeyboardVisible && !activeAgentAction && (
             <AgentActionRail onPick={handleAgentPick} disabled={isStreaming} />
           )}
           {!isEmpty && !agentMode && !isKeyboardVisible && (
             <SuggestionChips suggestions={smartSuggestions} onPress={handleSend} />
+          )}
+          {activeAgentAction && (
+            <Animated.View
+              entering={FadeIn.duration(150)}
+              className="mx-4 mb-2 flex-row items-center gap-2 rounded-full bg-[#f0efed] px-3.5 py-2">
+              <HugeiconsIcon icon={activeAgentAction.icon} size={15} color="#343433" />
+              <Text className="flex-1 font-body-medium text-[13px] text-charcoal-primary">
+                {activeAgentAction.label}
+              </Text>
+              <Pressable onPress={handleClearAgentAction} hitSlop={8}>
+                <HugeiconsIcon icon={Cancel01Icon} size={14} color="#94918d" />
+              </Pressable>
+            </Animated.View>
           )}
           <InputBar
             onSend={handleSend}

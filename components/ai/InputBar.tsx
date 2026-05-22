@@ -12,7 +12,6 @@ import {
   ArrowUp01Icon,
   Cancel01Icon,
   Add01Icon,
-  InformationCircleIcon,
   Message01Icon,
   IconComponent as HugeiconsIcon,
 } from '@/lib/icons';
@@ -83,30 +82,9 @@ export function InputBar({
 
   return (
     <View
-      className={`mx-4 overflow-hidden border border-black/[0.05] bg-parchment-card ${
-        agentMode ? 'rounded-[28px]' : 'rounded-[24px]'
+      className={`mx-4 overflow-hidden border border-black/[0.08] ${
+        agentMode ? 'rounded-full bg-white' : 'rounded-[24px] bg-parchment-card'
       }`}>
-      {agentMode && (
-        <>
-          <View className="flex-row items-center justify-between px-5 py-4">
-            <View className="flex-row items-center gap-2">
-              <HugeiconsIcon icon={Message01Icon} size={18} color="#343433" />
-              <Text className="font-body-medium text-[14px] text-[#343433]">Agent</Text>
-              <HugeiconsIcon icon={InformationCircleIcon} size={19} color="#8C8C8C" />
-            </View>
-            <Pressable
-              onPress={onAgentClose}
-              hitSlop={10}
-              className="h-10 w-10 items-center justify-center rounded-full"
-              accessibilityRole="button"
-              accessibilityLabel="Close agent mode">
-              <HugeiconsIcon icon={Cancel01Icon} size={22} color="#8C8C8C" />
-            </Pressable>
-          </View>
-          <View className="h-px bg-black/[0.06]" />
-        </>
-      )}
-
       {attachedImage && (
         <Animated.View entering={FadeIn.duration(150)} className="px-4 pt-3">
           <View className="relative self-start">
@@ -127,34 +105,23 @@ export function InputBar({
       )}
 
       {agentMode ? (
-        <View className="flex-row items-center gap-3 px-4 py-4">
-          {onMicPress && (
-            <Pressable
-              onPress={onMicPress}
-              disabled={isStreaming}
-              className="h-11 w-11 items-center justify-center rounded-full border border-[#343433]"
-              accessibilityRole="button"
-              accessibilityLabel="Voice input">
-              <HugeiconsIcon
-                icon={Mic01Icon}
-                size={25}
-                color={isStreaming ? '#B5B5B5' : '#343433'}
-              />
-            </Pressable>
-          )}
+        <View className="flex-row items-center gap-3 px-4 py-3">
+          <View className="h-9 w-9 items-center justify-center rounded-full border border-black/[0.08]">
+            <HugeiconsIcon icon={Mic01Icon} size={18} color="#343433" />
+          </View>
           <TextInput
             ref={inputRef}
             value={text}
             onChangeText={setText}
-            placeholder={attachedImage ? 'Add a message...' : 'Enter your task...'}
-            placeholderTextColor="#848281"
+            placeholder={attachedImage ? 'Add a message...' : 'Ask anything...'}
+            placeholderTextColor="#9CA3AF"
             multiline
             maxLength={4000}
             autoFocus={autoFocus}
             returnKeyType="default"
             blurOnSubmit={false}
             enablesReturnKeyAutomatically
-            className="max-h-[120px] flex-1 font-body text-[16px] leading-[24px] text-[#343433]"
+            className="max-h-[120px] flex-1 font-body text-[16px] leading-[22px] text-[#343433]"
           />
           <Animated.View style={sendStyle}>
             <Pressable
@@ -166,13 +133,13 @@ export function InputBar({
                 sendScale.value = withSpring(1, { damping: 15 });
               }}
               disabled={isStreaming || (!hasContent && !onImagePress)}
-              className="h-11 w-11 items-center justify-center rounded-full border border-[#343433]"
+              className="h-9 w-9 items-center justify-center rounded-full bg-[#1C1C1E]"
               accessibilityRole="button"
               accessibilityLabel={hasContent ? 'Send message' : 'Add attachment'}>
               <HugeiconsIcon
                 icon={hasContent ? ArrowUp01Icon : Add01Icon}
-                size={hasContent ? 20 : 24}
-                color={isStreaming ? '#B5B5B5' : '#343433'}
+                size={hasContent ? 18 : 20}
+                color="#FFFFFF"
               />
             </Pressable>
           </Animated.View>

@@ -9,8 +9,8 @@ import {
   CheckmarkCircle01Icon,
   ArrowRight01Icon,
   CrownIcon,
+  IconComponent as HugeiconsIcon,
 } from '@/lib/icons';
-import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import {
   useGameplayProfile,
   useAchievements,
@@ -25,7 +25,6 @@ import type { Achievement, UserChallenge } from '@/api/services/gameplay.service
 import { AchievementBadge } from '@/components/molecules/AchievementBadge';
 import { StreakRing } from '@/components/molecules/StreakRing';
 import { AchievementDetailSheet } from '@/components/sheets';
-import { AnimatedFire } from '@/components/gameplay/AnimatedFire';
 import { LevelRing } from '@/components/gameplay/LevelRing';
 
 export default function GameplayScreen() {
@@ -57,8 +56,6 @@ export default function GameplayScreen() {
   const challenges = challengesData?.challenges ?? profile?.active_challenges ?? [];
   const achievements = achievementsData?.achievements ?? [];
   const earnedCount = achievements.filter((a: Achievement) => a.unlocked).length;
-
-
 
   return (
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
@@ -96,7 +93,8 @@ export default function GameplayScreen() {
             <>
               <View className="items-center justify-center">
                 <LevelRing size={128} strokeWidth={5} progress={progressPct} glow />
-                <View className="absolute items-center justify-center rounded-full bg-black"
+                <View
+                  className="absolute items-center justify-center rounded-full bg-black"
                   style={{ width: 102, height: 102 }}>
                   <Text className="font-mono-bold text-[40px] text-white">{level}</Text>
                 </View>
@@ -132,18 +130,18 @@ export default function GameplayScreen() {
         </Animated.View>
 
         {/* ── Streak ──────────────────────────────────────────── */}
-        <Animated.View
-          entering={FadeInDown.delay(80).duration(400)}
-          className="mt-8 px-5">
-          <Text className="mb-4 font-subtitle text-small uppercase tracking-wider text-text-secondary">
-            Streak
+        <Animated.View entering={FadeInDown.delay(80).duration(400)} className="mt-8 px-5">
+          <Text className="mb-4 font-subtitle text-body text-text-secondary">
+            Deposit consistency
           </Text>
 
           <View className="flex-row items-center gap-4">
-            <AnimatedFire size={44} />
+            <View className="h-11 w-11 items-center justify-center rounded-full bg-stone-surface">
+              <HugeiconsIcon icon={Target01Icon} size={22} color="#ff3e00" strokeWidth={1.8} />
+            </View>
             <View>
               <Text className="font-heading text-headline-2 text-text-primary">
-                {depositStreak?.current_count ?? 0} day streak
+                {depositStreak?.current_count ?? 0} active days
               </Text>
               <Text className="mt-0.5 font-mono text-caption text-text-secondary">
                 Longest: {depositStreak?.longest_count ?? 0} days
@@ -159,21 +157,15 @@ export default function GameplayScreen() {
               streakType="deposit"
             />
           </View>
-
-
         </Animated.View>
 
         {/* ── Challenges ───────────────────────────────────────── */}
-        <Animated.View
-          entering={FadeInDown.delay(160).duration(400)}
-          className="mt-6 px-5">
+        <Animated.View entering={FadeInDown.delay(160).duration(400)} className="mt-6 px-5">
           <View className="mb-4 flex-row items-center justify-between">
-            <Text className="font-subtitle text-small uppercase tracking-wider text-text-secondary">
-              Challenges
-            </Text>
+            <Text className="font-subtitle text-body text-text-secondary">Goals</Text>
             <Text className="font-mono-semibold text-small text-primary">
-              {challenges.filter((c: UserChallenge) => c.status === 'completed').length}
-              /{challenges.length}
+              {challenges.filter((c: UserChallenge) => c.status === 'completed').length}/
+              {challenges.length}
             </Text>
           </View>
 
@@ -200,7 +192,7 @@ export default function GameplayScreen() {
                     <Text
                       className="flex-1 font-subtitle text-body text-text-primary"
                       numberOfLines={1}>
-                      {uc.challenge?.title ?? 'Challenge'}
+                      {uc.challenge?.title ?? 'Goal'}
                     </Text>
                     <Text className="ml-2 font-mono-semibold text-small text-success">
                       +{uc.challenge?.xp_reward ?? 0}
@@ -231,20 +223,16 @@ export default function GameplayScreen() {
             <View className="items-center rounded-lg border border-stone-surface py-8">
               <HugeiconsIcon icon={Target01Icon} size={28} color="#c6c6c6" />
               <Text className="mt-3 font-body text-caption text-text-secondary">
-                {isPro ? 'New challenges Monday' : 'New challenges drop Monday'}
+                {isPro ? 'New goals Monday' : 'New goals arrive Monday'}
               </Text>
             </View>
           )}
         </Animated.View>
 
         {/* ── Badges ───────────────────────────────────────────── */}
-        <Animated.View
-          entering={FadeInDown.delay(260).duration(400)}
-          className="mt-6 px-5">
+        <Animated.View entering={FadeInDown.delay(260).duration(400)} className="mt-6 px-5">
           <View className="mb-5 flex-row items-center justify-between">
-            <Text className="font-subtitle text-small uppercase tracking-wider text-text-secondary">
-              Badges
-            </Text>
+            <Text className="font-subtitle text-body text-text-secondary">Milestones</Text>
             <Text className="font-mono-semibold text-small text-primary">
               {earnedCount}/{achievements.length}
             </Text>

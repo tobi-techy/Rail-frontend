@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useNavigation } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import { OTPInput, Button } from '@/components/ui';
 import { usePajInitiate, usePajVerify } from '@/api/hooks';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
@@ -158,7 +158,9 @@ export default function PajVerifyScreen() {
             ) : (
               <Animated.View entering={FadeInDown.duration(300)} className="flex-1">
                 <View className="mb-8 mt-6">
-                  <Text className="font-subtitle text-[34px] text-charcoal-primary">Enter code</Text>
+                  <Text className="font-subtitle text-[34px] text-charcoal-primary">
+                    Enter code
+                  </Text>
                   <View className="mt-4">
                     <Text className="font-body text-[18px] text-ash">
                       We sent a 4-digit code to

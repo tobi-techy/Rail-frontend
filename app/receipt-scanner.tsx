@@ -36,7 +36,7 @@ export default function ReceiptScannerScreen() {
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.85,
+        quality: 0.6,
         base64: true,
       });
 

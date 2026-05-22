@@ -10,10 +10,12 @@ export const ROUTES = {
     CREATE_RAILTAG: '/(auth)/create-railtag',
     COMPLETE_PROFILE: {
       PERSONAL_INFO: '/(auth)/complete-profile/personal-info',
-      DATE_OF_BIRTH: '/(auth)/complete-profile/date-of-birth',
-      ADDRESS: '/(auth)/complete-profile/address',
-      PHONE: '/(auth)/complete-profile/phone',
       CREATE_PASSWORD: '/(auth)/complete-profile/create-password',
+    },
+    COMPLETE_KYC: {
+      DATE_OF_BIRTH: '/(auth)/complete-kyc/date-of-birth',
+      ADDRESS: '/(auth)/complete-kyc/address',
+      PHONE: '/(auth)/complete-kyc/phone',
     },
   },
   TABS: '/(tabs)',

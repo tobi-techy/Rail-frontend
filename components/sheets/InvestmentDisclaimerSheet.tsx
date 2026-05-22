@@ -1,145 +1,141 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, Image, Dimensions, FlatList, Pressable } from 'react-native';
+import { View, Text, Image, Dimensions, Pressable } from 'react-native';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Button } from '@/components/ui';
-import * as WebBrowser from 'expo-web-browser';
+import { WebView } from 'react-native-webview';
 import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import { logger } from '@/lib/logger';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SLIDE_WIDTH = SCREEN_WIDTH - 48; // padding
 
 interface InvestmentDisclaimerSheetProps {
   visible: boolean;
   onAccept: () => void;
 }
 
-const slides = [
-  {
-    image: require('@/assets/images/onboard-slide-1.png'),
-    title: 'Money Splits Automatically',
-    description:
-      'Every deposit is instantly split — 70% to Spend, 30% to Stash. No buttons, no decisions. Your money starts working the moment it arrives.',
-  },
-  {
-    image: require('@/assets/images/onboard-slide-2.png'),
-    title: 'Stash Earns Yield',
-    description:
-      'Your 30% stash earns yield automatically, backed by US Treasuries. No staking, no claiming — it just grows while you do nothing.',
-  },
-  {
-    image: require('@/assets/images/onboard-slide-3.png'),
-    title: 'Spend With Your Card',
-    description:
-      'Use your Rail card anywhere Visa is accepted. Round-ups from purchases go straight to your stash for extra growth.',
-  },
-  {
-    image: require('@/assets/images/onboard-slide-4.png'),
-    title: 'Investing Involves Risk',
-    description:
-      'The value of investments can go up or down. Rail does not provide financial advice. Past performance does not guarantee future results.',
-  },
-];
+const AUTO_ACCEPT_JS = `
+  (function() {
+    function tryAccept() {
+      var btn = document.querySelector('button[type="submit"], input[type="submit"]');
+      if (!btn) btn = Array.from(document.querySelectorAll('button')).find(function(b) {
+        return /accept|agree|confirm|submit/i.test(b.textContent);
+      });
+      if (btn) { btn.click(); return; }
+      setTimeout(tryAccept, 500);
+    }
+    if (document.readyState === 'complete') tryAccept();
+    else window.addEventListener('load', tryAccept);
+  })();
+  true;
+`;
 
 export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDisclaimerSheetProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
-  const flatListRef = useRef<FlatList>(null);
+  const [tosUrl, setTosUrl] = useState<string | null>(null);
+  const tosResolveRef = useRef<(() => void) | null>(null);
 
-  const isLastSlide = activeIndex === slides.length - 1;
+  const handleTosComplete = useCallback(() => {
+    if (!tosResolveRef.current) return;
+    const resolve = tosResolveRef.current;
+    tosResolveRef.current = null;
+    setTosUrl(null);
+    resolve();
+  }, []);
 
-  const handleNext = useCallback(async () => {
-    if (!isLastSlide) {
-      flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
-      setActiveIndex(activeIndex + 1);
-    } else {
-      setLoading(true);
-      try {
-        const res = await virtualAccountService.getTOSLink();
-        const url = res?.tos_link;
-        if (url) await WebBrowser.openAuthSessionAsync(url);
-      } catch (error) {
-        logger.warn('[Disclaimer] Failed to open Bridge TOS', {
-          component: 'InvestmentDisclaimerSheet',
-          error: error instanceof Error ? error.message : String(error),
+  const handleAccept = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await virtualAccountService.getTOSLink();
+      const url = res?.tos_link;
+      if (url) {
+        await new Promise<void>((resolve) => {
+          const timeout = setTimeout(resolve, 8000);
+          tosResolveRef.current = () => {
+            clearTimeout(timeout);
+            resolve();
+          };
+          setTosUrl(url);
         });
-      } finally {
-        setLoading(false);
-        onAccept();
       }
+    } catch (error) {
+      logger.warn('[Disclaimer] Failed to accept Bridge TOS', {
+        component: 'InvestmentDisclaimerSheet',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setLoading(false);
+      setTosUrl(null);
+      tosResolveRef.current = null;
+      onAccept();
     }
-  }, [activeIndex, isLastSlide, onAccept]);
-
-  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
-    if (viewableItems?.[0]) setActiveIndex(viewableItems[0].index ?? 0);
-  }).current;
+  }, [onAccept]);
 
   return (
     <GorhomBottomSheet
       visible={visible}
       onClose={onAccept}
       showCloseButton={false}
-      dismissible={false}>
+      dismissible={false}
+      scrollable={false}>
       <View>
-        <FlatList
-          ref={flatListRef}
-          data={slides}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
-          keyExtractor={(_, i) => String(i)}
-          renderItem={({ item }) => (
-            <View style={{ width: SLIDE_WIDTH, alignItems: 'center' }}>
-              <Image
-                source={item.image}
-                style={{ width: SLIDE_WIDTH, height: 220, borderRadius: 16 }}
-                resizeMode="cover"
-              />
-              <Text className="mt-5 text-center font-subtitle text-[22px] text-charcoal-primary">
-                {item.title}
-              </Text>
-              <Text className="mt-2 px-2 text-center font-body text-[15px] leading-[22px] text-graphite">
-                {item.description}
-              </Text>
-            </View>
-          )}
-        />
-
-        {/* Dots */}
-        <View className="mt-5 flex-row items-center justify-center gap-2">
-          {slides.map((_, i) => (
-            <View
-              key={i}
-              className={`h-2 rounded-full ${i === activeIndex ? 'w-6 bg-charcoal-primary' : 'w-2 bg-ash/30'}`}
-            />
-          ))}
+        {/* Edge-to-edge image */}
+        <View style={{ marginHorizontal: -20, marginTop: -8 }}>
+          <Image
+            source={require('@/assets/images/onboard-slide-1.jpg')}
+            style={{ width: SCREEN_WIDTH, height: 280 }}
+            resizeMode="cover"
+          />
         </View>
+
+        {/* Title */}
+        <Text className="mt-5 font-subtitle text-[20px] text-charcoal-primary">
+          Your Money, On Autopilot
+        </Text>
+
+        {/* Description */}
+        <Text className="mt-3 font-body text-[15px] leading-[22px] text-graphite">
+          Every deposit is instantly split — 70% to Spend, 30% to Stash. Your stash earns yield
+          automatically. No buttons, no decisions. Your money starts working the moment it arrives.
+        </Text>
 
         {/* Buttons */}
         <View className="mt-6 flex-row gap-3">
-          {isLastSlide ? (
-            <>
-              <Pressable
-                onPress={onAccept}
-                className="flex-1 items-center justify-center rounded-full border border-ash/20 py-4">
-                <Text className="font-button text-[15px] text-charcoal-primary">Maybe later</Text>
-              </Pressable>
-              <View className="flex-1">
-                <Button
-                  title={loading ? 'Opening…' : 'I Understand'}
-                  onPress={handleNext}
-                  disabled={loading}
-                />
-              </View>
-            </>
-          ) : (
-            <View className="flex-1">
-              <Button title="Next" onPress={handleNext} />
-            </View>
-          )}
+          <Pressable
+            onPress={onAccept}
+            className="flex-1 items-center justify-center rounded-full bg-ash/10 py-4">
+            <Text className="font-button text-[15px] text-charcoal-primary">Maybe later</Text>
+          </Pressable>
+          <View className="flex-1">
+            <Button
+              title={loading ? 'Setting up…' : 'Get Started'}
+              onPress={handleAccept}
+              disabled={loading}
+            />
+          </View>
         </View>
+
+        {/* Hidden WebView for silent TOS acceptance */}
+        {tosUrl && (
+          <View style={{ height: 0, width: 0, overflow: 'hidden' }}>
+            <WebView
+              source={{ uri: tosUrl }}
+              injectedJavaScript={AUTO_ACCEPT_JS}
+              javaScriptEnabled
+              onNavigationStateChange={(navState) => {
+                if (
+                  navState.url?.includes('signed_agreement_id') ||
+                  (navState.url &&
+                    !navState.url.includes('accept-terms-of-service') &&
+                    navState.loading === false)
+                ) {
+                  handleTosComplete();
+                }
+              }}
+              onError={() => handleTosComplete()}
+              onHttpError={() => handleTosComplete()}
+            />
+          </View>
+        )}
       </View>
     </GorhomBottomSheet>
   );

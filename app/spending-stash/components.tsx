@@ -2,21 +2,19 @@ import React from 'react';
 import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import Animated, { useSharedValue, withSpring, useAnimatedStyle } from 'react-native-reanimated';
 import { Icon } from '@/components/atoms/Icon';
-import { useHaptics } from '@/hooks/useHaptics';
-import { ScanEyeIcon } from '@/lib/icons';
-import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon, ScanEyeIcon } from '@/lib/icons';
 
 export const C = {
-  text: '#000000',
-  textSub: '#8E8E93',
-  surfaceEl: '#E5E5EA',
+  text: '#343433',
+  textSub: '#848281',
+  surfaceEl: '#f2f0ed',
   accent: '#ff3e00',
-  success: '#00c454',
-  warning: '#FF9F0A',
-  danger: '#FF453A',
+  success: '#00ca48',
+  warning: '#d48f00',
+  danger: '#ff2b3a',
 } as const;
 
-export const CATEGORY_PALETTE = ['#FF6B35', '#FFD166', '#06D6A0', '#118AB2', '#9B5DE5', '#EF476F'];
+export const CATEGORY_PALETTE = ['#ff3e00', '#00ca48', '#0090ff', '#ffbb26', '#00c978'];
 
 export const PERIODS = ['1W', '1M', '6M', '1Y'] as const;
 export type Period = (typeof PERIODS)[number];
@@ -62,13 +60,13 @@ export function PeriodSelector({
               accessibilityRole="button"
               accessibilityLabel={`${p} period`}>
               <Text
-                className={`text-caption ${selected === p ? 'font-button text-text-primary' : 'font-caption text-[#8E8E93]'}`}>
+                className={`text-caption ${selected === p ? 'font-button text-text-primary' : 'font-caption text-ash'}`}>
                 {p}
               </Text>
             </Pressable>
           ))}
         </View>
-        <View className="mt-1 h-0.5 overflow-hidden rounded-full bg-[#E5E5EA]">
+        <View className="mt-1 h-0.5 overflow-hidden rounded-full bg-stone-surface">
           <Animated.View
             className="h-0.5 rounded-full bg-primary"
             style={[{ width: tabW }, indicatorStyle]}
@@ -83,10 +81,10 @@ export function PeriodSelector({
 
 export function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <View className="flex-1 rounded-2xl bg-[#F2F2F7] px-4 py-4">
-      <Text className="font-caption text-small text-[#8E8E93]">{label}</Text>
+    <View className="flex-1 rounded-2xl bg-stone-surface px-4 py-4">
+      <Text className="font-caption text-small text-ash">{label}</Text>
       <Text className="mt-1 font-headline text-[22px] text-text-primary">{value}</Text>
-      {sub && <Text className="mt-0.5 font-caption text-[11px] text-[#8E8E93]">{sub}</Text>}
+      {sub && <Text className="mt-0.5 font-caption text-[11px] text-ash">{sub}</Text>}
     </View>
   );
 }
@@ -111,7 +109,7 @@ export function SectionHeader({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityRole="button"
           accessibilityLabel={action}>
-          <Text className="font-caption text-caption text-[#007AFF]">{action}</Text>
+          <Text className="font-caption text-caption text-sky-blue">{action}</Text>
         </Pressable>
       )}
     </View>
@@ -139,7 +137,7 @@ export function CategoryRow({
 }) {
   return (
     <View>
-      <View className="flex-row items-center px-4 py-[14px]">
+      <View className="flex-row items-center px-4 py-3.5">
         <View
           className="mr-3 h-11 w-11 items-center justify-center rounded-full"
           style={{ backgroundColor: `${color}22` }}>
@@ -149,13 +147,13 @@ export function CategoryRow({
           <Text className="font-button text-[15px] text-text-primary" numberOfLines={1}>
             {title}
           </Text>
-          <Text className="mt-0.5 font-caption text-small text-[#8E8E93]">
+          <Text className="mt-0.5 font-caption text-small text-ash">
             {transactionCount} transaction{transactionCount !== 1 ? 's' : ''}
           </Text>
         </View>
         <View className="items-end">
           <Text className="font-button text-[15px] text-text-primary">{`-$${Math.abs(amount).toFixed(2)}`}</Text>
-          <Text className="mt-0.5 font-caption text-small text-[#8E8E93]">{percentage}%</Text>
+          <Text className="mt-0.5 font-caption text-small text-ash">{percentage}%</Text>
         </View>
       </View>
       {showSep && <View className="ml-[72px] h-px bg-stone-surface" />}
@@ -186,8 +184,8 @@ export function TxRow({
 
   return (
     <View>
-      <View className="flex-row items-center px-4 py-[14px]">
-        <View className="mr-3 h-11 w-11 items-center justify-center rounded-full bg-[#E5E5EA]">
+      <View className="flex-row items-center px-4 py-3.5">
+        <View className="mr-3 h-11 w-11 items-center justify-center rounded-full bg-stone-surface">
           <Icon
             name={isCredit ? 'arrow-down-left' : 'arrow-up-right'}
             size={20}
@@ -199,7 +197,7 @@ export function TxRow({
           <Text className="font-button text-[15px] text-text-primary" numberOfLines={1}>
             {transaction.title}
           </Text>
-          <Text className="mt-0.5 font-caption text-small text-[#8E8E93]" numberOfLines={1}>
+          <Text className="mt-0.5 font-caption text-small text-ash" numberOfLines={1}>
             {transaction.subtitle}
           </Text>
         </View>
@@ -228,7 +226,7 @@ export function EmptyPeriod() {
       <Text className="mt-4 text-center font-button text-[17px] text-text-primary">
         Nothing spent during this time
       </Text>
-      <Text className="mt-2 text-center font-caption text-caption text-[#8E8E93]">
+      <Text className="mt-2 text-center font-caption text-caption text-ash">
         Make your first payment
       </Text>
     </View>

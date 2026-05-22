@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import { useHaptics } from './useHaptics';
 
 export function useKeypadFeedback() {

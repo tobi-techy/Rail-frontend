@@ -8,7 +8,7 @@ import {
 } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import { Cancel01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
@@ -66,19 +66,37 @@ export function GorhomBottomSheet({
   return (
     <BottomSheetModal
       ref={ref}
-      {...(snapPoints ? { snapPoints } : { enableDynamicSizing: true, maxDynamicContentSize: Dimensions.get('window').height * 0.8 })}
+      {...(snapPoints
+        ? { snapPoints }
+        : {
+            enableDynamicSizing: true,
+            maxDynamicContentSize: Dimensions.get('window').height * 0.8,
+          })}
       enablePanDownToClose={dismissible}
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: '#fbfaf9', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
-      handleIndicatorStyle={{ backgroundColor: '#c6c6c6', width: 36, height: 4, borderRadius: 2, marginTop: 8 }}
+      backgroundStyle={{
+        backgroundColor: '#fbfaf9',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+      }}
+      handleIndicatorStyle={{
+        backgroundColor: '#c6c6c6',
+        width: 36,
+        height: 4,
+        borderRadius: 2,
+        marginTop: 8,
+      }}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize">
       <Wrapper
         {...(scrollable
           ? {
-              contentContainerStyle: { paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom, 16) },
+              contentContainerStyle: {
+                paddingHorizontal: 20,
+                paddingBottom: Math.max(insets.bottom, 16),
+              },
               keyboardShouldPersistTaps: 'handled',
               showsVerticalScrollIndicator: false,
             }

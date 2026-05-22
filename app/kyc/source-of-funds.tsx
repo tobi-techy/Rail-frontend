@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -66,7 +66,8 @@ function OptionRow({
       className={`mb-2 flex-row items-center justify-between rounded-2xl border px-4 py-3.5 ${
         selected ? 'border-midnight bg-black' : 'border-fog bg-white'
       }`}>
-      <Text className={`font-body text-[15px] ${selected ? 'text-white' : 'text-charcoal-primary'}`}>
+      <Text
+        className={`font-body text-[15px] ${selected ? 'text-white' : 'text-charcoal-primary'}`}>
         {label}
       </Text>
       <View
@@ -103,6 +104,25 @@ export default function SourceOfFundsScreen() {
   const [occupation, setOccupation] = useState<string | null>(null);
   const [intermediary, setIntermediary] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionYRef = useRef<{
+    monthly: number;
+    purpose: number;
+    occupation: number;
+    intermediary: number;
+  }>({
+    monthly: 0,
+    purpose: 0,
+    occupation: 0,
+    intermediary: 0,
+  });
+
+  const scrollToSection = (section: keyof typeof sectionYRef.current) => {
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: sectionYRef.current[section] - 20, animated: true });
+    }, 300);
+  };
 
   // taxId is not persisted (PII) — if lost due to app backgrounding, redirect back
   if (!taxId) {
@@ -182,10 +202,13 @@ export default function SourceOfFundsScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         className="flex-1 px-5"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}>
-        <Text className="mb-1 font-display text-[28px] text-charcoal-primary">About your funds</Text>
+        <Text className="mb-1 font-display text-[28px] text-charcoal-primary">
+          About your funds
+        </Text>
         <Text className="mb-6 font-body text-[15px] leading-6 text-ash">
           This helps our financial partner verify your account and comply with regulations.
         </Text>
@@ -204,31 +227,53 @@ export default function SourceOfFundsScreen() {
             key={o.value}
             label={o.label}
             selected={funds === o.value}
-            onPress={() => setFunds(o.value)}
+            onPress={() => {
+              const isFirst = !funds;
+              setFunds(o.value);
+              if (isFirst) scrollToSection('monthly');
+            }}
           />
         ))}
 
-        <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
-          Expected monthly deposits
-        </Text>
+        <View
+          onLayout={(e) => {
+            sectionYRef.current.monthly = e.nativeEvent.layout.y;
+          }}>
+          <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
+            Expected monthly deposits
+          </Text>
+        </View>
         {MONTHLY_PAYMENTS.map((o) => (
           <OptionRow
             key={o.value}
             label={o.label}
             selected={monthly === o.value}
-            onPress={() => setMonthly(o.value)}
+            onPress={() => {
+              const isFirst = !monthly;
+              setMonthly(o.value);
+              if (isFirst) scrollToSection('purpose');
+            }}
           />
         ))}
 
-        <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
-          Account purpose
-        </Text>
+        <View
+          onLayout={(e) => {
+            sectionYRef.current.purpose = e.nativeEvent.layout.y;
+          }}>
+          <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
+            Account purpose
+          </Text>
+        </View>
         {ACCOUNT_PURPOSE.map((o) => (
           <OptionRow
             key={o.value}
             label={o.label}
             selected={purpose === o.value}
-            onPress={() => setPurpose(o.value)}
+            onPress={() => {
+              const isFirst = !purpose;
+              setPurpose(o.value);
+              if (isFirst && o.value !== 'other') scrollToSection('occupation');
+            }}
           />
         ))}
 
@@ -242,31 +287,47 @@ export default function SourceOfFundsScreen() {
           />
         )}
 
-        <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
-          Most recent occupation
-        </Text>
+        <View
+          onLayout={(e) => {
+            sectionYRef.current.occupation = e.nativeEvent.layout.y;
+          }}>
+          <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
+            Most recent occupation
+          </Text>
+        </View>
         {OCCUPATIONS.map((o) => (
           <OptionRow
             key={o.value}
             label={o.label}
             selected={occupation === o.value}
-            onPress={() => setOccupation(o.value)}
+            onPress={() => {
+              const isFirst = !occupation;
+              setOccupation(o.value);
+              if (isFirst) scrollToSection('intermediary');
+            }}
           />
         ))}
 
-        <View className="mt-6 flex-row items-center justify-between rounded-2xl border border-fog px-4 py-3.5">
-          <View className="flex-1 pr-4">
-            <Text className="font-body text-[15px] text-charcoal-primary">Acting as intermediary?</Text>
-            <Text className="mt-0.5 font-body text-[13px] text-smoke">
-              Are you transacting on behalf of another person or entity?
-            </Text>
+        <View
+          onLayout={(e) => {
+            sectionYRef.current.intermediary = e.nativeEvent.layout.y;
+          }}>
+          <View className="mt-6 flex-row items-center justify-between rounded-2xl border border-fog px-4 py-3.5">
+            <View className="flex-1 pr-4">
+              <Text className="font-body text-[15px] text-charcoal-primary">
+                Acting as intermediary?
+              </Text>
+              <Text className="mt-0.5 font-body text-[13px] text-smoke">
+                Are you transacting on behalf of another person or entity?
+              </Text>
+            </View>
+            <Switch
+              value={intermediary}
+              onValueChange={setIntermediary}
+              trackColor={{ false: '#e5e7eb', true: '#000' }}
+              thumbColor="#fff"
+            />
           </View>
-          <Switch
-            value={intermediary}
-            onValueChange={setIntermediary}
-            trackColor={{ false: '#e5e7eb', true: '#000' }}
-            thumbColor="#fff"
-          />
         </View>
 
         {!!submitError && (

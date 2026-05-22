@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { router } from 'expo-router';
 import { AmbientMiriam } from '@/components/ai/AmbientMiriam';
 import { useNudge } from '@/hooks/useNudge';
+import type { EnhancedNudge } from '@/hooks/useNudge';
 import type { NudgeAction } from '@/api/types/ai';
 
 type Props = {
@@ -15,6 +16,7 @@ type Props = {
   cooldownScope?: 'context' | 'screen';
   merchantHint?: string;
   recentActions?: string[];
+  fallbackNudge?: EnhancedNudge | null;
 };
 
 export function AmbientMiriamNudge({
@@ -28,6 +30,7 @@ export function AmbientMiriamNudge({
   cooldownScope,
   merchantHint,
   recentActions,
+  fallbackNudge,
 }: Props) {
   const { nudge, dismiss } = useNudge(screen, amount, currency, {
     daysUntilPayday,
@@ -37,6 +40,7 @@ export function AmbientMiriamNudge({
     cooldownScope,
     merchantHint,
     recentActions,
+    fallbackNudge,
   });
 
   const handleAction = useCallback(

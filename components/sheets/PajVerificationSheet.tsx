@@ -4,7 +4,7 @@ import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { OTPInput, Button } from '@/components/ui';
 import { usePajInitiate, usePajVerify } from '@/api/hooks';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 
 interface PajVerificationSheetProps {
   visible: boolean;

@@ -13,7 +13,6 @@ import {
   normalizeRoutePath,
 } from '@/utils/routeHelpers';
 import { SessionManager } from '@/utils/sessionManager';
-import { BACKGROUND_PASSCODE_GRACE_MS } from '@/utils/sessionConstants';
 
 const LOCAL_ADVANCED_STATUSES = new Set(['kyc_pending', 'kyc_approved', 'completed']);
 
@@ -209,22 +208,16 @@ export function useProtectedRoute() {
         if (nextAppState === 'background') {
           const state = useAuthStore.getState();
           if (state.isAuthenticated && state.hasPasscode) {
-            const graceExpiresAt = new Date(
-              Date.now() + BACKGROUND_PASSCODE_GRACE_MS
-            ).toISOString();
-            useAuthStore.setState({ appLockExpiresAt: graceExpiresAt });
-            SessionManager.schedulePasscodeSessionExpiry(graceExpiresAt);
+            // Mark session as expired immediately. The routing effect will
+            // navigate to /login-passcode when the app returns to foreground.
+            // We do NOT call router.replace here — navigating during background
+            // transition can corrupt navigation state and crash on next launch.
+            SessionManager.handlePasscodeSessionExpired();
+            useAuthStore.setState({ appLockExpiresAt: new Date().toISOString() });
           }
         }
 
-        if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-          // Only run full foreground logic when returning from background.
-          // inactive fires during system dialogs, button taps, sheets — skip those.
-          if (appState.current !== 'background') {
-            appState.current = nextAppState;
-            return;
-          }
-
+        if (appState.current === 'background' && nextAppState === 'active') {
           const freshState = useAuthStore.getState();
 
           logger.debug('[Auth] App came to foreground', {
@@ -232,24 +225,24 @@ export function useProtectedRoute() {
             action: 'app-foreground',
           });
 
+          // If session was expired on background, redirect to passcode immediately
           if (
             freshState.isAuthenticated &&
             freshState.hasPasscode &&
             SessionManager.isAppUnlockExpired()
           ) {
-            logger.info('[Auth] Background grace elapsed, requiring passcode', {
-              component: 'useProtectedRoute',
-              action: 'background-grace-elapsed',
-            });
-            SessionManager.handlePasscodeSessionExpired();
+            // Don't redirect if already on the passcode screen
+            if (pathname !== '/login-passcode') {
+              router.replace('/login-passcode' as any);
+            }
             appState.current = nextAppState;
             return;
           }
 
-          const stateAfterClear = useAuthStore.getState();
-
-          if (stateAfterClear.isAuthenticated && stateAfterClear.accessToken) {
-            if (stateAfterClear.checkTokenExpiry()) {
+          // Passcode screen is already showing (navigated on background).
+          // Just check if the full auth token has expired.
+          if (freshState.isAuthenticated && freshState.accessToken) {
+            if (freshState.checkTokenExpiry()) {
               logger.info('[Auth] 7-day token expired after app resume', {
                 component: 'useProtectedRoute',
                 action: 'token-expired-on-resume',
@@ -259,16 +252,7 @@ export function useProtectedRoute() {
               return;
             }
 
-            // Reset passcode session timer on activity (extends session)
-            if (stateAfterClear.passcodeSessionExpiresAt) {
-              SessionManager.resetPasscodeSessionTimer();
-            }
-
-            stateAfterClear.updateLastActivity();
-            const appLockExpiresAt = useAuthStore.getState().appLockExpiresAt;
-            if (appLockExpiresAt) {
-              SessionManager.schedulePasscodeSessionExpiry(appLockExpiresAt);
-            }
+            freshState.updateLastActivity();
 
             try {
               await refreshBackendAuthState();

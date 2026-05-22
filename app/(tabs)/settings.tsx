@@ -43,7 +43,7 @@ import {
 } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { useHaptics } from '@/hooks/useHaptics';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

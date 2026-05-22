@@ -1,8 +1,9 @@
 import React, { useCallback } from 'react';
-import { View, Pressable } from 'react-native';
+import { View, Pressable, Platform } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
+import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -10,7 +11,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { useAIChatStore } from '@/stores/aiChatStore';
 import { MiriamCharacter } from '@/components/ai';
 
-const ACCENT = '#ff3e00';
+const USE_LIQUID_GLASS = Platform.OS === 'ios' && isLiquidGlassAvailable();
 
 // ─── Tab Item ────────────────────────────────────────────────────
 
@@ -69,7 +70,7 @@ function TabBarItem({
   );
 }
 
-// ─── AI Button (Miriam) ─────────────────────────────────────────
+// ─── AI Button ──────────────────────────────────────────────────
 
 function AIButton() {
   const router = useRouter();
@@ -79,7 +80,6 @@ function AIButton() {
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    backgroundColor: '#FFFFFF',
   }));
 
   const handlePress = useCallback(() => {
@@ -102,7 +102,9 @@ function AIButton() {
         accessibilityLabel="Miriam AI"
         accessibilityRole="button"
         style={{ width: 64, height: 64 }}>
+        <Animated.View style={animatedStyle}>
           <MiriamCharacter size={64} emotion="happy" animate={true} />
+        </Animated.View>
       </Pressable>
     </View>
   );
@@ -127,33 +129,56 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         paddingBottom: insets.bottom + 4,
       }}
       pointerEvents="box-none">
-      {/* Left: blurred pill with tab icons */}
+      {/* Left: glass pill with tab icons */}
       <View style={{ borderRadius: 40, overflow: 'hidden' }}>
-        <BlurView
-          intensity={40}
-          tint="light"
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 4,
-            paddingHorizontal: 20,
-            paddingTop: 14,
-            paddingBottom: 12,
-            backgroundColor: 'rgba(255,255,255,0.75)',
-            borderWidth: 1,
-            borderColor: 'rgba(0,0,0,0.06)',
-            borderRadius: 40,
-          }}>
-          {state.routes.map((route, index) => (
-            <TabBarItem
-              key={route.key}
-              route={route}
-              descriptor={descriptors[route.key]}
-              isFocused={state.index === index}
-              navigation={navigation}
-            />
-          ))}
-        </BlurView>
+        {USE_LIQUID_GLASS ? (
+          <GlassView
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              paddingHorizontal: 20,
+              paddingTop: 14,
+              paddingBottom: 12,
+              borderRadius: 40,
+            }}>
+            {state.routes.map((route, index) => (
+              <TabBarItem
+                key={route.key}
+                route={route}
+                descriptor={descriptors[route.key]}
+                isFocused={state.index === index}
+                navigation={navigation}
+              />
+            ))}
+          </GlassView>
+        ) : (
+          <BlurView
+            intensity={40}
+            tint="light"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              paddingHorizontal: 20,
+              paddingTop: 14,
+              paddingBottom: 12,
+              backgroundColor: 'rgba(255,255,255,0.75)',
+              borderWidth: 1,
+              borderColor: 'rgba(0,0,0,0.06)',
+              borderRadius: 40,
+            }}>
+            {state.routes.map((route, index) => (
+              <TabBarItem
+                key={route.key}
+                route={route}
+                descriptor={descriptors[route.key]}
+                isFocused={state.index === index}
+                navigation={navigation}
+              />
+            ))}
+          </BlurView>
+        )}
       </View>
 
       {/* Right: AI button */}

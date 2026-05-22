@@ -7,7 +7,9 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { BankIcon, CoinIcon } from '@/assets/svg/filled';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { ROUTES } from '@/constants/routes';
+import { getKycResumeRoute } from '@/utils/onboardingFlow';
 import { useKYCStatus } from '@/api/hooks';
+import { useAuthStore } from '@/stores/authStore';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 import { KYCVerificationSheet } from '@/components/sheets';
 import { ArrowLeft01Icon, Wallet01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
@@ -94,7 +96,9 @@ export default function WithdrawMethodSelectorScreen() {
                   },
                   {
                     onProfileRequired: () =>
-                      router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never),
+                      router.push(
+                        getKycResumeRoute(useAuthStore.getState().currentOnboardingStep) as never
+                      ),
                     onKycRequired: () => setShowKYCSheet(true),
                   }
                 )

@@ -4,10 +4,21 @@ import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { type KYCStatusResponse, type KycStatus, isKycInReview } from '@/api/types/kyc';
 import { useKYCStatus, useKycStatusPolling } from '@/api/hooks/useKYC';
+import { useMissingKycFields } from '@/api/hooks/useOnboarding';
 import { useAuthStore } from '@/stores/authStore';
 import { useKycStore } from '@/stores/kycStore';
 import { ROUTES } from '@/constants/routes';
-import { Alert02Icon, Camera01Icon, CheckmarkCircle02Icon, Clock01Icon, File01Icon, RefreshIcon, ShieldKeyIcon, LockPasswordIcon } from '@/lib/icons';
+import { getKycResumeRoute } from '@/utils/onboardingFlow';
+import {
+  Alert02Icon,
+  Camera01Icon,
+  CheckmarkCircle02Icon,
+  Clock01Icon,
+  File01Icon,
+  RefreshIcon,
+  ShieldKeyIcon,
+  LockPasswordIcon,
+} from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import {
   NavigableBottomSheet,
@@ -105,25 +116,38 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
   }, [visible, statusMode, resetNavigation]);
 
   const hasRequiredProfileFields = Boolean(
-    user?.dateOfBirth && (user?.addressStreet || user?.addressCity) && (user?.phone || user?.phoneNumber)
+    user?.dateOfBirth &&
+    (user?.addressStreet || user?.addressCity) &&
+    (user?.phone || user?.phoneNumber)
   );
+
+  const { data: missingFieldsData } = useMissingKycFields(visible);
+  const backendStartStep = missingFieldsData?.startStep;
 
   const handleStart = useCallback(() => {
     onClose();
-    if (!hasRequiredProfileFields) {
-      requestAnimationFrame(() => router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never));
+    if (backendStartStep && backendStartStep !== 'none') {
+      const resumeRoute = getKycResumeRoute(backendStartStep);
+      requestAnimationFrame(() => router.push(resumeRoute as never));
+    } else if (!hasRequiredProfileFields && !backendStartStep) {
+      // Fallback to client-side check if backend hasn't responded
+      const resumeRoute = getKycResumeRoute(useAuthStore.getState().currentOnboardingStep);
+      requestAnimationFrame(() => router.push(resumeRoute as never));
     } else {
       requestAnimationFrame(() => router.push('/kyc'));
     }
-  }, [onClose, hasRequiredProfileFields]);
+  }, [onClose, hasRequiredProfileFields, backendStartStep]);
 
   const handleContinue = useCallback(() => {
     const state = useKycStore.getState();
-    const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, diditSessionToken } = state;
+    const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, diditSessionToken } =
+      state;
     let screen = '/kyc/tax-id';
     if (diditSessionToken) screen = '/kyc/didit-sdk';
-    else if (disclosuresConfirmed && taxId && employmentStatus && investmentPurposes.length > 0) screen = '/kyc/disclosures';
-    else if (employmentStatus && investmentPurposes.length > 0 && taxId) screen = '/kyc/disclosures';
+    else if (disclosuresConfirmed && taxId && employmentStatus && investmentPurposes.length > 0)
+      screen = '/kyc/disclosures';
+    else if (employmentStatus && investmentPurposes.length > 0 && taxId)
+      screen = '/kyc/disclosures';
     else if (taxId) screen = '/kyc/about-you';
     onClose();
     requestAnimationFrame(() => router.push(screen as never));
@@ -140,12 +164,16 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
 
   const handleRetry = useCallback(() => {
     onClose();
-    if (!hasRequiredProfileFields) {
-      requestAnimationFrame(() => router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never));
+    if (backendStartStep && backendStartStep !== 'none') {
+      const resumeRoute = getKycResumeRoute(backendStartStep);
+      requestAnimationFrame(() => router.push(resumeRoute as never));
+    } else if (!hasRequiredProfileFields && !backendStartStep) {
+      const resumeRoute = getKycResumeRoute(useAuthStore.getState().currentOnboardingStep);
+      requestAnimationFrame(() => router.push(resumeRoute as never));
     } else {
       requestAnimationFrame(() => router.push('/kyc'));
     }
-  }, [onClose, hasRequiredProfileFields]);
+  }, [onClose, hasRequiredProfileFields, backendStartStep]);
 
   const closeSheet = useCallback(() => onClose(), [onClose]);
 
@@ -220,7 +248,9 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
                   <View className="flex-row items-center gap-4 border-b border-stone-surface p-5">
                     <HugeiconsIcon icon={File01Icon} size={24} color="#343433" />
                     <View className="flex-1">
-                      <Text className="font-subtitle text-[15px] text-charcoal-primary">Your photo ID</Text>
+                      <Text className="font-subtitle text-[15px] text-charcoal-primary">
+                        Your photo ID
+                      </Text>
                       <Text className="mt-1 font-body text-[13px] leading-5 text-ash">
                         We accept most common forms of ID.
                       </Text>

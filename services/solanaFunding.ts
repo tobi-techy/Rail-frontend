@@ -7,6 +7,7 @@ import {
   createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
 } from '@solana/spl-token';
+import { MIN_CRYPTO_TRANSACTION_AMOUNT_USD } from '@/constants/transactionLimits';
 
 export type SupportedFundingWallet = 'phantom' | 'solflare' | 'mwa';
 
@@ -48,6 +49,12 @@ const APP_IDENTITY = {
 
 type FundingDeps = {
   getConnection: (endpoint: string) => Pick<Connection, 'getLatestBlockhash'>;
+  transactFn?: (
+    callback: (
+      wallet: import('@solana-mobile/mobile-wallet-adapter-protocol-web3js').Web3MobileWallet
+    ) => Promise<StartMobileWalletFundingResult>,
+    config?: { baseUri?: string }
+  ) => Promise<StartMobileWalletFundingResult>;
 };
 
 const defaultDeps: FundingDeps = {
@@ -138,8 +145,8 @@ async function buildAndSendTransfer(
   deps: FundingDeps
 ): Promise<StartMobileWalletFundingResult> {
   const amountBaseUnits = usdToUsdcBaseUnits(input.amountUsd);
-  if (amountBaseUnits <= 0n) {
-    throw new Error('Enter an amount greater than $0.00.');
+  if (input.amountUsd < MIN_CRYPTO_TRANSACTION_AMOUNT_USD || amountBaseUnits <= 0n) {
+    throw new Error('Minimum funding is $1.00.');
   }
 
   const endpoint = process.env.EXPO_PUBLIC_SOLANA_RPC_URL || DEFAULT_SOLANA_RPC_URL;
@@ -224,11 +231,16 @@ export async function startMobileWalletFunding(
   deps: Partial<FundingDeps> = {}
 ): Promise<StartMobileWalletFundingResult> {
   const mergedDeps: FundingDeps = { ...defaultDeps, ...deps };
+  if (input.amountUsd < MIN_CRYPTO_TRANSACTION_AMOUNT_USD) {
+    throw new Error('Minimum funding is $1.00.');
+  }
 
   try {
-    const { transact } = await import('@solana-mobile/mobile-wallet-adapter-protocol-web3js');
+    const transactFn =
+      mergedDeps.transactFn ??
+      (await import('@solana-mobile/mobile-wallet-adapter-protocol-web3js')).transact;
     const baseUri = resolveWalletBaseUri(input.wallet);
-    return await transact(
+    return await transactFn(
       async (wallet) => buildAndSendTransfer(wallet, input, mergedDeps),
       baseUri ? { baseUri } : undefined
     );

@@ -13,6 +13,8 @@ import { requireNativeModule } from 'expo-modules-core';
 import { Buffer } from 'buffer';
 import { useAuthStore } from '@/stores/authStore';
 import { API_CONFIG } from '@/api/config';
+import { logger } from '@/lib/logger';
+import { safeError, sanitizeForLog } from '@/utils/logSanitizer';
 
 export type VoiceState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'error';
 
@@ -62,6 +64,12 @@ function estimateCaptionDurationMs(text: string, audioDurationMs: number, audioS
   const remainingPlaybackMs = audioDurationMs - elapsedPlaybackMs;
   if (remainingPlaybackMs > 300) return Math.min(Math.max(remainingPlaybackMs, 500), 5000);
   return naturalDurationMs;
+}
+
+function safeVoiceErrorMessage(err: unknown) {
+  if (err instanceof Error && err.message) return sanitizeForLog(err.message);
+  if (typeof err === 'string') return sanitizeForLog(err);
+  return 'Unknown voice audio error';
 }
 
 /**
@@ -133,7 +141,15 @@ class AudioJitterBuffer {
       const toPlay = offset === bytesToDrain ? merged : merged.subarray(0, offset);
       try {
         playPCMData(toPlay);
-      } catch {}
+      } catch (err) {
+        const message = safeVoiceErrorMessage(err);
+        safeError('[VoiceSession] Native playback failed', err);
+        logger.error('[VoiceSession] Native playback failed', {
+          component: 'useVoiceSession',
+          action: 'play-pcm-data',
+          error: message,
+        });
+      }
     }
   }
 
@@ -446,7 +462,19 @@ export function useVoiceSession() {
       toggleRecording(true);
       activeRef.current = true;
       setVoiceState('listening');
-    } catch {}
+    } catch (err) {
+      activeRef.current = false;
+      setVoiceState('error');
+      const message = safeVoiceErrorMessage(err);
+      setError('Failed to start microphone');
+      safeError('[VoiceSession] Failed to start recorder', err);
+      logger.error('[VoiceSession] Failed to start recorder', {
+        component: 'useVoiceSession',
+        action: 'toggle-recording-start',
+        error: message,
+      });
+      return;
+    }
 
     const httpBase = API_CONFIG.baseURL;
     const wsBase = httpBase.replace(/^http/, 'ws');

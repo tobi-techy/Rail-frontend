@@ -121,4 +121,26 @@ describe('startMobileWalletFunding', () => {
     expect(result.signature).toBe('sig123');
     expect(result.amountBaseUnits).toBe('12340000');
   });
+
+  it('rejects crypto wallet funding below one dollar', async () => {
+    const fakeWallet = {
+      authorize: jest.fn(),
+      signAndSendTransactions: jest.fn(),
+    };
+
+    await expect(
+      startMobileWalletFunding(
+        {
+          wallet: 'phantom',
+          amountUsd: 0.99,
+          recipientOwnerAddress: '11111111111111111111111111111111',
+        },
+        {
+          transactFn: async (cb: (wallet: unknown) => Promise<unknown>) => cb(fakeWallet),
+        }
+      )
+    ).rejects.toThrow('Minimum funding is $1.00.');
+
+    expect(fakeWallet.authorize).not.toHaveBeenCalled();
+  });
 });

@@ -18,7 +18,14 @@ interface Props {
 
 function getActionInfo(action: PendingAction): { title: string; amount?: string } {
   const params = action.params;
-  
+
+  const formatMoney = (amount: unknown, currency: unknown = 'USD') => {
+    const numeric = Number(amount ?? 0);
+    const code = typeof currency === 'string' && currency ? currency : 'USD';
+    if (!Number.isFinite(numeric) || numeric <= 0) return undefined;
+    return code === 'USD' ? `$${numeric.toFixed(2)}` : `${code} ${numeric.toFixed(2)}`;
+  };
+
   if (action.action === 'transfer_funds') {
     const from = params.from === 'spend' ? 'spend' : 'stash';
     const to = params.to === 'spend' ? 'spend' : 'stash';
@@ -27,18 +34,54 @@ function getActionInfo(action: PendingAction): { title: string; amount?: string 
       amount: `$${params.amount}`,
     };
   }
-  
+
   if (action.action === 'update_financial_profile') {
     return { title: 'Save your financial profile' };
   }
-  
+
   if (action.action === 'set_budget') {
     return {
       title: `Set monthly budget to $${Number(params.monthly_limit ?? 0).toFixed(2)}`,
       amount: `$${Number(params.monthly_limit ?? 0).toFixed(2)}`,
     };
   }
-  
+
+  if (
+    action.action === 'create_obligation_reminder' ||
+    action.action === 'create_obligation_reminders'
+  ) {
+    const name = typeof params.name === 'string' && params.name ? params.name : 'this obligation';
+    const amount = formatMoney(params.amount, params.currency);
+    return {
+      title: `Protect money for ${name}`,
+      amount,
+    };
+  }
+
+  if (action.action === 'mark_obligation_paid') {
+    const name = typeof params.name === 'string' && params.name ? params.name : 'this obligation';
+    return { title: `Mark ${name} as paid` };
+  }
+
+  if (action.action === 'protect_subscription') {
+    const name = typeof params.name === 'string' && params.name ? params.name : 'this subscription';
+    const amount = formatMoney(params.amount, params.currency);
+    return {
+      title: `Protect ${name} every ${params.frequency ?? 'month'}`,
+      amount,
+    };
+  }
+
+  if (action.action === 'mark_subscription_cancelled') {
+    const name = typeof params.name === 'string' && params.name ? params.name : 'this subscription';
+    return { title: `Mark ${name} as cancelled` };
+  }
+
+  if (action.action === 'ignore_subscription') {
+    const name = typeof params.name === 'string' && params.name ? params.name : 'this subscription';
+    return { title: `Ignore ${name}` };
+  }
+
   return { title: action.description || 'Confirm this action' };
 }
 
@@ -113,7 +156,6 @@ export function ActionConfirmSheet({ action, visible, onClose, onConfirmed, onCa
       snapPoints={['35%']}
       dismissible={!loading}>
       <View className="flex-1 px-6 pb-8">
-        
         {/* Content */}
         <View className="flex-1 items-center justify-center">
           {info.amount && (
@@ -121,11 +163,11 @@ export function ActionConfirmSheet({ action, visible, onClose, onConfirmed, onCa
               {info.amount}
             </Text>
           )}
-          
+
           <Text className="mb-6 text-center font-body text-headline-3 leading-7 text-charcoal-primary">
             {info.title}
           </Text>
-          
+
           <Text className="font-mono-medium text-caption text-ash">
             {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}
           </Text>
@@ -133,13 +175,7 @@ export function ActionConfirmSheet({ action, visible, onClose, onConfirmed, onCa
 
         {/* Actions */}
         <View className="flex-row gap-4">
-          <Button
-            title="Cancel"
-            variant="white"
-            onPress={handleCancel}
-            disabled={loading}
-            flex
-          />
+          <Button title="Cancel" variant="white" onPress={handleCancel} disabled={loading} flex />
           <Button
             title="Confirm"
             variant="black"

@@ -3,7 +3,7 @@ import { Platform, ScrollView, Text, TouchableOpacity, View, RefreshControl } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { RailCard, RailCardReveal } from '../cards';
@@ -218,7 +218,9 @@ const CardMainScreen = () => {
 
           {/* Transactions */}
           <View className="mt-7">
-            <Text className="mb-3 font-headline text-headline-3 text-charcoal-primary">Transactions</Text>
+            <Text className="mb-3 font-headline text-headline-3 text-charcoal-primary">
+              Transactions
+            </Text>
             {isLoading ? (
               <View>
                 {Array.from({ length: 4 }).map((_, i) => (

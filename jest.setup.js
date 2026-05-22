@@ -1,5 +1,7 @@
 import '@testing-library/react-native/extend-expect';
 
+/* global jest */
+
 global.development = process.env.NODE_ENV !== 'production';
 
 jest.mock('@react-native-async-storage/async-storage', () =>

@@ -333,6 +333,9 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
 
         const convId = conversationId ?? state.activeConversationId;
         const userContent = message || 'Analyze this receipt';
+
+        // Truncate base64 for display (full sent to API)
+        const displayUrl = `data:image/jpeg;base64,${base64Image.slice(0, 1000)}`;
         const userMsg: AIMessage = {
           role: 'user',
           content: userContent,

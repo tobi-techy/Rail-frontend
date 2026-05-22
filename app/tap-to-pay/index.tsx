@@ -17,7 +17,7 @@ import Animated, {
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import { useTapToPay, type NearbyPeer } from '@/hooks/useTapToPay';
 import { useNearbyPermissions } from '@/hooks/useNearbyPermissions';
 import { useAuthStore } from '@/stores/authStore';
@@ -27,7 +27,12 @@ import { Keypad } from '@/components/molecules/Keypad';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { Button } from '@/components/ui';
 import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
-import { normalizeAmount, formatCurrency, formatMaxAmount, toDisplayAmount } from '@/app/withdraw/method-screen/utils';
+import {
+  normalizeAmount,
+  formatCurrency,
+  formatMaxAmount,
+  toDisplayAmount,
+} from '@/app/withdraw/method-screen/utils';
 import { parseApiError } from '@/utils/apiError';
 import { ArrowLeft01Icon, Wifi01Icon, CheckmarkCircle02Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
@@ -36,26 +41,35 @@ const BRAND_COLOR = '#ff3e00';
 const DISCOVERY_TIMEOUT_MS = 20_000;
 const MAX_DIGITS = 9;
 const P2P_LIMIT = 10_000;
+const TAP_TO_PAY_ENABLED = false;
 
 // ── Distance helpers ──────────────────────────────────────────────────────────
 
 function distanceLabel(meters: number | undefined): string | null {
-  if (meters == null) return null;
+  if (meters === undefined) return null;
   if (meters < 0.15) return 'Right here';
   if (meters < 1) return `${Math.round(meters * 100)}cm`;
   return `${meters.toFixed(1)}m`;
 }
 
 function distanceColor(meters: number | undefined): string {
-  if (meters == null) return '#00ca48';
+  if (meters === undefined) return '#00ca48';
   if (meters < 0.15) return '#00ca48'; // green — tap range
-  if (meters < 1) return '#F59E0B';    // amber — close
-  return '#848281';                     // gray — far
+  if (meters < 1) return '#F59E0B'; // amber — close
+  return '#848281'; // gray — far
 }
 
 // ── Staggered Pulse Rings ─────────────────────────────────────────────────────
 
-function PulseRing({ delay = 0, size = 128, haptic = false }: { delay?: number; size?: number; haptic?: boolean }) {
+function PulseRing({
+  delay = 0,
+  size = 128,
+  haptic = false,
+}: {
+  delay?: number;
+  size?: number;
+  haptic?: boolean;
+}) {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(0.4);
 
@@ -110,7 +124,8 @@ function PeerAvatar({
   const angle = (index * (2 * Math.PI)) / Math.max(total, 1) - Math.PI / 2;
   // Closer peers orbit nearer to center when UWB distance is available
   const baseRadius = 140;
-  const radius = distance != null ? Math.min(baseRadius, Math.max(80, distance * 100)) : baseRadius;
+  const radius =
+    distance !== undefined ? Math.min(baseRadius, Math.max(80, distance * 100)) : baseRadius;
   const x = Math.cos(angle) * radius;
   const y = Math.sin(angle) * radius;
   const dist = distanceLabel(distance);
@@ -121,19 +136,36 @@ function PeerAvatar({
 
   return (
     <Animated.View
-      entering={FadeIn.delay(index * 80).duration(400).springify().damping(16)}
-      style={[animStyle, { position: 'absolute', transform: [{ translateX: x }, { translateY: y }] }]}>
+      entering={FadeIn.delay(index * 80)
+        .duration(400)
+        .springify()
+        .damping(16)}
+      style={[
+        animStyle,
+        { position: 'absolute', transform: [{ translateX: x }, { translateY: y }] },
+      ]}>
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           onPress();
         }}
-        onPressIn={() => { scale.value = withSpring(0.9, { damping: 18, stiffness: 300 }); }}
-        onPressOut={() => { scale.value = withSpring(1, { damping: 18, stiffness: 300 }); }}
+        onPressIn={() => {
+          scale.value = withSpring(0.9, { damping: 18, stiffness: 300 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 18, stiffness: 300 });
+        }}
         className="items-center"
         style={{ width: 76 }}>
-        <View className="mb-1.5 h-14 w-14 items-center justify-center rounded-full bg-[#FFF0ED]"
-          style={{ shadowColor: BRAND_COLOR, shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 }}>
+        <View
+          className="mb-1.5 h-14 w-14 items-center justify-center rounded-full bg-[#FFF0ED]"
+          style={{
+            shadowColor: BRAND_COLOR,
+            shadowOpacity: 0.15,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 4,
+          }}>
           <Text className="font-subtitle text-[20px] text-[#ff3e00]">
             {peer.displayName.charAt(0).toUpperCase()}
           </Text>
@@ -142,7 +174,9 @@ function PeerAvatar({
           {peer.displayName.split(' ')[0]}
         </Text>
         {dist && (
-          <View className="mt-0.5 rounded-full px-2 py-0.5" style={{ backgroundColor: `${color}18` }}>
+          <View
+            className="mt-0.5 rounded-full px-2 py-0.5"
+            style={{ backgroundColor: `${color}18` }}>
             <Text style={{ color, fontSize: 9, fontWeight: '600' }}>{dist}</Text>
           </View>
         )}
@@ -165,7 +199,9 @@ function IncomingRequest({
   onDecline: () => void;
 }) {
   return (
-    <Animated.View entering={FadeInUp.duration(400)} className="flex-1 items-center justify-center px-6">
+    <Animated.View
+      entering={FadeInUp.duration(400)}
+      className="flex-1 items-center justify-center px-6">
       <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-[#FFF0ED]">
         <Text className="font-heading text-[32px] text-[#ff3e00]">
           {senderName.charAt(0).toUpperCase()}
@@ -173,15 +209,21 @@ function IncomingRequest({
       </View>
       <Text className="font-subtitle text-[18px] text-[#343433]">{senderName}</Text>
       <Text className="mt-2 font-body text-[15px] text-[#848281]">wants to send you</Text>
-      <Text className="font-heading mt-4 text-[48px] text-[#343433]">${amount}</Text>
+      <Text className="mt-4 font-heading text-[48px] text-[#343433]">${amount}</Text>
       <View className="mt-12 w-full flex-row gap-3">
         <Pressable
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onDecline(); }}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            onDecline();
+          }}
           className="flex-1 items-center rounded-2xl bg-[#FEF2F2] py-4">
           <Text className="font-subtitle text-[15px] text-[#ff2b3a]">Decline</Text>
         </Pressable>
         <Pressable
-          onPress={() => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); onAccept(); }}
+          onPress={() => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            onAccept();
+          }}
           className="flex-1 items-center rounded-2xl bg-[#343433] py-4">
           <Text className="font-subtitle text-[15px] text-white">Accept</Text>
         </Pressable>
@@ -192,7 +234,48 @@ function IncomingRequest({
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
+function TapToPayPausedScreen() {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <SafeAreaView className="flex-1 bg-[#fffaf4]" edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fffaf4" />
+      <View className="flex-1 px-5" style={{ paddingBottom: insets.bottom + 24 }}>
+        <View className="h-14 flex-row items-center justify-between">
+          <Pressable
+            onPress={() => router.back()}
+            className="h-11 w-11 items-center justify-center rounded-full bg-white"
+            accessibilityRole="button"
+            accessibilityLabel="Go back">
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" />
+          </Pressable>
+        </View>
+
+        <View className="flex-1 items-center justify-center">
+          <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-[#FFF0ED]">
+            <HugeiconsIcon icon={Wifi01Icon} size={34} color={BRAND_COLOR} />
+          </View>
+          <Text className="text-center font-heading text-[28px] text-[#343433]">Paused</Text>
+          <Text className="mt-3 max-w-[280px] text-center font-body text-[15px] leading-[22px] text-[#848281]">
+            Tap to Pay is temporarily unavailable.
+          </Text>
+          <Button
+            title="Back"
+            onPress={() => router.back()}
+            variant="orange"
+            className="mt-8 w-full"
+          />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
 export default function TapToPayScreen() {
+  return TAP_TO_PAY_ENABLED ? <TapToPayActiveScreen /> : <TapToPayPausedScreen />;
+}
+
+function TapToPayActiveScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const railtag = user?.railTag || user?.email?.split('@')[0] || 'user';
@@ -202,8 +285,16 @@ export default function TapToPayScreen() {
   const maxSend = Math.min(P2P_LIMIT, balance);
 
   const {
-    peers, peerDistances, incomingRequest, transferAccepted, transferDeclined,
-    isSupported, start, stop, sendIntent, respond,
+    peers,
+    peerDistances,
+    incomingRequest,
+    transferAccepted,
+    transferDeclined,
+    isSupported,
+    start,
+    stop,
+    sendIntent,
+    respond,
   } = useTapToPay(railtag, displayName);
 
   const { status: permStatus, request: requestPerms, openSettings } = useNearbyPermissions();
@@ -237,13 +328,21 @@ export default function TapToPayScreen() {
       const granted = await requestPerms();
       if (!cancelled && granted) start();
     })();
-    return () => { cancelled = true; stop(); };
+    return () => {
+      cancelled = true;
+      stop();
+    };
   }, [start, stop, requestPerms]);
 
   // Discovery timeout
   useEffect(() => {
-    if (peers.length > 0) { setDiscoveryTimedOut(false); return; }
-    const t = setTimeout(() => { if (peers.length === 0) setDiscoveryTimedOut(true); }, DISCOVERY_TIMEOUT_MS);
+    if (peers.length > 0) {
+      setDiscoveryTimedOut(false);
+      return;
+    }
+    const t = setTimeout(() => {
+      if (peers.length === 0) setDiscoveryTimedOut(true);
+    }, DISCOVERY_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, [peers.length]);
 
@@ -252,8 +351,11 @@ export default function TapToPayScreen() {
     if (!lockoutUntil) return;
     const tick = setInterval(() => {
       const rem = Math.ceil((lockoutUntil - Date.now()) / 1000);
-      if (rem <= 0) { setLockoutUntil(null); setLockoutSeconds(0); setPinAttempts(0); }
-      else setLockoutSeconds(rem);
+      if (rem <= 0) {
+        setLockoutUntil(null);
+        setLockoutSeconds(0);
+        setPinAttempts(0);
+      } else setLockoutSeconds(rem);
     }, 1000);
     return () => clearInterval(tick);
   }, [lockoutUntil]);
@@ -285,21 +387,24 @@ export default function TapToPayScreen() {
   }, [transferAccepted]);
 
   // Keypad handler
-  const onKey = useCallback((key: string) => {
-    setRawAmount((cur) => {
-      if (key === 'backspace') return cur === '0' ? cur : normalizeAmount(cur.slice(0, -1));
-      if (key === 'decimal') return cur.includes('.') ? cur : `${cur}.`;
-      if (!/^\d$/.test(key)) return cur;
-      if (cur.includes('.')) {
-        const [i, d = ''] = cur.split('.');
-        return d.length >= 2 ? cur : `${i}.${d}${key}`;
-      }
-      const next = (cur === '0' ? key : `${cur}${key}`).replace(/^0+(?=\d)/, '') || '0';
-      if (next.length > MAX_DIGITS) return cur;
-      if (maxSend > 0 && parseFloat(next) > maxSend) return formatMaxAmount(maxSend);
-      return next;
-    });
-  }, [maxSend]);
+  const onKey = useCallback(
+    (key: string) => {
+      setRawAmount((cur) => {
+        if (key === 'backspace') return cur === '0' ? cur : normalizeAmount(cur.slice(0, -1));
+        if (key === 'decimal') return cur.includes('.') ? cur : `${cur}.`;
+        if (!/^\d$/.test(key)) return cur;
+        if (cur.includes('.')) {
+          const [i, d = ''] = cur.split('.');
+          return d.length >= 2 ? cur : `${i}.${d}${key}`;
+        }
+        const next = (cur === '0' ? key : `${cur}${key}`).replace(/^0+(?=\d)/, '') || '0';
+        if (next.length > MAX_DIGITS) return cur;
+        if (maxSend > 0 && parseFloat(next) > maxSend) return formatMaxAmount(maxSend);
+        return next;
+      });
+    },
+    [maxSend]
+  );
 
   const onContinue = useCallback(() => {
     if (!selectedPeer || !amountOk) return;
@@ -323,33 +428,39 @@ export default function TapToPayScreen() {
     }
   }, [selectedPeer, rawAmount, sendIntent]);
 
-  const onPasscodeComplete = useCallback((code: string) => {
-    if (isVerifying || lockoutUntil) return;
-    setAuthError('');
-    verifyPasscode({ passcode: code }, {
-      onSuccess: (result) => {
-        if (!result.verified) {
-          const next = pinAttempts + 1;
-          setPinAttempts(next);
-          if (next >= 5) {
-            setLockoutUntil(Date.now() + 30_000);
-            setLockoutSeconds(30);
-            setAuthError('Too many attempts. Try again in 30s.');
-          } else {
-            setAuthError(`Invalid PIN. ${5 - next} attempt${5 - next !== 1 ? 's' : ''} left.`);
-          }
-          setAuthPasscode('');
-          return;
+  const onPasscodeComplete = useCallback(
+    (code: string) => {
+      if (isVerifying || lockoutUntil) return;
+      setAuthError('');
+      verifyPasscode(
+        { passcode: code },
+        {
+          onSuccess: (result) => {
+            if (!result.verified) {
+              const next = pinAttempts + 1;
+              setPinAttempts(next);
+              if (next >= 5) {
+                setLockoutUntil(Date.now() + 30_000);
+                setLockoutSeconds(30);
+                setAuthError('Too many attempts. Try again in 30s.');
+              } else {
+                setAuthError(`Invalid PIN. ${5 - next} attempt${5 - next !== 1 ? 's' : ''} left.`);
+              }
+              setAuthPasscode('');
+              return;
+            }
+            setPinAttempts(0);
+            onAuthorized();
+          },
+          onError: (err) => {
+            setAuthError(parseApiError(err, 'Verification failed.'));
+            setAuthPasscode('');
+          },
         }
-        setPinAttempts(0);
-        onAuthorized();
-      },
-      onError: (err) => {
-        setAuthError(parseApiError(err, 'Verification failed.'));
-        setAuthPasscode('');
-      },
-    });
-  }, [isVerifying, lockoutUntil, pinAttempts, verifyPasscode, onAuthorized]);
+      );
+    },
+    [isVerifying, lockoutUntil, pinAttempts, verifyPasscode, onAuthorized]
+  );
 
   const resetFlow = useCallback(() => {
     setSelectedPeer(null);
@@ -392,10 +503,14 @@ export default function TapToPayScreen() {
         {permStatus === 'blocked' ? (
           <Button title="Open Settings" className="mt-6" onPress={openSettings} />
         ) : (
-          <Button title="Grant Access" className="mt-6" onPress={async () => {
-            const ok = await requestPerms();
-            if (ok) start();
-          }} />
+          <Button
+            title="Grant Access"
+            className="mt-6"
+            onPress={async () => {
+              const ok = await requestPerms();
+              if (ok) start();
+            }}
+          />
         )}
         <Button title="Go back" variant="ghost" className="mt-3" onPress={() => router.back()} />
       </SafeAreaView>
@@ -410,7 +525,7 @@ export default function TapToPayScreen() {
           <HugeiconsIcon icon={Wifi01Icon} size={28} color="#ff3e00" />
         </View>
         <Text className="text-center font-subtitle text-[18px] text-[#343433]">
-          Tap to Pay isn't available on this device
+          Tap to Pay is not available on this device
         </Text>
         <Text className="mt-2 text-center font-body text-[14px] text-[#848281]">
           This feature requires a compatible device
@@ -461,7 +576,14 @@ export default function TapToPayScreen() {
           <Text className="mt-2 text-center font-body text-[15px] text-[#848281]">
             ${formatCurrency(numericAmount)} sent to {selectedPeer?.displayName}
           </Text>
-          <Button title="Done" className="mt-10 w-full" onPress={() => { resetFlow(); router.back(); }} />
+          <Button
+            title="Done"
+            className="mt-10 w-full"
+            onPress={() => {
+              resetFlow();
+              router.back();
+            }}
+          />
         </Animated.View>
       </SafeAreaView>
     );
@@ -491,7 +613,9 @@ export default function TapToPayScreen() {
       <SafeAreaView className="flex-1" style={{ backgroundColor: '#ff3e00' }} edges={['top']}>
         <StatusBar barStyle="light-content" />
         <View className="flex-1 px-5">
-          <Animated.View entering={FadeIn.duration(350)} className="flex-row items-center justify-between pb-2 pt-1">
+          <Animated.View
+            entering={FadeIn.duration(350)}
+            className="flex-row items-center justify-between pb-2 pt-1">
             <Pressable
               className="size-11 items-center justify-center rounded-full bg-white/20"
               onPress={resetFlow}>
@@ -513,7 +637,10 @@ export default function TapToPayScreen() {
           </View>
 
           {sendError ? (
-            <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} className="mb-2">
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(200)}
+              className="mb-2">
               <Text className="text-center font-body text-[13px] text-white/90">{sendError}</Text>
             </Animated.View>
           ) : null}
@@ -547,7 +674,10 @@ export default function TapToPayScreen() {
 
       <View className="flex-row items-center gap-4 px-6 pt-3">
         <Pressable
-          onPress={() => { stop(); router.back(); }}
+          onPress={() => {
+            stop();
+            router.back();
+          }}
           className="h-10 w-10 items-center justify-center rounded-full bg-[#f2f0ed]">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" strokeWidth={2} />
         </Pressable>
@@ -555,10 +685,10 @@ export default function TapToPayScreen() {
           <Text className="font-subtitle text-[18px] text-[#343433]">Tap to Pay</Text>
         </View>
         {peers.length > 0 && (
-          <Animated.View entering={FadeIn.duration(300)} className="rounded-full bg-[#f0fdf4] px-3 py-1">
-            <Text className="font-caption text-[11px] text-[#00ca48]">
-              {peers.length} nearby
-            </Text>
+          <Animated.View
+            entering={FadeIn.duration(300)}
+            className="rounded-full bg-[#f0fdf4] px-3 py-1">
+            <Text className="font-caption text-[11px] text-[#00ca48]">{peers.length} nearby</Text>
           </Animated.View>
         )}
       </View>
@@ -580,11 +710,22 @@ export default function TapToPayScreen() {
         <PulseRing delay={0} size={160} haptic />
         <PulseRing delay={700} size={160} />
         <PulseRing delay={1400} size={160} />
-        <View className="h-40 w-40 items-center justify-center rounded-full bg-[#FFF0ED]"
-          style={{ shadowColor: BRAND_COLOR, shadowOpacity: 0.12, shadowRadius: 20, shadowOffset: { width: 0, height: 4 }, elevation: 8 }}>
+        <View
+          className="h-40 w-40 items-center justify-center rounded-full bg-[#FFF0ED]"
+          style={{
+            shadowColor: BRAND_COLOR,
+            shadowOpacity: 0.12,
+            shadowRadius: 20,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: 8,
+          }}>
           <HugeiconsIcon icon={Wifi01Icon} size={48} color="#ff3e00" />
           {peers.length === 0 && !discoveryTimedOut && (
-            <ActivityIndicator size="small" color="#ff3e00" style={{ position: 'absolute', bottom: -28 }} />
+            <ActivityIndicator
+              size="small"
+              color="#ff3e00"
+              style={{ position: 'absolute', bottom: -28 }}
+            />
           )}
         </View>
 

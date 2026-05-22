@@ -13,6 +13,7 @@ export interface RouteConfig {
   isOnConfirmPasscode: boolean;
   isOnCreateRailTag: boolean;
   isOnCompleteProfile: boolean;
+  isOnCompleteKyc: boolean;
 }
 
 export interface AuthState {

@@ -509,13 +509,19 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         const now = Date.now();
         const currentExpiry = get().tokenExpiresAt ? new Date(get().tokenExpiresAt!).getTime() : 0;
         const state = get();
+        // Only extend appLockExpiresAt if the lock is currently valid (not expired).
+        // If the lock is expired, only passcode/biometric verification should reset it.
+        const currentLockExpiry = state.appLockExpiresAt
+          ? new Date(state.appLockExpiresAt).getTime()
+          : 0;
+        const isLockCurrentlyValid = currentLockExpiry > now;
         set({
           lastActivityAt: new Date(now).toISOString(),
           tokenExpiresAt: new Date(
             Math.max(currentExpiry, now + INACTIVITY_LIMIT_MS)
           ).toISOString(),
           appLockExpiresAt:
-            state.isAuthenticated && state.hasPasscode
+            state.isAuthenticated && state.hasPasscode && isLockCurrentlyValid
               ? new Date(now + PASSCODE_SESSION_MS).toISOString()
               : state.appLockExpiresAt,
         });

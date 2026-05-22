@@ -34,6 +34,7 @@ const USER_ENDPOINTS = {
   KYC_STATUS: '/v1/kyc/status',
   DEVICES: '/v1/security/devices',
   REMOVE_DEVICE: '/v1/security/devices/:id',
+  TOS: '/v1/users/me/tos',
 };
 
 export const userService = {
@@ -136,6 +137,20 @@ export const userService = {
     }
 
     return apiClient.delete(USER_ENDPOINTS.REMOVE_DEVICE.replace(':id', data.deviceId));
+  },
+
+  /**
+   * Get TOS acceptance status
+   */
+  async getTOSStatus(): Promise<{ accepted: boolean; accepted_at: string }> {
+    return apiClient.get(USER_ENDPOINTS.TOS);
+  },
+
+  /**
+   * Accept TOS
+   */
+  async acceptTOS(): Promise<{ accepted: boolean }> {
+    return apiClient.post(USER_ENDPOINTS.TOS);
   },
 };
 

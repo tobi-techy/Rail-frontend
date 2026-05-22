@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import { useKYCStatus } from '@/api/hooks';
 import { useVirtualAccounts } from '@/api/hooks/useVirtualAccount';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';

@@ -37,10 +37,14 @@ function patchFile(filePath, patcher) {
     console.log(`expo-two-way-audio: ${path.relative(root, filePath)} not found, skipping`);
     return;
   }
+  const relativeFile = path.relative(root, filePath);
   const before = fs.readFileSync(filePath, 'utf8');
   const after = patcher(before);
   if (after !== before) {
     fs.writeFileSync(filePath, after);
+    console.log(`expo-two-way-audio: patched ${relativeFile}`);
+  } else {
+    console.warn(`expo-two-way-audio: no changes applied to ${relativeFile}`);
   }
 }
 
@@ -154,6 +158,12 @@ patchFile(androidAudioEnginePath, (source) => {
         }
     }`,
   );
+
+  if (!next.includes('var offset = 0') || !next.includes('while (offset < data.size)')) {
+    console.error(
+      'expo-two-way-audio: CRITICAL Android playSample buffered-write patch failed to apply',
+    );
+  }
 
   next = next.replace(
     /executorServiceMicrophone\.shutdownNow\(\)\n\s+\}/,

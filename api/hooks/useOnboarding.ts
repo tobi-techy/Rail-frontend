@@ -3,9 +3,10 @@
  * React Query hooks for onboarding operations
  */
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { onboardingService } from '../services';
 import { useAuthStore } from '../../stores/authStore';
+import { queryKeys } from '../queryClient';
 import type { OnboardingCompleteRequest, KYCVerificationRequest } from '../types';
 
 /**
@@ -21,9 +22,7 @@ export function useOnboardingBasicComplete() {
       const fullName = [firstName, lastName].filter(Boolean).join(' ');
 
       useAuthStore.setState((state) => ({
-        user: state.user
-          ? { ...state.user, firstName, lastName, fullName }
-          : state.user,
+        user: state.user ? { ...state.user, firstName, lastName, fullName } : state.user,
         hasCompletedOnboarding: true,
         onboardingStatus: response.onboardingStatus ?? 'basic_complete',
       }));
@@ -72,5 +71,18 @@ export function useOnboardingSubmitKYC() {
         onboardingStatus: 'kyc_pending',
       });
     },
+  });
+}
+
+/**
+ * Fetch missing KYC profile fields from backend.
+ * Used to determine which complete-kyc steps to show.
+ */
+export function useMissingKycFields(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.onboarding.missingKycFields(),
+    queryFn: () => onboardingService.getMissingKycFields(),
+    enabled,
+    staleTime: 30_000,
   });
 }

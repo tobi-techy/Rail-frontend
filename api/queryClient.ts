@@ -89,6 +89,7 @@ export const queryKeys = {
     all: ['user'] as const,
     profile: () => [...queryKeys.user.all, 'profile'] as const,
     settings: () => [...queryKeys.user.all, 'settings'] as const,
+    tos: () => [...queryKeys.user.all, 'tos'] as const,
     kycBridgeLink: () => [...queryKeys.user.all, 'kyc-bridge-link'] as const,
     kycStatus: () => [...queryKeys.user.all, 'kyc-status'] as const,
     kycSession: () => [...queryKeys.user.all, 'kyc-session'] as const,
@@ -165,6 +166,10 @@ export const queryKeys = {
     moneyAcrossBorders: () => [...queryKeys.ai.all, 'money-across-borders'] as const,
     automations: () => [...queryKeys.ai.all, 'automations'] as const,
     obligations: (params?: unknown) => [...queryKeys.ai.all, 'obligations', params] as const,
+  },
+  onboarding: {
+    all: ['onboarding'] as const,
+    missingKycFields: () => [...queryKeys.onboarding.all, 'missing-kyc-fields'] as const,
   },
 };
 

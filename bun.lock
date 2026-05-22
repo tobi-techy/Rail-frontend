@@ -30,7 +30,7 @@
         "@solana-mobile/mobile-wallet-adapter-protocol-web3js": "^2.2.5",
         "@solana/spl-token": "^0.4.14",
         "@solana/web3.js": "^1.98.4",
-        "@speechmatics/expo-two-way-audio": "^0.1.2",
+        "@speechmatics/expo-two-way-audio": "0.1.2",
         "@tanstack/react-query": "^5.90.5",
         "@typescript-eslint/eslint-plugin": "^8.49.0",
         "@typescript-eslint/parser": "^8.49.0",
@@ -138,8 +138,8 @@
     "@shopify/react-native-skia",
   ],
   "overrides": {
-    "@react-navigation/core": "7.17.4",
-    "@react-navigation/native": "7.2.4",
+    "@react-navigation/core": "^7.17.4",
+    "@react-navigation/native": "^7.2.4",
     "react-native-webview": "13.16.0",
   },
   "packages": {

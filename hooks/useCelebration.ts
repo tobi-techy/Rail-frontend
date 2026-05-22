@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import { useFeedbackPopupStore } from '@/stores/feedbackPopupStore';
 
 /**

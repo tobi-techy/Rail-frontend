@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StatusBar,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, StatusBar, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, {
@@ -20,7 +14,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import { Cancel01Icon, Copy01Icon, CheckmarkCircle01Icon, AlertCircleIcon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -32,12 +26,12 @@ import { usePajRates, usePajOnramp, usePajOrderStatus } from '@/api/hooks';
 import { invalidateQueries } from '@/api/queryClient';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import type { PajOnrampOrder } from '@/api/types/paj';
+import { MIN_NGN_TRANSACTION_AMOUNT } from '@/constants/transactionLimits';
 
 type Step = 'amount' | 'bank-details' | 'waiting';
 
 const BRAND_RED = '#ff3e00';
 const MAX_INTEGER_DIGITS = 9;
-const MIN_NGN = 500;
 
 export default function FundNairaScreen() {
   const insets = useSafeAreaInsets();
@@ -73,7 +67,7 @@ export default function FundNairaScreen() {
     return hasDecimal ? `${grouped}.${dec}` : grouped;
   }, [rawAmount]);
 
-  const canContinue = numericAmount >= MIN_NGN;
+  const canContinue = numericAmount >= MIN_NGN_TRANSACTION_AMOUNT;
 
   // ── Keypad ────────────────────────────────────────────────────────────────
   const onKeyPress = useCallback((key: string) => {
@@ -125,11 +119,26 @@ export default function FundNairaScreen() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (step === 'bank-details' && order) {
-    return <BankDetailsStep order={order} onTransferred={handleTransferred} onClose={() => router.back()} insets={insets} />;
+    return (
+      <BankDetailsStep
+        order={order}
+        onTransferred={handleTransferred}
+        onClose={() => router.back()}
+        insets={insets}
+      />
+    );
   }
 
   if (step === 'waiting' && order) {
-    return <WaitingStep orderId={order.orderId} order={order} onClose={() => router.back()} insets={insets} showSuccess={showSuccess} />;
+    return (
+      <WaitingStep
+        orderId={order.orderId}
+        order={order}
+        onClose={() => router.back()}
+        insets={insets}
+        showSuccess={showSuccess}
+      />
+    );
   }
 
   return (
@@ -192,9 +201,9 @@ export default function FundNairaScreen() {
               variant="white"
               className="bg-warm-canvas"
             />
-            {numericAmount > 0 && numericAmount < MIN_NGN && (
+            {numericAmount > 0 && numericAmount < MIN_NGN_TRANSACTION_AMOUNT && (
               <Text className="mt-2 text-center font-body text-[12px] text-white/70">
-                Minimum deposit is ₦{MIN_NGN.toLocaleString()}
+                Minimum deposit is ₦{MIN_NGN_TRANSACTION_AMOUNT.toLocaleString()}
               </Text>
             )}
           </Animated.View>
@@ -258,7 +267,9 @@ function BankDetailsStep({
         {/* Amount summary */}
         <Animated.View entering={FadeInDown.delay(100).duration(400)} className="mt-6 items-center">
           <Text className="font-body text-[14px] text-text-secondary">Transfer exactly</Text>
-          <Text className="mt-1 font-mono-semibold text-[40px] text-text-primary" style={{ fontVariant: ['tabular-nums'] }}>
+          <Text
+            className="mt-1 font-mono-semibold text-[40px] text-text-primary"
+            style={{ fontVariant: ['tabular-nums'] }}>
             ₦{order.fiatAmount.toLocaleString()}
           </Text>
           <Text className="mt-1 font-body text-[14px] text-text-secondary">
@@ -293,17 +304,14 @@ function BankDetailsStep({
         {/* Instructions */}
         <Animated.View entering={FadeInDown.delay(300).duration(400)} className="mt-6 px-2">
           <Text className="text-center font-body text-[13px] leading-5 text-text-secondary">
-            Transfer the exact amount above to this account. Your deposit will be credited automatically once confirmed.
+            Transfer the exact amount above to this account. Your deposit will be credited
+            automatically once confirmed.
           </Text>
         </Animated.View>
 
         {/* CTA */}
         <View className="mt-auto pb-4">
-          <Button
-            title="I've sent the money"
-            variant="black"
-            onPress={onTransferred}
-          />
+          <Button title="I've sent the money" variant="black" onPress={onTransferred} />
         </View>
       </View>
     </SafeAreaView>
@@ -355,14 +363,14 @@ const STEPS = [
     title: 'Payment received',
     failTitle: 'Payment not received',
     desc: (amt: string) => `We received your ₦${amt} bank transfer.`,
-    failDesc: () => 'We haven\'t received your transfer yet. Please check your bank app.',
+    failDesc: () => "We haven't received your transfer yet. Please check your bank app.",
   },
   {
     key: 'conversion',
     title: 'Converting to USDC',
     failTitle: 'Conversion failed',
     desc: (amt: string) => `Your Naira is being converted to USDC.`,
-    failDesc: () => 'We couldn\'t convert your deposit. Your funds are safe.',
+    failDesc: () => "We couldn't convert your deposit. Your funds are safe.",
   },
   {
     key: 'credited',
@@ -430,7 +438,7 @@ function WaitingStep({
         withTiming(-6, { duration: 50 }),
         withTiming(6, { duration: 50 }),
         withTiming(-3, { duration: 50 }),
-        withTiming(0, { duration: 50 }),
+        withTiming(0, { duration: 50 })
       );
     }
     if (isTerminal) {
@@ -462,7 +470,11 @@ function WaitingStep({
         {/* Hero */}
         <Animated.View entering={FadeInDown.delay(100).duration(400)} className="mt-8 items-center">
           <Text className="font-subtitle text-[24px] text-text-primary">
-            {isCompleted ? 'Deposit complete' : isFailed ? 'Something went wrong' : 'We received your request'}
+            {isCompleted
+              ? 'Deposit complete'
+              : isFailed
+                ? 'Something went wrong'
+                : 'We received your request'}
           </Text>
           <Text className="mt-2 text-center font-body text-[15px] leading-[22px] text-text-secondary">
             {isCompleted
@@ -555,7 +567,9 @@ function TimelineRow({
   const lineColor = isDone ? '#c6c6c6' : '#f2f0ed';
 
   return (
-    <Animated.View entering={FadeInDown.delay(300 + index * 100).duration(350)} className="flex-row">
+    <Animated.View
+      entering={FadeInDown.delay(300 + index * 100).duration(350)}
+      className="flex-row">
       {/* Icon column with connector line */}
       <View className="mr-4 items-center" style={{ width: 24 }}>
         {isActive ? (
@@ -576,7 +590,10 @@ function TimelineRow({
           </View>
         )}
         {!isLast && (
-          <View className="my-1 flex-1" style={{ width: 2, minHeight: 20, backgroundColor: lineColor, borderRadius: 1 }} />
+          <View
+            className="my-1 flex-1"
+            style={{ width: 2, minHeight: 20, backgroundColor: lineColor, borderRadius: 1 }}
+          />
         )}
       </View>
 

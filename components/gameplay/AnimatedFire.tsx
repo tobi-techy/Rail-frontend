@@ -34,25 +34,25 @@ export function AnimatedFire({ size = 40 }: AnimatedFireProps) {
         withTiming(1.08, { duration: 550, easing: Easing.inOut(Easing.ease) }),
         withTiming(0.96, { duration: 480, easing: Easing.inOut(Easing.ease) }),
         withTiming(1.04, { duration: 420, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 550, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 550, easing: Easing.inOut(Easing.ease) })
       ),
-      -1,
+      -1
     );
     f2.value = withRepeat(
       withSequence(
         withTiming(0.94, { duration: 500, easing: Easing.inOut(Easing.ease) }),
         withTiming(1.1, { duration: 600, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 500, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 500, easing: Easing.inOut(Easing.ease) })
       ),
-      -1,
+      -1
     );
     f3.value = withRepeat(
       withSequence(
         withTiming(1.12, { duration: 400, easing: Easing.inOut(Easing.ease) }),
         withTiming(0.9, { duration: 350, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 450, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 450, easing: Easing.inOut(Easing.ease) })
       ),
-      -1,
+      -1
     );
   }, [f1, f2, f3]);
 
@@ -78,12 +78,12 @@ export function AnimatedFire({ size = 40 }: AnimatedFireProps) {
       </Animated.View>
       <Animated.View style={[{ position: 'absolute' }, s2]}>
         <Svg width={size * 0.72} height={size * 0.72} viewBox="0 0 24 24">
-          <Path d={FLAME_MIDDLE} fill="#FF6B35" />
+          <Path d={FLAME_MIDDLE} fill="#ffbb26" />
         </Svg>
       </Animated.View>
       <Animated.View style={[{ position: 'absolute' }, s3]}>
         <Svg width={size * 0.48} height={size * 0.48} viewBox="0 0 24 24">
-          <Path d={FLAME_INNER} fill="#FFD54F" />
+          <Path d={FLAME_INNER} fill="#f8f7f4" />
         </Svg>
       </Animated.View>
     </View>

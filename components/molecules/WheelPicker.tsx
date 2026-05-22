@@ -1,6 +1,6 @@
 import React from 'react';
 import RNWheelPicker from '@quidone/react-native-wheel-picker';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 
 interface WheelPickerProps {
   items: string[];

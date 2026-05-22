@@ -10,8 +10,7 @@ import { Skeleton } from '@/components/atoms/Skeleton';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useUIStore } from '@/stores';
 import { CATEGORY_PALETTE } from './components';
-import { ArrowLeft01Icon, RefreshIcon } from '@/lib/icons';
-import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { ArrowLeft01Icon, IconComponent as HugeiconsIcon, RefreshIcon } from '@/lib/icons';
 
 const ACCENT = '#ff3e00';
 
@@ -19,6 +18,7 @@ const ACCENT = '#ff3e00';
 
 const PERIODS = ['1W', '1M', '6M', '1Y'] as const;
 type Period = (typeof PERIODS)[number];
+const PERIOD_MONTHS: Record<Period, number> = { '1W': 0, '1M': 1, '6M': 6, '1Y': 12 };
 
 function PeriodSelector({
   selected,
@@ -95,10 +95,10 @@ function MonthlyBarChart({ data }: { data: ChartBar[] }) {
             return (
               <Group key={bar.month}>
                 {wdH > 0 && (
-                  <RoundedRect x={x} y={wdY} width={barW} height={wdH} r={r} color="#118AB2" />
+                  <RoundedRect x={x} y={wdY} width={barW} height={wdH} r={r} color="#0090ff" />
                 )}
                 {p2pH > 0 && (
-                  <RoundedRect x={x} y={p2pY} width={barW} height={p2pH} r={r} color="#06D6A0" />
+                  <RoundedRect x={x} y={p2pY} width={barW} height={p2pH} r={r} color="#00ca48" />
                 )}
                 {cardH > 0 && (
                   <RoundedRect x={x} y={cardY} width={barW} height={cardH} r={r} color={ACCENT} />
@@ -125,8 +125,8 @@ function MonthlyBarChart({ data }: { data: ChartBar[] }) {
       <View className="mt-3.5 flex-row gap-4">
         {[
           { color: ACCENT, label: 'Card' },
-          { color: '#06D6A0', label: 'P2P' },
-          { color: '#118AB2', label: 'Withdrawals' },
+          { color: '#00ca48', label: 'P2P' },
+          { color: '#0090ff', label: 'Withdrawals' },
         ].map(({ color, label }) => (
           <View key={label} className="flex-row items-center gap-1.5">
             <View style={{ backgroundColor: color }} className="h-2 w-2 rounded-full" />
@@ -196,8 +196,6 @@ export default function SpendingScreen() {
   const [period, setPeriod] = React.useState<Period>('6M');
   const mask = (v: string) => (isBalanceVisible ? v : '••••');
 
-  const PERIOD_MONTHS: Record<Period, number> = { '1W': 0, '1M': 1, '6M': 6, '1Y': 12 };
-
   const filteredChart = useMemo(() => {
     if (period === '1W') return monthlyChart.slice(-1);
     const months = PERIOD_MONTHS[period];
@@ -211,7 +209,7 @@ export default function SpendingScreen() {
       : trend === 'down'
         ? `↓ ${Math.abs(trendPct).toFixed(0)}%`
         : '— stable';
-  const trendTextColor = trend === 'up' ? '#FF453A' : trend === 'down' ? '#30D158' : '#8E8E93';
+  const trendTextColor = trend === 'up' ? '#ff2b3a' : trend === 'down' ? '#00ca48' : '#848281';
 
   const rangeLabel = useMemo(() => {
     if (!filteredChart.length) return '';
@@ -305,7 +303,9 @@ export default function SpendingScreen() {
             ].map(({ label, value }) => (
               <View key={label} className="flex-1 rounded-2xl bg-stone-surface p-3.5">
                 <Text className="font-caption text-[11px] text-ash">{label}</Text>
-                <Text className="mt-1.5 font-button text-[17px] text-charcoal-primary">{value}</Text>
+                <Text className="mt-1.5 font-button text-[17px] text-charcoal-primary">
+                  {value}
+                </Text>
               </View>
             ))}
           </View>
@@ -317,7 +317,7 @@ export default function SpendingScreen() {
             <View className="mb-3.5 flex-row items-center justify-between">
               <Text className="font-headline text-xl text-charcoal-primary">By Category</Text>
               <Pressable onPress={() => router.push('/card' as never)} accessibilityRole="button">
-                <Text className="font-body text-sm text-[#0A84FF]">Manage</Text>
+                <Text className="font-body text-sm text-sky-blue">Manage</Text>
               </Pressable>
             </View>
             <View className="overflow-hidden rounded-[20px] bg-stone-surface">

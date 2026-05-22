@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, View, Text, Pressable, TextInput, ScrollView } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import {
   Calendar03Icon,

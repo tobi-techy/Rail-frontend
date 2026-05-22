@@ -15,3 +15,4 @@ export type { BottomSheetScreen } from './NavigableBottomSheet';
 export { VirtualAccountSheet } from './VirtualAccountSheet';
 export { PajVerificationSheet } from './PajVerificationSheet';
 export { MFAChallengeSheet } from './MFAChallengeSheet';
+export { StashPerformanceSheet } from './StashPerformanceSheet';
