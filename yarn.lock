@@ -6358,6 +6358,11 @@ expo-sharing@~55.0.19:
     "@expo/config-types" "^55.0.5"
     "@expo/plist" "^0.5.3"
 
+expo-speech@~55.0.14:
+  version "55.0.14"
+  resolved "https://registry.npmjs.org/expo-speech/-/expo-speech-55.0.14.tgz"
+  integrity sha512-135FKZt1KZ9uCZdKjXQBbXyU5RHssYv+4Xxxy1wkENBHvgmnNTMOKRj+drXPmkCqsJWIVNTY6PmksUwjw2PcSQ==
+
 expo-splash-screen@~55.0.21:
   version "55.0.21"
   resolved "https://registry.npmjs.org/expo-splash-screen/-/expo-splash-screen-55.0.21.tgz"
