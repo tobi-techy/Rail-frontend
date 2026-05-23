@@ -9,6 +9,7 @@ import {
   type MicrophoneDataCallback,
   type VolumeLevelCallback,
 } from '@speechmatics/expo-two-way-audio';
+import * as Speech from 'expo-speech';
 import { requireNativeModule } from 'expo-modules-core';
 import { Buffer } from 'buffer';
 import { useAuthStore } from '@/stores/authStore';
@@ -42,6 +43,12 @@ const PRE_BUFFER_BYTES = Math.ceil((SAMPLE_RATE * BYTES_PER_SAMPLE * PRE_BUFFER_
 const DRAIN_INTERVAL_MS = 30;
 const DRAIN_CHUNK_MS = 80;
 const DRAIN_CHUNK_BYTES = Math.ceil((SAMPLE_RATE * BYTES_PER_SAMPLE * DRAIN_CHUNK_MS) / 1000);
+const TTS_FALLBACK_DELAY_MS = 280;
+const DEVICE_TTS_OPTIONS = {
+  language: 'en-US',
+  pitch: 1.03,
+  rate: 0.92,
+};
 
 // Helpers
 function base64ToBytes(b64: string): Uint8Array {
@@ -183,8 +190,11 @@ export function useVoiceSession() {
   const canPlayReplyAudioRef = useRef(false);
   const captionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const speakingSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ttsFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const replyAudioStartedAtRef = useRef(0);
   const replyAudioDurationMsRef = useRef(0);
+  const replyAudioMissingRef = useRef(false);
+  const deviceTtsActiveRef = useRef(false);
   const jitterBufferRef = useRef(new AudioJitterBuffer());
   const micMutedRef = useRef(false);
 
@@ -205,8 +215,22 @@ export function useVoiceSession() {
     }
   }, []);
 
+  const clearTtsFallbackTimer = useCallback(() => {
+    if (ttsFallbackTimerRef.current) {
+      clearTimeout(ttsFallbackTimerRef.current);
+      ttsFallbackTimerRef.current = null;
+    }
+  }, []);
+
+  const stopDeviceSpeech = useCallback(() => {
+    clearTtsFallbackTimer();
+    deviceTtsActiveRef.current = false;
+    void Speech.stop();
+  }, [clearTtsFallbackTimer]);
+
   const flushPlayback = useCallback(() => {
     canPlayReplyAudioRef.current = false;
+    stopDeviceSpeech();
     jitterBufferRef.current.stop();
     if (captionTimerRef.current) {
       clearInterval(captionTimerRef.current);
@@ -222,7 +246,7 @@ export function useVoiceSession() {
     } catch {}
     // Unmute mic after flushing playback
     unmuteMic();
-  }, [unmuteMic]);
+  }, [stopDeviceSpeech, unmuteMic]);
 
   const revealAgentCaption = useCallback((text: string, durationMs?: number) => {
     if (captionTimerRef.current) {
@@ -250,6 +274,91 @@ export function useVoiceSession() {
       }
     }, stepMs);
   }, []);
+
+  const speakWithDeviceTts = useCallback(
+    (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || !activeRef.current) return;
+
+      deviceTtsActiveRef.current = true;
+      muteMic();
+      setVoiceState('speaking');
+      void Speech.stop();
+      Speech.speak(trimmed, {
+        ...DEVICE_TTS_OPTIONS,
+        onStart: () => {
+          deviceTtsActiveRef.current = true;
+          setOutputVolume(0.45);
+          setVoiceState('speaking');
+        },
+        onDone: () => {
+          deviceTtsActiveRef.current = false;
+          setOutputVolume(0);
+          unmuteMic();
+          if (stateRef.current === 'speaking') setVoiceState('listening');
+        },
+        onStopped: () => {
+          deviceTtsActiveRef.current = false;
+          setOutputVolume(0);
+          unmuteMic();
+        },
+        onError: (err) => {
+          deviceTtsActiveRef.current = false;
+          setOutputVolume(0);
+          unmuteMic();
+          const message = safeVoiceErrorMessage(err);
+          safeError('[VoiceSession] Device TTS failed', err);
+          logger.error('[VoiceSession] Device TTS failed', {
+            component: 'useVoiceSession',
+            action: 'device-tts',
+            error: message,
+          });
+          if (stateRef.current === 'speaking') setVoiceState('listening');
+        },
+      });
+    },
+    [muteMic, setVoiceState, unmuteMic]
+  );
+
+  const scheduleDeviceTtsFallback = useCallback(
+    (text: string) => {
+      clearTtsFallbackTimer();
+      if (!text.trim()) return;
+
+      ttsFallbackTimerRef.current = setTimeout(() => {
+        ttsFallbackTimerRef.current = null;
+        const hasReplyAudio =
+          replyAudioDurationMsRef.current > 0 || replyAudioStartedAtRef.current > 0;
+        if (!replyAudioMissingRef.current && hasReplyAudio) return;
+
+        canPlayReplyAudioRef.current = false;
+        jitterBufferRef.current.stop();
+        speakWithDeviceTts(text);
+      }, TTS_FALLBACK_DELAY_MS);
+    },
+    [clearTtsFallbackTimer, speakWithDeviceTts]
+  );
+
+  const finishPcmPlayback = useCallback(() => {
+    canPlayReplyAudioRef.current = false;
+    const elapsedPlaybackMs = replyAudioStartedAtRef.current
+      ? Date.now() - replyAudioStartedAtRef.current
+      : 0;
+    const remainingPlaybackMs = Math.min(
+      Math.max(replyAudioDurationMsRef.current - elapsedPlaybackMs, 0),
+      5000
+    );
+    const bufferDrainMs = jitterBufferRef.current.bufferedMs;
+    const totalSettleMs = remainingPlaybackMs + bufferDrainMs + 80;
+
+    if (speakingSettleTimerRef.current) clearTimeout(speakingSettleTimerRef.current);
+    speakingSettleTimerRef.current = setTimeout(() => {
+      speakingSettleTimerRef.current = null;
+      jitterBufferRef.current.stop();
+      unmuteMic();
+      if (stateRef.current === 'speaking') setVoiceState('listening');
+    }, totalSettleMs);
+  }, [setVoiceState, unmuteMic]);
 
   // Stream mic PCM to backend — muted during playback to prevent echo/artifacts
   useExpoTwoWayAudioEventListener(
@@ -282,6 +391,8 @@ export function useVoiceSession() {
     activeRef.current = false;
     canPlayReplyAudioRef.current = false;
     micMutedRef.current = false;
+    replyAudioMissingRef.current = false;
+    stopDeviceSpeech();
     jitterBufferRef.current.stop();
     if (captionTimerRef.current) {
       clearInterval(captionTimerRef.current);
@@ -308,7 +419,7 @@ export function useVoiceSession() {
     setResponseText('');
     setInputVolume(0);
     setOutputVolume(0);
-  }, [setVoiceState]);
+  }, [setVoiceState, stopDeviceSpeech]);
 
   // Handle events from backend
   const handleEvent = useCallback(
@@ -340,6 +451,8 @@ export function useVoiceSession() {
           canPlayReplyAudioRef.current = true;
           replyAudioStartedAtRef.current = 0;
           replyAudioDurationMsRef.current = 0;
+          replyAudioMissingRef.current = false;
+          stopDeviceSpeech();
           if (captionTimerRef.current) {
             clearInterval(captionTimerRef.current);
             captionTimerRef.current = null;
@@ -355,6 +468,8 @@ export function useVoiceSession() {
         case 'reply.audio':
           if (event.data && canPlayReplyAudioRef.current) {
             try {
+              clearTtsFallbackTimer();
+              replyAudioMissingRef.current = false;
               const audioBytes = base64ToBytes(event.data);
               if (!replyAudioStartedAtRef.current) replyAudioStartedAtRef.current = Date.now();
               replyAudioDurationMsRef.current +=
@@ -382,6 +497,7 @@ export function useVoiceSession() {
                 replyAudioStartedAtRef.current
               )
             );
+            scheduleDeviceTtsFallback(text);
           }
           break;
 
@@ -389,10 +505,12 @@ export function useVoiceSession() {
           if (event.text) {
             if (captionTimerRef.current) break;
             revealAgentCaption(event.text, event.duration_ms ?? event.estimated_duration_ms);
+            scheduleDeviceTtsFallback(event.text);
           }
           break;
 
         case 'rail.voice.audio_missing':
+          replyAudioMissingRef.current = true;
           canPlayReplyAudioRef.current = true;
           setVoiceState('speaking');
           break;
@@ -400,27 +518,13 @@ export function useVoiceSession() {
         case 'reply.done':
           if (event.status === 'interrupted') {
             flushPlayback();
-          } else {
+          } else if (deviceTtsActiveRef.current || ttsFallbackTimerRef.current) {
             canPlayReplyAudioRef.current = false;
-            // Let the jitter buffer drain remaining audio before transitioning
-            const elapsedPlaybackMs = replyAudioStartedAtRef.current
-              ? Date.now() - replyAudioStartedAtRef.current
-              : 0;
-            const remainingPlaybackMs = Math.min(
-              Math.max(replyAudioDurationMsRef.current - elapsedPlaybackMs, 0),
-              5000
-            );
-            // Add buffer drain time
-            const bufferDrainMs = jitterBufferRef.current.bufferedMs;
-            const totalSettleMs = remainingPlaybackMs + bufferDrainMs + 80; // +80ms safety margin
-
-            if (speakingSettleTimerRef.current) clearTimeout(speakingSettleTimerRef.current);
-            speakingSettleTimerRef.current = setTimeout(() => {
-              speakingSettleTimerRef.current = null;
-              jitterBufferRef.current.stop();
-              unmuteMic();
-              if (stateRef.current === 'speaking') setVoiceState('listening');
-            }, totalSettleMs);
+          } else if (replyAudioDurationMsRef.current <= 0 && replyAudioMissingRef.current) {
+            canPlayReplyAudioRef.current = false;
+            jitterBufferRef.current.stop();
+          } else {
+            finishPcmPlayback();
           }
           if (event.status === 'interrupted' && stateRef.current === 'speaking')
             setVoiceState('listening');
@@ -432,7 +536,16 @@ export function useVoiceSession() {
           break;
       }
     },
-    [flushPlayback, muteMic, unmuteMic, revealAgentCaption, setVoiceState]
+    [
+      clearTtsFallbackTimer,
+      finishPcmPlayback,
+      flushPlayback,
+      muteMic,
+      revealAgentCaption,
+      scheduleDeviceTtsFallback,
+      setVoiceState,
+      stopDeviceSpeech,
+    ]
   );
 
   // Connect to voice session
