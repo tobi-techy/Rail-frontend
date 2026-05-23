@@ -192,6 +192,11 @@ export const aiService = {
     return apiClient.post(`${BASE}/conversations/${conversationId}/cancel`);
   },
 
+  async createVoiceSessionToken(): Promise<{ token: string; expires_at: string }> {
+    const payload = await apiClient.post<any>(`${BASE}/voice/session-token`);
+    return unwrapData<{ token: string; expires_at: string }>(payload);
+  },
+
   // ── Utility endpoints ──────────────────────────────────────────
 
   async getUsage(): Promise<{ data: AIUsage }> {

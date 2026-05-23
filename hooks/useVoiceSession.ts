@@ -11,8 +11,8 @@ import {
 } from '@speechmatics/expo-two-way-audio';
 import { requireNativeModule } from 'expo-modules-core';
 import { Buffer } from 'buffer';
-import { useAuthStore } from '@/stores/authStore';
 import { API_CONFIG } from '@/api/config';
+import { aiService } from '@/api/services/ai.service';
 import { logger } from '@/lib/logger';
 import { safeError, sanitizeForLog } from '@/utils/logSanitizer';
 
@@ -476,10 +476,38 @@ export function useVoiceSession() {
       return;
     }
 
+    let sessionToken = '';
+    try {
+      const ticket = await aiService.createVoiceSessionToken();
+      sessionToken = ticket.token;
+    } catch (err) {
+      activeRef.current = false;
+      try {
+        toggleRecording(false);
+      } catch {}
+      setError('Failed to start secure voice session');
+      setVoiceState('error');
+      logger.error('[VoiceSession] Failed to create session ticket', {
+        component: 'useVoiceSession',
+        action: 'voice-session-ticket',
+        error: safeVoiceErrorMessage(err),
+      });
+      return;
+    }
+
+    if (!sessionToken) {
+      activeRef.current = false;
+      try {
+        toggleRecording(false);
+      } catch {}
+      setError('Failed to start secure voice session');
+      setVoiceState('error');
+      return;
+    }
+
     const httpBase = API_CONFIG.baseURL;
     const wsBase = httpBase.replace(/^http/, 'ws');
-    const token = useAuthStore.getState().accessToken;
-    const url = `${wsBase}/v1/ai/voice/session?token=${token}`;
+    const url = `${wsBase}/v1/ai/voice/session?voice_session_token=${encodeURIComponent(sessionToken)}`;
 
     const ws = new WebSocket(url);
     wsRef.current = ws;
