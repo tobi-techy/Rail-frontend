@@ -242,6 +242,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
         let finalPending: PendingAction | null = null;
         let hitCeiling = false;
         let resolvedConvId = convId;
+        let receivedAnyEvent = false;
 
         const controller = aiService.streamChat(
           {
@@ -250,6 +251,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
             ...(convId ? { conversation_id: convId } : {}),
           },
           (event) => {
+            receivedAnyEvent = true;
             switch (event.type) {
               case 'token':
                 accumulated += event.content;
@@ -277,7 +279,9 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
             }
           },
           () => {
-            const content = accumulated || "I'm having a moment — try again in a few seconds";
+            const content =
+              accumulated ||
+              (receivedAnyEvent ? '' : "I'm having a moment — try again in a few seconds");
             const assistantMsg: AIMessage = {
               role: 'assistant',
               content,
@@ -285,7 +289,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
               created_at: new Date().toISOString(),
             };
             set((s) => ({
-              messages: [...s.messages, assistantMsg],
+              messages: content ? [...s.messages, assistantMsg] : s.messages,
               cards: finalCards,
               pendingAction: finalPending,
               isStreaming: false,
@@ -300,6 +304,31 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
             void get().processQueue();
           },
           (err) => {
+            // If we already accumulated content or received events, treat as success
+            if (accumulated || receivedAnyEvent) {
+              const content = accumulated;
+              const assistantMsg: AIMessage = {
+                role: 'assistant',
+                content,
+                metadata: { cards: finalCards },
+                created_at: new Date().toISOString(),
+              };
+              set((s) => ({
+                messages: content ? [...s.messages, assistantMsg] : s.messages,
+                cards: finalCards,
+                pendingAction: finalPending,
+                isStreaming: false,
+                streamedContent: '',
+                streamingPhase: '',
+                overCeiling: hitCeiling,
+                activeConversationId: resolvedConvId ?? s.activeConversationId,
+                connectionStatus: 'online',
+                streamAbortController: null,
+                lastError: null,
+              }));
+              void get().processQueue();
+              return;
+            }
             const is404 = err?.includes('404') || err?.includes('Not Found');
             const errorMsg: AIMessage = {
               role: 'assistant',

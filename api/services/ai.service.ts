@@ -146,7 +146,7 @@ export const aiService = {
           }
         };
         xhr.ontimeout = () => settle(() => onError('Stream timed out'));
-        xhr.timeout = 120000;
+        xhr.timeout = 180000;
 
         controller.signal.addEventListener('abort', () => xhr.abort());
 
