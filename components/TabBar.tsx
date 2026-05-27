@@ -1,11 +1,11 @@
-import React, { useCallback } from 'react';
-import { View, Pressable, Platform } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Pressable, Text, Platform } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useRouter } from 'expo-router';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, FadeIn, FadeOut } from 'react-native-reanimated';
 import { useHaptics } from '@/hooks/useHaptics';
 
 import { useAIChatStore } from '@/stores/aiChatStore';
@@ -70,26 +70,81 @@ function TabBarItem({
   );
 }
 
-// ─── AI Button ──────────────────────────────────────────────────
+// ─── AI Button with chat bubble ─────────────────────────────────
 
 function AIButton() {
   const router = useRouter();
   const { impact } = useHaptics();
   const open = useAIChatStore((s) => s.open);
+  const fetchProactiveOpener = useAIChatStore((s) => s.fetchProactiveOpener);
+  const proactiveOpener = useAIChatStore((s) => s.proactiveOpener);
   const scale = useSharedValue(1);
+  const bubbleDismissed = useRef(false);
+
+  // Fetch proactive opener on mount so bubble shows immediately
+  useEffect(() => {
+    fetchProactiveOpener();
+  }, [fetchProactiveOpener]);
+
+  // Rotate through bubble messages
+  const [bubbleIndex, setBubbleIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const FALLBACK_BUBBLES = [
+    'Check your finances',
+    'How is your spending looking?',
+    'Want a financial health check?',
+  ];
+  const bubbleMessages = useRef<string[]>([...FALLBACK_BUBBLES]);
+  useEffect(() => {
+    const msgs: string[] = [];
+    if (proactiveOpener?.bubble_message) msgs.push(proactiveOpener.bubble_message);
+    if (proactiveOpener?.suggestions) {
+      proactiveOpener.suggestions.forEach((s) => {
+        if (s.text && !msgs.includes(s.text)) msgs.push(s.text);
+      });
+    }
+    // If no messages from API, use fallbacks
+    if (msgs.length === 0) {
+      msgs.push(...FALLBACK_BUBBLES);
+    }
+    bubbleMessages.current = msgs;
+    // Reset to first message when list changes
+    setBubbleIndex(0);
+  }, [proactiveOpener]);
+
+  // Cycle messages every 10 seconds
+  useEffect(() => {
+    if (bubbleMessages.current.length <= 1) return;
+    intervalRef.current = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setBubbleIndex((prev) => (prev + 1) % bubbleMessages.current.length);
+        setVisible(true);
+      }, 300);
+    }, 10000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [proactiveOpener]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
+  const currentBubble = bubbleMessages.current[bubbleIndex] || null;
+
   const handlePress = useCallback(() => {
     impact();
+    bubbleDismissed.current = true;
+    setVisible(false);
     open();
     router.push('/ai-chat');
   }, [impact, open, router]);
 
   return (
-    <View>
+    <View style={{ alignItems: 'center' }}>
       <Pressable
         onPress={handlePress}
         onPressIn={() => {

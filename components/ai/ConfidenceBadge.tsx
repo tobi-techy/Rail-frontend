@@ -1,11 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
-import {
-  Tick02Icon,
-  InformationCircleIcon,
-  Alert02Icon,
-} from '@/lib/icons';
+import { Tick02Icon, InformationCircleIcon, Alert02Icon } from '@/lib/icons';
 import type { ConfidenceLevel } from '@/utils/aiTrust';
 
 interface Props {
@@ -16,10 +12,7 @@ interface Props {
   onPress?: () => void;
 }
 
-const levelConfig: Record<
-  ConfidenceLevel,
-  { icon: any; color: string; bg: string }
-> = {
+const levelConfig: Record<ConfidenceLevel, { icon: any; color: string; bg: string }> = {
   high: {
     icon: Tick02Icon,
     color: '#00c454',
@@ -43,7 +36,7 @@ export function ConfidenceBadge({ level, label, explanation, sourceCount, onPres
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center gap-2 mt-3 self-start rounded-full px-3 py-1.5"
+      className="mt-3 flex-row items-center gap-2 self-start rounded-full px-3 py-1.5"
       style={{ backgroundColor: config.bg }}
       accessibilityRole="button"
       accessibilityLabel={`Confidence: ${label}. ${explanation}`}>
@@ -52,7 +45,7 @@ export function ConfidenceBadge({ level, label, explanation, sourceCount, onPres
         {label}
       </Text>
       {sourceCount !== undefined && sourceCount > 0 && (
-        <Text className="font-body text-xs text-text-tertiary ml-1">
+        <Text className="ml-1 font-body text-xs text-text-tertiary">
           · {sourceCount} source{sourceCount > 1 ? 's' : ''}
         </Text>
       )}

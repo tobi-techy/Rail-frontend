@@ -169,7 +169,8 @@ function PeriodButton({
       <Animated.View
         className={`mx-1 rounded-full px-4 py-2 ${isActive ? 'bg-stone-surface' : ''}`}
         style={animatedStyle}>
-        <Text className={`text-sm font-medium ${isActive ? 'text-charcoal-primary' : 'text-smoke'}`}>
+        <Text
+          className={`text-sm font-medium ${isActive ? 'text-charcoal-primary' : 'text-smoke'}`}>
           {period}
         </Text>
       </Animated.View>

@@ -63,14 +63,21 @@ export const SelectionScreen = ({
               onPress={() => setSelected(option.id)}
               className="flex-row items-center justify-between border-b border-fog py-4">
               <View className="flex-1 pr-4">
-                <Text className="font-subtitle text-[16px] text-charcoal-primary">{option.label}</Text>
+                <Text className="font-subtitle text-[16px] text-charcoal-primary">
+                  {option.label}
+                </Text>
                 {option.desc && (
                   <Text className="font-body text-[13px] text-ash">{option.desc}</Text>
                 )}
               </View>
               {selected === option.id && (
                 <View className="h-6 w-6 items-center justify-center rounded-full bg-midnight">
-                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} color="#fff" strokeWidth={3} />
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle01Icon}
+                    size={14}
+                    color="#fff"
+                    strokeWidth={3}
+                  />
                 </View>
               )}
             </Pressable>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,11 +8,7 @@ import { GorhomBottomSheet } from '@/components/sheets/GorhomBottomSheet';
 import { Button } from '@/components/ui';
 import { EMPLOYMENT_STATUS_OPTIONS, INVESTMENT_PURPOSE_OPTIONS } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
-import {
-  ArrowDown01Icon,
-  ArrowLeft01Icon,
-  CheckmarkCircle01Icon,
-} from '@/lib/icons';
+import { ArrowDown01Icon, ArrowLeft01Icon, CheckmarkCircle01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export default function KycAboutYouScreen() {
@@ -23,10 +19,19 @@ export default function KycAboutYouScreen() {
     setEmploymentStatus,
     toggleInvestmentPurpose,
     clearInvestmentPurposes,
+    hasCompletedStep,
+    addCompletedStep,
   } = useKycStore();
 
   const [showEmployment, setShowEmployment] = useState(false);
   const [showPurpose, setShowPurpose] = useState(false);
+
+  // Skip if already completed
+  useEffect(() => {
+    if (hasCompletedStep('about-you')) {
+      router.replace('/kyc/disclosures');
+    }
+  }, []);
 
   // Employment is required, but investment goals are optional
   const canContinue = Boolean(employmentStatus);
@@ -54,13 +59,13 @@ export default function KycAboutYouScreen() {
             accessibilityLabel="Go back">
             <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" />
           </Pressable>
-          <Text className="font-subtitle text-[13px] text-ash">Step 3 of 4</Text>
+          <Text className="font-subtitle text-[13px] text-ash">Step 3</Text>
           <View className="size-11" />
         </View>
 
         <View className="px-4">
           <View className="h-1.5 overflow-hidden rounded-full bg-fog">
-            <View className="h-full w-3/4 rounded-full bg-midnight" />
+            <View className="h-full w-3/5 rounded-full bg-midnight" />
           </View>
         </View>
 
@@ -76,7 +81,9 @@ export default function KycAboutYouScreen() {
 
           {/* Employment Status */}
           <View className="mt-8">
-            <Text className="mb-2 font-subtitle text-[14px] text-charcoal-primary">Employment Status</Text>
+            <Text className="mb-2 font-subtitle text-[14px] text-charcoal-primary">
+              Employment Status
+            </Text>
             <Pressable
               onPress={() => setShowEmployment(true)}
               className="flex-row items-center justify-between rounded-2xl border border-fog px-4 py-4"
@@ -130,13 +137,17 @@ export default function KycAboutYouScreen() {
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           <Button
             title="Continue"
-            onPress={() => router.push('/kyc/disclosures')}
+            onPress={() => {
+              addCompletedStep('about-you');
+              router.replace('/kyc/disclosures');
+            }}
             disabled={!canContinue}
           />
           <Pressable
             onPress={() => {
               clearInvestmentPurposes();
-              router.push('/kyc/disclosures');
+              addCompletedStep('about-you');
+              router.replace('/kyc/disclosures');
             }}
             className="mt-2 py-2"
             accessibilityRole="button"
@@ -152,7 +163,9 @@ export default function KycAboutYouScreen() {
           visible={showEmployment}
           onClose={() => setShowEmployment(false)}
           showCloseButton={false}>
-          <Text className="mb-4 font-display text-[22px] text-charcoal-primary">Employment status</Text>
+          <Text className="mb-4 font-display text-[22px] text-charcoal-primary">
+            Employment status
+          </Text>
           {EMPLOYMENT_STATUS_OPTIONS.map((option, index) => {
             const selected = employmentStatus === option.value;
             return (
@@ -163,7 +176,9 @@ export default function KycAboutYouScreen() {
                   setShowEmployment(false);
                 }}
                 className={`flex-row items-center justify-between py-4 ${
-                  index < EMPLOYMENT_STATUS_OPTIONS.length - 1 ? 'border-b border-stone-surface' : ''
+                  index < EMPLOYMENT_STATUS_OPTIONS.length - 1
+                    ? 'border-b border-stone-surface'
+                    : ''
                 }`}
                 accessibilityRole="button">
                 <Text className="font-body text-[16px] text-charcoal-primary">{option.label}</Text>
@@ -188,7 +203,9 @@ export default function KycAboutYouScreen() {
           visible={showPurpose}
           onClose={() => setShowPurpose(false)}
           showCloseButton={false}>
-          <Text className="mb-1 font-display text-[22px] text-charcoal-primary">Purpose of account</Text>
+          <Text className="mb-1 font-display text-[22px] text-charcoal-primary">
+            Purpose of account
+          </Text>
           <Text className="mb-4 font-body text-[13px] text-ash">
             Select all that apply (optional)
           </Text>
@@ -199,11 +216,15 @@ export default function KycAboutYouScreen() {
                 key={option.value}
                 onPress={() => toggleInvestmentPurpose(option.value)}
                 className={`flex-row items-center justify-between py-4 ${
-                  index < INVESTMENT_PURPOSE_OPTIONS.length - 1 ? 'border-b border-stone-surface' : ''
+                  index < INVESTMENT_PURPOSE_OPTIONS.length - 1
+                    ? 'border-b border-stone-surface'
+                    : ''
                 }`}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: selected }}>
-                <Text className="flex-1 font-body text-[16px] text-charcoal-primary">{option.label}</Text>
+                <Text className="flex-1 font-body text-[16px] text-charcoal-primary">
+                  {option.label}
+                </Text>
                 <View
                   className={`size-6 items-center justify-center rounded ${
                     selected ? 'bg-midnight' : 'border border-fog'

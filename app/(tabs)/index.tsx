@@ -37,14 +37,14 @@ import {
   ArrowDownLeft01Icon,
   ArrowUpRight01Icon,
   BankIcon,
-  CreditCardIcon,
   InternetIcon,
   Message01Icon,
-  SavingsIcon,
   UserGroupIcon,
   Wallet01Icon,
   ChartIncreaseIcon,
   IconComponent as HugeiconsIcon,
+  CreditCardIcon,
+  SavingsIcon,
 } from '@/lib/icons';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -632,9 +632,7 @@ function DashboardScreen() {
               title="Spend"
               amount={spend.dollars}
               amountCents={spend.cents}
-              icon={
-                <HugeiconsIcon icon={CreditCardIcon} size={26} color="white" strokeWidth={1.8} />
-              }
+              icon={<CreditCardIcon size={26} color="white" weight="fill" />}
               cardColor="#ff3e00"
               className="flex-1"
               isLoading={isStationPending}
@@ -644,7 +642,7 @@ function DashboardScreen() {
               title="Stash"
               amount={stash.dollars}
               amountCents={stash.cents}
-              icon={<HugeiconsIcon icon={SavingsIcon} size={26} color="white" strokeWidth={1.8} />}
+              icon={<SavingsIcon size={26} color="white" weight='fill' />}
               cardColor="#0A7A3B"
               className="flex-1"
               isLoading={isStationPending}

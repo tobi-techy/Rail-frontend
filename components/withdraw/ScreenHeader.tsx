@@ -42,7 +42,7 @@ export const WithdrawScreenHeader: React.FC<WithdrawScreenHeaderProps> = ({
       {showBackButton ? (
         <TouchableOpacity
           onPress={handleBack}
-          className="h-11 w-11 items-center justify-center rounded-full bg-[#f2f0ed]"
+          className="h-11 w-11 items-center justify-center rounded-full bg-[#f7f2e8]"
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Go back">
@@ -60,7 +60,7 @@ export const WithdrawScreenHeader: React.FC<WithdrawScreenHeaderProps> = ({
       {showCloseButton ? (
         <TouchableOpacity
           onPress={handleClose}
-          className="h-11 w-11 items-center justify-center rounded-full bg-[#f2f0ed]"
+          className="h-11 w-11 items-center justify-center rounded-full bg-[#f7f2e8]"
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Close">

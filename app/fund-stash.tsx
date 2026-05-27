@@ -19,15 +19,20 @@ import { Button } from '@/components/ui';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
 import { parseApiError, isPasscodeSessionError } from '@/utils/apiError';
-import { safeName } from './withdraw/method-screen/utils';
+import { safeName } from '@/components/withdraw/method-screen/utils';
 import {
   WithdrawalStatusScreen,
   type WithdrawalStatusType,
 } from '@/components/withdraw/WithdrawalStatusScreen';
-import { AuthorizeScreen } from './withdraw/method-screen/sections';
-import { AnimatedAmount } from './withdraw/method-screen/AnimatedAmount';
-import { formatCurrency, toDisplayAmount, normalizeAmount, formatMaxAmount } from './withdraw/method-screen/utils';
-import { MAX_INTEGER_DIGITS } from './withdraw/method-screen/constants';
+import { AuthorizeScreen } from '@/components/withdraw/method-screen/sections';
+import { AnimatedAmount } from '@/components/withdraw/method-screen/AnimatedAmount';
+import {
+  formatCurrency,
+  toDisplayAmount,
+  normalizeAmount,
+  formatMaxAmount,
+} from '@/components/withdraw/method-screen/utils';
+import { MAX_INTEGER_DIGITS } from '@/components/withdraw/method-screen/constants';
 import { Cancel01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { useAuthStore } from '@/stores/authStore';
@@ -61,8 +66,11 @@ export default function FundStashScreen() {
     if (!lockoutUntil) return;
     const tick = setInterval(() => {
       const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
-      if (remaining <= 0) { setLockoutUntil(null); setLockoutSecondsRemaining(0); setPinAttempts(0); }
-      else setLockoutSecondsRemaining(remaining);
+      if (remaining <= 0) {
+        setLockoutUntil(null);
+        setLockoutSecondsRemaining(0);
+        setPinAttempts(0);
+      } else setLockoutSecondsRemaining(remaining);
     }, 1000);
     return () => clearInterval(tick);
   }, [lockoutUntil]);
@@ -143,40 +151,50 @@ export default function FundStashScreen() {
   });
 
   // Keep ref in sync so doTransfer can set auth errors without circular dep
-  useEffect(() => { authErrorRef.current = passkey.setAuthError; }, [passkey.setAuthError]);
+  useEffect(() => {
+    authErrorRef.current = passkey.setAuthError;
+  }, [passkey.setAuthError]);
 
   // ── Passcode authorize ──────────────────────────────────────────────────
   const doTransferRef = useRef(doTransfer);
-  useEffect(() => { doTransferRef.current = doTransfer; }, [doTransfer]);
+  useEffect(() => {
+    doTransferRef.current = doTransfer;
+  }, [doTransfer]);
 
-  const onPasscodeAuthorize = useCallback((code: string) => {
-    if (isPasscodeVerifying || isSubmitting || lockoutUntil) return;
-    passkey.setAuthError('');
-    verifyPasscode({ passcode: code }, {
-      onSuccess: (result) => {
-        if (!result.verified) {
-          const next = pinAttempts + 1;
-          setPinAttempts(next);
-          if (next >= 5) {
-            setLockoutUntil(Date.now() + 30_000);
-            setLockoutSecondsRemaining(30);
-            passkey.setAuthError('Too many attempts. Try again in 30s.');
-          } else {
-            passkey.setAuthError(`Invalid PIN. ${5 - next} left.`);
-          }
-          passkey.onAuthPasscodeChange('');
-          return;
+  const onPasscodeAuthorize = useCallback(
+    (code: string) => {
+      if (isPasscodeVerifying || isSubmitting || lockoutUntil) return;
+      passkey.setAuthError('');
+      verifyPasscode(
+        { passcode: code },
+        {
+          onSuccess: (result) => {
+            if (!result.verified) {
+              const next = pinAttempts + 1;
+              setPinAttempts(next);
+              if (next >= 5) {
+                setLockoutUntil(Date.now() + 30_000);
+                setLockoutSecondsRemaining(30);
+                passkey.setAuthError('Too many attempts. Try again in 30s.');
+              } else {
+                passkey.setAuthError(`Invalid PIN. ${5 - next} left.`);
+              }
+              passkey.onAuthPasscodeChange('');
+              return;
+            }
+            setPinAttempts(0);
+            setLockoutUntil(null);
+            void doTransferRef.current();
+          },
+          onError: (err: unknown) => {
+            passkey.setAuthError(parseApiError(err, 'Failed to verify PIN.'));
+            passkey.onAuthPasscodeChange('');
+          },
         }
-        setPinAttempts(0);
-        setLockoutUntil(null);
-        void doTransferRef.current();
-      },
-      onError: (err: unknown) => {
-        passkey.setAuthError(parseApiError(err, 'Failed to verify PIN.'));
-        passkey.onAuthPasscodeChange('');
-      },
-    });
-  }, [isPasscodeVerifying, isSubmitting, lockoutUntil, passkey, pinAttempts, verifyPasscode]);
+      );
+    },
+    [isPasscodeVerifying, isSubmitting, lockoutUntil, passkey, pinAttempts, verifyPasscode]
+  );
 
   const onCTAPress = useCallback(() => {
     if (!canContinue) return;
@@ -250,7 +268,14 @@ export default function FundStashScreen() {
             : errorMsg
         }
         onDone={() => router.replace('/(tabs)' as never)}
-        onRetry={status === 'failed' ? () => { setStatus(null); setErrorMsg(''); } : undefined}
+        onRetry={
+          status === 'failed'
+            ? () => {
+                setStatus(null);
+                setErrorMsg('');
+              }
+            : undefined
+        }
       />
     );
   }
@@ -261,8 +286,15 @@ export default function FundStashScreen() {
     <SafeAreaView className="flex-1" style={{ backgroundColor: BRAND_COLOR }} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND_COLOR} />
       <View className="flex-1 px-5">
-        <Animated.View entering={FadeIn.duration(400)} style={headerAnimatedStyle} className="flex-row items-center justify-between pb-2 pt-1">
-          <Pressable className="size-11 items-center justify-center rounded-full bg-white/20" onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Close">
+        <Animated.View
+          entering={FadeIn.duration(400)}
+          style={headerAnimatedStyle}
+          className="flex-row items-center justify-between pb-2 pt-1">
+          <Pressable
+            className="size-11 items-center justify-center rounded-full bg-white/20"
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Close">
             <HugeiconsIcon icon={Cancel01Icon} size={20} color="#FFFFFF" />
           </Pressable>
           <Text className="font-subtitle text-[20px] text-white">Fund Stash</Text>
@@ -271,22 +303,47 @@ export default function FundStashScreen() {
 
         <View className="flex-1 items-center justify-center px-2">
           <Text className="font-body text-[13px] text-white/80">From Spend</Text>
-          <View className="mt-2"><AnimatedAmount amount={displayAmount} prefix="$" /></View>
-          <Animated.View entering={FadeInUp.delay(200).duration(400)} style={pillsAnimatedStyle} className="mt-6 flex-row items-center justify-center gap-2">
+          <View className="mt-2">
+            <AnimatedAmount amount={displayAmount} prefix="$" />
+          </View>
+          <Animated.View
+            entering={FadeInUp.delay(200).duration(400)}
+            style={pillsAnimatedStyle}
+            className="mt-6 flex-row items-center justify-center gap-2">
             <View className="flex-row items-center rounded-full bg-white/20 px-3 py-2">
-              <Text className="font-body text-[13px] text-white/90">Spend: ${formatCurrency(spendBalance)}</Text>
+              <Text className="font-body text-[13px] text-white/90">
+                Spend: ${formatCurrency(spendBalance)}
+              </Text>
             </View>
-            <Pressable onPress={onMaxPress} className="rounded-full bg-parchment-card px-4 py-2" accessibilityRole="button" accessibilityLabel="Set maximum amount">
-              <Text className="font-subtitle text-[13px]" style={{ color: BRAND_COLOR }}>Max</Text>
+            <Pressable
+              onPress={onMaxPress}
+              className="rounded-full bg-parchment-card px-4 py-2"
+              accessibilityRole="button"
+              accessibilityLabel="Set maximum amount">
+              <Text className="font-subtitle text-[13px]" style={{ color: BRAND_COLOR }}>
+                Max
+              </Text>
             </Pressable>
           </Animated.View>
         </View>
 
         <Animated.View entering={SlideInUp.delay(100).duration(500)} className="px-0 pb-3 pt-1">
-          <Button title="Move to Stash" onPress={onCTAPress} disabled={!canContinue} variant="white" className="bg-warm-canvas" />
+          <Button
+            title="Move to Stash"
+            onPress={onCTAPress}
+            disabled={!canContinue}
+            variant="white"
+            className="bg-warm-canvas"
+          />
         </Animated.View>
         <Animated.View entering={SlideInUp.delay(100).duration(500)} style={keypadAnimatedStyle}>
-          <Keypad className="pb-2" onKeyPress={onAmountKeyPress} backspaceIcon="delete" variant="dark" leftKey="decimal" />
+          <Keypad
+            className="pb-2"
+            onKeyPress={onAmountKeyPress}
+            backspaceIcon="delete"
+            variant="dark"
+            leftKey="decimal"
+          />
         </Animated.View>
       </View>
     </SafeAreaView>

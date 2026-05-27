@@ -53,7 +53,7 @@ export function AchievementBadge({ achievement, size = 'medium', onPress, earned
             width: dims,
             height: dims,
             borderRadius: dims / 2,
-            backgroundColor: unlocked ? `${tier.ring}18` : '#f2f0ed',
+            backgroundColor: unlocked ? `${tier.ring}18` : '#f7f2e8',
           }}>
           <Image
             source={stickerSource}
@@ -92,9 +92,7 @@ export function AchievementBadge({ achievement, size = 'medium', onPress, earned
       </Text>
 
       {earnedPct !== undefined && unlocked && (
-        <Text className="mt-1 font-mono text-[8px] text-text-tertiary">
-          {earnedPct}% of users
-        </Text>
+        <Text className="mt-1 font-mono text-[8px] text-text-tertiary">{earnedPct}% of users</Text>
       )}
     </Pressable>
   );

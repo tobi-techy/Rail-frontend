@@ -17,7 +17,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { TransactionItem, TransactionItemSkeleton } from '@/components/molecules/TransactionItem';
 import { MarketClosedBanner } from '@/components/molecules/MarketClosedBanner';
 import { Skeleton } from '@/components/atoms/Skeleton';
-import { useInvestmentStashData } from './useInvestmentStashData';
+import { useInvestmentStashData } from '@/components/investment-stash/useInvestmentStashData';
 import { invalidateQueries } from '@/api/queryClient';
 import { ArrowLeft01Icon, ArrowRight01Icon, ChartDownIcon, ChartUpIcon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
@@ -312,7 +312,9 @@ function InvestmentRuleSection({ rule }: { rule: InvestmentRule }) {
       <View className="rounded-2xl border border-stone-surface bg-stone-surface p-4">
         <View className="mb-4 flex-row items-start justify-between">
           <View className="mr-4 flex-1">
-            <Text className="font-subtitle text-[16px] text-charcoal-primary">{rule.strategy_name}</Text>
+            <Text className="font-subtitle text-[16px] text-charcoal-primary">
+              {rule.strategy_name}
+            </Text>
             {rule.age_used !== null && (
               <Text className="mt-1 font-caption text-[12px] text-text-tertiary">
                 Based on age {rule.age_used}
@@ -348,7 +350,9 @@ function InvestmentRuleSection({ rule }: { rule: InvestmentRule }) {
           <View key={label} className="mb-3">
             <View className="mb-1.5 flex-row justify-between">
               <Text className="font-caption text-[13px] text-graphite">{label}</Text>
-              <Text className="font-subtitle text-[13px] text-charcoal-primary">{pct.toFixed(0)}%</Text>
+              <Text className="font-subtitle text-[13px] text-charcoal-primary">
+                {pct.toFixed(0)}%
+              </Text>
             </View>
             <View className="h-1.5 overflow-hidden rounded-full bg-fog">
               <View
@@ -481,7 +485,12 @@ export default function InvestmentStashScreen() {
                   {isPositive ? (
                     <HugeiconsIcon icon={ChartUpIcon} size={14} color={pnlColor} strokeWidth={2} />
                   ) : (
-                    <HugeiconsIcon icon={ChartDownIcon} size={14} color={pnlColor} strokeWidth={2} />
+                    <HugeiconsIcon
+                      icon={ChartDownIcon}
+                      size={14}
+                      color={pnlColor}
+                      strokeWidth={2}
+                    />
                   )}
                   <Text className="font-caption text-[14px]" style={{ color: pnlColor }}>
                     {isBalanceVisible
@@ -656,7 +665,12 @@ export default function InvestmentStashScreen() {
                   className="min-h-[44px] flex-row items-center gap-1 rounded-lg bg-stone-surface px-4 py-2.5"
                   style={{ opacity: hasMoreTx ? 1 : 0 }}>
                   <Text className="font-subtitle text-[13px] text-charcoal-primary">Next</Text>
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#343433" strokeWidth={2} />
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
+                    size={16}
+                    color="#343433"
+                    strokeWidth={2}
+                  />
                 </Pressable>
               </View>
             )}

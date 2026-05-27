@@ -39,8 +39,6 @@ export default function SignIn() {
   const { mutate: appleSignIn } = useAppleSignIn();
   const { mutate: googleSignIn } = useGoogleSignIn();
 
-
-
   const handleSignIn = () => {
     const result = signinSchema.safeParse({ email, password });
     if (!result.success) {

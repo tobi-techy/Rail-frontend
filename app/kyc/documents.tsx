@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,9 +31,9 @@ const DISCLOSURE_COPY: Record<keyof KycDisclosures, string> = {
 };
 
 export default function KycDocumentsScreen() {
-  const insets = useSafeAreaInsets();
-  const userCountry = useAuthStore((s) => s.registrationData.country);
   const {
+    completedSteps,
+    diditSessionToken,
     taxId,
     employmentStatus,
     sourceOfFunds,
@@ -53,6 +53,23 @@ export default function KycDocumentsScreen() {
     setDiditSession,
   } = useKycStore();
 
+  // This screen is legacy — redirect to the proper multi-step flow
+  useEffect(() => {
+    if (diditSessionToken || completedSteps.includes('source-of-funds')) {
+      router.replace('/kyc/didit-sdk');
+    } else if (completedSteps.includes('disclosures')) {
+      router.replace('/kyc/source-of-funds');
+    } else if (completedSteps.includes('about-you')) {
+      router.replace('/kyc/disclosures');
+    } else if (completedSteps.includes('tax-id')) {
+      router.replace('/kyc/about-you');
+    } else {
+      router.replace('/kyc/tax-id');
+    }
+  }, []);
+
+  const insets = useSafeAreaInsets();
+  const userCountry = useAuthStore((s) => s.registrationData.country);
   const country = (userCountry as Country) || 'USA';
   const taxIdType = COUNTRY_TAX_CONFIG[country].type;
 
@@ -171,7 +188,9 @@ export default function KycDocumentsScreen() {
 
             {/* Employment status */}
             <View className="mt-6 rounded-2xl border border-fog bg-parchment-card px-4 py-4">
-              <Text className="mb-3 font-subtitle text-[14px] text-charcoal-primary">About you</Text>
+              <Text className="mb-3 font-subtitle text-[14px] text-charcoal-primary">
+                About you
+              </Text>
               {EMPLOYMENT_STATUS_OPTIONS.map((option, index) => {
                 const selected = employmentStatus === option.value;
                 return (
@@ -179,7 +198,9 @@ export default function KycDocumentsScreen() {
                     key={option.value}
                     onPress={() => setEmploymentStatus(option.value)}
                     className={`flex-row items-center justify-between py-3 ${
-                      index < EMPLOYMENT_STATUS_OPTIONS.length - 1 ? 'border-b border-stone-surface' : ''
+                      index < EMPLOYMENT_STATUS_OPTIONS.length - 1
+                        ? 'border-b border-stone-surface'
+                        : ''
                     }`}
                     accessibilityRole="button"
                     accessibilityLabel={`Employment status ${option.label}`}>
@@ -196,10 +217,10 @@ export default function KycDocumentsScreen() {
 
             {/* Investing goals */}
             <View className="mt-6 rounded-2xl border border-fog bg-parchment-card px-4 py-4">
-              <Text className="mb-3 font-subtitle text-[14px] text-charcoal-primary">Investing goals</Text>
-              <Text className="mb-3 font-body text-[12px] text-ash">
-                Select all that apply.
+              <Text className="mb-3 font-subtitle text-[14px] text-charcoal-primary">
+                Investing goals
               </Text>
+              <Text className="mb-3 font-body text-[12px] text-ash">Select all that apply.</Text>
               {INVESTMENT_PURPOSE_OPTIONS.map((option, index) => {
                 const selected = investmentPurposes.includes(option.value);
                 return (
@@ -221,7 +242,14 @@ export default function KycDocumentsScreen() {
                       className={`size-5 items-center justify-center rounded ${
                         selected ? 'bg-midnight' : 'border border-fog bg-white'
                       }`}>
-                      {selected ? <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#FFFFFF" strokeWidth={3} /> : null}
+                      {selected ? (
+                        <HugeiconsIcon
+                          icon={CheckmarkCircle01Icon}
+                          size={12}
+                          color="#FFFFFF"
+                          strokeWidth={3}
+                        />
+                      ) : null}
                     </View>
                   </Pressable>
                 );
@@ -284,7 +312,14 @@ export default function KycDocumentsScreen() {
                 className={`mt-0.5 size-5 items-center justify-center rounded border ${
                   disclosuresConfirmed ? 'border-gray-900 bg-midnight' : 'border-gray-400 bg-white'
                 }`}>
-                {disclosuresConfirmed ? <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#FFFFFF" strokeWidth={3} /> : null}
+                {disclosuresConfirmed ? (
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle01Icon}
+                    size={12}
+                    color="#FFFFFF"
+                    strokeWidth={3}
+                  />
+                ) : null}
               </View>
               <Text className="flex-1 font-body text-[12px] leading-5 text-graphite">
                 I confirm all submitted information is accurate and belongs to me.

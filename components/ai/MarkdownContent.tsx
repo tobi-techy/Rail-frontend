@@ -4,13 +4,13 @@ import Markdown from 'react-native-markdown-display';
 
 const markdownStyles = StyleSheet.create({
   body: {
-    fontFamily: 'SFProDisplay-Regular',
+    fontFamily: 'Geist-Regular',
     fontSize: 17,
     color: '#343433',
     lineHeight: 28,
   },
   heading1: {
-    fontFamily: 'SFProDisplay-Bold',
+    fontFamily: 'Geist-Bold',
     fontSize: 28,
     color: '#343433',
     marginTop: 22,
@@ -18,7 +18,7 @@ const markdownStyles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   heading2: {
-    fontFamily: 'SFProDisplay-Bold',
+    fontFamily: 'Geist-Bold',
     fontSize: 24,
     color: '#343433',
     marginTop: 20,
@@ -26,33 +26,33 @@ const markdownStyles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   heading3: {
-    fontFamily: 'SFProDisplay-Semibold',
+    fontFamily: 'Geist-SemiBold',
     fontSize: 20,
     color: '#343433',
     marginTop: 16,
     marginBottom: 8,
   },
   strong: {
-    fontFamily: 'SFProDisplay-Bold',
+    fontFamily: 'Geist-Bold',
     color: '#343433',
   },
   em: {
     fontStyle: 'italic',
   },
   code_inline: {
-    fontFamily: 'SFMono-Bold',
+    fontFamily: 'Geist-Bold',
     fontSize: 16,
-    backgroundColor: '#f2f0ed',
+    backgroundColor: '#f7f2e8',
     color: '#343433',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   fence: {
-    fontFamily: 'SFMono-Regular',
+    fontFamily: 'Geist-Regular',
     fontSize: 15,
     backgroundColor: '#343433',
-    color: '#f2f0ed',
+    color: '#f7f2e8',
     padding: 14,
     borderRadius: 12,
     marginVertical: 10,
@@ -85,14 +85,14 @@ const markdownStyles = StyleSheet.create({
     marginVertical: 4,
   },
   bullet_list_icon: {
-    fontFamily: 'SFProDisplay-Regular',
+    fontFamily: 'Geist-Regular',
     fontSize: 17,
     color: '#343433',
     marginRight: 8,
     lineHeight: 28,
   },
   ordered_list_icon: {
-    fontFamily: 'SFMono-Bold',
+    fontFamily: 'Geist-Bold',
     fontSize: 17,
     color: '#343433',
     marginRight: 10,
@@ -111,10 +111,10 @@ const markdownStyles = StyleSheet.create({
     marginVertical: 8,
   },
   thead: {
-    backgroundColor: '#f2f0ed',
+    backgroundColor: '#f7f2e8',
   },
   th: {
-    fontFamily: 'SFProDisplay-Semibold',
+    fontFamily: 'Geist-SemiBold',
     fontSize: 14,
     color: '#343433',
     padding: 10,
@@ -122,7 +122,7 @@ const markdownStyles = StyleSheet.create({
     borderRightColor: 'rgba(0,0,0,0.04)',
   },
   td: {
-    fontFamily: 'SFProDisplay-Regular',
+    fontFamily: 'Geist-Regular',
     fontSize: 15,
     color: '#343433',
     padding: 10,

@@ -32,10 +32,10 @@ function AnimatedBalance({ value, isVisible }: { value: string; isVisible: boole
         style={{
           height: DIGIT_H,
           lineHeight: DIGIT_H,
-          fontFamily: 'SFMono-Semibold',
+          fontFamily: 'Geist-SemiBold',
           fontVariant: ['tabular-nums'],
           fontSize: 60,
-          letterSpacing: -3.8,
+          // letterSpacing: -3.8,
           color: '#343433',
         }}>
         {display}

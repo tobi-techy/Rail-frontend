@@ -37,10 +37,7 @@ export const achievementStickersByIcon: Record<string, ImageSourcePropType> = {
   gem: og,
 };
 
-export function getAchievementStickerSource(
-  name?: string,
-  icon?: string,
-): ImageSourcePropType {
+export function getAchievementStickerSource(name?: string, icon?: string): ImageSourcePropType {
   const normalizedName = name?.trim().toLowerCase();
   const normalizedIcon = icon?.trim().toLowerCase();
 

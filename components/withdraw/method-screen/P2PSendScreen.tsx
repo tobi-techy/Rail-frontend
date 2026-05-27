@@ -82,9 +82,9 @@ function initials(r?: P2PRecentRecipient | P2PLookupResponse['user'] | null): st
 function Avatar({ chars, size = 44 }: { chars: string; size?: number }) {
   return (
     <View
-      style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#f2f0ed' }}
+      style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#f7f2e8' }}
       className="items-center justify-center">
-      <Text style={{ fontSize: size * 0.38, fontFamily: 'SFProDisplay-Medium', color: '#111' }}>
+      <Text style={{ fontSize: size * 0.38, fontFamily: 'Geist-Medium', color: '#111' }}>
         {chars}
       </Text>
     </View>
@@ -518,7 +518,7 @@ function P2PSendScreenContent() {
             {/* Input */}
             <Animated.View entering={FadeInUp.delay(40).duration(200)} className="mb-2">
               <View
-                className="flex-row items-center gap-3 rounded-lg border border-[#f2f0ed] px-4"
+                className="flex-row items-center gap-3 rounded-lg border border-[#f7f2e8] px-4"
                 style={{ height: 52 }}>
                 <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
                 <TextInput
@@ -675,7 +675,7 @@ function P2PSendScreenContent() {
           {/* Note input */}
           <Animated.View entering={FadeInUp.delay(40).duration(200)} className="mb-4">
             <Text className="mb-2 font-subtitle text-[13px] text-text-secondary">Note</Text>
-            <View className="rounded-lg border border-[#f2f0ed] px-4 py-1">
+            <View className="rounded-lg border border-[#f7f2e8] px-4 py-1">
               <TextInput
                 ref={noteRef}
                 className="py-3 font-body text-[15px] text-text-primary"

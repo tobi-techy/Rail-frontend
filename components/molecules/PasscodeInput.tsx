@@ -114,7 +114,7 @@ export const PasscodeInput: React.FC<PasscodeInputProps> = ({
               return (
                 <View
                   key={index}
-                  className={`h-16 w-16 items-center justify-center rounded-full ${isDark ? 'bg-white/20' : 'bg-stone-surface'}`}>
+                  className={`h-16 w-16 items-center justify-center rounded-full  ${isDark ? 'bg-white/10' : 'bg-[#171717]/10'}`}>
                   {isFilled &&
                     (showPasscode ? (
                       <Text

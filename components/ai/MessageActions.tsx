@@ -2,13 +2,7 @@ import React from 'react';
 import { View, Pressable, Share, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
-import {
-  Copy01Icon,
-  Share01Icon,
-  ThumbsUpIcon,
-  ThumbsDownIcon,
-  Delete01Icon,
-} from '@/lib/icons';
+import { Copy01Icon, Share01Icon, ThumbsUpIcon, ThumbsDownIcon, Delete01Icon } from '@/lib/icons';
 import { useAIHaptics } from '@/hooks/useAIHaptics';
 import { aiService } from '@/api/services';
 
@@ -50,31 +44,31 @@ export function MessageActions({ content, messageId, onDelete }: Props) {
   };
 
   return (
-    <View className="flex-row items-center gap-1 mt-2 ml-1">
+    <View className="ml-1 mt-2 flex-row items-center gap-1">
       <Pressable
         onPress={handleCopy}
-        className="p-2 rounded-full"
+        className="rounded-full p-2"
         accessibilityRole="button"
         accessibilityLabel="Copy message">
         <HugeiconsIcon icon={Copy01Icon} size={16} color="#B5B5B5" />
       </Pressable>
       <Pressable
         onPress={handleShare}
-        className="p-2 rounded-full"
+        className="rounded-full p-2"
         accessibilityRole="button"
         accessibilityLabel="Share message">
         <HugeiconsIcon icon={Share01Icon} size={16} color="#B5B5B5" />
       </Pressable>
       <Pressable
         onPress={() => handleFeedback('positive')}
-        className="p-2 rounded-full"
+        className="rounded-full p-2"
         accessibilityRole="button"
         accessibilityLabel="Thumbs up">
         <HugeiconsIcon icon={ThumbsUpIcon} size={16} color="#B5B5B5" />
       </Pressable>
       <Pressable
         onPress={() => handleFeedback('negative')}
-        className="p-2 rounded-full"
+        className="rounded-full p-2"
         accessibilityRole="button"
         accessibilityLabel="Thumbs down">
         <HugeiconsIcon icon={ThumbsDownIcon} size={16} color="#B5B5B5" />
@@ -82,7 +76,7 @@ export function MessageActions({ content, messageId, onDelete }: Props) {
       {onDelete && (
         <Pressable
           onPress={handleDelete}
-          className="p-2 rounded-full"
+          className="rounded-full p-2"
           accessibilityRole="button"
           accessibilityLabel="Delete message">
           <HugeiconsIcon icon={Delete01Icon} size={16} color="#ff2b3a" />

@@ -137,7 +137,9 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
 ];
 
 export function isEVMChain(chain: WalletChain): boolean {
-  return ['ETH', 'BASE', 'ARB', 'OP', 'MATIC', 'AVAX', 'BSC', 'BNB', 'MONAD', 'HYPEREVM'].includes(chain);
+  return ['ETH', 'BASE', 'ARB', 'OP', 'MATIC', 'AVAX', 'BSC', 'BNB', 'MONAD', 'HYPEREVM'].includes(
+    chain
+  );
 }
 
 export function isSolanaChain(chain: WalletChain): boolean {
@@ -173,7 +175,19 @@ export function getDefaultReceiveChain(): WalletChain {
  * All 11 deposit chains support USDC.
  */
 export const STABLECOIN_CHAINS: Record<string, WalletChain[]> = {
-  USDC: ['SOL', 'ETH', 'BASE', 'ARB', 'OP', 'MATIC', 'AVAX', 'BSC', 'STARKNET', 'MONAD', 'HYPEREVM'],
+  USDC: [
+    'SOL',
+    'ETH',
+    'BASE',
+    'ARB',
+    'OP',
+    'MATIC',
+    'AVAX',
+    'BSC',
+    'STARKNET',
+    'MONAD',
+    'HYPEREVM',
+  ],
   USDT: ['SOL'],
   EURC: ['SOL', 'BASE'],
   PYUSD: ['SOL'],
@@ -197,7 +211,19 @@ export const STABLECOIN_CHAINS: Record<string, WalletChain[]> = {
  *   PYUSD → none via ChainRails
  */
 export const WITHDRAWAL_CHAINS: Record<string, WalletChain[]> = {
-  USDC: ['SOL', 'ETH', 'BASE', 'ARB', 'OP', 'MATIC', 'AVAX', 'BSC', 'STARKNET', 'MONAD', 'HYPEREVM'],
+  USDC: [
+    'SOL',
+    'ETH',
+    'BASE',
+    'ARB',
+    'OP',
+    'MATIC',
+    'AVAX',
+    'BSC',
+    'STARKNET',
+    'MONAD',
+    'HYPEREVM',
+  ],
   USDT: ['SOL', 'ETH', 'BSC', 'STARKNET'],
   EURC: ['SOL', 'ETH', 'BASE'],
   PYUSD: ['SOL', 'ETH'],

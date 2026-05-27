@@ -65,12 +65,12 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
         text: '#FFFFFF',
       }
     : {
-        border: hasError ? '#ff2b3a' : '#f2f0ed',
-        bg: hasError ? '#fbfaf9' : '#f2f0ed',
-        focusBorder: hasError ? '#ff2b3a' : '#343433',
-        focusBg: '#fbfaf9',
-        filledBorder: hasError ? '#ff2b3a' : '#848281',
-        filledBg: '#fbfaf9',
+        border: hasError ? '#ff2b3a' : 'rgba(23,23,23,0.10)',
+        bg: hasError ? '#f7f4ef' : 'transparent',
+        focusBorder: hasError ? '#ff2b3a' : 'rgba(255,59,31,0.40)',
+        focusBg: '#f7f4ef',
+        filledBorder: hasError ? '#ff2b3a' : 'rgba(23,23,23,0.20)',
+        filledBg: 'transparent',
         text: '#343433',
       };
 
@@ -101,7 +101,7 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
             justifyContent: 'center',
           },
           pinCodeTextStyle: {
-            fontFamily: 'SFMono-Semibold',
+            fontFamily: 'Geist-SemiBold',
             fontSize: 24,
             color: colors.text,
             textAlign: 'center',

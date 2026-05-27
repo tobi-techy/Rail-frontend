@@ -35,10 +35,12 @@ export function AnimatedScreen({ children, delay = 0 }: AnimatedScreenProps) {
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [
-      { translateY: interpolate(progress.value, [0, 1], [32, 0]) },
-    ],
+    transform: [{ translateY: interpolate(progress.value, [0, 1], [32, 0]) }],
   }));
 
-  return <Animated.View className="flex-1" style={animatedStyle}>{children}</Animated.View>;
+  return (
+    <Animated.View className="flex-1" style={animatedStyle}>
+      {children}
+    </Animated.View>
+  );
 }

@@ -31,12 +31,6 @@ interface StashCardProps {
   getStarted?: boolean | string;
 }
 
-const BADGE_COLORS: Record<StashCardBadge['color'], { bg: string; text: string; dot: string }> = {
-  green: { bg: '#ECFDF3', text: '#00ca48', dot: '#00ca48' },
-  red: { bg: '#FEF2F2', text: '#ff2b3a', dot: '#ff2b3a' },
-  gray: { bg: '#f2f0ed', text: '#474645', dot: '#a7a7a7' },
-};
-
 export const StashCard: React.FC<StashCardProps> = ({
   title,
   amount,
@@ -58,7 +52,6 @@ export const StashCard: React.FC<StashCardProps> = ({
   const { impact } = useHaptics();
 
   const isColored = !!cardColor;
-  const badgeColors = badge ? BADGE_COLORS[badge.color] : null;
 
   return (
     <AnimatedPressable

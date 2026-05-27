@@ -26,13 +26,13 @@ import { p2pService } from '@/api/services/p2p.service';
 import { Keypad } from '@/components/molecules/Keypad';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { Button } from '@/components/ui';
-import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
+import { AnimatedAmount } from '@/components/withdraw/method-screen/AnimatedAmount';
 import {
   normalizeAmount,
   formatCurrency,
   formatMaxAmount,
   toDisplayAmount,
-} from '@/app/withdraw/method-screen/utils';
+} from '@/components/withdraw/method-screen/utils';
 import { parseApiError } from '@/utils/apiError';
 import { ArrowLeft01Icon, Wifi01Icon, CheckmarkCircle02Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
@@ -678,7 +678,7 @@ function TapToPayActiveScreen() {
             stop();
             router.back();
           }}
-          className="h-10 w-10 items-center justify-center rounded-full bg-[#f2f0ed]">
+          className="h-10 w-10 items-center justify-center rounded-full bg-[#f7f2e8]">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" strokeWidth={2} />
         </Pressable>
         <View className="flex-1">

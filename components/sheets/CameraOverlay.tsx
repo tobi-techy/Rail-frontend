@@ -101,7 +101,9 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
         }
         // Otherwise loop continues with lower quality — but gallery picker re-opens.
         // Since we can't re-compress without expo-image-manipulator, just fail gracefully.
-        setCaptureError('Image01Icon exceeds 10MB. Please pick a smaller or lower-resolution image.');
+        setCaptureError(
+          'Image01Icon exceeds 10MB. Please pick a smaller or lower-resolution image.'
+        );
         return;
       }
     } catch (e) {
@@ -185,7 +187,9 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
               <View className="flex-1 items-center justify-center px-6">
                 <HugeiconsIcon icon={Camera01Icon} size={42} color="#FFFFFF" />
                 <Text className="mt-4 text-center font-subtitle text-[22px] text-white">
-                  {permissionDenied ? 'Camera01Icon access denied' : 'Camera01Icon permission needed'}
+                  {permissionDenied
+                    ? 'Camera01Icon access denied'
+                    : 'Camera01Icon permission needed'}
                 </Text>
                 <Text className="mt-2 text-center font-body text-[14px] leading-6 text-smoke">
                   {permissionDenied
@@ -230,7 +234,11 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
                 className="size-11 items-center justify-center rounded-full bg-black/50"
                 accessibilityRole="button"
                 accessibilityLabel="Toggle flash">
-                <HugeiconsIcon icon={ZapIcon} size={20} color={flashEnabled ? '#F59E0B' : '#FFFFFF'} />
+                <HugeiconsIcon
+                  icon={ZapIcon}
+                  size={20}
+                  color={flashEnabled ? '#F59E0B' : '#FFFFFF'}
+                />
               </Pressable>
             </View>
 
@@ -241,7 +249,9 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
                 <View className="mb-6 flex-row justify-center">
                   <View className="h-1 w-10 rounded-full bg-slate-200" />
                 </View>
-                <Text className="text-center font-subtitle text-[24px] text-charcoal-primary">{title}</Text>
+                <Text className="text-center font-subtitle text-[24px] text-charcoal-primary">
+                  {title}
+                </Text>
                 <Text className="mt-3 text-center font-body text-[15px] leading-6 text-ash">
                   Take a photo of the {side === 'front' ? 'front' : 'back'} side of your ID.
                   {'\n\n'}
@@ -320,7 +330,9 @@ export function CameraOverlay({ visible, side, onClose, onComplete }: CameraOver
             </View>
 
             <Animated.View entering={SlideInUp.duration(400)} className="mt-8 px-6 pb-2">
-              <Text className="text-center font-subtitle text-[22px] text-charcoal-primary">ID card</Text>
+              <Text className="text-center font-subtitle text-[22px] text-charcoal-primary">
+                ID card
+              </Text>
               <Text className="mt-2 text-center font-body text-[15px] leading-6 text-ash">
                 Make sure that all the information on the document is visible and easy to read
               </Text>

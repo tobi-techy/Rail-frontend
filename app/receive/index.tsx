@@ -9,9 +9,7 @@ import { SUPPORTED_CHAINS, isEVMChain, type ChainConfig } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import type { WalletChain } from '@/api/types';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
-import {
-  ArrowLeft01Icon, ArrowRight01Icon, Add01Icon,
-} from '@/lib/icons';
+import { ArrowLeft01Icon, ArrowRight01Icon, Add01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const BRIDGE_CHAINS = SUPPORTED_CHAINS.filter((c) => c.via === 'bridge');
@@ -23,7 +21,7 @@ function ChainRow({ config, onPress }: { config: ChainConfig; onPress: () => voi
       className="flex-row items-center px-5 py-4"
       accessibilityRole="button"
       accessibilityLabel={`Receive on ${config.label}`}>
-      <View className="size-11 items-center justify-center rounded-full overflow-hidden mr-4">
+      <View className="mr-4 size-11 items-center justify-center overflow-hidden rounded-full">
         <ChainLogo chain={config.chain} size={44} />
       </View>
       <View className="flex-1">
@@ -46,11 +44,14 @@ export default function ReceiveChainSelectScreen() {
   const { selection } = useHaptics();
   const { track } = useAnalytics();
 
-  const handleChainPress = useCallback((chain: WalletChain) => {
-    selection();
-    track(ANALYTICS_EVENTS.DEPOSIT_INITIATED, { chain });
-    router.push({ pathname: '/receive/address', params: { chain } });
-  }, [selection, track]);
+  const handleChainPress = useCallback(
+    (chain: WalletChain) => {
+      selection();
+      track(ANALYTICS_EVENTS.DEPOSIT_INITIATED, { chain });
+      router.push({ pathname: '/receive/address', params: { chain } });
+    },
+    [selection, track]
+  );
 
   return (
     <ErrorBoundary>
@@ -73,11 +74,13 @@ export default function ReceiveChainSelectScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 32) }}>
-
           {/* Promo banner */}
           <Animated.View entering={FadeInUp.duration(280)} className="mx-5 mb-5">
             <Pressable
-              onPress={() => { selection(); router.push('/fund-crosschain'); }}
+              onPress={() => {
+                selection();
+                router.push('/fund-crosschain');
+              }}
               className="overflow-hidden rounded-3xl border border-stone-surface"
               style={{ backgroundColor: '#f8f7f4' }}
               accessibilityRole="button">
@@ -87,7 +90,7 @@ export default function ReceiveChainSelectScreen() {
                   <View
                     key={chain}
                     className="size-9 items-center justify-center rounded-full bg-parchment-card shadow-sm"
-                    style={{ borderWidth: 1.5, borderColor: '#f2f0ed' }}>
+                    style={{ borderWidth: 1.5, borderColor: '#f7f2e8' }}>
                     <ChainLogo chain={chain} size={22} />
                   </View>
                 ))}
@@ -113,13 +116,8 @@ export default function ReceiveChainSelectScreen() {
           {/* Chain list */}
           {BRIDGE_CHAINS.map((config, i) => (
             <Animated.View key={config.chain} entering={FadeInUp.delay(i * 40).duration(280)}>
-              <ChainRow
-                config={config}
-                onPress={() => handleChainPress(config.chain)}
-              />
-              {i < BRIDGE_CHAINS.length - 1 && (
-                <View className="mx-5 h-px bg-stone-surface" />
-              )}
+              <ChainRow config={config} onPress={() => handleChainPress(config.chain)} />
+              {i < BRIDGE_CHAINS.length - 1 && <View className="mx-5 h-px bg-stone-surface" />}
             </Animated.View>
           ))}
 
@@ -129,11 +127,14 @@ export default function ReceiveChainSelectScreen() {
           {/* Other chains row */}
           <Animated.View entering={FadeInUp.delay(BRIDGE_CHAINS.length * 40 + 60).duration(280)}>
             <Pressable
-              onPress={() => { selection(); router.push('/fund-crosschain'); }}
+              onPress={() => {
+                selection();
+                router.push('/fund-crosschain');
+              }}
               className="flex-row items-center px-5 py-4"
               accessibilityRole="button"
               accessibilityLabel="Deposit from other chains">
-              <View className="size-11 items-center justify-center rounded-full bg-stone-surface mr-4">
+              <View className="mr-4 size-11 items-center justify-center rounded-full bg-stone-surface">
                 <HugeiconsIcon icon={Add01Icon} size={22} color="#848281" />
               </View>
               <View className="flex-1">

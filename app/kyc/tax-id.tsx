@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,11 +13,19 @@ import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export default function KycTaxIdScreen() {
   const insets = useSafeAreaInsets();
-  const { country, taxIdType, taxId, setTaxId } = useKycStore();
+  const { country, taxIdType, taxId, setTaxId, hasCompletedStep, addCompletedStep } =
+    useKycStore();
 
   const [taxIdError, setTaxIdError] = useState('');
 
   const taxConfig = COUNTRY_TAX_CONFIG[country];
+
+  // Skip if already completed
+  useEffect(() => {
+    if (hasCompletedStep('tax-id')) {
+      router.replace('/kyc/about-you');
+    }
+  }, []);
 
   const handleContinue = () => {
     if (taxId.trim().length === 0) {
@@ -30,7 +38,8 @@ export default function KycTaxIdScreen() {
       return;
     }
     setTaxIdError('');
-    router.push('/kyc/about-you');
+    addCompletedStep('tax-id');
+    router.replace('/kyc/about-you');
   };
 
   return (
@@ -44,13 +53,13 @@ export default function KycTaxIdScreen() {
             accessibilityLabel="Go back">
             <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" />
           </Pressable>
-          <Text className="font-subtitle text-[13px] text-ash">Step 2 of 4</Text>
+          <Text className="font-subtitle text-[13px] text-ash">Step 2</Text>
           <View className="size-11" />
         </View>
 
         <View className="px-4">
           <View className="h-1.5 overflow-hidden rounded-full bg-fog">
-            <View className="h-full w-2/4 rounded-full bg-midnight" />
+            <View className="h-full w-2/5 rounded-full bg-midnight" />
           </View>
         </View>
 
@@ -60,7 +69,9 @@ export default function KycTaxIdScreen() {
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}>
-            <Text className="font-display text-[30px] leading-[34px] text-charcoal-primary">Tax ID</Text>
+            <Text className="font-display text-[30px] leading-[34px] text-charcoal-primary">
+              Tax ID
+            </Text>
             <Text className="mt-2 font-body text-[15px] leading-6 text-ash">
               Enter your tax identifier. We use this for regulatory compliance.
             </Text>

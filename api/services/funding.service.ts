@@ -95,21 +95,29 @@ export const fundingService = {
   },
 
   // Early withdrawal preview (fee calculation)
-  async getEmergencyPreview(amount: string): Promise<import('../types').EmergencyWithdrawalPreview> {
+  async getEmergencyPreview(
+    amount: string
+  ): Promise<import('../types').EmergencyWithdrawalPreview> {
     return apiClient.get('/v1/withdrawals/emergency/preview', { params: { amount } });
   },
 
   // Early withdrawal: stash → spending with fee
-  async emergencyStashToSpending(amount: string): Promise<import('../types').EmergencyWithdrawalResult> {
+  async emergencyStashToSpending(
+    amount: string
+  ): Promise<import('../types').EmergencyWithdrawalResult> {
     return apiClient.post('/v1/withdrawals/emergency/to-spending', { amount });
   },
 
   // Fund stash: spending → stash (no fee)
   async fundStash(amount: string): Promise<import('../types').FundStashResult> {
     const idempotencyKey = `fund-stash-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    return apiClient.post('/v1/funding/stash', { amount }, {
-      headers: { 'Idempotency-Key': idempotencyKey },
-    });
+    return apiClient.post(
+      '/v1/funding/stash',
+      { amount },
+      {
+        headers: { 'Idempotency-Key': idempotencyKey },
+      }
+    );
   },
 };
 

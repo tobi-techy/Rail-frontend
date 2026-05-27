@@ -87,7 +87,6 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     segments[0] === 'withdraw-naira' ||
     segments[0] === 'paj-verify' ||
     segments[0] === 'ai-chat' ||
-    segments[0] === 'miriam-hub' ||
     segments[0] === 'voice-mode' ||
     segments[0] === 'tap-to-pay' ||
     pathname.startsWith('/spending-stash') ||
@@ -108,7 +107,6 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/withdraw-naira') ||
     pathname.startsWith('/paj-verify') ||
     pathname.startsWith('/ai-chat') ||
-    pathname.startsWith('/miriam-hub') ||
     pathname.startsWith('/voice-mode') ||
     pathname.startsWith('/tap-to-pay') ||
     pathname.startsWith('/receipt-scanner') ||
@@ -184,11 +182,11 @@ const handleAuthenticatedUser = (
     return null;
   }
 
-  // If on passcode screen and session is valid -> go to dashboard
+  // If on passcode screen, let the screen handle its own navigation
+  // via consumeReturnRoute(). The routing effect must NOT race against
+  // the passcode screen's onSuccess navigation, otherwise the user ends
+  // up on the home screen instead of their last route.
   if (config.isOnLoginPasscode) {
-    if (hasValidPasscodeSession) {
-      return ROUTES.TABS;
-    }
     return null;
   }
 

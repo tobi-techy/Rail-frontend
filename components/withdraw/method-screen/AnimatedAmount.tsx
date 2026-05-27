@@ -1,10 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { View, Text } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { layout, moderateScale, responsive } from '@/utils/layout';
 
 type AnimatedAmountProps = { amount: string; prefix?: string };
@@ -12,7 +8,15 @@ type AnimatedAmountProps = { amount: string; prefix?: string };
 const glideSpring = { damping: 14, stiffness: 200, mass: 0.7 };
 const fadeSpring = { damping: 22, stiffness: 100, mass: 0.8 };
 
-function AnimatedChar({ char, fontSize, animate }: { char: string; fontSize: number; animate: boolean }) {
+function AnimatedChar({
+  char,
+  fontSize,
+  animate,
+}: {
+  char: string;
+  fontSize: number;
+  animate: boolean;
+}) {
   const translateY = useSharedValue(animate ? 24 : 0);
   const opacity = useSharedValue(animate ? 0.15 : 1);
 
@@ -32,7 +36,7 @@ function AnimatedChar({ char, fontSize, animate }: { char: string; fontSize: num
     <Animated.View style={style}>
       <Text
         style={{
-          fontFamily: 'SFMono-Bold',
+          fontFamily: 'Geist-Bold',
           fontSize,
           color: '#FFFFFF',
           fontVariant: ['tabular-nums'],
@@ -46,7 +50,9 @@ function AnimatedChar({ char, fontSize, animate }: { char: string; fontSize: num
 export function AnimatedAmount({ amount, prefix = '$' }: AnimatedAmountProps) {
   const prevLen = useRef(amount.length);
   const grew = amount.length > prevLen.current;
-  useEffect(() => { prevLen.current = amount.length; });
+  useEffect(() => {
+    prevLen.current = amount.length;
+  });
 
   const displayText = `${prefix}${amount}`;
   const len = displayText.length;
@@ -63,7 +69,13 @@ export function AnimatedAmount({ amount, prefix = '$' }: AnimatedAmountProps) {
   const fontSize = moderateScale(baseSize, layout.isSeekerDevice ? 0.35 : 0.45);
 
   return (
-    <View style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'flex-end', overflow: 'hidden' }}>
+    <View
+      style={{
+        alignSelf: 'center',
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        overflow: 'hidden',
+      }}>
       {displayText.split('').map((char, i) => (
         <AnimatedChar
           key={`${i}-${displayText.length}`}

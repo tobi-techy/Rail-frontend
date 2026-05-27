@@ -39,9 +39,9 @@ export function StreakRing({ activeDates }: Props) {
     todayPulse.value = withRepeat(
       withSequence(
         withTiming(1.15, { duration: 800, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) })
       ),
-      -1,
+      -1
     );
   }, [todayPulse]);
 
@@ -53,9 +53,7 @@ export function StreakRing({ activeDates }: Props) {
     <View>
       <View className="mb-2 flex-row justify-between px-1">
         {days.map((d, i) => (
-          <Text
-            key={i}
-            className="w-8 text-center font-mono-medium text-[10px] text-text-tertiary">
+          <Text key={i} className="w-8 text-center font-mono-medium text-[10px] text-text-tertiary">
             {d}
           </Text>
         ))}
@@ -66,18 +64,13 @@ export function StreakRing({ activeDates }: Props) {
             const dot = (
               <View
                 className={`h-8 w-8 items-center justify-center rounded-full ${
-                  day.active
-                    ? 'bg-primary'
-                    : 'border-2 border-gray-200 bg-transparent'
+                  day.active ? 'bg-primary' : 'border-2 border-gray-200 bg-transparent'
                 }`}
               />
             );
             if (day.isToday) {
               return (
-                <Animated.View
-                  key={di}
-                  className="w-8 items-center"
-                  style={pulseStyle}>
+                <Animated.View key={di} className="w-8 items-center" style={pulseStyle}>
                   {dot}
                 </Animated.View>
               );

@@ -85,7 +85,7 @@ function CurrencyPicker({
           Haptics.selectionAsync();
           setOpen(!open);
         }}
-        className="flex-row items-center gap-2 rounded-full bg-[#f2f0ed] px-3 py-2">
+        className="flex-row items-center gap-2 rounded-full bg-[#f7f2e8] px-3 py-2">
         <View className="size-6 overflow-hidden rounded-full">
           <CountryFlag isoCode={flagCode} size={20} />
         </View>
@@ -162,7 +162,7 @@ function AccountDetails({ account }: { account: VirtualAccount }) {
           {account.beneficiary_name ? (
             <>
               <DetailRow label="Name" value={account.beneficiary_name} />
-              <View className="h-px bg-[#f2f0ed]" />
+              <View className="h-px bg-[#f7f2e8]" />
             </>
           ) : null}
 
@@ -170,33 +170,33 @@ function AccountDetails({ account }: { account: VirtualAccount }) {
 
           {account.routing_number ? (
             <>
-              <View className="h-px bg-[#f2f0ed]" />
+              <View className="h-px bg-[#f7f2e8]" />
               <DetailRow label="Routing number (for wire and ACH)" value={account.routing_number} />
             </>
           ) : null}
 
           {account.bank_name ? (
             <>
-              <View className="h-px bg-[#f2f0ed]" />
+              <View className="h-px bg-[#f7f2e8]" />
               <DetailRow label="Bank name" value={account.bank_name} />
             </>
           ) : null}
 
           {account.bank_address ? (
             <>
-              <View className="h-px bg-[#f2f0ed]" />
+              <View className="h-px bg-[#f7f2e8]" />
               <DetailRow label="Address" value={account.bank_address} />
             </>
           ) : null}
 
           {rails ? (
             <>
-              <View className="h-px bg-[#f2f0ed]" />
+              <View className="h-px bg-[#f7f2e8]" />
               <DetailRow label="Payment rails" value={rails} />
             </>
           ) : null}
 
-          <View className="h-px bg-[#f2f0ed]" />
+          <View className="h-px bg-[#f7f2e8]" />
           <DetailRow label="Account type" value="Checking" />
         </View>
 
@@ -272,7 +272,7 @@ export default function VirtualAccountScreen() {
         <Pressable
           onPress={() => router.back()}
           hitSlop={12}
-          className="h-10 w-10 items-center justify-center rounded-full bg-[#f2f0ed]"
+          className="h-10 w-10 items-center justify-center rounded-full bg-[#f7f2e8]"
           accessibilityRole="button"
           accessibilityLabel="Go back">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" strokeWidth={2} />

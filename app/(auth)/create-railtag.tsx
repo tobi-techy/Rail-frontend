@@ -20,7 +20,10 @@ export default function CreateRailTagScreen() {
   const { showError } = useFeedbackPopup();
 
   const handleChange = (value: string) => {
-    const normalized = value.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
+    const normalized = value
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 30);
     setTag(normalized);
     setAvailability('idle');
 

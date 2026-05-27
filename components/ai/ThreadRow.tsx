@@ -52,7 +52,7 @@ export function ThreadRow({ conv, onPress, onDelete }: Props) {
 
   if (showUndo) {
     return (
-      <View className="mx-5 py-5 flex-row items-center justify-between border-b border-black/[0.06]">
+      <View className="mx-5 flex-row items-center justify-between border-b border-black/[0.06] py-5">
         <Text className="font-body text-[15px] text-text-tertiary">Thread deleted</Text>
         <Pressable
           onPress={() => {
@@ -68,8 +68,8 @@ export function ThreadRow({ conv, onPress, onDelete }: Props) {
   }
 
   const renderRightActions = () => (
-    <View className="bg-coral-red/100 justify-center px-6">
-      <Text className="font-body-medium text-white text-[15px]">Delete</Text>
+    <View className="justify-center bg-coral-red/100 px-6">
+      <Text className="font-body-medium text-[15px] text-white">Delete</Text>
     </View>
   );
 
@@ -85,13 +85,13 @@ export function ThreadRow({ conv, onPress, onDelete }: Props) {
       rightThreshold={40}>
       <Pressable
         onPress={onPress}
-        className="mx-5 py-5 border-b border-black/[0.06]"
+        className="mx-5 border-b border-black/[0.06] py-5"
         accessibilityRole="button"
         accessibilityLabel={`Thread: ${title}. Swipe left to delete`}>
         {/* Title row with three-dot menu */}
         <View className="flex-row items-start justify-between">
           <Text
-            className="font-heading-semibold text-[17px] text-[#343433] flex-1 mr-3 leading-[24px]"
+            className="mr-3 flex-1 font-heading-semibold text-[17px] leading-[24px] text-[#343433]"
             numberOfLines={3}>
             {title}
           </Text>
@@ -109,13 +109,13 @@ export function ThreadRow({ conv, onPress, onDelete }: Props) {
 
         {/* Summary line — title is the first message, so show a truncated version as preview */}
         <Text
-          className="font-body text-[15px] text-[#8C8C8C] mt-2 leading-[22px]"
+          className="mt-2 font-body text-[15px] leading-[22px] text-[#8C8C8C]"
           numberOfLines={2}>
           {title.length > 50 ? title : `Conversation about ${title.toLowerCase()}`}
         </Text>
 
         {/* Meta: date + message count */}
-        <View className="flex-row items-center mt-2.5 gap-2">
+        <View className="mt-2.5 flex-row items-center gap-2">
           <Text className="font-body text-[13px] text-[#B5B5B5]">{dateLabel}</Text>
           {conv.message_count > 0 && (
             <>

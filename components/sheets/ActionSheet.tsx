@@ -77,7 +77,7 @@ export function ActionSheet({
               <View className="flex-1 flex-row items-center">
                 <View
                   className="mr-4 h-11 w-11 items-center justify-center rounded-full"
-                  style={{ backgroundColor: action.iconBgColor ?? '#f2f0ed' }}>
+                  style={{ backgroundColor: action.iconBgColor ?? '#f7f2e8' }}>
                   {isElement
                     ? Icon
                     : isHugeIcon(Icon) && (

@@ -16,12 +16,12 @@ export function configureAndroidVisualBaseline() {
   didConfigure = true;
 
   StatusBar.setBarStyle('dark-content');
-  StatusBar.setBackgroundColor('#FFFFFF', true);
-  void SystemUI.setBackgroundColorAsync('#FFFFFF');
+  StatusBar.setBackgroundColor('#f7f4ef', true);
+  void SystemUI.setBackgroundColorAsync('#f7f4ef');
 
   const androidTextStyle = {
     includeFontPadding: false,
-    fontFamily: FONT_FAMILIES.SF_PRO_DISPLAY.REGULAR,
+    fontFamily: FONT_FAMILIES.GEIST.REGULAR,
   };
 
   const text = Text as unknown as DefaultPropsTarget;

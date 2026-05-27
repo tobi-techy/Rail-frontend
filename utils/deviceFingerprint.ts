@@ -73,10 +73,7 @@ export async function getDeviceFingerprint(): Promise<string> {
     const attrs = collectDeviceAttributes();
     const raw = `${installId}:${attrs}`;
 
-    cachedFingerprint = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      raw
-    );
+    cachedFingerprint = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, raw);
 
     return cachedFingerprint;
   } catch (error) {

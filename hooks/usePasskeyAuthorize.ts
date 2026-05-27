@@ -16,7 +16,7 @@ import {
   markPasskeyPromptSuccess,
   suppressAutoPasskeyPrompt,
 } from '@/utils/passkeyPromptGuard';
-import { safeName } from '@/app/withdraw/method-screen/utils';
+import { safeName } from '@/components/withdraw/method-screen/utils';
 
 interface UsePasskeyAuthorizeOptions {
   email: string | undefined;

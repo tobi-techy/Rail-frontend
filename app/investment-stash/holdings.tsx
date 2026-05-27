@@ -176,13 +176,16 @@ export default function InvestmentHoldingsScreen() {
                   accessibilityLabel="Next page"
                   className={`min-h-[44px] flex-row items-center gap-1 rounded-lg bg-stone-surface px-4 py-2.5 ${!hasMore ? 'opacity-0' : ''}`}>
                   <Text className="font-button text-[13px] text-charcoal-primary">Next</Text>
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#343433" strokeWidth={2} />
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
+                    size={16}
+                    color="#343433"
+                    strokeWidth={2}
+                  />
                 </Pressable>
               </View>
               {isFetching && (
-                <Text className="mt-2 text-center font-caption text-xs text-smoke">
-                  Loading…
-                </Text>
+                <Text className="mt-2 text-center font-caption text-xs text-smoke">Loading…</Text>
               )}
             </View>
           ) : null

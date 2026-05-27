@@ -65,12 +65,16 @@ export function FeedbackSheet({ visible, onClose }: Props) {
         {done ? (
           <View className="items-center py-8">
             <Text className="mb-2 text-2xl">Done</Text>
-            <Text className="text-[17px] font-semibold text-charcoal-primary">Thanks for the feedback!</Text>
+            <Text className="text-[17px] font-semibold text-charcoal-primary">
+              Thanks for the feedback!
+            </Text>
             <Text className="mt-1 text-[14px] text-ash">We&apos;ll look into it.</Text>
           </View>
         ) : (
           <>
-            <Text className="mb-1 text-[18px] font-semibold text-charcoal-primary">Send feedback</Text>
+            <Text className="mb-1 text-[18px] font-semibold text-charcoal-primary">
+              Send feedback
+            </Text>
             <Text className="mb-5 text-[13px] text-ash">Help us improve Rail.</Text>
 
             {/* Category pills */}

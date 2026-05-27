@@ -31,7 +31,8 @@ const ACHIEVEMENT_DETAILS: Record<
     unlock: 'Grow your stash balance to $100.',
   },
   'streak lord': {
-    about: 'A consistency badge for users who keep showing up and building their balance over time.',
+    about:
+      'A consistency badge for users who keep showing up and building their balance over time.',
     unlock: 'Keep a deposit streak alive for 30 days.',
   },
   grand: {
@@ -98,7 +99,10 @@ export function AchievementDetailSheet({
             source={stickerSource}
             resizeMode="contain"
             className="h-48 w-48"
-            style={{ opacity: isUnlocked ? 1 : 0.18, transform: [{ scale: isUnlocked ? 1 : 0.92 }] }}
+            style={{
+              opacity: isUnlocked ? 1 : 0.18,
+              transform: [{ scale: isUnlocked ? 1 : 0.92 }],
+            }}
           />
           {!isUnlocked && (
             <View className="absolute h-28 w-28 items-center justify-center rounded-[36px] border border-fog bg-white/95">
@@ -116,10 +120,7 @@ export function AchievementDetailSheet({
             size={14}
             color={isUnlocked ? '#059669' : '#848281'}
           />
-          <Text
-            className={`font-mono text-[11px] ${
-              isUnlocked ? 'text-emerald-700' : 'text-ash'
-            }`}>
+          <Text className={`font-mono text-[11px] ${isUnlocked ? 'text-emerald-700' : 'text-ash'}`}>
             {isUnlocked ? 'Unlocked' : 'Locked'}
           </Text>
         </View>

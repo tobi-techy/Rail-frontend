@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   FlatList,
@@ -12,23 +12,16 @@ import {
 } from 'react-native';
 import { AppleLogo } from '../assets/svg';
 import { Button } from '@/components/ui';
-import Animated, {
-  SharedValue,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  interpolate,
-  Extrapolation,
-} from 'react-native-reanimated';
+import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAppleSignIn, useGoogleSignIn } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { getPostAuthRoute } from '@/utils/onboardingFlow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { onboardingSlides, SLIDE_INTERVAL } from './intro/onboardingSlides';
-import { ActiveVideoSlide } from './intro/ActiveVideoSlide';
-import { SlideContent } from './intro/SlideContent';
-import type { OnboardingSlide } from './intro/onboardingSlides';
+import { onboardingSlides, SLIDE_INTERVAL } from '@/components/intro/onboardingSlides';
+import { ActiveVideoSlide } from '@/components/intro/ActiveVideoSlide';
+import { SlideContent } from '@/components/intro/SlideContent';
+import type { OnboardingSlide } from '@/components/intro/onboardingSlides';
 import Svg, { Path, G } from 'react-native-svg';
 
 const GoogleLogo = () => (
@@ -54,28 +47,6 @@ const GoogleLogo = () => (
   </Svg>
 );
 
-const IndicatorBar = memo(function IndicatorBar({
-  index,
-  currentIndex,
-  progress,
-}: {
-  index: number;
-  currentIndex: number;
-  progress: SharedValue<number>;
-}) {
-  const animatedStyle = useAnimatedStyle(() => {
-    if (index < currentIndex) return { width: '100%' };
-    if (index === currentIndex)
-      return { width: `${interpolate(progress.value, [0, 1], [0, 100], Extrapolation.CLAMP)}%` };
-    return { width: '0%' };
-  });
-  return (
-    <View className="h-1 flex-1 rounded-full bg-white/30">
-      <Animated.View className="h-1 rounded-full bg-warm-canvas" style={animatedStyle} />
-    </View>
-  );
-});
-
 export default function App() {
   const { width, height } = useWindowDimensions();
   const isCompactWidth = width < 380;
@@ -89,7 +60,6 @@ export default function App() {
   const { mutate: googleSignIn } = useGoogleSignIn();
   const { showError } = useFeedbackPopup();
   const footerHorizontalPadding = width < 380 ? 16 : 20;
-  const footerGap = 12;
   const buttonHeight = 58;
 
   // Prefetch all slide images on mount so swiping is instant

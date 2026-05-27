@@ -28,11 +28,5 @@ export { default as GhsIcon } from './ghana.svg';
 export { default as KesIcon } from './kenya.svg';
 export { default as MxnIcon } from './MXN.svg';
 
-// Currency symbol icons
-export { default as DollarCurrencyIcon } from './Currency=Dollar.svg';
-export { default as EuroCurrencyIcon } from './Currency=Euro.svg';
-export { default as NairaCurrencyIcon } from './Currency=Naira.svg';
-export { default as PoundCurrencyIcon } from './Currency=Pound.svg';
-
 // Company logos
 export * from './company';

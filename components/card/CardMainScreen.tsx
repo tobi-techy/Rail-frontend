@@ -42,7 +42,7 @@ function mapCardTransaction(tx: CardTransaction): Transaction {
     merchant: tx.merchant_name ?? undefined,
     status: statusMap[tx.status] ?? 'pending',
     createdAt: new Date(tx.created_at),
-    icon: { type: 'icon' as const, iconName: 'credit-card', bgColor: '#f2f0ed' },
+    icon: { type: 'icon' as const, iconName: 'credit-card', bgColor: '#f7f2e8' },
   };
 }
 

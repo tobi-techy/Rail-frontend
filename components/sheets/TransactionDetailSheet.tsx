@@ -194,14 +194,12 @@ const ReceiptRow = ({ label, value }: { label: string; value: string }) => (
       justifyContent: 'space-between',
       paddingVertical: 10,
       borderBottomWidth: 1,
-      borderBottomColor: '#f2f0ed',
+      borderBottomColor: '#f7f2e8',
     }}>
-    <Text style={{ fontFamily: 'SFProDisplay-Regular', fontSize: 13, color: '#848281' }}>
-      {label}
-    </Text>
+    <Text style={{ fontFamily: 'Geist-Regular', fontSize: 13, color: '#848281' }}>{label}</Text>
     <Text
       style={{
-        fontFamily: 'SFProDisplay-Medium',
+        fontFamily: 'Geist-Medium',
         fontSize: 13,
         color: '#343433',
         maxWidth: '55%',
@@ -523,7 +521,7 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
         </View>
         <Text
           style={{
-            fontFamily: 'SFProDisplay-Bold',
+            fontFamily: 'Geist-Bold',
             fontSize: 28,
             color: '#343433',
             marginTop: 12,
@@ -533,7 +531,7 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
         </Text>
         <Text
           style={{
-            fontFamily: 'SFProDisplay-Medium',
+            fontFamily: 'Geist-Medium',
             fontSize: 14,
             color: status === 'failed' ? '#ff2b3a' : '#00ca48',
             marginTop: 4,
@@ -544,7 +542,7 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
 
       {/* Divider with notch effect */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 20 }}>
-        <View style={{ flex: 1, height: 1, backgroundColor: '#f2f0ed' }} />
+        <View style={{ flex: 1, height: 1, backgroundColor: '#f7f2e8' }} />
       </View>
 
       {/* Details */}
@@ -585,12 +583,12 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
           alignItems: 'center',
           paddingVertical: 20,
           borderTopWidth: 1,
-          borderTopColor: '#f2f0ed',
+          borderTopColor: '#f7f2e8',
           marginHorizontal: 20,
         }}>
         <Text
           style={{
-            fontFamily: 'SFProDisplay-Bold',
+            fontFamily: 'Geist-Bold',
             fontSize: 15,
             color: '#343433',
             letterSpacing: 1,
@@ -599,7 +597,7 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
         </Text>
         <Text
           style={{
-            fontFamily: 'SFProDisplay-Regular',
+            fontFamily: 'Geist-Regular',
             fontSize: 11,
             color: '#848281',
             marginTop: 2,

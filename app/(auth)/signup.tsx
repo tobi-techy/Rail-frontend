@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Pressable, Keyboard, StatusBar, Platform, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+  Keyboard,
+  StatusBar,
+  Platform,
+  Linking,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/ui';
@@ -112,7 +121,12 @@ export default function SignUp() {
                   Privacy Policy
                 </Text>
               </Text>
-              <Button title="Continue" onPress={handleSignUp} loading={isPending} variant="orange" />
+              <Button
+                title="Continue"
+                onPress={handleSignUp}
+                loading={isPending}
+                variant="orange"
+              />
               <TouchableOpacity
                 onPress={() => router.push(ROUTES.AUTH.SIGNIN as never)}
                 className="mt-4">

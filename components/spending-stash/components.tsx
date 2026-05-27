@@ -7,7 +7,7 @@ import { IconComponent as HugeiconsIcon, ScanEyeIcon } from '@/lib/icons';
 export const C = {
   text: '#343433',
   textSub: '#848281',
-  surfaceEl: '#f2f0ed',
+  surfaceEl: '#f7f2e8',
   accent: '#ff3e00',
   success: '#00ca48',
   warning: '#d48f00',

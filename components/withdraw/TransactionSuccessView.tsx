@@ -96,9 +96,9 @@ export const TransactionSuccessView: React.FC<TransactionSuccessViewProps> = ({ 
               <Text className="text-lg font-bold text-white">$</Text>
             </View>
             <View className="mx-4 flex-row items-center">
-              <View className="h-0.5 w-8 bg-[#f2f0ed]" />
+              <View className="h-0.5 w-8 bg-[#f7f2e8]" />
               <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#848281" className="mx-1" />
-              <View className="h-0.5 w-8 bg-[#f2f0ed]" />
+              <View className="h-0.5 w-8 bg-[#f7f2e8]" />
             </View>
             <View className="h-12 w-12 items-center justify-center rounded-full bg-[#9f4fff]">
               <Text className="font-semibold text-white">

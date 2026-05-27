@@ -47,7 +47,9 @@ function MonthDot({
                 ? 'border-[1.5px] border-charcoal-primary'
                 : 'border border-fog'
           }`}>
-          {hasData && !isSelected && <View className="h-[5px] w-[5px] rounded-full bg-charcoal-primary" />}
+          {hasData && !isSelected && (
+            <View className="h-[5px] w-[5px] rounded-full bg-charcoal-primary" />
+          )}
         </View>
         <Text
           className={`mt-[5px] text-center text-[11px] ${

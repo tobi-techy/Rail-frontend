@@ -126,7 +126,9 @@ export default function VerifyEmail() {
               showsVerticalScrollIndicator={false}>
               <StaggeredChild index={0}>
                 <View className="mb-8 mt-8">
-                  <Text className="font-subtitle text-[34px] text-charcoal-primary">Confirm email</Text>
+                  <Text className="font-subtitle text-[34px] text-charcoal-primary">
+                    Confirm email
+                  </Text>
                   <View className="mt-4">
                     <Text className="font-body text-[18px] text-ash">
                       The code has been sent to

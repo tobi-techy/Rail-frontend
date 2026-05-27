@@ -14,9 +14,10 @@ import { haptics } from '@/utils/haptics';
 import { SessionManager } from '@/utils/sessionManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { safeName } from '@/app/withdraw/method-screen/utils';
+import { safeName } from '@/components/withdraw/method-screen/utils';
 import { clearAutoFired } from '@/utils/passkeyPromptGuard';
 import { PASSCODE_SESSION_MS } from '@/utils/sessionConstants';
+import { consumeReturnRoute } from '@/utils/returnRoute';
 
 type ProfileNamePayload = {
   firstName?: string;
@@ -85,7 +86,7 @@ export default function LoginPasscodeScreen() {
       const expiresAt = new Date(Date.now() + PASSCODE_SESSION_MS).toISOString();
       useAuthStore.getState().setPasscodeSession('biometric-granted', expiresAt);
       SessionManager.schedulePasscodeSessionExpiry(expiresAt);
-      router.replace('/(tabs)');
+      router.replace(consumeReturnRoute() as any);
     } else {
       setError('Biometric authentication cancelled');
     }
@@ -154,8 +155,7 @@ export default function LoginPasscodeScreen() {
               SessionManager.schedulePasscodeSessionExpiry(response.passcodeSessionExpiresAt);
             }
             setLockoutUntil(null);
-            await new Promise((resolve) => setTimeout(resolve, 100));
-            router.replace('/(tabs)');
+            router.replace(consumeReturnRoute() as any);
           },
           onError: (err: unknown) => {
             const e = err as {

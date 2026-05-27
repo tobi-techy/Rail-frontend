@@ -22,7 +22,13 @@ interface BankPickerSheetProps {
 
 const SNAP_POINTS = ['80%'];
 
-export function BankPickerSheet({ visible, onClose, banks, loading, onSelect }: BankPickerSheetProps) {
+export function BankPickerSheet({
+  visible,
+  onClose,
+  banks,
+  loading,
+  onSelect,
+}: BankPickerSheetProps) {
   const [search, setSearch] = useState('');
   const ref = useRef<BottomSheetModal>(null);
   const insets = useSafeAreaInsets();
@@ -54,7 +60,13 @@ export function BankPickerSheet({ visible, onClose, banks, loading, onSelect }: 
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} pressBehavior="close" />
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+        pressBehavior="close"
+      />
     ),
     []
   );
@@ -81,8 +93,18 @@ export function BankPickerSheet({ visible, onClose, banks, loading, onSelect }: 
       enablePanDownToClose
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: '#fbfaf9', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
-      handleIndicatorStyle={{ backgroundColor: '#c6c6c6', width: 36, height: 4, borderRadius: 2, marginTop: 8 }}
+      backgroundStyle={{
+        backgroundColor: '#f7f4ef',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+      }}
+      handleIndicatorStyle={{
+        backgroundColor: '#c6c6c6',
+        width: 36,
+        height: 4,
+        borderRadius: 2,
+        marginTop: 8,
+      }}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize">

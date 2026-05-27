@@ -30,7 +30,19 @@ const CURRENCY_LOCALE: Record<Currency, string> = {
   PYUSD: 'en-US',
 };
 
-export const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'EUR', 'GBP', 'NGN', 'GHS', 'KES', 'CAD', 'USDC', 'USDT', 'EURC', 'PYUSD'];
+export const SUPPORTED_CURRENCIES: Currency[] = [
+  'USD',
+  'EUR',
+  'GBP',
+  'NGN',
+  'GHS',
+  'KES',
+  'CAD',
+  'USDC',
+  'USDT',
+  'EURC',
+  'PYUSD',
+];
 
 const LEGACY_CURRENCY_FALLBACK: Record<string, Currency> = {
   NGN: 'USD',
@@ -102,20 +114,20 @@ export const formatCurrencyAmount = (
   const max = options?.maximumFractionDigits ?? 2;
   const cacheKey = `${currency}:${min}:${max}`;
 
-// Stablecoins aren't ISO 4217 currencies — map them to their peg for Intl.NumberFormat
-const INTL_CURRENCY_CODE: Record<Currency, string> = {
-  USD: 'USD',
-  EUR: 'EUR',
-  GBP: 'GBP',
-  NGN: 'NGN',
-  GHS: 'GHS',
-  KES: 'KES',
-  CAD: 'CAD',
-  USDC: 'USD',
-  USDT: 'USD',
-  EURC: 'EUR',
-  PYUSD: 'USD',
-};
+  // Stablecoins aren't ISO 4217 currencies — map them to their peg for Intl.NumberFormat
+  const INTL_CURRENCY_CODE: Record<Currency, string> = {
+    USD: 'USD',
+    EUR: 'EUR',
+    GBP: 'GBP',
+    NGN: 'NGN',
+    GHS: 'GHS',
+    KES: 'KES',
+    CAD: 'CAD',
+    USDC: 'USD',
+    USDT: 'USD',
+    EURC: 'EUR',
+    PYUSD: 'USD',
+  };
 
   let formatter = currencyFormatterCache.get(cacheKey);
   if (!formatter) {

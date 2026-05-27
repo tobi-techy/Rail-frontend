@@ -1,8 +1,17 @@
 import type { ComponentType } from 'react';
 import type { Currency } from '@/stores/uiStore';
 import {
-  UsdcIcon, UsdtIcon, EurcIcon, PyusdIcon,
-  UsdIcon, EurIcon, GbpIcon, NgnIcon, GhsIcon, KesIcon, CadIcon,
+  UsdcIcon,
+  UsdtIcon,
+  EurcIcon,
+  PyusdIcon,
+  UsdIcon,
+  EurIcon,
+  GbpIcon,
+  NgnIcon,
+  GhsIcon,
+  KesIcon,
+  CadIcon,
 } from '@/assets/svg';
 
 export interface CurrencyConfig {
@@ -24,7 +33,13 @@ const CONFIG: Record<Currency, CurrencyConfig> = {
   USDC: { code: 'USDC', label: 'USD Coin', symbol: 'USDC', type: 'stablecoin', Icon: UsdcIcon },
   USDT: { code: 'USDT', label: 'Tether', symbol: 'USDT', type: 'stablecoin', Icon: UsdtIcon },
   EURC: { code: 'EURC', label: 'Euro Coin', symbol: 'EURC', type: 'stablecoin', Icon: EurcIcon },
-  PYUSD: { code: 'PYUSD', label: 'PayPal USD', symbol: 'PYUSD', type: 'stablecoin', Icon: PyusdIcon },
+  PYUSD: {
+    code: 'PYUSD',
+    label: 'PayPal USD',
+    symbol: 'PYUSD',
+    type: 'stablecoin',
+    Icon: PyusdIcon,
+  },
 };
 
 const FALLBACK = CONFIG.USDC;

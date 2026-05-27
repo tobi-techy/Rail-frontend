@@ -20,8 +20,8 @@ import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Keypad } from '@/components/molecules/Keypad';
 import { Button } from '@/components/ui';
-import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
-import { normalizeAmount } from '@/app/withdraw/method-screen/utils';
+import { AnimatedAmount } from '@/components/withdraw/method-screen/AnimatedAmount';
+import { normalizeAmount } from '@/components/withdraw/method-screen/utils';
 import { usePajRates, usePajOnramp, usePajOrderStatus } from '@/api/hooks';
 import { invalidateQueries } from '@/api/queryClient';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
@@ -564,7 +564,7 @@ function TimelineRow({
 
   const iconColor = isFailed ? '#ff2b3a' : isDone ? '#ff3e00' : '#c6c6c6';
   const titleColor = isFailed ? '#ff2b3a' : '#343433';
-  const lineColor = isDone ? '#c6c6c6' : '#f2f0ed';
+  const lineColor = isDone ? '#c6c6c6' : '#f7f2e8';
 
   return (
     <Animated.View

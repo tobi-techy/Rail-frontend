@@ -21,36 +21,39 @@ export function TypingText({ text, speed = 12, onComplete, style, children }: Pr
   const lastTimeRef = useRef(0);
   const completedRef = useRef(false);
 
-  const animate = useCallback((timestamp: number) => {
-    if (completedRef.current) return;
+  const animate = useCallback(
+    (timestamp: number) => {
+      if (completedRef.current) return;
 
-    const elapsed = timestamp - lastTimeRef.current;
-    // Adaptive: type faster for longer texts, batch more chars per frame
-    const charsPerTick = text.length > 500 ? 3 : text.length > 200 ? 2 : 1;
-    const interval = speed;
+      const elapsed = timestamp - lastTimeRef.current;
+      // Adaptive: type faster for longer texts, batch more chars per frame
+      const charsPerTick = text.length > 500 ? 3 : text.length > 200 ? 2 : 1;
+      const interval = speed;
 
-    if (elapsed >= interval) {
-      lastTimeRef.current = timestamp;
-      const nextIndex = Math.min(indexRef.current + charsPerTick, text.length);
+      if (elapsed >= interval) {
+        lastTimeRef.current = timestamp;
+        const nextIndex = Math.min(indexRef.current + charsPerTick, text.length);
 
-      // Skip ahead through whitespace for natural pacing
-      let finalIndex = nextIndex;
-      while (finalIndex < text.length && finalIndex < nextIndex + 2 && text[finalIndex] === ' ') {
-        finalIndex++;
+        // Skip ahead through whitespace for natural pacing
+        let finalIndex = nextIndex;
+        while (finalIndex < text.length && finalIndex < nextIndex + 2 && text[finalIndex] === ' ') {
+          finalIndex++;
+        }
+
+        indexRef.current = finalIndex;
+        setDisplayed(text.slice(0, finalIndex));
+
+        if (finalIndex >= text.length) {
+          completedRef.current = true;
+          onComplete?.();
+          return;
+        }
       }
 
-      indexRef.current = finalIndex;
-      setDisplayed(text.slice(0, finalIndex));
-
-      if (finalIndex >= text.length) {
-        completedRef.current = true;
-        onComplete?.();
-        return;
-      }
-    }
-
-    rafRef.current = requestAnimationFrame(animate);
-  }, [text, speed, onComplete]);
+      rafRef.current = requestAnimationFrame(animate);
+    },
+    [text, speed, onComplete]
+  );
 
   useEffect(() => {
     indexRef.current = 0;

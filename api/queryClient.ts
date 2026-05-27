@@ -166,6 +166,9 @@ export const queryKeys = {
     moneyAcrossBorders: () => [...queryKeys.ai.all, 'money-across-borders'] as const,
     automations: () => [...queryKeys.ai.all, 'automations'] as const,
     obligations: (params?: unknown) => [...queryKeys.ai.all, 'obligations', params] as const,
+    actionReceipts: () => [...queryKeys.ai.all, 'action-receipts'] as const,
+    receiptSplits: () => [...queryKeys.ai.all, 'receipt-splits'] as const,
+    receiptSplit: (id: string) => [...queryKeys.ai.all, 'receipt-split', id] as const,
   },
   onboarding: {
     all: ['onboarding'] as const,

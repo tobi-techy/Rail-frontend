@@ -2,12 +2,14 @@ import React, { useEffect } from 'react';
 import { View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import Animated, { FadeIn, FadeInDown, SlideInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, SlideInUp, BounceIn } from 'react-native-reanimated';
 import * as Haptics from '@/utils/platformHaptics';
 import { Button } from '@/components/ui';
 import { Confetti } from '@/components/atoms/Confetti';
 import { CheckmarkCircle02Icon, Cancel01Icon, Clock01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { MiriamCharacter } from '@/components/ai/MiriamCharacter';
+import type { MiriamEmotion } from '@/components/ai/MiriamCharacter';
 
 export type WithdrawalStatusType = 'success' | 'pending' | 'failed';
 
@@ -46,6 +48,7 @@ export function WithdrawalStatusScreen({
           iconBg: '#E8F5E9',
           title: title ?? 'Sent successfully',
           showConfetti: true,
+          miriamEmotion: 'happy' as MiriamEmotion,
         };
       case 'failed':
         return {
@@ -54,6 +57,7 @@ export function WithdrawalStatusScreen({
           iconBg: '#FEF2F2',
           title: title ?? 'Transfer failed',
           showConfetti: false,
+          miriamEmotion: 'sad' as MiriamEmotion,
         };
       case 'pending':
         return {
@@ -62,6 +66,7 @@ export function WithdrawalStatusScreen({
           iconBg: '#FFF7ED',
           title: title ?? 'Processing',
           showConfetti: false,
+          miriamEmotion: 'thinking' as MiriamEmotion,
         };
     }
   };
@@ -70,16 +75,13 @@ export function WithdrawalStatusScreen({
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      {config.showConfetti && <Confetti />}
+      {config.showConfetti && <Confetti count={80} />}
 
       {/* Content */}
       <View className="flex-1 items-center justify-center px-6">
-        {/* Status Icon */}
-        <Animated.View
-          entering={FadeIn.delay(100).duration(400)}
-          className="mb-8 size-24 items-center justify-center rounded-full"
-          style={{ backgroundColor: config.iconBg }}>
-          <HugeiconsIcon icon={config.icon} size={44} color={config.iconColor} strokeWidth={2} />
+        {/* Miriam Character */}
+        <Animated.View entering={BounceIn.delay(100).duration(600)} className="mb-6">
+          <MiriamCharacter size={100} emotion={config.miriamEmotion} animate />
         </Animated.View>
 
         {/* Amount */}

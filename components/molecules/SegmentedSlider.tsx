@@ -34,7 +34,7 @@ export function SegmentedSlider({
   label,
   showPercentage = true,
   activeColor = '#ff3e00',
-  inactiveColor = '#f2f0ed',
+  inactiveColor = '#f7f2e8',
   className,
 }: SegmentedSliderProps) {
   const sliderWidth = useSharedValue(0);

@@ -79,31 +79,31 @@ function AccountCard({ account }: { account: VirtualAccount }) {
         {account.beneficiary_name ? (
           <>
             <CopyRow label="Name" value={account.beneficiary_name} />
-            <View className="h-px bg-[#f2f0ed]" />
+            <View className="h-px bg-[#f7f2e8]" />
           </>
         ) : null}
         <CopyRow label="Account number" value={account.account_number || '\u2014'} />
         {account.routing_number ? (
           <>
-            <View className="h-px bg-[#f2f0ed]" />
+            <View className="h-px bg-[#f7f2e8]" />
             <CopyRow label="Routing number" value={account.routing_number} />
           </>
         ) : null}
         {account.bank_name ? (
           <>
-            <View className="h-px bg-[#f2f0ed]" />
+            <View className="h-px bg-[#f7f2e8]" />
             <CopyRow label="Bank" value={account.bank_name} />
           </>
         ) : null}
         {account.bank_address ? (
           <>
-            <View className="h-px bg-[#f2f0ed]" />
+            <View className="h-px bg-[#f7f2e8]" />
             <CopyRow label="Address" value={account.bank_address} />
           </>
         ) : null}
         {rails ? (
           <>
-            <View className="h-px bg-[#f2f0ed]" />
+            <View className="h-px bg-[#f7f2e8]" />
             <CopyRow label="Payment rails" value={rails} />
           </>
         ) : null}

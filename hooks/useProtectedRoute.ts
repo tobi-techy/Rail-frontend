@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import { router, useSegments, usePathname } from 'expo-router';
+import { router, useSegments, usePathname, useGlobalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { authService, passcodeService } from '@/api/services';
 import { logger } from '@/lib/logger';
@@ -13,6 +13,8 @@ import {
   normalizeRoutePath,
 } from '@/utils/routeHelpers';
 import { SessionManager } from '@/utils/sessionManager';
+import { setReturnRoute } from '@/utils/returnRoute';
+import { BACKGROUND_LOCK_GRACE_MS } from '@/utils/sessionConstants';
 
 const LOCAL_ADVANCED_STATUSES = new Set(['kyc_pending', 'kyc_approved', 'completed']);
 
@@ -24,6 +26,7 @@ const LOCAL_ADVANCED_STATUSES = new Set(['kyc_pending', 'kyc_approved', 'complet
 export function useProtectedRoute() {
   const segments = useSegments();
   const pathname = usePathname();
+  const globalParams = useGlobalSearchParams<Record<string, string>>();
 
   const authState: AuthState = {
     user: useAuthStore((state) => state.user),
@@ -41,6 +44,10 @@ export function useProtectedRoute() {
   const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const appState = useRef(AppState.currentState);
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+  const paramsRef = useRef(globalParams);
+  paramsRef.current = globalParams;
 
   const refreshBackendAuthState = useCallback(async () => {
     const state = useAuthStore.getState();
@@ -208,12 +215,16 @@ export function useProtectedRoute() {
         if (nextAppState === 'background') {
           const state = useAuthStore.getState();
           if (state.isAuthenticated && state.hasPasscode) {
-            // Mark session as expired immediately. The routing effect will
-            // navigate to /login-passcode when the app returns to foreground.
+            // Grant a 1-minute grace period before locking instead of locking
+            // immediately. This lets users briefly leave the app (e.g. to check
+            // an account number for a transfer) and return without needing to
+            // re-enter their PIN. The routing effect will navigate to
+            // /login-passcode when the app returns to foreground after expiry.
             // We do NOT call router.replace here — navigating during background
             // transition can corrupt navigation state and crash on next launch.
-            SessionManager.handlePasscodeSessionExpired();
-            useAuthStore.setState({ appLockExpiresAt: new Date().toISOString() });
+            useAuthStore.setState({
+              appLockExpiresAt: new Date(Date.now() + BACKGROUND_LOCK_GRACE_MS).toISOString(),
+            });
           }
         }
 
@@ -232,7 +243,8 @@ export function useProtectedRoute() {
             SessionManager.isAppUnlockExpired()
           ) {
             // Don't redirect if already on the passcode screen
-            if (pathname !== '/login-passcode') {
+            if (pathnameRef.current !== '/login-passcode') {
+              setReturnRoute(pathnameRef.current, paramsRef.current as Record<string, string>);
               router.replace('/login-passcode' as any);
             }
             appState.current = nextAppState;
@@ -336,6 +348,9 @@ export function useProtectedRoute() {
         action: 'navigate',
         targetRoute,
       });
+      if (targetRoute === '/login-passcode') {
+        setReturnRoute(pathname, globalParams as Record<string, string>);
+      }
       router.replace(targetRoute as any);
     } else {
       logger.debug('[Auth] No navigation needed - user is in correct place', {

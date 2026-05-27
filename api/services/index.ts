@@ -20,6 +20,7 @@ export { notificationService } from './notification.service';
 export { cardService } from './card.service';
 export { pajService } from './paj.service';
 export { aiService } from './ai.service';
+export { premiumService } from './premium.service';
 export { gameplayService } from './gameplay.service';
 export { securityService } from './security.service';
 

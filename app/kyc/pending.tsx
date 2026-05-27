@@ -58,8 +58,10 @@ export default function KycPendingScreen() {
 
   const handleRetry = useCallback(() => {
     setHasTimedOut(false);
+    // Clear stale session so source-of-funds skip effect doesn't redirect back with rejected token
+    useKycStore.getState().setDiditSession('', '');
     invalidateQueries.user();
-    router.replace('/kyc');
+    router.replace('/kyc/source-of-funds');
   }, []);
 
   const handleContactSupport = useCallback(() => {
@@ -76,7 +78,7 @@ export default function KycPendingScreen() {
   // don't show the polling spinner — send them back to the submission flow.
   useEffect(() => {
     if (data && !data.has_submitted && !localSubmissionPendingAt && status !== 'approved') {
-      router.replace('/kyc');
+      router.replace('/kyc/source-of-funds');
     }
   }, [data, localSubmissionPendingAt, status]);
 
@@ -225,9 +227,7 @@ export default function KycPendingScreen() {
                 }}
                 className="mt-2 py-2"
                 accessibilityRole="button">
-                <Text className="text-center font-body text-[14px] text-ash">
-                  Continue to app
-                </Text>
+                <Text className="text-center font-body text-[14px] text-ash">Continue to app</Text>
               </Pressable>
             </View>
           </>

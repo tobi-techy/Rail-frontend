@@ -71,9 +71,7 @@ export default function KycVerificationIntroScreen() {
 
           {/* What you unlock */}
           <View className="mt-8 rounded-2xl border border-stone-surface bg-stone-surface p-4">
-            <Text className="mb-3 font-subtitle text-[13px] text-graphite">
-              What you unlock:
-            </Text>
+            <Text className="mb-3 font-subtitle text-[13px] text-graphite">What you unlock:</Text>
             <View className="flex-row flex-wrap gap-2">
               {FEATURES_UNLOCKED.map((f) => (
                 <View
@@ -94,7 +92,9 @@ export default function KycVerificationIntroScreen() {
                   <Text className="font-subtitle text-[14px] text-white">{step.number}</Text>
                 </View>
                 <View className="flex-1 pt-0.5">
-                  <Text className="font-subtitle text-[16px] text-charcoal-primary">{step.title}</Text>
+                  <Text className="font-subtitle text-[16px] text-charcoal-primary">
+                    {step.title}
+                  </Text>
                   <Text className="mt-1 font-body text-[14px] leading-5 text-ash">
                     {step.description}
                   </Text>

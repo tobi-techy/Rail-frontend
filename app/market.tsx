@@ -13,7 +13,14 @@ import { MarketNewsCard } from '@/components/market/MarketNewsCard';
 import { useHaptics } from '@/hooks/useHaptics';
 import { MarketCategoryCard } from '@/components/market/MarketCategoryCard';
 import { useMarketFilters, SORT_OPTIONS, TYPE_OPTIONS } from '@/hooks/useMarketFilters';
-import { ArrowRight01Icon, BarChartIcon, Cancel01Icon, ChartUpIcon, DollarCircleIcon, FilterIcon } from '@/lib/icons';
+import {
+  ArrowRight01Icon,
+  BarChartIcon,
+  Cancel01Icon,
+  ChartUpIcon,
+  DollarCircleIcon,
+  FilterIcon,
+} from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);

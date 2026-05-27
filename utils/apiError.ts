@@ -24,7 +24,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   TRANSFER_FAILED: 'Transfer failed. Please try again.',
   WITHDRAWAL_ERROR: 'Withdrawal could not be processed. Please try again.',
   FUND_STASH_ERROR: 'Could not move funds to stash. Please try again.',
-  NO_LOCKED_CYCLES: 'Your stash has no locked funds to withdraw. Funds need to be deposited through auto-allocation first.',
+  NO_LOCKED_CYCLES:
+    'Your stash has no locked funds to withdraw. Funds need to be deposited through auto-allocation first.',
   PREVIEW_ERROR: 'Could not calculate withdrawal fee. A default fee will apply.',
   NO_WALLET: 'No wallet found for your account. Please contact support.',
   PROVIDER_NOT_CONFIGURED: 'Withdrawal service is temporarily unavailable.',

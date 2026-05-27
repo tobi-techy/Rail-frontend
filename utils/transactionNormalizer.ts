@@ -95,9 +95,22 @@ export const p2pToTransaction = (t: P2PTransfer): Transaction => ({
   withdrawalMethod: 'p2p' as WithdrawalMethod,
 });
 
-export const pajOrderToTransaction = (o: PajOrderStatus & { orderType?: string; createdAt?: string; tokenAmount?: number; bankAccountNumber?: string; bankAccountName?: string }): Transaction => {
+export const pajOrderToTransaction = (
+  o: PajOrderStatus & {
+    orderType?: string;
+    createdAt?: string;
+    tokenAmount?: number;
+    bankAccountNumber?: string;
+    bankAccountName?: string;
+  }
+): Transaction => {
   const isOfframp = o.type === 'OFF_RAMP' || o.orderType === 'offramp';
-  const statusMap: Record<string, string> = { INIT: 'pending', PAID: 'pending', COMPLETED: 'completed', FAILED: 'failed' };
+  const statusMap: Record<string, string> = {
+    INIT: 'pending',
+    PAID: 'pending',
+    COMPLETED: 'completed',
+    FAILED: 'failed',
+  };
   const acctName = o.bankAccountName;
   const acctNum = o.bankAccountNumber;
 

@@ -35,7 +35,9 @@ export function generateRequestId(): string {
       // Combines timestamp, high-res timer, and a simple counter to reduce predictability.
       const ts = Date.now().toString(36);
       const hr = Math.floor(performance.now() * 1000).toString(36);
-      const rnd = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+      const rnd = Math.floor(Math.random() * 0xffffff)
+        .toString(16)
+        .padStart(6, '0');
       return `${ts}-${hr}-4000-8000-${rnd}${Date.now().toString(16).slice(-6)}`;
     }
   }

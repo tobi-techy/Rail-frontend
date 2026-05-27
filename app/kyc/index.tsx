@@ -113,6 +113,9 @@ export default function KycCountryScreen() {
 
   // Auto-set KYC country from address step, then redirect if autoLaunch
   useEffect(() => {
+    // Don't auto-redirect if user is already approved or has submitted — kycStatus effect handles that
+    if (kycStatus && (kycStatus.status === 'approved' || kycStatus.has_submitted)) return;
+
     let mapped = false;
     if (userCountry) {
       const kycCountry = ISO2_TO_KYC[userCountry.toUpperCase()];
@@ -125,7 +128,7 @@ export default function KycCountryScreen() {
     if (params.autoLaunch === 'true' && mapped) {
       router.replace('/kyc/verification-intro');
     }
-  }, [userCountry, params.autoLaunch, country, setCountry]);
+  }, [userCountry, params.autoLaunch, country, setCountry, kycStatus]);
 
   const currentCountry = useMemo(
     () => COUNTRIES.find((item) => item.code === country) ?? COUNTRIES[0],
@@ -157,9 +160,9 @@ export default function KycCountryScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 160 }}>
           <View className="mb-6">
-            <Text className="font-subtitle text-[13px] text-ash">Step 1 of 4</Text>
+            <Text className="font-subtitle text-[13px] text-ash">Step 1</Text>
             <View className="mt-3 h-1.5 overflow-hidden rounded-full bg-fog">
-              <View className="h-full w-1/4 rounded-full bg-midnight" />
+              <View className="h-full w-1/5 rounded-full bg-midnight" />
             </View>
           </View>
 
@@ -195,7 +198,9 @@ export default function KycCountryScreen() {
           </View>
 
           <View className="mt-6 rounded-2xl border border-fog bg-parchment-card px-4 py-4">
-            <Text className="mb-3 font-subtitle text-[14px] text-charcoal-primary">Accepted documents</Text>
+            <Text className="mb-3 font-subtitle text-[14px] text-charcoal-primary">
+              Accepted documents
+            </Text>
             {requirements.acceptedDocuments.map((document, index) => (
               <View
                 key={document.type}
@@ -205,7 +210,9 @@ export default function KycCountryScreen() {
                     : ''
                 }`}>
                 <View className="flex-1 pr-4">
-                  <Text className="font-subtitle text-[14px] text-charcoal-primary">{document.label}</Text>
+                  <Text className="font-subtitle text-[14px] text-charcoal-primary">
+                    {document.label}
+                  </Text>
                   <Text className="mt-1 font-body text-[12px] text-ash">
                     {document.description}
                   </Text>
@@ -223,7 +230,14 @@ export default function KycCountryScreen() {
         <View
           className="absolute bottom-0 left-0 right-0 border-t border-stone-surface bg-parchment-card px-4 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
-          <Button title="Continue" onPress={() => router.push('/kyc/tax-id')} variant="orange" />
+          <Button
+            title="Continue"
+            onPress={() => {
+              useKycStore.getState().addCompletedStep('country');
+              router.replace('/kyc/tax-id');
+            }}
+            variant="orange"
+          />
         </View>
 
         <Modal

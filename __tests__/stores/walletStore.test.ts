@@ -2,12 +2,13 @@ import { useWalletStore } from '../../stores/walletStore';
 
 describe('walletStore', () => {
   beforeEach(() => {
-    useWalletStore.getState().reset?.() || useWalletStore.setState({
-      balance: 0,
-      transactions: [],
-      isLoading: false,
-      error: null,
-    });
+    useWalletStore.getState().reset?.() ||
+      useWalletStore.setState({
+        balance: 0,
+        transactions: [],
+        isLoading: false,
+        error: null,
+      });
   });
 
   it('should have initial state', () => {

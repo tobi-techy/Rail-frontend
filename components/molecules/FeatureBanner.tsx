@@ -82,31 +82,20 @@ interface FeatureBannerProps {
 }
 
 function getKycProgressScreen(state: ReturnType<typeof useKycStore.getState>): string {
-  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, diditSessionToken } =
-    state;
+  const { completedSteps, diditSessionToken } = state;
 
-  // If user has a Didit session token, they're in the middle of ID verification
-  if (diditSessionToken) {
+  if (diditSessionToken || completedSteps.includes('source-of-funds')) {
     return '/kyc/didit-sdk';
   }
-
-  // If user has completed disclosures and submitted, they should be going to Didit
-  // But if diditSessionToken is null (failed to get or session expired), go to disclosures to resubmit
-  if (disclosuresConfirmed && taxId && employmentStatus && investmentPurposes.length > 0) {
+  if (completedSteps.includes('disclosures')) {
+    return '/kyc/source-of-funds';
+  }
+  if (completedSteps.includes('about-you')) {
     return '/kyc/disclosures';
   }
-
-  // If user has started about-you (employment + investment goals), go to disclosures
-  if (employmentStatus && investmentPurposes.length > 0 && taxId) {
-    return '/kyc/disclosures';
-  }
-
-  // If user has started tax-id, go to about-you
-  if (taxId) {
+  if (completedSteps.includes('tax-id')) {
     return '/kyc/about-you';
   }
-
-  // Nothing started, go to beginning
   return '/kyc/tax-id';
 }
 
@@ -118,15 +107,10 @@ export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBanne
   const [showConductorSheet, setShowConductorSheet] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, diditSessionToken } =
+  const { completedSteps, diditSessionToken } =
     useKycStore();
 
-  const hasStartedKyc =
-    taxId.trim().length > 0 ||
-    employmentStatus !== null ||
-    investmentPurposes.length > 0 ||
-    disclosuresConfirmed ||
-    diditSessionToken !== null;
+  const hasStartedKyc = completedSteps.length > 0 || diditSessionToken !== null;
 
   const hasCompletedOnboarding = useAuthStore((s) => s.hasCompletedOnboarding);
   const onboardingStatus = useAuthStore((s) => s.onboardingStatus);
@@ -231,7 +215,7 @@ export function FeatureBanner({ kycApproved, onKYCPress, hasCard }: FeatureBanne
                 width: i === activeIndex ? 16 : 6,
                 height: 6,
                 borderRadius: 3,
-                backgroundColor: i === activeIndex ? '#ff3e00' : '#f2f0ed',
+                backgroundColor: i === activeIndex ? '#ff3e00' : '#f7f2e8',
               }}
             />
           ))}

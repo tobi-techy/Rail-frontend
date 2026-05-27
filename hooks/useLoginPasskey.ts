@@ -11,7 +11,7 @@ import {
   getPasskeyFallbackMessage,
   normalizePasskeyGetRequest,
 } from '@/utils/passkeyNative';
-import { safeName } from '@/app/withdraw/method-screen/utils';
+import { safeName } from '@/components/withdraw/method-screen/utils';
 import {
   beginPasskeyPrompt,
   canStartPasskeyPrompt,

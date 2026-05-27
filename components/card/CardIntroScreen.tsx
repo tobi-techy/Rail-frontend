@@ -218,7 +218,7 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
             },
             {
               icon: Tag01Icon,
-              bg: '#f2f0ed',
+              bg: '#f7f2e8',
               color: '#474645',
               title: 'Zero Fees',
               body: 'No annual fee, no issuance fee. Completely free.',

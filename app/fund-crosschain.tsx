@@ -16,8 +16,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Keypad } from '@/components/molecules/Keypad';
 import { Button } from '@/components/ui';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { AnimatedAmount } from '@/app/withdraw/method-screen/AnimatedAmount';
-import { normalizeAmount } from '@/app/withdraw/method-screen/utils';
+import { AnimatedAmount } from '@/components/withdraw/method-screen/AnimatedAmount';
+import { normalizeAmount } from '@/components/withdraw/method-screen/utils';
 import { Cancel01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 

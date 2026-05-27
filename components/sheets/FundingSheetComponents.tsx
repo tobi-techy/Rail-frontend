@@ -43,7 +43,7 @@ export function OptionCard({ option, index }: { option: FundingOption; index: nu
           option.onPress();
         }}
         disabled={option.disabled}
-        className="mb-3 flex-row items-center gap-4 rounded-2xl border border-[#f2f0ed] bg-parchment-card px-4 py-5 active:bg-[#f8f7f4]"
+        className="mb-3 flex-row items-center gap-4 rounded-2xl border border-[#f7f2e8] bg-parchment-card px-4 py-5 active:bg-[#f8f7f4]"
         style={option.disabled ? { opacity: 0.45 } : undefined}
         accessibilityRole="button"
         accessibilityState={{ disabled: option.disabled }}
@@ -64,7 +64,7 @@ export function OptionCard({ option, index }: { option: FundingOption; index: nu
           <View className="flex-row items-center gap-2">
             <Text className="font-subtitle text-[15px] text-[#343433]">{option.title}</Text>
             {option.badge && (
-              <View className="rounded-md bg-[#f2f0ed] px-1.5 py-0.5">
+              <View className="rounded-md bg-[#f7f2e8] px-1.5 py-0.5">
                 <Text className="font-caption text-[10px] text-[#848281]">{option.badge}</Text>
               </View>
             )}
@@ -240,7 +240,7 @@ function CurrencySelectorPill({
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setPickerVisible(true);
         }}
-        className="flex-row items-center gap-1.5 rounded-full border border-[#f2f0ed] bg-[#f8f7f4] px-3 py-1.5"
+        className="flex-row items-center gap-1.5 rounded-full border border-[#f7f2e8] bg-[#f8f7f4] px-3 py-1.5"
         accessibilityRole="button"
         accessibilityLabel="Select currency">
         <CurrencyIcon currency={current} size={20} />
@@ -271,14 +271,14 @@ function CurrencySelectorPill({
               handleSelect(c.code);
               setPickerVisible(false);
             }}
-            className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f2f0ed] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]"
+            className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f7f2e8] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]"
             style={c.disabled ? { opacity: 0.4 } : undefined}>
             <CurrencyIcon currency={c} size={36} />
             <View className="flex-1">
               <View className="flex-row items-center gap-2">
                 <Text className="font-subtitle text-[15px] text-[#343433]">{c.code}</Text>
                 {c.disabled && (
-                  <View className="rounded-md bg-[#f2f0ed] px-1.5 py-0.5">
+                  <View className="rounded-md bg-[#f7f2e8] px-1.5 py-0.5">
                     <Text className="font-caption text-[10px] text-[#848281]">Soon</Text>
                   </View>
                 )}
@@ -305,7 +305,7 @@ function CurrencySelectorPill({
               handleSelect(c.code);
               setPickerVisible(false);
             }}
-            className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f2f0ed] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]">
+            className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f7f2e8] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]">
             <CurrencyIcon currency={c} size={36} />
             <View className="flex-1">
               <Text className="font-subtitle text-[15px] text-[#343433]">{c.code}</Text>

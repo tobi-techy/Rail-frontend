@@ -7,12 +7,15 @@ import type {
   AIMessage,
   InsightCard,
   PendingAction,
+  ProactiveOpener,
+  ActionChip,
   ToneMode,
 } from '@/api/types/ai';
 
 type QueuedMessage = {
   message: string;
   toneMode?: ToneMode;
+  image?: string;
 };
 
 interface AIChatState {
@@ -26,11 +29,15 @@ interface AIChatState {
   isStreaming: boolean;
   streamedContent: string;
   cards: InsightCard[];
+  actionChips: ActionChip[];
   suggestions: string[];
   suggestionsLoading: boolean;
   pendingAction: PendingAction | null;
   overCeiling: boolean;
   tonePreference: ToneMode;
+  // Proactive opener
+  proactiveOpener: ProactiveOpener | null;
+  proactiveOpenerLoading: boolean;
   // Screen state
   isOpen: boolean;
   // Hardening: message queue, abort control, connection status
@@ -40,6 +47,8 @@ interface AIChatState {
   streamingPhase: string;
   lastError: string | null;
   retryCount: number;
+  // Scanned receipt bridge (set by scanner, consumed by ai-chat)
+  pendingScannedReceipt: { uri: string; base64: string } | null;
 }
 
 interface AIChatActions {
@@ -62,8 +71,13 @@ interface AIChatActions {
   stopStreaming: () => void;
   retryLastMessage: () => void;
   fetchSuggestions: () => Promise<void>;
+  fetchProactiveOpener: () => Promise<void>;
+  dismissActionChip: (chipId: string) => void;
   clearPendingAction: () => void;
   reset: () => void;
+  // Scanned receipt bridge
+  setPendingScannedReceipt: (receipt: { uri: string; base64: string }) => void;
+  consumePendingScannedReceipt: () => { uri: string; base64: string } | null;
   // Internal
   processQueue: () => Promise<void>;
 }
@@ -76,11 +90,14 @@ const initialState: AIChatState = {
   isStreaming: false,
   streamedContent: '',
   cards: [],
+  actionChips: [],
   suggestions: [],
   suggestionsLoading: false,
   pendingAction: null,
   overCeiling: false,
   tonePreference: 'direct',
+  proactiveOpener: null,
+  proactiveOpenerLoading: false,
   isOpen: false,
   messageQueue: [],
   streamAbortController: null,
@@ -88,6 +105,7 @@ const initialState: AIChatState = {
   streamingPhase: '',
   lastError: null,
   retryCount: 0,
+  pendingScannedReceipt: null,
 };
 
 export const useAIChatStore = create<AIChatState & AIChatActions>()(
@@ -99,6 +117,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
         set({ isOpen: true });
         get().fetchConversations();
         get().fetchSuggestions();
+        get().fetchProactiveOpener();
       },
 
       close: () => set({ isOpen: false }),
@@ -265,6 +284,9 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
                 finalCards = event.data;
                 set({ cards: event.data });
                 break;
+              case 'action_chips':
+                set({ actionChips: event.data });
+                break;
               case 'pending_action':
                 finalPending = event.data;
                 set({ pendingAction: event.data });
@@ -356,15 +378,18 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
       sendImage: async (base64Image: string, message?: string, conversationId?: string) => {
         const state = get();
         if (state.isStreaming) {
-          set({ messageQueue: [...state.messageQueue, { message: message ?? 'Image analysis' }] });
+          set({
+            messageQueue: [
+              ...state.messageQueue,
+              { message: message ?? 'Image analysis', image: base64Image },
+            ],
+          });
           return;
         }
 
         const convId = conversationId ?? state.activeConversationId;
         const userContent = message || 'Analyze this receipt';
 
-        // Truncate base64 for display (full sent to API)
-        const displayUrl = `data:image/jpeg;base64,${base64Image.slice(0, 1000)}`;
         const userMsg: AIMessage = {
           role: 'user',
           content: userContent,
@@ -403,7 +428,6 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
             lastError: null,
           }));
 
-          // If this was in a conversation context, create or update conversation
           if (convId) {
             void get().fetchConversations();
           }
@@ -439,7 +463,35 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
         }
       },
 
+      fetchProactiveOpener: async () => {
+        set({ proactiveOpenerLoading: true });
+        try {
+          const opener = await aiService.getProactiveOpener();
+          set({ proactiveOpener: opener });
+        } catch {
+          set({ proactiveOpener: null });
+        } finally {
+          set({ proactiveOpenerLoading: false });
+        }
+      },
+
+      dismissActionChip: (chipId: string) => {
+        set((s) => ({
+          actionChips: s.actionChips.filter((c) => c.id !== chipId),
+        }));
+      },
+
       clearPendingAction: () => set({ pendingAction: null }),
+
+      setPendingScannedReceipt: (receipt) => set({ pendingScannedReceipt: receipt }),
+
+      consumePendingScannedReceipt: () => {
+        const { pendingScannedReceipt } = get();
+        if (pendingScannedReceipt) {
+          set({ pendingScannedReceipt: null });
+        }
+        return pendingScannedReceipt;
+      },
 
       reset: () => set(initialState),
 
@@ -450,7 +502,12 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
 
         const [next, ...rest] = messageQueue;
         set({ messageQueue: rest });
-        await get().sendMessage(next.message, undefined, { toneMode: next.toneMode });
+
+        if (next.image) {
+          await get().sendImage(next.image, next.message);
+        } else {
+          await get().sendMessage(next.message, undefined, { toneMode: next.toneMode });
+        }
       },
     }),
     {

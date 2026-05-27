@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { aiService } from '../services/ai.service';
+import { premiumService } from '../services/premium.service';
 import { queryKeys } from '../queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import type {
@@ -70,6 +71,79 @@ export function useCreateFinancialObligation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.ai.obligations() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.ai.operatingPlan() });
+    },
+  });
+}
+
+export function useActionReceipts() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  return useQuery({
+    queryKey: queryKeys.ai.actionReceipts(),
+    queryFn: () => aiService.getActionReceipts(),
+    enabled: isAuthenticated,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useReceiptSplits(status?: string) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  return useQuery({
+    queryKey: queryKeys.ai.receiptSplits(),
+    queryFn: () => aiService.listSplits(status),
+    enabled: isAuthenticated,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useReceiptSplit(id: string) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  return useQuery({
+    queryKey: queryKeys.ai.receiptSplit(id),
+    queryFn: () => aiService.getSplit(id),
+    enabled: isAuthenticated && !!id,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useSendSplitReminder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (splitId: string) => aiService.sendSplitReminder(splitId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ai.receiptSplits() });
+    },
+  });
+}
+
+export function useMarkParticipantPaid() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ splitId, participantId }: { splitId: string; participantId: string }) =>
+      aiService.markParticipantPaid(splitId, participantId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ai.receiptSplits() });
+    },
+  });
+}
+
+export function useSplitReceipt() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      receiptId,
+      assignments,
+    }: {
+      receiptId: string;
+      assignments: Record<string, string>;
+    }) => premiumService.splitReceipt(receiptId, assignments),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ai.receiptSplits() });
     },
   });
 }

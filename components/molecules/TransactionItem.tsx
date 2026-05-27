@@ -143,7 +143,7 @@ const SwapIcon = ({
         borderRadius: 14,
         overflow: 'hidden',
         borderWidth: 2,
-        borderColor: '#fbfaf9',
+        borderColor: '#f7f4ef',
         alignItems: 'center',
         justifyContent: 'center',
       }}>
@@ -180,7 +180,7 @@ const WithdrawalBadge = ({ method }: { method: string }) => {
         borderRadius: 11,
         backgroundColor: badge.bg,
         borderWidth: 2,
-        borderColor: '#fbfaf9',
+        borderColor: '#f7f4ef',
         alignItems: 'center',
         justifyContent: 'center',
       }}>

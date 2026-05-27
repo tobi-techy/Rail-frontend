@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, TextInput, Pressable, Text, Keyboard, Image } from 'react-native';
+import { View, TextInput, Pressable, Text, Keyboard, Image, ActivityIndicator } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -55,9 +55,14 @@ export function InputBar({
   onAgentClose,
 }: Props) {
   const [text, setText] = useState(initialValue ?? '');
+  const [imageLoading, setImageLoading] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const sendScale = useSharedValue(1);
   const hasContent = text.trim().length > 0 || !!attachedImage;
+
+  useEffect(() => {
+    if (attachedImage) setImageLoading(true);
+  }, [attachedImage?.uri]);
 
   const sendStyle = useAnimatedStyle(() => ({
     transform: [{ scale: sendScale.value }],
@@ -88,10 +93,17 @@ export function InputBar({
       {attachedImage && (
         <Animated.View entering={FadeIn.duration(150)} className="px-4 pt-3">
           <View className="relative self-start">
+            {imageLoading && (
+              <View className="h-20 w-20 items-center justify-center rounded-lg bg-[#1C1C1E]">
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              </View>
+            )}
             <Image
               source={{ uri: attachedImage.uri }}
-              className="h-20 w-20 rounded-lg"
+              className={`h-20 w-20 rounded-lg ${imageLoading ? 'absolute opacity-0' : ''}`}
               resizeMode="cover"
+              onLoad={() => setImageLoading(false)}
+              onError={() => setImageLoading(false)}
             />
             <Pressable
               onPress={onClearImage}
@@ -106,9 +118,14 @@ export function InputBar({
 
       {agentMode ? (
         <View className="flex-row items-center gap-3 px-4 py-3">
-          <View className="h-9 w-9 items-center justify-center rounded-full border border-black/[0.08]">
+          <Pressable
+            onPress={onMicPress}
+            hitSlop={8}
+            className="h-9 w-9 items-center justify-center rounded-full border border-black/[0.08]"
+            accessibilityRole="button"
+            accessibilityLabel="Voice input">
             <HugeiconsIcon icon={Mic01Icon} size={18} color="#343433" />
-          </View>
+          </Pressable>
           <TextInput
             ref={inputRef}
             value={text}
@@ -182,7 +199,6 @@ export function InputBar({
             {showAttachments && onMicPress && (
               <Pressable
                 onPress={onMicPress}
-                disabled={isStreaming}
                 hitSlop={8}
                 className="h-10 w-10 items-center justify-center rounded-full"
                 accessibilityRole="button"
@@ -190,7 +206,7 @@ export function InputBar({
                 <HugeiconsIcon
                   icon={Mic01Icon}
                   size={22}
-                  color={isStreaming ? '#D4D4D4' : '#8C8C8C'}
+                  color="#8C8C8C"
                 />
               </Pressable>
             )}

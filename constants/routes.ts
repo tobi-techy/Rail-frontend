@@ -22,6 +22,8 @@ export const ROUTES = {
   SPENDING_STASH: '/spending-stash',
   INVESTMENT_STASH: '/investment-stash',
   CARD: '/card',
+  RECEIPT_SCANNER: '/receipt-scanner',
+  VOICE_MODE: '/voice-mode',
 } as const;
 
 export type AuthRoute = (typeof ROUTES.AUTH)[keyof typeof ROUTES.AUTH];

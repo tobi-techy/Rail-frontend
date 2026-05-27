@@ -64,5 +64,5 @@ const styles = StyleSheet.create({
 });
 
 /**
- * 
+ *
  */

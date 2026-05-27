@@ -391,7 +391,7 @@ export function StatePicker({
       <Pressable
         onPress={() => setIsModalVisible(true)}
         className={`h-[56px] flex-row items-center justify-between rounded-lg border px-4 ${
-          hasError ? 'border-destructive' : isModalVisible ? 'border-fog' : 'border-[#f2f0ed]'
+          hasError ? 'border-destructive' : isModalVisible ? 'border-fog' : 'border-[#f7f2e8]'
         } bg-white`}>
         <Text
           className={`font-body text-body ${selectedSubdivision ? 'text-text-primary' : 'text-text-secondary'}`}>

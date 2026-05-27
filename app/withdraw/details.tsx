@@ -14,7 +14,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from '@/components/ui';
 import { IconComponent as HugeiconsIcon, ArrowLeft01Icon } from '@/lib/icons';
-import { formatCurrency } from './method-screen/utils';
+import { formatCurrency } from '@/components/withdraw/method-screen/utils';
 import { AmbientMiriamNudge } from '@/components/ai/AmbientMiriamNudge';
 
 const CATEGORIES = [
@@ -148,7 +148,7 @@ export default function DetailsScreen() {
               </Text>
             </View>
           )}
-          <View className="mx-1 my-1 h-px bg-[#f2f0ed]" />
+          <View className="mx-1 my-1 h-px bg-[#f7f2e8]" />
           <View className="flex-row items-center justify-between px-1">
             <Text className="font-subtitle text-[14px] text-[#343433]">Total</Text>
             <Text className="font-subtitle text-[16px] text-[#343433]">

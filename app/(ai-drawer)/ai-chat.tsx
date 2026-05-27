@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAvoidingView, useKeyboardHandler } from 'react-native-keyboard-controller';
 import Animated, { FadeIn, FadeOut, useSharedValue, runOnJS } from 'react-native-reanimated';
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import {
   ArrowLeft01Icon,
@@ -21,15 +22,15 @@ import {
   IconComponent as HugeiconsIcon,
   type PhosphorIcon,
 } from '@/lib/icons';
+import { launchScanner } from '@dariyd/react-native-document-scanner';
 import { useAIChatStore } from '@/stores/aiChatStore';
+import { logger } from '@/lib/logger';
 import { ChatBubble, InputBar, MiriamCharacter } from '@/components/ai';
 import { ActionConfirmSheet } from '@/components/ai/ActionConfirmSheet';
 import { ActionSheet } from '@/components/sheets/ActionSheet';
 import type { AIMessage, PendingAction, InsightCard, ToneMode } from '@/api/types/ai';
-import { useSubscription } from '@/api/hooks/useGameplay';
 import { useHaptics } from '@/hooks/useHaptics';
 import { ANALYTICS_EVENTS, useAnalytics } from '@/utils/analytics';
-import { lastScannedReceipt, clearScannedReceipt } from '@/app/receipt-scanner';
 
 const BG = '#fbfaf9';
 
@@ -290,8 +291,6 @@ export default function AIChatScreen() {
   const [agentMode, setAgentMode] = useState(false);
   const isKeyboardVisible = useKeyboardVisible();
   const { track } = useAnalytics();
-  const { data: subData } = useSubscription();
-  const isPro = __DEV__ || (subData?.is_pro ?? false);
 
   const {
     activeConversationId,
@@ -343,20 +342,17 @@ export default function AIChatScreen() {
   const [editText, setEditText] = useState('');
   const [attachedImage, setAttachedImage] = useState<{ uri: string; base64: string } | null>(null);
   const [showImageSheet, setShowImageSheet] = useState(false);
+  const consumePendingScannedReceipt = useAIChatStore((s) => s.consumePendingScannedReceipt);
 
-  // Pick up scanned receipt when returning from scanner (check once per render cycle)
-  const scannedRef = useRef(false);
-  useEffect(() => {
-    if (lastScannedReceipt && !scannedRef.current) {
-      scannedRef.current = true;
-      setAttachedImage(lastScannedReceipt);
-      clearScannedReceipt();
-      // Reset flag after a tick so future scans work
-      setTimeout(() => {
-        scannedRef.current = false;
-      }, 500);
-    }
-  });
+  // Pick up scanned receipt from store when returning from scanner
+  useFocusEffect(
+    useCallback(() => {
+      const pending = consumePendingScannedReceipt();
+      if (pending) {
+        setAttachedImage(pending);
+      }
+    }, [consumePendingScannedReceipt]),
+  );
 
   const [activeAgentAction, setActiveAgentAction] = useState<AgentAction | null>(null);
 
@@ -489,18 +485,17 @@ export default function AIChatScreen() {
     setAgentMode(false);
   }, [clearActiveConversation]);
 
-  const handleMicPress = useCallback(() => {
-    router.push('/voice-mode');
-  }, [router]);
-
   const handleImagePress = useCallback(() => {
     setShowImageSheet(true);
   }, []);
 
   const pickFromGallery = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Allow photo access to scan receipts.');
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.status !== 'granted') {
+      const message = permissionResult.canAskAgain
+        ? 'Allow photo access to scan receipts.'
+        : 'Photo access was permanently denied. Go to Settings > Privacy > Photos to enable it.';
+      Alert.alert('Permission needed', message);
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -514,11 +509,28 @@ export default function AIChatScreen() {
     }
   };
 
-  const pickFromCamera = () => {
-    router.push('/receipt-scanner' as any);
+  const pickFromCamera = async () => {
+    try {
+      const result = await launchScanner({
+        quality: 0.7,
+        includeBase64: true,
+      });
+
+      if (result.error || result.didCancel) return;
+
+      const image = result.images?.[0];
+      if (image?.base64) {
+        setAttachedImage({ uri: image.uri, base64: image.base64 });
+      }
+    } catch (err) {
+      logger.warn('Document scanner failed', { error: err });
+    }
   };
 
   const handleClearImage = useCallback(() => setAttachedImage(null), []);
+  const handleMicPress = useCallback(() => {
+    router.push('/voice-mode');
+  }, [router]);
   const handleAgentPress = useCallback(() => setAgentMode(true), []);
   const handleAgentClose = useCallback(() => setAgentMode(false), []);
   const handleCloseImageSheet = useCallback(() => setShowImageSheet(false), []);
@@ -653,8 +665,8 @@ export default function AIChatScreen() {
           )}
           <InputBar
             onSend={handleSend}
-            onMicPress={handleMicPress}
             onImagePress={handleImagePress}
+            onMicPress={handleMicPress}
             isStreaming={isStreaming}
             placeholder={isEmpty ? 'Ask anything...' : 'Ask a follow up...'}
             initialValue={editText}

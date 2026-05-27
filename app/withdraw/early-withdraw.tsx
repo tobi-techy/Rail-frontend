@@ -23,10 +23,16 @@ import {
   WithdrawalStatusScreen,
   type WithdrawalStatusType,
 } from '@/components/withdraw/WithdrawalStatusScreen';
-import { AuthorizeScreen } from './method-screen/sections';
-import { AnimatedAmount } from './method-screen/AnimatedAmount';
-import { formatCurrency, toDisplayAmount, normalizeAmount, formatMaxAmount, safeName } from './method-screen/utils';
-import { MAX_INTEGER_DIGITS } from './method-screen/constants';
+import { AuthorizeScreen } from '@/components/withdraw/method-screen/sections';
+import { AnimatedAmount } from '@/components/withdraw/method-screen/AnimatedAmount';
+import {
+  formatCurrency,
+  toDisplayAmount,
+  normalizeAmount,
+  formatMaxAmount,
+  safeName,
+} from '@/components/withdraw/method-screen/utils';
+import { MAX_INTEGER_DIGITS } from '@/components/withdraw/method-screen/constants';
 import { Cancel01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { useAuthStore } from '@/stores/authStore';
@@ -60,8 +66,11 @@ export default function EarlyWithdrawScreen() {
     if (!lockoutUntil) return;
     const tick = setInterval(() => {
       const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
-      if (remaining <= 0) { setLockoutUntil(null); setLockoutSecondsRemaining(0); setPinAttempts(0); }
-      else setLockoutSecondsRemaining(remaining);
+      if (remaining <= 0) {
+        setLockoutUntil(null);
+        setLockoutSecondsRemaining(0);
+        setPinAttempts(0);
+      } else setLockoutSecondsRemaining(remaining);
     }, 1000);
     return () => clearInterval(tick);
   }, [lockoutUntil]);
@@ -151,40 +160,58 @@ export default function EarlyWithdrawScreen() {
     onAuthorized: doWithdraw,
   });
 
-  useEffect(() => { authErrorRef.current = passkey.setAuthError; }, [passkey.setAuthError]);
+  useEffect(() => {
+    authErrorRef.current = passkey.setAuthError;
+  }, [passkey.setAuthError]);
 
   // ── Passcode authorize ──────────────────────────────────────────────────
   const doWithdrawRef = useRef(doWithdraw);
-  useEffect(() => { doWithdrawRef.current = doWithdraw; }, [doWithdraw]);
+  useEffect(() => {
+    doWithdrawRef.current = doWithdraw;
+  }, [doWithdraw]);
 
-  const onPasscodeAuthorize = useCallback((code: string) => {
-    if (isPasscodeVerifying || isSubmitting || lockoutUntil) return;
-    passkey.setAuthError('');
-    verifyPasscode({ passcode: code }, {
-      onSuccess: (result) => {
-        if (!result.verified) {
-          const next = pinAttempts + 1;
-          setPinAttempts(next);
-          if (next >= 5) {
-            setLockoutUntil(Date.now() + 30_000);
-            setLockoutSecondsRemaining(30);
-            passkey.setAuthError('Too many attempts. Try again in 30s.');
-          } else {
-            passkey.setAuthError(`Invalid PIN. ${5 - next} left.`);
-          }
-          passkey.onAuthPasscodeChange('');
-          return;
+  const onPasscodeAuthorize = useCallback(
+    (code: string) => {
+      if (isPasscodeVerifying || isSubmitting || lockoutUntil) return;
+      passkey.setAuthError('');
+      verifyPasscode(
+        { passcode: code },
+        {
+          onSuccess: (result) => {
+            if (!result.verified) {
+              const next = pinAttempts + 1;
+              setPinAttempts(next);
+              if (next >= 5) {
+                setLockoutUntil(Date.now() + 30_000);
+                setLockoutSecondsRemaining(30);
+                passkey.setAuthError('Too many attempts. Try again in 30s.');
+              } else {
+                passkey.setAuthError(`Invalid PIN. ${5 - next} left.`);
+              }
+              passkey.onAuthPasscodeChange('');
+              return;
+            }
+            setPinAttempts(0);
+            setLockoutUntil(null);
+            void doWithdrawRef.current();
+          },
+          onError: (err: unknown) => {
+            passkey.setAuthError(parseApiError(err, 'Failed to verify PIN.'));
+            passkey.onAuthPasscodeChange('');
+          },
         }
-        setPinAttempts(0);
-        setLockoutUntil(null);
-        void doWithdrawRef.current();
-      },
-      onError: (err: unknown) => {
-        passkey.setAuthError(parseApiError(err, 'Failed to verify PIN.'));
-        passkey.onAuthPasscodeChange('');
-      },
-    });
-  }, [isPasscodeVerifying, isSubmitting, lockoutUntil, doWithdraw, passkey, pinAttempts, verifyPasscode]);
+      );
+    },
+    [
+      isPasscodeVerifying,
+      isSubmitting,
+      lockoutUntil,
+      doWithdraw,
+      passkey,
+      pinAttempts,
+      verifyPasscode,
+    ]
+  );
 
   // ── CTA tap → show auth screen ─────────────────────────────────────────
   const onCTAPress = useCallback(() => {
@@ -261,7 +288,14 @@ export default function EarlyWithdrawScreen() {
             : errorMsg
         }
         onDone={() => router.replace('/(tabs)' as never)}
-        onRetry={status === 'failed' ? () => { setStatus(null); setErrorMsg(''); } : undefined}
+        onRetry={
+          status === 'failed'
+            ? () => {
+                setStatus(null);
+                setErrorMsg('');
+              }
+            : undefined
+        }
       />
     );
   }

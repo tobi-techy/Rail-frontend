@@ -52,7 +52,7 @@ export function LevelRing({
           cx={center}
           cy={center}
           r={radius}
-          stroke="#f2f0ed"
+          stroke="#f7f2e8"
           strokeWidth={strokeWidth}
           fill="none"
         />

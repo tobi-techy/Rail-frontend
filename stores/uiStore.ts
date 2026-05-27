@@ -9,7 +9,18 @@ import {
 } from '@/utils/currency';
 import { getBestAvailableFxRates } from '@/utils/currencyRates';
 
-export type Currency = 'USD' | 'EUR' | 'GBP' | 'NGN' | 'GHS' | 'KES' | 'CAD' | 'USDC' | 'USDT' | 'EURC' | 'PYUSD';
+export type Currency =
+  | 'USD'
+  | 'EUR'
+  | 'GBP'
+  | 'NGN'
+  | 'GHS'
+  | 'KES'
+  | 'CAD'
+  | 'USDC'
+  | 'USDT'
+  | 'EURC'
+  | 'PYUSD';
 export type AppTheme = 'system' | 'light' | 'dark';
 export type AppLanguage = 'en' | 'fr' | 'es' | 'de';
 

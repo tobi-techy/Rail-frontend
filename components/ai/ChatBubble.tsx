@@ -3,7 +3,8 @@ import { View, Text, Pressable, Image, ActivityIndicator } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from '@/utils/platformHaptics';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import type { AIMessage, InsightCard } from '@/api/types/ai';
+import type { AIMessage, InsightCard, ActionChip } from '@/api/types/ai';
+
 import { MarkdownContent } from './MarkdownContent';
 import { TypingText } from './TypingText';
 import { InsightCardView } from './InsightCardView';
@@ -11,13 +12,15 @@ import { InsightCardView } from './InsightCardView';
 interface Props {
   msg: AIMessage;
   cards?: InsightCard[];
+  actionChips?: ActionChip[];
   isLatest?: boolean;
   animate?: boolean;
   onDeleteMessage?: () => void;
   onEdit?: (content: string) => void;
+  onActionChip?: (chip: ActionChip) => void;
 }
 
-export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
+export function ChatBubble({ msg, cards, actionChips, isLatest, animate, onEdit, onActionChip }: Props) {
   const isUser = msg.role === 'user';
   const content = msg.content ?? '';
   const imageUrl = msg.image_url ?? msg.metadata?.image_url;
@@ -97,6 +100,19 @@ export function ChatBubble({ msg, cards, isLatest, animate, onEdit }: Props) {
             <InsightCardView card={card} />
           </View>
         ))}
+
+      {(typingDone || !animate) && actionChips && actionChips.length > 0 && (
+        <View className="mt-4 flex-row flex-wrap gap-2">
+          {actionChips.map((chip) => (
+            <Pressable
+              key={chip.id}
+              onPress={() => onActionChip?.(chip)}
+              className="rounded-full border border-ember-orange/30 bg-ember-orange/5 px-4 py-2">
+              <Text className="font-body-medium text-[13px] text-ember-orange">{chip.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
     </Animated.View>
   );
 }

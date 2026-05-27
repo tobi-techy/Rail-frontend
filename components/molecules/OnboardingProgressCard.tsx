@@ -29,16 +29,22 @@ export function OnboardingProgressCard({ steps, onPress }: Props) {
           backgroundColor: '#f8f7f4',
           borderRadius: 17,
           borderWidth: 1,
-          borderColor: '#f2f0ed',
+          borderColor: '#f7f2e8',
           padding: 16,
           marginBottom: 16,
         }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Text style={{ fontFamily: 'SFProDisplay-Semibold', fontSize: 15, color: '#343433' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+          }}>
+          <Text style={{ fontFamily: 'Geist-SemiBold', fontSize: 15, color: '#343433' }}>
             Complete your profile
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Text style={{ fontFamily: 'SFMono-Medium', fontSize: 12, color: '#ff3e00' }}>
+            <Text style={{ fontFamily: 'Geist-Medium', fontSize: 12, color: '#ff3e00' }}>
               {completed}/{total}
             </Text>
             <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#848281" />
@@ -46,8 +52,22 @@ export function OnboardingProgressCard({ steps, onPress }: Props) {
         </View>
 
         {/* Progress bar */}
-        <View style={{ height: 4, backgroundColor: '#f2f0ed', borderRadius: 2, marginBottom: 14, overflow: 'hidden' }}>
-          <View style={{ height: 4, width: `${progress * 100}%`, backgroundColor: '#ff3e00', borderRadius: 2 }} />
+        <View
+          style={{
+            height: 4,
+            backgroundColor: '#f7f2e8',
+            borderRadius: 2,
+            marginBottom: 14,
+            overflow: 'hidden',
+          }}>
+          <View
+            style={{
+              height: 4,
+              width: `${progress * 100}%`,
+              backgroundColor: '#ff3e00',
+              borderRadius: 2,
+            }}
+          />
         </View>
 
         {/* Steps */}
@@ -59,12 +79,13 @@ export function OnboardingProgressCard({ steps, onPress }: Props) {
                 size={18}
                 color={step.done ? '#00ca48' : '#c6c6c6'}
               />
-              <Text style={{
-                fontFamily: 'SFProDisplay-Regular',
-                fontSize: 14,
-                color: step.done ? '#848281' : '#343433',
-                textDecorationLine: step.done ? 'line-through' : 'none',
-              }}>
+              <Text
+                style={{
+                  fontFamily: 'Geist-Regular',
+                  fontSize: 14,
+                  color: step.done ? '#848281' : '#343433',
+                  textDecorationLine: step.done ? 'line-through' : 'none',
+                }}>
                 {step.label}
               </Text>
             </View>

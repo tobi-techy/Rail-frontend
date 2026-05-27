@@ -28,15 +28,15 @@ const TIME_VALUE_PER_HOUR = 25; // Estimated value of user's time
  * Calculate impact from a set of automation rules and their execution history.
  */
 export function calculateImpact(
-  automations: Array<{
+  automations: {
     totalSaved: number;
     executions: number;
     type: 'round_up' | 'auto_transfer' | 'alert' | 'budget' | 'other';
-  }>,
-  alertsPrevented: Array<{
+  }[],
+  alertsPrevented: {
     amount: number;
     type: 'overspend' | 'duplicate' | 'subscription' | 'scam';
-  }>
+  }[]
 ): ImpactBreakdown {
   let lifetimeFeesAvoided = 0;
   let lifetimeAutoSaved = 0;
@@ -80,7 +80,8 @@ export function calculateImpact(
   }
 
   const timeValue = (lifetimeTimeSavedMinutes / 60) * TIME_VALUE_PER_HOUR;
-  const totalLifetimeValue = lifetimeFeesAvoided + lifetimeAutoSaved + timeValue + lifetimeBadPurchasesPrevented;
+  const totalLifetimeValue =
+    lifetimeFeesAvoided + lifetimeAutoSaved + timeValue + lifetimeBadPurchasesPrevented;
 
   // Generate mock monthly history for visualization
   // In production, this would come from the backend
@@ -98,17 +99,30 @@ export function calculateImpact(
 
 function generateMonthlyHistory(totalValue: number): MonthlyImpact[] {
   const months: MonthlyImpact[] = [];
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   const now = new Date();
 
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthValue = totalValue / 6 * (0.7 + Math.random() * 0.6);
+    const monthValue = (totalValue / 6) * (0.7 + Math.random() * 0.6);
     months.push({
       month: monthNames[d.getMonth()],
       feesAvoided: monthValue * 0.2,
       autoSaved: monthValue * 0.5,
-      timeSavedMinutes: monthValue * 0.1 * 60 / TIME_VALUE_PER_HOUR,
+      timeSavedMinutes: (monthValue * 0.1 * 60) / TIME_VALUE_PER_HOUR,
       badPurchasesPrevented: monthValue * 0.2,
       totalValue: monthValue,
     });

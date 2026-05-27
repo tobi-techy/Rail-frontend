@@ -136,7 +136,7 @@ export function GoalDetailSheet({ goal, visible, onClose, onRefresh }: Props) {
       <View className="flex-1 px-5 pb-8 pt-2">
         {/* Header */}
         <View className="mb-5 items-center">
-          <View className="mb-2 h-16 w-16 items-center justify-center rounded-full bg-[#f2f0ed]">
+          <View className="mb-2 h-16 w-16 items-center justify-center rounded-full bg-[#f7f2e8]">
             <HugeiconsIcon
               icon={GOAL_ICONS[goal.icon_name] || Target02Icon}
               size={28}
@@ -150,7 +150,7 @@ export function GoalDetailSheet({ goal, visible, onClose, onRefresh }: Props) {
         </View>
 
         {/* Progress */}
-        <View className="mb-5 rounded-3xl bg-[#f2f0ed] p-5">
+        <View className="mb-5 rounded-3xl bg-[#f7f2e8] p-5">
           <View className="mb-2 flex-row justify-between">
             <Text className="font-mono-semibold text-2xl text-text-primary">
               $
@@ -194,7 +194,7 @@ export function GoalDetailSheet({ goal, visible, onClose, onRefresh }: Props) {
             <Text className="font-heading-bold text-[15px] text-white">Contribute</Text>
           </Pressable>
         ) : (
-          <View className="mb-5 rounded-3xl bg-[#f2f0ed] p-5">
+          <View className="mb-5 rounded-3xl bg-[#f7f2e8] p-5">
             <Text className="mb-3 font-body text-[12px] text-text-secondary">
               Amount to contribute
             </Text>

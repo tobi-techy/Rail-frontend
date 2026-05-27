@@ -29,11 +29,11 @@ import {
   getFlowLabels,
   normalizeAmount,
   toDisplayAmount,
-} from '@/app/withdraw/method-screen/utils';
+} from '@/components/withdraw/method-screen/utils';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
 import { isPasscodeSessionError, parseApiError } from '@/utils/apiError';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { AnimatedAmount } from './method-screen/AnimatedAmount';
+import { AnimatedAmount } from '@/components/withdraw/method-screen/AnimatedAmount';
 import {
   BRAND_RED,
   FALLBACK_AVAILABLE_BALANCE,
@@ -46,17 +46,17 @@ import {
   resolveFlow,
   resolveMethod,
   springConfig,
-} from './method-screen/constants';
-import type { FiatCurrency, ProfileNamePayload, WithdrawalStep } from './method-screen/types';
-import { useMobileWalletFunding } from './method-screen/useMobileWalletFunding';
-import { useWithdrawalSubmit } from './method-screen/useWithdrawalSubmit';
-import { useMWAWithdrawal } from './method-screen/useMWAWithdrawal';
+} from '@/components/withdraw/method-screen/constants';
+import type { FiatCurrency, ProfileNamePayload, WithdrawalStep } from '@/components/withdraw/method-screen/types';
+import { useMobileWalletFunding } from '@/components/withdraw/method-screen/useMobileWalletFunding';
+import { useWithdrawalSubmit } from '@/components/withdraw/method-screen/useWithdrawalSubmit';
+import { useMWAWithdrawal } from '@/components/withdraw/method-screen/useMWAWithdrawal';
 import {
   AuthorizeScreen,
   FiatKycRequiredScreen,
   WithdrawSubmissionSheet,
-} from './method-screen/sections';
-import { P2PSendScreen } from './method-screen/P2PSendScreen';
+} from '@/components/withdraw/method-screen/sections';
+import { P2PSendScreen } from '@/components/withdraw/method-screen/P2PSendScreen';
 import {
   WithdrawalStatusScreen,
   type WithdrawalStatusType,
@@ -180,7 +180,9 @@ export default function WithdrawAmountScreen() {
   const isNGNAsset = asset === 'NGN';
   const { data: pajRatesData } = usePajRates();
   const ngnRate = pajRatesData?.offRampRate?.rate ?? 0;
-  const railFeeUSD = pajRatesData?.railFee ?? 0.02;
+  const railFeeBase = pajRatesData?.railFee ?? 50;
+  const stampDuty = pajRatesData?.stampDuty ?? 50;
+  const stampDutyAbove = pajRatesData?.stampDutyAbove ?? 10000;
 
   const availableBalance = useMemo(() => {
     const source =
@@ -217,12 +219,15 @@ export default function WithdrawAmountScreen() {
   const feeAmount = useMemo(() => {
     if (numericAmount <= 0) return 0;
     if (isFiatMethod) {
-      if (asset === 'NGN') return railFeeUSD;
+      if (asset === 'NGN') {
+        const feeNGN = numericAmount > stampDutyAbove ? railFeeBase + stampDuty : railFeeBase;
+        return ngnRate > 0 ? feeNGN / ngnRate : 0.04;
+      }
       return 1.0;
     }
     if (destinationChain === 'SOL' || !destinationChain) return 0.1;
     return 0.5;
-  }, [numericAmount, isFiatMethod, asset, destinationChain, railFeeUSD]);
+  }, [numericAmount, isFiatMethod, asset, destinationChain, ngnRate, railFeeBase, stampDuty, stampDutyAbove]);
   const amountError = useMemo(
     () =>
       getAmountError({

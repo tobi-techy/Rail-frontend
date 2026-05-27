@@ -76,7 +76,7 @@ export function GorhomBottomSheet({
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
       backgroundStyle={{
-        backgroundColor: '#fbfaf9',
+        backgroundColor: '#f7f4ef',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
       }}

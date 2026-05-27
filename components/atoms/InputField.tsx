@@ -88,11 +88,11 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
     const borderColor = useMemo(() => {
       if (!editable) return '#c6c6c6';
       if (hasError) return '#ff2b3a';
-      if (focused) return isDark ? '#FFFFFF' : '#343433';
-      return isDark ? 'rgba(255,255,255,0.28)' : '#f2f0ed';
+      if (focused) return isDark ? '#FFFFFF' : 'rgba(255,59,31,0.40)';
+      return isDark ? 'rgba(255,255,255,0.28)' : 'rgba(23,23,23,0.10)';
     }, [editable, focused, hasError, isDark]);
 
-    const backgroundColor = isDark ? 'rgba(255,255,255,0.06)' : editable ? '#fbfaf9' : '#f2f0ed';
+    const backgroundColor = isDark ? 'rgba(255,255,255,0.06)' : 'transparent';
 
     const handleFocus = (e: NativeSyntheticEvent<any>) => {
       setFocused(true);

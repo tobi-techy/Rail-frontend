@@ -20,10 +20,13 @@ export default function AuthorizeTransactionScreen() {
   // reached from internal navigation. If not authenticated, redirect immediately.
   useEffect(() => {
     if (!isAuthenticated) {
-      logger.warn('[AuthorizeTransaction] Unauthenticated access attempt — possible deep link abuse', {
-        component: 'AuthorizeTransaction',
-        action: 'unauthorized-access',
-      });
+      logger.warn(
+        '[AuthorizeTransaction] Unauthenticated access attempt — possible deep link abuse',
+        {
+          component: 'AuthorizeTransaction',
+          action: 'unauthorized-access',
+        }
+      );
       router.replace('/');
     }
   }, [isAuthenticated]);
@@ -106,7 +109,7 @@ export default function AuthorizeTransactionScreen() {
         <View className="mt-2 px-6">
           <Pressable
             onPress={() => router.back()}
-            className="h-10 w-10 items-center justify-center rounded-full bg-[#f2f0ed]">
+            className="h-10 w-10 items-center justify-center rounded-full bg-[#f7f2e8]">
             <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" strokeWidth={2} />
           </Pressable>
         </View>
@@ -131,7 +134,7 @@ export default function AuthorizeTransactionScreen() {
               return (
                 <View
                   key={i}
-                  className="h-[56px] w-[56px] items-center justify-center rounded-lg bg-[#f2f0ed]">
+                  className="h-[56px] w-[56px] items-center justify-center rounded-lg bg-[#f7f2e8]">
                   {filled && <View className="h-3 w-3 rounded-full bg-[#343433]" />}
                 </View>
               );

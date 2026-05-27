@@ -117,7 +117,7 @@ export function CountryPicker({
     if (isModalVisible) {
       return 'h-[56px] rounded-lg border border-fog bg-parchment-card px-4';
     }
-    return 'h-[56px] rounded-lg border border-[#f2f0ed] bg-parchment-card px-4';
+    return 'h-[56px] rounded-lg border border-[#f7f2e8] bg-parchment-card px-4';
   };
 
   const handleCountrySelect = (country: Country) => {

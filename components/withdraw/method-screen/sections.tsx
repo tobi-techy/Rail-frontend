@@ -270,7 +270,7 @@ function ChainPill({
       style={[
         animStyle,
         {
-          backgroundColor: selected ? chain.color + '18' : '#f2f0ed',
+          backgroundColor: selected ? chain.color + '18' : '#f7f2e8',
           borderWidth: selected ? 1.5 : 1,
           borderColor: selected ? chain.color : 'transparent',
         },

@@ -54,7 +54,7 @@ const Profile = () => {
       <View className="gap-4 px-[14px] pb-8 pt-2">
         <Text className="font-body text-lg text-text-secondary">{name}</Text>
 
-        <View className="gap-3 rounded-2xl bg-[#f2f0ed] p-5">
+        <View className="gap-3 rounded-2xl bg-[#f7f2e8] p-5">
           <Text className="font-caption text-sm text-text-secondary">Total Balance</Text>
           <Text className="font-body-bold text-4xl font-bold text-[#000]">
             {fmt(station?.total_balance)}
@@ -62,13 +62,13 @@ const Profile = () => {
         </View>
 
         <View className="flex-row gap-3">
-          <View className="flex-1 gap-1 rounded-2xl bg-[#f2f0ed] p-4">
+          <View className="flex-1 gap-1 rounded-2xl bg-[#f7f2e8] p-4">
             <Text className="font-caption text-xs text-text-secondary">Spend</Text>
             <Text className="font-body-bold text-xl font-bold text-[#000]">
               {fmt(station?.spend_balance)}
             </Text>
           </View>
-          <View className="flex-1 gap-1 rounded-2xl bg-[#f2f0ed] p-4">
+          <View className="flex-1 gap-1 rounded-2xl bg-[#f7f2e8] p-4">
             <Text className="font-caption text-xs text-text-secondary">Invest</Text>
             <Text className="font-body-bold text-xl font-bold text-[#000]">
               {fmt(station?.invest_balance)}
@@ -84,7 +84,7 @@ const Profile = () => {
             {station?.recent_activity?.slice(0, 5).map((item) => (
               <View
                 key={item.id}
-                className="flex-row items-center justify-between rounded-lg bg-[#f2f0ed] px-4 py-3">
+                className="flex-row items-center justify-between rounded-lg bg-[#f7f2e8] px-4 py-3">
                 <Text className="font-body text-sm text-[#000]">{item.description}</Text>
                 <Text className="font-body-bold text-sm font-semibold text-[#000]">
                   {fmt(item.amount)}
@@ -99,7 +99,7 @@ const Profile = () => {
           <Text className="font-body-bold text-base font-semibold text-[#000]">Security</Text>
           <Pressable
             onPress={() => router.push('/whitelist' as never)}
-            className="flex-row items-center rounded-2xl bg-[#f2f0ed] p-4">
+            className="flex-row items-center rounded-2xl bg-[#f7f2e8] p-4">
             <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-warm-canvas">
               <HugeiconsIcon icon={ShieldKeyIcon} size={18} color="#848281" />
             </View>
@@ -113,7 +113,7 @@ const Profile = () => {
           </Pressable>
           <Pressable
             onPress={() => router.push('/passkey-settings' as never)}
-            className="flex-row items-center rounded-2xl bg-[#f2f0ed] p-4">
+            className="flex-row items-center rounded-2xl bg-[#f7f2e8] p-4">
             <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-warm-canvas">
               <HugeiconsIcon icon={Key01Icon} size={18} color="#848281" />
             </View>

@@ -130,7 +130,7 @@ export function FeedbackPopupHost() {
             left: 14,
             right: 14,
             borderWidth: 1,
-            borderColor: '#f2f0ed',
+            borderColor: '#f7f2e8',
             backgroundColor: '#FFFFFF',
             borderRadius: 20,
             paddingVertical: 12,
@@ -170,13 +170,13 @@ export function FeedbackPopupHost() {
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text
               className="text-[15px] text-charcoal-primary"
-              style={{ fontFamily: 'SFProDisplay-Semibold' }}>
+              style={{ fontFamily: 'Geist-SemiBold' }}>
               {popup.title}
             </Text>
             {popup.message ? (
               <Text
                 className="mt-1 text-[13px] text-graphite"
-                style={{ fontFamily: 'SFProDisplay-Regular' }}>
+                style={{ fontFamily: 'Geist-Regular' }}>
                 {popup.message}
               </Text>
             ) : null}
@@ -186,7 +186,7 @@ export function FeedbackPopupHost() {
               onPress={() => hidePopup(popup.action?.onPress)}
               hitSlop={6}
               style={{ marginLeft: 10, alignSelf: 'center' }}>
-              <Text style={{ fontFamily: 'SFProDisplay-Semibold', fontSize: 13, color: '#343433' }}>
+              <Text style={{ fontFamily: 'Geist-SemiBold', fontSize: 13, color: '#343433' }}>
                 {popup.action.label}
               </Text>
             </Pressable>

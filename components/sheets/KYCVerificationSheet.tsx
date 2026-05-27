@@ -140,15 +140,19 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
 
   const handleContinue = useCallback(() => {
     const state = useKycStore.getState();
-    const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, diditSessionToken } =
-      state;
+    const { completedSteps, diditSessionToken } = state;
+
     let screen = '/kyc/tax-id';
-    if (diditSessionToken) screen = '/kyc/didit-sdk';
-    else if (disclosuresConfirmed && taxId && employmentStatus && investmentPurposes.length > 0)
+    if (diditSessionToken || completedSteps.includes('source-of-funds')) {
+      screen = '/kyc/didit-sdk';
+    } else if (completedSteps.includes('disclosures')) {
+      screen = '/kyc/source-of-funds';
+    } else if (completedSteps.includes('about-you')) {
       screen = '/kyc/disclosures';
-    else if (employmentStatus && investmentPurposes.length > 0 && taxId)
-      screen = '/kyc/disclosures';
-    else if (taxId) screen = '/kyc/about-you';
+    } else if (completedSteps.includes('tax-id')) {
+      screen = '/kyc/about-you';
+    }
+
     onClose();
     requestAnimationFrame(() => router.push(screen as never));
   }, [onClose]);

@@ -115,7 +115,7 @@ export function CreateGoalSheet({ visible, onClose, onCreated }: Props) {
                 impact();
                 setSelectedIcon(item.name);
               }}
-              className={`h-11 w-11 items-center justify-center rounded-full ${selectedIcon === item.name ? 'border-2 border-primary bg-[#FFF0ED]' : 'bg-[#f2f0ed]'}`}
+              className={`h-11 w-11 items-center justify-center rounded-full ${selectedIcon === item.name ? 'border-2 border-primary bg-[#FFF0ED]' : 'bg-[#f7f2e8]'}`}
               accessibilityRole="button"
               accessibilityLabel={`Select icon ${item.name}`}>
               <HugeiconsIcon
@@ -133,11 +133,11 @@ export function CreateGoalSheet({ visible, onClose, onCreated }: Props) {
           onChangeText={setName}
           placeholder="Goal name (e.g. Ibiza Trip)"
           placeholderTextColor="#848281"
-          className="mb-3 rounded-2xl bg-[#f2f0ed] px-4 py-4 font-body text-[15px] text-text-primary"
+          className="mb-3 rounded-2xl bg-[#f7f2e8] px-4 py-4 font-body text-[15px] text-text-primary"
         />
 
         {/* Amount */}
-        <View className="mb-3 flex-row items-center rounded-2xl bg-[#f2f0ed] px-4 py-4">
+        <View className="mb-3 flex-row items-center rounded-2xl bg-[#f7f2e8] px-4 py-4">
           <Text className="mr-1 font-mono-semibold text-xl text-text-primary">$</Text>
           <TextInput
             value={amount}
@@ -155,7 +155,7 @@ export function CreateGoalSheet({ visible, onClose, onCreated }: Props) {
           onChangeText={setInviteTags}
           placeholder="Invite friends (rail tags, comma separated)"
           placeholderTextColor="#848281"
-          className="mb-6 rounded-2xl bg-[#f2f0ed] px-4 py-4 font-body text-[15px] text-text-primary"
+          className="mb-6 rounded-2xl bg-[#f7f2e8] px-4 py-4 font-body text-[15px] text-text-primary"
         />
 
         {/* Create button */}

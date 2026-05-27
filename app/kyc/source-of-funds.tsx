@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -84,6 +84,12 @@ export default function SourceOfFundsScreen() {
     taxIdType,
     disclosures,
     employmentStatus,
+    sourceOfFunds: savedFunds,
+    expectedMonthlyPayments: savedMonthly,
+    accountPurpose: savedPurpose,
+    accountPurposeOther: savedPurposeOther,
+    mostRecentOccupation: savedOccupation,
+    actingAsIntermediary: savedIntermediary,
     setSourceOfFunds,
     setExpectedMonthlyPayments,
     setAccountPurpose,
@@ -93,17 +99,28 @@ export default function SourceOfFundsScreen() {
     setDiditSession,
     setLocalSubmissionPendingAt,
     setMissingProfileFields,
+    hasCompletedStep,
+    addCompletedStep,
+    diditSessionToken,
   } = useKycStore();
 
   const startSession = useStartDiditSession();
 
-  const [funds, setFunds] = useState<string | null>(null);
-  const [monthly, setMonthly] = useState<string | null>(null);
-  const [purpose, setPurpose] = useState<string | null>(null);
-  const [purposeOther, setPurposeOther] = useState('');
-  const [occupation, setOccupation] = useState<string | null>(null);
-  const [intermediary, setIntermediary] = useState(false);
+  // Pre-fill from store so retry after SDK failure doesn't lose data
+  const [funds, setFunds] = useState<string | null>(savedFunds);
+  const [monthly, setMonthly] = useState<string | null>(savedMonthly);
+  const [purpose, setPurpose] = useState<string | null>(savedPurpose);
+  const [purposeOther, setPurposeOther] = useState(savedPurposeOther ?? '');
+  const [occupation, setOccupation] = useState<string | null>(savedOccupation);
+  const [intermediary, setIntermediary] = useState(savedIntermediary);
   const [submitError, setSubmitError] = useState('');
+
+  // Skip if already done and we have a session token
+  useEffect(() => {
+    if (hasCompletedStep('source-of-funds') && diditSessionToken) {
+      router.replace('/kyc/didit-sdk');
+    }
+  }, []);
 
   const scrollRef = useRef<ScrollView>(null);
   const sectionYRef = useRef<{
@@ -124,10 +141,26 @@ export default function SourceOfFundsScreen() {
     }, 300);
   };
 
-  // taxId is not persisted (PII) — if lost due to app backgrounding, redirect back
+  // If taxId was lost (app kill), show a prompt instead of silently redirecting
   if (!taxId) {
-    router.replace('/kyc/tax-id');
-    return null;
+    return (
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="mb-4 text-center font-display text-[22px] text-charcoal-primary">
+            Session interrupted
+          </Text>
+          <Text className="mb-8 text-center font-body text-[15px] leading-6 text-ash">
+            Your session was interrupted. Please re-enter your tax ID to continue with verification.
+          </Text>
+          <Pressable
+            onPress={() => router.replace('/kyc/tax-id')}
+            className="rounded-full bg-primary px-8 py-4"
+            accessibilityRole="button">
+            <Text className="font-subtitle text-[15px] text-white">Re-enter Tax ID</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   const canContinue =
@@ -163,10 +196,13 @@ export default function SourceOfFundsScreen() {
         acting_as_intermediary: intermediary,
       });
       setDiditSession(result.session_token, result.session_id);
+      addCompletedStep('source-of-funds');
       if (result.status === 'existing_session') {
+        setLocalSubmissionPendingAt(new Date().toISOString());
         router.replace('/kyc/pending');
       } else {
-        router.push('/kyc/didit-sdk');
+        setLocalSubmissionPendingAt(new Date().toISOString());
+        router.replace('/kyc/didit-sdk');
       }
     } catch (error) {
       const apiError = error as TransformedApiError;

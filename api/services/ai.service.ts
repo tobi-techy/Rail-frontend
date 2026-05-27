@@ -27,6 +27,7 @@ import type {
   NudgeResponse,
   EnhancedNudgeRequest,
   EnhancedNudgeResponse,
+  ProactiveOpener,
   Automation,
   CreateAutomationRequest,
   AutomationLog,
@@ -207,6 +208,10 @@ export const aiService = {
     return apiClient.get(`${BASE}/suggestions`);
   },
 
+  async getProactiveOpener(): Promise<ProactiveOpener> {
+    return apiClient.get(`${BASE}/proactive-opener`);
+  },
+
   async getWrapped(): Promise<{ cards: AIWrappedCard[] }> {
     return apiClient.get(`${BASE}/wrapped`);
   },
@@ -307,15 +312,14 @@ export const aiService = {
     message?: string,
     conversationId?: string
   ): Promise<{ data: AIChatResponse }> {
-    return apiClient.post(
-      `${BASE}/chat/image`,
-      {
-        image: base64Image,
-        message: message ?? 'Analyze this image',
-        conversation_id: conversationId ?? '',
-      },
-      { timeout: 120000 }
-    );
+    const body: Record<string, any> = {
+      image: base64Image,
+      message: message ?? 'Analyze this image',
+    };
+    if (conversationId) {
+      body.conversation_id = conversationId;
+    }
+    return apiClient.post(`${BASE}/chat/image`, body, { timeout: 120000 });
   },
 
   // ── Premium endpoints (pro-only) ──────────────────────────────
@@ -497,6 +501,35 @@ export const aiService = {
 
   async leaveGoal(goalId: string): Promise<void> {
     return apiClient.post(`/v1/goals/shared/${goalId}/leave`);
+  },
+
+  // ── Voice session (ElevenLabs) ───────────────────────────────
+
+  async getVoiceSignedUrl(): Promise<{
+    signed_url: string;
+    agent_id: string;
+    dynamic_variables: Record<string, unknown>;
+  }> {
+    const payload = await apiClient.post<any>(`${BASE}/voice/signed-url`);
+    return unwrapData<{
+      signed_url: string;
+      agent_id: string;
+      dynamic_variables: Record<string, unknown>;
+    }>(payload);
+  },
+
+  async getProactiveInsight(): Promise<{ insight: string }> {
+    const payload = await apiClient.get<any>(`${BASE}/voice/proactive-insight`);
+    return unwrapData<{ insight: string }>(payload);
+  },
+
+  async executeVoiceTool(params: {
+    tool_name: string;
+    tool_call_id?: string;
+    parameters: Record<string, unknown>;
+  }): Promise<{ result: unknown; is_error?: boolean }> {
+    const payload = await apiClient.post<any>(`${BASE}/voice/execute-tool`, params, { timeout: 30000 });
+    return unwrapData<{ result: unknown; is_error?: boolean }>(payload);
   },
 };
 

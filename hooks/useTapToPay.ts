@@ -1,14 +1,11 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 
-const mod =
-  Platform.OS === 'ios' || Platform.OS === 'android'
-    ? NativeModules.RailTapToPay
-    : null;
+const mod = Platform.OS === 'ios' || Platform.OS === 'android' ? NativeModules.RailTapToPay : null;
 const emitter = mod ? new NativeEventEmitter(mod) : null;
 
 export type NearbyPeer = {
-  peerId: string;   // opaque session UUID — never user-controlled
+  peerId: string; // opaque session UUID — never user-controlled
   railtag: string;
   displayName: string;
 };
@@ -18,7 +15,7 @@ export type TransferRequest = {
   amount: string;
   senderName: string;
   senderRailtag: string;
-  nonce: string;  // server-issued nonce from sender's intent — must be echoed back
+  nonce: string; // server-issued nonce from sender's intent — must be echoed back
 };
 
 // nonce is the server-issued value echoed back by the recipient
@@ -56,7 +53,10 @@ export function useTapToPay(railtag: string, displayName: string) {
     peersRef.current = [];
     distancesRef.current = {};
     setPeerDistances({});
-    if (distanceFlushTimer.current) { clearTimeout(distanceFlushTimer.current); distanceFlushTimer.current = null; }
+    if (distanceFlushTimer.current) {
+      clearTimeout(distanceFlushTimer.current);
+      distanceFlushTimer.current = null;
+    }
     setIsActive(false);
     setIncomingRequest(null);
     setTransferAccepted(null);
@@ -90,16 +90,19 @@ export function useTapToPay(railtag: string, displayName: string) {
         delete distancesRef.current[peerId];
         setPeerDistances({ ...distancesRef.current });
       }),
-      emitter.addListener('onPeerDistance', ({ peerId, distance }: { peerId: string; distance: number }) => {
-        distancesRef.current[peerId] = distance;
-        // Throttle state updates to ~4fps to avoid excessive re-renders
-        if (!distanceFlushTimer.current) {
-          distanceFlushTimer.current = setTimeout(() => {
-            setPeerDistances({ ...distancesRef.current });
-            distanceFlushTimer.current = null;
-          }, 250);
+      emitter.addListener(
+        'onPeerDistance',
+        ({ peerId, distance }: { peerId: string; distance: number }) => {
+          distancesRef.current[peerId] = distance;
+          // Throttle state updates to ~4fps to avoid excessive re-renders
+          if (!distanceFlushTimer.current) {
+            distanceFlushTimer.current = setTimeout(() => {
+              setPeerDistances({ ...distancesRef.current });
+              distanceFlushTimer.current = null;
+            }, 250);
+          }
         }
-      }),
+      ),
       emitter.addListener('onTransferRequest', (req: TransferRequest) => {
         setIncomingRequest(req);
       }),

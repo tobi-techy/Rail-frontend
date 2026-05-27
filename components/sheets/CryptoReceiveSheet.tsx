@@ -31,14 +31,21 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
 
   // Auto-provision wallet when GET returns 404 (wallet not created yet)
   useEffect(() => {
-    if (!visible) { setCopied(false); setProvisioning(false); return; }
+    if (!visible) {
+      setCopied(false);
+      setProvisioning(false);
+      return;
+    }
     const status = (error as any)?.status;
     if (isError && (status === 404 || status === undefined) && !provisioning) {
       setProvisioning(true);
       provisionWallet.mutate(
         { tokenId: 'usdc', network: chain },
         {
-          onSuccess: () => { refetch(); setProvisioning(false); },
+          onSuccess: () => {
+            refetch();
+            setProvisioning(false);
+          },
           onError: () => setProvisioning(false),
         }
       );
@@ -168,7 +175,8 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
 
         {isEVMChain(chain) && (
           <Text className="mb-4 text-center font-caption text-xs text-text-secondary">
-            This address is shared across EVM networks (Ethereum, Arbitrum, Optimism, Polygon, Base, Avalanche).
+            This address is shared across EVM networks (Ethereum, Arbitrum, Optimism, Polygon, Base,
+            Avalanche).
           </Text>
         )}
 

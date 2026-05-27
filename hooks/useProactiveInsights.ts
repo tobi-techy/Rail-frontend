@@ -44,39 +44,42 @@ export function useProactiveInsights(options: UseProactiveInsightsOptions = {}) 
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const lastPollRef = useRef<number>(0);
 
-  const fetchInsight = useCallback(async (signal: AbortSignal) => {
-    // Debounce: don't poll more than once per minute
-    const now = Date.now();
-    if (now - lastPollRef.current < 60_000) return;
-    lastPollRef.current = now;
+  const fetchInsight = useCallback(
+    async (signal: AbortSignal) => {
+      // Debounce: don't poll more than once per minute
+      const now = Date.now();
+      if (now - lastPollRef.current < 60_000) return;
+      lastPollRef.current = now;
 
-    setLoading(true);
-    try {
-      // Only try 'performance' — avoids sequential 6s+ calls when providers are quota-limited
-      const res = await aiService.getQuickInsight('performance');
-      if (signal.aborted) return;
-      if (!res.error && res.insight?.trim()) {
-        const generated: ProactiveInsight = {
-          id: `quick-performance-${now}`,
-          type: 'weekly_summary',
-          title: 'Performance Update',
-          message: res.insight,
-          priority: 'high',
-          dismissable: true,
-          dataSource: 'ai_quick_insight_performance',
-          generatedAt: new Date().toISOString(),
-        };
-        if (!dismissedIds.has(generated.id)) {
-          setInsight(generated);
+      setLoading(true);
+      try {
+        // Only try 'performance' — avoids sequential 6s+ calls when providers are quota-limited
+        const res = await aiService.getQuickInsight('performance');
+        if (signal.aborted) return;
+        if (!res.error && res.insight?.trim()) {
+          const generated: ProactiveInsight = {
+            id: `quick-performance-${now}`,
+            type: 'weekly_summary',
+            title: 'Performance Update',
+            message: res.insight,
+            priority: 'high',
+            dismissable: true,
+            dataSource: 'ai_quick_insight_performance',
+            generatedAt: new Date().toISOString(),
+          };
+          if (!dismissedIds.has(generated.id)) {
+            setInsight(generated);
+          }
         }
+      } catch (e: any) {
+        if (e?.name === 'AbortError' || signal.aborted) return;
+        logger.warn('Failed to fetch proactive insights', { error: e });
+      } finally {
+        if (!signal.aborted) setLoading(false);
       }
-    } catch (e: any) {
-      if (e?.name === 'AbortError' || signal.aborted) return;
-      logger.warn('Failed to fetch proactive insights', { error: e });
-    } finally {
-      if (!signal.aborted) setLoading(false);
-    }
-  }, [dismissedIds]);
+    },
+    [dismissedIds]
+  );
 
   useEffect(() => {
     if (!enabled) return;
@@ -117,5 +120,3 @@ export function useProactiveInsights(options: UseProactiveInsightsOptions = {}) 
     refresh,
   };
 }
-
-

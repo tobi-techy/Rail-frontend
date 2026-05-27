@@ -9,7 +9,7 @@ import { isEVMChain, getChainConfig } from '@/utils/chains';
 import { ChainLogo } from '@/components/ChainLogo';
 import { useUIStore } from '@/stores';
 import { getCurrencyConfig } from '@/utils/currencyConfig';
-import { formatCurrency, formatSortCode } from './method-screen/utils';
+import { formatCurrency, formatSortCode } from '@/components/withdraw/method-screen/utils';
 import { AmbientMiriamNudge } from '@/components/ai/AmbientMiriamNudge';
 
 export default function ConfirmScreen() {

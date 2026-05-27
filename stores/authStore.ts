@@ -555,6 +555,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         set({
           passcodeSessionToken: undefined,
           passcodeSessionExpiresAt: undefined,
+          appLockExpiresAt: undefined,
         }),
 
       checkPasscodeSessionExpiry: () => {

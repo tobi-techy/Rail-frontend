@@ -54,8 +54,8 @@ import {
   formatCurrency,
   formatSortCode,
   safeName,
-} from './method-screen/utils';
-import type { FiatCurrency } from './method-screen/types';
+} from '@/components/withdraw/method-screen/utils';
+import type { FiatCurrency } from '@/components/withdraw/method-screen/types';
 import {
   usePajRates,
   usePajBanks,
@@ -152,7 +152,7 @@ export default function DestinationScreen() {
     if (numericAmount <= 0) return 0;
     if (isFiatMethod) {
       const fc = params.currency ?? 'USD';
-      if (fc === 'NGN') return 0.02; // ₦30 flat — actual value from API via railFeeUSD
+      if (fc === 'NGN') return 0.04; // ₦50 flat — actual value from API via railFeeNGN
       return 1.0;
     }
     // Crypto
@@ -243,10 +243,14 @@ export default function DestinationScreen() {
   const pajBanks = useMemo<PajBank[]>(() => pajBanksData?.banks ?? [], [pajBanksData?.banks]);
   const savedBanksList: PajSavedBankAccount[] = (pajSavedBanks as any)?.accounts ?? [];
   const offRampRate = pajRates?.offRampRate?.rate ?? 0;
-  const railFeeUSD = pajRates?.railFee ?? 0.02;
+  const railFeeBase = pajRates?.railFee ?? 50;
+  const stampDuty = pajRates?.stampDuty ?? 50;
+  const stampDutyAbove = pajRates?.stampDutyAbove ?? 10000;
+  const railFeeNGN = numericAmount > stampDutyAbove ? railFeeBase + stampDuty : railFeeBase;
+  const railFeeUSDC = offRampRate > 0 ? railFeeNGN / offRampRate : 0.04;
   // Recalculate fee with API value for NGN (overrides the placeholder above)
   const isNGNFee = isFiatMethod && (params.currency ?? storeCurrency) === 'NGN';
-  const feeAmount = isNGNFee ? railFeeUSD : feeAmountBase;
+  const feeAmount = isNGNFee ? railFeeUSDC : feeAmountBase;
   const totalAmount = numericAmount + feeAmount;
   const ngnAmount = isNGN ? numericAmount : 0;
   const ngnUsdEquivalent = isNGN && offRampRate > 0 ? numericAmount / offRampRate : 0;
@@ -643,7 +647,7 @@ export default function DestinationScreen() {
             <View className="flex-row items-center justify-between px-5 py-4">
               <Text className="font-body text-[14px] text-text-secondary">Rail fee</Text>
               <Text className="font-subtitle text-[14px] text-text-primary">
-                ₦{offRampRate > 0 ? Math.round(railFeeUSD * offRampRate).toLocaleString() : '—'}
+                ₦{railFeeNGN.toLocaleString()}
               </Text>
             </View>
             <View className="mx-5 h-px bg-stone-surface" />
@@ -652,7 +656,7 @@ export default function DestinationScreen() {
               <Text className="font-subtitle text-[16px] text-text-primary">
                 ₦
                 {offRampRate > 0
-                  ? Math.round((ngnUsdEquivalent + railFeeUSD) * offRampRate).toLocaleString()
+                  ? Math.round(numericAmount + railFeeNGN).toLocaleString()
                   : formatCurrency(numericAmount)}
               </Text>
             </View>
@@ -748,7 +752,7 @@ export default function DestinationScreen() {
           {/* Search */}
           <Animated.View entering={FadeInUp.delay(60).duration(250)} className="mt-6">
             <View
-              className="flex-row items-center gap-3 rounded-2xl bg-[#f2f0ed] px-4"
+              className="flex-row items-center gap-3 rounded-2xl bg-[#f7f2e8] px-4"
               style={{ height: 52 }}>
               <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
               <TextInput
@@ -973,7 +977,7 @@ export default function DestinationScreen() {
                   selection();
                   setChainSheetOpen(true);
                 }}
-                className="flex-row items-center justify-between rounded-lg border border-[#f2f0ed] px-4 py-3.5">
+                className="flex-row items-center justify-between rounded-lg border border-[#f7f2e8] px-4 py-3.5">
                 <View className="flex-row items-center gap-3">
                   <View className="relative size-8 items-center justify-center">
                     <View
@@ -1131,7 +1135,7 @@ export default function DestinationScreen() {
                         selection();
                         setNgnBankSheetOpen(true);
                       }}
-                      className="flex-row items-center justify-between rounded-lg border border-[#f2f0ed] px-4 py-3.5">
+                      className="flex-row items-center justify-between rounded-lg border border-[#f7f2e8] px-4 py-3.5">
                       <Text
                         className={`font-body text-[15px] ${ngnBank ? 'text-text-primary' : 'text-[#848281]'}`}>
                         {ngnBank?.name ?? 'Select bank'}
@@ -1177,7 +1181,7 @@ export default function DestinationScreen() {
                     onPress={() => setNgnSaveBank(!ngnSaveBank)}
                     className="flex-row items-center gap-2 py-1">
                     <View
-                      className={`size-5 items-center justify-center rounded ${ngnSaveBank ? 'bg-[#343433]' : 'border border-[#f2f0ed]'}`}>
+                      className={`size-5 items-center justify-center rounded ${ngnSaveBank ? 'bg-[#343433]' : 'border border-[#f7f2e8]'}`}>
                       {ngnSaveBank && <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFF" />}
                     </View>
                     <Text className="font-body text-[13px] text-text-secondary">
@@ -1199,7 +1203,7 @@ export default function DestinationScreen() {
                 selection();
                 setCategorySheetOpen(true);
               }}
-              className="flex-row items-center justify-between rounded-lg border border-[#f2f0ed] px-4 py-3.5">
+              className="flex-row items-center justify-between rounded-lg border border-[#f7f2e8] px-4 py-3.5">
               <View className="flex-row items-center gap-3">
                 <View
                   className="size-8 items-center justify-center rounded-full"
@@ -1318,7 +1322,7 @@ export default function DestinationScreen() {
                   setDestinationChain(chain.chain);
                   setChainSheetOpen(false);
                 }}
-                className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f2f0ed] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]">
+                className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f7f2e8] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]">
                 <View
                   className="size-9 items-center justify-center rounded-full"
                   style={{ backgroundColor: chain.color + '14' }}>
@@ -1328,7 +1332,7 @@ export default function DestinationScreen() {
                   <View className="flex-row items-center gap-2">
                     <Text className="font-subtitle text-[15px] text-[#343433]">{chain.label}</Text>
                     {isEVMChain(chain.chain) && (
-                      <View className="rounded-md bg-[#f2f0ed] px-1.5 py-0.5">
+                      <View className="rounded-md bg-[#f7f2e8] px-1.5 py-0.5">
                         <Text className="font-caption text-[10px] text-[#848281]">EVM</Text>
                       </View>
                     )}
@@ -1364,7 +1368,7 @@ export default function DestinationScreen() {
                   setDestinationChain(chain.chain);
                   setChainSheetOpen(false);
                 }}
-                className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f2f0ed] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]">
+                className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f7f2e8] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]">
                 <View
                   className="size-9 items-center justify-center rounded-full"
                   style={{ backgroundColor: chain.color + '14' }}>
@@ -1374,7 +1378,7 @@ export default function DestinationScreen() {
                   <View className="flex-row items-center gap-2">
                     <Text className="font-subtitle text-[15px] text-[#343433]">{chain.label}</Text>
                     {isEVMChain(chain.chain) && (
-                      <View className="rounded-md bg-[#f2f0ed] px-1.5 py-0.5">
+                      <View className="rounded-md bg-[#f7f2e8] px-1.5 py-0.5">
                         <Text className="font-caption text-[10px] text-[#848281]">EVM</Text>
                       </View>
                     )}
@@ -1444,7 +1448,7 @@ export default function DestinationScreen() {
         snapPoints={['70%']}>
         <Text className="font-subtitle text-[20px] text-text-primary">Select Bank</Text>
         <View
-          className="mb-4 mt-4 flex-row items-center gap-3 rounded-2xl bg-[#f2f0ed] px-4"
+          className="mb-4 mt-4 flex-row items-center gap-3 rounded-2xl bg-[#f7f2e8] px-4"
           style={{ height: 48 }}>
           <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
           <BottomSheetTextInput
@@ -1454,7 +1458,7 @@ export default function DestinationScreen() {
             value={ngnBankSearch}
             onChangeText={setNgnBankSearch}
             autoCorrect={false}
-            style={{ flex: 1, fontFamily: 'SFProDisplay-Regular', fontSize: 15, color: '#343433' }}
+            style={{ flex: 1, fontFamily: 'Geist-Regular', fontSize: 15, color: '#343433' }}
           />
         </View>
         <ScrollView
@@ -1472,7 +1476,7 @@ export default function DestinationScreen() {
                 setNgnBankSheetOpen(false);
               }}
               className="flex-row items-center gap-3 rounded-lg px-2 py-3 active:bg-[#f8f7f4]">
-              <View className="size-9 items-center justify-center rounded-full bg-[#f2f0ed]">
+              <View className="size-9 items-center justify-center rounded-full bg-[#f7f2e8]">
                 <Text className="font-subtitle text-[12px] text-text-secondary">
                   {bank.name.slice(0, 2).toUpperCase()}
                 </Text>

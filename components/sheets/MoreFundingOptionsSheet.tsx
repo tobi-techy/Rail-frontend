@@ -4,12 +4,7 @@ import { router } from 'expo-router';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { PhantomIcon, SolflareIcon, SolanaIcon } from '@/assets/svg';
 import { BankIcon } from '@/assets/svg/filled';
-import {
-  ArrowRight01Icon,
-  Mail01Icon,
-  MailAtSign01Icon,
-  UserGroupIcon,
-} from '@/lib/icons';
+import { ArrowRight01Icon, Mail01Icon, MailAtSign01Icon, UserGroupIcon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 interface FundingOption {

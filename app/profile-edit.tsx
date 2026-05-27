@@ -173,10 +173,12 @@ export default function ProfileEdit() {
 
     try {
       const updated = await updateProfile({
-        ...(isNameLocked ? {} : {
-          firstName: normalizeOptional(firstName),
-          lastName: normalizeOptional(lastName),
-        }),
+        ...(isNameLocked
+          ? {}
+          : {
+              firstName: normalizeOptional(firstName),
+              lastName: normalizeOptional(lastName),
+            }),
         phone: normalizeOptional(phone),
         ...(isDobLocked ? {} : { dateOfBirth: normalizeOptional(dateOfBirth) }),
         country: normalizeOptional(countryCode),

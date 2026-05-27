@@ -69,11 +69,11 @@ export const SendAmountKeypad: React.FC<SendAmountKeypadProps> = ({
       {/* Token Selector */}
       <TouchableOpacity
         onPress={onTokenPress}
-        className="mb-8 flex-row items-center justify-between rounded-2xl border border-[#f2f0ed] bg-parchment-card px-4 py-3"
+        className="mb-8 flex-row items-center justify-between rounded-2xl border border-[#f7f2e8] bg-parchment-card px-4 py-3"
         activeOpacity={0.7}>
         <View className="flex-1 flex-row items-center">
           {selectedToken && (
-            <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-[#f2f0ed]">
+            <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-[#f7f2e8]">
               <View className="h-6 w-6 items-center justify-center">
                 {selectedToken.icon === 'usdc' && (
                   <View className="h-6 w-6 items-center justify-center rounded-full bg-[#2775CA]">
@@ -109,13 +109,19 @@ export const SendAmountKeypad: React.FC<SendAmountKeypadProps> = ({
             {selectedToken?.priceChange || 0}%
           </Text>
         </View>
-        <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#848281" strokeWidth={2} className="ml-2" />
+        <HugeiconsIcon
+          icon={ArrowDown01Icon}
+          size={20}
+          color="#848281"
+          strokeWidth={2}
+          className="ml-2"
+        />
       </TouchableOpacity>
 
       {/* Amount Display */}
       <View className="mb-8 items-center">
         <View className="mb-2 flex-row items-center justify-center">
-          <Text className="font-body-bold mr-2 text-[50px] text-[#0B1120]">{displayAmount}</Text>
+          <Text className="mr-2 font-body-bold text-[50px] text-[#0B1120]">{displayAmount}</Text>
           <Text className="font-body-bold text-[50px] text-[#848281]">
             {selectedToken?.symbol || 'USDC'}
           </Text>

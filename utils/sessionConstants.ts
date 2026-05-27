@@ -13,3 +13,4 @@ export const ACCESS_TOKEN_REFRESH_MS = 55 * 60 * 1000; // 55 minutes (~5 min bef
 export const REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes before expiry
 export const HEALTH_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 export const MIN_TIMER_MS = 1000; // 1 second minimum for setTimeout
+export const BACKGROUND_LOCK_GRACE_MS = 60 * 1000; // 1 minute grace before locking on background

@@ -4,12 +4,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { Canvas, RoundedRect, Group } from '@shopify/react-native-skia';
-import { useSpendingStashData } from './useSpendingStashData';
+import { useSpendingStashData } from '@/components/spending-stash/useSpendingStashData';
 import { Icon } from '@/components/atoms/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useUIStore } from '@/stores';
-import { CATEGORY_PALETTE } from './components';
+import { CATEGORY_PALETTE } from '@/components/spending-stash/components';
 import { ArrowLeft01Icon, IconComponent as HugeiconsIcon, RefreshIcon } from '@/lib/icons';
 
 const ACCENT = '#ff3e00';
@@ -88,7 +88,7 @@ function MonthlyBarChart({ data }: { data: ChartBar[] }) {
                   width={barW}
                   height={6}
                   r={r}
-                  color="#f2f0ed"
+                  color="#f7f2e8"
                 />
               );
             }

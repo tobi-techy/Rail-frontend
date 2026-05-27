@@ -18,8 +18,8 @@ export function NotificationBell({ size = 22, color = '#111' }: NotificationBell
     <Pressable onPress={() => router.push('/notifications')} hitSlop={8} className="relative">
       <HugeiconsIcon icon={Notification03Icon} size={size} color={color} strokeWidth={1.8} />
       {unreadCount > 0 && (
-        <View className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-coral-red/100 items-center justify-center px-1">
-          <Text className="text-white text-[10px] font-bold">
+        <View className="absolute -right-1.5 -top-1.5 h-[18px] min-w-[18px] items-center justify-center rounded-full bg-coral-red/100 px-1">
+          <Text className="text-[10px] font-bold text-white">
             {unreadCount > 99 ? '99+' : unreadCount}
           </Text>
         </View>

@@ -60,7 +60,7 @@ export function PaymentMethodSelector({
               {/* Icon Background */}
               <View
                 className="mr-4 h-14 w-14 items-center justify-center rounded-2xl"
-                style={{ backgroundColor: method.backgroundColor || '#f2f0ed' }}>
+                style={{ backgroundColor: method.backgroundColor || '#f7f2e8' }}>
                 {isDisabled && (
                   <View className="absolute z-10 h-full w-full items-center justify-center rounded-2xl bg-black/10" />
                 )}

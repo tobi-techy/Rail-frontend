@@ -400,11 +400,40 @@ export interface MoneyAcrossBordersReport {
   professional_review_note?: string;
 }
 
+// ProactiveOpener is the personalized greeting shown in the empty chat state.
+export interface ProactiveOpener {
+  greeting: string;
+  bubble_message: string;
+  subtitle?: string;
+  severity: 'low' | 'medium' | 'high' | 'info';
+  suggestions: Suggestion[];
+  action_chips?: ActionChip[];
+}
+
+export interface Suggestion {
+  text: string;
+  category?: string;
+}
+
+export interface ActionChip {
+  id: string;
+  label: string;
+  type:
+    | 'transfer_to_stash'
+    | 'set_up_auto_transfer'
+    | 'remind_me_later'
+    | 'review_spending'
+    | 'set_budget';
+  description?: string;
+  dest_screen?: string;
+}
+
 // SSE stream event types
 export type AIStreamEvent =
   | { type: 'tool_result'; data: { tool: string } }
   | { type: 'cards'; data: InsightCard[] }
   | { type: 'token'; content: string }
+  | { type: 'action_chips'; data: ActionChip[] }
   | { type: 'pending_action'; data: PendingAction }
   | {
       type: 'done';

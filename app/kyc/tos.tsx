@@ -19,7 +19,10 @@ export default function KycTosScreen() {
   try {
     const decoded = decodeURIComponent(url ?? '');
     const parsed = new URL(decoded);
-    if (parsed.protocol === 'https:' && TRUSTED_HOSTS.some((h) => parsed.hostname === h || parsed.hostname.endsWith('.' + h))) {
+    if (
+      parsed.protocol === 'https:' &&
+      TRUSTED_HOSTS.some((h) => parsed.hostname === h || parsed.hostname.endsWith('.' + h))
+    ) {
       safeUrl = decoded;
     }
   } catch {}

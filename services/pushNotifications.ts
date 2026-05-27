@@ -342,7 +342,8 @@ class PushNotificationService {
         ]);
         const target =
           typeof screen === 'string' && SAFE_SCREENS.has(screen) ? screen : '/notifications';
-        const preloadedMsg = typeof data.preloaded_message === 'string' ? data.preloaded_message : '';
+        const preloadedMsg =
+          typeof data.preloaded_message === 'string' ? data.preloaded_message : '';
         if (target === '/ai-chat' && preloadedMsg) {
           router.push({ pathname: '/ai-chat', params: { preloaded_message: preloadedMsg } } as any);
         } else {

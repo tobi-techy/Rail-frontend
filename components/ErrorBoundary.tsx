@@ -140,7 +140,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fbfaf9',
+    backgroundColor: '#f7f4ef',
   },
   content: {
     flex: 1,
@@ -152,14 +152,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: 'SFProDisplay-Bold',
+    fontFamily: 'Geist-Bold',
     color: '#343433',
     marginBottom: 12,
     lineHeight: 34,
   },
   message: {
     fontSize: 16,
-    fontFamily: 'SFProDisplay-Regular',
+    fontFamily: 'Geist-Regular',
     color: '#848281',
     lineHeight: 24,
   },
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   devText: {
     fontSize: 11,
     color: '#ff2b3a',
-    fontFamily: 'SFMono-Regular',
+    fontFamily: 'Geist-Regular',
   },
   footer: {
     paddingHorizontal: 20,
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 15,
-    fontFamily: 'SFProDisplay-Semibold',
+    fontFamily: 'Geist-SemiBold',
     color: '#FFFFFF',
   },
 });

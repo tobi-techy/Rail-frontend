@@ -10,7 +10,14 @@ interface Props {
   style?: any;
 }
 
-export function AnimatedBalance({ value, prefix = '$', suffix = '', decimals = 2, duration = 600, style }: Props) {
+export function AnimatedBalance({
+  value,
+  prefix = '$',
+  suffix = '',
+  decimals = 2,
+  duration = 600,
+  style,
+}: Props) {
   const [display, setDisplay] = useState(`${prefix}${value.toFixed(decimals)}${suffix}`);
   const prevRef = useRef(value);
 

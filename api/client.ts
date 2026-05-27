@@ -101,8 +101,7 @@ function isPasscodeProtectedEndpoint(method?: string, url?: string): boolean {
   const normalizedMethod = method.toUpperCase();
   if (normalizedMethod === 'POST' && /^\/v1\/withdrawals(?:\/(?:crypto|fiat))?$/.test(path))
     return true;
-  if (normalizedMethod === 'POST' && path === '/v1/withdrawals/emergency/to-spending')
-    return true;
+  if (normalizedMethod === 'POST' && path === '/v1/withdrawals/emergency/to-spending') return true;
   if (normalizedMethod === 'POST' && path === '/v1/funding/stash') return true;
   if (normalizedMethod === 'POST' && path === '/v1/funding/paj/offramp') return true;
   if (normalizedMethod === 'POST' && path === '/v1/security/ip-whitelist') return true;

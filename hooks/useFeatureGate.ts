@@ -24,9 +24,7 @@ export function useFeatureGate() {
     onboardingStatus === 'kyc_rejected';
 
   const isProfileComplete = hasCompletedOnboarding || isLegacyComplete;
-  const isKycApproved =
-    kycStatus?.status === 'approved' ||
-    kycStatus?.bridge?.status === 'active';
+  const isKycApproved = kycStatus?.status === 'approved' || kycStatus?.bridge?.status === 'active';
 
   const requireFeature = useCallback(
     (

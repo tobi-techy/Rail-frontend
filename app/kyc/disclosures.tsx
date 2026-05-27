@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,16 +18,34 @@ const DISCLOSURE_COPY: Record<keyof KycDisclosures, string> = {
 };
 
 const DISCLOSURE_HELP: Record<keyof KycDisclosures, string> = {
-  is_control_person: 'A control person is someone who has significant influence over a publicly traded company (e.g., CEO, CFO, major shareholder).',
-  is_affiliated_exchange_or_finra: 'Select "Yes" if you work for a stock exchange, FINRA member firm, or are a registered broker.',
-  is_politically_exposed: 'A PEP is someone entrusted with prominent public functions (e.g., government officials, politicians, judges).',
-  immediate_family_exposed: 'Select "Yes" if any immediate family member (spouse, parent, sibling, child) is a PEP.',
+  is_control_person:
+    'A control person is someone who has significant influence over a publicly traded company (e.g., CEO, CFO, major shareholder).',
+  is_affiliated_exchange_or_finra:
+    'Select "Yes" if you work for a stock exchange, FINRA member firm, or are a registered broker.',
+  is_politically_exposed:
+    'A PEP is someone entrusted with prominent public functions (e.g., government officials, politicians, judges).',
+  immediate_family_exposed:
+    'Select "Yes" if any immediate family member (spouse, parent, sibling, child) is a PEP.',
 };
 
 export default function KycDisclosuresScreen() {
   const insets = useSafeAreaInsets();
-  const { country, disclosures, disclosuresConfirmed, setDisclosure, setDisclosuresConfirmed } =
-    useKycStore();
+  const {
+    country,
+    disclosures,
+    disclosuresConfirmed,
+    setDisclosure,
+    setDisclosuresConfirmed,
+    hasCompletedStep,
+    addCompletedStep,
+  } = useKycStore();
+
+  // Skip if already completed
+  useEffect(() => {
+    if (hasCompletedStep('disclosures')) {
+      router.replace('/kyc/source-of-funds');
+    }
+  }, []);
 
   const requirement = COUNTRY_KYC_REQUIREMENTS[country];
   const requiredDisclosureKeys = requirement.requiredDisclosures;
@@ -51,7 +69,8 @@ export default function KycDisclosuresScreen() {
 
   const handleContinue = () => {
     if (!disclosuresConfirmed) return;
-    router.push('/kyc/source-of-funds');
+    addCompletedStep('disclosures');
+    router.replace('/kyc/source-of-funds');
   };
 
   return (
@@ -65,13 +84,13 @@ export default function KycDisclosuresScreen() {
             accessibilityLabel="Go back">
             <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" />
           </Pressable>
-          <Text className="font-subtitle text-[13px] text-ash">Step 4 of 4</Text>
+          <Text className="font-subtitle text-[13px] text-ash">Step 4</Text>
           <View className="size-11" />
         </View>
 
         <View className="px-4">
           <View className="h-1.5 overflow-hidden rounded-full bg-fog">
-            <View className="h-full w-3/4 rounded-full bg-midnight" />
+            <View className="h-full w-4/5 rounded-full bg-midnight" />
           </View>
         </View>
 
@@ -136,7 +155,14 @@ export default function KycDisclosuresScreen() {
                 className={`mt-0.5 size-5 items-center justify-center rounded border ${
                   disclosuresConfirmed ? 'border-gray-900 bg-midnight' : 'border-gray-400 bg-white'
                 }`}>
-                {disclosuresConfirmed && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#FFFFFF" strokeWidth={3} />}
+                {disclosuresConfirmed && (
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle01Icon}
+                    size={12}
+                    color="#FFFFFF"
+                    strokeWidth={3}
+                  />
+                )}
               </View>
               <Text className="flex-1 font-body text-[13px] leading-5 text-graphite">
                 I confirm all submitted information is accurate and belongs to me.

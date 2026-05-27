@@ -19,22 +19,13 @@ export function StaggeredChild({ children, index = 0, delay = 50, style }: Stagg
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    progress.value = withDelay(
-      index * delay,
-      withSpring(1, { damping: 18, stiffness: 100 })
-    );
+    progress.value = withDelay(index * delay, withSpring(1, { damping: 18, stiffness: 100 }));
   }, [index, delay, progress]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
-    transform: [
-      { translateY: interpolate(progress.value, [0, 1], [16, 0]) },
-    ],
+    transform: [{ translateY: interpolate(progress.value, [0, 1], [16, 0]) }],
   }));
 
-  return (
-    <Animated.View style={[animatedStyle, style]}>
-      {children}
-    </Animated.View>
-  );
+  return <Animated.View style={[animatedStyle, style]}>{children}</Animated.View>;
 }

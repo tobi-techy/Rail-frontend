@@ -183,7 +183,7 @@ export function CreateAutomationSheet({ visible, onClose, onCreated }: Props) {
                   className={`mb-3 flex-row items-center rounded-2xl border px-4 py-4 ${selectedTrigger === i ? 'border-primary bg-[#FFF5F3]' : 'border-black/[0.06] bg-white'}`}
                   accessibilityRole="button"
                   accessibilityLabel={t.label}>
-                  <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-[#f2f0ed]">
+                  <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-[#f7f2e8]">
                     <HugeiconsIcon icon={t.icon} size={18} color="#000" />
                   </View>
                   <Text className="font-body-medium text-[15px] text-text-primary">{t.label}</Text>
@@ -218,7 +218,7 @@ export function CreateAutomationSheet({ visible, onClose, onCreated }: Props) {
                   className={`mb-3 flex-row items-center rounded-2xl border px-4 py-4 ${selectedAction === i ? 'border-primary bg-[#FFF5F3]' : 'border-black/[0.06] bg-white'}`}
                   accessibilityRole="button"
                   accessibilityLabel={a.label}>
-                  <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-[#f2f0ed]">
+                  <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-[#f7f2e8]">
                     <HugeiconsIcon icon={a.icon} size={18} color="#000" />
                   </View>
                   <Text className="font-body-medium text-[15px] text-text-primary">{a.label}</Text>
@@ -241,7 +241,7 @@ export function CreateAutomationSheet({ visible, onClose, onCreated }: Props) {
                 Set the amount and name
               </Text>
 
-              <View className="mb-4 flex-row items-center rounded-2xl bg-[#f2f0ed] px-4 py-4">
+              <View className="mb-4 flex-row items-center rounded-2xl bg-[#f7f2e8] px-4 py-4">
                 <Text className="mr-1 font-mono-semibold text-2xl text-text-primary">$</Text>
                 <TextInput
                   value={amount}
@@ -258,7 +258,7 @@ export function CreateAutomationSheet({ visible, onClose, onCreated }: Props) {
                 onChangeText={setName}
                 placeholder="Name this rule (optional)"
                 placeholderTextColor="#848281"
-                className="mb-6 rounded-2xl bg-[#f2f0ed] px-4 py-4 font-body text-[15px] text-text-primary"
+                className="mb-6 rounded-2xl bg-[#f7f2e8] px-4 py-4 font-body text-[15px] text-text-primary"
               />
 
               <Pressable

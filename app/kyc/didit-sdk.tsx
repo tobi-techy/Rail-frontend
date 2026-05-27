@@ -5,18 +5,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { startVerification, VerificationStatus } from '@didit-protocol/sdk-react-native';
 
 import { useKycStore } from '@/stores/kycStore';
+import { useStartDiditSession } from '@/api/hooks/useKYC';
 import { logger } from '@/lib/logger';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
+import type { TransformedApiError } from '@/api/types';
+import type { KycDisclosures } from '@/api/types/kyc';
 import { Alert02Icon, Cancel01Icon, RefreshIcon, MessageIcon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export default function KycDiditSdkScreen() {
   const { diditSessionToken, setLocalSubmissionPendingAt } = useKycStore();
+  const startSession = useStartDiditSession();
   const { track } = useAnalytics();
   const [initError, setInitError] = useState(false);
   const [errorType, setErrorType] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
   const launching = useRef(false);
+  const retryingRef = useRef(false);
 
   const handleClose = useCallback(() => {
     if (router.canDismiss()) {
@@ -26,30 +31,78 @@ export default function KycDiditSdkScreen() {
     }
   }, []);
 
-  const handleRetry = useCallback(() => {
+  const handleRetry = useCallback(async () => {
+    if (retryingRef.current) return;
+
+    const state = useKycStore.getState();
+    const { taxId } = state;
+
+    // If taxId was lost (app killed), can't retry in-place — go back to source-of-funds
+    if (!taxId) {
+      router.replace('/kyc/source-of-funds');
+      return;
+    }
+
+    retryingRef.current = true;
     setIsRetrying(true);
+
     setInitError(false);
     setErrorType(null);
     launching.current = false;
-    // Small delay before retry to allow state to reset
-    setTimeout(() => {
+
+    try {
+      const result = await startSession.mutateAsync({
+        tax_id: taxId,
+        tax_id_type: state.taxIdType,
+        issuing_country: state.country,
+        disclosures: state.disclosures as KycDisclosures,
+        source_of_funds: state.sourceOfFunds ?? undefined,
+        employment_status: state.employmentStatus ?? undefined,
+        expected_monthly_payments_usd: state.expectedMonthlyPayments ?? undefined,
+        account_purpose: state.accountPurpose ?? undefined,
+        account_purpose_other: state.accountPurposeOther ?? undefined,
+        most_recent_occupation: state.mostRecentOccupation ?? undefined,
+        acting_as_intermediary: state.actingAsIntermediary,
+      });
+
+      if (result.status === 'existing_session') {
+        router.replace('/kyc/pending');
+        return;
+      }
+
+      // Set new session token — triggers useEffect to re-launch SDK
+      useKycStore.getState().setDiditSession(result.session_token, result.session_id);
       setIsRetrying(false);
+      retryingRef.current = false;
+    } catch (error) {
+      const apiError = error as TransformedApiError;
+      const missingFields = Array.isArray(apiError?.details?.missing_fields)
+        ? (apiError.details.missing_fields as string[])
+        : [];
+
+      if (missingFields.length > 0) {
+        useKycStore.getState().setMissingProfileFields(missingFields);
+        router.replace('/kyc/profile-gaps');
+        return;
+      }
+
+      // Any other error — fall back to source-of-funds with pre-filled data
       router.replace('/kyc/source-of-funds');
-    }, 500);
-  }, []);
+    }
+  }, [startSession]);
 
   const handleContactSupport = useCallback(() => {
     Linking.openURL('mailto:support@userail.money?subject=KYC%20Verification%20Issue');
   }, []);
 
-  // Start verification on mount
+  // Start verification on mount or when diditSessionToken changes (from retry)
   useEffect(() => {
     if (!diditSessionToken) {
       setInitError(true);
       setErrorType('no_session');
       return;
     }
-    if (launching.current || isRetrying) return;
+    if (launching.current || retryingRef.current) return;
     launching.current = true;
 
     (async () => {
@@ -68,7 +121,10 @@ export default function KycDiditSdkScreen() {
               setLocalSubmissionPendingAt(new Date().toISOString());
               router.replace('/kyc/pending');
             } else {
-              // Declined — still go to pending so polling picks up the status
+              track(ANALYTICS_EVENTS.KYC_VERIFICATION_FAILED, {
+                status: result.session.status,
+                reason: 'declined',
+              });
               setLocalSubmissionPendingAt(new Date().toISOString());
               router.replace('/kyc/pending');
             }
@@ -108,9 +164,8 @@ export default function KycDiditSdkScreen() {
         launching.current = false;
       }
     })();
-  }, [diditSessionToken, setLocalSubmissionPendingAt, track, isRetrying]);
+  }, [diditSessionToken, setLocalSubmissionPendingAt, track]);
 
-  // Get user-friendly error message based on error type
   const getErrorMessage = () => {
     switch (errorType) {
       case 'no_session':
@@ -156,9 +211,7 @@ export default function KycDiditSdkScreen() {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#343433" />
           <Text className="mt-4 font-body text-[15px] text-ash">Launching verification…</Text>
-          <Text className="mt-2 font-caption text-[13px] text-smoke">
-            This may take a moment
-          </Text>
+          <Text className="mt-2 font-caption text-[13px] text-smoke">This may take a moment</Text>
         </View>
       )}
 
@@ -177,11 +230,18 @@ export default function KycDiditSdkScreen() {
           <View className="w-full flex-row gap-3">
             <Pressable
               onPress={handleRetry}
+              disabled={isRetrying}
               className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-6 py-4"
               accessibilityRole="button"
               accessibilityLabel="Try verification again">
-              <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />
-              <Text className="font-subtitle text-[15px] text-white">Try Again</Text>
+              {isRetrying ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />
+              )}
+              <Text className="font-subtitle text-[15px] text-white">
+                {isRetrying ? 'Creating session…' : 'Try Again'}
+              </Text>
             </Pressable>
 
             <Pressable
