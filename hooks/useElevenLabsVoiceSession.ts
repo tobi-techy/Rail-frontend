@@ -223,6 +223,7 @@ function useElevenLabsConversation() {
     },
     onError: (message: string) => {
       const severity = classifyError(message);
+      console.error('[ELVoice] Session error:', message);
       logger.error('[ELVoice] Session error', {
         component: 'useElevenLabsVoiceSession',
         action: 'session-error',
@@ -252,6 +253,7 @@ function useElevenLabsConversation() {
       }
     },
     onStatusChange: ({ status }: { status: string }) => {
+      console.log('[ELVoice] Status changed:', status);
       switch (status) {
         case 'connecting':
           setVoiceState('connecting');
@@ -293,6 +295,7 @@ function useElevenLabsConversation() {
 
     try {
       const { agent_id, dynamic_variables } = await aiService.getVoiceSignedUrl();
+      console.log('[ELVoice] Starting session with agentId:', agent_id);
       conversation.startSession({
         agentId: agent_id,
         connectionType: 'webrtc',
