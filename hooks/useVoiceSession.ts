@@ -17,7 +17,14 @@ import { aiService } from '@/api/services/ai.service';
 import { logger } from '@/lib/logger';
 import { safeError, sanitizeForLog } from '@/utils/logSanitizer';
 
-export type VoiceState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'error';
+export type VoiceState =
+  | 'idle'
+  | 'connecting'
+  | 'listening'
+  | 'thinking'
+  | 'speaking'
+  | 'interrupted'
+  | 'error';
 
 interface VoiceEvent {
   type: string;
@@ -35,28 +42,46 @@ interface ExpoTwoWayAudioNativeModule {
 const twoWayAudioNative = requireNativeModule<ExpoTwoWayAudioNativeModule>('ExpoTwoWayAudio');
 
 // Audio constants
-const SAMPLE_RATE = 24000; // 24kHz PCM16 mono
+const SAMPLE_RATE = 24000;
 const BYTES_PER_SAMPLE = 2;
-// Pre-buffer enough audio to keep native playback ahead of network/JS timer jitter.
 const PRE_BUFFER_MS = 220;
 const PRE_BUFFER_BYTES = Math.ceil((SAMPLE_RATE * BYTES_PER_SAMPLE * PRE_BUFFER_MS) / 1000);
 const DRAIN_INTERVAL_MS = 30;
 const DRAIN_CHUNK_MS = 80;
 const DRAIN_CHUNK_BYTES = Math.ceil((SAMPLE_RATE * BYTES_PER_SAMPLE * DRAIN_CHUNK_MS) / 1000);
-const TTS_FALLBACK_DELAY_MS = 280;
+const TTS_FALLBACK_DELAY_MS = 3000;
 const DEVICE_TTS_OPTIONS = {
   language: 'en-US',
-  pitch: 1.03,
-  rate: 0.92,
+  pitch: 1.0,
+  rate: 0.88,
 };
+const INTERRUPT_ENERGY_THRESHOLD = 0.15;
+const MAX_JITTER_BUFFER_BYTES = 1024 * 1024;
+const RECONNECT_BASE_DELAY_MS = 1000;
+const RECONNECT_MAX_DELAY_MS = 15000;
+const MAX_RECONNECT_ATTEMPTS = 5;
+const HEARTBEAT_INTERVAL_MS = 15000;
+const HEARTBEAT_TIMEOUT_MS = 5000;
 
-// Helpers
 function base64ToBytes(b64: string): Uint8Array {
   return Uint8Array.from(Buffer.from(b64, 'base64'));
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
   return Buffer.from(bytes).toString('base64');
+}
+
+function computeRMS(pcmData: Uint8Array): number {
+  let sumSquares = 0;
+  const view = new DataView(pcmData.buffer, pcmData.byteOffset, pcmData.byteLength);
+  const sampleCount = Math.floor(pcmData.byteLength / 2);
+  if (sampleCount === 0) return 0;
+  for (let i = 0; i < sampleCount; i++) {
+    const sample = view.getInt16(i * 2, true);
+    sumSquares += sample * sample;
+  }
+  const meanSquare = sumSquares / sampleCount;
+  return Math.sqrt(meanSquare) / 32768;
 }
 
 function splitCaptionTokens(text: string): string[] {
@@ -79,11 +104,6 @@ function safeVoiceErrorMessage(err: unknown) {
   return 'Unknown voice audio error';
 }
 
-/**
- * Jitter buffer: accumulates incoming PCM chunks and drains them at a steady
- * rate to the native audio player. This eliminates crackling caused by uneven
- * network delivery of audio packets.
- */
 class AudioJitterBuffer {
   private buffer: Uint8Array[] = [];
   private totalBytes = 0;
@@ -103,6 +123,16 @@ class AudioJitterBuffer {
 
   push(chunk: Uint8Array) {
     if (!this.playing) return;
+    if (this.totalBytes + chunk.byteLength > MAX_JITTER_BUFFER_BYTES) {
+      logger.warn('[VoiceSession] Jitter buffer overflow, dropping chunk', {
+        component: 'useVoiceSession',
+        action: 'jitter-buffer-push',
+        totalBytes: this.totalBytes,
+        chunkSize: chunk.byteLength,
+        maxBytes: MAX_JITTER_BUFFER_BYTES,
+      });
+      return;
+    }
     this.buffer.push(chunk);
     this.totalBytes += chunk.byteLength;
   }
@@ -110,18 +140,16 @@ class AudioJitterBuffer {
   private drain() {
     if (!this.playing) return;
 
-    // Wait for pre-buffer to fill before starting playback
     if (!this.preBufferReached) {
       if (this.totalBytes >= PRE_BUFFER_BYTES) {
         this.preBufferReached = true;
       } else {
-        return; // Still accumulating
+        return;
       }
     }
 
     if (this.buffer.length === 0) return;
 
-    // Merge buffered chunks into a single drain-sized chunk for smooth playback
     const bytesToDrain = Math.min(DRAIN_CHUNK_BYTES, this.totalBytes);
     const merged = new Uint8Array(bytesToDrain);
     let offset = 0;
@@ -136,7 +164,6 @@ class AudioJitterBuffer {
         this.buffer.shift();
         this.totalBytes -= chunk.byteLength;
       } else {
-        // Partial chunk: take what we need, leave the rest
         merged.set(chunk.subarray(0, needed), offset);
         this.buffer[0] = chunk.subarray(needed);
         this.totalBytes -= needed;
@@ -171,6 +198,12 @@ class AudioJitterBuffer {
     this.preBufferReached = false;
   }
 
+  clear() {
+    this.buffer = [];
+    this.totalBytes = 0;
+    this.preBufferReached = false;
+  }
+
   get bufferedMs(): number {
     return (this.totalBytes / BYTES_PER_SAMPLE / SAMPLE_RATE) * 1000;
   }
@@ -187,6 +220,8 @@ export function useVoiceSession() {
   const wsRef = useRef<WebSocket | null>(null);
   const activeRef = useRef(false);
   const stateRef = useRef<VoiceState>('idle');
+  const hasSettledRef = useRef(false);
+  const isTornDownRef = useRef(false);
   const canPlayReplyAudioRef = useRef(false);
   const captionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const speakingSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -194,9 +229,16 @@ export function useVoiceSession() {
   const replyAudioStartedAtRef = useRef(0);
   const replyAudioDurationMsRef = useRef(0);
   const replyAudioMissingRef = useRef(false);
+  const repliedAudioArrivedRef = useRef(false);
   const deviceTtsActiveRef = useRef(false);
   const jitterBufferRef = useRef(new AudioJitterBuffer());
   const micMutedRef = useRef(false);
+  const reconnectAttemptRef = useRef(0);
+  const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const heartbeatPendingRef = useRef(false);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleReconnectRef = useRef<() => void>(() => {});
+  const wsGenerationRef = useRef(0);
 
   const setVoiceState = useCallback((s: VoiceState) => {
     stateRef.current = s;
@@ -244,7 +286,6 @@ export function useVoiceSession() {
     try {
       twoWayAudioNative.stopPlayback?.();
     } catch {}
-    // Unmute mic after flushing playback
     unmuteMic();
   }, [stopDeviceSpeech, unmuteMic]);
 
@@ -327,6 +368,9 @@ export function useVoiceSession() {
 
       ttsFallbackTimerRef.current = setTimeout(() => {
         ttsFallbackTimerRef.current = null;
+
+        if (repliedAudioArrivedRef.current) return;
+
         const hasReplyAudio =
           replyAudioDurationMsRef.current > 0 || replyAudioStartedAtRef.current > 0;
         if (!replyAudioMissingRef.current && hasReplyAudio) return;
@@ -360,14 +404,60 @@ export function useVoiceSession() {
     }, totalSettleMs);
   }, [setVoiceState, unmuteMic]);
 
-  // Stream mic PCM to backend — muted during playback to prevent echo/artifacts
+  const stopHeartbeat = useCallback(() => {
+    if (heartbeatTimerRef.current) {
+      clearInterval(heartbeatTimerRef.current);
+      heartbeatTimerRef.current = null;
+    }
+    heartbeatPendingRef.current = false;
+  }, []);
+
+  const startHeartbeat = useCallback(
+    (ws: WebSocket) => {
+      stopHeartbeat();
+      heartbeatPendingRef.current = false;
+
+      heartbeatTimerRef.current = setInterval(() => {
+        if (ws.readyState !== WebSocket.OPEN) {
+          stopHeartbeat();
+          return;
+        }
+        heartbeatPendingRef.current = true;
+        try {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        } catch {}
+        setTimeout(() => {
+          if (heartbeatPendingRef.current) {
+            heartbeatPendingRef.current = false;
+            logger.warn('[VoiceSession] Heartbeat timeout, closing connection', {
+              component: 'useVoiceSession',
+              action: 'heartbeat-timeout',
+            });
+            ws.close();
+          }
+        }, HEARTBEAT_TIMEOUT_MS);
+      }, HEARTBEAT_INTERVAL_MS);
+    },
+    [stopHeartbeat]
+  );
+
+  // Stream mic PCM to backend — duck mic during playback but detect interruption energy
   useExpoTwoWayAudioEventListener(
     'onMicrophoneData',
     useCallback<MicrophoneDataCallback>((event) => {
       const ws = wsRef.current;
       if (!ws || ws.readyState !== WebSocket.OPEN || !activeRef.current) return;
-      // Duck mic during playback to prevent echo artifacts
-      if (micMutedRef.current) return;
+
+      if (micMutedRef.current) {
+        const energy = computeRMS(event.data);
+        if (energy > INTERRUPT_ENERGY_THRESHOLD) {
+          try {
+            ws.send(JSON.stringify({ type: 'input.interrupt' }));
+          } catch {}
+        }
+        return;
+      }
+
       const b64 = bytesToBase64(event.data);
       ws.send(JSON.stringify({ type: 'input.audio', audio: b64 }));
     }, [])
@@ -388,10 +478,18 @@ export function useVoiceSession() {
   );
 
   const cleanup = useCallback(() => {
+    if (!hasSettledRef.current) return;
+    hasSettledRef.current = false;
     activeRef.current = false;
     canPlayReplyAudioRef.current = false;
     micMutedRef.current = false;
     replyAudioMissingRef.current = false;
+    repliedAudioArrivedRef.current = false;
+    stopHeartbeat();
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
     stopDeviceSpeech();
     jitterBufferRef.current.stop();
     if (captionTimerRef.current) {
@@ -404,13 +502,17 @@ export function useVoiceSession() {
     }
     replyAudioStartedAtRef.current = 0;
     replyAudioDurationMsRef.current = 0;
-    try {
-      toggleRecording(false);
-    } catch {}
-    try {
-      tearDown();
-    } catch {}
+    if (isTornDownRef.current) {
+      isTornDownRef.current = false;
+      try {
+        toggleRecording(false);
+      } catch {}
+      try {
+        tearDown();
+      } catch {}
+    }
     if (wsRef.current) {
+      wsRef.current.onclose = null;
       wsRef.current.close();
       wsRef.current = null;
     }
@@ -419,14 +521,12 @@ export function useVoiceSession() {
     setResponseText('');
     setInputVolume(0);
     setOutputVolume(0);
-  }, [setVoiceState, stopDeviceSpeech]);
+  }, [setVoiceState, stopDeviceSpeech, stopHeartbeat]);
 
-  // Handle events from backend
   const handleEvent = useCallback(
     (event: VoiceEvent) => {
       switch (event.type) {
         case 'session.ready':
-          // Mic already recording from connect(); just confirm listening state
           setVoiceState('listening');
           activeRef.current = true;
           break;
@@ -435,11 +535,15 @@ export function useVoiceSession() {
         case 'rail.playback.flush':
           flushPlayback();
           setVoiceState('listening');
-          setResponseText('');
           break;
 
         case 'input.speech.stopped':
           setVoiceState('thinking');
+          break;
+
+        case 'rail.voice.interrupt_detected':
+          flushPlayback();
+          setVoiceState('listening');
           break;
 
         case 'transcript.user':
@@ -447,11 +551,16 @@ export function useVoiceSession() {
           setTranscript(event.text ?? '');
           break;
 
+        case 'pong':
+          heartbeatPendingRef.current = false;
+          break;
+
         case 'reply.started':
           canPlayReplyAudioRef.current = true;
           replyAudioStartedAtRef.current = 0;
           replyAudioDurationMsRef.current = 0;
           replyAudioMissingRef.current = false;
+          repliedAudioArrivedRef.current = false;
           stopDeviceSpeech();
           if (captionTimerRef.current) {
             clearInterval(captionTimerRef.current);
@@ -459,22 +568,20 @@ export function useVoiceSession() {
           }
           setResponseText('');
           setVoiceState('speaking');
-          // Mute mic during playback to prevent echo/feedback artifacts
           muteMic();
-          // Start jitter buffer for smooth audio drain
           jitterBufferRef.current.start();
           break;
 
         case 'reply.audio':
           if (event.data && canPlayReplyAudioRef.current) {
             try {
+              repliedAudioArrivedRef.current = true;
               clearTtsFallbackTimer();
               replyAudioMissingRef.current = false;
               const audioBytes = base64ToBytes(event.data);
               if (!replyAudioStartedAtRef.current) replyAudioStartedAtRef.current = Date.now();
               replyAudioDurationMsRef.current +=
                 (audioBytes.byteLength / BYTES_PER_SAMPLE / SAMPLE_RATE) * 1000;
-              // Push to jitter buffer instead of playing immediately
               jitterBufferRef.current.push(audioBytes);
             } catch {
               setError('Audio playback failed');
@@ -518,6 +625,7 @@ export function useVoiceSession() {
         case 'reply.done':
           if (event.status === 'interrupted') {
             flushPlayback();
+            setVoiceState('listening');
           } else if (deviceTtsActiveRef.current || ttsFallbackTimerRef.current) {
             canPlayReplyAudioRef.current = false;
           } else if (replyAudioDurationMsRef.current <= 0 && replyAudioMissingRef.current) {
@@ -526,8 +634,13 @@ export function useVoiceSession() {
           } else {
             finishPcmPlayback();
           }
-          if (event.status === 'interrupted' && stateRef.current === 'speaking')
-            setVoiceState('listening');
+          break;
+
+        case 'rail.session.ended':
+          canPlayReplyAudioRef.current = false;
+          jitterBufferRef.current.stop();
+          stopDeviceSpeech();
+          setVoiceState('idle');
           break;
 
         case 'session.error':
@@ -548,9 +661,99 @@ export function useVoiceSession() {
     ]
   );
 
-  // Connect to voice session
+  const scheduleReconnect = useCallback(() => {
+    if (!hasSettledRef.current) return;
+    if (reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
+      logger.error('[VoiceSession] Max reconnect attempts reached', {
+        component: 'useVoiceSession',
+        action: 'reconnect-limit',
+        attempts: reconnectAttemptRef.current,
+      });
+      setVoiceState('error');
+      setError('Voice connection lost');
+      return;
+    }
+    const delay = Math.min(
+      RECONNECT_BASE_DELAY_MS * Math.pow(2, reconnectAttemptRef.current),
+      RECONNECT_MAX_DELAY_MS
+    );
+    reconnectAttemptRef.current += 1;
+
+    logger.info('[VoiceSession] Scheduling reconnect attempt', {
+      component: 'useVoiceSession',
+      action: 'reconnect-schedule',
+      attempt: reconnectAttemptRef.current,
+      delayMs: delay,
+    });
+
+    reconnectTimerRef.current = setTimeout(async () => {
+      reconnectTimerRef.current = null;
+      if (!hasSettledRef.current) return;
+
+      let sessionToken = '';
+      try {
+        const ticket = await aiService.createVoiceSessionToken();
+        sessionToken = ticket.token;
+      } catch (err) {
+        logger.error('[VoiceSession] Reconnect failed to get token', {
+          component: 'useVoiceSession',
+          action: 'reconnect-token',
+          error: safeVoiceErrorMessage(err),
+        });
+        if (!hasSettledRef.current) return;
+        setVoiceState('error');
+        setError('Voice connection lost');
+        return;
+      }
+
+      if (!hasSettledRef.current) return;
+
+      const httpBase = API_CONFIG.baseURL;
+      const wsBase = httpBase.replace(/^http/, 'ws');
+      const url = `${wsBase}/v1/ai/voice/session?voice_session_token=${encodeURIComponent(sessionToken)}`;
+
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+      const thisGen = ++wsGenerationRef.current;
+
+      ws.onmessage = (e) => {
+        try {
+          handleEvent(JSON.parse(e.data));
+        } catch (err) {
+          logger.error('[VoiceSession] Failed to parse WS event', {
+            component: 'useVoiceSession',
+            action: 'reconnect-onmessage',
+            data: typeof e.data === 'string' ? e.data.substring(0, 200) : 'non-text',
+          });
+        }
+      };
+      ws.onerror = (err) => {
+        logger.error('[VoiceSession] Reconnect WS error', {
+          component: 'useVoiceSession',
+          action: 'reconnect-onerror',
+        });
+      };
+      ws.onopen = () => {
+        reconnectAttemptRef.current = 0;
+        startHeartbeat(ws);
+        setVoiceState('listening');
+      };
+      ws.onclose = () => {
+        if (!hasSettledRef.current) return;
+        if (wsGenerationRef.current !== thisGen) return;
+        scheduleReconnectRef.current();
+      };
+    }, delay);
+  }, [handleEvent, startHeartbeat]);
+
+  scheduleReconnectRef.current = scheduleReconnect;
+
   const connect = useCallback(async () => {
     cleanup();
+    hasSettledRef.current = true;
+    isTornDownRef.current = false;
+    reconnectAttemptRef.current = 0;
+
     setVoiceState('connecting');
     setError('');
 
@@ -563,14 +766,13 @@ export function useVoiceSession() {
 
     try {
       await initialize();
+      isTornDownRef.current = true;
     } catch {
       setError('Failed to initialize audio');
       setVoiceState('error');
       return;
     }
 
-    // Start recording immediately so the user can speak as soon as the screen appears.
-    // Mic data is only forwarded once the WebSocket is open (checked in onMicrophoneData).
     try {
       toggleRecording(true);
       activeRef.current = true;
@@ -590,9 +792,11 @@ export function useVoiceSession() {
     }
 
     let sessionToken = '';
+    let tokenExpiresAt = '';
     try {
       const ticket = await aiService.createVoiceSessionToken();
       sessionToken = ticket.token;
+      tokenExpiresAt = ticket.expires_at;
     } catch (err) {
       activeRef.current = false;
       try {
@@ -618,37 +822,83 @@ export function useVoiceSession() {
       return;
     }
 
+    if (tokenExpiresAt) {
+      const expiryMs = new Date(tokenExpiresAt).getTime();
+      const graceMs = 10000;
+      if (expiryMs - Date.now() < graceMs) {
+        activeRef.current = false;
+        try {
+          toggleRecording(false);
+        } catch {}
+        setError('Voice session token expired, please try again');
+        setVoiceState('error');
+        return;
+      }
+    }
+
     const httpBase = API_CONFIG.baseURL;
     const wsBase = httpBase.replace(/^http/, 'ws');
     const url = `${wsBase}/v1/ai/voice/session?voice_session_token=${encodeURIComponent(sessionToken)}`;
 
     const ws = new WebSocket(url);
     wsRef.current = ws;
+    const thisGen = ++wsGenerationRef.current;
 
     ws.onmessage = (e) => {
       try {
         handleEvent(JSON.parse(e.data));
-      } catch {}
+      } catch (err) {
+        logger.error('[VoiceSession] Failed to parse WS event', {
+          component: 'useVoiceSession',
+          action: 'connect-onmessage',
+          data: typeof e.data === 'string' ? e.data.substring(0, 200) : 'non-text',
+        });
+      }
     };
-    ws.onerror = () => {
+
+    ws.onopen = () => {
+      reconnectAttemptRef.current = 0;
+      startHeartbeat(ws);
+    };
+
+    ws.onerror = (err) => {
+      logger.error('[VoiceSession] Connect WS error', {
+        component: 'useVoiceSession',
+        action: 'connect-onerror',
+      });
       setError('Connection failed');
       setVoiceState('error');
     };
+
     ws.onclose = () => {
+      if (wsGenerationRef.current !== thisGen) return;
       activeRef.current = false;
       try {
         toggleRecording(false);
       } catch {}
-      if (stateRef.current !== 'error') setVoiceState('idle');
+      stopHeartbeat();
+      if (stateRef.current !== 'error') {
+        scheduleReconnectRef.current();
+      } else {
+        setVoiceState('idle');
+      }
     };
-  }, [cleanup, handleEvent, setVoiceState]);
+  }, [cleanup, handleEvent, setVoiceState, startHeartbeat]);
 
   const disconnect = useCallback(() => {
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
     cleanup();
   }, [cleanup]);
 
   useEffect(
     () => () => {
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
       cleanup();
     },
     [cleanup]
