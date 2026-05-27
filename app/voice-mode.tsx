@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,17 +14,19 @@ import Animated, {
   FadeInDown,
 } from 'react-native-reanimated';
 import { IconComponent as HugeiconsIcon, Cancel01Icon } from '@/lib/icons';
-import { useVoiceSession, VoiceState } from '@/hooks/useVoiceSession';
+import { ConversationProvider, useConversation } from '@elevenlabs/react-native';
 import { MiriamCharacter } from '@/components/ai/MiriamCharacter';
 import { useFeedbackPopupStore } from '@/stores/feedbackPopupStore';
 import { useHaptics } from '@/hooks/useHaptics';
+import { aiService } from '@/api/services/ai.service';
 import type { MiriamEmotion, MiriamFacing } from '@/components/ai/MiriamCharacter';
+
+type VoiceState = 'idle' | 'connecting' | 'listening' | 'speaking' | 'error';
 
 const STATE_EMOTIONS: Record<VoiceState, MiriamEmotion> = {
   idle: 'neutral',
   connecting: 'thinking',
   listening: 'happy',
-  thinking: 'thinking',
   speaking: 'happy',
   error: 'sad',
 };
@@ -33,7 +35,6 @@ const STATE_FACING: Record<VoiceState, MiriamFacing> = {
   idle: 'front',
   connecting: 'right',
   listening: 'left',
-  thinking: 'right',
   speaking: 'front',
   error: 'left',
 };
@@ -42,8 +43,7 @@ const STATE_LABELS: Record<VoiceState, string> = {
   idle: '',
   connecting: 'Connecting...',
   listening: 'Listening...',
-  thinking: 'Thinking...',
-  speaking: '',
+  speaking: 'Speaking',
   error: 'Connection lost',
 };
 
@@ -81,12 +81,6 @@ function MiriamReactive({ state }: { state: VoiceState }) {
         withSequence(withTiming(-6, { duration: 400 }), withTiming(2, { duration: 400 })),
         -1
       );
-    } else if (state === 'thinking') {
-      scale.value = withRepeat(
-        withSequence(withTiming(0.95, { duration: 600 }), withTiming(1, { duration: 600 })),
-        -1
-      );
-      translateY.value = withTiming(0);
     } else {
       scale.value = withSpring(1);
       translateY.value = withSpring(0);
@@ -109,38 +103,81 @@ function MiriamReactive({ state }: { state: VoiceState }) {
   );
 }
 
-export default function VoiceModeScreen() {
+function VoiceModeContent() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { impact } = useHaptics();
-  const { state, transcript, responseText, error, connect, disconnect } = useVoiceSession();
   const showPopup = useFeedbackPopupStore((s) => s.showPopup);
+  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+  const [transcript, setTranscript] = useState('');
+  const [responseText, setResponseText] = useState('');
 
-  useEffect(() => {
-    connect();
-    return () => {
-      disconnect();
-    };
-  }, [connect, disconnect]);
-
-  useEffect(() => {
-    if (error) {
+  const conversation = useConversation({
+    onConnect: () => {
+      console.log('[VoiceMode] ✅ Connected');
+      setVoiceState('listening');
+    },
+    onDisconnect: () => {
+      console.log('[VoiceMode] Disconnected');
+      setVoiceState('idle');
+    },
+    onError: (error: string) => {
+      console.error('[VoiceMode] Error:', error);
+      setVoiceState('error');
       showPopup({
         type: 'error',
         title: 'Voice unavailable',
         message: error,
-        action: { label: 'Retry', onPress: () => connect() },
       });
-    }
-  }, [connect, error, showPopup]);
+    },
+    onMessage: (msg: { message: string; source: string }) => {
+      console.log('[VoiceMode] Message:', msg.source, '-', msg.message?.slice(0, 50));
+      if (msg.source === 'user') {
+        setTranscript(msg.message);
+      } else {
+        setResponseText(msg.message);
+      }
+    },
+    onModeChange: ({ mode }: { mode: 'speaking' | 'listening' }) => {
+      console.log('[VoiceMode] Mode:', mode);
+      setVoiceState(mode === 'speaking' ? 'speaking' : 'listening');
+    },
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    const start = async () => {
+      setVoiceState('connecting');
+      try {
+        const { agent_id, dynamic_variables } = await aiService.getVoiceSignedUrl();
+        if (cancelled) return;
+        console.log('[VoiceMode] Starting session, agent:', agent_id);
+        await conversation.startSession({
+          agentId: agent_id,
+          dynamicVariables: { ...dynamic_variables, supports_pidgin: true },
+        });
+      } catch (err: any) {
+        if (cancelled) return;
+        console.error('[VoiceMode] Start failed:', err);
+        setVoiceState('error');
+      }
+    };
+    start();
+    return () => {
+      cancelled = true;
+      console.log('[VoiceMode] Cleanup - ending session');
+      conversation.endSession();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleClose = () => {
     impact();
-    disconnect();
+    conversation.endSession();
     router.back();
   };
 
-  const label = STATE_LABELS[state];
+  const label = STATE_LABELS[voiceState];
 
   return (
     <View
@@ -153,7 +190,7 @@ export default function VoiceModeScreen() {
         <Pressable
           onPress={handleClose}
           hitSlop={12}
-          className="h-10 w-10 items-center justify-center rounded-full bg-[#f2f0ed]"
+          className="h-10 w-10 items-center justify-center rounded-full bg-[#f7f2e8]"
           accessibilityRole="button"
           accessibilityLabel="Close voice mode">
           <HugeiconsIcon icon={Cancel01Icon} size={18} color="#000" />
@@ -179,7 +216,7 @@ export default function VoiceModeScreen() {
 
       {/* Rail AI mark - center */}
       <View className="items-center py-10">
-        <MiriamReactive state={state} />
+        <MiriamReactive state={voiceState} />
         {label ? (
           <Animated.Text
             entering={FadeIn.duration(200)}
@@ -193,12 +230,20 @@ export default function VoiceModeScreen() {
       <View className="items-center pb-8">
         <Pressable
           onPress={handleClose}
-          className="rounded-full bg-[#f2f0ed] px-8 py-4"
+          className="rounded-full bg-[#f7f2e8] px-8 py-4"
           accessibilityRole="button"
           accessibilityLabel="End voice session">
           <Text className="font-heading-bold text-[15px] text-text-primary">End</Text>
         </Pressable>
       </View>
     </View>
+  );
+}
+
+export default function VoiceModeScreen() {
+  return (
+    <ConversationProvider>
+      <VoiceModeContent />
+    </ConversationProvider>
   );
 }

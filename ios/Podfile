@@ -24,8 +24,11 @@ prepare_react_native_project!
 
 target 'RailMoney' do
   use_expo_modules!
-
-  pod 'DiditSDK', :podspec => 'https://raw.githubusercontent.com/didit-protocol/sdk-ios/main/DiditSDK.podspec'
+# @generated begin didit-sdk-react-native-pod - expo prebuild (DO NOT MODIFY) sync-d47b24d386f13a245e2cde106769569b727f3dce
+didit_sdk_ios_nfc_enabled = ENV.fetch('DIDIT_SDK_IOS_NFC_ENABLED', podfile_properties.fetch('didit.iosNfcEnabled', 'true')).downcase != 'false'
+didit_sdk_ios_pod = didit_sdk_ios_nfc_enabled ? 'DiditSDK' : 'DiditSDK/Core'
+pod didit_sdk_ios_pod, :podspec => 'https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.6.0/DiditSDK.podspec'
+# @generated end didit-sdk-react-native-pod
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
