@@ -160,9 +160,6 @@ function useElevenLabsConversation() {
         conv.startSession({
           agentId: agent_id,
           connectionType: 'webrtc',
-          overrides: {
-            tts: { stability: 0.75, similarityBoost: 0.85, speed: 1.0 },
-          },
           dynamicVariables: { ...dynamic_variables, supports_pidgin: true },
         });
       } catch (err) {
@@ -299,9 +296,6 @@ function useElevenLabsConversation() {
       conversation.startSession({
         agentId: agent_id,
         connectionType: 'webrtc',
-        overrides: {
-          tts: { stability: 0.75, similarityBoost: 0.85, speed: 1.0 },
-        },
         dynamicVariables: { ...dynamic_variables, supports_pidgin: true },
       });
       connectTimeoutRef.current = setTimeout(() => {
