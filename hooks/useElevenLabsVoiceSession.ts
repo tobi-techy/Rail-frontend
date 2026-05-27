@@ -156,9 +156,9 @@ function useElevenLabsConversation() {
         return;
       }
       try {
-        const { signed_url, agent_id, dynamic_variables } = await aiService.getVoiceSignedUrl();
+        const { agent_id, dynamic_variables } = await aiService.getVoiceSignedUrl();
         conv.startSession({
-          ...(signed_url ? { signedUrl: signed_url } : { agentId: agent_id }),
+          agentId: agent_id,
           connectionType: 'webrtc',
           overrides: {
             tts: { stability: 0.75, similarityBoost: 0.85, speed: 1.0 },
@@ -292,9 +292,9 @@ function useElevenLabsConversation() {
     setResponseText('');
 
     try {
-      const { signed_url, agent_id, dynamic_variables } = await aiService.getVoiceSignedUrl();
+      const { agent_id, dynamic_variables } = await aiService.getVoiceSignedUrl();
       conversation.startSession({
-        ...(signed_url ? { signedUrl: signed_url } : { agentId: agent_id }),
+        agentId: agent_id,
         connectionType: 'webrtc',
         overrides: {
           tts: { stability: 0.75, similarityBoost: 0.85, speed: 1.0 },
