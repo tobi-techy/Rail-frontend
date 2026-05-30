@@ -8,11 +8,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import {
   Mic01Icon,
-  Image01Icon,
   ArrowUp01Icon,
   Cancel01Icon,
   Add01Icon,
-  Message01Icon,
   IconComponent as HugeiconsIcon,
 } from '@/lib/icons';
 
@@ -23,42 +21,46 @@ interface AttachedImage {
   base64: string;
 }
 
+interface AttachedDocument {
+  uri: string;
+  name: string;
+  size?: number;
+}
+
 interface Props {
   onSend: (msg: string, image?: AttachedImage) => void;
   onMicPress?: () => void;
-  onImagePress?: () => void;
+  onPlusPress?: () => void;
   isStreaming: boolean;
   placeholder?: string;
   autoFocus?: boolean;
   initialValue?: string;
-  showAttachments?: boolean;
   attachedImage?: AttachedImage | null;
+  attachedDocument?: AttachedDocument | null;
   onClearImage?: () => void;
-  agentMode?: boolean;
-  onAgentPress?: () => void;
-  onAgentClose?: () => void;
+  onClearDocument?: () => void;
+  onSendDocument?: (uri: string, text?: string) => void;
 }
 
 export function InputBar({
   onSend,
   onMicPress,
-  onImagePress,
+  onPlusPress,
   isStreaming,
   placeholder,
   autoFocus,
   initialValue,
-  showAttachments = true,
   attachedImage,
+  attachedDocument,
   onClearImage,
-  agentMode = false,
-  onAgentPress,
-  onAgentClose,
+  onClearDocument,
+  onSendDocument,
 }: Props) {
   const [text, setText] = useState(initialValue ?? '');
   const [imageLoading, setImageLoading] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const sendScale = useSharedValue(1);
-  const hasContent = text.trim().length > 0 || !!attachedImage;
+  const hasContent = text.trim().length > 0 || !!attachedImage || !!attachedDocument;
 
   useEffect(() => {
     if (attachedImage) setImageLoading(true);
@@ -69,7 +71,13 @@ export function InputBar({
   }));
 
   const handleSend = () => {
-    if ((!text.trim() && !attachedImage) || isStreaming) return;
+    if (isStreaming) return;
+    if (attachedDocument && onSendDocument) {
+      onSendDocument(attachedDocument.uri, text.trim());
+      setText('');
+      return;
+    }
+    if (!text.trim() && !attachedImage) return;
     onSend(text.trim(), attachedImage ?? undefined);
     setText('');
   };
@@ -86,10 +94,7 @@ export function InputBar({
   }, [isStreaming]);
 
   return (
-    <View
-      className={`mx-4 overflow-hidden border border-black/[0.08] ${
-        agentMode ? 'rounded-full bg-white' : 'rounded-[24px] bg-parchment-card'
-      }`}>
+    <View className="mx-4 overflow-hidden rounded-[24px] border border-black/[0.08] bg-parchment-card">
       {attachedImage && (
         <Animated.View entering={FadeIn.duration(150)} className="px-4 pt-3">
           <View className="relative self-start">
@@ -116,125 +121,89 @@ export function InputBar({
         </Animated.View>
       )}
 
-      {agentMode ? (
-        <View className="flex-row items-center gap-3 px-4 py-3">
-          <Pressable
-            onPress={onMicPress}
-            hitSlop={8}
-            className="h-9 w-9 items-center justify-center rounded-full border border-black/[0.08]"
-            accessibilityRole="button"
-            accessibilityLabel="Voice input">
-            <HugeiconsIcon icon={Mic01Icon} size={18} color="#343433" />
-          </Pressable>
-          <TextInput
-            ref={inputRef}
-            value={text}
-            onChangeText={setText}
-            placeholder={attachedImage ? 'Add a message...' : 'Ask anything...'}
-            placeholderTextColor="#9CA3AF"
-            multiline
-            maxLength={4000}
-            autoFocus={autoFocus}
-            returnKeyType="default"
-            blurOnSubmit={false}
-            enablesReturnKeyAutomatically
-            className="max-h-[120px] flex-1 font-body text-[16px] leading-[22px] text-[#343433]"
-          />
-          <Animated.View style={sendStyle}>
+      {attachedDocument && (
+        <Animated.View entering={FadeIn.duration(150)} className="px-4 pt-3">
+          <View className="relative self-start rounded-2xl border border-black/[0.06] bg-[#F8F8F7] p-4">
+            <View className="flex-row items-center">
+              <View className="mr-3 h-14 w-14 items-center justify-center rounded-xl border border-black/[0.05] bg-white">
+                <Text className="font-body text-[24px] text-[#8C8C8C]">📄</Text>
+              </View>
+              <View className="mr-8 flex-1">
+                <Text
+                  className="font-body-medium text-[15px] leading-[20px] text-[#343433]"
+                  numberOfLines={2}>
+                  {attachedDocument.name}
+                </Text>
+                {attachedDocument.size ? (
+                  <Text className="mt-0.5 font-body text-[13px] text-[#8C8C8C]">
+                    {(attachedDocument.size / 1024 / 1024).toFixed(1)} MB
+                  </Text>
+                ) : null}
+              </View>
+            </View>
             <Pressable
-              onPress={hasContent ? handleSend : onImagePress}
-              onPressIn={() => {
-                sendScale.value = withSpring(0.88, { damping: 15 });
-              }}
-              onPressOut={() => {
-                sendScale.value = withSpring(1, { damping: 15 });
-              }}
-              disabled={isStreaming || (!hasContent && !onImagePress)}
-              className="h-9 w-9 items-center justify-center rounded-full bg-[#1C1C1E]"
+              onPress={onClearDocument}
+              className="absolute -right-2 -top-2 h-[26px] w-[26px] items-center justify-center rounded-full bg-[#8C8C8C]"
               accessibilityRole="button"
-              accessibilityLabel={hasContent ? 'Send message' : 'Add attachment'}>
-              <HugeiconsIcon
-                icon={hasContent ? ArrowUp01Icon : Add01Icon}
-                size={hasContent ? 18 : 20}
-                color="#FFFFFF"
-              />
+              accessibilityLabel="Remove document">
+              <HugeiconsIcon icon={Cancel01Icon} size={13} color="#FFFFFF" />
             </Pressable>
-          </Animated.View>
-        </View>
-      ) : (
-        <TextInput
-          ref={inputRef}
-          value={text}
-          onChangeText={setText}
-          placeholder={attachedImage ? 'Add a message...' : (placeholder ?? 'Ask anything...')}
-          placeholderTextColor="#B5B5B5"
-          multiline
-          maxLength={4000}
-          autoFocus={autoFocus}
-          returnKeyType="default"
-          blurOnSubmit={false}
-          enablesReturnKeyAutomatically
-          className="max-h-[120px] px-5 pb-2 pt-4 font-body text-[17px] leading-[26px] text-[#343433]"
-        />
+          </View>
+        </Animated.View>
       )}
 
-      {!agentMode && (
-        <View className="flex-row items-center justify-between px-3 pb-3">
-          <View className="flex-row items-center gap-0.5">
-            {showAttachments && onImagePress && (
-              <Pressable
-                onPress={onImagePress}
-                disabled={isStreaming}
-                hitSlop={8}
-                className="h-10 w-10 items-center justify-center rounded-full"
-                accessibilityRole="button"
-                accessibilityLabel="Attach image">
-                <HugeiconsIcon
-                  icon={Image01Icon}
-                  size={22}
-                  color={isStreaming ? '#D4D4D4' : '#8C8C8C'}
-                />
-              </Pressable>
-            )}
-            {showAttachments && onMicPress && (
-              <Pressable
-                onPress={onMicPress}
-                hitSlop={8}
-                className="h-10 w-10 items-center justify-center rounded-full"
-                accessibilityRole="button"
-                accessibilityLabel="Voice input">
-                <HugeiconsIcon
-                  icon={Mic01Icon}
-                  size={22}
-                  color="#8C8C8C"
-                />
-              </Pressable>
-            )}
-            {onAgentPress && (
-              <Pressable
-                onPress={() => {
-                  Keyboard.dismiss();
-                  onAgentPress();
-                }}
-                disabled={isStreaming}
-                className="ml-1 h-10 flex-row items-center gap-1.5 rounded-full border border-black/[0.06] px-3"
-                accessibilityRole="button"
-                accessibilityLabel="Open agent mode">
-                <HugeiconsIcon
-                  icon={Message01Icon}
-                  size={18}
-                  color={isStreaming ? '#D4D4D4' : '#343433'}
-                />
-                <Text className="font-body-medium text-[14px] text-[#343433]">Agent</Text>
-              </Pressable>
-            )}
-            {text.length > 3500 && (
-              <Text
-                className={`ml-1 font-mono-medium text-[12px] ${text.length > 3900 ? 'text-coral-red' : 'text-text-secondary'}`}>
-                {text.length}/4000
-              </Text>
-            )}
-          </View>
+      <TextInput
+        ref={inputRef}
+        value={text}
+        onChangeText={setText}
+        placeholder={placeholder ?? 'Ask away. Pics work too.'}
+        placeholderTextColor="#B5B5B5"
+        multiline
+        maxLength={4000}
+        autoFocus={autoFocus}
+        returnKeyType="default"
+        blurOnSubmit={false}
+        enablesReturnKeyAutomatically
+        className="max-h-[120px] px-5 pb-2 pt-4 font-body text-[17px] leading-[26px] text-[#343433]"
+      />
+
+      <View className="flex-row items-center justify-between px-3 pb-3">
+        <View className="flex-row items-center">
+          {onMicPress && (
+            <Pressable
+              onPress={onMicPress}
+              hitSlop={8}
+              disabled={isStreaming}
+              className="h-10 w-10 items-center justify-center rounded-full"
+              accessibilityRole="button"
+              accessibilityLabel="Voice input">
+              <HugeiconsIcon
+                icon={Mic01Icon}
+                size={22}
+                color={isStreaming ? '#D4D4D4' : '#343433'}
+              />
+            </Pressable>
+          )}
+        </View>
+
+        <View className="flex-row items-center gap-2">
+          {onPlusPress && (
+            <Pressable
+              onPress={() => {
+                Keyboard.dismiss();
+                onPlusPress();
+              }}
+              disabled={isStreaming}
+              className="h-[42px] w-[42px] items-center justify-center rounded-full border border-black/[0.1]"
+              accessibilityRole="button"
+              accessibilityLabel="Add attachment">
+              <HugeiconsIcon
+                icon={Add01Icon}
+                size={22}
+                color={isStreaming ? '#D4D4D4' : '#343433'}
+              />
+            </Pressable>
+          )}
 
           <Animated.View style={sendStyle}>
             <Pressable
@@ -247,7 +216,7 @@ export function InputBar({
               }}
               disabled={!hasContent || isStreaming}
               className="h-[42px] w-[42px] items-center justify-center rounded-full"
-              style={{ backgroundColor: hasContent ? ACCENT : '#E8E8E6' }}
+              style={{ backgroundColor: hasContent ? '#1C1C1E' : '#E8E8E6' }}
               accessibilityRole="button"
               accessibilityLabel="Send message">
               <HugeiconsIcon
@@ -258,7 +227,7 @@ export function InputBar({
             </Pressable>
           </Animated.View>
         </View>
-      )}
+      </View>
     </View>
   );
 }

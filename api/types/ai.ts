@@ -650,3 +650,21 @@ export interface CreateSharedGoalRequest {
   visibility?: string;
   icon_name?: string;
 }
+
+export interface StatementSummary {
+  bank_name: string;
+  total_transactions: number;
+  total_income: string;
+  total_spending: string;
+  currency: string;
+  months_covered: number;
+  top_categories: {
+    category: string;
+    total: string;
+    percentage: string;
+  }[];
+  monthly_avg_income?: string;
+  monthly_avg_spending?: string;
+  period_start?: string;
+  period_end?: string;
+}

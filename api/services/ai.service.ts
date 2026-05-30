@@ -43,6 +43,7 @@ import type {
   GoalInvite,
   GoalMember,
   CreateSharedGoalRequest,
+  StatementSummary,
 } from '../types/ai';
 
 const BASE = '/v1/ai';
@@ -528,8 +529,67 @@ export const aiService = {
     tool_call_id?: string;
     parameters: Record<string, unknown>;
   }): Promise<{ result: unknown; is_error?: boolean }> {
-    const payload = await apiClient.post<any>(`${BASE}/voice/execute-tool`, params, { timeout: 30000 });
+    const payload = await apiClient.post<any>(`${BASE}/voice/execute-tool`, params, {
+      timeout: 30000,
+    });
     return unwrapData<{ result: unknown; is_error?: boolean }>(payload);
+  },
+
+  // ── Bank Statement Upload ──────────────────────────────────
+
+  async uploadStatement(
+    fileUri: string,
+    bankName: string,
+    fileName?: string
+  ): Promise<{ data: { upload_id: string; status: string; message: string } }> {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: fileUri,
+      type: 'application/pdf',
+      name: fileName || 'statement.pdf',
+    } as any);
+    formData.append('bank_name', bankName);
+    return apiClient.post(`${BASE}/statement/upload`, formData, {
+      timeout: 60000,
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  async getStatementStatus(
+    uploadId: string
+  ): Promise<{
+    data: {
+      upload_id: string;
+      status: string;
+      bank_name?: string;
+      transaction_count: number;
+      error_message?: string;
+      period_start?: string;
+      period_end?: string;
+      summary?: StatementSummary;
+    };
+  }> {
+    return apiClient.get(`${BASE}/statement/${uploadId}/status`, { timeout: 15000 });
+  },
+
+  async listStatements(): Promise<{
+    data: {
+      statements: {
+        id: string;
+        bank_name: string;
+        status: string;
+        transaction_count: number;
+        created_at: string;
+        period_start?: string;
+        period_end?: string;
+      }[];
+    };
+  }> {
+    return apiClient.get(`${BASE}/statements`);
+  },
+
+  async deleteStatement(uploadId: string): Promise<{ data: { deleted: boolean } }> {
+    return apiClient.delete(`${BASE}/statement/${uploadId}`);
   },
 };
 

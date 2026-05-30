@@ -9,6 +9,7 @@ import type {
   PendingAction,
   ProactiveOpener,
   ActionChip,
+  StatementSummary,
   ToneMode,
 } from '@/api/types/ai';
 
@@ -49,6 +50,11 @@ interface AIChatState {
   retryCount: number;
   // Scanned receipt bridge (set by scanner, consumed by ai-chat)
   pendingScannedReceipt: { uri: string; base64: string } | null;
+  // Statement upload state
+  statementPollIntervalId: ReturnType<typeof setInterval> | null;
+  pendingStatementRetry: { fileUri: string; bankName: string; text?: string } | null;
+  lastStatementUploadId: string | null;
+  isStatementProcessing: boolean;
 }
 
 interface AIChatActions {
@@ -68,6 +74,8 @@ interface AIChatActions {
     options?: { toneMode?: ToneMode }
   ) => Promise<void>;
   sendImage: (base64Image: string, message?: string, conversationId?: string) => Promise<void>;
+  sendStatement: (fileUri: string, bankName: string, userText?: string) => Promise<void>;
+  pollStatementStatus: (uploadId: string) => void;
   stopStreaming: () => void;
   retryLastMessage: () => void;
   fetchSuggestions: () => Promise<void>;
@@ -78,6 +86,9 @@ interface AIChatActions {
   // Scanned receipt bridge
   setPendingScannedReceipt: (receipt: { uri: string; base64: string }) => void;
   consumePendingScannedReceipt: () => { uri: string; base64: string } | null;
+  // Statement upload
+  clearStatementPolling: () => void;
+  retryStatementUpload: () => Promise<void>;
   // Internal
   processQueue: () => Promise<void>;
 }
@@ -106,6 +117,10 @@ const initialState: AIChatState = {
   lastError: null,
   retryCount: 0,
   pendingScannedReceipt: null,
+  statementPollIntervalId: null,
+  pendingStatementRetry: null,
+  lastStatementUploadId: null,
+  isStatementProcessing: false,
 };
 
 export const useAIChatStore = create<AIChatState & AIChatActions>()(
@@ -120,7 +135,10 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
         get().fetchProactiveOpener();
       },
 
-      close: () => set({ isOpen: false }),
+      close: () => {
+        get().clearStatementPolling();
+        set({ isOpen: false });
+      },
 
       fetchConversations: async () => {
         set({ conversationsLoading: true });
@@ -179,7 +197,8 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
         }));
       },
 
-      clearActiveConversation: () =>
+      clearActiveConversation: () => {
+        get().clearStatementPolling();
         set({
           activeConversationId: null,
           messages: [],
@@ -188,7 +207,10 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
           pendingAction: null,
           lastError: null,
           retryCount: 0,
-        }),
+          pendingStatementRetry: null,
+          lastStatementUploadId: null,
+        });
+      },
 
       setTonePreference: (tone) => set({ tonePreference: tone }),
 
@@ -451,6 +473,193 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
         }
       },
 
+      sendStatement: async (fileUri: string, bankName: string, text?: string) => {
+        // Clear any existing poll first
+        get().clearStatementPolling();
+
+        // Mark processing flow active
+        set({ isStatementProcessing: true });
+
+        // Save for potential retry
+        set({ pendingStatementRetry: { fileUri, bankName, text } });
+
+        // Add user message (no emojis per design guidelines)
+        const label = bankName === 'auto' ? 'bank statement' : `${bankName} statement`;
+        const userMsg: AIMessage = {
+          role: 'user',
+          content: text ? `${text}` : `Uploading ${label}`,
+          created_at: new Date().toISOString(),
+        };
+        set((s) => ({ messages: [...s.messages, userMsg] }));
+
+        // Show Miriam typing dots during the upload API call
+        set({
+          isStreaming: true,
+          streamingPhase: 'Uploading statement...',
+          lastError: null,
+          pendingStatementRetry: null,
+        });
+
+        try {
+          const res = await aiService.uploadStatement(fileUri, bankName);
+          const { upload_id } = res.data;
+
+          if (!upload_id) {
+            throw new Error('Upload succeeded but no upload ID was returned');
+          }
+
+          set({ lastStatementUploadId: upload_id });
+
+          // Turn off streaming/typing dots
+          set({
+            isStreaming: false,
+            streamedContent: '',
+            streamingPhase: '',
+          });
+
+          const assistantMsg: AIMessage = {
+            role: 'assistant',
+            content: `I'm reviewing your ${label}. This usually takes a minute or two — I'll let you know when I'm done.`,
+            metadata: { statement_upload_id: upload_id, statement_status: 'processing' },
+            created_at: new Date().toISOString(),
+          };
+          set((s) => ({ messages: [...s.messages, assistantMsg] }));
+
+          // Start polling for completion
+          get().pollStatementStatus(upload_id);
+        } catch (err: any) {
+          set({
+            isStreaming: false,
+            streamedContent: '',
+            streamingPhase: '',
+          });
+
+          const errMsg =
+            err?.response?.data?.error ||
+            err?.message ||
+            'Failed to upload statement. Please try again.';
+          const errorMsg: AIMessage = {
+            role: 'assistant',
+            content: errMsg,
+            metadata: { statement_status: 'failed' },
+            created_at: new Date().toISOString(),
+          };
+          set((s) => ({
+            messages: [...s.messages, errorMsg],
+            pendingStatementRetry: { fileUri, bankName, text },
+          }));
+        }
+      },
+
+      pollStatementStatus: (uploadId: string) => {
+        // Clear any existing interval to prevent duplicate polling
+        const existing = get().statementPollIntervalId;
+        if (existing) clearInterval(existing);
+
+        let attempts = 0;
+        const maxAttempts = 60;
+        const interval = setInterval(async () => {
+          attempts++;
+          if (attempts > maxAttempts) {
+            clearInterval(interval);
+            const timeoutMsg: AIMessage = {
+              role: 'assistant',
+              content:
+                "Statement processing is taking longer than expected. You'll get a notification once it's ready — feel free to check back or try again.",
+              metadata: { statement_upload_id: uploadId, statement_status: 'failed' },
+              created_at: new Date().toISOString(),
+            };
+            set((s) => ({
+              statementPollIntervalId: null,
+              isStatementProcessing: false,
+              messages: [...s.messages, timeoutMsg],
+            }));
+            return;
+          }
+          try {
+            const res = await aiService.getStatementStatus(uploadId);
+            const { status, transaction_count, error_message, period_start, period_end, summary } =
+              res.data;
+
+            if (status === 'completed') {
+              clearInterval(interval);
+              set({
+                statementPollIntervalId: null,
+                pendingStatementRetry: null,
+                isStatementProcessing: false,
+              });
+
+              const periodStr =
+                period_start && period_end ? ` from ${period_start} to ${period_end}` : '';
+
+              let content: string;
+              if (summary) {
+                // Use rich summary data for an informative message
+                const spending = `${summary.currency} ${summary.total_spending}`;
+                const income =
+                  summary.total_income !== '0'
+                    ? `${summary.currency} ${summary.total_income}`
+                    : null;
+                const cats = summary.top_categories
+                  .slice(0, 3)
+                  .map((c) => `${c.category} (${summary.currency} ${c.total})`)
+                  .join(', ');
+
+                let msg = `I reviewed your ${summary.bank_name} statement covering ${summary.months_covered} month${summary.months_covered > 1 ? 's' : ''}${periodStr} and found ${transaction_count} transactions.`;
+                msg += `\n\nSpending: ${spending}`;
+                if (income) msg += ` | Income: ${income}`;
+                if (cats) msg += `\nTop categories: ${cats}`;
+                msg += `\n\nI've saved this data — ask me anything about your spending.`;
+                content = msg;
+              } else {
+                content = `I reviewed your bank statement${periodStr} and found ${transaction_count} transactions. I've saved this data — ask me anything about your finances.`;
+              }
+
+              const completionMsg: AIMessage = {
+                role: 'assistant',
+                content,
+                metadata: { statement_upload_id: uploadId, statement_status: 'completed' },
+                created_at: new Date().toISOString(),
+              };
+              set((s) => ({ messages: [...s.messages, completionMsg] }));
+            } else if (status === 'failed') {
+              clearInterval(interval);
+              set({ statementPollIntervalId: null, isStatementProcessing: false });
+
+              const failMsg: AIMessage = {
+                role: 'assistant',
+                content:
+                  error_message ||
+                  "I couldn't process that. Please try uploading a different file.",
+                metadata: { statement_upload_id: uploadId, statement_status: 'failed' },
+                created_at: new Date().toISOString(),
+              };
+              set((s) => ({ messages: [...s.messages, failMsg] }));
+            }
+          } catch {
+            // Silently retry on network errors — interval handles cleanup via maxAttempts
+          }
+        }, 10000);
+
+        set({ statementPollIntervalId: interval });
+      },
+
+      clearStatementPolling: () => {
+        const { statementPollIntervalId } = get();
+        if (statementPollIntervalId) {
+          clearInterval(statementPollIntervalId);
+          set({ statementPollIntervalId: null, isStatementProcessing: false });
+        }
+      },
+
+      retryStatementUpload: async () => {
+        const { pendingStatementRetry } = get();
+        if (!pendingStatementRetry) return;
+        const { fileUri, bankName, text } = pendingStatementRetry;
+        set({ pendingStatementRetry: null, isStatementProcessing: false });
+        await get().sendStatement(fileUri, bankName, text);
+      },
+
       fetchSuggestions: async () => {
         set({ suggestionsLoading: true });
         try {
@@ -493,7 +702,10 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
         return pendingScannedReceipt;
       },
 
-      reset: () => set(initialState),
+      reset: () => {
+        get().clearStatementPolling();
+        set(initialState);
+      },
 
       // Internal: process next queued message
       processQueue: async () => {

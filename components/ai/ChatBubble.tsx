@@ -8,6 +8,7 @@ import type { AIMessage, InsightCard, ActionChip } from '@/api/types/ai';
 import { MarkdownContent } from './MarkdownContent';
 import { TypingText } from './TypingText';
 import { InsightCardView } from './InsightCardView';
+import { MiriamCharacter } from './MiriamCharacter';
 
 interface Props {
   msg: AIMessage;
@@ -20,12 +21,21 @@ interface Props {
   onActionChip?: (chip: ActionChip) => void;
 }
 
-export function ChatBubble({ msg, cards, actionChips, isLatest, animate, onEdit, onActionChip }: Props) {
+export function ChatBubble({
+  msg,
+  cards,
+  actionChips,
+  isLatest,
+  animate,
+  onEdit,
+  onActionChip,
+}: Props) {
   const isUser = msg.role === 'user';
   const content = msg.content ?? '';
   const imageUrl = msg.image_url ?? msg.metadata?.image_url;
   const [typingDone, setTypingDone] = useState(!animate);
   const [copied, setCopied] = useState(false);
+  const statementStatus = msg.metadata?.statement_status as string | undefined;
 
   const handleLongPress = useCallback(async () => {
     if (!content) return;
@@ -63,6 +73,14 @@ export function ChatBubble({ msg, cards, actionChips, isLatest, animate, onEdit,
   const topCards = cards?.filter((c) => c.type === 'stat_grid' || c.type === 'highlight');
   const bottomCards = cards?.filter((c) => c.type !== 'stat_grid' && c.type !== 'highlight');
 
+  const isStatementMsg = !!statementStatus;
+  const statementEmotion: 'processing' | 'completed' | 'failed' =
+    statementStatus === 'completed'
+      ? 'completed'
+      : statementStatus === 'failed'
+        ? 'failed'
+        : 'processing';
+
   return (
     <Animated.View className="mb-6 self-start">
       {(typingDone || !animate) &&
@@ -72,21 +90,40 @@ export function ChatBubble({ msg, cards, actionChips, isLatest, animate, onEdit,
           </View>
         ))}
 
-      <Pressable
-        onLongPress={handleLongPress}
-        delayLongPress={400}
-        accessibilityRole="text"
-        accessibilityLabel={`Miriam: ${content.slice(0, 100)}`}>
-        <View className="py-1">
-          {animate && !typingDone ? (
-            <TypingText text={content} speed={10} onComplete={() => setTypingDone(true)}>
-              {(displayed) => <MarkdownContent content={displayed} />}
-            </TypingText>
-          ) : (
-            <MarkdownContent content={content} />
-          )}
-        </View>
-      </Pressable>
+      <View className="flex-row items-start gap-3">
+        {isStatementMsg && (
+          <View className="mt-1">
+            <MiriamCharacter
+              size={28}
+              emotion={
+                statementEmotion === 'completed'
+                  ? 'happy'
+                  : statementEmotion === 'failed'
+                    ? 'sad'
+                    : 'thinking'
+              }
+              isProcessing={statementEmotion === 'processing'}
+              animate={false}
+            />
+          </View>
+        )}
+        <Pressable
+          onLongPress={handleLongPress}
+          delayLongPress={400}
+          className="flex-1"
+          accessibilityRole="text"
+          accessibilityLabel={`Miriam: ${content.slice(0, 100)}`}>
+          <View className="py-1">
+            {animate && !typingDone ? (
+              <TypingText text={content} speed={10} onComplete={() => setTypingDone(true)}>
+                {(displayed) => <MarkdownContent content={displayed} />}
+              </TypingText>
+            ) : (
+              <MarkdownContent content={content} />
+            )}
+          </View>
+        </Pressable>
+      </View>
 
       {copied && (
         <Animated.View entering={FadeIn.duration(100)} className="mt-1 self-start">

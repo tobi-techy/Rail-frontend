@@ -6,6 +6,7 @@ import Animated, { FadeIn, FadeOut, useSharedValue, runOnJS } from 'react-native
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import {
   ArrowLeft01Icon,
   Menu01Icon,
@@ -25,9 +26,10 @@ import {
 import { launchScanner } from '@dariyd/react-native-document-scanner';
 import { useAIChatStore } from '@/stores/aiChatStore';
 import { logger } from '@/lib/logger';
-import { ChatBubble, InputBar, MiriamCharacter } from '@/components/ai';
+import { ChatBubble, InputBar, MiriamCharacter, StatementRetryBanner } from '@/components/ai';
 import { ActionConfirmSheet } from '@/components/ai/ActionConfirmSheet';
 import { ActionSheet } from '@/components/sheets/ActionSheet';
+import { AttachmentSheet } from '@/components/sheets/AttachmentSheet';
 import type { AIMessage, PendingAction, InsightCard, ToneMode } from '@/api/types/ai';
 import { useHaptics } from '@/hooks/useHaptics';
 import { ANALYTICS_EVENTS, useAnalytics } from '@/utils/analytics';
@@ -302,6 +304,7 @@ export default function AIChatScreen() {
     pendingAction,
     overCeiling,
     lastError,
+    isStatementProcessing,
     sendMessage,
     sendImage,
     setTonePreference,
@@ -341,8 +344,17 @@ export default function AIChatScreen() {
 
   const [editText, setEditText] = useState('');
   const [attachedImage, setAttachedImage] = useState<{ uri: string; base64: string } | null>(null);
-  const [showImageSheet, setShowImageSheet] = useState(false);
+  const [showAttachmentSheet, setShowAttachmentSheet] = useState(false);
+  const [attachedDocument, setAttachedDocument] = useState<{
+    uri: string;
+    name: string;
+    size?: number;
+  } | null>(null);
   const consumePendingScannedReceipt = useAIChatStore((s) => s.consumePendingScannedReceipt);
+  const sendStatement = useAIChatStore((s) => s.sendStatement);
+  const clearStatementPolling = useAIChatStore((s) => s.clearStatementPolling);
+  const pendingStatementRetry = useAIChatStore((s) => s.pendingStatementRetry);
+  const retryStatementUpload = useAIChatStore((s) => s.retryStatementUpload);
 
   // Pick up scanned receipt from store when returning from scanner
   useFocusEffect(
@@ -351,10 +363,36 @@ export default function AIChatScreen() {
       if (pending) {
         setAttachedImage(pending);
       }
-    }, [consumePendingScannedReceipt]),
+    }, [consumePendingScannedReceipt])
   );
 
   const [activeAgentAction, setActiveAgentAction] = useState<AgentAction | null>(null);
+
+  const handleStatementUpload = useCallback(async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const file = result.assets[0];
+      if (file.size && file.size > 20 * 1024 * 1024) {
+        Alert.alert('File too large', 'Please upload a PDF under 20MB.');
+        return;
+      }
+      setAttachedDocument({ uri: file.uri, name: file.name || 'Statement.pdf', size: file.size });
+    } catch {
+      Alert.alert('Error', 'Could not pick document. Please try again.');
+    }
+  }, []);
+
+  const handleSendDocument = useCallback(
+    (uri: string, text?: string) => {
+      setAttachedDocument(null);
+      sendStatement(uri, 'auto', text);
+    },
+    [sendStatement]
+  );
 
   const handleSend = useCallback(
     async (
@@ -435,6 +473,11 @@ export default function AIChatScreen() {
     setActiveAgentAction(null);
   }, []);
 
+  // Clean up statement polling when component unmounts
+  useEffect(() => {
+    return () => clearStatementPolling();
+  }, [clearStatementPolling]);
+
   // Auto-send preloaded message from notification deep-link
   const preloadHandled = useRef(false);
   const handleSendRef = useRef(handleSend);
@@ -485,10 +528,6 @@ export default function AIChatScreen() {
     setAgentMode(false);
   }, [clearActiveConversation]);
 
-  const handleImagePress = useCallback(() => {
-    setShowImageSheet(true);
-  }, []);
-
   const pickFromGallery = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.status !== 'granted') {
@@ -531,9 +570,6 @@ export default function AIChatScreen() {
   const handleMicPress = useCallback(() => {
     router.push('/voice-mode');
   }, [router]);
-  const handleAgentPress = useCallback(() => setAgentMode(true), []);
-  const handleAgentClose = useCallback(() => setAgentMode(false), []);
-  const handleCloseImageSheet = useCallback(() => setShowImageSheet(false), []);
 
   const hasFailedMessage =
     lastError && messages.length > 0 && messages[messages.length - 1].role === 'assistant';
@@ -623,15 +659,29 @@ export default function AIChatScreen() {
                     isLatest
                     animate={false}
                   />
+                ) : isStreaming && isStatementProcessing ? (
+                  <View className="flex-row items-center gap-3 px-1 py-3">
+                    <MiriamCharacter size={36} emotion="thinking" isProcessing animate={false} />
+                    <Text className="font-body text-[15px] text-ash">Uploading statement...</Text>
+                  </View>
                 ) : isStreaming ? (
                   <TypingDots />
                 ) : null}
                 {hasFailedMessage && <RetryBanner onPress={retryLastMessage} />}
+                {pendingStatementRetry && !isStreaming && (
+                  <StatementRetryBanner onRetry={retryStatementUpload} />
+                )}
                 {overCeiling && (
                   <View className="mt-3 rounded-2xl bg-sunburst-yellow/10 p-4">
                     <Text className="text-center font-body text-[14px] text-amber-700">
                       Monthly AI limit reached. Miriam resets next month.
                     </Text>
+                  </View>
+                )}
+                {isStatementProcessing && !isStreaming && !pendingStatementRetry && (
+                  <View className="flex-row items-center gap-3 px-1 py-3">
+                    <MiriamCharacter size={36} emotion="neutral" isProcessing animate />
+                    <Text className="font-body text-[15px] text-ash">Reviewing statement...</Text>
                   </View>
                 )}
               </>
@@ -665,16 +715,16 @@ export default function AIChatScreen() {
           )}
           <InputBar
             onSend={handleSend}
-            onImagePress={handleImagePress}
+            onPlusPress={() => setShowAttachmentSheet(true)}
             onMicPress={handleMicPress}
             isStreaming={isStreaming}
-            placeholder={isEmpty ? 'Ask anything...' : 'Ask a follow up...'}
+            placeholder={isEmpty ? 'Ask away. Pics work too.' : 'Ask a follow up...'}
             initialValue={editText}
             attachedImage={attachedImage}
+            attachedDocument={attachedDocument}
             onClearImage={handleClearImage}
-            agentMode={agentMode}
-            onAgentPress={handleAgentPress}
-            onAgentClose={handleAgentClose}
+            onClearDocument={() => setAttachedDocument(null)}
+            onSendDocument={handleSendDocument}
           />
         </View>
       </KeyboardAvoidingView>
@@ -688,32 +738,12 @@ export default function AIChatScreen() {
         onCancelled={handleActionCancelled}
       />
 
-      <ActionSheet
-        visible={showImageSheet}
-        onClose={handleCloseImageSheet}
-        icon={Camera01Icon}
-        title="Add Receipt"
-        subtitle="Scan or upload a receipt for Miriam to analyze"
-        actions={[
-          {
-            id: 'scan',
-            label: 'Scan Receipt',
-            sublabel: 'Take a photo with your camera',
-            icon: Camera01Icon,
-            iconColor: '#ff3e00',
-            iconBgColor: '#FFF0ED',
-            onPress: pickFromCamera,
-          },
-          {
-            id: 'upload',
-            label: 'Upload from Gallery',
-            sublabel: 'Choose an existing photo',
-            icon: Image01Icon,
-            iconColor: '#2196F3',
-            iconBgColor: '#E3F2FD',
-            onPress: pickFromGallery,
-          },
-        ]}
+      <AttachmentSheet
+        visible={showAttachmentSheet}
+        onClose={() => setShowAttachmentSheet(false)}
+        onScanReceipt={pickFromCamera}
+        onPickPhoto={pickFromGallery}
+        onUploadStatement={handleStatementUpload}
       />
     </View>
   );
