@@ -39,7 +39,8 @@
     "test:docker": "docker-compose exec app-dev bun test",
     "typecheck": "tsc --noEmit",
     "validate": "bun run typecheck && bun run lint && bun run test",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@chainrails/react-native": "0.0.13",
@@ -170,6 +171,7 @@
     "jest": "^29.7.0",
     "jest-expo": "~55.0.17",
     "lint-staged": "^15.2.0",
+    "patch-package": "^8.0.1",
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "react-native-qrcode-styled": "^0.4.0",
