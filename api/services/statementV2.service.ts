@@ -74,11 +74,14 @@ export const statementV2Service = {
     fileName?: string
   ): Promise<{ data: StatementUploadResponse }> {
     const formData = new FormData();
-    formData.append('file', {
-      uri: fileUri,
-      type: 'application/pdf',
-      name: fileName || 'statement.pdf',
-    } as any);
+    const name = fileName || fileUri.split('/').pop() || 'statement.pdf';
+    const ext = name.split('.').pop()?.toLowerCase();
+    let type = 'application/pdf';
+    if (ext === 'jpg' || ext === 'jpeg') type = 'image/jpeg';
+    else if (ext === 'png') type = 'image/png';
+    else if (ext === 'heic') type = 'image/heic';
+
+    formData.append('file', { uri: fileUri, type, name } as any);
     formData.append('bank_name', bankName);
     return apiClient.post(`${BASE}/v2/statement/upload`, formData, {
       timeout: 60000,

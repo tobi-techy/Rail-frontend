@@ -145,7 +145,7 @@ export function useStatementUploadV2() {
       setState((s) => ({ ...s, stage: 'picking' }));
       try {
         const result = await DocumentPicker.getDocumentAsync({
-          type: ['application/pdf', 'text/csv'],
+          type: ['application/pdf', 'image/jpeg', 'image/png', 'image/heic'],
           copyToCacheDirectory: true,
         });
         if (result.canceled || !result.assets?.length) {
