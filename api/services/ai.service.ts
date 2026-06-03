@@ -543,21 +543,28 @@ export const aiService = {
     fileName?: string
   ): Promise<{ data: { upload_id: string; status: string; message: string } }> {
     const formData = new FormData();
+
+    // Detect content type from extension or default to PDF
+    const name = fileName || fileUri.split('/').pop() || 'statement.pdf';
+    const ext = name.split('.').pop()?.toLowerCase();
+    let type = 'application/pdf';
+    if (ext === 'jpg' || ext === 'jpeg') type = 'image/jpeg';
+    else if (ext === 'png') type = 'image/png';
+    else if (ext === 'heic') type = 'image/heic';
+
     formData.append('file', {
       uri: fileUri,
-      type: 'application/pdf',
-      name: fileName || 'statement.pdf',
+      type,
+      name,
     } as any);
     formData.append('bank_name', bankName);
-    return apiClient.post(`${BASE}/statement/upload`, formData, {
+    return apiClient.post(`${BASE}/v2/statement/upload`, formData, {
       timeout: 60000,
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
 
-  async getStatementStatus(
-    uploadId: string
-  ): Promise<{
+  async getStatementStatus(uploadId: string): Promise<{
     data: {
       upload_id: string;
       status: string;

@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState, useEffect, useMemo } from 'react';
 import { View, Text, Pressable, FlatList, Platform, ScrollView, Alert } from 'react-native';
+import { GlassView } from '@/components/ui/GlassView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAvoidingView, useKeyboardHandler } from 'react-native-keyboard-controller';
 import Animated, { FadeIn, FadeOut, useSharedValue, runOnJS } from 'react-native-reanimated';
@@ -12,9 +13,7 @@ import {
   Menu01Icon,
   Add01Icon,
   BarChartIcon,
-  Camera01Icon,
   Calendar03Icon,
-  Image01Icon,
   FlashIcon,
   Invoice02Icon,
   Target01Icon,
@@ -26,15 +25,15 @@ import {
 import { launchScanner } from '@dariyd/react-native-document-scanner';
 import { useAIChatStore } from '@/stores/aiChatStore';
 import { logger } from '@/lib/logger';
-import { ChatBubble, InputBar, MiriamCharacter, StatementRetryBanner } from '@/components/ai';
+import { ChatBubble, InputBar, MiriamCharacter } from '@/components/ai';
 import { ActionConfirmSheet } from '@/components/ai/ActionConfirmSheet';
-import { ActionSheet } from '@/components/sheets/ActionSheet';
 import { AttachmentSheet } from '@/components/sheets/AttachmentSheet';
+import { AppsSheet } from '@/components/sheets/AppsSheet';
 import type { AIMessage, PendingAction, InsightCard, ToneMode } from '@/api/types/ai';
 import { useHaptics } from '@/hooks/useHaptics';
 import { ANALYTICS_EVENTS, useAnalytics } from '@/utils/analytics';
 
-const BG = '#fbfaf9';
+const BG = '#FAFAF7';
 
 type AgentAction = {
   label: string;
@@ -170,7 +169,7 @@ function SuggestionChips({
         <Pressable
           key={i}
           onPress={() => onPress(s)}
-          className="rounded-full border border-fog/40 bg-parchment-card px-4 py-2">
+          className="rounded-full border border-black/[0.08] bg-[#F5F5F5] px-4 py-2">
           <Text className="font-body text-[14px] text-ash" numberOfLines={1}>
             {s}
           </Text>
@@ -209,7 +208,7 @@ function AgentActionRail({
             key={card.label}
             onPress={() => handlePress(card)}
             disabled={disabled}
-            className="flex-row items-center gap-1.5 rounded-full border border-fog/40 bg-parchment-card px-3.5 py-2.5"
+            className="flex-row items-center gap-1.5 rounded-full border border-black/[0.08] bg-[#F5F5F5] px-3.5 py-2.5"
             style={{ opacity: disabled ? 0.5 : 1 }}
             accessibilityRole="button"
             accessibilityLabel={card.label}>
@@ -222,13 +221,10 @@ function AgentActionRail({
   );
 }
 
-// ─── Empty State (Miriam centered) ───────────────────────────────
+// ─── Empty State (Perplexity-inspired: centered character + name) ────
 
 function EmptyChatState({
-  onSend,
-  suggestions,
   hideForTyping,
-  agentMode,
 }: {
   onSend: (msg: string) => void;
   suggestions: string[];
@@ -237,46 +233,11 @@ function EmptyChatState({
 }) {
   if (hideForTyping) return <View className="flex-1" />;
 
-  const topSuggestions = [
-    'Audit my money in hard mode',
-    'Audit me',
-    'Build my monthly plan',
-    'Find my biggest spending leak',
-    ...suggestions,
-  ];
-  const seen = new Set<string>();
-  const cleanSuggestions = topSuggestions.filter((suggestion) => {
-    const key = suggestion.trim().toLowerCase();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
   return (
-    <View className="flex-1 px-6 pt-6">
-      <View>
-        <MiriamCharacter size={agentMode ? 48 : 72} emotion="happy" animate />
-        <Text className="mt-4 font-body-medium text-[18px] leading-[26px] text-charcoal-primary">
-          {agentMode
-            ? 'Pick a task below, then tell me what you need.'
-            : "Hey, I'm Miriam. I can audit your spending, plan the month, or catch the leaks."}
-        </Text>
-        {!agentMode && (
-          <View className="mt-5 gap-2.5">
-            {cleanSuggestions.slice(0, 3).map((suggestion) => (
-              <Pressable
-                key={suggestion}
-                onPress={() => onSend(suggestion)}
-                className="self-start rounded-2xl border border-fog/40 px-4 py-2.5"
-                accessibilityRole="button"
-                accessibilityLabel={suggestion}>
-                <Text className="font-body text-[15px] text-charcoal-primary" numberOfLines={1}>
-                  {suggestion}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
+    <View className="flex-1 items-center justify-center">
+      <View className="flex-row items-center gap-3">
+        <MiriamCharacter size={40} emotion="happy" animate />
+        <Text className="font-body text-[34px] tracking-[-0.5px] text-[#6B6B68]">miriam</Text>
       </View>
     </View>
   );
@@ -309,6 +270,8 @@ export default function AIChatScreen() {
     sendImage,
     setTonePreference,
     retryLastMessage,
+    deleteMessage,
+    retryFromMessage,
     createConversation,
     clearActiveConversation,
     clearPendingAction,
@@ -342,9 +305,27 @@ export default function AIChatScreen() {
     prevCountRef.current = messageCount;
   }, [messageCount]);
 
+  // Track which message should play the typing animation.
+  // Only the message that arrives after a live stream should animate — never history.
+  const animateMessageIdRef = useRef<string | null>(null);
+  const prevIsStreaming = useRef(false);
+  useEffect(() => {
+    if (prevIsStreaming.current && !isStreaming) {
+      const msgs = messages ?? [];
+      const lastIndex = msgs.length - 1;
+      const last = msgs[lastIndex];
+      if (last?.role === 'assistant') {
+        // Key must match renderMessage's msgKey exactly
+        animateMessageIdRef.current = last.id ?? `${last.created_at}-${lastIndex}`;
+      }
+    }
+    prevIsStreaming.current = isStreaming;
+  }, [isStreaming, messages]);
+
   const [editText, setEditText] = useState('');
   const [attachedImage, setAttachedImage] = useState<{ uri: string; base64: string } | null>(null);
   const [showAttachmentSheet, setShowAttachmentSheet] = useState(false);
+  const [showAppsSheet, setShowAppsSheet] = useState(false);
   const [attachedDocument, setAttachedDocument] = useState<{
     uri: string;
     name: string;
@@ -353,8 +334,6 @@ export default function AIChatScreen() {
   const consumePendingScannedReceipt = useAIChatStore((s) => s.consumePendingScannedReceipt);
   const sendStatement = useAIChatStore((s) => s.sendStatement);
   const clearStatementPolling = useAIChatStore((s) => s.clearStatementPolling);
-  const pendingStatementRetry = useAIChatStore((s) => s.pendingStatementRetry);
-  const retryStatementUpload = useAIChatStore((s) => s.retryStatementUpload);
 
   // Pick up scanned receipt from store when returning from scanner
   useFocusEffect(
@@ -371,13 +350,13 @@ export default function AIChatScreen() {
   const handleStatementUpload = useCallback(async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf',
+        type: ['application/pdf', 'image/jpeg', 'image/png', 'image/heic'],
         copyToCacheDirectory: true,
       });
       if (result.canceled || !result.assets?.[0]) return;
       const file = result.assets[0];
       if (file.size && file.size > 20 * 1024 * 1024) {
-        Alert.alert('File too large', 'Please upload a PDF under 20MB.');
+        Alert.alert('File too large', 'Please upload a file under 20MB.');
         return;
       }
       setAttachedDocument({ uri: file.uri, name: file.name || 'Statement.pdf', size: file.size });
@@ -567,9 +546,6 @@ export default function AIChatScreen() {
   };
 
   const handleClearImage = useCallback(() => setAttachedImage(null), []);
-  const handleMicPress = useCallback(() => {
-    router.push('/voice-mode');
-  }, [router]);
 
   const hasFailedMessage =
     lastError && messages.length > 0 && messages[messages.length - 1].role === 'assistant';
@@ -583,17 +559,23 @@ export default function AIChatScreen() {
       } else if (item.role === 'assistant' && item.metadata?.cards) {
         showCards = item.metadata.cards as InsightCard[];
       }
+      const msgKey = item.id ?? `${item.created_at}-${index}`;
+      const shouldAnimate = item.role === 'assistant' && msgKey === animateMessageIdRef.current;
+      // Clear after consuming so re-mounts don't replay the animation
+      if (shouldAnimate) animateMessageIdRef.current = null;
       return (
         <ChatBubble
           msg={item}
           cards={showCards}
           isLatest={isLast}
-          animate={false}
+          animate={shouldAnimate}
           onEdit={(content) => setEditText(content)}
+          onRetry={() => retryFromMessage({ id: item.id, index })}
+          onDeleteMessage={() => deleteMessage({ id: item.id, index })}
         />
       );
     },
-    [messageCount, cards]
+    [messageCount, cards, deleteMessage, retryFromMessage]
   );
 
   const isEmpty = !activeConversationId && (messages ?? []).length === 0;
@@ -602,7 +584,7 @@ export default function AIChatScreen() {
     <View className="flex-1" style={{ backgroundColor: BG }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+        style={{ flex: 1, backgroundColor: BG }}
         keyboardVerticalOffset={0}>
         {/* ── Header ── */}
         <View
@@ -621,18 +603,29 @@ export default function AIChatScreen() {
             </Text>
           </View>
           <View className="flex-row items-center gap-1">
-            <Pressable
-              onPress={() => (navigation as any).openDrawer()}
-              hitSlop={12}
-              className="h-10 w-10 items-center justify-center rounded-full">
-              <HugeiconsIcon icon={Menu01Icon} size={22} color="#343433" />
-            </Pressable>
-            <Pressable
-              onPress={handleNewThread}
-              hitSlop={12}
-              className="h-10 w-10 items-center justify-center rounded-full">
-              <HugeiconsIcon icon={Add01Icon} size={22} color="#343433" />
-            </Pressable>
+            <GlassView
+              effect="regular"
+              interactive
+              white
+              fallbackColor="rgba(0,0,0,0.06)"
+              style={{ borderRadius: 22, flexDirection: 'row', alignItems: 'center' }}>
+              <Pressable
+                onPress={() => (navigation as any).openDrawer()}
+                hitSlop={12}
+                className="h-10 w-10 items-center justify-center"
+                accessibilityRole="button"
+                accessibilityLabel="Open threads">
+                <HugeiconsIcon icon={Menu01Icon} size={22} color="#343433" />
+              </Pressable>
+              <Pressable
+                onPress={handleNewThread}
+                hitSlop={12}
+                className="h-10 w-10 items-center justify-center"
+                accessibilityRole="button"
+                accessibilityLabel="New thread">
+                <HugeiconsIcon icon={Add01Icon} size={22} color="#343433" />
+              </Pressable>
+            </GlassView>
           </View>
         </View>
 
@@ -668,20 +661,11 @@ export default function AIChatScreen() {
                   <TypingDots />
                 ) : null}
                 {hasFailedMessage && <RetryBanner onPress={retryLastMessage} />}
-                {pendingStatementRetry && !isStreaming && (
-                  <StatementRetryBanner onRetry={retryStatementUpload} />
-                )}
                 {overCeiling && (
                   <View className="mt-3 rounded-2xl bg-sunburst-yellow/10 p-4">
                     <Text className="text-center font-body text-[14px] text-amber-700">
                       Monthly AI limit reached. Miriam resets next month.
                     </Text>
-                  </View>
-                )}
-                {isStatementProcessing && !isStreaming && !pendingStatementRetry && (
-                  <View className="flex-row items-center gap-3 px-1 py-3">
-                    <MiriamCharacter size={36} emotion="neutral" isProcessing animate />
-                    <Text className="font-body text-[15px] text-ash">Reviewing statement...</Text>
                   </View>
                 )}
               </>
@@ -703,7 +687,7 @@ export default function AIChatScreen() {
           {activeAgentAction && (
             <Animated.View
               entering={FadeIn.duration(150)}
-              className="mx-4 mb-2 flex-row items-center gap-2 rounded-full bg-[#f0efed] px-3.5 py-2">
+              className="mx-4 mb-2 flex-row items-center gap-2 rounded-full bg-[#F0F0F0] px-3.5 py-2">
               <HugeiconsIcon icon={activeAgentAction.icon} size={15} color="#343433" />
               <Text className="flex-1 font-body-medium text-[13px] text-charcoal-primary">
                 {activeAgentAction.label}
@@ -716,15 +700,16 @@ export default function AIChatScreen() {
           <InputBar
             onSend={handleSend}
             onPlusPress={() => setShowAttachmentSheet(true)}
-            onMicPress={handleMicPress}
             isStreaming={isStreaming}
-            placeholder={isEmpty ? 'Ask away. Pics work too.' : 'Ask a follow up...'}
+            placeholder={isEmpty ? 'Ask anything...' : 'Ask a follow up...'}
             initialValue={editText}
             attachedImage={attachedImage}
             attachedDocument={attachedDocument}
             onClearImage={handleClearImage}
             onClearDocument={() => setAttachedDocument(null)}
             onSendDocument={handleSendDocument}
+            agentMode={agentMode}
+            onAgentModeToggle={() => setAgentMode((v) => !v)}
           />
         </View>
       </KeyboardAvoidingView>
@@ -742,9 +727,12 @@ export default function AIChatScreen() {
         visible={showAttachmentSheet}
         onClose={() => setShowAttachmentSheet(false)}
         onScanReceipt={pickFromCamera}
-        onPickPhoto={pickFromGallery}
+        onPickImage={pickFromGallery}
         onUploadStatement={handleStatementUpload}
+        onApps={() => setShowAppsSheet(true)}
       />
+
+      <AppsSheet visible={showAppsSheet} onClose={() => setShowAppsSheet(false)} />
     </View>
   );
 }
