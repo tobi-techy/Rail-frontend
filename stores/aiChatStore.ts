@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { aiService } from '@/api/services/ai.service';
+import { StatementActivity } from '@/utils/statementActivity';
 import type {
   AIConversation,
   AIMessage,
@@ -78,6 +79,9 @@ interface AIChatActions {
   pollStatementStatus: (uploadId: string) => void;
   stopStreaming: () => void;
   retryLastMessage: () => void;
+  // Per-message actions (used by the message context menu)
+  deleteMessage: (target: { id?: string; index?: number }) => void;
+  retryFromMessage: (target: { id?: string; index?: number }) => void;
   fetchSuggestions: () => Promise<void>;
   fetchProactiveOpener: () => Promise<void>;
   dismissActionChip: (chipId: string) => void;
@@ -242,6 +246,59 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
             return;
           }
         }
+      },
+
+      // Resolve a message's index from either an explicit id or a positional index.
+      // Returns -1 when the target can no longer be found (e.g. list changed under us).
+      deleteMessage: ({ id, index }) => {
+        const { messages, isStreaming } = get();
+        // Never mutate the transcript mid-stream — the streaming tail isn't in `messages` yet.
+        if (isStreaming) return;
+        const targetIndex =
+          typeof id === 'string'
+            ? messages.findIndex((m) => m.id === id)
+            : typeof index === 'number'
+              ? index
+              : -1;
+        if (targetIndex < 0 || targetIndex >= messages.length) return;
+
+        const next = messages.filter((_, i) => i !== targetIndex);
+        // If we removed the trailing assistant message, the failure banner no longer applies.
+        const removedWasLast = targetIndex === messages.length - 1;
+        set({
+          messages: next,
+          ...(removedWasLast ? { cards: [], lastError: null } : {}),
+        });
+      },
+
+      retryFromMessage: ({ id, index }) => {
+        const { messages, retryCount, isStreaming } = get();
+        if (isStreaming) return;
+        const targetIndex =
+          typeof id === 'string'
+            ? messages.findIndex((m) => m.id === id)
+            : typeof index === 'number'
+              ? index
+              : -1;
+        if (targetIndex < 0 || targetIndex >= messages.length) return;
+
+        // Walk back from the target to the user turn that produced it, then resend that turn.
+        // Retrying an assistant message regenerates its response; retrying a user message resends it.
+        let userIndex = targetIndex;
+        while (userIndex >= 0 && messages[userIndex].role !== 'user') {
+          userIndex -= 1;
+        }
+        if (userIndex < 0) return;
+
+        const userContent = messages[userIndex].content;
+        // Drop everything after the user turn (the stale/failed response) before resending.
+        set({
+          messages: messages.slice(0, userIndex + 1),
+          cards: [],
+          lastError: null,
+          retryCount: retryCount + 1,
+        });
+        void get().sendMessage(userContent);
       },
 
       sendMessage: async (
@@ -483,11 +540,13 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
         // Save for potential retry
         set({ pendingStatementRetry: { fileUri, bankName, text } });
 
-        // Add user message (no emojis per design guidelines)
+        // Add user message reflecting intent, not system status
         const label = bankName === 'auto' ? 'bank statement' : `${bankName} statement`;
+        const fileName = fileUri.split('/').pop() ?? 'Statement.pdf';
         const userMsg: AIMessage = {
           role: 'user',
-          content: text ? `${text}` : `Uploading ${label}`,
+          content: text?.trim() ? text.trim() : `Analyse my ${label}`,
+          metadata: { document_name: fileName },
           created_at: new Date().toISOString(),
         };
         set((s) => ({ messages: [...s.messages, userMsg] }));
@@ -499,6 +558,10 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
           lastError: null,
           pendingStatementRetry: null,
         });
+
+        // Start Live Activity so user can leave the app (awaited so end() is never called before start())
+        const activityFileName = fileUri.split('/').pop() ?? 'Statement.pdf';
+        await StatementActivity.start(activityFileName, 'Uploading statement...');
 
         try {
           const res = await aiService.uploadStatement(fileUri, bankName);
@@ -535,9 +598,9 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
           });
 
           const errMsg =
-            err?.response?.data?.error ||
-            err?.message ||
-            'Failed to upload statement. Please try again.';
+            err?.response?.data?.error?.includes?.('network') || err?.message?.includes?.('network')
+              ? 'Network issue — check your connection and try again.'
+              : "I couldn't process that statement. Please try a different file or upload again.";
           const errorMsg: AIMessage = {
             role: 'assistant',
             content: errMsg,
@@ -556,12 +619,32 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
         const existing = get().statementPollIntervalId;
         if (existing) clearInterval(existing);
 
+        // Phase messages shown at specific attempt thresholds to reduce dead-zone anxiety
+        const PHASE_UPDATES: Record<number, string> = {
+          6: 'Reading your transactions...',
+          12: 'Categorising spending...',
+          20: 'Building your financial picture...',
+          30: 'Almost there...',
+          45: 'Still processing — large statements take a bit longer...',
+          60: 'Wrapping up...',
+          80: 'Finishing analysis...',
+        };
+
         let attempts = 0;
-        const maxAttempts = 60;
+        const maxAttempts = 999; // Poll indefinitely until success/failure
         const interval = setInterval(async () => {
           attempts++;
+
+          // Update streaming phase at key milestones
+          if (PHASE_UPDATES[attempts]) {
+            set({ streamingPhase: PHASE_UPDATES[attempts] });
+            // Pass -1 (indeterminate) — attempt count doesn't reflect actual processing progress
+            StatementActivity.update(PHASE_UPDATES[attempts], -1);
+          }
+
           if (attempts > maxAttempts) {
             clearInterval(interval);
+            StatementActivity.end(false);
             const timeoutMsg: AIMessage = {
               role: 'assistant',
               content:
@@ -572,6 +655,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
             set((s) => ({
               statementPollIntervalId: null,
               isStatementProcessing: false,
+              streamingPhase: '',
               messages: [...s.messages, timeoutMsg],
             }));
             return;
@@ -583,6 +667,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
 
             if (status === 'completed') {
               clearInterval(interval);
+              StatementActivity.end(true);
               set({
                 statementPollIntervalId: null,
                 pendingStatementRetry: null,
@@ -624,6 +709,7 @@ export const useAIChatStore = create<AIChatState & AIChatActions>()(
               set((s) => ({ messages: [...s.messages, completionMsg] }));
             } else if (status === 'failed') {
               clearInterval(interval);
+              StatementActivity.end(false);
               set({ statementPollIntervalId: null, isStatementProcessing: false });
 
               const failMsg: AIMessage = {
