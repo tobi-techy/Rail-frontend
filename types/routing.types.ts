@@ -5,11 +5,15 @@
 export interface RouteConfig {
   inAuthGroup: boolean;
   inTabsGroup: boolean;
+  inAppGroup: boolean;
   isOnWelcomeScreen: boolean;
   isOnLoginPasscode: boolean;
   isOnVerifyEmail: boolean;
   isOnCreatePasscode: boolean;
   isOnConfirmPasscode: boolean;
+  isOnCreateRailTag: boolean;
+  isOnCompleteProfile: boolean;
+  isOnCompleteKyc: boolean;
 }
 
 export interface AuthState {
@@ -17,7 +21,10 @@ export interface AuthState {
   isAuthenticated: boolean;
   accessToken: string | null;
   refreshToken: string | null;
+  hasPasscode: boolean;
   onboardingStatus: string | null;
   pendingVerificationEmail: string | null;
+  lastActivityAt?: string | null;
+  passcodeSessionExpiresAt?: string;
+  appLockExpiresAt?: string;
 }
-

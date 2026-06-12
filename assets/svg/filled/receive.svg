@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="gReceive" x1="12" y1="4.5" x2="12" y2="19.5" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFB06A"/>
+      <stop offset="1" stop-color="#FF7A3D"/>
+    </linearGradient>
+  </defs>
+
+  <!-- stem -->
+  <path fill="url(#gReceive)" d="M11 5.8c0-.66.54-1.2 1.2-1.2s1.2.54 1.2 1.2v8.3c0 .66-.54 1.2-1.2 1.2S11 14.76 11 14.1V5.8Z"/>
+  <!-- head -->
+  <path fill="url(#gReceive)" d="M6.9 12.9c.47-.47 1.23-.47 1.7 0l3.6 3.6 3.6-3.6c.47-.47 1.23-.47 1.7 0 .47.47.47 1.23 0 1.7l-4.45 4.45c-.47.47-1.23.47-1.7 0L6.9 14.6c-.47-.47-.47-1.23 0-1.7Z"/>
+  <!-- tiny highlight -->
+  <circle cx="10.2" cy="6.9" r="1.0" fill="#FFFFFF" fill-opacity=".18"/>
+</svg>

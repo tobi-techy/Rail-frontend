@@ -1,49 +1,144 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as Haptics from '@/utils/platformHaptics';
 import { Icon } from '@/components/atoms/Icon';
 import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { useAuthStore } from '@/stores/authStore';
 import { useVerifyPasscode } from '@/api/hooks';
+import { userService } from '@/api/services';
+import { useHaptics } from '@/hooks/useHaptics';
+import { haptics } from '@/utils/haptics';
 import { SessionManager } from '@/utils/sessionManager';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { safeName } from '@/components/withdraw/method-screen/utils';
+import { clearAutoFired } from '@/utils/passkeyPromptGuard';
+import { PASSCODE_SESSION_MS } from '@/utils/sessionConstants';
+import { consumeReturnRoute } from '@/utils/returnRoute';
+
+type ProfileNamePayload = {
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
+};
+
+const extractProfileName = (profile: ProfileNamePayload) => {
+  const firstName = safeName(profile.firstName || profile.first_name);
+  const lastName = safeName(profile.lastName || profile.last_name);
+  const directFullName = safeName(profile.fullName || profile.full_name || profile.name);
+  const combinedFullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+  return { firstName, lastName, fullName: combinedFullName || directFullName };
+};
 
 export default function LoginPasscodeScreen() {
-  const user = useAuthStore((state) => state.user);
-  const userName = user?.fullName || user?.email?.split('@')[0] || 'User';
+  const { impact } = useHaptics();
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const updateUser = useAuthStore((s) => s.updateUser);
+  const isBiometricEnabled = useAuthStore((s) => s.isBiometricEnabled);
+  const profileFetchAttemptedRef = useRef(false);
+
+  const userName = safeName(user?.firstName) || safeName(user?.fullName)?.split(' ')[0] || 'User';
+
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
+  const [lockoutSecondsRemaining, setLockoutSecondsRemaining] = useState(0);
 
   const { mutate: verifyPasscode, isPending: isLoading } = useVerifyPasscode();
+  const { showError, showWarning } = useFeedbackPopup();
+
+  // Check biometric availability
+  useEffect(() => {
+    (async () => {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      setBiometricAvailable(compatible && enrolled);
+    })();
+  }, []);
+
+  // Auto-trigger biometric on mount if enabled
+  useEffect(() => {
+    if (isBiometricEnabled && biometricAvailable) {
+      handleBiometricAuth();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [biometricAvailable]);
 
   const handleBiometricAuth = useCallback(async () => {
-    try {
-      const isBiometricAvailable = await LocalAuthentication.hasHardwareAsync();
-      const isBiometricEnrolled = await LocalAuthentication.isEnrolledAsync();
-
-      if (!isBiometricAvailable || !isBiometricEnrolled) {
-        setError('Biometric authentication not available');
-        return;
-      }
-
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate to access your account',
-        fallbackLabel: 'Use PIN',
-        cancelLabel: 'Cancel',
-      });
-
-      if (result.success) {
-        handlePasscodeSubmit('biometric');
-      }
-    } catch (error) {
-      setError('Biometric authentication failed');
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Sign in to Rail',
+      fallbackLabel: 'Use PIN',
+      disableDeviceFallback: false,
+    });
+    if (result.success) {
+      setLockoutUntil(null);
+      useAuthStore.getState().updateLastActivity();
+      // Grant a passcode session so the session guard doesn't bounce back
+      const expiresAt = new Date(Date.now() + PASSCODE_SESSION_MS).toISOString();
+      useAuthStore.getState().setPasscodeSession('biometric-granted', expiresAt);
+      SessionManager.schedulePasscodeSessionExpiry(expiresAt);
+      router.replace(consumeReturnRoute() as any);
+    } else {
+      setError('Biometric authentication cancelled');
     }
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || safeName(user?.firstName) || profileFetchAttemptedRef.current) return;
+    profileFetchAttemptedRef.current = true;
+    let isMounted = true;
+    (async () => {
+      try {
+        const profile = (await userService.getProfile()) as ProfileNamePayload;
+        if (!isMounted) return;
+        const { firstName, lastName, fullName } = extractProfileName(profile);
+        if (!firstName && !fullName) return;
+        updateUser({
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          fullName: fullName || undefined,
+        });
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, updateUser, user?.firstName]);
+
+  useEffect(() => {
+    if (!lockoutUntil) {
+      setLockoutSecondsRemaining(0);
+      return;
+    }
+    const update = () => {
+      const remaining = Math.max(0, Math.ceil((lockoutUntil.getTime() - Date.now()) / 1000));
+      setLockoutSecondsRemaining(remaining);
+      if (remaining === 0) setLockoutUntil(null);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [lockoutUntil]);
 
   const handlePasscodeSubmit = useCallback(
     (code: string) => {
       if (isLoading) return;
+      if (lockoutSecondsRemaining > 0) {
+        haptics.error();
+        setError(`PIN is locked. Try again in ${lockoutSecondsRemaining}s.`);
+        return;
+      }
       setError('');
 
       verifyPasscode(
@@ -51,104 +146,137 @@ export default function LoginPasscodeScreen() {
         {
           onSuccess: async (response) => {
             if (!response.verified) {
+              haptics.error();
               setError('PIN verification failed');
               setPasscode('');
               return;
             }
-
             if (response.passcodeSessionExpiresAt) {
               SessionManager.schedulePasscodeSessionExpiry(response.passcodeSessionExpiresAt);
             }
-
-            await new Promise((resolve) => setTimeout(resolve, 100));
-            router.replace('/(tabs)');
+            setLockoutUntil(null);
+            router.replace(consumeReturnRoute() as any);
           },
-          onError: (err: any) => {
-            const errorMessage =
-              err?.error?.message || err?.message || 'Incorrect PIN. Please try again.';
-            setError(errorMessage);
+          onError: (err: unknown) => {
+            const e = err as {
+              status?: number;
+              code?: string;
+              message?: string;
+              details?: { lockedUntil?: string; locked_until?: string };
+              error?: { details?: { lockedUntil?: string; locked_until?: string } };
+            };
+            if (e?.status === 401 && e?.code === 'INVALID_PASSCODE') {
+              haptics.error();
+              setError(e?.message || 'Incorrect PIN. Please try again.');
+              setPasscode('');
+              return;
+            }
+            if (e?.status === 423) {
+              const lockoutRaw =
+                e?.details?.lockedUntil ??
+                e?.details?.locked_until ??
+                e?.error?.details?.lockedUntil ??
+                e?.error?.details?.locked_until;
+              const parsed = lockoutRaw ? new Date(lockoutRaw) : null;
+              if (parsed && !Number.isNaN(parsed.getTime())) setLockoutUntil(parsed);
+              setError(
+                e?.message || 'Too many incorrect PIN attempts. Sign in with email to continue.'
+              );
+              setPasscode('');
+              return;
+            }
+            if (e?.status === 401) {
+              useAuthStore.getState().reset();
+              showWarning('Session Expired', 'Please sign in again.');
+              router.replace('/(auth)/signin');
+              return;
+            }
+            const msg = e?.message || 'Incorrect PIN. Please try again.';
+            haptics.error();
+            setError(msg);
+            showError('PIN Verification Failed', msg);
             setPasscode('');
           },
         }
       );
     },
-    [verifyPasscode, isLoading]
+    [isLoading, lockoutSecondsRemaining, showError, showWarning, verifyPasscode]
   );
 
-  const handleSwitchAccount = () => {
-    // Clear user data and navigate to sign in
-    useAuthStore.getState().reset();
-    router.replace('/(auth)/signin');
-  };
-
-  const handleSignInWithEmail = () => {
-    // Navigate to email/password sign in
-    router.push('/(auth)/signin');
-  };
-
-  const handleNeedHelp = () => {
-    // Navigate to help or support
-    router.push('/(auth)/forgot-password');
-  };
-
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
-
-      <View className="flex-1">
-        {/* Header with Need Help button */}
-        <View className="mt-2 flex-row items-center justify-end px-6">
-          <TouchableOpacity
-            onPress={handleNeedHelp}
-            className="flex-row items-center gap-x-2 rounded-full bg-background-tertiary px-4 py-2.5"
-            activeOpacity={0.7}>
-            <Icon name="message-circle" size={18} color="#fff" strokeWidth={2} />
-            <Text className="font-body-medium text-[14px] text-white">Need help?</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Welcome Text */}
-        <View className="mt-8 px-6">
-          <Text className="font-subtitle text-[24px] leading-[38px] text-[#070914]">
-            Welcome Back,
-          </Text>
-          <Text className="font-subtitle text-headline-1 text-[#070914]">{userName}</Text>
-        </View>
-
-        {/* PasscodeInput Component */}
-        <PasscodeInput
-          subtitle="Enter your account PIN to log in"
-          length={4}
-          value={passcode}
-          onValueChange={(value) => {
-            setPasscode(value);
-            if (error) setError('');
-          }}
-          onComplete={handlePasscodeSubmit}
-          errorText={error}
-          showToggle
-          showFingerprint
-          onFingerprint={handleBiometricAuth}
-          autoSubmit
-          className="flex-1"
-        />
-
-        {/* Footer */}
-        <View className="mb-4 items-center gap-y-3 px-6">
-          <View className="flex-row items-center gap-x-1">
-            <Text className="font-body-medium text-[14px] text-[#6B7280]">Not {userName}? </Text>
-            <TouchableOpacity onPress={handleSwitchAccount} activeOpacity={0.7}>
-              <Text className="font-body-semibold text-[14px] text-[#FF5A00]">Switch Account</Text>
+    <ErrorBoundary>
+      <SafeAreaView className="flex-1 bg-warm-canvas">
+        <StatusBar barStyle="dark-content" backgroundColor="white" />
+        <View className="flex-1">
+          <View className="mt-2 flex-row items-center justify-end px-6">
+            <TouchableOpacity
+              onPress={() => {
+                impact(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/(auth)/forgot-password');
+              }}
+              className="flex-row items-center gap-x-2 rounded-full bg-stone-surface px-4 py-2.5"
+              activeOpacity={0.7}>
+              <Icon name="message-circle" size={18} color="#474645" strokeWidth={2} />
+              <Text className="font-body text-caption text-graphite">Need help?</Text>
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity onPress={handleSignInWithEmail} activeOpacity={0.7}>
-            <Text className="font-body-medium text-[14px] text-[#6B7280]">Sign in with email</Text>
-          </TouchableOpacity>
+          <View className="mt-8 px-6">
+            <Text className="font-subtitle text-headline-2 leading-[38px] text-text-primary">
+              Welcome Back,
+            </Text>
+            <Text className="font-subtitle text-headline-1 text-text-primary">{userName}</Text>
+          </View>
 
-          <Text className="font-body text-[12px] text-[#9CA3AF]">v2.1.6</Text>
+          <PasscodeInput
+            subtitle="Enter your PIN"
+            length={4}
+            value={passcode}
+            onValueChange={(value) => {
+              setPasscode(value);
+              if (error) setError('');
+            }}
+            onComplete={handlePasscodeSubmit}
+            errorText={
+              lockoutSecondsRemaining > 0
+                ? `PIN is locked. Try again in ${lockoutSecondsRemaining}s or sign in with email.`
+                : error
+            }
+            showToggle
+            showFingerprint={biometricAvailable}
+            onFingerprint={handleBiometricAuth}
+            autoSubmit
+            variant="light"
+            className="flex-1"
+          />
+
+          <View className="mb-4 items-center gap-y-3 px-6">
+            <View className="flex-row items-center gap-x-1">
+              <Text className="font-body text-caption text-text-secondary">Not {userName}? </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  impact(Haptics.ImpactFeedbackStyle.Light);
+                  clearAutoFired(
+                    `login-passcode:${useAuthStore.getState().user?.id || safeName(user?.email) || 'anonymous'}`
+                  );
+                  useAuthStore.getState().reset();
+                  router.replace('/(auth)/signin');
+                }}
+                activeOpacity={0.7}>
+                <Text className="font-button text-caption text-primary">Switch Account</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                impact(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/(auth)/signin');
+              }}
+              activeOpacity={0.7}>
+              <Text className="font-body text-caption text-text-secondary">Sign in with email</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ErrorBoundary>
   );
 }

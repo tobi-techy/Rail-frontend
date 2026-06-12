@@ -11,9 +11,6 @@ import type {
   KYCVerificationRequest,
   KYCVerificationResponse,
   KYCStatusResponse,
-  GetNotificationsRequest,
-  GetNotificationsResponse,
-  MarkNotificationReadRequest,
   Enable2FAResponse,
   Verify2FARequest,
   Verify2FAResponse,
@@ -31,14 +28,13 @@ const USER_ENDPOINTS = {
   DELETE_ACCOUNT: '/v1/users/me',
   ENABLE_2FA: '/v1/users/me/enable-2fa',
   DISABLE_2FA: '/v1/users/me/disable-2fa',
-  SETTINGS: '/user/settings',
-  UPDATE_SETTINGS: '/user/settings',
-  KYC_SUBMIT: '/user/kyc/submit',
-  KYC_STATUS: '/user/kyc/status',
-  NOTIFICATIONS: '/user/notifications',
-  MARK_READ: '/user/notifications/read',
-  DEVICES: '/user/devices',
-  REMOVE_DEVICE: '/user/devices/:id',
+  SETTINGS: '/v1/users/me',
+  UPDATE_SETTINGS: '/v1/users/me',
+  KYC_SUBMIT: '/v1/kyc/bridge/link',
+  KYC_STATUS: '/v1/kyc/status',
+  DEVICES: '/v1/security/devices',
+  REMOVE_DEVICE: '/v1/security/devices/:id',
+  TOS: '/v1/users/me/tos',
 };
 
 export const userService = {
@@ -88,12 +84,16 @@ export const userService = {
    * Submit KYC verification
    */
   async submitKYC(data: KYCVerificationRequest): Promise<KYCVerificationResponse> {
-    // If images are base64, use regular post
-    // If images are files, use uploadFile helper
-    return apiClient.post<KYCVerificationResponse>(
-      USER_ENDPOINTS.KYC_SUBMIT,
-      data
-    );
+    // Current backend flow uses Bridge-hosted KYC link generation.
+    const linkResponse = await apiClient.get<any>(USER_ENDPOINTS.KYC_SUBMIT);
+    const kycLink = linkResponse?.kycLink || linkResponse?.kyc_link || linkResponse?.url;
+
+    return {
+      message: 'KYC session created',
+      status: linkResponse?.status || 'pending',
+      user_id: '',
+      next_steps: kycLink ? [String(kycLink)] : ['complete_kyc'],
+    };
   },
 
   /**
@@ -101,23 +101,6 @@ export const userService = {
    */
   async getKYCStatus(): Promise<KYCStatusResponse> {
     return apiClient.get<KYCStatusResponse>(USER_ENDPOINTS.KYC_STATUS);
-  },
-
-  /**
-   * Get notifications
-   */
-  async getNotifications(params?: GetNotificationsRequest): Promise<GetNotificationsResponse> {
-    return apiClient.get<GetNotificationsResponse>(
-      USER_ENDPOINTS.NOTIFICATIONS,
-      { params }
-    );
-  },
-
-  /**
-   * Mark notifications as read
-   */
-  async markNotificationsRead(data: MarkNotificationReadRequest): Promise<void> {
-    return apiClient.post(USER_ENDPOINTS.MARK_READ, data);
   },
 
   /**
@@ -145,11 +128,29 @@ export const userService = {
 
   /**
    * Remove a device
+   * SECURITY: Validate and sanitize deviceId before interpolation
    */
   async removeDevice(data: RemoveDeviceRequest): Promise<void> {
-    return apiClient.delete(
-      USER_ENDPOINTS.REMOVE_DEVICE.replace(':id', data.deviceId)
-    );
+    // SECURITY: Validate deviceId format to prevent path traversal
+    if (!data.deviceId || !/^[a-zA-Z0-9_-]+$/.test(data.deviceId)) {
+      throw new Error('Invalid device ID format');
+    }
+
+    return apiClient.delete(USER_ENDPOINTS.REMOVE_DEVICE.replace(':id', data.deviceId));
+  },
+
+  /**
+   * Get TOS acceptance status
+   */
+  async getTOSStatus(): Promise<{ accepted: boolean; accepted_at: string }> {
+    return apiClient.get(USER_ENDPOINTS.TOS);
+  },
+
+  /**
+   * Accept TOS
+   */
+  async acceptTOS(): Promise<{ accepted: boolean }> {
+    return apiClient.post(USER_ENDPOINTS.TOS);
   },
 };
 

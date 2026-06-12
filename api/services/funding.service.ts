@@ -1,0 +1,124 @@
+import apiClient from '../client';
+import type {
+  CreateVirtualAccountResponse,
+  DepositsResponse,
+  Withdrawal,
+  InitiateWithdrawalRequest,
+  InitiateFiatWithdrawalRequest,
+  InitiateWithdrawalResponse,
+} from '../types';
+
+function isNotFoundError(error: unknown): boolean {
+  return Boolean(
+    error &&
+    typeof error === 'object' &&
+    'status' in error &&
+    (error as { status?: number }).status === 404
+  );
+}
+
+export const fundingService = {
+  // Virtual account
+  async createVirtualAccount(alpacaAccountId: string): Promise<CreateVirtualAccountResponse> {
+    return apiClient.post<CreateVirtualAccountResponse>('/v1/funding/virtual-account', {
+      alpaca_account_id: alpacaAccountId,
+    });
+  },
+
+  // Deposits
+  async getDeposits(limit = 20, offset = 0): Promise<DepositsResponse> {
+    return apiClient.get<DepositsResponse>('/v1/deposits', {
+      params: { limit, offset },
+    });
+  },
+
+  // Withdrawals
+  async getWithdrawals(limit = 20, offset = 0): Promise<Withdrawal[]> {
+    const response = await apiClient.get<
+      | Withdrawal[]
+      | {
+          withdrawals?: Withdrawal[];
+          items?: Withdrawal[];
+          data?: Withdrawal[] | { withdrawals?: Withdrawal[]; items?: Withdrawal[] };
+        }
+    >('/v1/withdrawals', {
+      params: { limit, offset },
+    });
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response?.withdrawals)) return response.withdrawals;
+    if (Array.isArray(response?.items)) return response.items;
+    if (Array.isArray(response?.data)) return response.data;
+    if (Array.isArray(response?.data?.withdrawals)) return response.data.withdrawals;
+    if (Array.isArray(response?.data?.items)) return response.data.items;
+    return [];
+  },
+
+  // Crypto withdrawal (USDC to external wallet)
+  async initiateWithdrawal(req: InitiateWithdrawalRequest): Promise<InitiateWithdrawalResponse> {
+    const payload: Record<string, unknown> = {
+      amount: typeof req.amount === 'number' ? req.amount.toFixed(2) : req.amount,
+      destination_address: req.destination_address,
+    };
+    if (req.destination_chain) {
+      payload.destination_chain = req.destination_chain;
+    }
+    if (req.category) {
+      payload.category = req.category;
+    }
+    if (req.narration) {
+      payload.narration = req.narration;
+    }
+
+    try {
+      return await apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals/crypto', payload);
+    } catch (error) {
+      if (isNotFoundError(error)) {
+        return apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals', payload);
+      }
+      throw error;
+    }
+  },
+
+  // Fiat withdrawal (USDC to bank account via Bridge)
+  async initiateFiatWithdrawal(
+    req: InitiateFiatWithdrawalRequest
+  ): Promise<InitiateWithdrawalResponse> {
+    return apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals/fiat', {
+      ...req,
+      amount: typeof req.amount === 'number' ? req.amount.toFixed(2) : req.amount,
+    });
+  },
+
+  // Cancel a pending withdrawal
+  async cancelWithdrawal(withdrawalId: string): Promise<void> {
+    return apiClient.delete(`/v1/withdrawals/${withdrawalId}`);
+  },
+
+  // Early withdrawal preview (fee calculation)
+  async getEmergencyPreview(
+    amount: string
+  ): Promise<import('../types').EmergencyWithdrawalPreview> {
+    return apiClient.get('/v1/withdrawals/emergency/preview', { params: { amount } });
+  },
+
+  // Early withdrawal: stash → spending with fee
+  async emergencyStashToSpending(
+    amount: string
+  ): Promise<import('../types').EmergencyWithdrawalResult> {
+    return apiClient.post('/v1/withdrawals/emergency/to-spending', { amount });
+  },
+
+  // Fund stash: spending → stash (no fee)
+  async fundStash(amount: string): Promise<import('../types').FundStashResult> {
+    const idempotencyKey = `fund-stash-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    return apiClient.post(
+      '/v1/funding/stash',
+      { amount },
+      {
+        headers: { 'Idempotency-Key': idempotencyKey },
+      }
+    );
+  },
+};
+
+export default fundingService;

@@ -8,6 +8,7 @@ interface OTPInputProps {
   error?: string;
   isInvalid?: boolean;
   autoValidate?: boolean;
+  variant?: 'light' | 'dark';
 }
 
 interface OTPInputRef {
@@ -20,11 +21,12 @@ interface OTPInputRef {
 const { width } = Dimensions.get('window');
 
 const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputProps> = (
-  { length = 6, onComplete, error, isInvalid = false, autoValidate = false },
+  { length = 6, onComplete, error, isInvalid = false, autoValidate = false, variant = 'light' },
   ref
 ) => {
   const [hasError, setHasError] = useState(isInvalid);
   const otpRef = useRef<any>(null);
+  const isDark = variant === 'dark';
 
   useImperativeHandle(
     ref,
@@ -50,7 +52,27 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
     if (autoValidate) Keyboard.dismiss();
   };
 
-  const boxSize = Math.min((width - 60) / length - 4, 90);
+  const boxSize = Math.min((width - 60) / length - 4, 56);
+
+  const colors = isDark
+    ? {
+        border: hasError ? '#ff2b3a' : 'rgba(255,255,255,0.2)',
+        bg: hasError ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.1)',
+        focusBorder: hasError ? '#ff2b3a' : 'rgba(255,255,255,0.5)',
+        focusBg: 'rgba(255,255,255,0.15)',
+        filledBorder: hasError ? '#ff2b3a' : 'rgba(255,255,255,0.4)',
+        filledBg: 'rgba(255,255,255,0.1)',
+        text: '#FFFFFF',
+      }
+    : {
+        border: hasError ? '#ff2b3a' : 'rgba(23,23,23,0.10)',
+        bg: hasError ? '#f7f4ef' : 'transparent',
+        focusBorder: hasError ? '#ff2b3a' : 'rgba(255,59,31,0.40)',
+        focusBg: '#f7f4ef',
+        filledBorder: hasError ? '#ff2b3a' : 'rgba(23,23,23,0.20)',
+        filledBg: 'transparent',
+        text: '#343433',
+      };
 
   return (
     <View className="w-full">
@@ -67,36 +89,38 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
           accessibilityHint: 'Enter your verification code',
         }}
         theme={{
-          containerStyle: { width: '100%', justifyContent: 'center', gap: 8 },
+          containerStyle: { width: '100%', justifyContent: 'flex-start', gap: 8 },
           pinCodeContainerStyle: {
             width: boxSize,
             height: boxSize,
-            borderRadius: 16,
+            borderRadius: 10,
             borderWidth: 2,
-            borderColor: hasError ? '#F44336' : '#F5F5F5',
-            backgroundColor: hasError ? '#FFFFFF' : '#F5F5F5',
+            borderColor: colors.border,
+            backgroundColor: colors.bg,
             alignItems: 'center',
             justifyContent: 'center',
           },
           pinCodeTextStyle: {
-            fontFamily: 'SF-Pro-Rounded-Semibold',
+            fontFamily: 'Geist-SemiBold',
             fontSize: 24,
-            color: '#121212',
+            color: colors.text,
             textAlign: 'center',
           },
           focusedPinCodeContainerStyle: {
-            borderColor: hasError ? '#F44336' : '#1B84FF',
-            backgroundColor: '#FFFFFF',
+            borderColor: colors.focusBorder,
+            backgroundColor: colors.focusBg,
           },
           filledPinCodeContainerStyle: {
-            borderColor: hasError ? '#F44336' : '#757575',
-            backgroundColor: '#FFFFFF',
+            borderColor: colors.filledBorder,
+            backgroundColor: colors.filledBg,
           },
           focusStickStyle: { display: 'none' },
         }}
       />
       {error && (
-        <Text className="font-caption mt-2 text-center text-caption text-destructive" accessibilityRole="alert">
+        <Text
+          className={`mt-2 text-center font-caption text-caption ${isDark ? 'text-white/70' : 'text-destructive'}`}
+          accessibilityRole="alert">
           {error}
         </Text>
       )}

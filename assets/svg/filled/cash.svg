@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="gCash" x1="12" y1="5" x2="12" y2="19" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4AE3A7"/>
+      <stop offset="1" stop-color="#1FBF7F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- back bill -->
+  <path fill="url(#gCash)" d="M6.2 7.2c0-1.2.8-2 2-2h8.2c1.2 0 2 .8 2 2v.8H6.2v-.8Z" opacity=".55"/>
+  <!-- front bill -->
+  <path fill="url(#gCash)" d="M5.2 9.0c0-1.4 1.0-2.4 2.4-2.4h8.8c1.4 0 2.4 1.0 2.4 2.4v7.0c0 1.4-1.0 2.4-2.4 2.4H7.6c-1.4 0-2.4-1.0-2.4-2.4V9.0Z"/>
+
+  <!-- inner "coin" cut -->
+  <circle cx="12" cy="12.5" r="2.35" fill="#FFFFFF" fill-opacity=".90"/>
+  <circle cx="12.7" cy="11.9" r="1.15" fill="url(#gCash)" fill-opacity=".35"/>
+
+  <!-- corner marks (subtle) -->
+  <path fill="#FFFFFF" fill-opacity=".22" d="M7.2 10.4c0-.5.4-.9.9-.9h.3c.5 0 .9.4.9.9s-.4.9-.9.9h-.3c-.5 0-.9-.4-.9-.9ZM14.6 16.0c0-.5.4-.9.9-.9h.3c.5 0 .9.4.9.9s-.4.9-.9.9h-.3c-.5 0-.9-.4-.9-.9Z"/>
+</svg>

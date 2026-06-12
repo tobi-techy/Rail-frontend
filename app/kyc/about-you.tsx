@@ -1,0 +1,251 @@
+import React, { useEffect, useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { GorhomBottomSheet } from '@/components/sheets/GorhomBottomSheet';
+import { Button } from '@/components/ui';
+import { EMPLOYMENT_STATUS_OPTIONS, INVESTMENT_PURPOSE_OPTIONS } from '@/api/types/kyc';
+import { useKycStore } from '@/stores/kycStore';
+import { ArrowDown01Icon, ArrowLeft01Icon, CheckmarkCircle01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+
+export default function KycAboutYouScreen() {
+  const insets = useSafeAreaInsets();
+  const {
+    employmentStatus,
+    investmentPurposes,
+    setEmploymentStatus,
+    toggleInvestmentPurpose,
+    clearInvestmentPurposes,
+    hasCompletedStep,
+    addCompletedStep,
+  } = useKycStore();
+
+  const [showEmployment, setShowEmployment] = useState(false);
+  const [showPurpose, setShowPurpose] = useState(false);
+
+  // Skip if already completed
+  useEffect(() => {
+    if (hasCompletedStep('about-you')) {
+      router.replace('/kyc/disclosures');
+    }
+  }, []);
+
+  // Employment is required, but investment goals are optional
+  const canContinue = Boolean(employmentStatus);
+
+  const employmentLabel =
+    EMPLOYMENT_STATUS_OPTIONS.find((o) => o.value === employmentStatus)?.label ??
+    'Select your employment status';
+
+  const purposeLabel =
+    investmentPurposes.length > 0
+      ? investmentPurposes
+          .map((v) => INVESTMENT_PURPOSE_OPTIONS.find((o) => o.value === v)?.label)
+          .filter(Boolean)
+          .join(', ')
+      : 'Select investment goals (optional)';
+
+  return (
+    <ErrorBoundary>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
+        <View className="flex-row items-center justify-between px-4 pb-2 pt-1">
+          <Pressable
+            className="size-11 items-center justify-center rounded-full bg-stone-surface"
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back">
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" />
+          </Pressable>
+          <Text className="font-subtitle text-[13px] text-ash">Step 3</Text>
+          <View className="size-11" />
+        </View>
+
+        <View className="px-4">
+          <View className="h-1.5 overflow-hidden rounded-full bg-fog">
+            <View className="h-full w-3/5 rounded-full bg-midnight" />
+          </View>
+        </View>
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 120 }}>
+          <Text className="font-display text-[30px] leading-[34px] text-charcoal-primary">
+            Just a few more questions
+          </Text>
+          <Text className="mt-2 font-body text-[15px] leading-6 text-ash">
+            Financial regulations require us to collect this information.
+          </Text>
+
+          {/* Employment Status */}
+          <View className="mt-8">
+            <Text className="mb-2 font-subtitle text-[14px] text-charcoal-primary">
+              Employment Status
+            </Text>
+            <Pressable
+              onPress={() => setShowEmployment(true)}
+              className="flex-row items-center justify-between rounded-2xl border border-fog px-4 py-4"
+              accessibilityRole="button"
+              accessibilityLabel="Select employment status">
+              <Text
+                className={`flex-1 font-body text-[15px] ${
+                  employmentStatus ? 'text-charcoal-primary' : 'text-smoke'
+                }`}
+                numberOfLines={1}>
+                {employmentLabel}
+              </Text>
+              <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#848281" />
+            </Pressable>
+          </View>
+
+          {/* Investment Purpose - Now Optional */}
+          <View className="mt-6">
+            <View className="flex-row items-center justify-between">
+              <Text className="mb-2 font-subtitle text-[14px] text-charcoal-primary">
+                Purpose of account
+              </Text>
+              <Text className="font-caption text-[12px] text-smoke">Optional</Text>
+            </View>
+            <Pressable
+              onPress={() => setShowPurpose(true)}
+              className="flex-row items-center justify-between rounded-2xl border border-fog px-4 py-4"
+              accessibilityRole="button"
+              accessibilityLabel="Select investment goals">
+              <Text
+                className={`flex-1 font-body text-[15px] ${
+                  investmentPurposes.length > 0 ? 'text-charcoal-primary' : 'text-smoke'
+                }`}
+                numberOfLines={1}>
+                {purposeLabel}
+              </Text>
+              <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#848281" />
+            </Pressable>
+            {investmentPurposes.length > 0 && (
+              <Pressable
+                onPress={() => clearInvestmentPurposes()}
+                className="mt-2 flex-row items-center gap-x-1">
+                <Text className="font-caption text-[12px] text-ash">Clear selection</Text>
+              </Pressable>
+            )}
+          </View>
+        </ScrollView>
+
+        <View
+          className="absolute bottom-0 left-0 right-0 border-t border-stone-surface bg-parchment-card px-4 pt-3"
+          style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
+          <Button
+            title="Continue"
+            onPress={() => {
+              addCompletedStep('about-you');
+              router.replace('/kyc/disclosures');
+            }}
+            disabled={!canContinue}
+          />
+          <Pressable
+            onPress={() => {
+              clearInvestmentPurposes();
+              addCompletedStep('about-you');
+              router.replace('/kyc/disclosures');
+            }}
+            className="mt-2 py-2"
+            accessibilityRole="button"
+            accessibilityLabel="Skip investment goals">
+            <Text className="text-center font-body text-[14px] text-ash">
+              Skip investment goals
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Employment Bottom Sheet */}
+        <GorhomBottomSheet
+          visible={showEmployment}
+          onClose={() => setShowEmployment(false)}
+          showCloseButton={false}>
+          <Text className="mb-4 font-display text-[22px] text-charcoal-primary">
+            Employment status
+          </Text>
+          {EMPLOYMENT_STATUS_OPTIONS.map((option, index) => {
+            const selected = employmentStatus === option.value;
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => {
+                  setEmploymentStatus(option.value);
+                  setShowEmployment(false);
+                }}
+                className={`flex-row items-center justify-between py-4 ${
+                  index < EMPLOYMENT_STATUS_OPTIONS.length - 1
+                    ? 'border-b border-stone-surface'
+                    : ''
+                }`}
+                accessibilityRole="button">
+                <Text className="font-body text-[16px] text-charcoal-primary">{option.label}</Text>
+                {selected && (
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle01Icon}
+                    size={20}
+                    color="#343433"
+                    strokeWidth={2.5}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
+          <View className="mt-4">
+            <Button title="Done" onPress={() => setShowEmployment(false)} variant="orange" />
+          </View>
+        </GorhomBottomSheet>
+
+        {/* Investment Purpose Bottom Sheet */}
+        <GorhomBottomSheet
+          visible={showPurpose}
+          onClose={() => setShowPurpose(false)}
+          showCloseButton={false}>
+          <Text className="mb-1 font-display text-[22px] text-charcoal-primary">
+            Purpose of account
+          </Text>
+          <Text className="mb-4 font-body text-[13px] text-ash">
+            Select all that apply (optional)
+          </Text>
+          {INVESTMENT_PURPOSE_OPTIONS.map((option, index) => {
+            const selected = investmentPurposes.includes(option.value);
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => toggleInvestmentPurpose(option.value)}
+                className={`flex-row items-center justify-between py-4 ${
+                  index < INVESTMENT_PURPOSE_OPTIONS.length - 1
+                    ? 'border-b border-stone-surface'
+                    : ''
+                }`}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}>
+                <Text className="flex-1 font-body text-[16px] text-charcoal-primary">
+                  {option.label}
+                </Text>
+                <View
+                  className={`size-6 items-center justify-center rounded ${
+                    selected ? 'bg-midnight' : 'border border-fog'
+                  }`}>
+                  {selected && (
+                    <HugeiconsIcon
+                      icon={CheckmarkCircle01Icon}
+                      size={14}
+                      color="#FFFFFF"
+                      strokeWidth={3}
+                    />
+                  )}
+                </View>
+              </Pressable>
+            );
+          })}
+          <View className="mt-4">
+            <Button title="Done" onPress={() => setShowPurpose(false)} variant="orange" />
+          </View>
+        </GorhomBottomSheet>
+      </SafeAreaView>
+    </ErrorBoundary>
+  );
+}

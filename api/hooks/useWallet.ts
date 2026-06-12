@@ -6,6 +6,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { walletService } from '../services';
 import { queryKeys, invalidateQueries } from '../queryClient';
+import { useAnalytics, ANALYTICS_EVENTS } from '../../utils/analytics';
 import type {
   GetTransactionsRequest,
   CreateTransferRequest,
@@ -19,13 +20,20 @@ import type {
 
 /**
  * Get wallet balance
+ * Optimized for fast loading with aggressive caching:
+ * - Uses cached data immediately if available
+ * - Refetches in background after 15 seconds (faster than 30s to show updates quicker)
+ * - Refetches every 45 seconds (balance is critical, monitor frequently)
+ * - Prefers cached data on mount (avoids zero flash)
  */
 export function useWalletBalance() {
   return useQuery({
     queryKey: queryKeys.wallet.balance(),
     queryFn: () => walletService.getBalance(),
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
+    staleTime: 15 * 1000, // 15 seconds - balance becomes stale faster
+    refetchInterval: 90 * 1000, // Refetch every 90 seconds
+    refetchOnWindowFocus: true, // Refetch when app comes to foreground
+    refetchOnReconnect: true, // Refetch when connection restored
   });
 }
 
@@ -56,12 +64,27 @@ export function useTransaction(txId: string) {
  */
 export function useCreateTransfer() {
   const queryClient = useQueryClient();
+  const { track } = useAnalytics();
 
   return useMutation({
     mutationFn: (data: CreateTransferRequest) => walletService.createTransfer(data),
-    onSuccess: () => {
+    onSuccess: (response, variables) => {
+      // Track transfer completed
+      track(ANALYTICS_EVENTS.TRANSFER_COMPLETED, {
+        transfer_id: response.transaction.id,
+        amount: variables.amount,
+        recipient: variables.toAddress?.slice(0, 6) + '...', // Partial for privacy
+        network: variables.network,
+      });
+
       // Invalidate wallet queries to refresh balance and transactions
       invalidateQueries.wallet();
+    },
+    onError: (error, variables) => {
+      track(ANALYTICS_EVENTS.TRANSFER_FAILED, {
+        amount: variables.amount,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     },
   });
 }
@@ -94,6 +117,18 @@ export function useGetDepositAddress() {
 }
 
 /**
+ * Query version — auto-fetches deposit address for a chain, creating the wallet if needed.
+ */
+export function useDepositAddress(chain: string) {
+  return useQuery({
+    queryKey: [...queryKeys.wallet.all, 'deposit-address', chain],
+    queryFn: () => walletService.getDepositAddress({ tokenId: 'usdc', network: chain }),
+    staleTime: 10 * 60 * 1000,
+    retry: 2,
+  });
+}
+
+/**
  * Get token prices
  */
 export function useTokenPrices(tokenIds: string[]) {
@@ -119,31 +154,47 @@ export function useNetworks() {
 
 /**
  * Get wallet addresses, optionally filtered by chain
- * 
+ *
  * Optimizations:
  * - 5min stale time (addresses rarely change)
  * - Cached per chain filter for efficient lookups
  * - Prevents refetch on window focus
- * 
+ *
  * Note: Returns error if:
  * - 401: User not authenticated or token expired
  * - 404: Endpoint not implemented
  */
 export function useWalletAddresses(chain?: WalletChain) {
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.wallet.addresses(chain),
-    queryFn: () => walletService.getWalletAddresses(chain ? { chain } : undefined),
-    staleTime: 5 * 60 * 1000, // 5 minutes (addresses rarely change)
+    queryFn: async () => {
+      // Use the deposit address endpoint which returns the liquidation address
+      // (the correct address for receiving deposits) instead of the raw custody wallet.
+      const result = await walletService.getDepositAddress({
+        tokenId: 'usdc',
+        network: chain || 'SOL',
+      });
+      return {
+        address: result.address,
+        chain: (chain || 'SOL') as WalletChain,
+        status: 'live' as const,
+      };
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
-    refetchInterval: false, // Disable automatic refetch to prevent auth error spam
     retry: (failureCount, error: any) => {
-      // Don't retry on 401 (auth error) or 404 (not found)
-      const errorCode = error?.error?.code;
-      if (errorCode === 'HTTP_401' || errorCode === 'HTTP_404') {
-        return false;
-      }
-      // Retry once for other errors
+      const status = error?.status;
+      if (status === 401 || status === 403) return false;
+      // Retry up to 5x if wallet is being provisioned
+      if (status === 404 && error?.data?.provisioning) return failureCount < 5;
+      if (status === 404) return false;
       return failureCount < 1;
     },
+    retryDelay: (attempt) => Math.min(3000 * (attempt + 1), 15000),
   });
+
+  const isProvisioning = (query.error as any)?.data?.provisioning === true;
+  return { ...query, isProvisioning };
 }

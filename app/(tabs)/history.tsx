@@ -1,91 +1,225 @@
-import { useNavigation } from 'expo-router';
-import { useLayoutEffect } from 'react';
-import { Text, View, FlatList } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SvgXml } from 'react-native-svg';
+import React, { useState, useMemo } from 'react';
+import { Text, View, RefreshControl, TextInput, Pressable, ScrollView } from 'react-native';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { Search01Icon } from '@/lib/icons';
+import { TransactionList } from '@/components/molecules/TransactionList';
+import type {
+  Transaction,
+  TransactionType,
+  TransactionStatus,
+  WithdrawalMethod,
+} from '@/components/molecules/TransactionItem';
+import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
+import { useActivityFeed } from '@/api/hooks/useActivity';
+import type { ActivityItem } from '@/api/types/activity';
+import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
+import { NgnIcon, UsdcIcon } from '@/assets/svg';
 
-const transactionsEmptySvg = `<svg width="520" height="220" viewBox="0 0 520 220" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="30" y="40" width="460" height="140" rx="26" stroke="#D1D5DB" stroke-width="3"/>
-  <rect x="58" y="78" width="44" height="44" rx="10" stroke="#D1D5DB" stroke-width="3"/>
-  <path d="M80 112V90" stroke="#D1D5DB" stroke-width="3" stroke-linecap="round"/>
-  <path d="M72 98L80 90L88 98" stroke="#D1D5DB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="120" y="80" width="120" height="18" rx="9" fill="#E5E7EB"/>
-  <rect x="120" y="110" width="220" height="18" rx="9" fill="#E5E7EB"/>
-  <path d="M40 60C66 26 126 20 260 20C394 20 454 26 480 60" stroke="#D1D5DB" stroke-width="3" opacity="0.35"/>
-  <path d="M40 160C66 194 126 200 260 200C394 200 454 194 480 160" stroke="#D1D5DB" stroke-width="3" opacity="0.35"/>
-</svg>`;
+// Convert unified ActivityItem → existing Transaction type for TransactionList/TransactionDetailSheet
+function activityToTransaction(item: ActivityItem): Transaction {
+  const typeMap: Record<string, TransactionType> = {
+    deposit: 'deposit',
+    naira_fund: 'deposit',
+    p2p_receive: 'receive',
+    withdrawal: 'withdraw',
+    naira_withdraw: 'withdraw',
+    p2p_send: 'send',
+    card_payment: 'withdraw',
+    investment: 'withdraw',
+  };
 
-type Transaction = {
-  id: string;
-  title: string;
-  description: string;
-  amount: number;
-  type: 'credit' | 'debit';
-  date: string;
-};
+  const statusMap: Record<string, TransactionStatus> = {
+    completed: 'completed',
+    pending: 'pending',
+    processing: 'pending',
+    failed: 'failed',
+    cancelled: 'failed',
+  };
 
-const transactions: Transaction[] = [];
+  const methodMap: Record<string, WithdrawalMethod> = {
+    withdrawal: 'crypto',
+    naira_withdraw: 'fiat',
+    p2p_send: 'p2p',
+    card_payment: 'card',
+  };
 
-const TransactionItem = ({ item }: { item: Transaction }) => (
-  <View className="flex-row items-center px-md py-sm border-b border-surface">
-    <View className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-sm">
-      <Ionicons
-        name={item.type === 'credit' ? 'arrow-down' : 'arrow-up'}
-        size={20}
-        color={item.type === 'credit' ? '#00C853' : '#121212'}
-      />
-    </View>
-    <View className="flex-1">
-      <Text className="text-body font-subtitle text-text-primary">{item.title}</Text>
-      <Text className="text-caption font-caption text-text-secondary">{item.description}</Text>
-    </View>
-    <View className="items-end">
-      <Text className={`text-body font-subtitle ${item.type === 'credit' ? 'text-success' : 'text-text-primary'}`}>
-        {item.type === 'credit' ? '+' : '-'}${Math.abs(item.amount).toFixed(2)}
-      </Text>
-      <Text className="text-caption font-caption text-text-secondary">{item.date}</Text>
-    </View>
-  </View>
-);
+  // For naira transactions with dual currency, show swap icon
+  const hasDualCurrency = !!item.currency.secondary;
+  let icon: Transaction['icon'];
+  if (hasDualCurrency) {
+    icon = {
+      type: 'swap' as const,
+      SwapFrom: item.direction === 'in' ? NgnIcon : UsdcIcon,
+      SwapTo: item.direction === 'in' ? UsdcIcon : NgnIcon,
+      swapFromBg: item.direction === 'in' ? '#008751' : '#2775CA',
+      swapToBg: item.direction === 'in' ? '#2775CA' : '#008751',
+    };
+  }
 
-const EmptyState = () => (
-  <View className="flex-1 items-center justify-center px-xl">
-    <SvgXml xml={transactionsEmptySvg} width={260} height={110} />
-    <Text className="text-subtitle font-subtitle text-text-primary mt-lg text-center">No transactions yet</Text>
-    <Text className="text-caption font-caption text-text-secondary mt-xs text-center">
-      Your transaction history will appear here once you start using Rail
-    </Text>
-  </View>
-);
+  return {
+    id: item.id,
+    type: typeMap[item.type] ?? 'deposit',
+    title: item.title,
+    subtitle: item.subtitle ?? '',
+    amount: parseFloat(item.amount) || 0,
+    currency: item.currency.primary,
+    status: statusMap[item.status] ?? 'pending',
+    createdAt: new Date(item.createdAt),
+    txHash: item.txHash,
+    toAddress: item.destination,
+    fee: item.feeAmount,
+    withdrawalMethod: methodMap[item.type],
+    icon,
+    metadata: {
+      sourceType: item.sourceType,
+      sourceId: item.sourceId,
+      chain: item.chain,
+      fiatAmount: item.fiatAmount,
+      secondaryCurrency: item.currency.secondary,
+      groupId: item.groupId,
+      bankName: item.bankName,
+      bankAccountName: item.receiverName,
+      narration: item.narration,
+    },
+  };
+}
+
+type FilterId = 'all' | 'deposit' | 'withdraw' | 'naira' | 'p2p';
 
 export default function History() {
-  const navigation = useNavigation();
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [search, setSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState<FilterId>('all');
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <View className="flex-row items-center gap-x-3 pl-[14px]">
-          <Text className="font-subtitle text-headline-1">History</Text>
-        </View>
-      ),
-      headerShown: true,
-      title: '',
-      headerStyle: { backgroundColor: 'transparent' },
-    });
-  }, [navigation]);
+  const filters: { id: FilterId; label: string }[] = [
+    { id: 'all', label: 'All' },
+    { id: 'deposit', label: 'Deposits' },
+    { id: 'withdraw', label: 'Withdrawals' },
+    { id: 'naira', label: 'Naira' },
+    { id: 'p2p', label: 'P2P' },
+  ];
+
+  const activity = useActivityFeed(50);
+
+  const transactions = useMemo(() => {
+    if (!activity.data?.items) return [];
+    return activity.data.items.map(activityToTransaction);
+  }, [activity.data]);
+
+  const filteredTransactions = useMemo(() => {
+    let result = transactions;
+    if (activeFilter !== 'all') {
+      result = result.filter((t) => {
+        const meta = t.metadata as Record<string, string | undefined> | undefined;
+        const sourceType = meta?.sourceType;
+        if (activeFilter === 'deposit') return t.type === 'deposit' || t.type === 'receive';
+        if (activeFilter === 'withdraw') return t.type === 'withdraw' || t.type === 'send';
+        if (activeFilter === 'naira') return sourceType === 'paj_order';
+        if (activeFilter === 'p2p') return sourceType === 'p2p_transfer';
+        return true;
+      });
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          t.subtitle?.toLowerCase().includes(q) ||
+          t.amount.toString().includes(q)
+      );
+    }
+    return result;
+  }, [transactions, activeFilter, search]);
+
+  const showSkeleton = activity.isLoading && transactions.length === 0;
 
   return (
-    <View className="flex-1 bg-background-main">
-      {transactions.length === 0 ? (
-        <EmptyState />
+    <View className="flex-1">
+      {/* Search */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 2 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 12, paddingHorizontal: 12, height: 40, backgroundColor: '#F2F2F2', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' }}>
+          <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search transactions..."
+            placeholderTextColor="#a7a7a7"
+            style={{
+              flex: 1,
+              fontFamily: 'Geist-Regular',
+              fontSize: 15,
+              color: '#343433',
+              marginLeft: 8,
+            }}
+          />
+        </View>
+      </View>
+
+      {/* Filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingVertical: 8,
+          gap: 8,
+          alignItems: 'center',
+        }}>
+        {filters.map((f) => (
+          <Pressable
+            key={f.id}
+            onPress={() => setActiveFilter(f.id)}
+            style={{
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 20,
+              backgroundColor: activeFilter === f.id ? '#121212' : '#f2f0ed',
+            }}>
+            <Text
+              style={{
+                fontFamily: 'SFProDisplay-Medium',
+                fontSize: 13,
+                color: activeFilter === f.id ? '#FFF' : '#848281',
+              }}>
+              {f.label}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {!showSkeleton && filteredTransactions.length === 0 ? (
+        <View className="flex-1 items-center justify-center px-8">
+          <TransactionsEmptyIllustration width={220} height={140} />
+          <Text className="mt-4 text-center font-subtitle text-subtitle text-text-primary">
+            No transactions yet
+          </Text>
+          <Text className="mt-2 text-center font-body text-caption text-text-secondary">
+            Your transaction history will appear here once you start using Rail
+          </Text>
+        </View>
       ) : (
-        <FlatList
-          data={transactions}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <TransactionItem item={item} />}
-          contentContainerStyle={{ paddingBottom: 100 }}
+        <TransactionList
+          transactions={filteredTransactions}
+          onTransactionPress={setSelectedTransaction}
+          className="flex-1 px-md pt-md"
+          isLoading={showSkeleton}
+          loadingItems={6}
+          refreshControl={
+            <RefreshControl
+              refreshing={activity.isRefetching}
+              onRefresh={() => activity.refetch()}
+              tintColor="#000"
+            />
+          }
         />
       )}
+
+      <TransactionDetailSheet
+        visible={!!selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+        transaction={selectedTransaction}
+      />
     </View>
   );
 }

@@ -5,44 +5,42 @@
 
 import apiClient from '../client';
 import type {
-  OnboardingStartRequest,
-  OnboardingStartResponse,
-  OnboardingStatusResponse,
+  OnboardingCompleteRequest,
+  OnboardingCompleteResponse,
   KYCVerificationRequest,
   KYCVerificationResponse,
 } from '../types';
 
+export interface MissingKycFieldsResponse {
+  missingFields: string[];
+  /** Which complete-kyc step to start from: 'date_of_birth' | 'address' | 'phone' | 'none' */
+  startStep: 'date_of_birth' | 'address' | 'phone' | 'none';
+}
+
 const ONBOARDING_ENDPOINTS = {
-  START: '/v1/onboarding/start',
-  STATUS: '/v1/onboarding/status',
+  BASIC_COMPLETE: '/v1/onboarding/basic-complete',
+  COMPLETE: '/v1/onboarding/complete',
   KYC_SUBMIT: '/v1/onboarding/kyc/submit',
+  KYC_MISSING_FIELDS: '/v1/onboarding/kyc/missing-fields',
 };
 
 export const onboardingService = {
   /**
-   * Start onboarding process for a user
-   * Creates user if needed and initializes onboarding steps
-   * @returns User ID, onboarding status, and next step
+   * Basic complete — slim signup with name + password only
    */
-  async start(data: OnboardingStartRequest): Promise<OnboardingStartResponse> {
-    return apiClient.post<OnboardingStartResponse>(
-      ONBOARDING_ENDPOINTS.START,
+  async basicComplete(data: { firstName: string; lastName: string; password: string }) {
+    return apiClient.post<{ userId: string; onboardingStatus: string; message: string }>(
+      ONBOARDING_ENDPOINTS.BASIC_COMPLETE,
       data
     );
   },
 
   /**
-   * Get comprehensive onboarding status
-   * Includes KYC status, wallet provisioning, and required actions
-   * @param userId - Optional user ID (defaults to authenticated user)
-   * @returns Detailed onboarding status
+   * Complete onboarding process for an authenticated user
+   * Sets profile/password and triggers account provisioning
    */
-  async getStatus(userId?: string): Promise<OnboardingStatusResponse> {
-    const params = userId ? { user_id: userId } : {};
-    return apiClient.get<OnboardingStatusResponse>(
-      ONBOARDING_ENDPOINTS.STATUS,
-      { params }
-    );
+  async complete(data: OnboardingCompleteRequest): Promise<OnboardingCompleteResponse> {
+    return apiClient.post<OnboardingCompleteResponse>(ONBOARDING_ENDPOINTS.COMPLETE, data);
   },
 
   /**
@@ -51,10 +49,15 @@ export const onboardingService = {
    * @returns Submission confirmation with next steps
    */
   async submitKYC(data: KYCVerificationRequest): Promise<KYCVerificationResponse> {
-    return apiClient.post<KYCVerificationResponse>(
-      ONBOARDING_ENDPOINTS.KYC_SUBMIT,
-      data
-    );
+    return apiClient.post<KYCVerificationResponse>(ONBOARDING_ENDPOINTS.KYC_SUBMIT, data);
+  },
+
+  /**
+   * Get missing KYC profile fields from the backend.
+   * Returns which fields the user still needs to fill before KYC submission.
+   */
+  async getMissingKycFields(): Promise<MissingKycFieldsResponse> {
+    return apiClient.get<MissingKycFieldsResponse>(ONBOARDING_ENDPOINTS.KYC_MISSING_FIELDS);
   },
 };
 

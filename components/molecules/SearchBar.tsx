@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text } from 'react-native';
-import { colors, typography } from '../../design/tokens';
+import { View, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { InputField } from '@/components/atoms/InputField';
 
 export interface SearchBarProps {
   placeholder?: string;
@@ -33,38 +34,39 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   const handleClear = () => {
+    if (disabled) return;
     if (!isControlled) setInternalValue('');
     onClear?.();
     onChangeText?.('');
   };
 
   return (
-    <View
-      className={`flex-row items-center bg-surface rounded-sm px-4 py-3 ${disabled ? 'opacity-50' : ''} ${className || ''}`}
-    >
-      <View className="mr-3">
-        <Text className="text-text-secondary text-body">🔍</Text>
-      </View>
-
-      <TextInput
+    <View className={className || ''}>
+      <InputField
         value={value}
         onChangeText={handleChangeText}
         onSubmitEditing={() => onSearch?.(value)}
         placeholder={placeholder}
-        placeholderTextColor={colors.text.secondary}
         editable={!disabled}
         autoFocus={autoFocus}
         returnKeyType="search"
-        className="flex-1 text-body text-text-primary"
-        style={{ fontFamily: typography.fonts.body }}
+        icon="search-outline"
+        density="compact"
+        inputWrapperClassName="rounded-full border-surface bg-surface"
+        inputClassName="text-body"
         accessibilityLabel="Search input"
+        rightAccessory={
+          value.length > 0 && !disabled ? (
+            <TouchableOpacity
+              onPress={handleClear}
+              className="min-h-[44px] min-w-[44px] items-center justify-center"
+              accessibilityRole="button"
+              accessibilityLabel="Clear search">
+              <Ionicons name="close" size={18} color="#848281" />
+            </TouchableOpacity>
+          ) : undefined
+        }
       />
-
-      {value.length > 0 && (
-        <TouchableOpacity onPress={handleClear} className="ml-3 p-1" accessibilityLabel="Clear search">
-          <Text className="text-text-secondary text-body">✕</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 };

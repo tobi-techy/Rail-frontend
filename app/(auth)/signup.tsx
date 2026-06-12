@@ -1,0 +1,144 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+  Keyboard,
+  StatusBar,
+  Platform,
+  Linking,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Button } from '@/components/ui';
+import { AuthGradient, InputField, StaggeredChild } from '@/components';
+import { ROUTES } from '@/constants/routes';
+import { useRegister } from '@/api/hooks/useAuth';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { signupSchema, fieldError } from '@/utils/schemas';
+import { useAuthStore } from '@/stores/authStore';
+
+const normalizeRegistrationMethod = (value?: string): 'password' | 'passkey' => {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === 'passkey' || normalized === 'biometric' ? 'passkey' : 'password';
+};
+
+export default function SignUp() {
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ method?: string; authMethod?: string }>();
+  const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const { mutate: register, isPending } = useRegister();
+  const { showError, showWarning, showSuccess } = useFeedbackPopup();
+  const registrationMethod = normalizeRegistrationMethod(
+    typeof params.authMethod === 'string'
+      ? params.authMethod
+      : typeof params.method === 'string'
+        ? params.method
+        : undefined
+  );
+
+  const handleSignUp = () => {
+    const result = signupSchema.safeParse({ email });
+    if (!result.success) {
+      const msg = fieldError(result.error, 'email');
+      setEmailError(msg);
+      showWarning('Invalid Email', msg);
+      return;
+    }
+    const normalizedEmail = result.data.email;
+
+    setEmailError('');
+    updateRegistrationData({ authMethod: registrationMethod });
+
+    register(
+      { email: normalizedEmail },
+      {
+        onSuccess: () => {
+          showSuccess('Verification Sent', 'Check your email for a 6-digit verification code.');
+          router.push(ROUTES.AUTH.VERIFY_EMAIL as never);
+        },
+        onError: (error: any) => {
+          showError('Sign Up Failed', error?.message || 'Registration failed. Please try again.');
+        },
+      }
+    );
+  };
+
+  return (
+    <AuthGradient>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={Platform.OS === 'android'}
+      />
+      <Pressable
+        style={{ flex: 1, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 20 }}
+        onPress={Keyboard.dismiss}>
+        <View className="flex-1 px-6">
+          <StaggeredChild index={0}>
+            <View className="mb-10">
+              <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
+                Enter your email
+              </Text>
+              <Text className="mt-2 font-body text-body text-ash">
+                Sign up to start your journey
+              </Text>
+            </View>
+          </StaggeredChild>
+
+          <StaggeredChild index={1}>
+            <InputField
+              label="Email"
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={(value) => {
+                setEmail(value);
+                if (emailError) setEmailError('');
+              }}
+              type="email"
+              error={emailError}
+              returnKeyType="done"
+              onSubmitEditing={handleSignUp}
+            />
+          </StaggeredChild>
+
+          <StaggeredChild index={2} delay={120} style={{ marginTop: 'auto' }}>
+            <View className="pt-8">
+              <Text className="mb-5 text-center font-caption text-small text-ash">
+                By signing up, you agree to our{' '}
+                <Text
+                  className="underline"
+                  onPress={() => Linking.openURL('https://userail.money/terms')}>
+                  Terms
+                </Text>
+                {' & '}
+                <Text
+                  className="underline"
+                  onPress={() => Linking.openURL('https://userail.money/privacy')}>
+                  Privacy Policy
+                </Text>
+              </Text>
+              <Button
+                title="Continue"
+                onPress={handleSignUp}
+                loading={isPending}
+                variant="orange"
+              />
+              <TouchableOpacity
+                onPress={() => router.push(ROUTES.AUTH.SIGNIN as never)}
+                className="mt-4">
+                <Text className="text-center font-body text-caption text-ash">
+                  Already have an account?{' '}
+                  <Text className="font-subtitle text-charcoal-primary underline">Sign In</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </StaggeredChild>
+        </View>
+      </Pressable>
+    </AuthGradient>
+  );
+}

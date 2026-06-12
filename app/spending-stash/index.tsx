@@ -1,104 +1,388 @@
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
-import React, { useLayoutEffect, useMemo, useState, useCallback, useRef, useEffect } from 'react';
-import { useNavigation } from 'expo-router';
-import { BalanceCard } from '@/components/molecules/BalanceCard';
-import { ArrowDown, DollarSignIcon, PersonStanding } from 'lucide-react-native';
-import { TransactionList } from '@/components/molecules/TransactionList';
-import type { Transaction } from '@/components/molecules/TransactionItem';
-import { Button } from '../../components/ui';
-import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
-import { FloatingBackButton } from '@/components/FloatingBackButton';
-import { AnimatedScreen } from '@/components/AnimatedScreen';
+import React, { useMemo } from 'react';
+import { View, Text, ScrollView, Pressable, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { Canvas, RoundedRect, Group } from '@shopify/react-native-skia';
+import { useSpendingStashData } from '@/components/spending-stash/useSpendingStashData';
+import { Icon } from '@/components/atoms/Icon';
+import { Skeleton } from '@/components/atoms/Skeleton';
+import { useHaptics } from '@/hooks/useHaptics';
+import { useUIStore } from '@/stores';
+import { CATEGORY_PALETTE } from '@/components/spending-stash/components';
+import { ArrowLeft01Icon, IconComponent as HugeiconsIcon, RefreshIcon } from '@/lib/icons';
 
-export default function SpendingStashScreen() {
-  const navigation = useNavigation();
-  const [refreshing, setRefreshing] = useState(false);
-  const [activePeriod, setActivePeriod] = useState('6M');
-  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+const ACCENT = '#ff3e00';
 
-  useEffect(() => {
-    return () => {
-      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
-    };
-  }, []);
+// ── Period pill selector ──────────────────────────────────────────────────────
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    refreshTimeoutRef.current = setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+const PERIODS = ['1W', '1M', '6M', '1Y'] as const;
+type Period = (typeof PERIODS)[number];
+const PERIOD_MONTHS: Record<Period, number> = { '1W': 0, '1M': 1, '6M': 6, '1Y': 12 };
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <View className="flex-row items-center gap-x-3">
-          <View className="h-9 w-9 items-center justify-center rounded-[12px] bg-[#4A89F7]">
-            <DollarSignIcon size={14} color="white" />
-          </View>
-          <Text className="font-subtitle text-headline-1">Spending</Text>
-        </View>
-      ),
-    });
-  }, [navigation]);
+function PeriodSelector({
+  selected,
+  onSelect,
+}: {
+  selected: Period;
+  onSelect: (p: Period) => void;
+}) {
+  return (
+    <View className="flex-row gap-0.5 self-start rounded-[20px] bg-stone-surface p-1">
+      {PERIODS.map((p) => {
+        const active = p === selected;
+        return (
+          <Pressable
+            key={p}
+            onPress={() => onSelect(p)}
+            className={`rounded-2xl px-[18px] py-2 ${active ? 'bg-stone-surface' : 'bg-transparent'}`}
+            accessibilityRole="button">
+            <Text
+              className={`text-sm ${active ? 'font-button text-black' : 'font-caption text-ash'}`}>
+              {p}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
-  const transactions = useMemo<Transaction[]>(() => [], []);
+// ── Stacked bar chart ─────────────────────────────────────────────────────────
 
-  const displayBalance = '$00.00';
-  const displayPerformance = '+00.00%';
+type ChartBar = { month: string; card: number; p2p: number; withdrawals: number; total: number };
+
+function MonthlyBarChart({ data }: { data: ChartBar[] }) {
+  const { width: sw } = useWindowDimensions();
+  const chartH = 340;
+  const n = data.length || 1;
+  const barW = 28;
+  const totalBarsW = barW * n;
+  const gap = n > 1 ? (sw - 64 - totalBarsW) / (n - 1) : 0;
+  const maxVal = Math.max(...data.map((d) => d.total), 1);
 
   return (
-    <AnimatedScreen>
-      <View className="flex-1 bg-white">
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingBottom: 100 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
-          }>
-          <View className="px-[14px]">
-            <BalanceCard
-              balance={displayBalance}
-              percentChange={displayPerformance}
-              timeframe={activePeriod}
-            />
+    <View>
+      <Canvas style={{ width: sw - 64, height: chartH }}>
+        <Group>
+          {data.map((bar, i) => {
+            const x = i * (barW + gap);
+            const r = barW / 2;
+            const cardH = Math.max((bar.card / maxVal) * (chartH - 4), bar.card > 0 ? 4 : 0);
+            const p2pH = Math.max((bar.p2p / maxVal) * (chartH - 4), bar.p2p > 0 ? 4 : 0);
+            const wdH = Math.max(
+              (bar.withdrawals / maxVal) * (chartH - 4),
+              bar.withdrawals > 0 ? 4 : 0
+            );
 
-            <View className="mt-6 flex-row gap-3">
-              <Button
-                title="Become a Creator"
-                leftIcon={<PersonStanding size={20} color="white" />}
-                size="small"
-                variant="black"
-              />
-              <Button
-                title="Withdraw"
-                leftIcon={<ArrowDown size={20} color="black" />}
-                size="small"
-                variant="white"
-              />
-            </View>
+            const wdY = chartH - wdH;
+            const p2pY = wdY - p2pH;
+            const cardY = p2pY - cardH;
 
-            <View className="py-5">
-              {transactions.length === 0 ? (
-                <View className="items-center justify-center rounded-3xl bg-white px-5 py-8">
-                  <TransactionsEmptyIllustration width={220} height={140} />
-                  <Text className="mt-4 text-center font-subtitle text-headline-2 text-gray-900">
-                    No spending yet
-                  </Text>
-                  <Text className="mt-2 text-center font-body text-base text-gray-500">
-                    Make your first purchase to see spending activity here.
-                  </Text>
-                </View>
-              ) : (
-                <TransactionList
-                  title="Spending Activity"
-                  transactions={transactions}
-                  emptyStateMessage="No activity to show yet."
+            if (bar.total === 0) {
+              return (
+                <RoundedRect
+                  key={bar.month}
+                  x={x}
+                  y={chartH - 6}
+                  width={barW}
+                  height={6}
+                  r={r}
+                  color="#f7f2e8"
                 />
-              )}
+              );
+            }
+            return (
+              <Group key={bar.month}>
+                {wdH > 0 && (
+                  <RoundedRect x={x} y={wdY} width={barW} height={wdH} r={r} color="#0090ff" />
+                )}
+                {p2pH > 0 && (
+                  <RoundedRect x={x} y={p2pY} width={barW} height={p2pH} r={r} color="#00ca48" />
+                )}
+                {cardH > 0 && (
+                  <RoundedRect x={x} y={cardY} width={barW} height={cardH} r={r} color={ACCENT} />
+                )}
+              </Group>
+            );
+          })}
+        </Group>
+      </Canvas>
+
+      {/* Month labels */}
+      <View className="mt-2.5 flex-row">
+        {data.map((bar, i) => (
+          <View
+            key={bar.month}
+            style={{ width: barW + (i < data.length - 1 ? gap : 0) }}
+            className="items-center">
+            <Text className="font-caption text-[11px] text-ash">{bar.month.slice(0, 3)}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Legend */}
+      <View className="mt-3.5 flex-row gap-4">
+        {[
+          { color: ACCENT, label: 'Card' },
+          { color: '#00ca48', label: 'P2P' },
+          { color: '#0090ff', label: 'Withdrawals' },
+        ].map(({ color, label }) => (
+          <View key={label} className="flex-row items-center gap-1.5">
+            <View style={{ backgroundColor: color }} className="h-2 w-2 rounded-full" />
+            <Text className="font-caption text-xs text-ash">{label}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ── Category row ──────────────────────────────────────────────────────────────
+
+function CategoryRow({
+  title,
+  amount,
+  percentage,
+  iconName,
+  color,
+  showSep,
+}: {
+  title: string;
+  amount: number;
+  percentage: number;
+  iconName: string;
+  color: string;
+  showSep: boolean;
+}) {
+  return (
+    <View>
+      <View className="flex-row items-center px-4 py-4">
+        <View className="mr-3.5 h-11 w-11 items-center justify-center rounded-full bg-stone-surface">
+          <Icon name={iconName} size={20} color={color} strokeWidth={1.5} />
+        </View>
+        <View className="flex-1">
+          <Text className="font-button text-base text-charcoal-primary">{title}</Text>
+          <Text className="mt-0.5 font-caption text-[13px] text-ash">{percentage}%</Text>
+        </View>
+        <Text className="font-button text-base text-charcoal-primary">-${amount.toFixed(2)}</Text>
+      </View>
+      {showSep && <View className="ml-[74px] h-px bg-stone-surface" />}
+    </View>
+  );
+}
+
+// ── Main screen ───────────────────────────────────────────────────────────────
+
+export default function SpendingScreen() {
+  const insets = useSafeAreaInsets();
+  const { impact, selection } = useHaptics();
+  const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
+
+  const {
+    isLoading,
+    availableBalance,
+    thisMonthSpend,
+    lastMonthSpend,
+    dailyAvg,
+    trend,
+    trendPct,
+    transactionCount,
+    categories,
+    monthlyChart,
+    roundUps,
+  } = useSpendingStashData();
+
+  const [period, setPeriod] = React.useState<Period>('6M');
+  const mask = (v: string) => (isBalanceVisible ? v : '••••');
+
+  const filteredChart = useMemo(() => {
+    if (period === '1W') return monthlyChart.slice(-1);
+    const months = PERIOD_MONTHS[period];
+    if (!months || months >= monthlyChart.length) return monthlyChart;
+    return monthlyChart.slice(-months);
+  }, [monthlyChart, period]);
+
+  const trendLabel =
+    trend === 'up'
+      ? `↑ ${Math.abs(trendPct).toFixed(0)}%`
+      : trend === 'down'
+        ? `↓ ${Math.abs(trendPct).toFixed(0)}%`
+        : '— stable';
+  const trendTextColor = trend === 'up' ? '#ff2b3a' : trend === 'down' ? '#00ca48' : '#848281';
+
+  const rangeLabel = useMemo(() => {
+    if (!filteredChart.length) return '';
+    return `${filteredChart[0].month.slice(0, 3)} – ${filteredChart[filteredChart.length - 1].month.slice(0, 3)}`;
+  }, [filteredChart]);
+
+  return (
+    <View className="flex-1 bg-warm-canvas">
+      {/* Header */}
+      <View className="flex-row items-center px-4 pb-1" style={{ paddingTop: insets.top + 8 }}>
+        <Pressable
+          onPress={() => {
+            impact();
+            router.back();
+          }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          className="mr-3 h-9 w-9 items-center justify-center"
+          accessibilityRole="button"
+          accessibilityLabel="Go back">
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#000000" strokeWidth={2} />
+        </Pressable>
+        <Text className="font-subtitle text-[17px] text-charcoal-primary">Spend</Text>
+      </View>
+
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 48 }}
+        showsVerticalScrollIndicator={false}
+        bounces>
+        {/* ── Hero ── */}
+        <View className="mb-7 mt-2">
+          <Text className="font-caption text-[15px] text-ash">Spent</Text>
+          {isLoading ? (
+            <View className="mt-2 gap-2.5">
+              <Skeleton style={{ width: 180, height: 56, borderRadius: 12 }} />
+              <Skeleton style={{ width: 100, height: 16 }} />
+            </View>
+          ) : (
+            <Animated.View entering={FadeIn.duration(200)}>
+              <Text
+                className="mt-0.5 font-display text-charcoal-primary"
+                style={{ fontSize: 56, letterSpacing: -2, lineHeight: 64 }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.5}>
+                {mask(`$${thisMonthSpend.toFixed(2)}`)}
+              </Text>
+              <View className="mt-1.5 flex-row items-center gap-3">
+                <Text className="font-caption text-sm text-ash">{rangeLabel}</Text>
+                {trend !== 'stable' && (
+                  <Text className="font-button text-[13px]" style={{ color: trendTextColor }}>
+                    {trendLabel}
+                  </Text>
+                )}
+              </View>
+            </Animated.View>
+          )}
+        </View>
+
+        {/* ── Chart ── */}
+        {isLoading ? (
+          <View className="mb-7 h-[340px] flex-row items-end gap-2">
+            {[80, 110, 50, 140, 70, 100].map((h, i) => (
+              <Skeleton key={i} style={{ width: 28, height: h, borderRadius: 14 }} />
+            ))}
+          </View>
+        ) : (
+          <Animated.View entering={FadeIn.duration(300)} className="mb-5">
+            <MonthlyBarChart data={filteredChart} />
+          </Animated.View>
+        )}
+
+        {/* ── Period selector ── */}
+        <View className="mb-8">
+          <PeriodSelector
+            selected={period}
+            onSelect={(p) => {
+              selection();
+              setPeriod(p);
+            }}
+          />
+        </View>
+
+        {/* ── Stat row ── */}
+        {!isLoading && (
+          <View className="mb-8 flex-row gap-2.5">
+            {[
+              { label: 'Daily avg', value: mask(`$${dailyAvg.toFixed(2)}`) },
+              { label: 'Last month', value: mask(`$${lastMonthSpend.toFixed(2)}`) },
+              { label: 'Transactions', value: String(transactionCount) },
+            ].map(({ label, value }) => (
+              <View key={label} className="flex-1 rounded-2xl bg-stone-surface p-3.5">
+                <Text className="font-caption text-[11px] text-ash">{label}</Text>
+                <Text className="mt-1.5 font-button text-[17px] text-charcoal-primary">
+                  {value}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* ── By Category ── */}
+        {(isLoading || categories.length > 0) && (
+          <View className="mb-4">
+            <View className="mb-3.5 flex-row items-center justify-between">
+              <Text className="font-headline text-xl text-charcoal-primary">By Category</Text>
+              <Pressable onPress={() => router.push('/card' as never)} accessibilityRole="button">
+                <Text className="font-body text-sm text-sky-blue">Manage</Text>
+              </Pressable>
+            </View>
+            <View className="overflow-hidden rounded-[20px] bg-stone-surface">
+              {isLoading
+                ? [0, 1, 2].map((i) => (
+                    <View key={i} className="flex-row items-center gap-3.5 p-4">
+                      <Skeleton style={{ width: 44, height: 44, borderRadius: 22 }} />
+                      <View className="flex-1 gap-2">
+                        <Skeleton className="w-[55%]" style={{ height: 14 }} />
+                        <Skeleton className="w-[30%]" style={{ height: 11 }} />
+                      </View>
+                      <Skeleton style={{ width: 60, height: 14 }} />
+                    </View>
+                  ))
+                : categories
+                    .slice(0, 5)
+                    .map((cat, i, arr) => (
+                      <CategoryRow
+                        key={cat.id}
+                        title={cat.title}
+                        amount={cat.amount}
+                        percentage={cat.percentage}
+                        iconName={cat.iconName}
+                        color={CATEGORY_PALETTE[i % CATEGORY_PALETTE.length]}
+                        showSep={i < Math.min(arr.length, 5) - 1}
+                      />
+                    ))}
             </View>
           </View>
-        </ScrollView>
-        <FloatingBackButton />
-      </View>
-    </AnimatedScreen>
+        )}
+
+        {/* ── Round-ups ── */}
+        {!isLoading && roundUps?.is_enabled && (
+          <Animated.View entering={FadeIn.duration(300)}>
+            <View className="flex-row items-center gap-3.5 rounded-[20px] bg-stone-surface p-4">
+              <View
+                className="h-11 w-11 items-center justify-center rounded-full"
+                style={{ backgroundColor: `${ACCENT}22` }}>
+                <HugeiconsIcon icon={RefreshIcon} size={20} color={ACCENT} strokeWidth={1.5} />
+              </View>
+              <View className="flex-1">
+                <Text className="font-button text-base text-charcoal-primary">Round-ups</Text>
+                <Text className="mt-0.5 font-caption text-[13px] text-ash">
+                  {roundUps.transaction_count} transactions
+                </Text>
+              </View>
+              <Text className="font-button text-[17px] text-charcoal-primary">
+                {mask(`$${parseFloat(roundUps.total_accumulated).toFixed(2)}`)}
+              </Text>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* ── Available ── */}
+        {!isLoading && (
+          <View className="mt-7 items-center">
+            <Text className="font-caption text-[13px] text-ash">Available to spend</Text>
+            <Text
+              className="mt-1 font-headline text-2xl text-charcoal-primary"
+              style={{ letterSpacing: -0.5 }}>
+              {mask(`$${availableBalance.toFixed(2)}`)}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }

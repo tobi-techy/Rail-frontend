@@ -40,7 +40,7 @@ describe('SignIn Screen', () => {
   it('should render email and password inputs', async () => {
     // Dynamic import to ensure mocks are applied
     const SignIn = require('../../app/(auth)/signin').default;
-    
+
     const { getByPlaceholderText } = render(<SignIn />, { wrapper });
 
     await waitFor(() => {
@@ -51,7 +51,7 @@ describe('SignIn Screen', () => {
 
   it('should have a sign in button', async () => {
     const SignIn = require('../../app/(auth)/signin').default;
-    
+
     const { getByText } = render(<SignIn />, { wrapper });
 
     await waitFor(() => {

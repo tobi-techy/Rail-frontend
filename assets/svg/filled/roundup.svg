@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="gRoundRef" x1="8" y1="18" x2="18" y2="6" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9A8BFF"/>
+      <stop offset="1" stop-color="#6C7CFF"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M9 18V11a4 4 0 0 1 4-4h7"
+        fill="none"
+        stroke="url(#gRoundRef)"
+        stroke-width="3.6"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

@@ -1,52 +1,142 @@
-import React from 'react';
-import { View, Text, FlatList, ViewProps } from 'react-native';
-import { TransactionItem, Transaction } from './TransactionItem';
-import { colors } from '@/design/tokens';
-import { Icon } from '@/components/atoms';
+import React, { useCallback } from 'react';
+import { View, Text, SectionList, ViewProps, RefreshControlProps } from 'react-native';
+import { Skeleton } from '../atoms';
+import { TransactionItem, Transaction, TransactionItemSkeleton } from './TransactionItem';
 
 export interface TransactionListProps extends Omit<ViewProps, 'children'> {
   transactions: Transaction[];
   title?: string;
   onTransactionPress?: (transaction: Transaction) => void;
-  emptyStateMessage?: string;
+  isLoading?: boolean;
+  loadingItems?: number;
+  refreshControl?: React.ReactElement<RefreshControlProps>;
+  /** Set false when embedded inside a ScrollView — renders as plain View */
+  scrollEnabled?: boolean;
 }
+
+type Section = { label: string; data: Transaction[] };
+
+const groupByDate = (transactions: Transaction[]): Section[] => {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const groups: Record<string, Transaction[]> = {};
+
+  transactions.forEach((tx) => {
+    const txDate = new Date(tx.createdAt);
+    let label: string;
+
+    if (txDate.toDateString() === today.toDateString()) {
+      label = 'Today';
+    } else if (txDate.toDateString() === yesterday.toDateString()) {
+      label = 'Yesterday';
+    } else {
+      label = txDate.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+    }
+
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(tx);
+  });
+
+  return Object.entries(groups).map(([label, data]) => ({ label, data }));
+};
 
 export const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
   title,
   onTransactionPress,
-  emptyStateMessage = 'You have no transactions yet.',
+  isLoading = false,
+  loadingItems = 6,
+  refreshControl,
+  scrollEnabled = true,
   style,
-  ...props
+  className,
 }) => {
-  const renderItem = ({ item }: { item: Transaction }) => (
-    <TransactionItem transaction={item} onPress={() => onTransactionPress?.(item)} />
-  );
+  if (isLoading) {
+    const firstGroupCount = Math.max(1, Math.ceil(loadingItems / 2));
+    const secondGroupCount = Math.max(0, loadingItems - firstGroupCount);
 
-  const renderEmptyState = () => (
-    <View className="items-center justify-center p-8">
-      <Icon name="file-tray-outline" size={48} color={colors.text.tertiary} />
-      <Text className="mt-4 text-center font-body text-base text-gray-500">
-        {emptyStateMessage}
-      </Text>
-    </View>
+    return (
+      <View style={style} className={className}>
+        {title && (
+          <Text className="mb-md font-headline-2 text-headline-3 text-text-primary">{title}</Text>
+        )}
+        <View className="mb-md">
+          <Skeleton className="mb-sm h-3 w-[80px] rounded-sm" />
+          {Array.from({ length: firstGroupCount }).map((_, i) => (
+            <TransactionItemSkeleton key={`sk1-${i}`} />
+          ))}
+        </View>
+        {secondGroupCount > 0 && (
+          <View className="mb-md">
+            <Skeleton className="mb-sm h-3 w-[94px] rounded-sm" />
+            {Array.from({ length: secondGroupCount }).map((_, i) => (
+              <TransactionItemSkeleton key={`sk2-${i}`} />
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  const sections = groupByDate(transactions);
+
+  // Flat render for use inside a ScrollView
+  if (!scrollEnabled) {
+    return (
+      <View style={style} className={className}>
+        {title && (
+          <Text className="mb-md font-headline-2 text-headline-3 text-text-primary">{title}</Text>
+        )}
+        {sections.map((section) => (
+          <View key={section.label} className="mb-md">
+            <Text className="mb-1 mt-2 font-body text-[13px] text-text-tertiary">
+              {section.label}
+            </Text>
+            {section.data.map((tx) => (
+              <TransactionItem
+                key={tx.id}
+                transaction={tx}
+                onPress={() => onTransactionPress?.(tx)}
+              />
+            ))}
+          </View>
+        ))}
+      </View>
+    );
+  }
+
+  const renderItem = useCallback(
+    ({ item: tx }: { item: Transaction }) => (
+      <TransactionItem transaction={tx} onPress={() => onTransactionPress?.(tx)} />
+    ),
+    [onTransactionPress]
   );
 
   return (
-    <View style={style} {...props}>
-      <View className="flex-row items-center justify-between">
-        {title && <Text className="font-subtitle text-headline-2 text-gray-900">{title}</Text>}
-        <Text className="font-body text-headline-2 text-gray-500">see all</Text>
-      </View>
-      <FlatList
-        data={transactions}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={renderEmptyState}
-        scrollEnabled={false}
-        ItemSeparatorComponent={() => <View className="h-3" />}
-        contentContainerStyle={{ paddingVertical: 12 }}
-      />
-    </View>
+    <SectionList
+      style={style}
+      className={className}
+      sections={sections}
+      keyExtractor={(tx) => tx.id}
+      showsVerticalScrollIndicator={false}
+      refreshControl={refreshControl}
+      stickySectionHeadersEnabled={false}
+      renderSectionHeader={({ section }) => (
+        <Text className="mb-1 mt-2 font-body text-[13px] text-text-tertiary">{section.label}</Text>
+      )}
+      renderItem={renderItem}
+      SectionSeparatorComponent={() => <View className="mb-md" />}
+      ListHeaderComponent={
+        title ? (
+          <Text className="mb-md font-headline-2 text-headline-3 text-text-primary">{title}</Text>
+        ) : null
+      }
+    />
   );
 };

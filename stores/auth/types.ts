@@ -2,6 +2,8 @@ import type { User as ApiUser } from '../../api/types';
 
 export interface User extends Omit<ApiUser, 'phone'> {
   fullName?: string;
+  firstName?: string;
+  lastName?: string;
   phoneNumber?: string;
 }
 
@@ -15,6 +17,8 @@ export interface RegistrationData {
   postalCode: string;
   country: string;
   phone: string;
+  password: string;
+  authMethod: 'password' | 'passkey';
 }
 
 export interface AuthState {
@@ -30,10 +34,12 @@ export interface AuthState {
   currentOnboardingStep: string | null;
   registrationData: RegistrationData;
   pendingVerificationEmail: string | null;
+  _pendingPasscode: string | null;
   hasPasscode: boolean;
   isBiometricEnabled: boolean;
   passcodeSessionToken?: string;
   passcodeSessionExpiresAt?: string;
+  appLockExpiresAt?: string;
   loginAttempts: number;
   lockoutUntil: string | null;
   isLoading: boolean;
@@ -43,7 +49,7 @@ export interface AuthState {
 export interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string) => Promise<void>;
   refreshSession: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
   updateLastActivity: () => void;

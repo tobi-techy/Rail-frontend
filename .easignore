@@ -1,0 +1,33 @@
+# Dependencies - EAS reinstalls fresh (fixes platform-specific native binaries like lightningcss)
+node_modules
+
+# Git
+.git
+
+# iOS (not needed for Android build)
+ios
+
+# Android build artifacts
+android/.gradle
+android/app/build
+
+# Tests & docs
+__tests__
+__mocks__
+docs
+coverage
+
+# Dev tooling
+.vscode
+.idea
+*.log
+
+# Temp/output dirs
+.expo
+tmp
+output
+public
+
+# Misc
+~
+keystores

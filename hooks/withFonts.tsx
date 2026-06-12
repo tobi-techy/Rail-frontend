@@ -1,4 +1,5 @@
 import React from 'react';
+import { logger } from '../lib/logger';
 import { useFonts } from './useFonts';
 
 /**
@@ -28,7 +29,11 @@ export const withFonts = <P extends object>(
 
     // Log warning if fonts failed to load but continue rendering
     if (error) {
-      console.warn('Fonts failed to load, falling back to system fonts:', error);
+      logger.warn('Fonts failed to load, falling back to system fonts', {
+        component: 'withFonts',
+        action: 'font-load-fallback',
+        error,
+      });
     }
 
     // Render the wrapped component

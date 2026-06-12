@@ -5,7 +5,7 @@
 
 import { QueryClient } from '@tanstack/react-query';
 import type { TransformedApiError } from './types';
-import { safeError } from '../utils/logSanitizer';
+import { safeWarn } from '../utils/logSanitizer';
 
 function isTransformedApiError(error: unknown): error is TransformedApiError {
   return (
@@ -29,17 +29,17 @@ export const queryClient = new QueryClient({
         if (isTransformedApiError(error) && error.status >= 400 && error.status < 500) {
           return false;
         }
-        return failureCount < 3;
+        return failureCount < 2;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
       refetchOnReconnect: true,
       refetchOnMount: true,
     },
     mutations: {
       retry: false,
       onError: (error) => {
-        if (__DEV__) safeError('[Mutation Error]', error);
+        if (__DEV__) safeWarn('[Mutation Error]', error);
       },
     },
   },
@@ -58,6 +58,23 @@ export const queryKeys = {
     all: ['portfolio'] as const,
     overview: () => [...queryKeys.portfolio.all, 'overview'] as const,
   },
+  station: {
+    all: ['station'] as const,
+    home: () => [...queryKeys.station.all, 'home'] as const,
+  },
+  gameplay: {
+    all: ['gameplay'] as const,
+    profile: () => [...queryKeys.gameplay.all, 'profile'] as const,
+    streaks: () => [...queryKeys.gameplay.all, 'streaks'] as const,
+    challenges: () => [...queryKeys.gameplay.all, 'challenges'] as const,
+    achievements: () => [...queryKeys.gameplay.all, 'achievements'] as const,
+    xpHistory: () => [...queryKeys.gameplay.all, 'xp-history'] as const,
+    subscription: () => [...queryKeys.gameplay.all, 'subscription'] as const,
+  },
+  allocation: {
+    all: ['allocation'] as const,
+    balances: () => [...queryKeys.allocation.all, 'balances'] as const,
+  },
   wallet: {
     all: ['wallet'] as const,
     balance: () => [...queryKeys.wallet.all, 'balance'] as const,
@@ -72,10 +89,90 @@ export const queryKeys = {
     all: ['user'] as const,
     profile: () => [...queryKeys.user.all, 'profile'] as const,
     settings: () => [...queryKeys.user.all, 'settings'] as const,
+    tos: () => [...queryKeys.user.all, 'tos'] as const,
+    kycBridgeLink: () => [...queryKeys.user.all, 'kyc-bridge-link'] as const,
     kycStatus: () => [...queryKeys.user.all, 'kyc-status'] as const,
-    notifications: (filters?: unknown) =>
-      [...queryKeys.user.all, 'notifications', filters] as const,
+    kycSession: () => [...queryKeys.user.all, 'kyc-session'] as const,
     devices: () => [...queryKeys.user.all, 'devices'] as const,
+  },
+  funding: {
+    all: ['funding'] as const,
+    transactions: (params?: unknown) => [...queryKeys.funding.all, 'transactions', params] as const,
+    virtualAccount: () => [...queryKeys.funding.all, 'virtual-account'] as const,
+  },
+  virtualAccount: {
+    all: ['virtual-account'] as const,
+    list: () => [...queryKeys.virtualAccount.all, 'list'] as const,
+  },
+  market: {
+    all: ['market'] as const,
+    filters: () => [...queryKeys.market.all, 'filters'] as const,
+    explore: (filters?: unknown) => [...queryKeys.market.all, 'explore', filters] as const,
+    popular: (symbols: string[]) => [...queryKeys.market.all, 'popular', symbols] as const,
+    instrument: (
+      symbol: string,
+      includeBars?: boolean,
+      barsTimeframe?: string,
+      barsLimit?: number
+    ) =>
+      [
+        ...queryKeys.market.all,
+        'instrument',
+        symbol,
+        includeBars,
+        barsTimeframe,
+        barsLimit,
+      ] as const,
+    bars: (symbol: string, timeframe?: string, start?: string, end?: string) =>
+      [...queryKeys.market.all, 'bars', symbol, timeframe, start, end] as const,
+  },
+  news: {
+    all: ['news'] as const,
+    marketFeed: (filters?: unknown) => [...queryKeys.news.all, 'market-feed', filters] as const,
+  },
+  spending: {
+    all: ['spending'] as const,
+    stash: () => [...queryKeys.spending.all, 'stash'] as const,
+  },
+  investment: {
+    all: ['investment'] as const,
+    stash: () => [...queryKeys.investment.all, 'stash'] as const,
+    positions: (params?: unknown) => [...queryKeys.investment.all, 'positions', params] as const,
+    distribution: (limit?: number) => [...queryKeys.investment.all, 'distribution', limit] as const,
+    transactions: (params?: unknown) =>
+      [...queryKeys.investment.all, 'transactions', params] as const,
+    performance: (period?: string) => [...queryKeys.investment.all, 'performance', period] as const,
+  },
+  card: {
+    all: ['card'] as const,
+    list: () => [...queryKeys.card.all, 'list'] as const,
+    detail: (id: string) => [...queryKeys.card.all, 'detail', id] as const,
+    transactions: (params?: unknown) => [...queryKeys.card.all, 'transactions', params] as const,
+    cardTransactions: (id: string, params?: unknown) =>
+      [...queryKeys.card.all, 'card-transactions', id, params] as const,
+  },
+  passkeys: {
+    all: ['passkeys'] as const,
+    list: () => [...queryKeys.passkeys.all, 'list'] as const,
+  },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (params?: unknown) => [...queryKeys.notifications.all, 'list', params] as const,
+    unreadCount: () => [...queryKeys.notifications.all, 'unread-count'] as const,
+  },
+  ai: {
+    all: ['ai'] as const,
+    operatingPlan: () => [...queryKeys.ai.all, 'operating-plan'] as const,
+    moneyAcrossBorders: () => [...queryKeys.ai.all, 'money-across-borders'] as const,
+    automations: () => [...queryKeys.ai.all, 'automations'] as const,
+    obligations: (params?: unknown) => [...queryKeys.ai.all, 'obligations', params] as const,
+    actionReceipts: () => [...queryKeys.ai.all, 'action-receipts'] as const,
+    receiptSplits: () => [...queryKeys.ai.all, 'receipt-splits'] as const,
+    receiptSplit: (id: string) => [...queryKeys.ai.all, 'receipt-split', id] as const,
+  },
+  onboarding: {
+    all: ['onboarding'] as const,
+    missingKycFields: () => [...queryKeys.onboarding.all, 'missing-kyc-fields'] as const,
   },
 };
 
@@ -85,8 +182,19 @@ export const queryKeys = {
 export const invalidateQueries = {
   auth: () => queryClient.invalidateQueries({ queryKey: queryKeys.auth.all }),
   portfolio: () => queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.all }),
+  station: () => queryClient.invalidateQueries({ queryKey: queryKeys.station.all }),
+  allocation: () => queryClient.invalidateQueries({ queryKey: queryKeys.allocation.all }),
   wallet: () => queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all }),
+  funding: () => queryClient.invalidateQueries({ queryKey: queryKeys.funding.all }),
+  virtualAccount: () => queryClient.invalidateQueries({ queryKey: queryKeys.virtualAccount.all }),
+  market: () => queryClient.invalidateQueries({ queryKey: queryKeys.market.all }),
+  news: () => queryClient.invalidateQueries({ queryKey: queryKeys.news.all }),
+  investment: () => queryClient.invalidateQueries({ queryKey: queryKeys.investment.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
+  passkeys: () => queryClient.invalidateQueries({ queryKey: queryKeys.passkeys.all }),
+  notifications: () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
+  gameplay: () => queryClient.invalidateQueries({ queryKey: queryKeys.gameplay.all }),
+  ai: () => queryClient.invalidateQueries({ queryKey: queryKeys.ai.all }),
   all: () => queryClient.invalidateQueries(),
 };
 

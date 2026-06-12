@@ -1,194 +1,227 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { Stack } from 'expo-router';
-import { StatusBar, View } from 'react-native';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { AppState, Platform, StatusBar, StyleSheet, View } from 'react-native';
+import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import * as SplashScreen from 'expo-splash-screen';
 import { initSentry } from '@/lib/sentry';
+import { initGlobalErrorHandlers, logger } from '@/lib/logger';
+import { validateEnvironmentVariables } from '@/utils/envValidator';
 import { useFonts } from '@/hooks/useFonts';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
-import { SplashScreen } from '@/components/SplashScreen';
+import { useBiometricLock } from '@/hooks/useBiometricLock';
+import { enforceDeviceSecurity } from '@/utils/deviceSecurity';
+import { initEncryption } from '@/utils/encryption';
+import { SplashScreen as CustomSplash } from '@/components/SplashScreen';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import queryClient from '@/api/queryClient';
+import { FeedbackPopupHost } from '@/components/ui';
+import queryClient, { queryKeys } from '@/api/queryClient';
+import { stationService } from '@/api/services/station.service';
+import SessionManager from '@/utils/sessionManager';
+import { PostHogProvider, usePostHog } from 'posthog-react-native';
+import { useAuthStore } from '@/stores/authStore';
+import { useUIStore } from '@/stores';
 import '../global.css';
 
-const SPLASH_BG = '#FF5A00';
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
-// Hard limit: force-hide the splash after this long, no matter what.
-const SPLASH_HARD_TIMEOUT_MS = 0.5 * 60 * 1000;
-
-// Soft minimum: don't *start* finishing the splash animation before this long.
-// Keep it the same as the hard timeout unless you want a longer/shorter animation window.
-const MIN_SPLASH_DURATION_MS = SPLASH_HARD_TIMEOUT_MS;
-
-// Toggle console logs for debugging splash behavior.
-const SPLASH_DEBUG = false;
-
-// Persist splash timing across Layout unmount/remounts (expo-router can remount on reload/navigation)
-let splashStartedAtMs: number | null = null;
-let splashHardDeadlineMs: number | null = null;
-let splashMinDeadlineMs: number | null = null;
-
+// Critical synchronous inits only
 initSentry();
+initGlobalErrorHandlers();
+
+if (!validateEnvironmentVariables().isValid && !__DEV__) {
+  logger.error('[Layout] Critical environment configuration missing', { component: 'Layout' });
+}
+
+// Android baseline — deferred
+if (Platform.OS === 'android') {
+  const { InteractionManager } = require('react-native');
+  InteractionManager.runAfterInteractions(() => {
+    require('@/utils/androidVisualBaseline').configureAndroidVisualBaseline();
+  });
+}
+
+const SPLASH_BG = '#ff3e00';
+const SPLASH_MIN_MS = 600; // Just a flash of branding — dismiss as soon as ready
+const SPLASH_MAX_MS = 1000; // Hard cap — never wait longer than this
+
+// Lazy-loaded heavy components (not needed at startup)
+const BlurView = lazy(() => import('expo-blur').then((m) => ({ default: m.BlurView })));
+
+function AppReadyTracker() {
+  const posthog = usePostHog();
+
+  useEffect(() => {
+    posthog?.capture('app_opened', { platform: Platform.OS });
+
+    // Defer all non-critical SDK inits
+    Promise.allSettled([
+      import('@/utils/mixpanel').then((m) => m.initMixpanel()),
+      import('@/hooks/usePushNotifications'),
+      import('@/hooks/useForceUpdate'),
+    ]);
+  }, [posthog]);
+
+  return null;
+}
+
+// Separate component to initialize push + force update AFTER app is ready
+function PostReadyHooks() {
+  const { usePushNotifications } = require('@/hooks/usePushNotifications');
+  const { useForceUpdate } = require('@/hooks/useForceUpdate');
+  usePushNotifications();
+  useForceUpdate();
+  return null;
+}
 
 function AppNavigator() {
+  useProtectedRoute();
+  useBiometricLock();
+
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack initialRouteName="index" screenOptions={{ headerShown: false, contentStyle: styles.white }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="login-passcode" />
+      <Stack.Screen name="intro" options={{ contentStyle: styles.black }} />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="spending-stash" />
+      <Stack.Screen name="market-asset/[symbol]" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="market-asset/trade" options={{ animation: 'slide_from_bottom', contentStyle: styles.black }} />
+      <Stack.Screen name="spending-stash" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="investment-stash" />
+      <Stack.Screen name="gameplay" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="subscription" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="withdraw" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="kyc" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="virtual-account" />
+      <Stack.Screen name="passkey-settings" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="settings-notifications" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="fund-crosschain" options={{ animation: 'slide_from_bottom', contentStyle: styles.primary }} />
+      <Stack.Screen name="fund-stash" options={{ animation: 'slide_from_bottom', contentStyle: styles.primary }} />
+      <Stack.Screen name="fund-naira" options={{ animation: 'slide_from_bottom', contentStyle: styles.primary }} />
+      <Stack.Screen name="paj-verify" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="ai-chat" options={{ animation: 'fade_from_bottom', animationDuration: 250, gestureEnabled: false }} />
     </Stack>
   );
 }
 
 export default function Layout() {
-  const { fontsLoaded } = useFonts();
-  const [isAppReady, setIsAppReady] = useState(false);
-  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
+  const { fontsLoaded, error: fontError } = useFonts();
   const [showSplash, setShowSplash] = useState(true);
+  const [securityChecked, setSecurityChecked] = useState(false);
+  const splashStart = useRef<number | null>(null);
+  const refreshCurrencyRates = useUIStore((s) => s.refreshCurrencyRates);
+  const [isBlurred, setIsBlurred] = useState(false);
 
-  useProtectedRoute();
-
+  // App state — blur only when backgrounded
   useEffect(() => {
-    const now = Date.now();
-
-    // Initialize module-scoped timing once so remounts don't "reset" the timer.
-    if (splashStartedAtMs === null) {
-      splashStartedAtMs = now;
-      splashHardDeadlineMs = splashStartedAtMs + SPLASH_HARD_TIMEOUT_MS;
-      splashMinDeadlineMs = splashStartedAtMs + MIN_SPLASH_DURATION_MS;
-    }
-
-    if (SPLASH_DEBUG) {
-      console.log('[splash] mounted');
-      console.log('[splash] timing:', {
-        startedAtMs: splashStartedAtMs,
-        minDeadlineMs: splashMinDeadlineMs,
-        hardDeadlineMs: splashHardDeadlineMs,
-        now,
-        msUntilMin: Math.max(0, (splashMinDeadlineMs ?? now) - now),
-        msUntilHard: Math.max(0, (splashHardDeadlineMs ?? now) - now),
-      });
-    }
-
-    const msUntilMin = Math.max(0, (splashMinDeadlineMs ?? now) - now);
-
-    // Soft minimum: keep splash up for at least MIN_SPLASH_DURATION_MS (relative to first mount).
-    const minTimer = setTimeout(() => {
-      if (SPLASH_DEBUG) console.log('[splash] min duration elapsed');
-      setMinSplashElapsed(true);
-    }, msUntilMin);
-
-    // Hard deadline enforcement: poll the absolute deadline so we don't rely on a single long timer.
-    // (Some environments can be flaky with long setTimeouts.)
-    let lastHeartbeatAt = now;
-
-    const pollTimer = setInterval(() => {
-      // If the splash is already hidden, stop polling to avoid repeated logs/work.
-      if (!showSplash) {
-        clearInterval(pollTimer);
-        return;
-      }
-
-      const t = Date.now();
-      const hardDeadline = splashHardDeadlineMs ?? t;
-      const remainingMs = hardDeadline - t;
-
-      // Heartbeat every 10 seconds while splash is shown (useful for debugging).
-      if (SPLASH_DEBUG && t - lastHeartbeatAt >= 10_000) {
-        lastHeartbeatAt = t;
-        console.log('[splash] heartbeat:', {
-          remainingMs: Math.max(0, remainingMs),
-          showSplash,
-          isAppReady,
-          fontsLoaded,
-          minSplashElapsed,
-        });
-      }
-
-      if (t >= hardDeadline) {
-        const elapsedMs = t - (splashStartedAtMs ?? t);
-        if (SPLASH_DEBUG)
-          console.log(`[splash] HARD DEADLINE reached after ${elapsedMs}ms -> hiding splash`);
-        setShowSplash(false);
-        clearInterval(pollTimer);
-      }
-    }, 1000);
-
-    // If min deadline is already in the past (e.g., remount), apply immediately.
-    if (msUntilMin === 0) setMinSplashElapsed(true);
-
-    return () => {
-      if (SPLASH_DEBUG) console.log('[splash] unmounted');
-      clearTimeout(minTimer);
-      clearInterval(pollTimer);
-    };
-    // Intentionally mount-only: deadlines are module-scoped and we don't want to re-arm on rerenders.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const sub = AppState.addEventListener('change', (s) => {
+      setIsBlurred(s !== 'active');
+      focusManager.setFocused(s === 'active');
+    });
+    return () => sub.remove();
   }, []);
 
+  // Security checks in parallel
   useEffect(() => {
-    if (SPLASH_DEBUG) console.log('[splash] fontsLoaded changed:', fontsLoaded);
-  }, [fontsLoaded]);
-
-  useEffect(() => {
-    // Only allow the splash animation to start finishing once fonts are ready AND
-    // the minimum splash duration has elapsed.
-    if (fontsLoaded && minSplashElapsed) {
-      if (SPLASH_DEBUG)
-        console.log('[splash] isAppReady -> true (fontsLoaded && minSplashElapsed)');
-      setIsAppReady(true);
-    }
-  }, [fontsLoaded, minSplashElapsed]);
-
-  useEffect(() => {
-    // Safety net: if the animation callback never fires for any reason,
-    // force-hide the splash shortly after it's allowed to complete.
-    if (!showSplash) return;
-    if (!isAppReady) return;
-
-    if (SPLASH_DEBUG) console.log('[splash] isAppReady true, starting force-hide fallback timer');
-    const forceHideTimer = setTimeout(() => {
-      if (SPLASH_DEBUG) console.log('[splash] force-hide fallback fired -> hiding splash');
-      setShowSplash(false);
-    }, 1500);
-
-    return () => clearTimeout(forceHideTimer);
-  }, [isAppReady, showSplash]);
-
-  const handleSplashComplete = useCallback(() => {
-    if (SPLASH_DEBUG) console.log('[splash] onAnimationComplete -> hiding splash');
-    setShowSplash(false);
+    Promise.all([
+      enforceDeviceSecurity({ allowContinue: __DEV__ }),
+      initEncryption(),
+      import('@/utils/deviceFingerprint').then((m) => m.getDeviceFingerprint()),
+    ]).finally(() => setSecurityChecked(true));
   }, []);
 
-  if (showSplash) {
-    return (
-      <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
-        <SplashScreen isReady={isAppReady} onAnimationComplete={handleSplashComplete} />
-      </View>
-    );
-  }
+  // Hide native splash as soon as custom splash mounts
+  const onCustomSplashReady = useCallback(async () => {
+    if (splashStart.current === null) {
+      await SplashScreen.hideAsync();
+      splashStart.current = Date.now();
+    }
+  }, []);
 
-  if (!fontsLoaded) {
-    // Match the splash background to prevent any brief "flash" during startup.
-    return <View style={{ flex: 1, backgroundColor: SPLASH_BG }} />;
-  }
+  // Dismiss splash when ready
+  useEffect(() => {
+    if (!(fontsLoaded || fontError) || !securityChecked || splashStart.current === null) return;
+    const elapsed = Date.now() - splashStart.current;
+    const remaining = Math.max(0, SPLASH_MIN_MS - elapsed);
+    const t = setTimeout(() => setShowSplash(false), remaining);
+    return () => clearTimeout(t);
+  }, [fontsLoaded, fontError, securityChecked]);
+
+  // Hard timeout fallback
+  useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), SPLASH_MAX_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Post-splash: initialize session, prefetch data
+  useEffect(() => {
+    if (showSplash) return;
+
+    SessionManager.initialize();
+
+    // Deferred SDK init
+    import('@/utils/gleap').then((m) => {
+      const token = process.env.EXPO_PUBLIC_GLEAP_TOKEN ?? '';
+      if (token) { m.default.initialize(token); m.default.showFeedbackButton(false); }
+    }).catch(() => {});
+
+    // Prefetch if authenticated
+    const state = useAuthStore.getState();
+    if (state?.isAuthenticated && state?.accessToken) {
+      queryClient.prefetchQuery({ queryKey: queryKeys.station.home(), queryFn: () => stationService.getStation(), staleTime: 0 });
+      refreshCurrencyRates();
+    }
+  }, [showSplash, refreshCurrencyRates]);
+
+  const isReady = !showSplash && (fontsLoaded || !!fontError);
 
   return (
-    <ErrorBoundary>
-      <StatusBar barStyle={'dark-content'} />
-      <KeyboardProvider>
-        <View style={{ flex: 1, backgroundColor: SPLASH_BG }}>
-          <QueryClientProvider client={queryClient}>
-            <SafeAreaProvider>
-              <AppNavigator />
-            </SafeAreaProvider>
-          </QueryClientProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <BottomSheetModalProvider>
+        <ErrorBoundary>
+          <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+          <KeyboardProvider>
+            <QueryClientProvider client={queryClient}>
+              <SafeAreaProvider style={styles.root}>
+                <View style={styles.root}>
+                  <PostHogProvider
+                    apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
+                    autocapture={false}
+                    options={{ host: 'https://us.i.posthog.com', disabled: __DEV__ }}>
+                    {isReady && <AppReadyTracker />}
+                    {isReady && <PostReadyHooks />}
+                    <AppNavigator />
+                    <FeedbackPopupHost />
+                    {isBlurred && (
+                      <Suspense fallback={null}>
+                        <BlurView intensity={50} tint="regular" style={StyleSheet.absoluteFill} />
+                      </Suspense>
+                    )}
+                  </PostHogProvider>
+                </View>
+              </SafeAreaProvider>
+            </QueryClientProvider>
+          </KeyboardProvider>
+        </ErrorBoundary>
+      </BottomSheetModalProvider>
+      {((!fontsLoaded && !fontError) || showSplash) && (
+        <View style={[StyleSheet.absoluteFill, styles.splash]}>
+          <CustomSplash onMounted={onCustomSplashReady} />
         </View>
-      </KeyboardProvider>
-    </ErrorBoundary>
+      )}
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#FFFFFF' },
+  splash: { backgroundColor: SPLASH_BG, zIndex: 999 },
+  white: { backgroundColor: '#FFFFFF' },
+  black: { backgroundColor: '#000000' },
+  primary: { backgroundColor: '#ff3e00' },
+});

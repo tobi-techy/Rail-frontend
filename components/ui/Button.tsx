@@ -1,6 +1,6 @@
 import React, { forwardRef, useRef, useCallback } from 'react';
 import { Pressable, PressableProps, Text, ActivityIndicator, View, Animated } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 interface ButtonProps extends Omit<PressableProps, 'style'> {
   title: string;
@@ -34,16 +34,17 @@ export const Button = forwardRef<View, ButtonProps>(
     ref
   ) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
+    const triggerFeedback = useButtonFeedback(enableHaptics);
 
     const handlePressIn = useCallback(() => {
-      if (enableHaptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      triggerFeedback();
       Animated.spring(scaleAnim, {
-        toValue: 0.96,
+        toValue: 0.97,
         useNativeDriver: true,
         speed: 50,
         bounciness: 4,
       }).start();
-    }, [scaleAnim, enableHaptics]);
+    }, [scaleAnim, triggerFeedback]);
 
     const handlePressOut = useCallback(() => {
       Animated.spring(scaleAnim, {
@@ -62,23 +63,23 @@ export const Button = forwardRef<View, ButtonProps>(
     );
 
     const variantStyles = {
-      black: 'bg-black',
-      white: 'bg-white border border-gray-200',
-      orange: 'bg-[#FF2E01]',
-      destructive: 'bg-[#F44336]',
+      black: 'bg-midnight',
+      white: 'bg-parchment-card border border-fog',
+      orange: 'bg-ember-orange',
+      destructive: 'bg-coral-red',
       ghost: 'bg-transparent',
     }[variant];
 
     const textStyles = {
       black: 'text-white',
-      white: 'text-black',
+      white: 'text-charcoal-primary',
       orange: 'text-white',
       destructive: 'text-white',
-      ghost: 'text-text-secondary',
+      ghost: 'text-ember-orange',
     }[variant];
 
-    const sizeStyles = size === 'small' ? 'px-4 py-3' : 'px-6 py-5';
-    const textSize = size === 'small' ? 'text-caption' : 'text-lg';
+    const sizeStyles = size === 'small' ? 'min-h-[44px] px-5 py-3' : 'min-h-[58px] px-7 py-[17px]';
+    const textSize = size === 'small' ? 'text-caption' : 'text-body';
 
     return (
       <Animated.View
@@ -93,17 +94,29 @@ export const Button = forwardRef<View, ButtonProps>(
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           onPress={handlePress}
-          className={`flex-row items-center justify-center rounded-full ${variantStyles} ${sizeStyles} ${
+          accessibilityRole="button"
+          accessibilityState={{ disabled: disabled || loading, busy: loading }}
+          accessibilityLabel={loading ? `${title}, loading` : title}
+          className={`flex-row items-center justify-center overflow-hidden rounded-full ${variantStyles} ${sizeStyles} ${
             disabled ? 'opacity-50' : ''
           } ${className}`}
           {...props}>
           {loading ? (
-            <ActivityIndicator color={variant === 'black' ? '#fff' : '#000'} size="small" />
+            <ActivityIndicator
+              color={variant === 'white' ? '#343433' : variant === 'ghost' ? '#ff3e00' : '#fff'}
+              size="small"
+            />
           ) : (
-            <View className="flex-row items-center">
-              {leftIcon && <View className="mr-2">{leftIcon}</View>}
-              <Text className={`font-button  ${textSize} ${textStyles}`}>{title}</Text>
-              {rightIcon && <View className="ml-2">{rightIcon}</View>}
+            <View className="max-w-full flex-shrink flex-row items-center justify-center">
+              {leftIcon && <View className="mr-2 flex-shrink-0">{leftIcon}</View>}
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+                className={`min-w-0 flex-shrink text-center font-button ${textSize} ${textStyles}`}>
+                {title}
+              </Text>
+              {rightIcon && <View className="ml-2 flex-shrink-0">{rightIcon}</View>}
             </View>
           )}
         </Pressable>

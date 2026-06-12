@@ -1,10 +1,13 @@
 {
   "expo": {
     "name": "Rail Money",
-    "slug": "rail",
-    "version": "1.0.0",
+    "slug": "rail-money",
+    "version": "1.1.0",
     "scheme": "rail",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "web": {
       "bundler": "metro",
       "output": "static",
@@ -16,15 +19,57 @@
       "expo-secure-store",
       "expo-local-authentication",
       "expo-font",
+      ["@jamsch/expo-speech-recognition", {
+        "speechRecognitionPermission": "Allow Rail Money to transcribe your voice input.",
+        "microphonePermission": "Allow Rail Money to access the microphone for voice input."
+      }],
+      "./plugins/withStatementActivity",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FF2E01",
+          "image": "./assets/app-icon/logo-transparent.png",
+          "imageWidth": 150,
+          "resizeMode": "contain"
+        }
+      ],
       [
         "@sentry/react-native/expo",
         {
-          "organization": "YOUR_SENTRY_ORG",
-          "project": "YOUR_SENTRY_PROJECT"
+          "organization": "rail-money",
+          "project": "react-native"
+        }
+      ],
+      [
+        "@react-native-community/datetimepicker",
+        {
+          "android": {
+            "colorAccent": {
+              "light": "#FF2E01",
+              "dark": "#FF2E01"
+            }
+          }
         }
       ],
       "expo-web-browser",
-      "expo-video"
+      "expo-apple-authentication",
+      "@react-native-google-signin/google-signin",
+      "expo-localization",
+      "expo-notifications",
+      "@didit-protocol/sdk-react-native",
+      "@sentry/react-native",
+      "expo-sharing",
+      "expo-audio",
+      "@livekit/react-native-expo-plugin",
+      "@config-plugins/react-native-webrtc",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.0"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -33,33 +78,85 @@
     "orientation": "portrait",
     "icon": "./assets/app-icon/app-icon.png",
     "userInterfaceStyle": "light",
-    "assetBundlePatterns": ["**/*"],
+    "androidStatusBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#FFFFFF",
+      "translucent": false
+    },
+    "androidNavigationBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#FFFFFF"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "splash": {
-      "backgroundColor": "#FF5A00"
+      "image": "./assets/app-icon/logo-transparent.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF2E01"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.railmoney.rail",
+      "splash": {
+        "image": "./assets/app-icon/logo-transparent.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#FF2E01"
+      },
+      "associatedDomains": [
+        "webcredentials:api.userail.money",
+        "webcredentials:userail.money"
+      ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSFaceIDUsageDescription": "Use Face ID to authenticate and secure your account",
-        "NSCameraUsageDescription": "Camera access is required for QR code scanning"
+        "NSCameraUsageDescription": "Camera access is required for QR code scanning",
+        "NSPhotoLibraryUsageDescription": "Access your photo library to upload profile pictures and payment verification documents",
+        "NSLocationWhenInUseUsageDescription": "Your location helps us provide location-based services and improve your experience",
+        "NSContactsUsageDescription": "Access your contacts to send money to friends and family",
+        "NSMicrophoneUsageDescription": "Microphone access may be required during identity verification",
+        "NSNearbyInteractionUsageDescription": "This app does not use nearby interaction features directly, but a third-party SDK requires this permission",
+        "UIRequiredDeviceCapabilities": [
+          "armv7"
+        ],
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait"
+        ],
+        "UIStatusBarStyle": "UIStatusBarStyleDefault"
       },
-      "icon": "./assets/app-icon/app-icon.png"
+      "icon": "./assets/app-icon/app-icon.png",
+      "appleTeamId": "A239A6TG6R"
     },
     "android": {
+      "icon": "./assets/app-icon/app-icon.png",
+      "splash": {
+        "image": "./assets/app-icon/logo-transparent.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#FF2E01"
+      },
       "adaptiveIcon": {
-        "foregroundImage": "./assets/app-icon/logo-dark.png",
-        "backgroundColor": "#FF5A00"
+        "foregroundImage": "./assets/app-icon/app-icon.png",
+        "backgroundColor": "#FF2E01"
       },
       "package": "com.railmoney.rail",
-      "permissions": ["android.permission.USE_BIOMETRIC", "android.permission.USE_FINGERPRINT"]
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "d2824fee-1afc-48e0-a253-e72399dd968b"
+        "projectId": "66c2f975-cad6-4243-a0e9-03680d6433a1"
       }
-    }
+    },
+    "owner": "rail-money-organization"
   }
 }

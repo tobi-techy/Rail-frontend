@@ -4,9 +4,12 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { authService } from '../services';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { authService, passcodeService } from '../services';
 import { queryKeys, invalidateQueries } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
+import { useAnalytics, ANALYTICS_EVENTS } from '../../utils/analytics';
+import { SESSION_DURATION_MS, PASSCODE_SESSION_MS } from '../../utils/sessionConstants';
 import type {
   LoginRequest,
   RegisterRequest,
@@ -14,31 +17,88 @@ import type {
   ResendCodeRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
-  User,
+  VerifyResetCodeRequest,
 } from '../types';
+
+const getSessionExpiryIso = (sessionExpiresAt?: string): string => {
+  if (sessionExpiresAt) return new Date(sessionExpiresAt).toISOString();
+
+  return new Date(Date.now() + SESSION_DURATION_MS).toISOString();
+};
+
+const syncPasscodeStatus = async () => {
+  try {
+    const status = await passcodeService.getStatus();
+    useAuthStore.setState({ hasPasscode: Boolean(status.enabled) });
+  } catch {
+    // Keep the last known state on transient failures to avoid relaxing auth gates.
+  }
+};
+
+/**
+ * After a successful email/password login, grant a passcode session so the user
+ * isn't immediately redirected to /login-passcode by useProtectedRoute.
+ * The user already proved identity via credentials — requiring passcode again is redundant.
+ */
+const grantPostLoginPasscodeSession = () => {
+  const expiresAt = new Date(Date.now() + PASSCODE_SESSION_MS);
+  useAuthStore.getState().setPasscodeSession('login-granted', expiresAt.toISOString());
+};
 
 /**
  * Login mutation
  */
 export function useLogin() {
-  const queryClient = useQueryClient();
+  const { track, identify } = useAnalytics();
 
   return useMutation({
     mutationFn: (data: LoginRequest) => authService.login(data),
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
+      const nowIso = new Date().toISOString();
+
       // Update auth store with response data
       useAuthStore.setState({
         user: response.user,
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
         isAuthenticated: true,
+        pendingVerificationEmail: null,
         onboardingStatus: response.user.onboardingStatus || null,
+        lastActivityAt: nowIso,
+        tokenIssuedAt: nowIso,
+        tokenExpiresAt: getSessionExpiryIso(response.sessionExpiresAt),
       });
+
+      // Grant passcode session BEFORE syncing status so routing doesn't bounce to /login-passcode
+      grantPostLoginPasscodeSession();
+
+      await syncPasscodeStatus();
+
+      // Track analytics
+      track(ANALYTICS_EVENTS.SIGN_IN_COMPLETED, {
+        user_id: response.user.id,
+        email: response.user.email,
+        onboarding_status: response.user.onboardingStatus,
+      });
+
+      // Identify user in PostHog
+      if (response.user.id) {
+        identify(response.user.id, {
+          email: response.user.email,
+          first_name: response.user.firstName,
+          last_name: response.user.lastName,
+        });
+      }
 
       // Invalidate and refetch relevant queries
       invalidateQueries.auth();
       invalidateQueries.wallet();
       invalidateQueries.user();
+    },
+    onError: (error) => {
+      track(ANALYTICS_EVENTS.SIGN_IN_STARTED, {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     },
   });
 }
@@ -48,6 +108,8 @@ export function useLogin() {
  * IMPORTANT: Does NOT set isAuthenticated - user must verify email first
  */
 export function useRegister() {
+  const { track } = useAnalytics();
+
   return useMutation({
     mutationFn: (data: RegisterRequest) => authService.register(data),
     onSuccess: (response, variables) => {
@@ -58,6 +120,18 @@ export function useRegister() {
         isAuthenticated: false, // Explicitly ensure not authenticated
         user: null, // No user object until verified
       });
+
+      // Track signup started
+      track(ANALYTICS_EVENTS.SIGN_UP_STARTED, {
+        identifier_type: variables.email ? 'email' : 'phone',
+        identifier: variables.email || variables.phone,
+      });
+    },
+    onError: (error) => {
+      track(ANALYTICS_EVENTS.ERROR_OCCURRED, {
+        component: 'useRegister',
+        error: error instanceof Error ? error.message : 'Registration failed',
+      });
     },
   });
 }
@@ -66,29 +140,35 @@ export function useRegister() {
  * Verify email code mutation
  */
 export function useVerifyCode() {
-  const TOKEN_EXPIRY_DAYS = 7;
-  const DEFAULT_ONBOARDING_STATUS = 'wallets_pending';
+  const DEFAULT_ONBOARDING_STATUS = 'started';
 
   return useMutation({
     mutationFn: (data: VerifyCodeRequest) => authService.verifyCode(data),
     onSuccess: (response) => {
+      if (!response.user || !response.accessToken) {
+        useAuthStore.setState({ pendingVerificationEmail: null });
+        return;
+      }
+
       const now = new Date();
-      const defaultExpiryTime = new Date(now.getTime() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-      const tokenExpiresAt = response.expiresAt 
-        ? new Date(response.expiresAt)
-        : defaultExpiryTime;
-      
+      const tokenExpiresAt = getSessionExpiryIso(response.sessionExpiresAt);
+      const refreshToken = response.refreshToken || useAuthStore.getState().refreshToken;
+
       useAuthStore.setState({
         user: response.user,
         accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
+        refreshToken: refreshToken || null,
         isAuthenticated: true,
         pendingVerificationEmail: null,
-        onboardingStatus: response.user.onboardingStatus || DEFAULT_ONBOARDING_STATUS,
+        onboardingStatus:
+          response.onboarding_status || response.user.onboardingStatus || DEFAULT_ONBOARDING_STATUS,
+        currentOnboardingStep: response.onboarding?.currentStep ?? null,
         lastActivityAt: now.toISOString(),
         tokenIssuedAt: now.toISOString(),
-        tokenExpiresAt: tokenExpiresAt.toISOString(),
+        tokenExpiresAt,
       });
+
+      void syncPasscodeStatus();
     },
   });
 }
@@ -107,15 +187,27 @@ export function useResendCode() {
  */
 export function useLogout() {
   const queryClient = useQueryClient();
+  const { track } = useAnalytics();
 
   return useMutation({
     mutationFn: () => authService.logout(),
     onSuccess: () => {
+      // Track logout event
+      track(ANALYTICS_EVENTS.SIGN_OUT, {
+        timestamp: new Date().toISOString(),
+      });
+
       // Clear auth store
       useAuthStore.getState().reset();
 
       // Clear all cached data
       queryClient.clear();
+    },
+    onError: (error) => {
+      track(ANALYTICS_EVENTS.ERROR_OCCURRED, {
+        component: 'useLogout',
+        error: error instanceof Error ? error.message : 'Logout failed',
+      });
     },
   });
 }
@@ -130,6 +222,15 @@ export function useForgotPassword() {
 }
 
 /**
+ * Verify reset code mutation
+ */
+export function useVerifyResetCode() {
+  return useMutation({
+    mutationFn: (data: VerifyResetCodeRequest) => authService.verifyResetCode(data),
+  });
+}
+
+/**
  * Reset password mutation
  */
 export function useResetPassword() {
@@ -137,27 +238,6 @@ export function useResetPassword() {
     mutationFn: (data: ResetPasswordRequest) => authService.resetPassword(data),
   });
 }
-
-
-
-/**
- * Verify email mutation
- */
-export function useVerifyEmail() {
-  return useMutation({
-    mutationFn: (token: string) => authService.verifyEmail({ token }),
-    onSuccess: () => {
-      // Update user's email verified status
-      const currentUser = useAuthStore.getState().user;
-      if (currentUser) {
-        useAuthStore.setState({
-          user: { ...currentUser, emailVerified: true },
-        });
-      }
-    },
-  });
-}
-
 
 /**
  * Get current user query
@@ -170,5 +250,154 @@ export function useCurrentUser() {
     queryFn: () => authService.getCurrentUser(),
     enabled: isAuthenticated,
     staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+/**
+ * Apple Sign-In mutation
+ */
+export function useAppleSignIn() {
+  const { track, identify } = useAnalytics();
+
+  return useMutation({
+    mutationFn: async () => {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        throw new Error('Apple identity token missing');
+      }
+
+      return authService.socialLogin({
+        provider: 'apple',
+        idToken: credential.identityToken,
+        givenName: credential.fullName?.givenName ?? undefined,
+        familyName: credential.fullName?.familyName ?? undefined,
+      });
+    },
+    onSuccess: async (response) => {
+      const nowIso = new Date().toISOString();
+
+      useAuthStore.setState({
+        user: response.user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        isAuthenticated: true,
+        pendingVerificationEmail: null,
+        onboardingStatus: response.user.onboardingStatus || null,
+        lastActivityAt: nowIso,
+        tokenIssuedAt: nowIso,
+        tokenExpiresAt: getSessionExpiryIso(response.sessionExpiresAt),
+      });
+
+      grantPostLoginPasscodeSession();
+
+      await syncPasscodeStatus();
+
+      // Track analytics
+      track(ANALYTICS_EVENTS.SIGN_IN_COMPLETED, {
+        user_id: response.user.id,
+        email: response.user.email,
+        provider: 'apple',
+        onboarding_status: response.user.onboardingStatus,
+      });
+
+      // Identify user in PostHog
+      if (response.user.id) {
+        identify(response.user.id, {
+          email: response.user.email,
+          first_name: response.user.firstName,
+          last_name: response.user.lastName,
+          auth_provider: 'apple',
+        });
+      }
+
+      invalidateQueries.auth();
+      invalidateQueries.wallet();
+      invalidateQueries.user();
+    },
+  });
+}
+
+/**
+ * Google Sign-In mutation (Android)
+ * Requires EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to be set.
+ */
+export function useGoogleSignIn() {
+  const { track, identify } = useAnalytics();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { GoogleSignin, statusCodes } =
+        await import('@react-native-google-signin/google-signin');
+
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      });
+
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      const response = await GoogleSignin.signIn();
+
+      if (response.type !== 'success') {
+        throw Object.assign(new Error('Google Sign-In cancelled'), {
+          code: statusCodes.SIGN_IN_CANCELLED,
+        });
+      }
+
+      const idToken = response.data?.idToken;
+      if (!idToken) {
+        throw new Error('Google ID token missing');
+      }
+
+      return authService.socialLogin({
+        provider: 'google',
+        idToken,
+        givenName: response.data?.user?.givenName ?? undefined,
+        familyName: response.data?.user?.familyName ?? undefined,
+      });
+    },
+    onSuccess: async (response) => {
+      const nowIso = new Date().toISOString();
+
+      useAuthStore.setState({
+        user: response.user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        isAuthenticated: true,
+        pendingVerificationEmail: null,
+        onboardingStatus: response.user.onboardingStatus || null,
+        lastActivityAt: nowIso,
+        tokenIssuedAt: nowIso,
+        tokenExpiresAt: getSessionExpiryIso(response.sessionExpiresAt),
+      });
+
+      grantPostLoginPasscodeSession();
+      await syncPasscodeStatus();
+
+      track(ANALYTICS_EVENTS.SIGN_IN_COMPLETED, {
+        user_id: response.user.id,
+        email: response.user.email,
+        provider: 'google',
+        onboarding_status: response.user.onboardingStatus,
+      });
+
+      if (response.user.id) {
+        identify(response.user.id, {
+          email: response.user.email,
+          first_name: response.user.firstName,
+          last_name: response.user.lastName,
+          auth_provider: 'google',
+        });
+      }
+
+      invalidateQueries.auth();
+      invalidateQueries.wallet();
+      invalidateQueries.user();
+    },
   });
 }

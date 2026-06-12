@@ -1,60 +1,46 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, ViewProps, TouchableOpacity } from 'react-native';
-import { Eye, EyeOff } from 'lucide-react-native';
 import { useUIStore } from '@/stores';
 import { sanitizeNumber } from '@/utils/sanitizeInput';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSequence,
-  Easing,
-} from 'react-native-reanimated';
+import { Skeleton } from '@/components/atoms/Skeleton';
+import type { Currency } from '@/stores/uiStore';
+import { formatCurrencyAmount, convertFromUsd, type FxRates } from '@/utils/currency';
+import { EyeIcon, ViewOffIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export interface BalanceCardProps extends ViewProps {
   balance?: string;
   percentChange?: string;
   timeframe?: string;
-  buyingPower?: string;
   className?: string;
+  isLoading?: boolean;
 }
 
+function formatBalance(usdValue: number, currency: Currency, rates: FxRates): string {
+  const converted = convertFromUsd(usdValue, currency, rates);
+  return formatCurrencyAmount(converted, currency);
+}
+
+const DIGIT_H = 66; // text-balance-lg is 50px, lineHeight 1.1 = 55px — add 1px buffer
+
 function AnimatedBalance({ value, isVisible }: { value: string; isVisible: boolean }) {
-  const opacity = useSharedValue(1);
-  const translateY = useSharedValue(0);
-
-  useEffect(() => {
-    opacity.value = withSequence(
-      withTiming(0, { duration: 150, easing: Easing.out(Easing.ease) }),
-      withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) })
-    );
-    translateY.value = withSequence(
-      withTiming(-8, { duration: 150, easing: Easing.out(Easing.ease) }),
-      withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) })
-    );
-  }, [value]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  const maskValue = (val: string) => {
-    const sanitized = sanitizeNumber(String(val));
-    if (isVisible) return sanitized;
-    return sanitized.replace(/[\d,\.]+/g, (match) => '−'.repeat(Math.min(match.length, 6)));
-  };
-
-  const masked = maskValue(value);
-  const [whole, decimal] = masked.split('.');
+  const display = isVisible ? value : value.replace(/[0-9]/g, '•');
 
   return (
-    <Animated.View style={[{ flexDirection: 'row' }, animatedStyle]}>
-      <Text className="font-subtitle text-[50px] text-text-primary">{whole}</Text>
-      {decimal !== undefined && (
-        <Text className="font-subtitle text-[50px] text-neutral-300">.{decimal}</Text>
-      )}
-    </Animated.View>
+    <View style={{ maxWidth: '86%', flexDirection: 'row', alignItems: 'flex-end' }}>
+      <Text
+        style={{
+          height: DIGIT_H,
+          lineHeight: DIGIT_H,
+          fontFamily: 'Geist-SemiBold',
+          fontVariant: ['tabular-nums'],
+          fontSize: 50,
+          // letterSpacing: -3.8,
+          color: '#343433',
+        }}>
+        {display}
+      </Text>
+    </View>
   );
 }
 
@@ -62,64 +48,57 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   balance = '$0.00',
   percentChange = '0.00%',
   timeframe = '1D',
-  buyingPower = '$0.00',
   className,
+  isLoading,
   ...props
 }) => {
-  const { isBalanceVisible, toggleBalanceVisibility } = useUIStore();
-
-  const maskValue = (value: string) => {
-    const sanitized = sanitizeNumber(String(value));
-    if (isBalanceVisible) return sanitized;
-    return sanitized.replace(/[\d,\.]+/g, (match) => '−'.repeat(Math.min(match.length, 6)));
-  };
-
+  const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
+  const toggleBalanceVisibility = useUIStore((s) => s.toggleBalanceVisibility);
+  const currency = useUIStore((s) => s.currency);
+  const currencyRates = useUIStore((s) => s.currencyRates);
   const isNegative = percentChange.startsWith('-');
+  const rawUsd = parseFloat(balance.replace(/[^0-9.-]/g, '')) || 0;
+  const dataLoading = isLoading === true;
+  const displayBalance = dataLoading ? '---' : formatBalance(rawUsd, currency, currencyRates);
 
   return (
-    <View className={`overflow-hidden ${className || ''}`} {...props}>
-      <View className="pb-4 pt-6">
-        <View className="flex-row items-start justify-between">
-          <View>
-            <View className="mt-2 items-start gap-x-2">
-              <Text className="font-caption text-caption text-text-secondary">Total Portfolio</Text>
-              <View className="flex-row items-center gap-x-2">
-                <View className="mb-1">
-                  <AnimatedBalance value={balance} isVisible={isBalanceVisible} />
-                </View>
-                <TouchableOpacity
-                  onPress={toggleBalanceVisibility}
-                  accessibilityLabel={isBalanceVisible ? 'Hide balance' : 'Show balance'}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  {isBalanceVisible ? (
-                    <Eye size={24} color="#757575" strokeWidth={0.9} />
-                  ) : (
-                    <EyeOff size={24} color="#757575" strokeWidth={0.9} />
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
+    <View
+      className={`overflow-hidden ${className || ''}`}
+      style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
+      {...props}>
+      <View className="items-start pb-4 pt-6">
+        <Text className="mb-2 font-caption text-caption text-text-secondary">Total balance</Text>
 
-            <View className="flex-row items-center justify-between gap-x-4">
-              <View className="flex-row items-center">
-                <Text
-                  className={`font-body text-body ${isNegative ? 'text-destructive' : 'text-success'}`}>
-                  {maskValue(percentChange)}{' '}
-                  <Text className="font-subtitle text-caption text-text-secondary">
-                    {timeframe}
-                  </Text>
-                </Text>
-              </View>
-
-              <View className="flex-row items-center gap-x-1">
-                <Text className="font-body text-caption text-text-secondary">Buying Power:</Text>
-                <Text className="font-subtitle text-caption text-text-secondary">
-                  {maskValue(buyingPower)}
-                </Text>
-              </View>
-            </View>
+        {dataLoading ? (
+          <View className="gap-y-2">
+            <Skeleton className="h-9 w-48" />
+            <Skeleton className="h-4 w-24" />
           </View>
-        </View>
+        ) : (
+          <>
+            <View className="w-full flex-row items-center">
+              <AnimatedBalance value={displayBalance} isVisible={isBalanceVisible} />
+              <TouchableOpacity
+                className="ml-2 shrink-0"
+                onPress={toggleBalanceVisibility}
+                accessibilityRole="button"
+                accessibilityLabel={isBalanceVisible ? 'Hide balance' : 'Show balance'}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                {isBalanceVisible ? (
+                  <HugeiconsIcon icon={EyeIcon} size={24} color="#848281" strokeWidth={0.9} />
+                ) : (
+                  <HugeiconsIcon icon={ViewOffIcon} size={24} color="#848281" strokeWidth={0.9} />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <Text
+              className={`mt-1 font-body text-caption ${isNegative ? 'text-destructive' : 'text-success'}`}>
+              {isBalanceVisible ? sanitizeNumber(String(percentChange)) : '••••'}{' '}
+              <Text className="text-text-secondary">{timeframe}</Text>
+            </Text>
+          </>
+        )}
       </View>
     </View>
   );

@@ -1,0 +1,11 @@
+{
+  "name": "rail-tap-to-pay",
+  "version": "1.0.0",
+  "private": true,
+  "react-native": {
+    "platforms": {
+      "android": null,
+      "ios": null
+    }
+  }
+}

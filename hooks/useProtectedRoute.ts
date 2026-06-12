@@ -1,15 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import { router, useSegments, usePathname } from 'expo-router';
+import { router, useSegments, usePathname, useGlobalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
+import { authService, passcodeService } from '@/api/services';
+import { logger } from '@/lib/logger';
 import type { AuthState } from '@/types/routing.types';
 import {
   buildRouteConfig,
   determineRoute,
   validateAccessToken,
   checkWelcomeStatus,
+  normalizeRoutePath,
 } from '@/utils/routeHelpers';
 import { SessionManager } from '@/utils/sessionManager';
+import { setReturnRoute } from '@/utils/returnRoute';
+import { BACKGROUND_LOCK_GRACE_MS } from '@/utils/sessionConstants';
+
+const LOCAL_ADVANCED_STATUSES = new Set(['kyc_pending', 'kyc_approved', 'completed']);
 
 /**
  * Protected route hook that manages authentication-based navigation
@@ -19,151 +26,281 @@ import { SessionManager } from '@/utils/sessionManager';
 export function useProtectedRoute() {
   const segments = useSegments();
   const pathname = usePathname();
-  
+  const globalParams = useGlobalSearchParams<Record<string, string>>();
+
   const authState: AuthState = {
     user: useAuthStore((state) => state.user),
     isAuthenticated: useAuthStore((state) => state.isAuthenticated),
     accessToken: useAuthStore((state) => state.accessToken),
     refreshToken: useAuthStore((state) => state.refreshToken),
+    hasPasscode: useAuthStore((state) => state.hasPasscode),
     onboardingStatus: useAuthStore((state) => state.onboardingStatus),
     pendingVerificationEmail: useAuthStore((state) => state.pendingVerificationEmail),
+    lastActivityAt: useAuthStore((state) => state.lastActivityAt),
+    passcodeSessionExpiresAt: useAuthStore((state) => state.passcodeSessionExpiresAt),
+    appLockExpiresAt: useAuthStore((state) => state.appLockExpiresAt),
   };
-  
+
   const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const hasNavigatedRef = useRef(false);
   const appState = useRef(AppState.currentState);
-  const isInitialMount = useRef(true);
+  const lastForegroundRefresh = useRef(0);
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+  const paramsRef = useRef(globalParams);
+  paramsRef.current = globalParams;
+
+  const refreshBackendAuthState = useCallback(async () => {
+    const state = useAuthStore.getState();
+    if (!state.isAuthenticated || !state.accessToken) return;
+
+    // Fetch user profile and passcode status in parallel
+    const [userResult, passcodeResult] = await Promise.allSettled([
+      authService.getCurrentUser(),
+      passcodeService.getStatus(),
+    ]);
+
+    // Re-check auth state — session may have been cleared while requests were in flight
+    const currentState = useAuthStore.getState();
+    if (!currentState.isAuthenticated || !currentState.accessToken) return;
+
+    if (userResult.status === 'fulfilled') {
+      const currentUserResponse = userResult.value;
+      const backendUser = currentUserResponse?.user ?? currentUserResponse;
+      const backendOnboardingStatus =
+        currentUserResponse?.onboarding?.onboardingStatus ?? backendUser?.onboardingStatus;
+
+      if (backendUser) {
+        const localStatus = currentState.onboardingStatus;
+        const resolvedStatus =
+          localStatus &&
+          LOCAL_ADVANCED_STATUSES.has(localStatus) &&
+          !LOCAL_ADVANCED_STATUSES.has(backendOnboardingStatus ?? '')
+            ? localStatus
+            : (backendOnboardingStatus ?? currentState.onboardingStatus);
+
+        useAuthStore.setState({
+          user: backendUser,
+          onboardingStatus: resolvedStatus,
+        });
+      }
+    } else {
+      logger.warn('[Auth] Failed to refresh user profile state', {
+        component: 'useProtectedRoute',
+        action: 'refresh-user-profile',
+        error:
+          userResult.reason instanceof Error
+            ? userResult.reason.message
+            : String(userResult.reason),
+      });
+    }
+
+    if (passcodeResult.status === 'fulfilled') {
+      useAuthStore.setState({
+        hasPasscode: Boolean(passcodeResult.value.enabled),
+      });
+    } else {
+      logger.warn('[Auth] Failed to refresh passcode status', {
+        component: 'useProtectedRoute',
+        action: 'refresh-passcode-status',
+        error:
+          passcodeResult.reason instanceof Error
+            ? passcodeResult.reason.message
+            : String(passcodeResult.reason),
+      });
+    }
+  }, []);
 
   // Initialize app: validate token and check welcome status
   // Runs on every mount (app reload) and re-validates routing
   useEffect(() => {
-    const HYDRATION_DELAY_MS = 500;
-    const TOKEN_FRESHNESS_THRESHOLD_MS = 10000; // 10 seconds
+    let isMounted = true;
 
     const initializeApp = async () => {
-      console.log('[Auth] App initializing - checking routing...');
-      
+      logger.debug('[Auth] App initializing - checking routing...', {
+        component: 'useProtectedRoute',
+        action: 'initialize-app',
+      });
+
       try {
         const welcomed = await checkWelcomeStatus();
-        setHasSeenWelcome(welcomed);
-        
-        // Wait for auth store to fully hydrate from AsyncStorage
-        // This prevents race condition where tokens aren't loaded yet
-        await new Promise(resolve => setTimeout(resolve, HYDRATION_DELAY_MS));
-        
-        // Get fresh state after hydration
+        if (isMounted) setHasSeenWelcome(welcomed);
+
         const freshState = useAuthStore.getState();
         const hasValidAuthData = freshState.isAuthenticated && freshState.accessToken;
-        
-        console.log('[Auth] State after hydration:', {
+
+        // CRITICAL: Add detailed logging for debugging old user routing issues
+        logger.debug('[Auth] State after hydration (DETAILED)', {
+          component: 'useProtectedRoute',
+          action: 'hydration-complete',
           hasUser: !!freshState.user,
+          userId: freshState.user?.id,
+          isAuthenticated: freshState.isAuthenticated,
+          hasPasscode: freshState.hasPasscode,
           hasAccessToken: !!freshState.accessToken,
           hasRefreshToken: !!freshState.refreshToken,
-          isAuthenticated: freshState.isAuthenticated,
+          onboardingStatus: freshState.onboardingStatus,
+          hasValidAuthData,
+          welcomed,
         });
-        
+
         if (hasValidAuthData) {
-          // Calculate token age to determine if validation is needed
-          const { lastActivityAt } = freshState;
-          const tokenAge = lastActivityAt 
-            ? Date.now() - new Date(lastActivityAt).getTime() 
-            : Infinity;
-          
-          const isTokenFresh = tokenAge <= TOKEN_FRESHNESS_THRESHOLD_MS;
-          
-          // Only validate if token is older than threshold (not just issued)
-          if (!isTokenFresh) {
-            const isValid = await validateAccessToken();
-            if (!isValid) {
-              console.log('[Auth] Token invalid on app load');
-              SessionManager.handleSessionExpired();
+          const shouldValidate = __DEV__ ? freshState.lastActivityAt : true;
+          if (shouldValidate) {
+            try {
+              const isValid = await validateAccessToken();
+              if (!isValid) {
+                logger.info('[Auth] Token invalid on app load', {
+                  component: 'useProtectedRoute',
+                  action: 'token-validation-failed',
+                });
+                SessionManager.handleSessionExpired();
+                return;
+              }
+            } catch (validationError) {
+              logger.warn('[Auth] Token validation failed, continuing', {
+                component: 'useProtectedRoute',
+                action: 'token-validation-error',
+                error:
+                  validationError instanceof Error
+                    ? validationError.message
+                    : String(validationError),
+              });
             }
-          } else {
-            console.log('[Auth] Token recently issued, skipping validation');
           }
+
+          await refreshBackendAuthState();
+        } else if (freshState.user) {
+          // CRITICAL: User has stored credentials but no valid auth tokens
+          // This is the case for old users after app backgrounding
+          logger.info('[Auth] User has stored credentials but tokens invalid/missing', {
+            component: 'useProtectedRoute',
+            action: 'stored-credentials-detected',
+            userId: freshState.user.id,
+            hasPasscode: freshState.hasPasscode,
+          });
         }
-        
-        // Reset navigation flag to allow routing to run on reload
-        hasNavigatedRef.current = false;
       } catch (error) {
-        console.error('[Auth] Error initializing app:', error);
+        logger.error(
+          '[Auth] Error initializing app',
+          error instanceof Error ? error : new Error(String(error))
+        );
       } finally {
-        setIsReady(true);
-        isInitialMount.current = false;
+        if (isMounted) setIsReady(true);
       }
     };
-    
-    initializeApp();
-  }, []); // Run once on mount (which happens on every app reload)
+
+    if (useAuthStore.persist.hasHydrated()) {
+      void initializeApp();
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
+      void initializeApp();
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [refreshBackendAuthState]); // Run once on mount (which happens on every app reload)
 
   // Listen for app state changes (foreground/background)
+  // Reset passcode session timer on foreground (activity-based timeout)
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
-      // App is going to background - clear passcode session for security
-      if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
-        console.log('[Auth] App going to background - clearing passcode session for security');
-        
-        // Clear ONLY passcode session tokens, NOT the full session
-        const { isAuthenticated, clearPasscodeSession } = useAuthStore.getState();
-        if (isAuthenticated) {
-          clearPasscodeSession();
+    const subscription = AppState.addEventListener(
+      'change',
+      async (nextAppState: AppStateStatus) => {
+        if (nextAppState === 'background') {
+          const state = useAuthStore.getState();
+          if (state.isAuthenticated && state.hasPasscode) {
+            // Grant a 1-minute grace period before locking instead of locking
+            // immediately. This lets users briefly leave the app (e.g. to check
+            // an account number for a transfer) and return without needing to
+            // re-enter their PIN. The routing effect will navigate to
+            // /login-passcode when the app returns to foreground after expiry.
+            // We do NOT call router.replace here — navigating during background
+            // transition can corrupt navigation state and crash on next launch.
+            useAuthStore.setState({
+              appLockExpiresAt: new Date(Date.now() + BACKGROUND_LOCK_GRACE_MS).toISOString(),
+            });
+          }
         }
+
+        if (appState.current === 'background' && nextAppState === 'active') {
+          const freshState = useAuthStore.getState();
+
+          logger.debug('[Auth] App came to foreground', {
+            component: 'useProtectedRoute',
+            action: 'app-foreground',
+          });
+
+          // If session was expired on background, redirect to passcode immediately
+          if (
+            freshState.isAuthenticated &&
+            freshState.hasPasscode &&
+            SessionManager.isAppUnlockExpired()
+          ) {
+            // Don't redirect if already on the passcode screen
+            if (pathnameRef.current !== '/login-passcode') {
+              setReturnRoute(pathnameRef.current, paramsRef.current as Record<string, string>);
+              router.replace('/login-passcode' as any);
+            }
+            appState.current = nextAppState;
+            return;
+          }
+
+          // Passcode screen is already showing (navigated on background).
+          // Just check if the full auth token has expired.
+          if (freshState.isAuthenticated && freshState.accessToken) {
+            if (freshState.checkTokenExpiry()) {
+              logger.info('[Auth] 7-day token expired after app resume', {
+                component: 'useProtectedRoute',
+                action: 'token-expired-on-resume',
+              });
+              SessionManager.handleSessionExpired();
+              appState.current = nextAppState;
+              return;
+            }
+
+            freshState.updateLastActivity();
+
+            // Cooldown: skip refresh if last call was < 30s ago
+            if (Date.now() - lastForegroundRefresh.current > 30_000) {
+              lastForegroundRefresh.current = Date.now();
+              try {
+                await refreshBackendAuthState();
+              } catch (error) {
+                logger.warn('[Auth] Failed to refresh auth state on resume', {
+                  component: 'useProtectedRoute',
+                  action: 'foreground-refresh-failed',
+                  error: error instanceof Error ? error.message : String(error),
+                });
+              }
+            }
+          }
+        }
+
+        appState.current = nextAppState;
       }
-      
-      // App has come to foreground
-      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        console.log('[Auth] App came to foreground - re-validating routing');
-        
-        // Reset navigation ref to allow routing logic to run again
-        hasNavigatedRef.current = false;
-        
-        // Get fresh state from store to avoid stale closure values
-        const freshState = useAuthStore.getState();
-        
-        // Check if passcode session expired/cleared
-        if (freshState.isAuthenticated && SessionManager.isPasscodeSessionExpired()) {
-          console.log('[Auth] Passcode session expired - need to re-authenticate with passcode');
-          SessionManager.handlePasscodeSessionExpired();
-          // Navigation will happen automatically in the routing effect
-          return;
-        }
-        
-        // Update last activity since user is now active
-        if (freshState.isAuthenticated) {
-          freshState.updateLastActivity();
-        }
-        
-        // Check if 7-day token has expired
-        if (freshState.isAuthenticated && freshState.checkTokenExpiry()) {
-          console.log('[Auth] 7-day token expired after app resume');
-          SessionManager.handleSessionExpired();
-          return;
-        }
-      }
-      
-      appState.current = nextAppState;
-    });
+    );
 
     return () => {
       subscription.remove();
     };
-  }, []); // No dependencies needed - we fetch fresh state inside the handler
+  }, [refreshBackendAuthState]);
 
-  // Handle routing based on auth state
-  // Runs on mount, auth changes, and when app comes to foreground
   useEffect(() => {
     if (!isReady) {
-      console.log('[Auth] Routing check skipped - app not ready');
-      return;
-    }
-    
-    if (hasNavigatedRef.current) {
-      console.log('[Auth] Routing check skipped - already navigated in this session');
+      logger.debug('[Auth] Routing check skipped - app not ready', {
+        component: 'useProtectedRoute',
+        action: 'routing-check-skipped',
+      });
       return;
     }
 
-    // Get fresh state from store to ensure we have latest values after hydration
     const freshAuthState = useAuthStore.getState();
     const currentAuthState: AuthState = {
       user: freshAuthState.user,
@@ -171,44 +308,74 @@ export function useProtectedRoute() {
       accessToken: freshAuthState.accessToken,
       refreshToken: freshAuthState.refreshToken,
       onboardingStatus: freshAuthState.onboardingStatus,
+      hasPasscode: freshAuthState.hasPasscode,
       pendingVerificationEmail: freshAuthState.pendingVerificationEmail,
+      lastActivityAt: freshAuthState.lastActivityAt,
+      passcodeSessionExpiresAt: freshAuthState.passcodeSessionExpiresAt,
+      appLockExpiresAt: freshAuthState.appLockExpiresAt,
     };
-    
-    // Check if passcode session is valid for authenticated users
-    const hasValidPasscodeSession = currentAuthState.isAuthenticated 
-      ? !SessionManager.isPasscodeSessionExpired() 
+
+    const hasValidPasscodeSession = currentAuthState.isAuthenticated
+      ? !SessionManager.isAppUnlockExpired()
       : false;
 
     const config = buildRouteConfig(segments, pathname);
-    const targetRoute = determineRoute(currentAuthState, config, hasSeenWelcome, hasValidPasscodeSession);
-    
-    console.log('[Auth] Routing check:', {
+    const targetRoute = determineRoute(
+      currentAuthState,
+      config,
+      hasSeenWelcome,
+      hasValidPasscodeSession
+    );
+
+    logger.debug('[Auth] Routing check', {
+      component: 'useProtectedRoute',
+      action: 'routing-check',
       currentPath: pathname,
       targetRoute,
       isAuthenticated: currentAuthState.isAuthenticated,
       hasUser: !!currentAuthState.user,
-      hasToken: !!currentAuthState.accessToken,
-      hasRefreshToken: !!currentAuthState.refreshToken,
+      hasPasscode: currentAuthState.hasPasscode,
       hasValidPasscodeSession,
     });
-    
+
     if (targetRoute) {
-      console.log(`[Auth] Navigating to: ${targetRoute}`);
-      hasNavigatedRef.current = true;
+      const normalizedTargetRoute = normalizeRoutePath(targetRoute);
+      if (normalizedTargetRoute === pathname) {
+        logger.debug('[Auth] Target route already active', {
+          component: 'useProtectedRoute',
+          action: 'route-already-active',
+        });
+        return;
+      }
+
+      logger.debug(`[Auth] Navigating to: ${targetRoute}`, {
+        component: 'useProtectedRoute',
+        action: 'navigate',
+        targetRoute,
+      });
+      if (targetRoute === '/login-passcode') {
+        setReturnRoute(pathname, globalParams as Record<string, string>);
+      }
       router.replace(targetRoute as any);
     } else {
-      console.log('[Auth] No navigation needed - user is in correct place');
+      logger.debug('[Auth] No navigation needed - user is in correct place', {
+        component: 'useProtectedRoute',
+        action: 'no-navigation-needed',
+      });
     }
   }, [
     authState.user,
     authState.isAuthenticated,
     authState.accessToken,
+    authState.hasPasscode,
     authState.onboardingStatus,
     authState.pendingVerificationEmail,
+    authState.lastActivityAt,
+    authState.passcodeSessionExpiresAt,
+    authState.appLockExpiresAt,
     pathname,
     segments,
     hasSeenWelcome,
     isReady,
   ]);
 }
-

@@ -1,16 +1,17 @@
-import React from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Pressable } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
+import { GlassView } from '@/components/ui/GlassView';
+import { useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { useHaptics } from '@/hooks/useHaptics';
 
-type TabBarProps = BottomTabBarProps & {
-  rightIcon?: React.ReactNode;
-  onRightIconPress?: () => void;
-  rightIconAccessibilityLabel?: string;
-};
+import { useAIChatStore } from '@/stores/aiChatStore';
+import { MiriamCharacter } from '@/components/ai';
+
+
+// ─── Tab Item ────────────────────────────────────────────────────
 
 function TabBarItem({
   route,
@@ -25,13 +26,14 @@ function TabBarItem({
 }) {
   const scale = useSharedValue(1);
   const { options } = descriptor;
+  const { impact } = useHaptics();
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
   const onPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impact();
     const event = navigation.emit({
       type: 'tabPress',
       target: route.key,
@@ -44,9 +46,8 @@ function TabBarItem({
 
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityState={isFocused ? { selected: true } : {}}
-      accessibilityLabel={options.tabBarAccessibilityLabel}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isFocused }}
       onPress={onPress}
       onPressIn={() => {
         scale.value = withSpring(0.85, { damping: 15 });
@@ -54,103 +55,107 @@ function TabBarItem({
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 15 });
       }}
-      style={styles.item}>
+      hitSlop={8}
+      style={{ alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 }}>
       <Animated.View style={animatedStyle}>
         {options.tabBarIcon?.({
           focused: isFocused,
-          color: isFocused ? '#FF2E01' : '#ccc',
-          size: 28,
+          color: isFocused ? '#ff3e00' : '#848281',
+          size: 26,
         })}
       </Animated.View>
     </Pressable>
   );
 }
 
-export function TabBar({
-  state,
-  descriptors,
-  navigation,
-  rightIcon,
-  onRightIconPress,
-  rightIconAccessibilityLabel,
-}: TabBarProps) {
-  const insets = useSafeAreaInsets();
+// ─── AI Button ───────────────────────────────────────────────────
+
+function AIButton() {
+  const router = useRouter();
+  const { impact } = useHaptics();
+  const open = useAIChatStore((s) => s.open);
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePress = useCallback(() => {
+    impact();
+    open();
+    router.push('/ai-chat');
+  }, [impact, open, router]);
 
   return (
-    <View style={[styles.wrapper, { paddingBottom: insets.bottom + 1 }]} pointerEvents="box-none">
-      <View style={styles.row}>
-        <View style={styles.container}>
-          <BlurView intensity={40} tint="light" style={styles.blur}>
-            {state.routes.map((route, index) => (
-              <TabBarItem
-                key={route.key}
-                route={route}
-                descriptor={descriptors[route.key]}
-                isFocused={state.index === index}
-                navigation={navigation}
-              />
-            ))}
-          </BlurView>
-        </View>
-
-        {rightIcon && (
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onRightIconPress?.();
-            }}
-            style={styles.rightButton}
-            accessibilityRole="button"
-            accessibilityLabel={rightIconAccessibilityLabel}
-            accessibilityState={{ disabled: !onRightIconPress }}>
-            <BlurView intensity={80} tint="light" style={styles.rightButtonBlur}>
-              {rightIcon}
-            </BlurView>
-          </Pressable>
-        )}
-      </View>
+    <View style={{ alignItems: 'center' }}>
+      <Pressable
+        onPress={handlePress}
+        onPressIn={() => {
+          scale.value = withSpring(0.88, { damping: 15 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 15 });
+        }}
+        hitSlop={8}
+        accessibilityLabel="Miriam AI"
+        accessibilityRole="button"
+        style={{ width: 64, height: 64 }}>
+        <Animated.View style={animatedStyle}>
+          <MiriamCharacter size={64} emotion="happy" animate={true} />
+        </Animated.View>
+      </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  container: {
-    borderRadius: 40,
-    overflow: 'hidden',
-  },
-  blur: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 32,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-  },
-  item: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rightButton: {
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
-  rightButtonBlur: {
-    width: 56,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
-});
+// ─── Tab Bar ─────────────────────────────────────────────────────
+
+export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingBottom: insets.bottom + 4,
+      }}
+      pointerEvents="box-none">
+      {/* Left: glass pill with tab icons */}
+      <View style={{ borderRadius: 40, overflow: 'hidden' }}>
+        <GlassView
+          effect="clear"
+          interactive
+          fallbackColor="rgba(255,255,255,0.82)"
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            paddingHorizontal: 20,
+            paddingTop: 14,
+            paddingBottom: 12,
+            borderRadius: 40,
+          }}>
+          {state.routes.map((route, index) => (
+            <TabBarItem
+              key={route.key}
+              route={route}
+              descriptor={descriptors[route.key]}
+              isFocused={state.index === index}
+              navigation={navigation}
+            />
+          ))}
+        </GlassView>
+      </View>
+
+      {/* Right: AI button */}
+      <AIButton />
+    </View>
+  );
+}

@@ -1,0 +1,194 @@
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  COUNTRY_KYC_REQUIREMENTS,
+  COUNTRY_TAX_CONFIG,
+  INVESTMENT_PURPOSE_OPTIONS,
+  type EmploymentStatus,
+  type InvestmentPurpose,
+  type KycDisclosures,
+  type Country,
+  type TaxIdType,
+} from '@/api/types/kyc';
+
+const DEFAULT_DISCLOSURES: KycDisclosures = {
+  is_control_person: false,
+  is_affiliated_exchange_or_finra: false,
+  is_politically_exposed: false,
+  immediate_family_exposed: false,
+};
+
+// Steps in the KYC flow, tracked for resume/skip
+export const KYC_STEPS = [
+  'country',
+  'tax-id',
+  'about-you',
+  'disclosures',
+  'source-of-funds',
+] as const;
+
+export type KycStep = (typeof KYC_STEPS)[number];
+
+interface KycState {
+  country: Country;
+  taxIdType: TaxIdType;
+  taxId: string;
+  employmentStatus: EmploymentStatus | null;
+  sourceOfFunds: string | null;
+  expectedMonthlyPayments: string | null;
+  accountPurpose: string | null;
+  accountPurposeOther: string | null;
+  mostRecentOccupation: string | null;
+  actingAsIntermediary: boolean;
+  investmentPurposes: InvestmentPurpose[];
+  disclosures: KycDisclosures;
+  disclosuresConfirmed: boolean;
+  missingProfileFields: string[];
+
+  // Didit session (non-sensitive — token is short-lived, not PII)
+  diditSessionToken: string | null;
+  diditSessionId: string | null;
+  localSubmissionPendingAt: string | null;
+
+  // Persisted flow tracking — non-sensitive, survives app kills
+  completedSteps: KycStep[];
+
+  setCountry: (country: Country) => void;
+  setTaxIdType: (taxIdType: TaxIdType) => void;
+  setTaxId: (taxId: string) => void;
+  setEmploymentStatus: (value: EmploymentStatus | null) => void;
+  setSourceOfFunds: (value: string | null) => void;
+  setExpectedMonthlyPayments: (value: string | null) => void;
+  setAccountPurpose: (value: string | null) => void;
+  setAccountPurposeOther: (value: string | null) => void;
+  setMostRecentOccupation: (value: string | null) => void;
+  setActingAsIntermediary: (value: boolean) => void;
+  toggleInvestmentPurpose: (value: InvestmentPurpose) => void;
+  clearInvestmentPurposes: () => void;
+  setDisclosure: (key: keyof KycDisclosures, value: boolean) => void;
+  setDisclosuresConfirmed: (confirmed: boolean) => void;
+  setMissingProfileFields: (fields: string[]) => void;
+  setDiditSession: (sessionToken: string, sessionId: string) => void;
+  setLocalSubmissionPendingAt: (submittedAt: string | null) => void;
+  addCompletedStep: (step: KycStep) => void;
+  hasCompletedStep: (step: KycStep) => boolean;
+  resetKycState: () => void;
+}
+
+export const useKycStore = create<KycState>()(
+  persist(
+    (set, get) => ({
+      country: 'USA',
+      taxIdType: COUNTRY_TAX_CONFIG['USA'].type,
+      taxId: '',
+      employmentStatus: null,
+      sourceOfFunds: null,
+      expectedMonthlyPayments: null,
+      accountPurpose: null,
+      accountPurposeOther: null,
+      mostRecentOccupation: null,
+      actingAsIntermediary: false,
+      investmentPurposes: [],
+      disclosures: DEFAULT_DISCLOSURES,
+      disclosuresConfirmed: false,
+      missingProfileFields: [],
+      diditSessionToken: null,
+      diditSessionId: null,
+      localSubmissionPendingAt: null,
+      completedSteps: [],
+
+      setCountry: (country) =>
+        set({
+          country,
+          taxIdType: COUNTRY_TAX_CONFIG[country].type,
+          taxId: '',
+          employmentStatus: null,
+          sourceOfFunds: null,
+          expectedMonthlyPayments: null,
+          accountPurpose: null,
+          accountPurposeOther: null,
+          mostRecentOccupation: null,
+          actingAsIntermediary: false,
+          investmentPurposes: [],
+          disclosures: DEFAULT_DISCLOSURES,
+          disclosuresConfirmed: false,
+          completedSteps: [],
+        }),
+
+      setTaxIdType: (taxIdType) => set({ taxIdType }),
+      setTaxId: (taxId) => set({ taxId }),
+      setEmploymentStatus: (employmentStatus) => set({ employmentStatus }),
+      setSourceOfFunds: (sourceOfFunds) => set({ sourceOfFunds }),
+      setExpectedMonthlyPayments: (expectedMonthlyPayments) => set({ expectedMonthlyPayments }),
+      setAccountPurpose: (accountPurpose) => set({ accountPurpose }),
+      setAccountPurposeOther: (accountPurposeOther) => set({ accountPurposeOther }),
+      setMostRecentOccupation: (mostRecentOccupation) => set({ mostRecentOccupation }),
+      setActingAsIntermediary: (actingAsIntermediary) => set({ actingAsIntermediary }),
+
+      toggleInvestmentPurpose: (value) =>
+        set((state) => {
+          if (state.investmentPurposes.includes(value)) {
+            return { investmentPurposes: state.investmentPurposes.filter((v) => v !== value) };
+          }
+          if (state.investmentPurposes.length >= INVESTMENT_PURPOSE_OPTIONS.length) return state;
+          return { investmentPurposes: [...state.investmentPurposes, value] };
+        }),
+
+      clearInvestmentPurposes: () => set({ investmentPurposes: [] }),
+
+      setDisclosure: (key, value) =>
+        set((state) => ({ disclosures: { ...state.disclosures, [key]: value } })),
+
+      setDisclosuresConfirmed: (disclosuresConfirmed) => set({ disclosuresConfirmed }),
+      setMissingProfileFields: (missingProfileFields) => set({ missingProfileFields }),
+      setDiditSession: (diditSessionToken, diditSessionId) =>
+        set({ diditSessionToken, diditSessionId }),
+      setLocalSubmissionPendingAt: (localSubmissionPendingAt) => set({ localSubmissionPendingAt }),
+
+      addCompletedStep: (step) =>
+        set((state) => {
+          if (state.completedSteps.includes(step)) return state;
+          return { completedSteps: [...state.completedSteps, step] };
+        }),
+
+      hasCompletedStep: (step) => get().completedSteps.includes(step),
+
+      resetKycState: () =>
+        set({
+          country: 'USA',
+          taxIdType: COUNTRY_TAX_CONFIG['USA'].type,
+          taxId: '',
+          employmentStatus: null,
+          sourceOfFunds: null,
+          expectedMonthlyPayments: null,
+          accountPurpose: null,
+          accountPurposeOther: null,
+          mostRecentOccupation: null,
+          actingAsIntermediary: false,
+          investmentPurposes: [],
+          disclosures: DEFAULT_DISCLOSURES,
+          disclosuresConfirmed: false,
+          missingProfileFields: [],
+          diditSessionToken: null,
+          diditSessionId: null,
+          localSubmissionPendingAt: null,
+          completedSteps: [],
+        }),
+    }),
+    {
+      name: 'kyc-store',
+      storage: createJSONStorage(() => AsyncStorage),
+      // Never persist taxId or didit session tokens — transient PII/sensitive data
+      partialize: (state) => {
+        const {
+          taxId: _taxId,
+          diditSessionToken: _diditSessionToken,
+          diditSessionId: _diditSessionId,
+          ...rest
+        } = state;
+        return rest;
+      },
+    }
+  )
+);

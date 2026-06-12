@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="gTrash" x1="12" y1="5" x2="12" y2="19" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF66A6"/>
+      <stop offset="1" stop-color="#FF2D7A"/>
+    </linearGradient>
+  </defs>
+
+  <path fill="url(#gTrash)" d="M9.0 5.7c0-1.1.9-2 2-2h2.0c1.1 0 2 .9 2 2v.6h3.2c.7 0 1.2.5 1.2 1.2S18.9 8.7 18.2 8.7H5.8c-.7 0-1.2-.5-1.2-1.2S5.1 6.3 5.8 6.3H9.0v-.6Z"/>
+  <path fill="url(#gTrash)" d="M7.2 9.2h9.6c.7 0 1.2.5 1.2 1.2v7.2c0 2.0-1.2 3.2-3.2 3.2H9.2c-2.0 0-3.2-1.2-3.2-3.2v-7.2c0-.7.5-1.2 1.2-1.2Z"/>
+  <path fill="#FFFFFF" fill-opacity=".22" d="M10.2 11.2c.6 0 1.0.4 1.0 1.0v6.0c0 .6-.4 1.0-1.0 1.0s-1.0-.4-1.0-1.0v-6.0c0-.6.4-1.0 1.0-1.0ZM13.8 11.2c.6 0 1.0.4 1.0 1.0v6.0c0 .6-.4 1.0-1.0 1.0s-1.0-.4-1.0-1.0v-6.0c0-.6.4-1.0 1.0-1.0Z"/>
+</svg>

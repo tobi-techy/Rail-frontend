@@ -1,36 +1,22 @@
-import { Platform } from 'react-native';
+import { RateLimiter as BaseRateLimiter } from './rateLimiter';
 
 /**
- * Rate limiter for sensitive operations
+ * Rate limiter for sensitive operations.
+ * Wraps the shared RateLimiter with the legacy check/reset/getRemainingTime API.
  */
 class RateLimiter {
-  private attempts: Map<string, { count: number; resetAt: number }> = new Map();
+  private base = new BaseRateLimiter();
 
   check(key: string, maxAttempts: number, windowMs: number): boolean {
-    const now = Date.now();
-    const record = this.attempts.get(key);
-
-    if (!record || now > record.resetAt) {
-      this.attempts.set(key, { count: 1, resetAt: now + windowMs });
-      return true;
-    }
-
-    if (record.count >= maxAttempts) {
-      return false;
-    }
-
-    record.count++;
-    return true;
+    return this.base.isAllowed(key, maxAttempts, windowMs);
   }
 
   reset(key: string) {
-    this.attempts.delete(key);
+    this.base.reset(key);
   }
 
   getRemainingTime(key: string): number {
-    const record = this.attempts.get(key);
-    if (!record) return 0;
-    return Math.max(0, record.resetAt - Date.now());
+    return this.base.getResetTime(key);
   }
 }
 
@@ -63,17 +49,11 @@ export const maskSensitiveData = (data: Record<string, unknown>): Record<string,
 };
 
 /**
- * Validate that a string doesn't contain potential injection attacks
+ * Validate that a string doesn't contain potential injection attacks.
+ * Used at form submission sites to sanitize user input.
  */
 export const isSafeInput = (input: string): boolean => {
-  const dangerousPatterns = [
-    /<script/i,
-    /javascript:/i,
-    /on\w+=/i,
-    /data:/i,
-    /vbscript:/i,
-  ];
-
+  const dangerousPatterns = [/<script/i, /javascript:/i, /on\w+=/i, /data:/i, /vbscript:/i];
   return !dangerousPatterns.some((pattern) => pattern.test(input));
 };
 

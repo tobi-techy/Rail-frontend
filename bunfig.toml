@@ -36,7 +36,7 @@ coverageThreshold = 80
 
 [define]
 # Environment variable definitions for build optimization
-"process.env.NODE_ENV" = "development"
+"process.env.NODE_ENV" = "'development'"
 
 # Performance optimizations
 [loader]
@@ -50,7 +50,3 @@ coverageThreshold = 80
 ".otf" = "file"
 ".woff" = "file"
 ".woff2" = "file"
-
-# Telemetry
-[telemetry]
-disabled = false

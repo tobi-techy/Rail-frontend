@@ -1,0 +1,23 @@
+diff --git a/node_modules/react-native-ssl-pinning/android/build.gradle b/node_modules/react-native-ssl-pinning/android/build.gradle
+index d1d9c39..fd9feab 100644
+--- a/node_modules/react-native-ssl-pinning/android/build.gradle
++++ b/node_modules/react-native-ssl-pinning/android/build.gradle
+@@ -1,11 +1,7 @@
+-
+ buildscript {
+     repositories {
+-        jcenter()
+-    }
+-
+-    dependencies {
+-        classpath 'com.android.tools.build:gradle:2.3.0'
++        google()
++        mavenCentral()
+     }
+ }
+ 
+@@ -38,4 +34,3 @@ dependencies {
+     implementation "com.squareup.okhttp3:logging-interceptor:4.9.0"
+     implementation "com.squareup.okhttp3:okhttp-urlconnection:4.9.0"
+ }
+-  

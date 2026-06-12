@@ -1,75 +1,49 @@
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
-import { useNavigation } from 'expo-router';
-import React, { useCallback, useLayoutEffect, useState, useMemo } from 'react';
-import { Chart, BalanceCard } from '@/components';
-import { Avatar } from '@rneui/base';
-import { usePortfolioOverview } from '@/api';
-import { ArrowDown, PlusIcon } from 'lucide-react-native';
-import { Button } from '../components/ui';
+import React, { useCallback, useLayoutEffect, useState } from 'react';
+import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { useNavigation, router } from 'expo-router';
+import { useStation } from '@/api/hooks/useStation';
+import { useAuthStore } from '@/stores/authStore';
+import { invalidateQueries } from '@/api/queryClient';
+import { formatCurrencyAmount } from '@/utils/currency';
+import { ShieldKeyIcon, Key01Icon, ArrowRight01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+
+const fmt = (v: string | undefined) => formatCurrencyAmount(parseFloat(v ?? '0') || 0, 'USD');
 
 const Profile = () => {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
+  const { data: station, refetch } = useStation();
+  const user = useAuthStore((s) => s.user);
 
-  // Fetch portfolio overview with automatic refetching
-  const { data: portfolio, isError, error, refetch } = usePortfolioOverview();
+  const initials =
+    [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join('').toUpperCase() || '?';
 
-  // Pull to refresh handler
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      await refetch();
-    } finally {
-      setRefreshing(false);
-    }
+    await Promise.all([refetch(), invalidateQueries.station()]);
+    setRefreshing(false);
   }, [refetch]);
-
-  // Format currency with proper decimals
-  const formatCurrency = (value: string) => {
-    const num = parseFloat(value);
-    return isNaN(num) ? '$0.00' : `$${num.toFixed(2)}`;
-  };
-
-  // Format percentage with sign
-  const formatPercentage = (value: number) => {
-    const sign = value >= 0 ? '+' : '';
-    return `${sign}${value.toFixed(2)}%`;
-  };
-
-  // Only show error if no cached data exists and it's not a 404
-  const is404 = error?.error?.code === 'HTTP_404';
-  const showError = isError && !portfolio && !is404;
-
-  // Use loading placeholder values when no data yet
-  const displayBalance = portfolio ? formatCurrency(portfolio.totalPortfolio) : '$00.00';
-  const displayPerformance = portfolio ? formatPercentage(portfolio.performanceLast30d) : '---%';
-  const displayBuyingPower = portfolio ? formatCurrency(portfolio.buyingPower) : '$---';
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
       headerLeft: () => (
         <View className="items-start pl-[14px]">
-          <Text className="font-body-bold text-[40px] font-bold text-[#000] ">Portfolio</Text>
+          <Text className="font-body-bold text-[40px] font-bold text-[#000]">Portfolio</Text>
         </View>
       ),
       headerRight: () => (
-        <View className="flex-row items-center gap-x-[12px] pr-[14px]">
-          <Avatar size={40} rounded title="Fc" containerStyle={{ backgroundColor: '#3d4db7' }} />
+        <View className="mr-[14px] h-10 w-10 items-center justify-center rounded-full bg-[#3d4db7]">
+          <Text className="font-body-bold text-base text-white">{initials}</Text>
         </View>
       ),
       title: '',
-      headerStyle: {
-        backgroundColor: 'transparent',
-      },
+      headerStyle: { backgroundColor: 'transparent' },
     });
-  }, [navigation]);
-  // Prepare chart data (7 points) based on portfolio total (flat series)
-  const chartValue = portfolio ? parseFloat(portfolio.totalPortfolio) || 0 : 0;
-  const chartData = useMemo(
-    () => Array.from({ length: 7 }, () => ({ value: chartValue })),
-    [chartValue]
-  );
+  }, [navigation, initials]);
+
+  const name = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Your Account';
 
   return (
     <ScrollView
@@ -77,29 +51,80 @@ const Profile = () => {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
       }>
-      <View className="px-[14px] ">
-        <BalanceCard
-          balance={displayBalance}
-          percentChange={displayPerformance}
-          buyingPower={displayBuyingPower}
-          timeframe="Last 30d"
-          className="rounded-x"
-        />
+      <View className="gap-4 px-[14px] pb-8 pt-2">
+        <Text className="font-body text-lg text-text-secondary">{name}</Text>
 
-        <View className="mt-4 flex-row gap-3">
-          <Button
-            title="Apply"
-            // onPress={() => router.navigate('/deposit')}
-            leftIcon={<PlusIcon size={24} color="white" />}
-            size="small"
-          />
-          {/*<Button
-            title=""
-            // onPress={() => router.navigate('/withdraw')}
-            leftIcon={<ArrowDown size={24} color="black" />}
-            size="small"
-            variant="white"
-          />*/}
+        <View className="gap-3 rounded-2xl bg-[#f7f2e8] p-5">
+          <Text className="font-caption text-sm text-text-secondary">Total Balance</Text>
+          <Text className="font-body-bold text-4xl font-bold text-[#000]">
+            {fmt(station?.total_balance)}
+          </Text>
+        </View>
+
+        <View className="flex-row gap-3">
+          <View className="flex-1 gap-1 rounded-2xl bg-[#f7f2e8] p-4">
+            <Text className="font-caption text-xs text-text-secondary">Spend</Text>
+            <Text className="font-body-bold text-xl font-bold text-[#000]">
+              {fmt(station?.spend_balance)}
+            </Text>
+          </View>
+          <View className="flex-1 gap-1 rounded-2xl bg-[#f7f2e8] p-4">
+            <Text className="font-caption text-xs text-text-secondary">Invest</Text>
+            <Text className="font-body-bold text-xl font-bold text-[#000]">
+              {fmt(station?.invest_balance)}
+            </Text>
+          </View>
+        </View>
+
+        {(station?.recent_activity?.length ?? 0) > 0 && (
+          <View className="gap-2">
+            <Text className="font-body-bold text-base font-semibold text-[#000]">
+              Recent Activity
+            </Text>
+            {station?.recent_activity?.slice(0, 5).map((item) => (
+              <View
+                key={item.id}
+                className="flex-row items-center justify-between rounded-lg bg-[#f7f2e8] px-4 py-3">
+                <Text className="font-body text-sm text-[#000]">{item.description}</Text>
+                <Text className="font-body-bold text-sm font-semibold text-[#000]">
+                  {fmt(item.amount)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Security */}
+        <View className="gap-2">
+          <Text className="font-body-bold text-base font-semibold text-[#000]">Security</Text>
+          <Pressable
+            onPress={() => router.push('/whitelist' as never)}
+            className="flex-row items-center rounded-2xl bg-[#f7f2e8] p-4">
+            <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-warm-canvas">
+              <HugeiconsIcon icon={ShieldKeyIcon} size={18} color="#848281" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-subtitle text-sm text-[#000]">Withdrawal Whitelist</Text>
+              <Text className="mt-0.5 font-caption text-xs text-text-secondary">
+                Manage approved withdrawal addresses
+              </Text>
+            </View>
+            <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#848281" />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/passkey-settings' as never)}
+            className="flex-row items-center rounded-2xl bg-[#f7f2e8] p-4">
+            <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-warm-canvas">
+              <HugeiconsIcon icon={Key01Icon} size={18} color="#848281" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-subtitle text-sm text-[#000]">Passkeys</Text>
+              <Text className="mt-0.5 font-caption text-xs text-text-secondary">
+                Manage passkeys for fast authorization
+              </Text>
+            </View>
+            <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#848281" />
+          </Pressable>
         </View>
       </View>
     </ScrollView>

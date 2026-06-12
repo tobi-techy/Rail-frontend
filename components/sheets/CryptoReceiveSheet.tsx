@@ -1,0 +1,200 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, ActivityIndicator, Pressable } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import QRCodeStyled from 'react-native-qrcode-styled';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
+import { Button } from '../ui';
+import { useWalletAddresses, useGetDepositAddress } from '@/api/hooks/useWallet';
+import { getChainConfig, isEVMChain, isSolanaChain } from '@/utils/chains';
+import { useHaptics } from '@/hooks/useHaptics';
+import { UsdcIcon } from '@/assets/svg';
+import { ChainLogo } from '@/components/ChainLogo';
+import type { WalletChain } from '@/api/types';
+import { CheckmarkCircle01Icon, Copy01Icon, RefreshIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+
+interface CryptoReceiveSheetProps {
+  visible: boolean;
+  onClose: () => void;
+  chain?: WalletChain;
+}
+
+export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoReceiveSheetProps) {
+  const chainConfig = getChainConfig(chain);
+  const { data: wallet, isLoading, isError, error, refetch } = useWalletAddresses(chain);
+  const provisionWallet = useGetDepositAddress();
+  const [copied, setCopied] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
+  const { notification, selection } = useHaptics();
+  const tokenLabel = chainConfig.token;
+  const TokenBadge = UsdcIcon;
+
+  // Auto-provision wallet when GET returns 404 (wallet not created yet)
+  useEffect(() => {
+    if (!visible) {
+      setCopied(false);
+      setProvisioning(false);
+      return;
+    }
+    const status = (error as any)?.status;
+    if (isError && (status === 404 || status === undefined) && !provisioning) {
+      setProvisioning(true);
+      provisionWallet.mutate(
+        { tokenId: 'usdc', network: chain },
+        {
+          onSuccess: () => {
+            refetch();
+            setProvisioning(false);
+          },
+          onError: () => setProvisioning(false),
+        }
+      );
+    }
+  }, [visible, isError, error, chain]);
+
+  const address = wallet?.address ?? '';
+
+  const isSolana = isSolanaChain(chain);
+  const usdcMint =
+    process.env.EXPO_PUBLIC_SOLANA_USDC_MINT ?? 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+  const qrValue =
+    isSolana && address ? `solana:${address}?spl-token=${usdcMint}&label=Rail` : address;
+
+  const handleCopy = useCallback(async () => {
+    if (!address) return;
+    await Clipboard.setStringAsync(address);
+    notification();
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [address, notification]);
+
+  const header = (
+    <View className="mb-5 flex-row items-center gap-3">
+      <View className="relative size-12">
+        <View
+          className="size-12 items-center justify-center rounded-full"
+          style={{ backgroundColor: chainConfig.color + '18' }}>
+          <ChainLogo chain={chain} size={28} />
+        </View>
+        <View className="absolute -bottom-1 -right-1 size-5 items-center justify-center rounded-full bg-parchment-card shadow-sm">
+          <TokenBadge width={14} height={14} />
+        </View>
+      </View>
+      <View>
+        <Text className="font-subtitle text-[20px] text-text-primary">Receive {tokenLabel}</Text>
+        <Text className="font-body text-[13px] text-text-secondary">on {chainConfig.label}</Text>
+      </View>
+    </View>
+  );
+
+  if (isLoading || provisioning) {
+    return (
+      <GorhomBottomSheet visible={visible} onClose={onClose}>
+        {header}
+        <View className="items-center justify-center py-16">
+          <ActivityIndicator size="small" color="#000" />
+          <Text className="mt-3 font-body text-sm text-text-secondary">
+            {provisioning ? 'Setting up your wallet…' : 'Loading wallet…'}
+          </Text>
+        </View>
+      </GorhomBottomSheet>
+    );
+  }
+
+  if (isError || (!isLoading && !address)) {
+    const errCode = (error as any)?.data?.code;
+    const errMsg =
+      errCode === 'kyc_required'
+        ? 'Complete identity verification before receiving crypto.'
+        : errCode === 'has_not_accepted_tos'
+          ? 'Accept the Terms of Service to receive crypto.'
+          : 'Please check your connection and try again.';
+    return (
+      <GorhomBottomSheet visible={visible} onClose={onClose}>
+        {header}
+        <View className="items-center justify-center py-12">
+          <Text className="mb-2 font-subtitle text-base text-text-primary">
+            Unable to load wallet
+          </Text>
+          <Text className="mb-5 text-center font-body text-sm text-text-secondary">{errMsg}</Text>
+          {!errCode && (
+            <Pressable
+              onPress={() => {
+                selection();
+                refetch();
+              }}
+              className="flex-row items-center gap-2 rounded-full bg-stone-surface px-5 py-2.5"
+              hitSlop={8}>
+              <HugeiconsIcon icon={RefreshIcon} size={16} color="#474645" />
+              <Text className="font-subtitle text-sm text-graphite">Retry</Text>
+            </Pressable>
+          )}
+        </View>
+      </GorhomBottomSheet>
+    );
+  }
+
+  return (
+    <GorhomBottomSheet visible={visible} onClose={onClose}>
+      {header}
+
+      <View className="items-center">
+        {/* QR Code */}
+        <View
+          className="mb-5 rounded-2xl p-4"
+          style={{
+            backgroundColor: chainConfig.color + '08',
+            borderWidth: 1,
+            borderColor: chainConfig.color + '20',
+          }}>
+          <QRCodeStyled
+            data={qrValue}
+            style={{ backgroundColor: 'white' }}
+            padding={12}
+            size={240}
+            pieceBorderRadius={4}
+            isPiecesGlued
+            color={chainConfig.color}
+            errorCorrectionLevel="H"
+          />
+        </View>
+
+        {/* Address */}
+        <Text
+          className="mb-3 px-4 text-center font-mono text-[13px] leading-5 text-text-primary"
+          selectable
+          numberOfLines={2}>
+          {address}
+        </Text>
+
+        {/* Warning */}
+        <Text className="mb-5 text-center font-caption text-xs text-text-secondary">
+          ⓘ {chainConfig.warning}
+          {'\n'}NFTs and other tokens are not supported.
+        </Text>
+
+        {isEVMChain(chain) && (
+          <Text className="mb-4 text-center font-caption text-xs text-text-secondary">
+            This address is shared across EVM networks (Ethereum, Arbitrum, Optimism, Polygon, Base,
+            Avalanche).
+          </Text>
+        )}
+
+        <Button
+          title={copied ? 'Copied!' : 'Copy address'}
+          onPress={handleCopy}
+          leftIcon={
+            copied ? (
+              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={18} color="#16a34a" />
+            ) : (
+              <HugeiconsIcon icon={Copy01Icon} size={18} color="#000" />
+            )
+          }
+          variant="white"
+          size="large"
+          className="w-full"
+        />
+      </View>
+    </GorhomBottomSheet>
+  );
+}

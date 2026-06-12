@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Modal, FlatList, TextInput } from 'react-native';
+import { View, Text, Pressable, Modal, FlatList } from 'react-native';
 import { Ionicons } from './SafeIonicons';
+import { InputField } from './InputField';
 
 interface Country {
   code: string;
@@ -15,6 +16,7 @@ interface CountryPickerProps {
   onSelect: (country: Country) => void;
   error?: string;
   required?: boolean;
+  variant?: 'light' | 'dark' | 'blended';
 }
 
 // Common countries list with flags
@@ -85,22 +87,38 @@ const COUNTRIES: Country[] = [
   { code: 'NZ', name: 'New Zealand', flag: '🇳🇿' },
 ];
 
-export function CountryPicker({ 
-  label, 
-  placeholder = "Select your country", 
-  value, 
-  onSelect, 
+export function CountryPicker({
+  label,
+  placeholder = 'Select your country',
+  value,
+  onSelect,
   error,
-  required = false 
+  required = false,
+  variant = 'blended',
 }: CountryPickerProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const isDark = variant === 'dark';
+  const hasError = !!error;
 
-  const selectedCountry = COUNTRIES.find(country => country.name === value);
-  
-  const filteredCountries = COUNTRIES.filter(country =>
+  const selectedCountry = COUNTRIES.find((country) => country.name === value);
+
+  const filteredCountries = COUNTRIES.filter((country) =>
     country.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const getContainerStyle = () => {
+    if (isDark) {
+      return `h-[56px] rounded-lg border px-4 ${hasError ? 'border-destructive' : 'border-white/30'} bg-white/5`;
+    }
+    if (hasError) {
+      return 'h-[56px] rounded-lg border border-destructive bg-parchment-card px-4';
+    }
+    if (isModalVisible) {
+      return 'h-[56px] rounded-lg border border-fog bg-parchment-card px-4';
+    }
+    return 'h-[56px] rounded-lg border border-[#f7f2e8] bg-parchment-card px-4';
+  };
 
   const handleCountrySelect = (country: Country) => {
     onSelect(country);
@@ -111,108 +129,91 @@ export function CountryPicker({
   const renderCountryItem = ({ item }: { item: Country }) => (
     <Pressable
       onPress={() => handleCountrySelect(item)}
-      className="flex-row items-center px-4 py-3 border-b border-gray-100"
-    >
-      <Text className="text-2xl mr-3">{item.flag}</Text>
-      <Text className="text-base text-text-primary font-heading-regular flex-1">
-        {item.name}
-      </Text>
+      className="flex-row items-center border-b border-fog/40 px-5 py-3">
+      <Text className="mr-3 text-2xl">{item.flag}</Text>
+      <Text className="flex-1 font-body text-body text-text-primary">{item.name}</Text>
     </Pressable>
   );
 
   return (
-    <View className="space-y-2">
-      {/* Label */}
+    <View className={isDark ? 'mb-2' : 'mb-4'}>
       {label && (
-        <View className="flex-row items-center">
-          <Text className="text-sm font-heading-medium text-text-primary">
+        <View className="mb-1 flex-row">
+          <Text
+            className={`font-subtitle text-body ${isDark ? 'text-white/60' : 'text-text-primary'}`}>
             {label}
           </Text>
           {required && (
-            <Text className="text-sm text-red-500 ml-1">*</Text>
+            <Text
+              className={`font-subtitle text-body ${isDark ? 'text-white/60' : 'text-destructive'}`}>
+              {' '}
+              *
+            </Text>
           )}
         </View>
       )}
 
-      {/* Picker Button */}
       <Pressable
         onPress={() => setIsModalVisible(true)}
-        className={`
-          flex-row items-center justify-between px-4 py-4 
-          border rounded-xl bg-white
-          ${error ? 'border-red-500' : 'border-gray-300'}
-          ${selectedCountry ? '' : ''}
-        `}
-      >
-        <View className="flex-row items-center flex-1">
+        className={`flex-row items-center justify-between ${getContainerStyle()}`}>
+        <View className="flex-1 flex-row items-center">
           {selectedCountry ? (
             <>
-              <Text className="text-2xl mr-3">{selectedCountry.flag}</Text>
-              <Text className="text-base text-text-primary font-heading-regular">
+              <Text className="mr-3 text-2xl">{selectedCountry.flag}</Text>
+              <Text
+                className={`font-body text-body ${isDark ? 'text-white' : 'text-text-primary'}`}>
                 {selectedCountry.name}
               </Text>
             </>
           ) : (
-            <Text className="text-base text-text-tertiary font-heading-regular">
+            <Text
+              className={`font-body text-body ${isDark ? 'text-white/50' : 'text-text-tertiary'}`}>
               {placeholder}
             </Text>
           )}
         </View>
-        <Ionicons 
-          name="chevron-down" 
-          size={20} 
-          color="#A0A0A0" 
+        <Ionicons
+          name="chevron-down"
+          size={20}
+          color={hasError ? '#ff2b3a' : isDark ? '#FFFFFF' : isModalVisible ? '#0090ff' : '#848281'}
         />
       </Pressable>
 
-      {/* Error Message */}
       {error && (
-        <Text className="text-sm text-red-500 font-heading-regular">
+        <Text
+          className={`mt-1 font-caption text-caption ${isDark ? 'text-white' : 'text-destructive'}`}>
           {error}
         </Text>
       )}
 
-      {/* Modal */}
-      <Modal
-        visible={isModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <View className="flex-1 bg-white">
-          {/* Header */}
-          <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200">
-            <Text className="text-lg font-heading-bold text-text-primary">
-              Select Country
-            </Text>
-            <Pressable
-              onPress={() => setIsModalVisible(false)}
-              className="p-2"
-            >
+      <Modal visible={isModalVisible} animationType="slide" presentationStyle="pageSheet">
+        <View className="flex-1 bg-parchment-card">
+          <View className="flex-row items-center justify-between border-b border-fog/40 px-5 py-4">
+            <Text className="font-subtitle text-[30px] text-text-primary">Select Country</Text>
+            <Pressable onPress={() => setIsModalVisible(false)} className="p-2">
               <Ionicons name="close" size={24} color="#000000" />
             </Pressable>
           </View>
 
-          {/* Search */}
-          <View className="px-4 py-3 border-b border-gray-200">
-            <View className="flex-row items-center px-4 py-3 border border-gray-300 rounded-xl bg-gray-50">
-              <Ionicons name="search" size={20} color="#A0A0A0" />
-              <TextInput
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Search countries..."
-                className="flex-1 ml-3 text-base font-heading-regular text-text-primary"
-                placeholderTextColor="#A0A0A0"
-              />
-            </View>
+          <View className="border-b border-fog/40 px-5 py-3">
+            <InputField
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search countries..."
+              icon="search-outline"
+              density="compact"
+              inputWrapperClassName="rounded-2xl border-transparent bg-neutral-100"
+            />
           </View>
 
-          {/* Countries List */}
           <FlatList
             data={filteredCountries}
             renderItem={renderCountryItem}
             keyExtractor={(item) => item.code}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
             className="flex-1"
+            contentContainerStyle={{ paddingBottom: 24 }}
           />
         </View>
       </Modal>

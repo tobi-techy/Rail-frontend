@@ -42,6 +42,6 @@ export const formatCurrencyForA11y = (amount: number, currency = 'USD'): string 
     style: 'currency',
     currency,
   }).format(amount);
-  
+
   return `${formatted.replace('$', '')} dollars`;
 };

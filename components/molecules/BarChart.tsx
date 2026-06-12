@@ -104,7 +104,7 @@ export function BarChart({
           entering={FadeIn.duration(300)}
           exiting={FadeOut.duration(200)}
           key={selectedPeriod}
-          className="mb-3 text-center font-body text-xs text-neutral-400">
+          className="mb-3 text-center font-body text-xs text-ash">
           {subtitle}
         </Animated.Text>
       )}
@@ -167,9 +167,10 @@ function PeriodButton({
         scale.value = withSpring(1, { damping: 15 });
       }}>
       <Animated.View
-        className={`mx-1 rounded-full px-4 py-2 ${isActive ? 'bg-neutral-100' : ''}`}
+        className={`mx-1 rounded-full px-4 py-2 ${isActive ? 'bg-stone-surface' : ''}`}
         style={animatedStyle}>
-        <Text className={`text-sm font-medium ${isActive ? 'text-black' : 'text-neutral-300'}`}>
+        <Text
+          className={`text-sm font-medium ${isActive ? 'text-charcoal-primary' : 'text-smoke'}`}>
           {period}
         </Text>
       </Animated.View>

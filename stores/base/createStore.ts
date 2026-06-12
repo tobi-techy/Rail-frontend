@@ -24,7 +24,9 @@ export function createDomainStore<State extends object, Actions extends object>(
     return create<State & Actions>()(storeCreator);
   }
 
-  const storage = options.encrypt ? createSecureStorage(name) : createJSONStorage(() => AsyncStorage);
+  const storage = options.encrypt
+    ? createSecureStorage(name)
+    : createJSONStorage(() => AsyncStorage);
 
   return create<State & Actions>()(
     persist(storeCreator, {
@@ -66,7 +68,9 @@ function createSecureStorage(name: string) {
           delete value.refreshToken;
         }
         await AsyncStorage.setItem(key, JSON.stringify(value));
-      } catch {}
+      } catch (error) {
+        console.warn(`[createSecureStorage] Failed to persist ${name}:`, error);
+      }
     },
     removeItem: async (key: string) => {
       await AsyncStorage.removeItem(key);

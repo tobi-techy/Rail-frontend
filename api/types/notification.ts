@@ -1,24 +1,35 @@
-// ============= Notification Types =============
-
-import { PaginationParams, PaginatedResponse } from './common';
+/**
+ * Notification Types
+ */
 
 export interface Notification {
   id: string;
-  type: 'transaction' | 'security' | 'system' | 'promotion';
+  user_id: string;
+  type: string;
   title: string;
-  message: string;
+  body: string;
+  data?: Record<string, any>;
+  image_url?: string;
+  action_url?: string;
   read: boolean;
-  data?: any;
-  createdAt: string;
+  read_at?: string;
+  created_at: string;
 }
 
-export interface GetNotificationsRequest extends PaginationParams {
-  type?: Notification['type'];
-  unreadOnly?: boolean;
+export interface NotificationsResponse {
+  notifications: Notification[];
+  limit: number;
+  offset: number;
 }
 
-export interface GetNotificationsResponse extends PaginatedResponse<Notification> {}
+export interface UnreadCountResponse {
+  unread_count: number;
+}
 
-export interface MarkNotificationReadRequest {
-  notificationIds: string[];
+export interface RegisterDeviceTokenRequest {
+  token: string;
+  platform: 'ios' | 'android' | 'web';
+  app_version?: string;
+  device_model?: string;
+  os_version?: string;
 }

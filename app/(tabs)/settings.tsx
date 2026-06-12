@@ -1,238 +1,538 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Trash2, LogOut, PieChart } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
-import { useNavigation } from 'expo-router';
-import { useLayoutEffect, useState, useEffect, type ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BottomSheet, SettingsSheet } from '@/components/sheets';
-import { SegmentedSlider } from '@/components/molecules';
-import { useAuthStore } from '@/stores/authStore';
-import { Button } from '@/components/ui';
+import { View, Text, ScrollView, ActivityIndicator, Switch, Pressable } from 'react-native';
+import { Passkey } from 'react-native-passkey';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { router } from 'expo-router';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
 
-type SettingItem = { icon: ReactNode; label: string; onPress?: () => void; danger?: boolean };
+import { GorhomBottomSheet, SettingsSheet } from '@/components/sheets';
+import { SegmentedSlider } from '@/components/molecules';
+import { Button, Input } from '@/components/ui';
+import { useAuthStore } from '@/stores/authStore';
+import { useUIStore } from '@/stores';
+import type { Currency } from '@/stores/uiStore';
+import { logger } from '@/lib/logger';
+import { useAllocationBalances, useEnableAllocationMode } from '@/api/hooks';
+import gleap from '@/utils/gleap';
+import { formatFxUpdatedAt, migrateLegacyCurrency } from '@/utils/currency';
+import { usePinChange, sanitizePin } from '@/hooks/usePinChange';
+import { useSpendSettings, clampAlloc } from '@/hooks/useSpendSettings';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { useBiometric } from '@/hooks/useBiometric';
+import {
+  ArrowLeftRightIcon,
+  ChartUpIcon,
+  Delete02Icon,
+  EyeIcon,
+  FingerPrintIcon,
+  HeadphonesIcon,
+  InternetIcon,
+  Key01Icon,
+  LockIcon,
+  Logout01Icon,
+  Notification03Icon,
+  RefreshIcon,
+  RepeatIcon,
+  BalanceScaleIcon,
+  Shield01Icon,
+  ShieldKeyIcon,
+  SmartPhone01Icon,
+  UserGroupIcon,
+  ViewOffIcon,
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import * as Haptics from '@/utils/platformHaptics';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const CURRENCIES: Currency[] = ['USD', 'EUR'];
+const CURRENCY_LABELS: Record<Currency, string> = {
+  USD: 'US Dollar (USD)',
+  EUR: 'Euro (EUR)',
+  GBP: 'British Pound (GBP)',
+  NGN: 'Nigerian Naira (NGN)',
+  GHS: 'Ghanaian Cedi (GHS)',
+  KES: 'Kenyan Shilling (KES)',
+  CAD: 'Canadian Dollar (CAD)',
+  USDC: 'USD Coin (USDC)',
+  USDT: 'Tether (USDT)',
+  EURC: 'Euro Coin (EURC)',
+  PYUSD: 'PayPal USD (PYUSD)',
+};
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type SheetType =
   | 'allocation'
   | 'autoInvest'
   | 'roundups'
   | 'limits'
-  | 'biometrics'
-  | 'notifications'
+  | 'pin'
   | 'logout'
   | 'delete'
+  | 'privacy'
+  | 'haptics'
+  | 'lockOnResume'
+  | 'currency'
+  | 'biometric'
   | null;
 
-const SettingButton = ({ icon, label, onPress, danger }: SettingItem) => (
-  <TouchableOpacity
-    className="mb-md w-[25%] items-center"
-    onPress={() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      onPress?.();
-    }}>
-    <View className="h-12 w-12 items-center justify-center">{icon}</View>
-    <Text
-      className={`mt-xs text-center font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}
-      numberOfLines={2}>
-      {label}
-    </Text>
-  </TouchableOpacity>
-);
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <View className="border-b border-surface py-md">
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object' && 'message' in error) {
+    const m = (error as { message?: unknown }).message;
+    if (typeof m === 'string' && m.trim()) return m;
+  }
+  return fallback;
+};
+
+// ── UI Primitives ─────────────────────────────────────────────────────────────
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+function SettingButton({
+  icon,
+  label,
+  onPress,
+  danger,
+  right,
+}: {
+  icon: ReactNode;
+  label: string;
+  onPress?: () => void;
+  danger?: boolean;
+  right?: ReactNode;
+}) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const { impact } = useHaptics();
+  return (
+    <AnimatedPressable
+      style={animStyle}
+      className={
+        right
+          ? 'mb-md w-full flex-row items-center justify-between px-1'
+          : 'mb-md w-[25%] items-center'
+      }
+      onPress={onPress}
+      onPressIn={() => {
+        impact(Haptics.ImpactFeedbackStyle.Light);
+        scale.value = withSpring(0.9, { damping: 20, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+      }}>
+      {right ? (
+        <>
+          <View className="flex-row items-center gap-3">
+            <View className="h-12 w-12 items-center justify-center">{icon}</View>
+            <Text
+              className={`font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}>
+              {label}
+            </Text>
+          </View>
+          {right}
+        </>
+      ) : (
+        <>
+          <View className="h-12 w-12 items-center justify-center">{icon}</View>
+          <Text
+            className={`mt-xs text-center font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}
+            numberOfLines={2}>
+            {label}
+          </Text>
+        </>
+      )}
+    </AnimatedPressable>
+  );
+}
+
+const Section = ({ title, children }: { title: string; children: ReactNode }) => (
+  <View className="border-b border-black/[0.07] py-md">
     <Text className="mb-md px-md font-subtitle text-body">{title}</Text>
     <View className="flex-row flex-wrap px-sm">{children}</View>
   </View>
 );
 
+const SheetRow = ({
+  label,
+  value,
+  onPress,
+}: {
+  label: string;
+  value?: string;
+  onPress?: () => void;
+}) => {
+  const { impact } = useHaptics();
+  return (
+    <Pressable
+      className="flex-row items-center justify-between border-b border-black/[0.07] py-4"
+      onPress={() => {
+        impact(Haptics.ImpactFeedbackStyle.Light);
+        onPress?.();
+      }}>
+      <Text className="font-body text-base text-text-primary">{label}</Text>
+      {value && <Text className="font-body text-base text-text-secondary">{value}</Text>}
+    </Pressable>
+  );
+};
+
+const SheetToggleRow = ({
+  label,
+  subtitle,
+  value,
+  onChange,
+}: {
+  label: string;
+  subtitle?: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) => (
+  <View className="flex-row items-center justify-between border-b border-black/[0.07] py-4">
+    <View className="flex-1 pr-4">
+      <Text className="font-body text-base text-text-primary">{label}</Text>
+      {subtitle && (
+        <Text className="mt-0.5 font-caption text-caption text-text-secondary">{subtitle}</Text>
+      )}
+    </View>
+    <Switch value={value} onValueChange={onChange} />
+  </View>
+);
+
 export default function Settings() {
-  const navigation = useNavigation();
-  const [activeSheet, setActiveSheet] = useState<SheetType>(null);
-  const [baseAllocation, setBaseAllocation] = useState(60);
-  const [autoInvestEnabled, setAutoInvestEnabled] = useState(false);
-  const [roundupsEnabled, setRoundupsEnabled] = useState(true);
-  const [spendingLimit, setSpendingLimit] = useState(500);
-  const [biometricsEnabled, setBiometricsEnabled] = useState(true);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const { showError, showSuccess, showWarning, showInfo } = useFeedbackPopup();
+  const {
+    isAvailable: biometricHardwareAvailable,
+    enableBiometric,
+    disableBiometric,
+  } = useBiometric();
+  const isBiometricEnabled = useAuthStore((s) => s.isBiometricEnabled);
+
+  const handleToggleBiometric = async () => {
+    if (isBiometricEnabled) {
+      await disableBiometric();
+      showSuccess('Biometrics Off', 'Biometric login has been disabled.');
+    } else {
+      const ok = await enableBiometric();
+      if (ok) showSuccess('Biometrics On', 'You can now sign in with Face ID or fingerprint.');
+    }
+  };
+
   const logout = useAuthStore((s) => s.logout);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
+  const user = useAuthStore((s) => s.user);
+
+  const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
+  const toggleBalanceVisibility = useUIStore((s) => s.toggleBalanceVisibility);
+  const hapticsEnabled = useUIStore((s) => s.hapticsEnabled);
+  const setHapticsEnabled = useUIStore((s) => s.setHapticsEnabled);
+  const requireBiometricOnResume = useUIStore((s) => s.requireBiometricOnResume);
+  const setRequireBiometricOnResume = useUIStore((s) => s.setRequireBiometricOnResume);
+  const currency = useUIStore((s) => s.currency);
+  const setCurrency = useUIStore((s) => s.setCurrency);
+  const currencyRatesUpdatedAt = useUIStore((s) => s.currencyRatesUpdatedAt);
+  const isCurrencyRatesRefreshing = useUIStore((s) => s.isCurrencyRatesRefreshing);
+  const refreshCurrencyRates = useUIStore((s) => s.refreshCurrencyRates);
+  const selectedCurrency = migrateLegacyCurrency(currency);
+
+  const [activeSheet, setActiveSheet] = useState<SheetType>(null);
+  const closeSheet = () => {
+    setActiveSheet(null);
+  };
+
+  const {
+    baseAllocation,
+    setBaseAllocation,
+    autoInvestEnabled,
+    setAutoInvestEnabled,
+    roundupsEnabled,
+    setRoundupsEnabled,
+    spendingLimit,
+    setSpendingLimit,
+    MIN_BASE_ALLOCATION,
+    MAX_BASE_ALLOCATION,
+  } = useSpendSettings();
+
+  const [allocationFeedback, setAllocationFeedback] = useState<string | null>(null);
+
+  const {
+    currentPin,
+    setCurrentPin,
+    newPin,
+    setNewPin,
+    confirmPin,
+    setConfirmPin,
+    pinError,
+    pinSuccess,
+    hasPasscodeConfigured,
+    isSavingPin,
+    handleSubmitPin,
+    PIN_MAX_LENGTH,
+  } = usePinChange({ isSheetOpen: activeSheet === 'pin', onSuccess: closeSheet });
+
+  // Account state
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // API hooks
+  const { refetch: refetchAllocationBalances } = useAllocationBalances();
+  const { mutateAsync: enableAllocationMode, isPending: isEnablingAllocation } =
+    useEnableAllocationMode();
 
   useEffect(() => {
-    AsyncStorage.multiGet([
-      'baseAllocation',
-      'autoInvestEnabled',
-      'roundupsEnabled',
-      'spendingLimit',
-      'biometricsEnabled',
-      'notificationsEnabled',
-    ]).then((values) => {
-      values.forEach(([key, value]) => {
-        if (value !== null) {
-          if (key === 'baseAllocation') setBaseAllocation(Number(value));
-          else if (key === 'autoInvestEnabled') setAutoInvestEnabled(value === 'true');
-          else if (key === 'roundupsEnabled') setRoundupsEnabled(value === 'true');
-          else if (key === 'spendingLimit') setSpendingLimit(Number(value));
-          else if (key === 'biometricsEnabled') setBiometricsEnabled(value === 'true');
-          else if (key === 'notificationsEnabled') setNotificationsEnabled(value === 'true');
-        }
+    if (activeSheet !== 'currency' || currencyRatesUpdatedAt) return;
+    void refreshCurrencyRates();
+  }, [activeSheet, currencyRatesUpdatedAt, refreshCurrencyRates]);
+
+  useEffect(() => {
+    if (currency !== selectedCurrency) setCurrency(selectedCurrency);
+  }, [currency, selectedCurrency, setCurrency]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleSaveAllocation = async () => {
+    if (isEnablingAllocation) return;
+    const spendingRatio = Math.min(0.99, Math.max(0.01, baseAllocation / 100));
+    const stashRatio = Number((1 - spendingRatio).toFixed(2));
+    try {
+      const response = await enableAllocationMode({
+        spending_ratio: Number(spendingRatio.toFixed(2)),
+        stash_ratio: stashRatio,
       });
-    });
-  }, []);
-
-  useEffect(() => {
-    AsyncStorage.setItem('baseAllocation', String(baseAllocation));
-  }, [baseAllocation]);
-
-  useEffect(() => {
-    AsyncStorage.setItem('autoInvestEnabled', String(autoInvestEnabled));
-  }, [autoInvestEnabled]);
-
-  useEffect(() => {
-    AsyncStorage.setItem('roundupsEnabled', String(roundupsEnabled));
-  }, [roundupsEnabled]);
-
-  useEffect(() => {
-    AsyncStorage.setItem('spendingLimit', String(spendingLimit));
-  }, [spendingLimit]);
-
-  useEffect(() => {
-    AsyncStorage.setItem('biometricsEnabled', String(biometricsEnabled));
-  }, [biometricsEnabled]);
-
-  useEffect(() => {
-    AsyncStorage.setItem('notificationsEnabled', String(notificationsEnabled));
-  }, [notificationsEnabled]);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <View className="flex-row items-center gap-x-3 pl-[14px]">
-          <Text className="font-subtitle text-headline-1">Settings</Text>
-        </View>
-      ),
-      headerShown: true,
-      title: '',
-      headerStyle: { backgroundColor: 'transparent' },
-    });
-  }, [navigation]);
-
-  const closeSheet = () => setActiveSheet(null);
-
-  const handleLogout = () => {
-    closeSheet();
-    logout();
+      setAllocationFeedback(response.message || 'Base/Active split updated.');
+      await refetchAllocationBalances();
+      closeSheet();
+    } catch (error) {
+      const msg = getErrorMessage(error, 'Failed to update Base/Active split.');
+      setAllocationFeedback(msg);
+      showError('Split Update Failed', msg);
+    }
   };
 
-  const handleDeleteAccount = () => {
-    closeSheet();
-    Alert.alert('Account Deleted', 'Your account deletion request has been submitted.');
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      showSuccess('Logged Out', 'You have been logged out successfully.');
+      closeSheet();
+    } catch (error) {
+      logger.error('[Settings] Logout error', {
+        component: 'Settings',
+        action: 'logout-error',
+        error: error instanceof Error ? error.message : 'unknown',
+      });
+      showWarning(
+        'Logout Issue',
+        'We had trouble logging you out from the server. Your local session has been cleared for security.'
+      );
+      closeSheet();
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const result = await deleteAccount('User requested account deletion');
+      closeSheet();
+      const fundsMsg =
+        parseFloat(result.funds_swept) > 0
+          ? `$${result.funds_swept} was transferred to our treasury wallet.`
+          : undefined;
+      showSuccess('Account Deleted', fundsMsg ?? 'Your account has been permanently deleted.');
+    } catch (error: any) {
+      showError('Error', error?.message || 'Failed to delete account. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <View className="flex-1 bg-background-main">
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        className="flex-1"
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}>
         <Section title="Spend">
           <SettingButton
-            icon={<PieChart size={24} color="#121212" />}
+            icon={<HugeiconsIcon icon={ArrowLeftRightIcon} size={22} color="#121212" />}
             label="Base/Active Split"
-            onPress={() => setActiveSheet('allocation')}
+            onPress={() => {
+              setAllocationFeedback(null);
+              setActiveSheet('allocation');
+              void refetchAllocationBalances();
+            }}
           />
           <SettingButton
-            icon={<Ionicons name="trending-up-outline" size={24} color="#121212" />}
+            icon={<HugeiconsIcon icon={ChartUpIcon} size={22} color="#121212" />}
             label="Auto Invest"
             onPress={() => setActiveSheet('autoInvest')}
           />
           <SettingButton
-            icon={<Ionicons name="arrow-up-circle-outline" size={24} color="#121212" />}
+            icon={<HugeiconsIcon icon={RepeatIcon} size={22} color="#121212" />}
             label="Round-ups"
             onPress={() => setActiveSheet('roundups')}
           />
           <SettingButton
-            icon={<Ionicons name="swap-horizontal-outline" size={24} color="#121212" />}
+            icon={<HugeiconsIcon icon={BalanceScaleIcon} size={22} color="#121212" />}
             label="Limits"
             onPress={() => setActiveSheet('limits')}
           />
         </Section>
 
+        <Section title="Preferences">
+          <SettingButton
+            icon={
+              isBalanceVisible ? (
+                <HugeiconsIcon icon={EyeIcon} size={22} color="#121212" />
+              ) : (
+                <HugeiconsIcon icon={ViewOffIcon} size={22} color="#121212" />
+              )
+            }
+            label="Privacy"
+            onPress={() => setActiveSheet('privacy')}
+          />
+          <SettingButton
+            icon={<HugeiconsIcon icon={SmartPhone01Icon} size={22} color="#121212" />}
+            label="Haptics"
+            onPress={() => setActiveSheet('haptics')}
+          />
+          <SettingButton
+            icon={<HugeiconsIcon icon={LockIcon} size={22} color="#121212" />}
+            label="App Lock"
+            onPress={() => setActiveSheet('lockOnResume')}
+          />
+          <SettingButton
+            icon={<HugeiconsIcon icon={Notification03Icon} size={22} color="#121212" />}
+            label="Notifications"
+            onPress={() => router.push('/settings-notifications')}
+          />
+          <SettingButton
+            icon={<HugeiconsIcon icon={InternetIcon} size={22} color="#121212" />}
+            label="Currency"
+            onPress={() => setActiveSheet('currency')}
+          />
+        </Section>
+
         <Section title="Security">
           <SettingButton
-            icon={<Ionicons name="finger-print-outline" size={24} color="#121212" />}
-            label="Biometrics"
-            onPress={() => setActiveSheet('biometrics')}
-          />
-          <SettingButton
-            icon={<Ionicons name="lock-closed-outline" size={24} color="#121212" />}
+            icon={<HugeiconsIcon icon={Shield01Icon} size={22} color="#121212" />}
             label="PIN"
+            onPress={() => setActiveSheet('pin')}
           />
+          {biometricHardwareAvailable && (
+            <SettingButton
+              icon={<HugeiconsIcon icon={FingerPrintIcon} size={22} color="#121212" />}
+              label="Biometrics"
+              onPress={() => setActiveSheet('biometric')}
+            />
+          )}
+          {Passkey.isSupported() && (
+            <SettingButton
+              icon={<HugeiconsIcon icon={Key01Icon} size={22} color="#121212" />}
+              label="Passkeys"
+              onPress={() => router.push('/passkey-settings')}
+            />
+          )}
           <SettingButton
-            icon={<Ionicons name="shield-checkmark-outline" size={24} color="#121212" />}
-            label={'2-Factor Auth'}
+            icon={<HugeiconsIcon icon={ShieldKeyIcon} size={22} color="#121212" />}
+            label="2-Factor Auth"
+            onPress={() =>
+              showInfo(
+                'Coming Soon',
+                '2-Factor authentication will be available in a future update.'
+              )
+            }
           />
         </Section>
 
         <Section title="More">
           <SettingButton
-            icon={<Ionicons name="notifications-outline" size={24} color="#121212" />}
-            label="Notifications"
-            onPress={() => setActiveSheet('notifications')}
-          />
-          <SettingButton
-            icon={<Ionicons name="gift-outline" size={24} color="#121212" />}
+            icon={<HugeiconsIcon icon={UserGroupIcon} size={22} color="#121212" />}
             label="Referrals"
+            onPress={() =>
+              showInfo('Coming Soon', 'Referrals will be available in a future update.')
+            }
           />
           <SettingButton
-            icon={<Ionicons name="document-text-outline" size={24} color="#121212" />}
+            icon={<HugeiconsIcon icon={BalanceScaleIcon} size={22} color="#121212" />}
             label="Legal"
+            onPress={() =>
+              showInfo('Legal', 'Legal documents will be available in a future update.')
+            }
           />
           <SettingButton
-            icon={<Ionicons name="help-circle-outline" size={24} color="#121212" />}
+            icon={<HugeiconsIcon icon={HeadphonesIcon} size={22} color="#121212" />}
             label="Support"
+            onPress={() => gleap.open()}
           />
         </Section>
 
         <Section title="Account">
           <SettingButton
-            icon={<Ionicons name="log-out-outline" size={24} color="#F44336" />}
+            icon={<HugeiconsIcon icon={Logout01Icon} size={22} color="#ff2b3a" />}
             label="Logout"
             danger
             onPress={() => setActiveSheet('logout')}
           />
           <SettingButton
-            icon={<Ionicons name="trash-outline" size={24} color="#F44336" />}
-            label={'Delete Account'}
+            icon={<HugeiconsIcon icon={Delete02Icon} size={22} color="#ff2b3a" />}
+            label="Delete Account"
             danger
             onPress={() => setActiveSheet('delete')}
           />
         </Section>
       </ScrollView>
 
-      {/* Base/Active Split Sheet */}
-      <BottomSheet visible={activeSheet === 'allocation'} onClose={closeSheet}>
+      {/* Spend */}
+      <GorhomBottomSheet visible={activeSheet === 'allocation'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Base/Active Split</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
-          Set how your deposits are split between Base (savings) and Active (investments).
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
+          Set how new deposits are split between Base and Active allocations.
         </Text>
+        {allocationFeedback && (
+          <View className="mb-4 rounded-lg border border-fog bg-stone-surface p-3">
+            <Text className="font-caption text-caption text-text-secondary">
+              {allocationFeedback}
+            </Text>
+          </View>
+        )}
         <SegmentedSlider
           value={baseAllocation}
-          onValueChange={setBaseAllocation}
+          onValueChange={(v) => setBaseAllocation(clampAlloc(v))}
+          min={MIN_BASE_ALLOCATION}
+          max={MAX_BASE_ALLOCATION}
+          step={1}
           label="Base Allocation"
-          segments={50}
-          activeColor="#8B5CF6"
+          segments={49}
+          activeColor="#9f4fff"
         />
         <View className="my-4 flex-row justify-between">
           <View className="items-center">
             <Text className="font-subtitle text-2xl">{baseAllocation}%</Text>
-            <Text className="font-caption text-sm text-text-secondary">Base (Savings)</Text>
+            <Text className="font-caption text-sm text-text-secondary">Base</Text>
           </View>
           <View className="items-center">
             <Text className="font-subtitle text-2xl">{100 - baseAllocation}%</Text>
-            <Text className="font-caption text-sm text-text-secondary">Active (Invest)</Text>
+            <Text className="font-caption text-sm text-text-secondary">Active</Text>
           </View>
         </View>
-        <Button title="Save Changes" variant="black" onPress={closeSheet} />
-      </BottomSheet>
+        <Button
+          title={isEnablingAllocation ? '' : 'Save Changes'}
+          variant="black"
+          onPress={handleSaveAllocation}
+          disabled={isEnablingAllocation}
+          flex>
+          {isEnablingAllocation && <ActivityIndicator color="#fff" />}
+        </Button>
+      </GorhomBottomSheet>
 
-      {/* Auto Invest Sheet */}
       <SettingsSheet
         visible={activeSheet === 'autoInvest'}
         onClose={closeSheet}
@@ -242,8 +542,6 @@ export default function Settings() {
         toggleValue={autoInvestEnabled}
         onToggleChange={setAutoInvestEnabled}
       />
-
-      {/* Round-ups Sheet */}
       <SettingsSheet
         visible={activeSheet === 'roundups'}
         onClose={closeSheet}
@@ -254,11 +552,10 @@ export default function Settings() {
         onToggleChange={setRoundupsEnabled}
       />
 
-      {/* Spending Limits Sheet */}
-      <BottomSheet visible={activeSheet === 'limits'} onClose={closeSheet}>
+      <GorhomBottomSheet visible={activeSheet === 'limits'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl">Spending Limits</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
-          Set your daily spending limit to help manage your expenses and stay on budget.
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
+          Set your daily spending limit to help manage your expenses.
         </Text>
         <SegmentedSlider
           value={spendingLimit}
@@ -273,77 +570,190 @@ export default function Settings() {
         />
         <Text className="my-4 text-center font-subtitle text-2xl">${spendingLimit}</Text>
         <Button title="Save Limit" variant="black" onPress={closeSheet} />
-      </BottomSheet>
+      </GorhomBottomSheet>
 
-      {/* Biometrics Sheet */}
-      <SettingsSheet
-        visible={activeSheet === 'biometrics'}
-        onClose={closeSheet}
-        title="Biometrics"
-        subtitle="Use Face ID or fingerprint to unlock the app and authorize transactions."
-        toggleLabel="Enable Biometrics"
-        toggleValue={biometricsEnabled}
-        onToggleChange={setBiometricsEnabled}
-      />
+      {/* Preferences */}
+      <GorhomBottomSheet visible={activeSheet === 'privacy'} onClose={closeSheet}>
+        <Text className="mb-4 font-subtitle text-xl">Privacy</Text>
+        <SheetToggleRow
+          label="Hide Balances"
+          subtitle="Mask all monetary values in the app"
+          value={!isBalanceVisible}
+          onChange={() => toggleBalanceVisibility()}
+        />
+      </GorhomBottomSheet>
 
-      {/* Notifications Sheet */}
-      <SettingsSheet
-        visible={activeSheet === 'notifications'}
-        onClose={closeSheet}
-        title="Notifications"
-        subtitle="Receive alerts for transactions, deposits, and account activity."
-        toggleLabel="Push Notifications"
-        toggleValue={notificationsEnabled}
-        onToggleChange={setNotificationsEnabled}
-      />
+      <GorhomBottomSheet visible={activeSheet === 'haptics'} onClose={closeSheet}>
+        <Text className="mb-4 font-subtitle text-xl">Haptics</Text>
+        <SheetToggleRow
+          label="Enable Haptic Feedback"
+          subtitle="Vibration feedback on interactions"
+          value={hapticsEnabled}
+          onChange={setHapticsEnabled}
+        />
+      </GorhomBottomSheet>
 
-      {/* Logout Sheet */}
-      <BottomSheet visible={activeSheet === 'logout'} onClose={closeSheet}>
-        <Text className="mb-6 font-subtitle text-xl">Log Out</Text>
+      <GorhomBottomSheet visible={activeSheet === 'lockOnResume'} onClose={closeSheet}>
+        <Text className="mb-4 font-subtitle text-xl">App LockIcon</Text>
+        <SheetToggleRow
+          label="Require Authentication on Resume"
+          subtitle="Require device authentication when returning to the app"
+          value={requireBiometricOnResume}
+          onChange={setRequireBiometricOnResume}
+        />
+      </GorhomBottomSheet>
 
-        <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-8">
-          <View className="h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-            <LogOut size={32} color="#F59E0B" />
-          </View>
+      <GorhomBottomSheet visible={activeSheet === 'biometric'} onClose={closeSheet}>
+        <Text className="mb-1 font-subtitle text-xl">Biometrics</Text>
+        <Text className="mb-5 font-caption text-caption text-text-secondary">
+          Use Face ID or fingerprint to sign in instantly.
+        </Text>
+        <SheetToggleRow
+          label="Enable Biometric Login"
+          subtitle="Sign in with Face ID or fingerprint instead of your PIN"
+          value={isBiometricEnabled}
+          onChange={handleToggleBiometric}
+        />
+      </GorhomBottomSheet>
+
+      <GorhomBottomSheet visible={activeSheet === 'currency'} onClose={closeSheet}>
+        <View className="mb-4 flex-row items-center justify-between">
+          <Text className="font-subtitle text-xl">Display Currency</Text>
+          <Pressable
+            className="h-9 w-9 items-center justify-center rounded-full bg-surface"
+            disabled={isCurrencyRatesRefreshing}
+            onPress={() => void refreshCurrencyRates({ forceRefresh: true })}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            {isCurrencyRatesRefreshing ? (
+              <ActivityIndicator size="small" color="#343433" />
+            ) : (
+              <HugeiconsIcon icon={RefreshIcon} size={16} color="#343433" />
+            )}
+          </Pressable>
         </View>
+        <Text className="mb-1 font-body text-sm text-text-secondary">
+          Balances are converted instantly using cached FX rates.
+        </Text>
+        <Text className="mb-4 font-caption text-caption text-text-tertiary">
+          Last updated: {formatFxUpdatedAt(currencyRatesUpdatedAt)}
+        </Text>
+        {CURRENCIES.map((c) => (
+          <SheetRow
+            key={c}
+            label={CURRENCY_LABELS[c]}
+            value={selectedCurrency === c ? 'Active' : undefined}
+            onPress={() => {
+              setCurrency(c);
+              closeSheet();
+            }}
+          />
+        ))}
+      </GorhomBottomSheet>
 
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+      {/* Security */}
+      <GorhomBottomSheet visible={activeSheet === 'pin'} onClose={closeSheet}>
+        <Text className="mb-2 font-subtitle text-xl">
+          {hasPasscodeConfigured ? 'Update PIN' : 'Create PIN'}
+        </Text>
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
+          Enter a 4-digit PIN used to unlock sensitive actions on your account.
+        </Text>
+        <View className="gap-3">
+          {hasPasscodeConfigured && (
+            <Input
+              label="Current PIN"
+              value={currentPin}
+              onChangeText={(v) => setCurrentPin(sanitizePin(v))}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={PIN_MAX_LENGTH}
+              placeholder="••••"
+            />
+          )}
+          <Input
+            label={hasPasscodeConfigured ? 'New PIN' : 'PIN'}
+            value={newPin}
+            onChangeText={(v) => setNewPin(sanitizePin(v))}
+            keyboardType="number-pad"
+            secureTextEntry
+            maxLength={PIN_MAX_LENGTH}
+            placeholder="••••"
+          />
+          <Input
+            label="Confirm PIN"
+            value={confirmPin}
+            onChangeText={(v) => setConfirmPin(sanitizePin(v))}
+            keyboardType="number-pad"
+            secureTextEntry
+            maxLength={PIN_MAX_LENGTH}
+            placeholder="••••"
+          />
+        </View>
+        {pinError && (
+          <Text className="mt-3 font-caption text-caption text-destructive">{pinError}</Text>
+        )}
+        {pinSuccess && (
+          <Text className="mt-3 font-caption text-caption text-success">{pinSuccess}</Text>
+        )}
+        <View className="mt-6 flex-row gap-3">
+          <Button title="Cancel" variant="ghost" onPress={closeSheet} disabled={isSavingPin} flex />
+          <Button
+            title={isSavingPin ? '' : hasPasscodeConfigured ? 'Update PIN' : 'Create PIN'}
+            variant="black"
+            onPress={handleSubmitPin}
+            disabled={isSavingPin}
+            flex>
+            {isSavingPin && <ActivityIndicator color="#fff" />}
+          </Button>
+        </View>
+      </GorhomBottomSheet>
+
+      {/* Account */}
+      <GorhomBottomSheet visible={activeSheet === 'logout'} onClose={closeSheet}>
+        <Text className="mb-6 font-subtitle text-xl">Log Out</Text>
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
           Are you sure you want to log out? You&apos;ll need to sign in again to access your
           account.
         </Text>
-        <View className="flex-row gap-3">
-          <Button title="Cancel" variant="ghost" onPress={closeSheet} flex />
-          <Button title="Log Out" variant="black" onPress={handleLogout} flex />
+        <View className=" gap-3">
+          <Button
+            title={isLoggingOut ? '' : 'Log Out'}
+            variant="black"
+            onPress={handleLogout}
+            disabled={isLoggingOut}
+            flex>
+            {isLoggingOut && <ActivityIndicator color="#fff" />}
+          </Button>
         </View>
-      </BottomSheet>
+      </GorhomBottomSheet>
 
-      {/* Delete Account Sheet */}
-      <BottomSheet visible={activeSheet === 'delete'} onClose={closeSheet}>
+      <GorhomBottomSheet visible={activeSheet === 'delete'} onClose={closeSheet}>
         <Text className="mb-6 font-subtitle text-xl text-text-primary">Delete Account</Text>
-
-        {/* Wallet Card Illustration */}
         <View className="mb-6 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 py-10">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-red-100">
-            <Trash2 size={34} color="#EF4444" />
+            <HugeiconsIcon icon={Delete02Icon} size={32} color="#ff2b3a" />
           </View>
         </View>
-
-        <Text className="mb-4 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-4 font-body text-base leading-6 text-ash">
           Deleting your account will permanently remove it from the device. If you continue, you
           will not be able to recover, access or perform any other action with this account in Rail.
-          Any assets left in this account will be lost.
         </Text>
-
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
-          By continuing, you confirm that you have sent out all assets before deleting the account
-          and any assets left in the account after deletion will be inaccessible.
+        <Text className="mb-4 font-body text-base leading-6 text-ash">
+          Any remaining funds in your account will be transferred to our company treasury before
+          deletion.
         </Text>
-
         <View className="flex-row gap-3">
-          <Button title="Cancel" variant="ghost" onPress={closeSheet} flex />
-          <Button title="Continue" variant="orange" onPress={handleDeleteAccount} flex />
+          <Button title="Cancel" variant="ghost" onPress={closeSheet} disabled={isDeleting} flex />
+          <Button
+            title={isDeleting ? '' : 'Delete Account'}
+            variant="orange"
+            onPress={handleDeleteAccount}
+            disabled={isDeleting}
+            flex>
+            {isDeleting && <ActivityIndicator color="#fff" />}
+          </Button>
         </View>
-      </BottomSheet>
+      </GorhomBottomSheet>
     </View>
   );
 }

@@ -1,256 +1,200 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, Alert, AccessibilityInfo } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StatusBar,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableWithoutFeedback,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { OTPInput, Button } from '../../components/ui';
-import { useAuthStore } from '../../stores/authStore';
-import { useVerifyCode, useResendCode } from '../../api/hooks';
+import { AuthGradient, StaggeredChild } from '@/components';
+import { ROUTES } from '@/constants/routes';
+import { useVerifyCode, useResendCode } from '@/api/hooks/useAuth';
+import { useAuthStore } from '@/stores/authStore';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { getPostAuthRoute } from '@/utils/onboardingFlow';
 
 export default function VerifyEmail() {
-  const pendingEmail = useAuthStore((state) => state.pendingVerificationEmail);
   const [otp, setOtp] = useState('');
   const [resendTimer, setResendTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
-  const [error, setError] = useState('');
-  const [isInvalid, setIsInvalid] = useState(false);
-
-  const { mutate: verifyEmail, isPending: isVerifying } = useVerifyCode();
-  const { mutate: resendCode, isPending: isResendLoading } = useResendCode();
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const pendingEmail = useAuthStore((state) => state.pendingVerificationEmail);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { mutate: verifyCode, isPending: isVerifying } = useVerifyCode();
+  const { mutate: resendCode, isPending: isResending } = useResendCode();
+  const otpRef = useRef<any>(null);
+  const { showError, showInfo, showWarning } = useFeedbackPopup();
 
   useEffect(() => {
+    if (!pendingEmail && !isAuthenticated && !isVerifying && !isTransitioning) {
+      router.replace(ROUTES.AUTH.SIGNUP as never);
+      return;
+    }
+  }, [pendingEmail, isAuthenticated, isVerifying, isTransitioning]);
+
+  useEffect(() => {
+    if (!pendingEmail) return;
     if (resendTimer > 0) {
       const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
       return () => clearTimeout(timer);
-    } else {
-      setCanResend(true);
     }
-  }, [resendTimer]);
 
-  // Validate OTP code and handle routing
-  const validateOTP = useCallback(
-    (code: string) => {
-      if (code.length !== 6) {
-        return;
-      }
-
-      setError('');
-      setIsInvalid(false);
-
-      verifyEmail(
-        { email: pendingEmail || '', code },
-        {
-          onSuccess: (response) => {
-            // Store user info and tokens from verification
-            // Note: The hook already updates the auth store
-            // Route to complete profile screen after email verification
-            // Navigate to Complete Profile (Personal Info step)
-            router.push('/(auth)/complete-profile/personal-info');
-          },
-          onError: (err: any) => {
-            const errorCode = err?.error?.code;
-            const errorMessage = err?.error?.message;
-            
-            let displayMessage = 'Invalid verification code. Please try again.';
-            
-            switch (errorCode) {
-              case 'INVALID_CODE':
-                displayMessage = 'Invalid or expired code. Please check and try again.';
-                break;
-              case 'ALREADY_VERIFIED':
-                displayMessage = 'This email is already verified. Please sign in.';
-                // Navigate to signin after a delay
-                setTimeout(() => router.replace('/(auth)/signin'), 2000);
-                break;
-              case 'VALIDATION_ERROR':
-                displayMessage = 'Please enter a valid 6-digit code.';
-                break;
-              default:
-                displayMessage = errorMessage || displayMessage;
-            }
-            
-            setIsInvalid(true);
-            setError(displayMessage);
-
-            // Announce error to screen readers
-            AccessibilityInfo.isScreenReaderEnabled().then((screenReaderEnabled) => {
-              if (screenReaderEnabled) {
-                AccessibilityInfo.announceForAccessibility(displayMessage);
-              }
-            });
-          },
-        }
-      );
-    },
-    [verifyEmail]
-  );
+    setCanResend(true);
+  }, [resendTimer, pendingEmail]);
 
   const handleOTPComplete = (code: string) => {
+    setErrorMessage('');
     setOtp(code);
-    setError('');
-
-    // Auto-validate when all digits are entered
-    validateOTP(code);
-  };
-
-  const handleVerify = () => {
-    if (otp.length !== 6) {
-      setError('Please enter the complete 6-digit code');
-      setIsInvalid(true);
-      return;
+    Keyboard.dismiss();
+    if (code.length === 6 && pendingEmail && !isVerifying && !isTransitioning) {
+      handleVerifyWithCode(code);
     }
-
-    validateOTP(otp);
   };
 
-  const handleResendCode = () => {
-    if (!canResend) return;
-
-    setError('');
-    setIsInvalid(false);
-
-    resendCode(
-      { email: pendingEmail || '' },
+  const handleVerifyWithCode = (code: string) => {
+    verifyCode(
+      { email: pendingEmail!, code },
       {
         onSuccess: (response) => {
-          setResendTimer(60);
-          setCanResend(false);
-          setOtp(''); // Clear current OTP input
-
-          Alert.alert('Code Sent', response.message || 'A new verification code has been sent to your email.');
-
-          // Announce to screen readers
-          AccessibilityInfo.isScreenReaderEnabled().then((screenReaderEnabled) => {
-            if (screenReaderEnabled) {
-              AccessibilityInfo.announceForAccessibility('New verification code sent to your email');
-            }
-          });
-        },
-        onError: (err: any) => {
-          const errorCode = err?.error?.code;
-          const errorMessage = err?.error?.message;
-          
-          let displayMessage = 'Failed to resend code. Please try again.';
-          
-          switch (errorCode) {
-            case 'TOO_MANY_REQUESTS':
-              displayMessage = 'Too many requests. Please wait before requesting a new code.';
-              break;
-            case 'ALREADY_VERIFIED':
-              displayMessage = 'Your email is already verified. Please sign in.';
-              setTimeout(() => router.replace('/(auth)/signin'), 2000);
-              break;
-            default:
-              displayMessage = errorMessage || displayMessage;
+          setIsTransitioning(true);
+          if (response.accessToken) {
+            const onboardingStatus = response.onboarding_status || response.user?.onboardingStatus;
+            router.replace(getPostAuthRoute(onboardingStatus) as never);
+            return;
           }
-          
-          setError(displayMessage);
-          Alert.alert('Error', displayMessage);
+          router.replace(ROUTES.AUTH.SIGNIN as never);
+        },
+        onError: (error: any) => {
+          setIsTransitioning(false);
+          const message = error?.message || 'Invalid or expired verification code';
+          setErrorMessage(message);
+          setOtp('');
+          otpRef.current?.clear?.();
+          showError('Verification Failed', message);
         },
       }
     );
   };
 
-  const handlePasteCode = () => {
-    // This would typically handle clipboard paste
-    // For demo, we'll just focus the first input
-    Alert.alert(
-      'Paste Code',
-      'In a real app, this would paste the code from your clipboard or from SMS.',
-      [{ text: 'OK' }]
+  const handleResend = () => {
+    if (!canResend || !pendingEmail) return;
+
+    resendCode(
+      { email: pendingEmail },
+      {
+        onSuccess: () => {
+          setResendTimer(60);
+          setCanResend(false);
+          setOtp('');
+          setErrorMessage('');
+          otpRef.current?.clear?.();
+          showInfo('Code Resent', 'A new verification code has been sent.');
+        },
+        onError: (error: any) => {
+          showError('Resend Failed', error?.message || 'Unable to resend verification code');
+        },
+      }
     );
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+    <AuthGradient>
+      <SafeAreaView className="flex-1" edges={['top', 'bottom']}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={Platform.OS === 'android'}
+        />
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <ScrollView
+              className="flex-1"
+              contentContainerClassName="flex-grow px-6 pb-6"
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+              showsVerticalScrollIndicator={false}>
+              <StaggeredChild index={0}>
+                <View className="mb-8 mt-8">
+                  <Text className="font-subtitle text-[34px] text-charcoal-primary">
+                    Confirm email
+                  </Text>
+                  <View className="mt-4">
+                    <Text className="font-body text-[18px] text-ash">
+                      The code has been sent to
+                    </Text>
+                    <Text className="mt-1 font-subtitle text-[28px] text-charcoal-primary">
+                      {pendingEmail || 'your email'}
+                    </Text>
+                  </View>
+                </View>
+              </StaggeredChild>
 
-      {/* Main Content */}
-      <View className="flex-1 px-6 pb-6">
-        {/* Title */}
-        <View className="mb-8 mt-8">
-          <Text className="font-body-bold text-[34px] text-gray-900" accessibilityRole="header">
-            Confirm email
-          </Text>
-          <View className="mt-4">
-            <Text
-              className="font-body-medium text-[18px] text-gray-600"
-              accessibilityLabel="The code has been sent to">
-              The code has been sent to
-            </Text>
-            <Text
-              className="mt-1 font-heading-light text-[28px] text-gray-900"
-              accessibilityLabel={`Email: ${pendingEmail || 'your email'}`}>
-              {pendingEmail || 'your email'}
-            </Text>
-          </View>
-        </View>
+              <StaggeredChild index={1}>
+                <View className="mb-8">
+                  <Text className="font-body text-base text-ash">
+                    Please check your inbox and{'\n'}paste the code from the email below
+                  </Text>
+                </View>
+              </StaggeredChild>
 
-        {/* Instructions */}
-        <View className="mb-8">
-          <Text
-            className="font-body-medium text-base text-gray-600"
-            accessibilityLabel="Please check your inbox and paste the code from the email below">
-            Please check your inbox and{'\n'}paste the code from the email below
-          </Text>
-        </View>
+              <StaggeredChild index={2}>
+                <View className="mb-8">
+                  <OTPInput
+                    ref={otpRef}
+                    length={6}
+                    onComplete={handleOTPComplete}
+                    autoValidate={true}
+                    error={errorMessage}
+                    isInvalid={!!errorMessage}
+                  />
+                </View>
+              </StaggeredChild>
 
-        {/* OTP Input */}
-        <View className="mb-8">
-          <OTPInput
-            length={6}
-            onComplete={handleOTPComplete}
-            error={error}
-            isInvalid={isInvalid}
-            autoValidate={true}
-          />
-          <TouchableOpacity
-            onPress={handlePasteCode}
-            className="mx-auto mt-4 w-[30%] items-center justify-center rounded-full bg-gray-100 px-4 py-2"
-            accessibilityLabel="Paste verification code"
-            accessibilityHint="Tap to paste verification code from clipboard"
-            accessibilityRole="button">
-            <Text className="font-body-medium text-[14px] text-gray-600">Paste</Text>
-          </TouchableOpacity>
-        </View>
+              <View className="mt-auto">
+                <StaggeredChild index={3} delay={80}>
+                  <View className="mb-6">
+                    <Button
+                      title="Verify Email"
+                      onPress={() => handleVerifyWithCode(otp)}
+                      loading={isVerifying}
+                    />
+                  </View>
+                </StaggeredChild>
 
-        <View className="flex-1" />
-
-        {/* Verify Button */}
-        <View className="mb-6">
-          <Button
-            title="Verify Email"
-            onPress={handleVerify}
-            loading={isVerifying}
-            disabled={otp.length !== 6 || isVerifying}
-            className="rounded-full"
-            accessibilityLabel="Verify Email"
-            accessibilityHint="Tap to verify your email with the entered code"
-          />
-        </View>
-
-        {/* Resend Code */}
-        <View className="items-center">
-          {canResend ? (
-            <TouchableOpacity
-              onPress={handleResendCode}
-              disabled={isResendLoading}
-              className="py-2"
-              accessibilityLabel="Didn't receive the code? Resend"
-              accessibilityHint="Tap to request a new verification code"
-              accessibilityRole="button">
-              <Text className="font-body-rounded-medium text-base text-gray-900">
-                {isResendLoading ? 'Sending...' : "Didn't receive the code? Resend"}
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <Text
-              className="py-2 font-label text-base text-gray-500"
-              accessibilityLabel={`Resend code in ${resendTimer} seconds`}>
-              Resend code in {resendTimer}s
-            </Text>
-          )}
-        </View>
-      </View>
-    </SafeAreaView>
+                <StaggeredChild index={4} delay={80}>
+                  <View className="items-center">
+                    {canResend ? (
+                      <TouchableOpacity
+                        onPress={handleResend}
+                        className="py-2"
+                        disabled={isResending}>
+                        <Text className="font-body text-base text-charcoal-primary">
+                          {isResending ? 'Resending...' : "Didn't receive the code? Resend"}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <Text className="py-2 font-caption text-base text-smoke">
+                        Resend code in {resendTimer}s
+                      </Text>
+                    )}
+                  </View>
+                </StaggeredChild>
+              </View>
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </AuthGradient>
   );
 }

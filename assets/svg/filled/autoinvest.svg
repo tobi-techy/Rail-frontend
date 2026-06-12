@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="gAutoPro" x1="7.5" y1="7" x2="18.5" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8F8BFF"/>
+      <stop offset="1" stop-color="#4C7DFF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- coin body -->
+  <circle cx="10.2" cy="13.3" r="5.9" fill="url(#gAutoPro)"/>
+
+  <!-- soft coin highlight -->
+  <circle cx="8.6" cy="11.7" r="2.0" fill="#FFFFFF" fill-opacity=".16"/>
+
+  <!-- growth chevron inside coin -->
+  <path fill="#FFFFFF" fill-opacity=".90"
+        d="M8.2 14.7c-.35-.35-.35-.92 0-1.27.35-.35.92-.35 1.27 0l1.05 1.05 2.30-2.30c.35-.35.92-.35 1.27 0 .35.35.35.92 0 1.27l-2.94 2.94c-.35.35-.92.35-1.27 0L8.2 14.7Z"/>
+
+  <!-- auto sparkle (top-right) -->
+  <path fill="url(#gAutoPro)"
+        d="M18.3 6.0c.28 0 .52.2.57.47l.18.97.97.18c.27.05.47.29.47.57s-.2.52-.47.57l-.97.18-.18.97c-.05.27-.29.47-.57.47s-.52-.2-.57-.47l-.18-.97-.97-.18c-.27-.05-.47-.29-.47-.57s.2-.52.47-.57l.97-.18.18-.97c.05-.27.29-.47.57-.47Z"/>
+</svg>

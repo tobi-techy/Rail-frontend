@@ -1,0 +1,302 @@
+import React, { useState } from 'react';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { Passkey } from 'react-native-passkey';
+import { BottomSheet } from '@/components/sheets';
+import { Button } from '@/components/ui';
+import { InputField } from '@/components/atoms/InputField';
+import { usePasskeys, useRegisterPasskey, useDeletePasskey } from '@/api/hooks';
+import type { PasskeyCredential } from '@/api/types';
+import { useHaptics } from '@/hooks/useHaptics';
+import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { ArrowLeft01Icon, Delete02Icon, Key01Icon, PlusSignIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+
+const formatDate = (iso: string | null) => {
+  if (!iso) return 'Never';
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+function PasskeyRow({
+  credential,
+  onDelete,
+}: {
+  credential: PasskeyCredential;
+  onDelete: () => void;
+}) {
+  return (
+    <View className="bg-surface-secondary mb-3 flex-row items-center rounded-2xl border border-surface p-4">
+      <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-surface">
+        <HugeiconsIcon icon={Key01Icon} size={18} color="#848281" />
+      </View>
+      <View className="flex-1">
+        <Text className="font-subtitle text-body text-text-primary" numberOfLines={1}>
+          {credential.name || 'Passkey'}
+        </Text>
+        <Text className="mt-0.5 font-caption text-caption text-text-secondary">
+          Last used {formatDate(credential.lastUsedAt)}
+        </Text>
+      </View>
+      <Pressable
+        onPress={onDelete}
+        className="ml-2 h-9 w-9 items-center justify-center rounded-full bg-coral-red/10"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <HugeiconsIcon icon={Delete02Icon} size={16} color="#ff2b3a" />
+      </Pressable>
+    </View>
+  );
+}
+
+export default function PasskeySettingsScreen() {
+  const [showRegisterSheet, setShowRegisterSheet] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<PasskeyCredential | null>(null);
+  const [passkeyName, setPasskeyName] = useState('');
+  const { impact, notification } = useHaptics();
+  const { showError } = useFeedbackPopup();
+  const { data, isLoading, isError } = usePasskeys();
+  const credentials = data ?? [];
+  const { mutateAsync: registerPasskey, isPending: isRegistering } = useRegisterPasskey();
+  const { mutateAsync: deletePasskey, isPending: isDeleting } = useDeletePasskey();
+
+  if (!Passkey.isSupported()) {
+    return (
+      <SafeAreaView className="flex-1 bg-background-main">
+        <View className="flex-row items-center px-4 py-3">
+          <Pressable
+            onPress={() => router.back()}
+            className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-surface"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
+          </Pressable>
+          <Text className="flex-1 font-subtitle text-headline-1">Passkeys</Text>
+        </View>
+        <View className="flex-1 items-center justify-center px-8">
+          <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-surface">
+            <HugeiconsIcon icon={Key01Icon} size={24} color="#848281" />
+          </View>
+          <Text className="mb-2 text-center font-subtitle text-base text-text-primary">
+            Passkeys not supported
+          </Text>
+          <Text className="text-center font-body text-sm text-text-secondary">
+            Passkeys require iOS 16+ or Android with Digital Asset Links configured.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const getRegistrationErrorMessage = (err: any) => {
+    const code = String(err?.code || err?.error || '').toUpperCase();
+    const message = String(err?.message || '').toLowerCase();
+    const codeSuffix = code ? ` (code: ${code})` : '';
+
+    if (code === 'NOCREDENTIALS' || message.includes('no credentials')) {
+      return `iOS did not return a passkey credential. Make sure iCloud Keychain is enabled, then reinstall the app and try again.${codeSuffix}`;
+    }
+
+    if (code === 'WEBAUTHN_UNAVAILABLE' || code === 'WEBAUTHN_SESSION_UNAVAILABLE') {
+      return `Passkey service is unavailable on server. Check backend WebAuthn/Redis configuration.${codeSuffix}`;
+    }
+
+    if (code === 'INVALID_SESSION') {
+      return `Passkey session expired. Please try registration again.${codeSuffix}`;
+    }
+
+    if (code === 'AUTHENTICATOR_ALREADY_REGISTERED' || message.includes('already registered')) {
+      return `This passkey is already registered.${codeSuffix}`;
+    }
+
+    if (code === 'USER_VERIFICATION_FAILED' || message.includes('verification failed')) {
+      return `Biometric verification failed. Try again or use a different authentication method.${codeSuffix}`;
+    }
+
+    if (code === 'ABORT_ERROR' || message.includes('cancelled') || message.includes('abort')) {
+      return `Passkey registration was cancelled.${codeSuffix}`;
+    }
+
+    if (code === 'TIMEOUT' || message.includes('timeout')) {
+      return `Passkey registration timed out. Please try again.${codeSuffix}`;
+    }
+
+    if (code === 'NOT_SECURE_CONTEXT' || message.includes('secure context')) {
+      return `Passkeys require a secure context. Ensure you're using HTTPS.${codeSuffix}`;
+    }
+
+    if (code === 'BADCONFIGURATION' || message.includes('configuration')) {
+      return `Passkey configuration error. Contact support.${codeSuffix}`;
+    }
+
+    return `${err?.message || 'Could not register passkey. Try again.'}${codeSuffix}`;
+  };
+
+  const handleRegister = async () => {
+    try {
+      await registerPasskey(passkeyName.trim() || undefined);
+      setShowRegisterSheet(false);
+      setPasskeyName('');
+      notification();
+    } catch (err: any) {
+      if (err?.name === 'NotAllowedError' || err?.message?.includes('cancel')) return;
+      showError('Registration Failed', getRegistrationErrorMessage(err));
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deletePasskey(deleteTarget.id);
+      notification();
+    } catch (err: any) {
+      showError('Error', err?.message || 'Failed to remove passkey.');
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
+
+  const openRegisterSheet = () => {
+    setPasskeyName('');
+    setShowRegisterSheet(true);
+  };
+
+  return (
+    <SafeAreaView className="flex-1 bg-background-main">
+      {/* Header */}
+      <View className="flex-row items-center px-4 py-3">
+        <Pressable
+          onPress={() => router.back()}
+          className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-surface"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
+        </Pressable>
+        <Text className="flex-1 font-subtitle text-headline-1">Passkeys</Text>
+        <Pressable
+          onPress={openRegisterSheet}
+          className="h-10 w-10 items-center justify-center rounded-full bg-surface"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <HugeiconsIcon icon={PlusSignIcon} size={20} color="#343433" />
+        </Pressable>
+      </View>
+
+      <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* Description */}
+        <Text className="mb-6 mt-2 font-body text-base leading-6 text-text-secondary">
+          Passkeys let you sign in with Face ID or Touch ID — no password needed. Add one for each
+          device you use.
+        </Text>
+
+        {/* Loading */}
+        {isLoading && (
+          <View className="items-center py-12">
+            <ActivityIndicator color="#848281" />
+          </View>
+        )}
+
+        {/* Error */}
+        {isError && !isLoading && (
+          <View className="bg-surface-secondary items-center rounded-2xl border border-surface py-10">
+            <Text className="font-body text-base text-text-secondary">
+              Failed to load passkeys.
+            </Text>
+          </View>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && !isError && credentials.length === 0 && (
+          <View className="bg-surface-secondary items-center rounded-2xl border border-dashed border-neutral-300 py-12">
+            <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-surface">
+              <HugeiconsIcon icon={Key01Icon} size={24} color="#848281" />
+            </View>
+            <Text className="mb-1 font-subtitle text-base text-text-primary">No passkeys yet</Text>
+            <Text className="mb-6 font-body text-sm text-text-secondary">
+              Add a passkey to sign in faster
+            </Text>
+            <Button title="Add Passkey" variant="black" onPress={openRegisterSheet} />
+          </View>
+        )}
+
+        {/* Credential list */}
+        {credentials.map((cred) => (
+          <PasskeyRow
+            key={cred.id}
+            credential={cred}
+            onDelete={() => {
+              impact();
+              setDeleteTarget(cred);
+            }}
+          />
+        ))}
+
+        {/* Add button when list is non-empty */}
+        {credentials.length > 0 && (
+          <Button
+            title="Add Another Passkey"
+            variant="ghost"
+            onPress={openRegisterSheet}
+            disabled={isRegistering || isDeleting}
+          />
+        )}
+      </ScrollView>
+
+      {/* Delete confirm sheet */}
+      <BottomSheet visible={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
+        <Text className="mb-2 font-subtitle text-xl">Remove Passkey</Text>
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
+          Remove &quot;{deleteTarget?.name ?? 'this passkey'}&quot;? You won&apos;t be able to use
+          it to sign in.
+        </Text>
+        <View className="flex-row gap-3">
+          <Button title="Cancel" variant="ghost" onPress={() => setDeleteTarget(null)} flex />
+          <Button
+            title={isDeleting ? '' : 'Remove'}
+            variant="destructive"
+            onPress={handleDeleteConfirm}
+            disabled={isDeleting}
+            flex>
+            {isDeleting && <ActivityIndicator color="#fff" />}
+          </Button>
+        </View>
+      </BottomSheet>
+
+      {/* Register sheet */}
+      <BottomSheet visible={showRegisterSheet} onClose={() => setShowRegisterSheet(false)}>
+        <Text className="mb-2 font-subtitle text-xl">Add Passkey</Text>
+        <Text className="mb-6 font-body text-base leading-6 text-ash">
+          Give this passkey a name so you can identify it later (e.g. &quot;iPhone 15&quot;).
+        </Text>
+
+        <InputField
+          value={passkeyName}
+          onChangeText={setPasskeyName}
+          placeholder="Passkey name (optional)"
+          maxLength={40}
+          returnKeyType="done"
+          onSubmitEditing={handleRegister}
+          containerClassName="mb-6"
+        />
+
+        <View className="flex-row gap-3">
+          <Button
+            title="Cancel"
+            variant="ghost"
+            onPress={() => setShowRegisterSheet(false)}
+            disabled={isRegistering}
+            flex
+          />
+          <Button
+            title={isRegistering ? '' : 'Continue'}
+            variant="black"
+            onPress={handleRegister}
+            disabled={isRegistering}
+            flex>
+            {isRegistering && <ActivityIndicator color="#fff" />}
+          </Button>
+        </View>
+      </BottomSheet>
+    </SafeAreaView>
+  );
+}

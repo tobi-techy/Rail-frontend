@@ -2,9 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { walletService } from '../api/services';
 import { encryptObject, decryptObject } from '../utils/encryption';
-import { safeError } from '../utils/logSanitizer';
+import { logger } from '@/lib/logger';
 import type { Token, Transaction } from '@/lib/domain/wallet/models';
-import { MOCK_TOKENS, MOCK_TRANSACTIONS } from '@/__mocks__/wallet.mock';
 import { ERROR_MESSAGES } from '@/lib/constants/messages';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -14,14 +13,14 @@ interface WalletState {
   // Balances
   tokens: Token[];
   totalBalanceUSD: number;
-  
+
   // Transactions
   transactions: Transaction[];
-  
+
   // UI State
   isLoading: boolean;
   error: string | null;
-  
+
   // Selected items
   selectedToken: Token | null;
 }
@@ -31,32 +30,30 @@ interface WalletActions {
   fetchTokens: () => Promise<void>;
   updateTokenBalance: (tokenId: string, balance: number) => void;
   refreshPrices: () => Promise<void>;
-  
+
   // Transaction operations
   fetchTransactions: () => Promise<void>;
   addTransaction: (transaction: Transaction) => void;
   updateTransactionStatus: (txId: string, status: Transaction['status']) => void;
-  
+
   // Selection
   setSelectedToken: (token: Token | null) => void;
-  
+
   // Calculations
   calculateTotalBalance: () => void;
-  
+
   // Error handling
   setError: (error: string | null) => void;
   clearError: () => void;
-  
+
   // Reset
   reset: () => void;
 }
 
-
-
 const initialState: WalletState = {
-  tokens: MOCK_TOKENS,
+  tokens: [],
   totalBalanceUSD: 0,
-  transactions: MOCK_TRANSACTIONS,
+  transactions: [],
   isLoading: false,
   error: null,
   selectedToken: null,
@@ -68,11 +65,13 @@ const createEncryptedStorage = () => ({
     try {
       const encrypted = await AsyncStorage.getItem(name);
       if (encrypted) {
-        return JSON.parse(decryptObject(encrypted));
+        // SECURITY FIX (H-5): decryptObject<T> already JSON.parses internally.
+        // Wrapping in JSON.parse() again caused double-parse failures.
+        return decryptObject<any>(encrypted);
       }
       return null;
     } catch (error) {
-      console.error('Encrypted storage getItem error:', error);
+      logger.error('Encrypted storage getItem error', { component: 'WalletStore', error });
       return null;
     }
   },
@@ -81,14 +80,14 @@ const createEncryptedStorage = () => ({
       const encrypted = encryptObject(value);
       await AsyncStorage.setItem(name, encrypted);
     } catch (error) {
-      console.error('Encrypted storage setItem error:', error);
+      logger.error('Encrypted storage setItem error', { component: 'WalletStore', error });
     }
   },
   removeItem: async (name: string) => {
     try {
       await AsyncStorage.removeItem(name);
     } catch (error) {
-      console.error('Encrypted storage removeItem error:', error);
+      logger.error('Encrypted storage removeItem error', { component: 'WalletStore', error });
     }
   },
 });
@@ -103,33 +102,40 @@ export const useWalletStore = create<WalletState & WalletActions>()(
         set({ isLoading: true, error: null });
         try {
           const balance = await walletService.getBalance();
-          
+
           if (!balance || !balance.tokens) {
             throw new Error('Invalid response from wallet service');
           }
-          
+
           // Transform API response to match store structure
-          const tokens: Token[] = balance.tokens.map((token: any) => {
-            if (!token.symbol || !token.name) {
-              safeError('[WalletStore] Invalid token data', { hasSymbol: !!token.symbol, hasName: !!token.name });
-              return null;
-            }
-            return {
-              id: token.symbol.toLowerCase(),
-              symbol: token.symbol,
-              name: token.name,
-              balance: parseFloat(token.balance) || 0,
-              usdValue: parseFloat(token.usdValue) || 0,
-              priceChange: token.priceChange24h || 0,
-              network: token.network || 'Solana',
-              icon: token.symbol.toLowerCase(),
-            };
-          }).filter(Boolean) as Token[];
-          
+          const tokens: Token[] = balance.tokens
+            .map((token: any) => {
+              if (!token.symbol || !token.name) {
+                logger.error('[WalletStore] Invalid token data', {
+                  hasSymbol: !!token.symbol,
+                  hasName: !!token.name,
+                });
+                return null;
+              }
+              return {
+                id: token.symbol.toLowerCase(),
+                symbol: token.symbol,
+                name: token.name,
+                balance: parseFloat(token.balance) || 0,
+                usdValue: parseFloat(token.usdValue) || 0,
+                priceChange: token.priceChange24h || 0,
+                network: token.network || 'Solana',
+                icon: token.symbol.toLowerCase(),
+              };
+            })
+            .filter(Boolean) as Token[];
+
           if (tokens.length === 0) {
-            safeError('[WalletStore] No valid tokens received, using mock data');
+            logger.error('[WalletStore] No valid tokens received');
+            // SECURITY FIX (M-6): Never fall back to mock data — show empty state with error
             set({
-              tokens: MOCK_TOKENS,
+              tokens: [],
+              error: __DEV__ ? 'No valid tokens received (dev)' : null,
               isLoading: false,
             });
           } else {
@@ -138,15 +144,16 @@ export const useWalletStore = create<WalletState & WalletActions>()(
               isLoading: false,
             });
           }
-          
+
           get().calculateTotalBalance();
         } catch (error: any) {
-          safeError('[WalletStore] Failed to fetch tokens:', error);
-          const errorMessage = error?.error?.message || error?.message || ERROR_MESSAGES.WALLET.LOAD_FAILED;
-          
-          // Fallback to mock data if API fails
+          logger.error('[WalletStore] Failed to fetch tokens:', error);
+          const errorMessage =
+            error?.error?.message || error?.message || ERROR_MESSAGES.WALLET.LOAD_FAILED;
+
+          // SECURITY FIX (M-6): Show error state, never mock data in production
           set({
-            tokens: MOCK_TOKENS,
+            tokens: [],
             error: errorMessage,
             isLoading: false,
           });
@@ -157,11 +164,9 @@ export const useWalletStore = create<WalletState & WalletActions>()(
       updateTokenBalance: (tokenId: string, balance: number) => {
         const { tokens } = get();
         const updatedTokens = tokens.map((token: Token) =>
-          token.id === tokenId
-            ? { ...token, balance, usdValue: balance }
-            : token
+          token.id === tokenId ? { ...token, balance, usdValue: balance } : token
         );
-        
+
         set({ tokens: updatedTokens });
         get().calculateTotalBalance();
       },
@@ -171,27 +176,30 @@ export const useWalletStore = create<WalletState & WalletActions>()(
         try {
           const { tokens } = get();
           const tokenIds = tokens.map((t: Token) => t.symbol);
-          
+
           // Fetch latest prices from API
           const pricesResponse = await walletService.getPrices({ tokenIds });
-          
+
           const updatedTokens = tokens.map((token: Token) => {
-            const priceData = pricesResponse.prices.find(p => p.symbol === token.symbol);
+            const priceData = pricesResponse.prices.find((p) => p.symbol === token.symbol);
             return {
               ...token,
               priceChange: priceData?.priceChange24h || 0,
-              usdValue: token.balance * (parseFloat(priceData?.price || '1')),
+              usdValue: token.balance * parseFloat(priceData?.price || '1'),
             };
           });
-          
+
           set({
             tokens: updatedTokens,
             isLoading: false,
           });
-          
+
           get().calculateTotalBalance();
         } catch (error) {
-          safeError('[WalletStore] Failed to refresh prices:', error);
+          logger.error(
+            '[WalletStore] Failed to refresh prices',
+            error instanceof Error ? error : { error }
+          );
           set({
             error: error instanceof Error ? error.message : ERROR_MESSAGES.WALLET.LOAD_FAILED,
             isLoading: false,
@@ -204,9 +212,9 @@ export const useWalletStore = create<WalletState & WalletActions>()(
         set({ isLoading: true, error: null });
         try {
           const txResponse = await walletService.getTransactions({ limit: 50 });
-          
+
           // Transform API transactions to store format
-          const transactions: Transaction[] = txResponse.data.map((tx: any) => ({
+          const transactions: Transaction[] = txResponse.items.map((tx: any) => ({
             id: tx.id,
             type: tx.type as Transaction['type'],
             token: {
@@ -228,16 +236,19 @@ export const useWalletStore = create<WalletState & WalletActions>()(
             txHash: tx.txHash,
             fee: tx.fee,
           }));
-          
+
           set({
             transactions,
             isLoading: false,
           });
         } catch (error) {
-          safeError('[WalletStore] Failed to fetch transactions:', error);
-          // Fallback to mock data if API fails
+          logger.error(
+            '[WalletStore] Failed to fetch transactions',
+            error instanceof Error ? error : { error }
+          );
+          // SECURITY FIX (M-6): Show error state, never mock data
           set({
-            transactions: MOCK_TRANSACTIONS,
+            transactions: [],
             error: error instanceof Error ? error.message : ERROR_MESSAGES.WALLET.LOAD_FAILED,
             isLoading: false,
           });
@@ -280,11 +291,7 @@ export const useWalletStore = create<WalletState & WalletActions>()(
 
       // Reset
       reset: () => {
-        set({
-          ...initialState,
-          tokens: MOCK_TOKENS,
-          transactions: MOCK_TRANSACTIONS,
-        });
+        set(initialState);
         get().calculateTotalBalance();
       },
     }),

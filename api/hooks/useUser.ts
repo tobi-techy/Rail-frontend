@@ -9,14 +9,42 @@ import { queryKeys, invalidateQueries } from '../queryClient';
 import type {
   UpdateSettingsRequest,
   KYCVerificationRequest,
-  GetNotificationsRequest,
-  MarkNotificationReadRequest,
   Verify2FARequest,
   RemoveDeviceRequest,
   ChangePasswordRequest,
   DeleteAccountRequest,
   User,
 } from '../types';
+import { useAuthStore } from '../../stores/authStore';
+
+/**
+ * Get TOS acceptance status from backend
+ */
+export function useTOSStatus() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  return useQuery({
+    queryKey: queryKeys.user.tos(),
+    queryFn: () => userService.getTOSStatus(),
+    enabled: isAuthenticated,
+    staleTime: Infinity,
+  });
+}
+
+/**
+ * Accept TOS mutation
+ */
+export function useAcceptTOS() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => userService.acceptTOS(),
+    onSuccess: () => {
+      queryClient.setQueryData(queryKeys.user.tos(), {
+        accepted: true,
+        accepted_at: new Date().toISOString(),
+      });
+    },
+  });
+}
 
 /**
  * Get user profile
@@ -97,7 +125,7 @@ export function useUpdateSettings() {
 /**
  * Submit KYC verification mutation
  */
-export function useSubmitKYC() {
+export function useSubmitUserKYC() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -112,39 +140,11 @@ export function useSubmitKYC() {
 /**
  * Get KYC status
  */
-export function useKYCStatus() {
+export function useUserKYCStatus() {
   return useQuery({
     queryKey: queryKeys.user.kycStatus(),
     queryFn: () => userService.getKYCStatus(),
     staleTime: 60 * 1000, // 1 minute
-  });
-}
-
-/**
- * Get notifications
- */
-export function useNotifications(params?: GetNotificationsRequest) {
-  return useQuery({
-    queryKey: queryKeys.user.notifications(params),
-    queryFn: () => userService.getNotifications(params),
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
-  });
-}
-
-/**
- * Mark notifications as read mutation
- */
-export function useMarkNotificationsRead() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: MarkNotificationReadRequest) => 
-      userService.markNotificationsRead(data),
-    onSuccess: () => {
-      // Invalidate notifications to refresh
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.all });
-    },
   });
 }
 

@@ -1,0 +1,23 @@
+// Filled icon exports
+export { default as AllocationIcon } from './allocation.svg';
+export { default as AutoInvestIcon } from './autoinvest.svg';
+export { default as BankIcon } from './bank.svg';
+export { default as BiometricsIcon } from './biometrics.svg';
+export { default as CardIcon } from './card.svg';
+export { default as CashIcon } from './cash.svg';
+export { default as EarnIcon } from './earn.svg';
+export { default as InvestmentIcon } from './investment.svg';
+export { default as NotificationIcon } from './notification.svg';
+export { default as ReceiveIcon } from './receive.svg';
+export { default as RoundupIcon } from './roundup.svg';
+export { default as SecurityIcon } from './security.svg';
+export { default as SendIcon } from './send.svg';
+export { default as SettingsIcon } from './settings.svg';
+export { default as SwapIcon } from './swap.svg';
+export { default as TrashIcon } from './trash.svg';
+export { default as RefferalIcon } from './refferal.svg';
+export { default as LegalIcon } from './legal.svg';
+export { default as SupportIcon } from './support.svg';
+export { default as LogOutIcon } from './logout.svg';
+export { default as TwoFactorAuthIcon } from './2fa.svg';
+export { default as CoinIcon } from './coin.svg';
