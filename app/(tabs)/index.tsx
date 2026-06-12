@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, RefreshControl, Pressable, Platform } from 'react-native';
-import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo } from 'react';
 import { router, useNavigation, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PhantomIcon, SolflareIcon, SolanaIcon, VisaWhite } from '@/assets/svg';
@@ -196,9 +196,6 @@ function DashboardScreen() {
     setRefreshing(true);
     try {
       await Promise.all([
-        refetch(),
-        deposits.refetch(),
-        withdrawals.refetch(),
         invalidateQueries.station(),
         invalidateQueries.funding(),
         invalidateQueries.allocation(),
@@ -207,25 +204,9 @@ function DashboardScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [refetch, deposits, withdrawals]);
+  }, []);
 
-  const focusRefetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      if (focusRefetchTimer.current) clearTimeout(focusRefetchTimer.current);
-      focusRefetchTimer.current = setTimeout(() => {
-        void refetch();
-        void deposits.refetch();
-        void withdrawals.refetch();
-        void invalidateQueries.station();
-        void invalidateQueries.wallet();
-      }, 300);
-    });
-    return () => {
-      if (focusRefetchTimer.current) clearTimeout(focusRefetchTimer.current);
-      unsubscribe();
-    };
-  }, [navigation, refetch, deposits, withdrawals]);
+  // React Query's refetchOnWindowFocus handles tab focus refetching — no manual listener needed
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -260,6 +241,16 @@ function DashboardScreen() {
     ) => {
       setShowSendSheet(false);
       setShowReceiveSheet(false);
+
+      // Crypto goes to chain selection first (amount screen comes after address entry)
+      if (method === 'crypto') {
+        router.push({
+          pathname: '/withdraw/select-chain',
+          params: { currency: sheetCurrency },
+        } as never);
+        return;
+      }
+
       router.push({
         pathname: '/withdraw/[method]',
         params: { method, flow, asset: sheetCurrency },
@@ -465,17 +456,6 @@ function DashboardScreen() {
                   },
                 ]),
             {
-              id: 'p2p',
-              label: 'Send to People',
-              sublabel: PEOPLE_TRANSFER_FEATURES_ENABLED
-                ? 'Via RailTag, email, or phone'
-                : 'Paused for review',
-              icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#ff3e00" />,
-              onPress: startP2P,
-              disabled: !PEOPLE_TRANSFER_FEATURES_ENABLED,
-              badge: !PEOPLE_TRANSFER_FEATURES_ENABLED ? 'Paused' : undefined,
-            },
-            {
               id: 'withdraw-stash',
               label: 'Withdraw from Stash',
               sublabel: 'Move funds out of your investment stash',
@@ -493,17 +473,6 @@ function DashboardScreen() {
               sublabel: 'Send to wallet address',
               icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
               onPress: () => startWithdrawal('crypto'),
-            },
-            {
-              id: 'p2p',
-              label: 'Send to People',
-              sublabel: PEOPLE_TRANSFER_FEATURES_ENABLED
-                ? 'Via RailTag, email, or phone'
-                : 'Paused for review',
-              icon: <HugeiconsIcon icon={UserGroupIcon} size={26} color="#ff3e00" />,
-              onPress: startP2P,
-              disabled: !PEOPLE_TRANSFER_FEATURES_ENABLED,
-              badge: !PEOPLE_TRANSFER_FEATURES_ENABLED ? 'Paused' : undefined,
             },
             {
               id: 'withdraw-stash',
@@ -530,22 +499,6 @@ function DashboardScreen() {
               icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
               onPress: () => startWithdrawal('crypto'),
             },
-            ...(Platform.OS === 'ios'
-              ? [
-                  {
-                    id: 'tap-to-pay',
-                    label: 'Tap to Pay',
-                    sublabel: 'Paused for review',
-                    icon: <HugeiconsIcon icon={Wallet01Icon} size={20} color="#6366F1" />,
-                    onPress: () => {
-                      setShowSendSheet(false);
-                      router.push('/tap-to-pay' as never);
-                    },
-                    disabled: true,
-                    badge: 'Paused',
-                  },
-                ]
-              : []),
           ]
         : [
             {
@@ -668,30 +621,34 @@ function DashboardScreen() {
           </View>
         </View>
 
-        <GorhomBottomSheet
-          visible={showReceiveSheet}
-          onClose={() => setShowReceiveSheet(false)}
-          showCloseButton={false}>
-          <SheetHeader
-            title="Receive Funds"
-            showCurrencySelector
-            selectedCurrency={sheetCurrency}
-            onCurrencyChange={onSheetCurrencyChange}
-          />
-          <ExpandableOptionList main={receiveMainActions} more={receiveMoreActions} />
-        </GorhomBottomSheet>
-        <GorhomBottomSheet
-          visible={showSendSheet}
-          onClose={() => setShowSendSheet(false)}
-          showCloseButton={false}>
-          <SheetHeader
-            title="Send Funds"
-            showCurrencySelector
-            selectedCurrency={sheetCurrency}
-            onCurrencyChange={onSheetCurrencyChange}
-          />
-          <ExpandableOptionList main={sendMainActions} more={sendMoreActions} />
-        </GorhomBottomSheet>
+        {showReceiveSheet && (
+          <GorhomBottomSheet
+            visible={showReceiveSheet}
+            onClose={() => setShowReceiveSheet(false)}
+            showCloseButton={false}>
+            <SheetHeader
+              title="Receive Funds"
+              showCurrencySelector
+              selectedCurrency={sheetCurrency}
+              onCurrencyChange={onSheetCurrencyChange}
+            />
+            <ExpandableOptionList main={receiveMainActions} more={receiveMoreActions} />
+          </GorhomBottomSheet>
+        )}
+        {showSendSheet && (
+          <GorhomBottomSheet
+            visible={showSendSheet}
+            onClose={() => setShowSendSheet(false)}
+            showCloseButton={false}>
+            <SheetHeader
+              title="Send Funds"
+              showCurrencySelector
+              selectedCurrency={sheetCurrency}
+              onCurrencyChange={onSheetCurrencyChange}
+            />
+            <ExpandableOptionList main={sendMainActions} more={sendMoreActions} />
+          </GorhomBottomSheet>
+        )}
         <SpendBreakdownSheet
           visible={showSpendBreakdown}
           onClose={() => setShowSpendBreakdown(false)}
@@ -704,11 +661,13 @@ function DashboardScreen() {
           visible={showStashPerformance}
           onClose={() => setShowStashPerformance(false)}
         />
-        <KYCVerificationSheet
-          visible={showKYCSheet}
-          onClose={() => setShowKYCSheet(false)}
-          kycStatus={kycStatus}
-        />
+        {showKYCSheet && (
+          <KYCVerificationSheet
+            visible={showKYCSheet}
+            onClose={() => setShowKYCSheet(false)}
+            kycStatus={kycStatus}
+          />
+        )}
         <InvestmentDisclaimerSheet
           visible={showDisclaimer}
           onAccept={() => {
@@ -730,14 +689,17 @@ function DashboardScreen() {
           onClose={() => setSelectedTransaction(null)}
           transaction={selectedTransaction}
         />
-        <VirtualAccountSheet
-          visible={showVirtualAccountSheet}
-          onClose={() => setShowVirtualAccountSheet(false)}
-          currency={sheetCurrency === 'EUR' ? 'EUR' : sheetCurrency === 'NGN' ? 'NGN' : 'USD'}
-        />
-        <GorhomBottomSheet
-          visible={showMicroLoanSheet}
-          onClose={() => setShowMicroLoanSheet(false)}>
+        {showVirtualAccountSheet && (
+          <VirtualAccountSheet
+            visible={showVirtualAccountSheet}
+            onClose={() => setShowVirtualAccountSheet(false)}
+            currency={sheetCurrency === 'EUR' ? 'EUR' : sheetCurrency === 'NGN' ? 'NGN' : 'USD'}
+          />
+        )}
+        {showMicroLoanSheet && (
+          <GorhomBottomSheet
+            visible={showMicroLoanSheet}
+            onClose={() => setShowMicroLoanSheet(false)}>
           <View className="px-5">
             <Text className="font-subtitle text-[20px] text-charcoal-primary">Rail Credit</Text>
             <Text className="mt-1 font-body text-[14px] text-ash">
@@ -772,9 +734,11 @@ function DashboardScreen() {
             </View>
           </View>
         </GorhomBottomSheet>
-        <GorhomBottomSheet
-          visible={showCardComingSheet}
-          onClose={() => setShowCardComingSheet(false)}>
+        )}
+        {showCardComingSheet && (
+          <GorhomBottomSheet
+            visible={showCardComingSheet}
+            onClose={() => setShowCardComingSheet(false)}>
           <View className="px-5">
             <Text className="font-subtitle text-[20px] text-charcoal-primary">Rail Card</Text>
             <Text className="mt-1 font-body text-[14px] text-ash">
@@ -808,6 +772,7 @@ function DashboardScreen() {
             </View>
           </View>
         </GorhomBottomSheet>
+        )}
       </ScrollView>
     </View>
   );

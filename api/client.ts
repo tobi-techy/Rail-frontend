@@ -320,7 +320,7 @@ axiosInstance.interceptors.response.use(
 
       if (retryCount < 3 && retryAfter) {
         originalRequest._retryCount = retryCount + 1;
-        const delay = parseInt(retryAfter, 10) * 1000 || 5000;
+        const delay = Math.min(parseInt(retryAfter, 10) * 1000 || 5000, 30_000);
         await new Promise((resolve) => setTimeout(resolve, delay));
         return axiosInstance.request(originalRequest);
       }

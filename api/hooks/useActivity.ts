@@ -10,6 +10,6 @@ export function useActivityFeed(limit = 20, offset = 0) {
     enabled: isAuthenticated,
     staleTime: 15_000,
     refetchOnMount: 'always' as const,
-    refetchInterval: 30_000,
+    refetchInterval: 90_000,
   });
 }

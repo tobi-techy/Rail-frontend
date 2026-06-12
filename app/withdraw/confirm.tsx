@@ -34,7 +34,7 @@ export default function ConfirmScreen() {
   }>();
 
   const numericAmount = parseFloat(params.amount ?? '0') || 0;
-  const feeAmount = numericAmount > 0 ? 0.5 : 0;
+  const feeAmount = numericAmount > 0 ? 0.1 : 0;
   const totalAmount = numericAmount + feeAmount;
   const isCryptoMethod = params.isCryptoMethod === 'true';
   const isFiatMethod = params.isFiatMethod === 'true';

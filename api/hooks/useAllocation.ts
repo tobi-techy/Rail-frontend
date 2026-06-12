@@ -20,7 +20,7 @@ export function useAllocationBalances() {
     queryFn: () => allocationService.getBalances(),
     enabled: isAuthenticated,
     staleTime: 20 * 1000, // 20 seconds - balance-critical, refresh often
-    refetchInterval: 50 * 1000, // Refetch every 50 seconds
+    refetchInterval: 120 * 1000, // Refetch every 2 minutes
     refetchOnWindowFocus: true, // Update when app comes to foreground
     refetchOnReconnect: true, // Update when network restored
   });

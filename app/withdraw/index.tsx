@@ -112,7 +112,7 @@ export default function WithdrawMethodSelectorScreen() {
               subtitle="Withdraw to an external wallet address"
               onPress={() => {
                 track(ANALYTICS_EVENTS.WITHDRAW_INITIATED, { method: 'crypto' });
-                router.push('/withdraw/crypto' as never);
+                router.push('/withdraw/select-chain' as never);
               }}
               icon={<CoinIcon width={24} height={24} />}
               accessibilityLabel="Select crypto withdrawal"

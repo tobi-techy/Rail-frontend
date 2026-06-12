@@ -33,6 +33,9 @@ export interface ActivityItem {
   chain?: string;
   txHash?: string;
   destination?: string;
+  receiverName?: string;
+  bankName?: string;
+  narration?: string;
   sourceId: string;
   sourceType: string;
   groupId?: string;

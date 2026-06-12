@@ -59,6 +59,11 @@ export function parseApiError(
   // TransformedApiError (from api/client.ts transformError)
   const e = err as Partial<TransformedApiError>;
   if (e.code && e.message) {
+    // For INVALID_REQUEST, prefer the server's specific message (e.g. "amount must be at least...")
+    // over the generic mapped text, since the backend provides actionable detail.
+    if (e.code === 'INVALID_REQUEST' && e.message !== e.code) {
+      return e.message;
+    }
     // Prefer mapped user-friendly message, fall back to server message
     return ERROR_MESSAGES[e.code] ?? e.message;
   }

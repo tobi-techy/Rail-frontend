@@ -44,6 +44,7 @@ export function useProtectedRoute() {
   const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const appState = useRef(AppState.currentState);
+  const lastForegroundRefresh = useRef(0);
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
   const paramsRef = useRef(globalParams);
@@ -266,14 +267,18 @@ export function useProtectedRoute() {
 
             freshState.updateLastActivity();
 
-            try {
-              await refreshBackendAuthState();
-            } catch (error) {
-              logger.warn('[Auth] Failed to refresh auth state on resume', {
-                component: 'useProtectedRoute',
-                action: 'foreground-refresh-failed',
-                error: error instanceof Error ? error.message : String(error),
-              });
+            // Cooldown: skip refresh if last call was < 30s ago
+            if (Date.now() - lastForegroundRefresh.current > 30_000) {
+              lastForegroundRefresh.current = Date.now();
+              try {
+                await refreshBackendAuthState();
+              } catch (error) {
+                logger.warn('[Auth] Failed to refresh auth state on resume', {
+                  component: 'useProtectedRoute',
+                  action: 'foreground-refresh-failed',
+                  error: error instanceof Error ? error.message : String(error),
+                });
+              }
             }
           }
         }

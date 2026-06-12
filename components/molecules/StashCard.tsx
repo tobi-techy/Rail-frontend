@@ -55,8 +55,8 @@ export const StashCard: React.FC<StashCardProps> = ({
 
   return (
     <AnimatedPressable
-      style={[animStyle, isColored ? { backgroundColor: cardColor } : undefined]}
-      className={`flex-1 rounded-3xl ${isColored ? '' : 'border border-fog bg-parchment-card'} px-4 py-4 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
+      style={[animStyle, isColored ? { backgroundColor: cardColor } : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 }]}
+      className={`flex-1 rounded-3xl ${isColored ? '' : 'border border-black/[0.07] bg-[#F8F8F8]'} px-4 py-4 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
       onPress={() => {
         impact();
         onPress?.();

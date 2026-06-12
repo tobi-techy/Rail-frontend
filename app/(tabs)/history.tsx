@@ -77,6 +77,9 @@ function activityToTransaction(item: ActivityItem): Transaction {
       fiatAmount: item.fiatAmount,
       secondaryCurrency: item.currency.secondary,
       groupId: item.groupId,
+      bankName: item.bankName,
+      bankAccountName: item.receiverName,
+      narration: item.narration,
     },
   };
 }
@@ -131,18 +134,10 @@ export default function History() {
   const showSkeleton = activity.isLoading && transactions.length === 0;
 
   return (
-    <View className="flex-1 bg-background-main">
+    <View className="flex-1">
       {/* Search */}
       <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 2 }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: '#f2f0ed',
-            borderRadius: 12,
-            paddingHorizontal: 12,
-            height: 40,
-          }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 12, paddingHorizontal: 12, height: 40, backgroundColor: '#F2F2F2', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' }}>
           <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
           <TextInput
             value={search}
@@ -151,7 +146,7 @@ export default function History() {
             placeholderTextColor="#a7a7a7"
             style={{
               flex: 1,
-              fontFamily: 'SFProDisplay-Regular',
+              fontFamily: 'Geist-Regular',
               fontSize: 15,
               color: '#343433',
               marginLeft: 8,

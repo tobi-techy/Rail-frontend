@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StatusBar, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -47,6 +47,9 @@ export default function FundNairaScreen() {
 
   const onRampRate = rates?.onRampRate?.rate ?? 0;
 
+  // ── PAJ verification gate ─────────────────────────────────────────────────
+  const needsVerification = useRef(false);
+
   // ── Derived amounts ───────────────────────────────────────────────────────
   const numericAmount = useMemo(() => {
     const n = parseFloat(rawAmount);
@@ -86,21 +89,32 @@ export default function FundNairaScreen() {
 
   // ── Create onramp order ───────────────────────────────────────────────────
   const handleContinue = useCallback(async () => {
-    if (!canContinue) return;
+    if (!canContinue || onramp.isPending) return;
     try {
       const result = await onramp.mutateAsync({ amount: numericAmount, currency: 'NGN' });
+      needsVerification.current = false;
       setOrder(result);
       setStep('bank-details');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: any) {
       const code = err?.code || err?.error || '';
       if (code === 'PAJ_VERIFICATION_REQUIRED') {
+        needsVerification.current = true;
         router.push('/paj-verify');
         return;
       }
       showError('Failed to create deposit', err?.message || 'Please try again.');
     }
   }, [canContinue, numericAmount, onramp, showError]);
+
+  // Re-attempt order when returning from paj-verify (triggers redirect if still unverified)
+  useFocusEffect(
+    useCallback(() => {
+      if (needsVerification.current && canContinue) {
+        handleContinue();
+      }
+    }, [canContinue, handleContinue])
+  );
 
   // ── Proceed to waiting ────────────────────────────────────────────────────
   const handleTransferred = useCallback(() => {

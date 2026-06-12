@@ -13,7 +13,7 @@ import Animated, {
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-export type MiriamEmotion = 'neutral' | 'happy' | 'sad' | 'thinking' | 'surprised' | 'sleepy';
+export type MiriamEmotion = 'neutral' | 'happy' | 'sad' | 'thinking' | 'surprised' | 'sleepy' | 'annoyed' | 'dizzy' | 'nervous' | 'smug' | 'idle' | 'bored' | 'confused';
 
 export type MiriamFacing = 'front' | 'left' | 'right' | 'auto';
 
@@ -133,6 +133,111 @@ const PRESETS: Record<MiriamEmotion, EmotionPreset> = {
     mouth: 'rest',
     brows: 'heavy',
     cheekOpacity: 0,
+    cheekY: 0.5,
+  },
+  annoyed: {
+    yOffset: 0.37,
+    scaleY: 0.6,
+    rx: 0.058,
+    ry: 0.07,
+    lookBiasX: -1.2,
+    lookBiasY: 1.0,
+    blinkSpeed: 100,
+    blinkHold: 80,
+    headBias: -0.3,
+    mouth: 'frown',
+    brows: 'worry',
+    cheekOpacity: 0.1,
+    cheekY: 0.52,
+  },
+  dizzy: {
+    yOffset: 0.36,
+    scaleY: 1.1,
+    rx: 0.072,
+    ry: 0.09,
+    lookBiasX: 2.0,
+    lookBiasY: -2.0,
+    blinkSpeed: 60,
+    blinkHold: 40,
+    headBias: 0.1,
+    mouth: 'open',
+    brows: 'wide',
+    cheekOpacity: 0.15,
+    cheekY: 0.5,
+  },
+  nervous: {
+    yOffset: 0.35,
+    scaleY: 0.85,
+    rx: 0.055,
+    ry: 0.078,
+    lookBiasX: 1.5,
+    lookBiasY: 0.5,
+    blinkSpeed: 60,
+    blinkHold: 45,
+    headBias: 0.12,
+    mouth: 'flat',
+    brows: 'worry',
+    cheekOpacity: 0.35,
+    cheekY: 0.52,
+  },
+  smug: {
+    yOffset: 0.39,
+    scaleY: 0.5,
+    rx: 0.065,
+    ry: 0.07,
+    lookBiasX: 0.8,
+    lookBiasY: 0.8,
+    blinkSpeed: 100,
+    blinkHold: 80,
+    headBias: 0.25,
+    mouth: 'smile',
+    brows: 'calm',
+    cheekOpacity: 0.4,
+    cheekY: 0.51,
+  },
+  idle: {
+    yOffset: 0.36,
+    scaleY: 1.0,
+    rx: 0.058,
+    ry: 0.083,
+    lookBiasX: 0,
+    lookBiasY: 0,
+    blinkSpeed: 150,
+    blinkHold: 100,
+    headBias: 0,
+    mouth: 'flat',
+    brows: 'calm',
+    cheekOpacity: 0.2,
+    cheekY: 0.5,
+  },
+  bored: {
+    yOffset: 0.38,
+    scaleY: 0.7,
+    rx: 0.06,
+    ry: 0.075,
+    lookBiasX: -0.3,
+    lookBiasY: 1.5,
+    blinkSpeed: 180,
+    blinkHold: 200,
+    headBias: -0.1,
+    mouth: 'flat',
+    brows: 'heavy',
+    cheekOpacity: 0.1,
+    cheekY: 0.52,
+  },
+  confused: {
+    yOffset: 0.35,
+    scaleY: 0.9,
+    rx: 0.06,
+    ry: 0.085,
+    lookBiasX: 1.8,
+    lookBiasY: -0.5,
+    blinkSpeed: 110,
+    blinkHold: 70,
+    headBias: 0.3,
+    mouth: 'ponder',
+    brows: 'curious',
+    cheekOpacity: 0.2,
     cheekY: 0.5,
   },
 };
@@ -454,14 +559,16 @@ export function MiriamCharacter({
 
   // ── Eye geometry ────────────────────────────────────────────────────────
 
-  const eyeW = preset.rx * s * 2;
-  const eyeH = preset.ry * s * 2;
+  // ── Eye geometry ────────────────────────────────────────────────────────
+
+  const eyeW = preset.rx * s * 2.2;
+  const eyeH = preset.ry * s * 2.8;
+  const eyeRadius = eyeW / 2;
   const eyeY = preset.yOffset * s - eyeH / 2;
   const leftX = s * 0.36 - eyeW / 2;
   const rightX = s * 0.56 - eyeW / 2;
 
-  // Padding so head movement isn't clipped
-  const pad = s * 0.15;
+  const pad = s * 0.08;
 
   return (
     <View

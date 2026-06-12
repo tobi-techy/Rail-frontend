@@ -85,9 +85,11 @@ const DetailRow = ({
   return (
     <View className="flex-row items-center justify-between py-3">
       <Text className="font-caption text-body text-text-secondary">{label}</Text>
-      <View className="flex-row items-center">
+      <View className="ml-4 flex-1 flex-row items-center justify-end">
         <Text
-          className={`font-subtitle text-body ${isGreen ? 'text-success' : isDanger ? 'text-destructive' : 'text-text-primary'}`}>
+          className={`font-subtitle text-body ${isGreen ? 'text-success' : isDanger ? 'text-destructive' : 'text-text-primary'}`}
+          numberOfLines={1}
+          style={{ maxWidth: '75%', textAlign: 'right' }}>
           {copyable ? truncateAddress(value) : value}
         </Text>
         {copyable && (
@@ -251,9 +253,11 @@ export function TransactionDetailSheet({
 
   const isCancellable = transaction.type === 'withdraw' && transaction.status === 'pending';
   const meta = transaction.metadata ?? {};
-  const resolvedBankName = meta.bankId
-    ? (pajBanksData?.banks ?? []).find((b) => b.id === meta.bankId)?.name
-    : undefined;
+  const resolvedBankName = meta.bankName
+    ? String(meta.bankName)
+    : meta.bankId
+      ? (pajBanksData?.banks ?? []).find((b) => b.id === meta.bankId)?.name ?? String(meta.bankId)
+      : undefined;
 
   const handleCancel = () => {
     Alert.alert('Cancel Withdrawal', 'Are you sure you want to cancel this withdrawal?', [
@@ -388,7 +392,14 @@ export function TransactionDetailSheet({
 
       {/* Primary details */}
       <View className="mt-2 border-t border-surface pt-2">
-        {transaction.title && <DetailRow label="Description" value={transaction.title} />}
+        {/* Recipient name — prominently displayed for fiat */}
+        {meta.bankAccountName && (
+          <DetailRow label="Recipient" value={String(meta.bankAccountName)} />
+        )}
+
+        {transaction.title && !meta.bankAccountName && (
+          <DetailRow label="Description" value={transaction.title} />
+        )}
 
         {(type === 'send' || type === 'receive') && toAddress && (
           <DetailRow label={type === 'send' ? 'To' : 'From'} value={toAddress} copyable />
@@ -396,20 +407,39 @@ export function TransactionDetailSheet({
 
         {type === 'deposit' && <DetailRow label="Method" value={transaction.subtitle || 'Card'} />}
 
-        {type === 'withdraw' && (
+        {type === 'withdraw' && !meta.bankAccountName && (
           <DetailRow
             label="To"
-            value={String(
-              meta.bankAccountName ||
-                meta.bankAccountNumber ||
-                transaction.subtitle ||
-                'Bank Account'
-            )}
+            value={String(meta.bankAccountNumber || transaction.subtitle || 'Bank Account')}
           />
         )}
 
         {type === 'swap' && (
           <DetailRow label="Via" value={transaction.subtitle || 'Rail Exchange'} />
+        )}
+
+        {/* Fiat details — amount in naira, bank, account */}
+        {meta.fiatAmount && (
+          <DetailRow
+            label="Naira Amount"
+            value={`₦${Number(meta.fiatAmount).toLocaleString()}`}
+          />
+        )}
+        {meta.secondaryCurrency && meta.fiatAmount && meta.rate && (
+          <DetailRow
+            label="Rate"
+            value={`₦${Number(meta.rate).toLocaleString()}/$1`}
+          />
+        )}
+        {resolvedBankName && <DetailRow label="Bank" value={resolvedBankName} />}
+        {!resolvedBankName && type === 'withdraw' && transaction.subtitle?.includes('•') && (
+          <DetailRow label="Bank" value={transaction.subtitle.split('•')[0].trim()} />
+        )}
+        {meta.bankAccountNumber && !meta.bankAccountName && (
+          <DetailRow label="Account" value={String(meta.bankAccountNumber)} copyable />
+        )}
+        {meta.bankAccountNumber && meta.bankAccountName && (
+          <DetailRow label="Account" value={String(meta.bankAccountNumber)} copyable />
         )}
 
         <DetailRow
@@ -419,10 +449,14 @@ export function TransactionDetailSheet({
           isDanger={transaction.status === 'failed'}
         />
 
+        <DetailRow label="Date" value={formatDate(createdAt)} />
+
         {txHash && <DetailRow label="Transaction ID" value={txHash} copyable />}
         {fee && (
           <DetailRow label="Fees" value={fee} isGreen={fee.toLowerCase().includes('covered')} />
         )}
+        {meta.chain && <DetailRow label="Network" value={String(meta.chain)} />}
+        {meta.narration && <DetailRow label="Note" value={String(meta.narration)} />}
       </View>
 
       {/* See More expandable */}
@@ -549,8 +583,6 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
       <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
         <ReceiptRow label="Type" value={typeLabels[type]} />
         {!!title && <ReceiptRow label="Description" value={title} />}
-        {!!subtitle && <ReceiptRow label="Details" value={subtitle} />}
-        <ReceiptRow label="Date" value={formatDateShort(createdAt)} />
         {!!meta.bankAccountName && (
           <ReceiptRow label="Recipient" value={String(meta.bankAccountName)} />
         )}
@@ -560,8 +592,11 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
         {!!(bankName || meta.bankId) && (
           <ReceiptRow label="Bank" value={bankName || String(meta.bankId)} />
         )}
+        {!!meta.fiatAmount && (
+          <ReceiptRow label="Naira Amount" value={`₦${Number(meta.fiatAmount).toLocaleString()}`} />
+        )}
         {!!meta.rate && (
-          <ReceiptRow label="Rate" value={`₦${Number(meta.rate).toLocaleString()}`} />
+          <ReceiptRow label="Rate" value={`₦${Number(meta.rate).toLocaleString()}/$1`} />
         )}
         {!!meta.tokenAmount && (
           <ReceiptRow label="USDC" value={`$${Number(meta.tokenAmount).toFixed(2)}`} />
@@ -569,12 +604,16 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
         {!!meta.fee && Number(meta.fee) > 0 && (
           <ReceiptRow label="Fee" value={`$${Number(meta.fee).toFixed(2)}`} />
         )}
+        {!!meta.chain && <ReceiptRow label="Network" value={String(meta.chain)} />}
+        <ReceiptRow label="Date" value={formatDateShort(createdAt)} />
+        <ReceiptRow label="Status" value={statusLabel(status)} />
         {!!txHash && (
           <ReceiptRow
             label="TX ID"
             value={txHash.length > 20 ? `${txHash.slice(0, 8)}...${txHash.slice(-8)}` : txHash}
           />
         )}
+        {!!subtitle && !meta.bankAccountName && <ReceiptRow label="Note" value={subtitle} />}
       </View>
 
       {/* Footer */}
@@ -617,9 +656,12 @@ function buildTextReceipt(tx: Transaction): string {
     `Type: ${typeLabels[tx.type]}`,
     `Amount: ${formatAbsAmount(tx.amount)} ${tx.currency ?? 'NGN'}`,
     tx.title ? `Description: ${tx.title}` : '',
-    `Date: ${formatDate(tx.createdAt)}`,
+    meta.bankAccountName ? `Recipient: ${meta.bankAccountName}` : '',
     meta.bankAccountNumber ? `Account: ${meta.bankAccountNumber}` : '',
-    meta.rate ? `Rate: ₦${Number(meta.rate).toLocaleString()}` : '',
+    meta.fiatAmount ? `Naira Amount: ₦${Number(meta.fiatAmount).toLocaleString()}` : '',
+    meta.rate ? `Rate: ₦${Number(meta.rate).toLocaleString()}/$1` : '',
+    `Date: ${formatDate(tx.createdAt)}`,
+    meta.chain ? `Network: ${meta.chain}` : '',
     tx.txHash ? `TX: ${tx.txHash}` : '',
     `Status: ${statusLabel(tx.status)}`,
     '━━━━━━━━━━━━━━━━━━━━━━━━',

@@ -66,9 +66,11 @@ lerna-debug.log*
 
 # Package managers
 pnpm-lock.yaml
+yarn.lock
+package-lock.json
 
 # macOS
-.DS_Store
+**/.DS_Store
 .AppleDouble
 .LSOverride
 
@@ -76,6 +78,20 @@ pnpm-lock.yaml
 .metro-health-check*
 *.tmp
 *.temp
+tmp/
+
+# Non-app assets
+output/
+*.pptx
+*.html
+!app/**/*.html
+generate_pptx.py
+tobi-avatar.png
+
+# Docker (not used)
+Dockerfile
+docker-compose.yml
+.dockerignore
 
 # IDE
 .vscode/

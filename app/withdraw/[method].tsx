@@ -68,6 +68,7 @@ import { Cancel01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { usePajRates } from '@/api/hooks/usePaj';
 import {
   MIN_CRYPTO_TRANSACTION_AMOUNT_USD,
+  MIN_EUR_TRANSACTION_AMOUNT,
   MIN_NGN_TRANSACTION_AMOUNT,
 } from '@/constants/transactionLimits';
 
@@ -183,6 +184,7 @@ export default function WithdrawAmountScreen() {
   const railFeeBase = pajRatesData?.railFee ?? 50;
   const stampDuty = pajRatesData?.stampDuty ?? 50;
   const stampDutyAbove = pajRatesData?.stampDutyAbove ?? 10000;
+  const minNGN = pajRatesData?.minWithdrawalNGN ?? MIN_NGN_TRANSACTION_AMOUNT;
 
   const availableBalance = useMemo(() => {
     const source =
@@ -190,9 +192,7 @@ export default function WithdrawAmountScreen() {
         ? station?.broker_cash
         : selectedMethod === 'asset-sell'
           ? station?.invest_balance
-          : isFiatMethod
-            ? station?.total_balance
-            : station?.spend_balance;
+          : station?.spend_balance;
     const parsed = Number.parseFloat(source ?? '');
     const usdBalance = Number.isFinite(parsed) && parsed >= 0 ? parsed : FALLBACK_AVAILABLE_BALANCE;
     return isNGNAsset && ngnRate > 0 ? usdBalance * ngnRate : usdBalance;
@@ -201,8 +201,6 @@ export default function WithdrawAmountScreen() {
     station?.broker_cash,
     station?.invest_balance,
     station?.spend_balance,
-    station?.total_balance,
-    isFiatMethod,
     isNGNAsset,
     ngnRate,
   ]);
@@ -225,9 +223,8 @@ export default function WithdrawAmountScreen() {
       }
       return 1.0;
     }
-    if (destinationChain === 'SOL' || !destinationChain) return 0.1;
-    return 0.5;
-  }, [numericAmount, isFiatMethod, asset, destinationChain, ngnRate, railFeeBase, stampDuty, stampDutyAbove]);
+    return 0.1;
+  }, [numericAmount, isFiatMethod, asset, ngnRate, railFeeBase, stampDuty, stampDutyAbove]);
   const amountError = useMemo(
     () =>
       getAmountError({
@@ -237,8 +234,12 @@ export default function WithdrawAmountScreen() {
         numericAmount,
         withdrawalLimit,
         feeAmount,
-        currencySymbol: isNGNAsset ? '₦' : '$',
-        minAmount: isNGNAsset ? MIN_NGN_TRANSACTION_AMOUNT : MIN_CRYPTO_TRANSACTION_AMOUNT_USD,
+        currencySymbol: isNGNAsset ? '₦' : asset === 'EUR' ? '€' : '$',
+        minAmount: isNGNAsset
+          ? minNGN
+          : asset === 'EUR'
+            ? MIN_EUR_TRANSACTION_AMOUNT
+            : MIN_CRYPTO_TRANSACTION_AMOUNT_USD,
         minAmountLabel: isFundFlow ? 'funding' : 'withdrawal',
       }),
     [
@@ -561,6 +562,21 @@ export default function WithdrawAmountScreen() {
       setIsAuthorizeScreenVisible(true);
       return;
     }
+    // Crypto with pre-filled address from new flow → skip destination, go to confirm
+    if (isCryptoDestinationMethod && params.destinationInput && params.destinationChain) {
+      router.push({
+        pathname: '/withdraw/confirm',
+        params: {
+          method: selectedMethod,
+          amount: numericAmount.toFixed(2),
+          isCryptoMethod: 'true',
+          destinationInput: params.destinationInput,
+          destinationChain: params.destinationChain,
+          currency: nudgeCurrency,
+        },
+      });
+      return;
+    }
     router.push({
       pathname: '/withdraw/destination',
       params: {
@@ -593,6 +609,8 @@ export default function WithdrawAmountScreen() {
     availableBalance,
     maxWithdrawable,
     nudgeCurrency,
+    params.destinationInput,
+    params.destinationChain,
   ]);
 
   const MAX_PIN_ATTEMPTS = 5;

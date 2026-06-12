@@ -46,7 +46,7 @@ export default function DetailsScreen() {
   }>();
 
   const numericAmount = parseFloat(params.amount ?? '0') || 0;
-  const feeAmount = numericAmount > 0 ? 0.5 : 0;
+  const feeAmount = numericAmount > 0 ? 0.1 : 0;
   const totalAmount = numericAmount + feeAmount;
 
   const [category, setCategory] = useState('Transfer');

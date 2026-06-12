@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Dimensions, Keyboard, Pressable, View } from 'react-native';
+import { Dimensions, Keyboard, Pressable } from 'react-native';
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
   BottomSheetScrollView,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import type { BottomSheetBackdropProps, BottomSheetBackgroundProps } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from '@/utils/platformHaptics';
-import { Cancel01Icon } from '@/lib/icons';
-import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { Cancel01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { GlassView } from '@/components/ui/GlassView';
 
 interface GorhomBottomSheetProps {
   visible: boolean;
@@ -20,6 +20,18 @@ interface GorhomBottomSheetProps {
   dismissible?: boolean;
   scrollable?: boolean;
   snapPoints?: (string | number)[];
+  glassBackground?: boolean;
+}
+
+function GlassBackground({ style }: BottomSheetBackgroundProps) {
+  return (
+    <GlassView
+      effect="regular"
+      white
+      fallbackColor="rgba(255,255,255,0.97)"
+      style={[style, { borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' }]}
+    />
+  );
 }
 
 export function GorhomBottomSheet({
@@ -30,6 +42,7 @@ export function GorhomBottomSheet({
   dismissible = true,
   scrollable = true,
   snapPoints,
+  glassBackground = false,
 }: GorhomBottomSheetProps) {
   const ref = useRef<BottomSheetModal>(null);
   const insets = useSafeAreaInsets();
@@ -75,11 +88,18 @@ export function GorhomBottomSheet({
       enablePanDownToClose={dismissible}
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
-      backgroundStyle={{
-        backgroundColor: '#f7f4ef',
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-      }}
+      {...(glassBackground
+        ? {
+            backgroundComponent: GlassBackground,
+            backgroundStyle: { backgroundColor: 'transparent' },
+          }
+        : {
+            backgroundStyle: {
+              backgroundColor: '#f7f4ef',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+            },
+          })}
       handleIndicatorStyle={{
         backgroundColor: '#c6c6c6',
         width: 36,

@@ -533,7 +533,7 @@ export function FiatKycRequiredScreen({
                   <Button
                     title="Use Crypto Instead"
                     variant="white"
-                    onPress={() => router.replace('/withdraw/crypto' as never)}
+                    onPress={() => router.replace('/withdraw/select-chain' as never)}
                     flex
                   />
                 </View>
@@ -578,7 +578,7 @@ export function FiatKycRequiredScreen({
                   <Button
                     title="Use Crypto Instead"
                     variant="white"
-                    onPress={() => router.replace('/withdraw/crypto' as never)}
+                    onPress={() => router.replace('/withdraw/select-chain' as never)}
                     flex
                   />
                 </View>

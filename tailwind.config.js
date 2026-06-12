@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 const colors = {
-  warmCanvas: '#fbfaf9',
-  stoneSurface: '#f2f0ed',
-  parchmentCard: '#f8f7f4',
+  warmCanvas: '#ffffff',
+  stoneSurface: '#f2f2f2',
+  parchmentCard: '#f5f5f5',
   graphite: '#474645',
   charcoalPrimary: '#343433',
   midnight: '#121212',

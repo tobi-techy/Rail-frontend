@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
+import { GlassView } from '@/components/ui/GlassView';
 import {
   IconComponent as HugeiconsIcon,
   Search01Icon,
@@ -10,8 +11,11 @@ import {
   Add01Icon,
   MoreHorizontalIcon,
   Clock01Icon,
+  Delete02Icon,
+  PinIcon,
 } from '@/lib/icons';
 import { useAIChatStore } from '@/stores/aiChatStore';
+import * as Haptics from '@/utils/platformHaptics';
 
 function relativeDateLabel(iso: string): string {
   if (!iso) return '';
@@ -31,12 +35,93 @@ function relativeDateLabel(iso: string): string {
   return `${Math.floor(diffDays / 30)}mo`;
 }
 
+// ─── Glass Popover Menu ──────────────────────────────────────────
+
+function ThreadOptionsMenu({
+  visible,
+  anchor,
+  onClose,
+  onPin,
+  onDelete,
+}: {
+  visible: boolean;
+  anchor: { x: number; y: number } | null;
+  onClose: () => void;
+  onPin: () => void;
+  onDelete: () => void;
+}) {
+  const scale = useSharedValue(0.85);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (visible) {
+      opacity.value = withTiming(1, { duration: 150 });
+      scale.value = withSpring(1, { damping: 20, stiffness: 340 });
+    } else {
+      opacity.value = withTiming(0, { duration: 100 });
+      scale.value = withTiming(0.85, { duration: 100 });
+    }
+  }, [visible, opacity, scale]);
+
+  const menuStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
+
+  if (!visible || !anchor) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View className="absolute inset-0" />
+      </TouchableWithoutFeedback>
+      <Animated.View
+        style={[
+          menuStyle,
+          {
+            position: 'absolute',
+            top: anchor.y,
+            right: 20,
+            width: 200,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.15,
+            shadowRadius: 20,
+            elevation: 12,
+          },
+        ]}>
+        <GlassView
+          effect="regular"
+          white
+          fallbackColor="rgba(255,255,255,0.92)"
+          style={{ borderRadius: 14, overflow: 'hidden' }}>
+          <Pressable
+            onPress={() => { onClose(); onPin(); }}
+            className="flex-row items-center justify-between px-4 py-3.5 active:bg-black/[0.05]">
+            <Text className="font-body-medium text-[15px] text-[#1C1C1E]">Pin</Text>
+            <HugeiconsIcon icon={PinIcon} size={18} color="#1C1C1E" />
+          </Pressable>
+          <View className="mx-4 h-[0.5px] bg-black/[0.08]" />
+          <Pressable
+            onPress={() => { onClose(); onDelete(); }}
+            className="flex-row items-center justify-between px-4 py-3.5 active:bg-black/[0.05]">
+            <Text className="font-body-medium text-[15px] text-[#FF3B30]">Delete</Text>
+            <HugeiconsIcon icon={Delete02Icon} size={18} color="#FF3B30" />
+          </Pressable>
+        </GlassView>
+      </Animated.View>
+    </Modal>
+  );
+}
+
 export function MiriamDrawerContent({ navigation }: DrawerContentComponentProps) {
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
+  const [menuConvId, setMenuConvId] = useState<string | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<{ x: number; y: number } | null>(null);
   const inputRef = useRef<TextInput>(null);
 
-  const { conversations, activeConversationId, selectConversation, clearActiveConversation, fetchProactiveOpener } =
+  const { conversations, activeConversationId, selectConversation, clearActiveConversation, fetchProactiveOpener, deleteConversation } =
     useAIChatStore();
 
   // Pre-fetch proactive opener when drawer opens so it's ready for chat
@@ -65,6 +150,9 @@ export function MiriamDrawerContent({ navigation }: DrawerContentComponentProps)
       )
     : (conversations ?? []);
 
+  // Strip mic/voice emoji prefix from display titles
+  const stripVoiceEmoji = (title: string) => title.replace(/^🎙️\s*/, '');
+
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
       {/* Header */}
@@ -73,24 +161,30 @@ export function MiriamDrawerContent({ navigation }: DrawerContentComponentProps)
       </View>
 
       {/* Search bar */}
-      <View className="mx-5 mb-4 flex-row items-center rounded-2xl bg-[#F2F2F2] px-4" style={{ height: 44 }}>
-        <HugeiconsIcon icon={Search01Icon} size={17} color="#9CA3AF" />
-        <TextInput
-          ref={inputRef}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search threads"
-          placeholderTextColor="#9CA3AF"
-          className="ml-2 flex-1 font-body text-[15px] text-[#1A1A1A]"
-          returnKeyType="search"
-        />
-        {searchQuery.length > 0 && (
-          <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(150)}>
-            <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
-              <HugeiconsIcon icon={Cancel01Icon} size={15} color="#9CA3AF" />
-            </Pressable>
-          </Animated.View>
-        )}
+      <View className="mx-5 mb-4" style={{ height: 44 }}>
+        <GlassView
+          effect="regular"
+          white
+          fallbackColor="#F2F2F2"
+          style={{ borderRadius: 22, height: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 }}>
+          <HugeiconsIcon icon={Search01Icon} size={17} color="#9CA3AF" />
+          <TextInput
+            ref={inputRef}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search threads"
+            placeholderTextColor="#9CA3AF"
+            className="ml-2 flex-1 font-body text-[15px] text-[#1A1A1A]"
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(150)}>
+              <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+                <HugeiconsIcon icon={Cancel01Icon} size={15} color="#9CA3AF" />
+              </Pressable>
+            </Animated.View>
+          )}
+        </GlassView>
       </View>
 
       {/* Thread list */}
@@ -101,9 +195,8 @@ export function MiriamDrawerContent({ navigation }: DrawerContentComponentProps)
         {filtered.map((conv) => {
           const isActive = conv.id === activeConversationId;
           const dateLabel = relativeDateLabel(conv.updated_at ?? conv.created_at);
-          const summary = conv.title.length > 40
-            ? conv.title
-            : `Conversation about ${conv.title.toLowerCase()}`;
+          // Show title as summary; truncate long titles with ellipsis via numberOfLines
+          const summary = conv.title;
 
           return (
             <Pressable
@@ -117,10 +210,15 @@ export function MiriamDrawerContent({ navigation }: DrawerContentComponentProps)
                 <Text
                   className="mr-3 flex-1 font-heading-semibold text-[16px] leading-[22px] text-[#1A1A1A]"
                   numberOfLines={2}>
-                  {conv.title}
+                  {stripVoiceEmoji(conv.title)}
                 </Text>
                 <Pressable
-                  onPress={(e) => e.stopPropagation?.()}
+                  onPress={(e) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    const { pageY } = e.nativeEvent;
+                    setMenuAnchor({ x: 0, y: pageY });
+                    setMenuConvId(conv.id);
+                  }}
                   hitSlop={12}
                   className="mt-0.5"
                   accessibilityRole="button"
@@ -133,7 +231,7 @@ export function MiriamDrawerContent({ navigation }: DrawerContentComponentProps)
               <Text
                 className="mt-1 font-body text-[14px] leading-[20px] text-[#8C8C8C]"
                 numberOfLines={2}>
-                {summary}
+                {stripVoiceEmoji(summary)}
               </Text>
 
               {/* Timestamp */}
@@ -158,12 +256,27 @@ export function MiriamDrawerContent({ navigation }: DrawerContentComponentProps)
         style={{ paddingBottom: insets.bottom + 20 }}>
         <Pressable
           onPress={handleNewChat}
-          className="flex-row items-center rounded-full bg-primary px-5 py-3.5 shadow-md active:opacity-80"
-          style={{ elevation: 4 }}>
-          <HugeiconsIcon icon={Add01Icon} size={18} color="#FFFFFF" />
-          <Text className="ml-2 font-heading-semibold text-[15px] text-white">New Chat</Text>
+          accessibilityRole="button"
+          accessibilityLabel="New Chat">
+          <GlassView
+            effect="regular"
+            interactive
+            white
+            fallbackColor="rgba(0,0,0,0.08)"
+            style={{ borderRadius: 100, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 }}>
+            <HugeiconsIcon icon={Add01Icon} size={18} color="#1A1A1A" />
+            <Text className="ml-2 font-heading-semibold text-[15px] text-[#1A1A1A]">New Chat</Text>
+          </GlassView>
         </Pressable>
       </View>
+
+      <ThreadOptionsMenu
+        visible={!!menuConvId}
+        anchor={menuAnchor}
+        onClose={() => setMenuConvId(null)}
+        onPin={() => { /* TODO: pin API */ }}
+        onDelete={() => { if (menuConvId) deleteConversation(menuConvId); }}
+      />
     </View>
   );
 }

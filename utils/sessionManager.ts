@@ -19,6 +19,7 @@ import {
 export class SessionManager {
   private static refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private static passcodeSessionTimer: ReturnType<typeof setTimeout> | null = null;
+  private static healthCheckTimer: ReturnType<typeof setTimeout> | null = null;
   private static initialized = false;
 
   /**
@@ -441,15 +442,12 @@ export class SessionManager {
    * Schedule periodic health check
    */
   private static scheduleHealthCheck(): void {
-    setTimeout(() => {
+    if (this.healthCheckTimer) clearTimeout(this.healthCheckTimer);
+
+    this.healthCheckTimer = setTimeout(() => {
       const { isAuthenticated, accessToken, checkTokenExpiry } = useAuthStore.getState();
 
       if (isAuthenticated && accessToken) {
-        logger.debug('[SessionManager] Running health check', {
-          component: 'SessionManager',
-          action: 'health-check-run',
-        });
-
         // Check if 7-day token has expired
         if (checkTokenExpiry()) {
           logger.warn('[SessionManager] Health check detected expired token', {
@@ -459,15 +457,7 @@ export class SessionManager {
           this.handleSessionExpired();
           return;
         }
-
-        // Attempt to refresh token to ensure it's still valid
-        this.refreshToken().catch((error) => {
-          logger.warn('[SessionManager] Health check token refresh failed', {
-            component: 'SessionManager',
-            action: 'health-check-refresh-failed',
-            error: error instanceof Error ? error.message : String(error),
-          });
-        });
+        // Token refresh is handled by scheduleTokenRefresh — no need to force refresh here
       }
 
       // Schedule next check if still initialized
@@ -489,6 +479,11 @@ export class SessionManager {
     if (this.passcodeSessionTimer) {
       clearTimeout(this.passcodeSessionTimer);
       this.passcodeSessionTimer = null;
+    }
+
+    if (this.healthCheckTimer) {
+      clearTimeout(this.healthCheckTimer);
+      this.healthCheckTimer = null;
     }
 
     this.initialized = false;

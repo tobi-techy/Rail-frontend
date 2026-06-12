@@ -16,3 +16,4 @@ export { VirtualAccountSheet } from './VirtualAccountSheet';
 export { PajVerificationSheet } from './PajVerificationSheet';
 export { MFAChallengeSheet } from './MFAChallengeSheet';
 export { StashPerformanceSheet } from './StashPerformanceSheet';
+export { AppsSheet } from './AppsSheet';

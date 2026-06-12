@@ -21,7 +21,6 @@ import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { useBiometric } from '@/hooks/useBiometric';
 import {
   ArrowLeftRightIcon,
-  ArrowRight01Icon,
   ChartUpIcon,
   Delete02Icon,
   EyeIcon,
@@ -152,7 +151,7 @@ function SettingButton({
 }
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
-  <View className="border-b border-surface py-md">
+  <View className="border-b border-black/[0.07] py-md">
     <Text className="mb-md px-md font-subtitle text-body">{title}</Text>
     <View className="flex-row flex-wrap px-sm">{children}</View>
   </View>
@@ -170,7 +169,7 @@ const SheetRow = ({
   const { impact } = useHaptics();
   return (
     <Pressable
-      className="flex-row items-center justify-between border-b border-surface py-4"
+      className="flex-row items-center justify-between border-b border-black/[0.07] py-4"
       onPress={() => {
         impact(Haptics.ImpactFeedbackStyle.Light);
         onPress?.();
@@ -192,7 +191,7 @@ const SheetToggleRow = ({
   value: boolean;
   onChange: (v: boolean) => void;
 }) => (
-  <View className="flex-row items-center justify-between border-b border-surface py-4">
+  <View className="flex-row items-center justify-between border-b border-black/[0.07] py-4">
     <View className="flex-1 pr-4">
       <Text className="font-body text-base text-text-primary">{label}</Text>
       {subtitle && (
@@ -226,19 +225,17 @@ export default function Settings() {
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const user = useAuthStore((s) => s.user);
 
-  const {
-    isBalanceVisible,
-    toggleBalanceVisibility,
-    hapticsEnabled,
-    setHapticsEnabled,
-    requireBiometricOnResume,
-    setRequireBiometricOnResume,
-    currency,
-    setCurrency,
-    currencyRatesUpdatedAt,
-    isCurrencyRatesRefreshing,
-    refreshCurrencyRates,
-  } = useUIStore();
+  const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
+  const toggleBalanceVisibility = useUIStore((s) => s.toggleBalanceVisibility);
+  const hapticsEnabled = useUIStore((s) => s.hapticsEnabled);
+  const setHapticsEnabled = useUIStore((s) => s.setHapticsEnabled);
+  const requireBiometricOnResume = useUIStore((s) => s.requireBiometricOnResume);
+  const setRequireBiometricOnResume = useUIStore((s) => s.setRequireBiometricOnResume);
+  const currency = useUIStore((s) => s.currency);
+  const setCurrency = useUIStore((s) => s.setCurrency);
+  const currencyRatesUpdatedAt = useUIStore((s) => s.currencyRatesUpdatedAt);
+  const isCurrencyRatesRefreshing = useUIStore((s) => s.isCurrencyRatesRefreshing);
+  const refreshCurrencyRates = useUIStore((s) => s.refreshCurrencyRates);
   const selectedCurrency = migrateLegacyCurrency(currency);
 
   const [activeSheet, setActiveSheet] = useState<SheetType>(null);

@@ -80,8 +80,8 @@ export function WithdrawalStatusScreen({
       {/* Content */}
       <View className="flex-1 items-center justify-center px-6">
         {/* Miriam Character */}
-        <Animated.View entering={BounceIn.delay(100).duration(600)} className="mb-6">
-          <MiriamCharacter size={100} emotion={config.miriamEmotion} animate />
+        <Animated.View entering={BounceIn.delay(100).duration(600)} className="mb-8">
+          <MiriamCharacter size={160} emotion={config.miriamEmotion} animate />
         </Animated.View>
 
         {/* Amount */}

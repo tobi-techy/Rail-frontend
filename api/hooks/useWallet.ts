@@ -31,7 +31,7 @@ export function useWalletBalance() {
     queryKey: queryKeys.wallet.balance(),
     queryFn: () => walletService.getBalance(),
     staleTime: 15 * 1000, // 15 seconds - balance becomes stale faster
-    refetchInterval: 45 * 1000, // Refetch every 45 seconds (more frequent for balance)
+    refetchInterval: 90 * 1000, // Refetch every 90 seconds
     refetchOnWindowFocus: true, // Refetch when app comes to foreground
     refetchOnReconnect: true, // Refetch when connection restored
   });

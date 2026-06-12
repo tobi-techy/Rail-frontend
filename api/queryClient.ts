@@ -29,7 +29,7 @@ export const queryClient = new QueryClient({
         if (isTransformedApiError(error) && error.status >= 400 && error.status < 500) {
           return false;
         }
-        return failureCount < 3;
+        return failureCount < 2;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       refetchOnWindowFocus: true,

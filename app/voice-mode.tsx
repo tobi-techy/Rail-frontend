@@ -1,239 +1,314 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { View, Pressable, Platform, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Canvas, RoundedRect } from '@shopify/react-native-skia';
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-  withSpring,
-  Easing,
   FadeIn,
-  FadeInDown,
 } from 'react-native-reanimated';
-import { IconComponent as HugeiconsIcon, Cancel01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon, Cancel01Icon, Mic01Icon } from '@/lib/icons';
 import { ConversationProvider, useConversation } from '@elevenlabs/react-native';
 import { MiriamCharacter } from '@/components/ai/MiriamCharacter';
 import { useFeedbackPopupStore } from '@/stores/feedbackPopupStore';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useBiometric } from '@/hooks/useBiometric';
 import { aiService } from '@/api/services/ai.service';
-import type { MiriamEmotion, MiriamFacing } from '@/components/ai/MiriamCharacter';
+import { useWalletStore } from '@/stores/walletStore';
+import { logger } from '@/lib/logger';
+import type { MiriamEmotion } from '@/components/ai/MiriamCharacter';
 
-type VoiceState = 'idle' | 'connecting' | 'listening' | 'speaking' | 'error';
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+type VoiceState = 'idle' | 'auth' | 'connecting' | 'listening' | 'speaking' | 'error';
 
 const STATE_EMOTIONS: Record<VoiceState, MiriamEmotion> = {
   idle: 'neutral',
+  auth: 'thinking',
   connecting: 'thinking',
   listening: 'happy',
   speaking: 'happy',
   error: 'sad',
 };
 
-const STATE_FACING: Record<VoiceState, MiriamFacing> = {
-  idle: 'front',
-  connecting: 'right',
-  listening: 'left',
-  speaking: 'front',
-  error: 'left',
-};
-
 const STATE_LABELS: Record<VoiceState, string> = {
   idle: '',
-  connecting: 'Connecting...',
-  listening: 'Listening...',
+  auth: 'Verifying…',
+  connecting: 'Connecting…',
+  listening: 'Listening',
   speaking: 'Speaking',
-  error: 'Connection lost',
+  error: 'Try again',
 };
 
-function MiriamReactive({ state }: { state: VoiceState }) {
-  const scale = useSharedValue(1);
-  const translateY = useSharedValue(0);
+// ─── Skia Waveform (GPU-rendered, deterministic) ────────────────────────────
+
+const BAR_COUNT = 16;
+const BAR_WIDTH = 3;
+const BAR_GAP = 3;
+const WAVE_HEIGHT = 32;
+const CANVAS_WIDTH = BAR_COUNT * (BAR_WIDTH + BAR_GAP) - BAR_GAP;
+
+function VoiceWaveform({ state }: { state: VoiceState }) {
+  const active = state === 'listening' || state === 'speaking';
+  const [bars, setBars] = useState<number[]>(() => Array(BAR_COUNT).fill(3));
+  const timeRef = useRef(0);
 
   useEffect(() => {
-    if (state === 'listening') {
-      scale.value = withRepeat(
-        withSequence(
-          withTiming(1.05, { duration: 800, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) })
-        ),
-        -1
-      );
-      translateY.value = withRepeat(
-        withSequence(
-          withTiming(-4, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0, { duration: 1000, easing: Easing.inOut(Easing.ease) })
-        ),
-        -1
-      );
-    } else if (state === 'speaking') {
-      scale.value = withRepeat(
-        withSequence(
-          withTiming(1.1, { duration: 300 }),
-          withTiming(0.95, { duration: 300 }),
-          withTiming(1.05, { duration: 250 }),
-          withTiming(1, { duration: 250 })
-        ),
-        -1
-      );
-      translateY.value = withRepeat(
-        withSequence(withTiming(-6, { duration: 400 }), withTiming(2, { duration: 400 })),
-        -1
-      );
-    } else {
-      scale.value = withSpring(1);
-      translateY.value = withSpring(0);
+    if (!active) {
+      setBars(Array(BAR_COUNT).fill(3));
+      return;
     }
-  }, [scale, state, translateY]);
 
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }, { translateY: translateY.value }],
-  }));
+    let raf: number;
+    const animate = () => {
+      timeRef.current += 0.06;
+      const t = timeRef.current;
+      const isSpeaking = state === 'speaking';
+      const amplitude = isSpeaking ? 0.85 : 0.55;
+      const speed = isSpeaking ? 1.4 : 0.8;
+
+      const newBars = Array.from({ length: BAR_COUNT }, (_, i) => {
+        const phase = (i / BAR_COUNT) * Math.PI * 2;
+        const wave = Math.sin(t * speed + phase) * 0.5 + 0.5;
+        const harmonic = Math.sin(t * speed * 1.7 + phase * 1.3) * 0.3 + 0.5;
+        const combined = (wave * 0.6 + harmonic * 0.4) * amplitude;
+        return 3 + combined * (WAVE_HEIGHT - 3);
+      });
+
+      setBars(newBars);
+      raf = requestAnimationFrame(animate);
+    };
+
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, [active, state]);
 
   return (
-    <Animated.View style={animStyle} className="items-center">
-      <MiriamCharacter
-        size={160}
-        emotion={STATE_EMOTIONS[state]}
-        facing={STATE_FACING[state]}
-        animate
-      />
+    <View style={{ width: CANVAS_WIDTH, height: WAVE_HEIGHT, opacity: active ? 1 : 0.3 }}>
+      <Canvas style={{ width: CANVAS_WIDTH, height: WAVE_HEIGHT }}>
+        {bars.map((h, i) => (
+          <RoundedRect
+            key={i}
+            x={i * (BAR_WIDTH + BAR_GAP)}
+            y={(WAVE_HEIGHT - h) / 2}
+            width={BAR_WIDTH}
+            height={h}
+            r={BAR_WIDTH / 2}
+            color={active ? 'rgba(255, 255, 255, 0.75)' : 'rgba(255, 255, 255, 0.3)'}
+          />
+        ))}
+      </Canvas>
+    </View>
+  );
+}
+
+// ─── Session Timer ──────────────────────────────────────────────────────────
+
+function SessionTimer({ active }: { active: boolean }) {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!active) { setSeconds(0); return; }
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+
+  if (!active) return null;
+
+  return (
+    <Animated.View entering={FadeIn.duration(300)}>
+      <Text style={styles.timer}>
+        {Math.floor(seconds / 60)}:{(seconds % 60).toString().padStart(2, '0')}
+      </Text>
     </Animated.View>
   );
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function buildFinancialContext(
+  tokens: { symbol: string; balance: number; usdValue: number }[],
+  totalBalanceUSD: number
+): string {
+  const lines: string[] = [`Total: $${totalBalanceUSD.toFixed(2)}`];
+  for (const t of tokens.slice(0, 5)) {
+    if (t.balance > 0) lines.push(`${t.symbol}: $${t.usdValue.toFixed(2)}`);
+  }
+  return lines.join('. ');
+}
+
+// ─── Main ───────────────────────────────────────────────────────────────────
+
 function VoiceModeContent() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { impact } = useHaptics();
+  const { impact, notification } = useHaptics();
   const showPopup = useFeedbackPopupStore((s) => s.showPopup);
+  const { verifyWithBiometric, isAvailable: biometricAvailable, isBiometricEnabled } = useBiometric();
+  const tokens = useWalletStore((s) => s.tokens);
+  const totalBalanceUSD = useWalletStore((s) => s.totalBalanceUSD);
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
-  const [transcript, setTranscript] = useState('');
-  const [responseText, setResponseText] = useState('');
+  const [isMuted, setIsMuted] = useState(false);
+  const contextSentRef = useRef(false);
+  const sessionActive = voiceState === 'listening' || voiceState === 'speaking';
 
   const conversation = useConversation({
+    clientTools: {
+      getBalance: async () => buildFinancialContext(tokens, totalBalanceUSD),
+      navigateToScreen: async (params: { screen: string }) => {
+        router.push(params.screen as any);
+        return `Navigated to ${params.screen}`;
+      },
+    },
     onConnect: () => {
-      console.log('[VoiceMode] ✅ Connected');
       setVoiceState('listening');
-    },
-    onDisconnect: () => {
-      console.log('[VoiceMode] Disconnected');
-      setVoiceState('idle');
-    },
-    onError: (error: string) => {
-      console.error('[VoiceMode] Error:', error);
-      setVoiceState('error');
-      showPopup({
-        type: 'error',
-        title: 'Voice unavailable',
-        message: error,
-      });
-    },
-    onMessage: (msg: { message: string; source: string }) => {
-      console.log('[VoiceMode] Message:', msg.source, '-', msg.message?.slice(0, 50));
-      if (msg.source === 'user') {
-        setTranscript(msg.message);
-      } else {
-        setResponseText(msg.message);
+      notification('success');
+      if (!contextSentRef.current && tokens.length > 0) {
+        contextSentRef.current = true;
+        setTimeout(() => {
+          try {
+            conversation.sendContextualUpdate(
+              `Financial snapshot: ${buildFinancialContext(tokens, totalBalanceUSD)}`
+            );
+          } catch { /* session may have ended */ }
+        }, 600);
       }
     },
+    onDisconnect: () => {
+      setVoiceState('idle');
+      // Auto-end: when agent disconnects, exit voice mode
+      router.back();
+    },
+    onError: (error: string) => {
+      logger.error('[VoiceMode] Error', { error });
+      setVoiceState('error');
+      notification('error');
+      showPopup({ type: 'error', title: 'Voice unavailable', message: error });
+    },
+    onMessage: () => {
+      // No transcript display
+    },
     onModeChange: ({ mode }: { mode: 'speaking' | 'listening' }) => {
-      console.log('[VoiceMode] Mode:', mode);
       setVoiceState(mode === 'speaking' ? 'speaking' : 'listening');
     },
   });
 
   useEffect(() => {
     let cancelled = false;
+
     const start = async () => {
+      // Biometric gate
+      if (biometricAvailable && isBiometricEnabled) {
+        setVoiceState('auth');
+        const ok = await verifyWithBiometric();
+        if (cancelled) return;
+        if (!ok) {
+          setVoiceState('error');
+          showPopup({
+            type: 'error',
+            title: 'Auth required',
+            message: 'Biometric verification needed for voice mode.',
+          });
+          return;
+        }
+      }
+
+      // Connect
       setVoiceState('connecting');
       try {
         const { agent_id, dynamic_variables } = await aiService.getVoiceSignedUrl();
         if (cancelled) return;
-        console.log('[VoiceMode] Starting session, agent:', agent_id);
+
         await conversation.startSession({
           agentId: agent_id,
-          dynamicVariables: { ...dynamic_variables, supports_pidgin: true },
+          dynamicVariables: { ...dynamic_variables, supports_pidgin: true, platform: Platform.OS },
+          connectionDelay: { default: 300, ios: 400, android: 200 },
+          preferHeadphonesForIosDevices: true,
         });
-      } catch (err: any) {
+      } catch (e) {
         if (cancelled) return;
-        console.error('[VoiceMode] Start failed:', err);
+        logger.error('[VoiceMode] Start failed', {
+          error: e instanceof Error ? e.message : String(e),
+        });
         setVoiceState('error');
+        showPopup({
+          type: 'error',
+          title: 'Connection failed',
+          message: 'Could not reach Miriam. Please try again.',
+        });
       }
     };
+
     start();
     return () => {
       cancelled = true;
-      console.log('[VoiceMode] Cleanup - ending session');
-      conversation.endSession();
+      try { conversation.endSession(); } catch { /* noop */ }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     impact();
-    conversation.endSession();
+    try { conversation.endSession(); } catch { /* noop */ }
     router.back();
-  };
+  }, [conversation, impact, router]);
 
-  const label = STATE_LABELS[voiceState];
+  const handleMicToggle = useCallback(() => {
+    impact();
+    const next = !isMuted;
+    setIsMuted(next);
+    conversation.setMuted(next);
+  }, [conversation, impact, isMuted]);
 
   return (
-    <View
-      className="flex-1 bg-warm-canvas"
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
+    <View className="flex-1 bg-[#FAFAF7]" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 py-3">
-        <View className="w-10" />
-        <Text className="font-mono-bold text-[14px] tracking-wider text-text-primary">MIRIAM</Text>
+        <SessionTimer active={sessionActive} />
         <Pressable
           onPress={handleClose}
           hitSlop={12}
-          className="h-10 w-10 items-center justify-center rounded-full bg-[#f7f2e8]"
+          className="h-10 w-10 items-center justify-center rounded-full bg-[#F0F0EE]"
           accessibilityRole="button"
-          accessibilityLabel="Close voice mode">
-          <HugeiconsIcon icon={Cancel01Icon} size={18} color="#000" />
+          accessibilityLabel="Close">
+          <HugeiconsIcon icon={Cancel01Icon} size={18} color="#1C1C1E" />
         </Pressable>
       </View>
 
-      {/* Transcript area */}
-      <View className="flex-1 justify-end px-6 pb-6">
-        {transcript ? (
-          <Animated.View entering={FadeInDown.duration(200)}>
-            <Text className="mb-2 font-body text-[14px] text-text-secondary">You</Text>
-            <Text className="font-body text-[16px] leading-6 text-text-primary">{transcript}</Text>
-          </Animated.View>
+      {/* Center */}
+      <View className="flex-1 items-center justify-center">
+        <MiriamCharacter size={190} emotion={STATE_EMOTIONS[voiceState]} animate />
+
+        {/* State label */}
+        {STATE_LABELS[voiceState] ? (
+          <Text style={styles.stateLabel}>{STATE_LABELS[voiceState]}</Text>
         ) : null}
-        {responseText ? (
-          <Animated.View entering={FadeInDown.duration(200)} className="mt-4">
-            <Text className="font-body-medium text-[16px] leading-6 text-text-primary">
-              {responseText}
-            </Text>
-          </Animated.View>
-        ) : null}
+
+        {/* Waveform */}
+        <View className="mt-6">
+          <VoiceWaveform state={isMuted ? 'idle' : voiceState} />
+        </View>
       </View>
 
-      {/* Rail AI mark - center */}
-      <View className="items-center py-10">
-        <MiriamReactive state={voiceState} />
-        {label ? (
-          <Animated.Text
-            entering={FadeIn.duration(200)}
-            className="mt-5 font-body text-[14px] text-text-secondary">
-            {label}
-          </Animated.Text>
-        ) : null}
-      </View>
+      {/* Controls — separated */}
+      <View className="flex-row items-center justify-between px-16 pb-10">
+        {/* Mic toggle */}
+        <Pressable
+          onPress={handleMicToggle}
+          className="h-[60px] w-[60px] items-center justify-center rounded-full"
+          style={{ backgroundColor: isMuted ? '#FF3B30' : '#F0F0EE' }}
+          accessibilityRole="button"
+          accessibilityLabel={isMuted ? 'Unmute' : 'Mute'}>
+          <HugeiconsIcon icon={Mic01Icon} size={24} color={isMuted ? '#FFFFFF' : '#1C1C1E'} />
+          {isMuted && <View style={styles.micSlash} />}
+        </Pressable>
 
-      {/* End button */}
-      <View className="items-center pb-8">
+        {/* End session */}
         <Pressable
           onPress={handleClose}
-          className="rounded-full bg-[#f7f2e8] px-8 py-4"
+          className="h-[60px] w-[60px] items-center justify-center rounded-full bg-[#1C1C1E]"
           accessibilityRole="button"
-          accessibilityLabel="End voice session">
-          <Text className="font-heading-bold text-[15px] text-text-primary">End</Text>
+          accessibilityLabel="End session">
+          <HugeiconsIcon icon={Cancel01Icon} size={20} color="#FFFFFF" />
         </Pressable>
       </View>
     </View>
@@ -247,3 +322,29 @@ export default function VoiceModeScreen() {
     </ConversationProvider>
   );
 }
+
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  timer: {
+    fontFamily: Platform.select({ ios: 'SF Mono', android: 'monospace' }),
+    fontSize: 13,
+    color: '#8C8C8C',
+    fontVariant: ['tabular-nums'],
+  },
+  stateLabel: {
+    marginTop: 20,
+    fontSize: 14,
+    fontFamily: Platform.select({ ios: 'SF Pro Display', android: undefined }),
+    fontWeight: '500',
+    color: '#8C8C8C',
+  },
+  micSlash: {
+    position: 'absolute',
+    width: 26,
+    height: 2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 1,
+    transform: [{ rotate: '-45deg' }],
+  },
+});

@@ -14,8 +14,6 @@ export type MainnetChain =
   | 'STARKNET'
   | 'BSC'
   | 'BNB'
-  | 'MONAD'
-  | 'HYPEREVM'
   | 'LISK';
 
 // All supported wallet chains

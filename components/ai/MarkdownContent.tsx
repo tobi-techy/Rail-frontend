@@ -1,47 +1,50 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { Text } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 
-const markdownStyles = StyleSheet.create({
+const markdownStyles = {
   body: {
     fontFamily: 'Geist-Regular',
-    fontSize: 17,
+    fontSize: 18,
     color: '#343433',
-    lineHeight: 28,
+    lineHeight: 30,
+    backgroundColor: 'transparent',
   },
   heading1: {
     fontFamily: 'Geist-Bold',
-    fontSize: 28,
-    color: '#343433',
+    fontSize: 30,
+    color: '#1C1C1E',
     marginTop: 22,
     marginBottom: 12,
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   },
   heading2: {
     fontFamily: 'Geist-Bold',
-    fontSize: 24,
-    color: '#343433',
+    fontSize: 26,
+    color: '#1C1C1E',
     marginTop: 20,
     marginBottom: 10,
     letterSpacing: -0.3,
   },
   heading3: {
     fontFamily: 'Geist-SemiBold',
-    fontSize: 20,
-    color: '#343433',
+    fontSize: 22,
+    color: '#1C1C1E',
     marginTop: 16,
     marginBottom: 8,
   },
   strong: {
     fontFamily: 'Geist-Bold',
-    color: '#343433',
+    fontSize: 19,
+    color: '#1C1C1E',
+    letterSpacing: -0.2,
   },
   em: {
-    fontStyle: 'italic',
+    fontStyle: 'italic' as const,
   },
   code_inline: {
     fontFamily: 'Geist-Bold',
-    fontSize: 16,
+    fontSize: 17,
     backgroundColor: '#f7f2e8',
     color: '#343433',
     paddingHorizontal: 6,
@@ -56,7 +59,6 @@ const markdownStyles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     marginVertical: 10,
-    overflow: 'hidden',
   },
   blockquote: {
     borderLeftWidth: 2,
@@ -74,29 +76,22 @@ const markdownStyles = StyleSheet.create({
   paragraph: {
     marginVertical: 6,
   },
-  bullet_list: {
-    marginVertical: 6,
-  },
-  ordered_list: {
-    marginVertical: 6,
-  },
-  list_item: {
-    flexDirection: 'row',
-    marginVertical: 4,
-  },
+  bullet_list: { marginVertical: 6 },
+  ordered_list: { marginVertical: 6 },
+  list_item: { flexDirection: 'row' as const, marginVertical: 4 },
   bullet_list_icon: {
     fontFamily: 'Geist-Regular',
-    fontSize: 17,
+    fontSize: 18,
     color: '#343433',
     marginRight: 8,
-    lineHeight: 28,
+    lineHeight: 30,
   },
   ordered_list_icon: {
     fontFamily: 'Geist-Bold',
-    fontSize: 17,
-    color: '#343433',
+    fontSize: 18,
+    color: '#1C1C1E',
     marginRight: 10,
-    lineHeight: 28,
+    lineHeight: 30,
   },
   hr: {
     backgroundColor: 'rgba(0,0,0,0.06)',
@@ -107,15 +102,12 @@ const markdownStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.06)',
     borderRadius: 10,
-    overflow: 'hidden',
     marginVertical: 8,
   },
-  thead: {
-    backgroundColor: '#f7f2e8',
-  },
+  thead: { backgroundColor: '#f7f2e8' },
   th: {
     fontFamily: 'Geist-SemiBold',
-    fontSize: 14,
+    fontSize: 15,
     color: '#343433',
     padding: 10,
     borderRightWidth: 1,
@@ -123,7 +115,7 @@ const markdownStyles = StyleSheet.create({
   },
   td: {
     fontFamily: 'Geist-Regular',
-    fontSize: 15,
+    fontSize: 16,
     color: '#343433',
     padding: 10,
     borderRightWidth: 1,
@@ -133,8 +125,26 @@ const markdownStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.04)',
   },
-});
+};
 
-export function MarkdownContent({ content }: { content: string }) {
-  return <Markdown style={markdownStyles}>{content}</Markdown>;
+const selectableRules = {
+  text: (node: any, _children: any, _parent: any, styles: any, inheritedStyles: any = {}) => (
+    <Text key={node.key} style={[inheritedStyles, styles.text]} selectable>
+      {node.content}
+    </Text>
+  ),
+  textgroup: (node: any, children: any, _parent: any, styles: any) => (
+    <Text key={node.key} style={styles.textgroup} selectable>
+      {children}
+    </Text>
+  ),
+};
+
+export function MarkdownContent({ content, selectable = false }: { content: string; selectable?: boolean }) {
+  if (!content) return null;
+  return (
+    <Markdown style={markdownStyles} rules={selectable ? selectableRules : undefined}>
+      {content}
+    </Markdown>
+  );
 }

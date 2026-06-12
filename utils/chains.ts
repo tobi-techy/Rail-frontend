@@ -114,32 +114,10 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
     token: 'USDC',
     via: 'chainrails',
   },
-  {
-    chain: 'MONAD',
-    label: 'Monad',
-    shortLabel: 'MON',
-    color: '#836EF9',
-    warning: 'Only send USDC on Monad to this address.',
-    nativeCurrency: 'MON',
-    token: 'USDC',
-    via: 'chainrails',
-  },
-  {
-    chain: 'HYPEREVM',
-    label: 'HyperEVM',
-    shortLabel: 'HYPE',
-    color: '#00FF87',
-    warning: 'Only send USDC on HyperEVM to this address.',
-    nativeCurrency: 'HYPE',
-    token: 'USDC',
-    via: 'chainrails',
-  },
 ];
 
 export function isEVMChain(chain: WalletChain): boolean {
-  return ['ETH', 'BASE', 'ARB', 'OP', 'MATIC', 'AVAX', 'BSC', 'BNB', 'MONAD', 'HYPEREVM'].includes(
-    chain
-  );
+  return ['ETH', 'BASE', 'ARB', 'OP', 'MATIC', 'AVAX', 'BSC', 'BNB'].includes(chain);
 }
 
 export function isSolanaChain(chain: WalletChain): boolean {
@@ -185,8 +163,6 @@ export const STABLECOIN_CHAINS: Record<string, WalletChain[]> = {
     'AVAX',
     'BSC',
     'STARKNET',
-    'MONAD',
-    'HYPEREVM',
   ],
   USDT: ['SOL'],
   EURC: ['SOL', 'BASE'],
@@ -198,14 +174,14 @@ export const STABLECOIN_CHAINS: Record<string, WalletChain[]> = {
  * Source: Bridge route table + ChainRails token availability docs.
  *
  * Bridge (source = Solana USDC wallet):
- *   USDC → SOL, ETH, BASE, ARB, OP, MATIC, AVAX, HYPEREVM
+ *   USDC → SOL, ETH, BASE, ARB, OP, MATIC, AVAX
  *   EURC → SOL (direct), ETH (via Bridge), BASE (via Bridge)
  *   PYUSD → SOL (direct), ETH (via Bridge)
  *   USDT → SOL (direct), ETH (via Bridge)
  *   USDG → SOL (direct)
  *
  * ChainRails (token availability by network):
- *   USDC → BSC, STARKNET, MONAD, HYPEREVM, LISK
+ *   USDC → BSC, STARKNET, LISK
  *   USDT → BSC, STARKNET (NOT Monad, HyperEVM, Lisk)
  *   EURC → Ethereum only via ChainRails (NOT Starknet, BSC, Monad, etc.)
  *   PYUSD → none via ChainRails
@@ -221,8 +197,6 @@ export const WITHDRAWAL_CHAINS: Record<string, WalletChain[]> = {
     'AVAX',
     'BSC',
     'STARKNET',
-    'MONAD',
-    'HYPEREVM',
   ],
   USDT: ['SOL', 'ETH', 'BSC', 'STARKNET'],
   EURC: ['SOL', 'ETH', 'BASE'],

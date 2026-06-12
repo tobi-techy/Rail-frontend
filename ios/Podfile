@@ -24,10 +24,10 @@ prepare_react_native_project!
 
 target 'RailMoney' do
   use_expo_modules!
-# @generated begin didit-sdk-react-native-pod - expo prebuild (DO NOT MODIFY) sync-d47b24d386f13a245e2cde106769569b727f3dce
+# @generated begin didit-sdk-react-native-pod - expo prebuild (DO NOT MODIFY) sync-daa51d1a3152296bf6f55be075b8ce1898d0a763
 didit_sdk_ios_nfc_enabled = ENV.fetch('DIDIT_SDK_IOS_NFC_ENABLED', podfile_properties.fetch('didit.iosNfcEnabled', 'true')).downcase != 'false'
 didit_sdk_ios_pod = didit_sdk_ios_nfc_enabled ? 'DiditSDK' : 'DiditSDK/Core'
-pod didit_sdk_ios_pod, :podspec => 'https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.6.0/DiditSDK.podspec'
+pod didit_sdk_ios_pod, :podspec => 'https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.6.1/DiditSDK.podspec'
 # @generated end didit-sdk-react-native-pod
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
@@ -66,5 +66,18 @@ pod didit_sdk_ios_pod, :podspec => 'https://raw.githubusercontent.com/didit-prot
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    # Fix AFNetworking private header import error (Xcode 16+/iOS 26 SDK)
+    # The SDK now errors on direct inclusion of netinet6/in6.h
+    af_dir = File.join(installer.sandbox.root, 'AFNetworking')
+    if Dir.exist?(af_dir)
+      Dir.glob("#{af_dir}/**/*.{m,h}").each do |f|
+        content = File.read(f)
+        if content.include?('netinet6/in6.h')
+          content.gsub!('netinet6/in6.h', 'netinet/in.h')
+          File.write(f, content)
+        end
+      end
+    end
   end
 end

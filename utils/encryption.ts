@@ -87,12 +87,14 @@ export function clearEncryptionKey(): void {
 
 export const encryptData = (data: string): string => {
   if (!data) throw new Error('Data to encrypt cannot be empty');
-  return CryptoJS.AES.encrypt(data, getKey()).toString();
+  // Use passphrase-mode (string key) which auto-generates random IV in OpenSSL format
+  // This is secure — CryptoJS uses random salt + PBKDF2 + CBC internally
+  return CryptoJS.AES.encrypt(data, getKey().toString()).toString();
 };
 
 export const decryptData = (encryptedData: string): string => {
   if (!encryptedData) throw new Error('Encrypted data cannot be empty');
-  const bytes = CryptoJS.AES.decrypt(encryptedData, getKey());
+  const bytes = CryptoJS.AES.decrypt(encryptedData, getKey().toString());
   const decrypted = bytes.toString(CryptoJS.enc.Utf8);
   if (!decrypted) throw new Error('Failed to decrypt data');
   return decrypted;

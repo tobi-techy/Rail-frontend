@@ -34,7 +34,7 @@ function AnimatedBalance({ value, isVisible }: { value: string; isVisible: boole
           lineHeight: DIGIT_H,
           fontFamily: 'Geist-SemiBold',
           fontVariant: ['tabular-nums'],
-          fontSize: 60,
+          fontSize: 50,
           // letterSpacing: -3.8,
           color: '#343433',
         }}>
@@ -52,14 +52,20 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   isLoading,
   ...props
 }) => {
-  const { isBalanceVisible, toggleBalanceVisibility, currency, currencyRates } = useUIStore();
+  const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
+  const toggleBalanceVisibility = useUIStore((s) => s.toggleBalanceVisibility);
+  const currency = useUIStore((s) => s.currency);
+  const currencyRates = useUIStore((s) => s.currencyRates);
   const isNegative = percentChange.startsWith('-');
   const rawUsd = parseFloat(balance.replace(/[^0-9.-]/g, '')) || 0;
   const dataLoading = isLoading === true;
   const displayBalance = dataLoading ? '---' : formatBalance(rawUsd, currency, currencyRates);
 
   return (
-    <View className={`overflow-hidden ${className || ''}`} {...props}>
+    <View
+      className={`overflow-hidden ${className || ''}`}
+      style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
+      {...props}>
       <View className="items-start pb-4 pt-6">
         <Text className="mb-2 font-caption text-caption text-text-secondary">Total balance</Text>
 

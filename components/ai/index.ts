@@ -7,6 +7,7 @@ export { InputBar } from './InputBar';
 export { InsightCardView } from './InsightCardView';
 export { MarkdownContent } from './MarkdownContent';
 export { MessageActions } from './MessageActions';
+export { MessageContextMenu } from './MessageContextMenu';
 export { ThreadRow } from './ThreadRow';
 export { MiriamDrawerContent } from './MiriamDrawerContent';
 export { TypingText } from './TypingText';

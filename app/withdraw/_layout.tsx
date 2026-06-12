@@ -4,9 +4,13 @@ export default function WithdrawLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" options={{ animation: 'slide_from_bottom' }} />
-      <Stack.Screen name="[method]" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="select-chain" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="enter-address" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="[method]" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="early-withdraw" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="destination" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="select-bank" options={{ animation: 'slide_from_right', animationDuration: 200 }} />
+      <Stack.Screen name="enter-account" options={{ animation: 'slide_from_right', animationDuration: 200 }} />
       <Stack.Screen name="details" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="confirm" options={{ animation: 'slide_from_right' }} />
     </Stack>

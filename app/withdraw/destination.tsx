@@ -140,6 +140,11 @@ export default function DestinationScreen() {
     availableBalance?: string;
     withdrawalLimit?: string;
     currency?: string;
+    prefillBankId?: string;
+    prefillBankName?: string;
+    prefillBankLogo?: string;
+    prefillAccountNumber?: string;
+    prefillAccountName?: string;
   }>();
 
   const isFiatMethod = params.isFiatMethod === 'true';
@@ -156,8 +161,7 @@ export default function DestinationScreen() {
       return 1.0;
     }
     // Crypto
-    if (destinationChain === 'SOL') return 0.1;
-    return 0.5;
+    return 0.1;
   };
   const feeAmountBase = getFee();
 
@@ -259,6 +263,24 @@ export default function DestinationScreen() {
     const q = ngnBankSearch.toLowerCase();
     return pajBanks.filter((b) => b.name.toLowerCase().includes(q));
   }, [pajBanks, ngnBankSearch]);
+
+  // ── NGN: prefill from select-bank → enter-account flow ───────────────
+  const didPrefill = useRef(false);
+  useEffect(() => {
+    if (didPrefill.current || !params.prefillBankId || !params.prefillAccountNumber) return;
+    didPrefill.current = true;
+    const bank = pajBanks.find((b) => b.id === params.prefillBankId) ?? {
+      id: params.prefillBankId,
+      code: '',
+      name: params.prefillBankName ?? '',
+      logo: params.prefillBankLogo ?? '',
+      country: 'NG',
+    };
+    setNgnBank(bank);
+    setNgnAccountNumber(params.prefillAccountNumber);
+    setNgnAccountName(params.prefillAccountName ?? '');
+    setFlowStep('form');
+  }, [params.prefillBankId, params.prefillAccountNumber, params.prefillBankName, params.prefillBankLogo, params.prefillAccountName, pajBanks]);
 
   // ── NGN auth: lockout timer ─────────────────────────────────────────────
   useEffect(() => {
@@ -777,13 +799,20 @@ export default function DestinationScreen() {
             <Pressable
               className="flex-row items-center justify-between rounded-2xl bg-[#f8f7f4] px-4 py-4"
               onPress={() => {
-                setFiatAccountHolderName('');
-                setFiatAccountNumber('');
-                setDestinationInput('');
-                setNgnBank(null);
-                setNgnAccountNumber('');
-                setNgnAccountName('');
-                setFlowStep('form');
+                if (isNGN) {
+                  router.push({
+                    pathname: '/withdraw/select-bank' as never,
+                    params: { amount: params.amount ?? '0', currency: currencyCode },
+                  } as never);
+                } else {
+                  setFiatAccountHolderName('');
+                  setFiatAccountNumber('');
+                  setDestinationInput('');
+                  setNgnBank(null);
+                  setNgnAccountNumber('');
+                  setNgnAccountName('');
+                  setFlowStep('form');
+                }
               }}>
               <View className="flex-row items-center gap-3">
                 <View className="size-11 items-center justify-center rounded-full bg-[#0090ff]">

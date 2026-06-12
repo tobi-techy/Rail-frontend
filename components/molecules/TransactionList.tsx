@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, SectionList, ViewProps, RefreshControlProps } from 'react-native';
 import { Skeleton } from '../atoms';
 import { TransactionItem, Transaction, TransactionItemSkeleton } from './TransactionItem';
@@ -111,6 +111,13 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     );
   }
 
+  const renderItem = useCallback(
+    ({ item: tx }: { item: Transaction }) => (
+      <TransactionItem transaction={tx} onPress={() => onTransactionPress?.(tx)} />
+    ),
+    [onTransactionPress]
+  );
+
   return (
     <SectionList
       style={style}
@@ -123,9 +130,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       renderSectionHeader={({ section }) => (
         <Text className="mb-1 mt-2 font-body text-[13px] text-text-tertiary">{section.label}</Text>
       )}
-      renderItem={({ item: tx }) => (
-        <TransactionItem transaction={tx} onPress={() => onTransactionPress?.(tx)} />
-      )}
+      renderItem={renderItem}
       SectionSeparatorComponent={() => <View className="mb-md" />}
       ListHeaderComponent={
         title ? (

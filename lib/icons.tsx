@@ -123,6 +123,7 @@ import {
   HouseSimpleIcon,
   BuildingIcon,
   ImagesIcon,
+  GridFourIcon,
 } from 'phosphor-react-native';
 
 // ─── Icon type (matches HugeiconsProps['icon']) ─────────────────────────────
@@ -407,6 +408,7 @@ export { LinkIcon as LinkSquare01Icon };
 export { DotsThreeIcon as MoreHorizontalIcon };
 export { DotsThreeOutlineIcon as MoreIcon };
 export { DeviceMobileIcon as SmartPhone01Icon };
+export { PhPhoneIcon as PhoneIcon };
 export { MicrophoneIcon as Mic01Icon };
 export { PhHeadphonesIcon as HeadphonesIcon };
 export { PhCrownIcon as CrownIcon };
@@ -438,3 +440,4 @@ export { WarningIcon as Alert01Icon };
 export { FlagIcon as Flag01Icon };
 export { ThumbsUpIcon as ThumbsUpIcon };
 export { ThumbsDownIcon as ThumbsDownIcon };
+export { GridFourIcon };

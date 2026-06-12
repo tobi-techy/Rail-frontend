@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { Stack } from 'expo-router';
 import { AppState, Platform, StatusBar, StyleSheet, View } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -10,14 +9,10 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import * as SplashScreen from 'expo-splash-screen';
 import { initSentry } from '@/lib/sentry';
 import { initGlobalErrorHandlers, logger } from '@/lib/logger';
-import { initMixpanel } from '@/utils/mixpanel';
 import { validateEnvironmentVariables } from '@/utils/envValidator';
-import { configureAndroidVisualBaseline } from '@/utils/androidVisualBaseline';
 import { useFonts } from '@/hooks/useFonts';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { useBiometricLock } from '@/hooks/useBiometricLock';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
-import { useForceUpdate } from '@/hooks/useForceUpdate';
 import { enforceDeviceSecurity } from '@/utils/deviceSecurity';
 import { initEncryption } from '@/utils/encryption';
 import { SplashScreen as CustomSplash } from '@/components/SplashScreen';
@@ -26,39 +21,59 @@ import { FeedbackPopupHost } from '@/components/ui';
 import queryClient, { queryKeys } from '@/api/queryClient';
 import { stationService } from '@/api/services/station.service';
 import SessionManager from '@/utils/sessionManager';
-import gleap from '@/utils/gleap';
-import { PostHogProvider, PostHogSurveyProvider, usePostHog } from 'posthog-react-native';
+import { PostHogProvider, usePostHog } from 'posthog-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores';
 import '../global.css';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const SPLASH_BG = '#ff3e00';
-const SPLASH_MIN_DURATION_MS = 2500;
-const SPLASH_MAX_DURATION_MS = 4000;
-
+// Critical synchronous inits only
 initSentry();
 initGlobalErrorHandlers();
-initMixpanel();
-configureAndroidVisualBaseline();
 
-const envValidation = validateEnvironmentVariables();
-if (!envValidation.isValid && !__DEV__) {
-  logger.error('[Layout] Critical environment configuration missing', {
-    component: 'Layout',
-    action: 'env-validation-failed',
-    errors: envValidation.errors,
+if (!validateEnvironmentVariables().isValid && !__DEV__) {
+  logger.error('[Layout] Critical environment configuration missing', { component: 'Layout' });
+}
+
+// Android baseline — deferred
+if (Platform.OS === 'android') {
+  const { InteractionManager } = require('react-native');
+  InteractionManager.runAfterInteractions(() => {
+    require('@/utils/androidVisualBaseline').configureAndroidVisualBaseline();
   });
 }
 
+const SPLASH_BG = '#ff3e00';
+const SPLASH_MIN_MS = 600; // Just a flash of branding — dismiss as soon as ready
+const SPLASH_MAX_MS = 1000; // Hard cap — never wait longer than this
+
+// Lazy-loaded heavy components (not needed at startup)
+const BlurView = lazy(() => import('expo-blur').then((m) => ({ default: m.BlurView })));
+
 function AppReadyTracker() {
   const posthog = usePostHog();
-  usePushNotifications(); // Initialize push notifications
-  useForceUpdate(); // Check for app updates
+
   useEffect(() => {
     posthog?.capture('app_opened', { platform: Platform.OS });
+
+    // Defer all non-critical SDK inits
+    Promise.allSettled([
+      import('@/utils/mixpanel').then((m) => m.initMixpanel()),
+      import('@/hooks/usePushNotifications'),
+      import('@/hooks/useForceUpdate'),
+    ]);
   }, [posthog]);
+
+  return null;
+}
+
+// Separate component to initialize push + force update AFTER app is ready
+function PostReadyHooks() {
+  const { usePushNotifications } = require('@/hooks/usePushNotifications');
+  const { useForceUpdate } = require('@/hooks/useForceUpdate');
+  usePushNotifications();
+  useForceUpdate();
   return null;
 }
 
@@ -67,141 +82,29 @@ function AppNavigator() {
   useBiometricLock();
 
   return (
-    <Stack
-      initialRouteName="index"
-      screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FFFFFF' } }}>
-      <Stack.Screen name="index" options={{ contentStyle: { backgroundColor: '#ff3e00' } }} />
-      <Stack.Screen
-        name="login-passcode"
-        options={{ contentStyle: { backgroundColor: '#FFFFFF' } }}
-      />
-      <Stack.Screen name="intro" options={{ contentStyle: { backgroundColor: '#000000' } }} />
-      <Stack.Screen name="(auth)" options={{ contentStyle: { backgroundColor: '#FFFFFF' } }} />
-      <Stack.Screen name="(tabs)" options={{ contentStyle: { backgroundColor: '#FFFFFF' } }} />
-      <Stack.Screen
-        name="market-asset/[symbol]"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_right',
-          contentStyle: { backgroundColor: '#FFFFFF' },
-        }}
-      />
-      <Stack.Screen
-        name="market-asset/trade"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_bottom',
-          contentStyle: { backgroundColor: '#000000' },
-        }}
-      />
-      <Stack.Screen
-        name="spending-stash"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_bottom',
-          animationTypeForReplace: 'push',
-        }}
-      />
-      <Stack.Screen name="investment-stash" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="gameplay"
-        options={{ headerShown: false, animation: 'slide_from_right' }}
-      />
-      <Stack.Screen
-        name="subscription"
-        options={{ headerShown: false, animation: 'slide_from_right' }}
-      />
-      <Stack.Screen
-        name="withdraw"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_bottom',
-          animationTypeForReplace: 'push',
-          contentStyle: { backgroundColor: '#FFFFFF' },
-        }}
-      />
-      <Stack.Screen
-        name="kyc"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_bottom',
-          animationTypeForReplace: 'push',
-          contentStyle: { backgroundColor: '#FFFFFF' },
-        }}
-      />
-      <Stack.Screen
-        name="virtual-account"
-        options={{
-          headerShown: false,
-          contentStyle: { backgroundColor: '#FFFFFF' },
-        }}
-      />
-      <Stack.Screen
-        name="passkey-settings"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_right',
-          contentStyle: { backgroundColor: '#FFFFFF' },
-        }}
-      />
-      <Stack.Screen
-        name="settings-notifications"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_right',
-          contentStyle: { backgroundColor: '#FFFFFF' },
-        }}
-      />
-      <Stack.Screen
-        name="notifications"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_right',
-          contentStyle: { backgroundColor: '#FFFFFF' },
-        }}
-      />
-      <Stack.Screen
-        name="fund-crosschain"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_bottom',
-          contentStyle: { backgroundColor: '#ff3e00' },
-        }}
-      />
-      <Stack.Screen
-        name="fund-stash"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_bottom',
-          contentStyle: { backgroundColor: '#ff3e00' },
-        }}
-      />
-      <Stack.Screen
-        name="fund-naira"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_bottom',
-          contentStyle: { backgroundColor: '#ff3e00' },
-        }}
-      />
-      <Stack.Screen
-        name="paj-verify"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_bottom',
-          contentStyle: { backgroundColor: '#FFFFFF' },
-        }}
-      />
-      <Stack.Screen
-        name="ai-chat"
-        options={{
-          headerShown: false,
-          animation: 'fade_from_bottom',
-          animationDuration: 250,
-          contentStyle: { backgroundColor: '#F9F8F6' },
-          gestureEnabled: false,
-        }}
-      />
+    <Stack initialRouteName="index" screenOptions={{ headerShown: false, contentStyle: styles.white }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="login-passcode" />
+      <Stack.Screen name="intro" options={{ contentStyle: styles.black }} />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="market-asset/[symbol]" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="market-asset/trade" options={{ animation: 'slide_from_bottom', contentStyle: styles.black }} />
+      <Stack.Screen name="spending-stash" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="investment-stash" />
+      <Stack.Screen name="gameplay" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="subscription" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="withdraw" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="kyc" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="virtual-account" />
+      <Stack.Screen name="passkey-settings" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="settings-notifications" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="fund-crosschain" options={{ animation: 'slide_from_bottom', contentStyle: styles.primary }} />
+      <Stack.Screen name="fund-stash" options={{ animation: 'slide_from_bottom', contentStyle: styles.primary }} />
+      <Stack.Screen name="fund-naira" options={{ animation: 'slide_from_bottom', contentStyle: styles.primary }} />
+      <Stack.Screen name="paj-verify" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="ai-chat" options={{ animation: 'fade_from_bottom', animationDuration: 250, gestureEnabled: false }} />
     </Stack>
   );
 }
@@ -210,116 +113,95 @@ export default function Layout() {
   const { fontsLoaded, error: fontError } = useFonts();
   const [showSplash, setShowSplash] = useState(true);
   const [securityChecked, setSecurityChecked] = useState(false);
-  const [customSplashStartTime, setCustomSplashStartTime] = useState<number | null>(null);
+  const splashStart = useRef<number | null>(null);
   const refreshCurrencyRates = useUIStore((s) => s.refreshCurrencyRates);
-  const [isBlurred, setIsBlurred] = useState(AppState.currentState !== 'active');
+  const [isBlurred, setIsBlurred] = useState(false);
 
+  // App state — blur only when backgrounded
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       setIsBlurred(s !== 'active');
       focusManager.setFocused(s === 'active');
     });
-    focusManager.setFocused(AppState.currentState === 'active');
     return () => sub.remove();
   }, []);
 
+  // Security checks in parallel
   useEffect(() => {
-    Promise.all([enforceDeviceSecurity({ allowContinue: __DEV__ }), initEncryption()]).finally(() =>
-      setSecurityChecked(true)
-    );
+    Promise.all([
+      enforceDeviceSecurity({ allowContinue: __DEV__ }),
+      initEncryption(),
+      import('@/utils/deviceFingerprint').then((m) => m.getDeviceFingerprint()),
+    ]).finally(() => setSecurityChecked(true));
   }, []);
 
-  useEffect(() => {
-    void refreshCurrencyRates();
-  }, [refreshCurrencyRates]);
-
+  // Hide native splash as soon as custom splash mounts
   const onCustomSplashReady = useCallback(async () => {
-    if (customSplashStartTime === null) {
+    if (splashStart.current === null) {
       await SplashScreen.hideAsync();
-      setCustomSplashStartTime(Date.now());
+      splashStart.current = Date.now();
     }
-  }, [customSplashStartTime]);
+  }, []);
 
+  // Dismiss splash when ready
   useEffect(() => {
-    const fontsReady = fontsLoaded || fontError;
-    if (!fontsReady || !securityChecked || customSplashStartTime === null) return;
-    const remaining = SPLASH_MIN_DURATION_MS - (Date.now() - customSplashStartTime);
-    if (remaining <= 0) {
-      setShowSplash(false);
-    } else {
-      const t = setTimeout(() => setShowSplash(false), remaining);
-      return () => clearTimeout(t);
-    }
-  }, [fontsLoaded, fontError, securityChecked, customSplashStartTime]);
+    if (!(fontsLoaded || fontError) || !securityChecked || splashStart.current === null) return;
+    const elapsed = Date.now() - splashStart.current;
+    const remaining = Math.max(0, SPLASH_MIN_MS - elapsed);
+    const t = setTimeout(() => setShowSplash(false), remaining);
+    return () => clearTimeout(t);
+  }, [fontsLoaded, fontError, securityChecked]);
 
-  // Max timeout fallback
+  // Hard timeout fallback
   useEffect(() => {
-    const t = setTimeout(() => setShowSplash(false), SPLASH_MAX_DURATION_MS);
+    const t = setTimeout(() => setShowSplash(false), SPLASH_MAX_MS);
     return () => clearTimeout(t);
   }, []);
 
+  // Post-splash: initialize session, prefetch data
   useEffect(() => {
     if (showSplash) return;
-    try {
-      SessionManager.initialize();
-      gleap.initialize(process.env.EXPO_PUBLIC_GLEAP_TOKEN ?? '');
-      // SECURITY FIX (L-5): Log when Gleap token is missing instead of silent degradation
-      if (!process.env.EXPO_PUBLIC_GLEAP_TOKEN) {
-        logger.warn('[Layout] EXPO_PUBLIC_GLEAP_TOKEN not set — Gleap feedback disabled', {
-          component: 'Layout',
-          action: 'gleap-token-missing',
-        });
-      }
-      gleap.showFeedbackButton(false);
-    } catch (error) {
-      logger.error(
-        '[Layout] SessionManager init failed',
-        error instanceof Error ? error : new Error(String(error))
-      );
-    }
-  }, [showSplash]);
 
-  useEffect(() => {
-    if (showSplash) return;
+    SessionManager.initialize();
+
+    // Deferred SDK init
+    import('@/utils/gleap').then((m) => {
+      const token = process.env.EXPO_PUBLIC_GLEAP_TOKEN ?? '';
+      if (token) { m.default.initialize(token); m.default.showFeedbackButton(false); }
+    }).catch(() => {});
+
+    // Prefetch if authenticated
     const state = useAuthStore.getState();
-    if (!state?.isAuthenticated || !state?.accessToken) return;
-    void queryClient.prefetchQuery({
-      queryKey: queryKeys.station.home(),
-      queryFn: () => stationService.getStation(),
-      staleTime: 0,
-    });
-  }, [showSplash]);
+    if (state?.isAuthenticated && state?.accessToken) {
+      queryClient.prefetchQuery({ queryKey: queryKeys.station.home(), queryFn: () => stationService.getStation(), staleTime: 0 });
+      refreshCurrencyRates();
+    }
+  }, [showSplash, refreshCurrencyRates]);
 
   const isReady = !showSplash && (fontsLoaded || !!fontError);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={styles.root}>
       <BottomSheetModalProvider>
         <ErrorBoundary>
           <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
           <KeyboardProvider>
             <QueryClientProvider client={queryClient}>
-              <SafeAreaProvider style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-                <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+              <SafeAreaProvider style={styles.root}>
+                <View style={styles.root}>
                   <PostHogProvider
                     apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
-                    autocapture={{ captureScreens: false }}
-                    options={{
-                      host: 'https://us.i.posthog.com',
-                      disabled: __DEV__,
-                      // SECURITY FIX (C-3): Only enable session replay when key is configured.
-                      // Mask all images to prevent capturing sensitive financial data (balances, QR codes).
-                      enableSessionReplay: !!process.env.EXPO_PUBLIC_POSTHOG_API_KEY,
-                      sessionReplayConfig: { maskAllTextInputs: true, maskAllImages: true },
-                    }}>
-                    <PostHogSurveyProvider>
-                      {isReady && <AppReadyTracker />}
-                      <AppNavigator />
-                      <FeedbackPopupHost />
-                      {isBlurred && (
+                    autocapture={false}
+                    options={{ host: 'https://us.i.posthog.com', disabled: __DEV__ }}>
+                    {isReady && <AppReadyTracker />}
+                    {isReady && <PostReadyHooks />}
+                    <AppNavigator />
+                    <FeedbackPopupHost />
+                    {isBlurred && (
+                      <Suspense fallback={null}>
                         <BlurView intensity={50} tint="regular" style={StyleSheet.absoluteFill} />
-                      )}
-                    </PostHogSurveyProvider>
+                      </Suspense>
+                    )}
                   </PostHogProvider>
                 </View>
               </SafeAreaProvider>
@@ -328,10 +210,18 @@ export default function Layout() {
         </ErrorBoundary>
       </BottomSheetModalProvider>
       {((!fontsLoaded && !fontError) || showSplash) && (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: SPLASH_BG, zIndex: 999 }]}>
+        <View style={[StyleSheet.absoluteFill, styles.splash]}>
           <CustomSplash onMounted={onCustomSplashReady} />
         </View>
       )}
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#FFFFFF' },
+  splash: { backgroundColor: SPLASH_BG, zIndex: 999 },
+  white: { backgroundColor: '#FFFFFF' },
+  black: { backgroundColor: '#000000' },
+  primary: { backgroundColor: '#ff3e00' },
+});

@@ -235,7 +235,7 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, onPress }) => {
+export const TransactionItem: React.FC<TransactionItemProps> = React.memo(({ transaction, onPress }) => {
   const { text: amountText, isCredit } = formatTransactionAmount(
     transaction.amount,
     transaction.type,
@@ -300,7 +300,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, o
       </View>
     </AnimatedPressable>
   );
-};
+});
+TransactionItem.displayName = 'TransactionItem';
 
 export const TransactionItemSkeleton: React.FC = () => (
   <View className="flex-row items-center py-[14px]">

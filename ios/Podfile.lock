@@ -24,9 +24,9 @@ PODS:
     - GoogleUtilities/Environment (~> 8.0)
     - GoogleUtilities/UserDefaults (~> 8.0)
     - PromisesObjC (~> 2.4)
-  - DiditSDK (3.6.0):
-    - DiditSDK/Full (= 3.6.0)
-  - DiditSDK/Full (3.6.0)
+  - DiditSDK (3.6.1):
+    - DiditSDK/Full (= 3.6.1)
+  - DiditSDK/Full (3.6.1)
   - EXApplication (55.0.15):
     - ExpoModulesCore
   - EXConstants (55.0.16):
@@ -34,7 +34,7 @@ PODS:
   - EXJSONUtils (55.0.2)
   - EXManifests (55.0.17):
     - ExpoModulesCore
-  - Expo (55.0.24):
+  - Expo (55.0.26):
     - ExpoModulesCore
     - hermes-engine
     - RCTRequired
@@ -59,15 +59,15 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - expo-dev-client (55.0.33):
+  - expo-dev-client (55.0.35):
     - EXManifests
     - expo-dev-launcher
     - expo-dev-menu
     - expo-dev-menu-interface
     - EXUpdatesInterface
-  - expo-dev-launcher (55.0.34):
+  - expo-dev-launcher (55.0.36):
     - EXManifests
-    - expo-dev-launcher/Main (= 55.0.34)
+    - expo-dev-launcher/Main (= 55.0.36)
     - expo-dev-menu
     - expo-dev-menu-interface
     - ExpoModulesCore
@@ -96,7 +96,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - expo-dev-launcher/Main (55.0.34):
+  - expo-dev-launcher/Main (55.0.36):
     - EXManifests
     - expo-dev-launcher/Unsafe
     - expo-dev-menu
@@ -127,7 +127,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - expo-dev-launcher/Unsafe (55.0.34):
+  - expo-dev-launcher/Unsafe (55.0.36):
     - EXManifests
     - expo-dev-menu
     - expo-dev-menu-interface
@@ -157,8 +157,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - expo-dev-menu (55.0.28):
-    - expo-dev-menu/Main (= 55.0.28)
+  - expo-dev-menu (55.0.30):
+    - expo-dev-menu/Main (= 55.0.30)
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -181,7 +181,7 @@ PODS:
     - ReactNativeDependencies
     - Yoga
   - expo-dev-menu-interface (55.0.2)
-  - expo-dev-menu/Main (55.0.28):
+  - expo-dev-menu/Main (55.0.30):
     - EXManifests
     - expo-dev-menu-interface
     - ExpoModulesCore
@@ -219,9 +219,9 @@ PODS:
     - ExpoModulesCore
   - ExpoBlur (55.0.14):
     - ExpoModulesCore
-  - ExpoCamera (55.0.18):
+  - ExpoCamera (55.0.19):
     - ExpoModulesCore
-  - ExpoCameraBarcodeScanning (55.0.18):
+  - ExpoCameraBarcodeScanning (55.0.19):
     - ExpoCamera
     - ZXingObjC/OneD
     - ZXingObjC/PDF417
@@ -237,13 +237,13 @@ PODS:
     - ExpoModulesCore
   - ExpoFileSystem (55.0.22):
     - ExpoModulesCore
-  - ExpoFont (55.0.7):
+  - ExpoFont (55.0.8):
     - ExpoModulesCore
   - ExpoGlassEffect (55.0.11):
     - ExpoModulesCore
   - ExpoHaptics (55.0.14):
     - ExpoModulesCore
-  - ExpoImage (55.0.10):
+  - ExpoImage (55.0.11):
     - ExpoModulesCore
     - libavif/libdav1d
     - SDWebImage (~> 5.21.0)
@@ -260,7 +260,7 @@ PODS:
     - ExpoModulesCore
   - ExpoLocalAuthentication (55.0.14):
     - ExpoModulesCore
-  - ExpoLocalization (55.0.14):
+  - ExpoLocalization (55.0.15):
     - ExpoModulesCore
   - ExpoLogBox (55.0.12):
     - React-Core
@@ -296,26 +296,26 @@ PODS:
     - ReactCommon
   - ExpoNotifications (55.0.23):
     - ExpoModulesCore
-  - ExpoRouter (55.0.14):
+  - ExpoRouter (55.0.16):
     - ExpoModulesCore
     - RNScreens
   - ExpoSecureStore (55.0.14):
     - ExpoModulesCore
-  - ExpoSharing (55.0.19):
+  - ExpoSharing (55.0.20):
     - ExpoModulesCore
   - ExpoSpeech (55.0.14):
     - ExpoModulesCore
+  - ExpoSpeechRecognition (0.2.15):
+    - ExpoModulesCore
   - ExpoSplashScreen (55.0.21):
     - ExpoModulesCore
-  - ExpoSymbols (55.0.8):
+  - ExpoSymbols (55.0.9):
     - ExpoModulesCore
   - ExpoSystemUI (55.0.18):
     - ExpoModulesCore
-  - ExpoUI (55.0.16):
+  - ExpoUI (55.0.17):
     - ExpoModulesCore
     - React-RCTFabric
-  - ExpoVideo (55.0.17):
-    - ExpoModulesCore
   - ExpoWebBrowser (55.0.16):
     - ExpoModulesCore
   - EXUpdatesInterface (55.1.6):
@@ -362,6 +362,28 @@ PODS:
   - libwebp/sharpyuv (1.5.0)
   - libwebp/webp (1.5.0):
     - libwebp/sharpyuv
+  - LiquidGlass (0.8.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - livekit-react-native (2.11.0):
     - hermes-engine
     - livekit-react-native-webrtc
@@ -388,6 +410,10 @@ PODS:
   - livekit-react-native-webrtc (144.1.0):
     - React-Core
     - WebRTC-SDK (= 144.7559.04)
+  - LiveKitExpoPlugin (1.0.2):
+    - ExpoModulesCore
+    - livekit-react-native
+    - livekit-react-native-webrtc
   - Mixpanel-swift (5.2.0):
     - Mixpanel-swift/Complete (= 5.2.0)
   - Mixpanel-swift/Complete (5.2.0)
@@ -418,7 +444,7 @@ PODS:
     - ReactNativeDependencies
     - Yoga
   - MixpanelSessionReplay (1.3.2)
-  - PostHog (3.59.1)
+  - PostHog (3.59.3)
   - posthog-react-native-session-replay (1.3.0):
     - hermes-engine
     - PostHog (~> 3.21)
@@ -2897,7 +2923,7 @@ PODS:
     - ZXingObjC/Core
 
 DEPENDENCIES:
-  - DiditSDK (from `https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.6.0/DiditSDK.podspec`)
+  - DiditSDK (from `https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.6.1/DiditSDK.podspec`)
   - EXApplication (from `../node_modules/expo-application/ios`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
   - EXJSONUtils (from `../node_modules/expo-json-utils/ios`)
@@ -2938,18 +2964,20 @@ DEPENDENCIES:
   - ExpoSecureStore (from `../node_modules/expo-secure-store/ios`)
   - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - ExpoSpeech (from `../node_modules/expo-speech/ios`)
+  - "ExpoSpeechRecognition (from `../node_modules/@jamsch/expo-speech-recognition/ios`)"
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
   - ExpoSystemUI (from `../node_modules/expo-system-ui/ios`)
   - "ExpoUI (from `../node_modules/@expo/ui/ios`)"
-  - ExpoVideo (from `../node_modules/expo-video/ios`)
   - ExpoWebBrowser (from `../node_modules/expo-web-browser/ios`)
   - EXUpdatesInterface (from `../node_modules/expo-updates-interface/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - jail-monkey (from `../node_modules/jail-monkey`)
+  - "LiquidGlass (from `../node_modules/@callstack/liquid-glass`)"
   - "livekit-react-native (from `../node_modules/@livekit/react-native`)"
   - "livekit-react-native-webrtc (from `../node_modules/@livekit/react-native-webrtc`)"
+  - "LiveKitExpoPlugin (from `../node_modules/@livekit/react-native-expo-plugin/ios`)"
   - MixpanelReactNative (from `../node_modules/mixpanel-react-native`)
   - "MixpanelReactNativeSessionReplay (from `../node_modules/@mixpanel/react-native-session-replay`)"
   - posthog-react-native-session-replay (from `../node_modules/posthog-react-native-session-replay`)
@@ -3077,7 +3105,7 @@ SPEC REPOS:
 
 EXTERNAL SOURCES:
   DiditSDK:
-    :podspec: https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.6.0/DiditSDK.podspec
+    :podspec: https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.6.1/DiditSDK.podspec
   EXApplication:
     :path: "../node_modules/expo-application/ios"
   EXConstants:
@@ -3158,6 +3186,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-sharing/ios"
   ExpoSpeech:
     :path: "../node_modules/expo-speech/ios"
+  ExpoSpeechRecognition:
+    :path: "../node_modules/@jamsch/expo-speech-recognition/ios"
   ExpoSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
   ExpoSymbols:
@@ -3166,8 +3196,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-system-ui/ios"
   ExpoUI:
     :path: "../node_modules/@expo/ui/ios"
-  ExpoVideo:
-    :path: "../node_modules/expo-video/ios"
   ExpoWebBrowser:
     :path: "../node_modules/expo-web-browser/ios"
   EXUpdatesInterface:
@@ -3179,10 +3207,14 @@ EXTERNAL SOURCES:
     :tag: hermes-v0.14.1
   jail-monkey:
     :path: "../node_modules/jail-monkey"
+  LiquidGlass:
+    :path: "../node_modules/@callstack/liquid-glass"
   livekit-react-native:
     :path: "../node_modules/@livekit/react-native"
   livekit-react-native-webrtc:
     :path: "../node_modules/@livekit/react-native-webrtc"
+  LiveKitExpoPlugin:
+    :path: "../node_modules/@livekit/react-native-expo-plugin/ios"
   MixpanelReactNative:
     :path: "../node_modules/mixpanel-react-native"
   MixpanelReactNativeSessionReplay:
@@ -3384,52 +3416,52 @@ SPEC CHECKSUMS:
   AFNetworking: 3bd23d814e976cd148d7d44c3ab78017b744cd58
   AppAuth: 1c1a8afa7e12f2ec3a294d9882dfa5ab7d3cb063
   AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
-  DiditSDK: 8a6925bc3d26565a5af803200774aaad06482f2a
+  DiditSDK: 71dbdc90190527e2d69087405d3b752f6b6b4f28
   EXApplication: 82a44fa8236bb644a805ee21e64054eeb01d22ea
   EXConstants: dadbeba983acc30f855a919658a2b34fbd86615d
   EXJSONUtils: 04bc3807d351331a5fe154ce1da596ec15d99169
   EXManifests: 35b26ca30c8a6bd427d1cba20348cd3c43684bb2
-  Expo: 16f3bba63c001ae67319631affd50e83c429d7c6
-  expo-dev-client: feba6f7be1640072de1f77c5cc8342d292bcfce0
-  expo-dev-launcher: 8b60faae5715d49afa48c86ae7422a6ffd3426ce
-  expo-dev-menu: a84da48edce4ed67b32c7f492763129587003960
+  Expo: a74260e921728e06b81d3811a508acd5858812d6
+  expo-dev-client: f65f51def820b8c6d4b249942c98538fc42a68b4
+  expo-dev-launcher: f61d325756363aa4622b09d189955659f1afe297
+  expo-dev-menu: ff595953daf028b6bd9f0fa9b77bf58fbc41fa66
   expo-dev-menu-interface: 833795f4c98a674d36cbc12b11b21756c38e01e8
   ExpoAdapterGoogleSignIn: ab4d9fc38cb91077a4138d178395525ec65d0c2e
   ExpoAppleAuthentication: 08b3d0e502f46731abdf4c59203769fb685f66c8
   ExpoAsset: 7721c5c4ae2a7c3c8147a046727ac6c020b05648
   ExpoAudio: a826903abdeba843cde8602bd1c077d808b31f1d
   ExpoBlur: 7a86e84e7728108fa6908d7103fa527705a3dbbf
-  ExpoCamera: 82498151f9c05cc70d116d2bf68e4c187869300c
-  ExpoCameraBarcodeScanning: 66aa18c44eb8d034bdb49ea1b893fe549372ef7b
+  ExpoCamera: 7926674f9ec1be53bfc83b21c908b7fadd381b32
+  ExpoCameraBarcodeScanning: d798baaca89608f387d851649a201f2cf6d0033e
   ExpoClipboard: 5d1b0cd2686406f21e616f2d9b3431259dee2e6a
   ExpoCrypto: e7f4a14eaa6d6a6a2196cd7391d171c84be0b1aa
   ExpoDevice: b8a65afe42c3c5934eb6983870672fe785b39dea
   ExpoDocumentPicker: be59b82799ae30811e3f37a7521d6622baa63a19
   ExpoDomWebView: b2e9d601f9cb77d3c97da73234e175b64be91928
   ExpoFileSystem: 61e663d0bbd1a973d324530d1d6ee559a5e5192c
-  ExpoFont: a95606f106a6394df8edf6d0d87aab9020af5ad4
+  ExpoFont: a7e34a75bdfb703fa07a0e87807f836236608c76
   ExpoGlassEffect: 2dedac2fe817f9b02d0dad29ce0aef7afebc5cd4
   ExpoHaptics: 679f09dc37d5981e619bc197732007a3334e80b8
-  ExpoImage: 74d26278507b0b0d85b1e50562412172603f59eb
+  ExpoImage: 5854bd51edd7c0a775755473598f9daeb3fde4e3
   ExpoImagePicker: 7c75b2f076d6f45598fcbd035908aebc4c2eb257
   ExpoKeepAwake: d0eb7a0719500d2a43fbf29b6f79e84d70c75ebf
   ExpoLinearGradient: dcbc1ca46ebfeb9d7646f49595057d161dae208e
   ExpoLinking: 40f36cf134ea6930f37867858c0643877b865d53
   ExpoLocalAuthentication: 2d4533756d4d0673739ed2045435b6c62ad3d443
-  ExpoLocalization: 8bda1a33676542204301b719b3a51b29e2bbd3fd
+  ExpoLocalization: 827b7e833ef284190385c76d5d3914d7b7af4157
   ExpoLogBox: a678d36477ab9544fe63e0b5328a0716539b6774
   ExpoModulesCore: 5e1ad569ce7cf8d35c0737585f34cc299fc3f0ca
   ExpoModulesJSI: 964334271fc77832736f66ee1785761cdc778dbe
   ExpoNotifications: 61c46aa5df088ff0ad41de0504a86a92333aec55
-  ExpoRouter: 0948f6a7c3949e8405099663e55d149408afc021
+  ExpoRouter: e0e2aa4b03843e7abfa3e63e0cdd6c642d74780f
   ExpoSecureStore: 0e7959ad3a9fa59306d55f26a37854640dd334c2
-  ExpoSharing: 641637bdd478455f33c5f78d68c2c9a5d42cb0bc
+  ExpoSharing: ae902b28ac0eb274d771411f39a7daad2529309d
   ExpoSpeech: afff97450c029ce8a3cf0e2f122423870c756e59
+  ExpoSpeechRecognition: 1be520aff1d1bf8fd584a321ced0d30cde06235a
   ExpoSplashScreen: 049301b226bce8284fcafb7923fcad3a43f23a9f
-  ExpoSymbols: 446a0835f3fb505214891d72baf5edf1de2ee4e7
+  ExpoSymbols: 896159288ad708e1a32dc12c92fe5f90bff01126
   ExpoSystemUI: fbc4f8af83f2b8338c1de69a79624769536f09d1
-  ExpoUI: 9157bbfd59555db446834e23fa1e6e3689de6cea
-  ExpoVideo: 5e7aee124df2f7d9ffe1bd4dbf63119417b340a3
+  ExpoUI: 3d10642147c44f94a4557f1defe2efd3244349af
   ExpoWebBrowser: 5847267c496125abe38afccae97d34cb6ecc5340
   EXUpdatesInterface: 4c11f4d1594526258f14d09817dc407acbf24e3b
   FBLazyVector: 427fa1856a481856091061293ce865a75aa4f20f
@@ -3443,13 +3475,15 @@ SPEC CHECKSUMS:
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
+  LiquidGlass: 65ee63f03b81fd36383ec14d5bd57a190680ebed
   livekit-react-native: 58b32aac95e51d7e8ff00a71e08ec58784923be1
   livekit-react-native-webrtc: 6384bffff182166749ea42ccc419cee6785b0603
+  LiveKitExpoPlugin: 244fe0ae6c8226121a2257a2408749ea10c5e11c
   Mixpanel-swift: de454db5987bf6f601106520a44663fc556e8cfa
   MixpanelReactNative: 1f0d8718b2be7174f719ed5db8e8f75d7975dea4
   MixpanelReactNativeSessionReplay: cfddac0916a66dca6523e6a97a784ec9f138700d
   MixpanelSessionReplay: f60b1b2d6df6d5a5273ae1d04c814a74d9421b4f
-  PostHog: 037a5d3bab9015dc1694af5ede07e0f6dfc5311d
+  PostHog: 6c74cc84f3872f4335108ff363aecdeb7c278052
   posthog-react-native-session-replay: cc5a281243db99912bf0edf27a58c81a9c672a3a
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   Pulsar: db1cccc0a590d3dae98f2a9a3151bfc9be8785c3
@@ -3555,6 +3589,6 @@ SPEC CHECKSUMS:
   Yoga: e41d64347f52d634dd8c2f6bac33f95081959fd3
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: 60c7cc46399b5dd8258d92849462560e3ccdafcd
+PODFILE CHECKSUM: c2c30a1a520768e17b9d4b4d279f34776ba87931
 
 COCOAPODS: 1.16.2

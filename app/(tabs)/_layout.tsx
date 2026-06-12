@@ -12,12 +12,12 @@ export default function TabLayout() {
         tabBar={(props) => <TabBar {...props} />}
         screenOptions={{
           headerShown: true,
-          headerStyle: { backgroundColor: '#fbfaf9' },
+          headerStyle: { backgroundColor: '#ffffff' },
           headerShadowVisible: false,
           headerTitleStyle: { fontFamily: 'SFProDisplay-Bold', fontSize: 28, width: '100%' },
           headerTitleAlign: 'left',
           headerTitleContainerStyle: { width: '60%' },
-          sceneStyle: { backgroundColor: '#fbfaf9' },
+          sceneStyle: { backgroundColor: '#ffffff' },
         }}>
         <Tabs.Screen
           name="index"

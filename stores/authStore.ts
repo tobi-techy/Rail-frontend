@@ -201,17 +201,19 @@ const createSecureStorage = () => ({
   setItem: async (name: string, value: Record<string, unknown>) => {
     try {
       const toStore = { ...value };
-      for (const key of SENSITIVE_KEYS) {
-        const secureKey = `${name}_${key}`;
-        const keyValue = toStore[key];
-        if (typeof keyValue === 'string' && keyValue.length > 0) {
-          await withRetry(() => secureStorage.setItem(secureKey, keyValue));
-          toStore[key] = SECURE_VALUE_PLACEHOLDER;
-        } else {
-          await secureStorage.deleteItem(secureKey);
-          toStore[key] = key === 'passcodeSessionToken' ? undefined : null;
-        }
-      }
+      await Promise.all(
+        SENSITIVE_KEYS.map(async (key) => {
+          const secureKey = `${name}_${key}`;
+          const keyValue = toStore[key];
+          if (typeof keyValue === 'string' && keyValue.length > 0) {
+            await withRetry(() => secureStorage.setItem(secureKey, keyValue));
+            toStore[key] = SECURE_VALUE_PLACEHOLDER;
+          } else {
+            await secureStorage.deleteItem(secureKey);
+            toStore[key] = key === 'passcodeSessionToken' ? undefined : null;
+          }
+        })
+      );
       await withRetry(() => AsyncStorage.setItem(name, JSON.stringify(toStore)));
     } catch (error) {
       safeError('[SecureStorage] setItem error:', error);

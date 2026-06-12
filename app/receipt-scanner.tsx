@@ -14,6 +14,10 @@ export default function ReceiptScannerScreen() {
     let cancelled = false;
 
     async function scan() {
+      // Wait for the screen to fully present before launching the native scanner
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      if (cancelled) return;
+
       try {
         const result = await launchScanner({
           quality: 0.7,
@@ -35,10 +39,7 @@ export default function ReceiptScannerScreen() {
 
         const image = result.images?.[0];
         if (image?.base64) {
-          setPendingScannedReceipt({
-            uri: image.uri,
-            base64: image.base64,
-          });
+          setPendingScannedReceipt({ uri: image.uri, base64: image.base64 });
         }
 
         router.back();

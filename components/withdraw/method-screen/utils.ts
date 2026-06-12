@@ -165,8 +165,6 @@ export const getDestinationError = ({
       'MATIC',
       'AVAX',
       'BSC',
-      'MONAD',
-      'HYPEREVM',
       'LISK',
     ].includes(destinationChain ?? '');
     const isSolChain = !isEvmChain && !isStarknetChain;
