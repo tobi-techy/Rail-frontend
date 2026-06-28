@@ -28,11 +28,11 @@ function useReduceTransparency() {
   useEffect(() => {
     let mounted = true;
     AccessibilityInfo.isReduceTransparencyEnabled?.()
-      .then((v) => mounted && setReduce(!!v))
-      .catch(() => {});
-    const sub = AccessibilityInfo.addEventListener('reduceTransparencyChanged', (v) =>
-      setReduce(!!v)
-    );
+      .then((v) => { if (mounted) setReduce(!!v); })
+      .catch(() => { /* deterministic fallback: keep reduce = false */ });
+    const sub = AccessibilityInfo.addEventListener('reduceTransparencyChanged', (v) => {
+      if (mounted) setReduce(!!v);
+    });
     return () => {
       mounted = false;
       sub?.remove?.();
@@ -44,11 +44,11 @@ function useReduceTransparency() {
 export function GlassView({ children, style, fallbackColor, interactive, effect = 'regular', white = false }: GlassViewProps) {
   const reduceTransparency = useReduceTransparency();
 
-  // Accessibility: opaque surface, no blur. A translucent fallbackColor would be
-  // illegible here, so prefer a solid tone unless an opaque fallback was given.
+  // Accessibility: opaque surface, no blur. Use the caller-provided fallbackColor
+  // when supplied (e.g. TabBar's custom surface), otherwise pick a built-in opaque tone.
   if (reduceTransparency) {
-    const opaque = white ? '#FFFFFF' : '#ECEBE7';
-    return <View style={[{ backgroundColor: opaque }, style]}>{children}</View>;
+    const opaqueDefault = white ? '#FFFFFF' : '#ECEBE7';
+    return <View style={[{ backgroundColor: fallbackColor ?? opaqueDefault }, style]}>{children}</View>;
   }
 
   if (USE_NATIVE_GLASS) {
