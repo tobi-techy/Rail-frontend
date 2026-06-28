@@ -253,7 +253,8 @@ export default function AIChatScreen() {
     ({ item, index }: { item: AIMessage; index: number }) => {
       const isLast = index === messageCount - 1;
       let showCards: InsightCard[] | undefined;
-      if (isLast && item.role === 'assistant') showCards = cards;
+      if (isLast && item.role === 'assistant')
+        showCards = cards?.length ? cards : (item.metadata?.cards as InsightCard[] | undefined);
       else if (item.role === 'assistant' && item.metadata?.cards)
         showCards = item.metadata.cards as InsightCard[];
 

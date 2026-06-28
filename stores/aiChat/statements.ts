@@ -112,22 +112,25 @@ export const createStatementSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
 
           const periodStr = period_start && period_end ? ` from ${period_start} to ${period_end}` : '';
           let content: string;
+          let cards: Record<string, any>[] | undefined;
 
           if (summary) {
-            const spending = `${summary.currency} ${summary.total_spending}`;
-            const income = summary.total_income !== '0' ? `${summary.currency} ${summary.total_income}` : null;
-            let msg = `Here's a summary of your **${summary.bank_name}** statement covering **${summary.months_covered} month${summary.months_covered > 1 ? 's' : ''}**${periodStr}, with **${transaction_count}** transactions found.\n\n`;
-            msg += `## Account overview\n\n`;
-            msg += `- Total spending: **${spending}**\n`;
-            if (income) msg += `- Total income: **${income}**\n`;
-            if (summary.top_categories?.length) {
-              msg += `\n## Top categories\n\n`;
-              summary.top_categories.slice(0, 5).forEach((c) => {
-                msg += `- ${c.category}: **${summary.currency} ${c.total}**\n`;
-              });
-            }
-            msg += `\nI've saved this data — ask me anything about your spending.`;
-            content = msg;
+            const monthsLabel = summary.months_covered
+              ? ` covering ${summary.months_covered} month${summary.months_covered > 1 ? 's' : ''}`
+              : '';
+            content = `Here's your **${summary.bank_name}** statement${monthsLabel}. I've saved everything — ask me anything about your spending.`;
+            cards = [
+              {
+                type: 'statement_summary',
+                title: summary.bank_name,
+                data: {
+                  ...summary,
+                  transaction_count,
+                  period_start: period_start ?? summary.period_start,
+                  period_end: period_end ?? summary.period_end,
+                },
+              },
+            ];
           } else {
             content = `I reviewed your bank statement${periodStr} and found **${transaction_count}** transactions.\n\nI've saved this data — ask me anything about your finances.`;
           }
@@ -135,7 +138,7 @@ export const createStatementSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
           const completionMsg: AIMessage = {
             role: 'assistant',
             content,
-            metadata: { statement_upload_id: uploadId, statement_status: 'completed' },
+            metadata: { statement_upload_id: uploadId, statement_status: 'completed', ...(cards ? { cards } : {}) },
             created_at: new Date().toISOString(),
           };
           set((s) => {

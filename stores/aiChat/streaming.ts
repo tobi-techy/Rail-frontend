@@ -334,17 +334,7 @@ export const createStreamingSlice: StateCreator<
 
     const userContent = message || 'Analyze this receipt';
 
-    // Ensure a conversation exists before sending the image so the receipt
-    // exchange is persisted and follow-up messages stay in the same thread.
-    let convId = conversationId ?? state.activeConversationId;
-    if (!convId) {
-      try {
-        convId = await get().createConversation(userContent.slice(0, 50));
-      } catch {
-        /* proceed without — image still analyzed */
-      }
-    }
-
+    // Show the user's receipt bubble immediately — don't wait on the network.
     const userMsg: AIMessage = {
       role: 'user',
       content: userContent,
@@ -359,6 +349,17 @@ export const createStreamingSlice: StateCreator<
       pendingAction: null,
       connectionStatus: 'streaming',
     }));
+
+    // Then ensure a conversation exists so the receipt exchange is persisted and
+    // follow-ups stay in the same thread. This runs after the bubble is on screen.
+    let convId = conversationId ?? state.activeConversationId;
+    if (!convId) {
+      try {
+        convId = await get().createConversation(userContent.slice(0, 50));
+      } catch {
+        /* proceed without — image still analyzed */
+      }
+    }
 
     try {
       const res = await aiService.analyzeImage(base64Image, message, convId ?? undefined);

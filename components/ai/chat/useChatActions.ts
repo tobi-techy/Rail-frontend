@@ -38,7 +38,6 @@ export function useChatActions(deps: {
   const sendMessage = useAIChatStore((s) => s.sendMessage);
   const sendImage = useAIChatStore((s) => s.sendImage);
   const setTonePreference = useAIChatStore((s) => s.setTonePreference);
-  const createConversation = useAIChatStore((s) => s.createConversation);
   const sendStatement = useAIChatStore((s) => s.sendStatement);
 
   const [attachedDocument, setAttachedDocument] = useState<{
@@ -82,21 +81,15 @@ export function useChatActions(deps: {
         return;
       }
 
-      let convId = activeConversationId;
-      if (!convId) {
-        try {
-          convId = await createConversation(finalMsg.slice(0, 50));
-        } catch {
-          /* proceed without — message still sends */
-        }
-      }
-
-      await sendMessage(finalMsg, convId ?? undefined, { toneMode });
+      // Send straight away — sendMessage inserts the user bubble synchronously
+      // (instant), and the stream creates + resolves the conversation id on its
+      // own. Pre-creating the conversation here added a blocking round-trip that
+      // delayed the very first message of a thread from appearing.
       setEditText('');
+      await sendMessage(finalMsg, activeConversationId ?? undefined, { toneMode });
     },
     [
       activeConversationId,
-      createConversation,
       sendMessage,
       sendImage,
       setTonePreference,

@@ -15,6 +15,7 @@ import {
   DepositPatternCard,
   YieldSummaryCard,
   ComparisonCard,
+  StatementSummaryCard,
 } from './cards';
 
 const CARD_MAP: Record<string, React.ComponentType<{ card: InsightCard }>> = {
@@ -31,6 +32,7 @@ const CARD_MAP: Record<string, React.ComponentType<{ card: InsightCard }>> = {
   deposit_pattern: DepositPatternCard,
   yield_summary: YieldSummaryCard,
   comparison: ComparisonCard,
+  statement_summary: StatementSummaryCard,
 };
 
 export function InsightCardView({ card }: { card: InsightCard }) {

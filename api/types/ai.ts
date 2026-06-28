@@ -48,7 +48,8 @@ export interface InsightCard {
     | 'meme'
     | 'voice_message'
     | 'celebration'
-    | 'poll';
+    | 'poll'
+    | 'statement_summary';
   title: string;
   subtitle?: string;
   sentiment?: 'positive' | 'negative' | 'neutral';
