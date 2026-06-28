@@ -5,31 +5,45 @@ import { CardContainer, CardErrorFallback, parseMoney, type InsightCard } from '
 
 export function SubscriptionAuditCard({ card }: { card: InsightCard }) {
   const totalMonthly = card.data?.total_monthly as string;
-  const subs = (card.data?.subscriptions ?? []) as { name: string; amount: string; frequency: string; status?: string }[];
+  const subs = (card.data?.subscriptions ?? []) as {
+    name: string;
+    amount: string;
+    frequency: string;
+    status?: string;
+  }[];
   const tip = card.data?.savings_tip as string;
 
   if (!subs.length) return <CardErrorFallback />;
 
   return (
     <CardContainer>
-      <View className="py-2">
+      <View className="px-4 py-2">
         <View className="mb-3 flex-row items-center justify-between">
-          <Text className="font-heading-semibold text-base text-text-primary">{card.title || 'Subscriptions'}</Text>
+          <Text className="font-heading-semibold text-base text-text-primary">
+            {card.title || 'Subscriptions'}
+          </Text>
           <Text className="font-body-medium text-sm text-coral-red">${totalMonthly}/mo</Text>
         </View>
         <View className="gap-2.5">
           {subs.slice(0, 6).map((sub, i) => (
-            <Animated.View key={`${sub.name}-${i}`} entering={FadeInUp.duration(250).delay(i * 60)} className="flex-row items-center justify-between">
+            <Animated.View
+              key={`${sub.name}-${i}`}
+              entering={FadeInUp.duration(250).delay(i * 60)}
+              className="flex-row items-center justify-between">
               <View className="flex-row items-center gap-2.5">
                 <View className="h-8 w-8 items-center justify-center rounded-full bg-stone-surface">
-                  <Text className="font-body-medium text-xs text-text-primary">{sub.name.charAt(0)}</Text>
+                  <Text className="font-body-medium text-xs text-text-primary">
+                    {sub.name.charAt(0)}
+                  </Text>
                 </View>
                 <View>
                   <Text className="font-body-medium text-sm text-text-primary">{sub.name}</Text>
                   <Text className="font-body text-xs text-text-tertiary">{sub.frequency}</Text>
                 </View>
               </View>
-              <Text className="font-body-medium text-sm tabular-nums text-text-primary">${sub.amount}</Text>
+              <Text className="font-body-medium text-sm tabular-nums text-text-primary">
+                ${sub.amount}
+              </Text>
             </Animated.View>
           ))}
         </View>
@@ -68,7 +82,11 @@ export function RunwayCard({ card }: { card: InsightCard }) {
             <Text className={`font-body-medium text-xs capitalize ${colors.text}`}>{status}</Text>
           </View>
         </View>
-        {dailyBurn && <Text className="mt-2 font-body text-xs text-text-secondary">Daily burn: ${dailyBurn}</Text>}
+        {dailyBurn && (
+          <Text className="mt-2 font-body text-xs text-text-secondary">
+            Daily burn: ${dailyBurn}
+          </Text>
+        )}
       </View>
     </Animated.View>
   );
@@ -83,12 +101,16 @@ export function DepositPatternCard({ card }: { card: InsightCard }) {
 
   return (
     <CardContainer>
-      <View className="py-2">
-        <Text className="mb-3 font-heading-semibold text-base text-text-primary">{card.title || 'Deposit Pattern'}</Text>
+      <View className="px-4 py-2">
+        <Text className="mb-3 font-heading-semibold text-base text-text-primary">
+          {card.title || 'Deposit Pattern'}
+        </Text>
         <View className="flex-row flex-wrap gap-y-3">
           <View className="w-1/2 pr-3">
             <Text className="font-body text-xs text-text-secondary">Frequency</Text>
-            <Text className="mt-0.5 font-body-medium text-sm capitalize text-text-primary">{frequency}</Text>
+            <Text className="mt-0.5 font-body-medium text-sm capitalize text-text-primary">
+              {frequency}
+            </Text>
           </View>
           <View className="w-1/2">
             <Text className="font-body text-xs text-text-secondary">Average</Text>
@@ -96,15 +118,23 @@ export function DepositPatternCard({ card }: { card: InsightCard }) {
           </View>
           <View className="w-1/2 pr-3">
             <Text className="font-body text-xs text-text-secondary">Streak</Text>
-            <Text className="mt-0.5 font-body-medium text-sm text-text-primary">{streak} deposits</Text>
+            <Text className="mt-0.5 font-body-medium text-sm text-text-primary">
+              {streak} deposits
+            </Text>
           </View>
           <View className="w-1/2">
             <Text className="font-body text-xs text-text-secondary">Consistency</Text>
-            <Text className="mt-0.5 font-body-medium text-sm text-text-primary">{consistency}%</Text>
+            <Text className="mt-0.5 font-body-medium text-sm text-text-primary">
+              {consistency}%
+            </Text>
           </View>
         </View>
         <View className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-surface">
-          <Animated.View entering={FadeInUp.duration(500)} className="h-full rounded-full bg-meadow-green" style={{ width: `${barWidth}%` }} />
+          <Animated.View
+            entering={FadeInUp.duration(500)}
+            className="h-full rounded-full bg-meadow-green"
+            style={{ width: `${barWidth}%` }}
+          />
         </View>
       </View>
     </CardContainer>
@@ -122,7 +152,9 @@ export function YieldSummaryCard({ card }: { card: InsightCard }) {
     <Animated.View entering={FadeInUp.duration(300)} className="my-2">
       <View className="rounded-2xl border border-meadow-green/20 bg-meadow-green/5 p-4">
         <View className="mb-3 flex-row items-center justify-between">
-          <Text className="font-heading-semibold text-base text-text-primary">{card.title || 'Stash Yield'}</Text>
+          <Text className="font-heading-semibold text-base text-text-primary">
+            {card.title || 'Stash Yield'}
+          </Text>
           <View className="rounded-full bg-meadow-green/15 px-2 py-0.5">
             <Text className="font-body-medium text-xs text-meadow-green">{currentAPY}% APY</Text>
           </View>
@@ -130,19 +162,27 @@ export function YieldSummaryCard({ card }: { card: InsightCard }) {
         <View className="flex-row flex-wrap gap-y-3">
           <View className="w-1/2 pr-3">
             <Text className="font-body text-xs text-text-secondary">Total Earned</Text>
-            <Text className="mt-0.5 font-heading-semibold text-lg text-meadow-green">${totalEarned}</Text>
+            <Text className="mt-0.5 font-heading-semibold text-lg text-meadow-green">
+              ${totalEarned}
+            </Text>
           </View>
           <View className="w-1/2">
             <Text className="font-body text-xs text-text-secondary">This Month</Text>
-            <Text className="mt-0.5 font-body-medium text-sm text-text-primary">${monthEarned}</Text>
+            <Text className="mt-0.5 font-body-medium text-sm text-text-primary">
+              ${monthEarned}
+            </Text>
           </View>
           <View className="w-1/2 pr-3">
             <Text className="font-body text-xs text-text-secondary">Stash Balance</Text>
-            <Text className="mt-0.5 font-body-medium text-sm text-text-primary">${stashBalance}</Text>
+            <Text className="mt-0.5 font-body-medium text-sm text-text-primary">
+              ${stashBalance}
+            </Text>
           </View>
           <View className="w-1/2">
             <Text className="font-body text-xs text-text-secondary">Daily Estimate</Text>
-            <Text className="mt-0.5 font-body-medium text-sm text-text-primary">${dailyEstimate}</Text>
+            <Text className="mt-0.5 font-body-medium text-sm text-text-primary">
+              ${dailyEstimate}
+            </Text>
           </View>
         </View>
       </View>
@@ -163,12 +203,16 @@ export function ComparisonCard({ card }: { card: InsightCard }) {
 
   return (
     <CardContainer>
-      <View className="py-2">
+      <View className="px-4 py-2">
         <View className="mb-3 flex-row items-center justify-between">
-          <Text className="font-heading-semibold text-base text-text-primary">{card.title || metricLabel}</Text>
+          <Text className="font-heading-semibold text-base text-text-primary">
+            {card.title || metricLabel}
+          </Text>
           {deltaPct && (
-            <Text className={`font-body-medium text-sm ${sentiment === 'positive' ? 'text-meadow-green' : sentiment === 'negative' ? 'text-coral-red' : 'text-text-secondary'}`}>
-              {parseFloat(deltaPct) >= 0 ? '+' : ''}{deltaPct}%
+            <Text
+              className={`font-body-medium text-sm ${sentiment === 'positive' ? 'text-meadow-green' : sentiment === 'negative' ? 'text-coral-red' : 'text-text-secondary'}`}>
+              {parseFloat(deltaPct) >= 0 ? '+' : ''}
+              {deltaPct}%
             </Text>
           )}
         </View>
@@ -176,19 +220,37 @@ export function ComparisonCard({ card }: { card: InsightCard }) {
           <View className="gap-1.5">
             <View className="flex-row items-center justify-between">
               <Text className="font-body text-xs text-text-secondary">{current.label}</Text>
-              <Text className="font-body-medium text-sm tabular-nums text-text-primary">${current.value}</Text>
+              <Text className="font-body-medium text-sm tabular-nums text-text-primary">
+                ${current.value}
+              </Text>
             </View>
             <View className="h-2 overflow-hidden rounded-full bg-stone-surface">
-              <Animated.View entering={FadeInUp.duration(400)} className="h-full rounded-full" style={{ width: `${(currentVal / maxVal) * 100}%`, backgroundColor: current.color ?? '#FF3E00' }} />
+              <Animated.View
+                entering={FadeInUp.duration(400)}
+                className="h-full rounded-full"
+                style={{
+                  width: `${(currentVal / maxVal) * 100}%`,
+                  backgroundColor: current.color ?? '#FF3E00',
+                }}
+              />
             </View>
           </View>
           <View className="gap-1.5">
             <View className="flex-row items-center justify-between">
               <Text className="font-body text-xs text-text-secondary">{previous.label}</Text>
-              <Text className="font-body-medium text-sm tabular-nums text-text-primary">${previous.value}</Text>
+              <Text className="font-body-medium text-sm tabular-nums text-text-primary">
+                ${previous.value}
+              </Text>
             </View>
             <View className="h-2 overflow-hidden rounded-full bg-stone-surface">
-              <Animated.View entering={FadeInUp.duration(400).delay(100)} className="h-full rounded-full" style={{ width: `${(previousVal / maxVal) * 100}%`, backgroundColor: previous.color ?? '#8C8C8C' }} />
+              <Animated.View
+                entering={FadeInUp.duration(400).delay(100)}
+                className="h-full rounded-full"
+                style={{
+                  width: `${(previousVal / maxVal) * 100}%`,
+                  backgroundColor: previous.color ?? '#8C8C8C',
+                }}
+              />
             </View>
           </View>
         </View>

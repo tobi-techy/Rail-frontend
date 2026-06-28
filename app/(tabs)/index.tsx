@@ -1,12 +1,13 @@
 import { View, Text, ScrollView, RefreshControl, Pressable, Platform } from 'react-native';
 import React, { useLayoutEffect, useState, useCallback, useEffect, useMemo } from 'react';
-import { router, useNavigation, useFocusEffect } from 'expo-router';
+import { router, useNavigation, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PhantomIcon, SolflareIcon, SolanaIcon, VisaWhite } from '@/assets/svg';
 import { BalanceCard } from '@/components/molecules/BalanceCard';
 import { StashCard } from '@/components/molecules/StashCard';
 import { GameplayCard } from '@/components/molecules/GameplayCard';
 import { NotificationBell } from '@/components/molecules/NotificationBell';
+import { HomeHeader } from '@/components/molecules/HomeHeader';
 import { Button } from '@/components/ui';
 import {
   InvestmentDisclaimerSheet,
@@ -19,12 +20,17 @@ import {
 import { SheetHeader, ExpandableOptionList } from '@/components/sheets/FundingSheetComponents';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
+import { MiriamHealthWidget } from '@/components/ai/MiriamHealthWidget';
+import { MiriamActivitySheet } from '@/components/ai/MiriamActivitySheet';
+import { MiriamSuggestionsSheet } from '@/components/ai/MiriamSuggestionsSheet';
+import { MiriamMandateSheet } from '@/components/ai/MiriamMandateSheet';
+import { MiriamIntroSheet } from '@/components/ai/MiriamIntroSheet';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
+import { useAmbientHomescreen } from '@/hooks/useAmbientHomescreen';
+import aiService from '@/api/services/ai.service';
 import { ROUTES } from '@/constants/routes';
 import { getKycResumeRoute } from '@/utils/onboardingFlow';
 import { useStation, useKYCStatus, useTOSStatus, useAcceptTOS } from '@/api/hooks';
-import { useCards } from '@/api/hooks/useCard';
-import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores';
 import type { Currency } from '@/stores/uiStore';
@@ -115,6 +121,7 @@ function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const isAndroid = Platform.OS === 'android';
   const navigation = useNavigation();
+  useAmbientHomescreen(); // "Hey Miriam" listens while this screen is focused
 
   const [refreshing, setRefreshing] = useState(false);
   const [showReceiveSheet, setShowReceiveSheet] = useState(false);
@@ -127,6 +134,23 @@ function DashboardScreen() {
   const [showCardComingSheet, setShowCardComingSheet] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showVirtualAccountSheet, setShowVirtualAccountSheet] = useState(false);
+  const [showMiriamActivity, setShowMiriamActivity] = useState(false);
+  const [showMiriamSuggestions, setShowMiriamSuggestions] = useState(false);
+  const [showMiriamMandates, setShowMiriamMandates] = useState(false);
+  const [pendingSuggestionsCount, setPendingSuggestionsCount] = useState(0);
+
+  // Handle deep-link params from push notifications
+  const { openMiriamActivity, openMiriamSuggestions } = useLocalSearchParams<{
+    openMiriamActivity?: string;
+    openMiriamSuggestions?: string;
+  }>();
+  useEffect(() => {
+    if (openMiriamActivity === 'true') setShowMiriamActivity(true);
+  }, [openMiriamActivity]);
+  useEffect(() => {
+    if (openMiriamSuggestions === 'true') setShowMiriamSuggestions(true);
+  }, [openMiriamSuggestions]);
+
   // Local currency for send/receive sheets — does NOT affect balance card
   const [sheetCurrency, setSheetCurrency] = useState<Currency>('USD');
   const onSheetCurrencyChange = useCallback((c: Currency) => setSheetCurrency(c), []);
@@ -136,7 +160,8 @@ function DashboardScreen() {
     setShowReceiveSheet(true);
   }, []);
   const openSendSheet = useCallback(() => {
-    setSheetCurrency('USD');
+    // NGN is the default currency when sending funds
+    setSheetCurrency('NGN');
     setShowSendSheet(true);
   }, []);
 
@@ -165,20 +190,37 @@ function DashboardScreen() {
     isPending: isStationPending,
     isError: isStationError,
   } = useStation();
-  const { data: cardsData } = useCards();
+  // hasCard now comes from station response — no separate API call needed
+  const hasCard = station?.has_card ?? false;
   // Gameplay feature-gated — disabled for now
   const gameplayData = undefined;
   const isGameplayPending = false;
-  const deposits = useDeposits(10);
-  const withdrawals = useWithdrawals(10);
-  const { data: kycStatus, refetch: refetchKYC } = useKYCStatus();
+
+  // Fetch pending Miriam suggestions count (badge)
+  useEffect(() => {
+    aiService
+      .getMiriamSuggestions()
+      .then((res: any) => {
+        const data = res?.data ?? [];
+        setPendingSuggestionsCount(Array.isArray(data) ? data.length : 0);
+      })
+      .catch(() => {});
+  }, []);
+  const [kycEnabled, setKycEnabled] = useState(false);
+  const { data: kycStatus, refetch: refetchKYC } = useKYCStatus(kycEnabled);
+
+  // Defer KYC fetch until after first paint
+  useEffect(() => {
+    const t = setTimeout(() => setKycEnabled(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
 
   // Refetch KYC status every time this screen comes into focus
   // so users who just completed KYC don't see stale gates
   useFocusEffect(
     useCallback(() => {
-      void refetchKYC();
-    }, [refetchKYC])
+      if (kycEnabled) void refetchKYC();
+    }, [refetchKYC, kycEnabled])
   );
 
   const selectedCurrency = useUIStore((s) => s.currency);
@@ -210,6 +252,8 @@ function DashboardScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
+      headerTitle: () => <HomeHeader />,
+      headerTitleContainerStyle: { width: '70%' },
       headerRight: () => (
         <View className="flex-row items-center gap-x-4 pr-md">
           <Pressable onPress={() => gleap.open()} hitSlop={8}>
@@ -231,8 +275,6 @@ function DashboardScreen() {
   const stash = hasData
     ? splitDollars(station?.invest_balance ?? '0', selectedCurrency, currencyRates)
     : { dollars: '---', cents: '' };
-
-  const hasCard = Boolean(cardsData?.cards && cardsData.cards.length > 0);
 
   const startWithdrawal = useCallback(
     (
@@ -595,7 +637,7 @@ function DashboardScreen() {
               title="Stash"
               amount={stash.dollars}
               amountCents={stash.cents}
-              icon={<SavingsIcon size={26} color="white" weight='fill' />}
+              icon={<SavingsIcon size={26} color="white" weight="fill" />}
               cardColor="#0A7A3B"
               className="flex-1"
               isLoading={isStationPending}
@@ -619,6 +661,20 @@ function DashboardScreen() {
               <GameplayCard data={gameplayData} isLoading={isGameplayPending} className="flex-1" />
             )}
           </View>
+
+          {/* Miriam: Health widget + suggestions badge */}
+          <MiriamHealthWidget />
+          {pendingSuggestionsCount > 0 && (
+            <Pressable
+              onPress={() => setShowMiriamSuggestions(true)}
+              className="mt-2 flex-row items-center justify-between rounded-2xl bg-[#ff3e0010] px-4 py-3">
+              <Text className="font-body text-[13px] text-charcoal-primary">
+                {pendingSuggestionsCount} new suggestion{pendingSuggestionsCount !== 1 ? 's' : ''}{' '}
+                from Miriam
+              </Text>
+              <HugeiconsIcon icon={ArrowUpRight01Icon} size={16} color="#ff3e00" />
+            </Pressable>
+          )}
         </View>
 
         {showReceiveSheet && (
@@ -700,80 +756,103 @@ function DashboardScreen() {
           <GorhomBottomSheet
             visible={showMicroLoanSheet}
             onClose={() => setShowMicroLoanSheet(false)}>
-          <View className="px-5">
-            <Text className="font-subtitle text-[20px] text-charcoal-primary">Rail Credit</Text>
-            <Text className="mt-1 font-body text-[14px] text-ash">
-              Spend beyond your balance. Repay automatically.
-            </Text>
-            <View className="mt-5">
-              <CreditSection title="How It Works">
-                Money comes in — Rail detects your inflow and automatically gives you a safe credit
-                advance based on your cashflow. Spend beyond your balance when you need to. Your
-                next deposit repays it automatically. No applications, no billing cycles, no stress.
-              </CreditSection>
-              <CreditSection title="What You Get">
-                <CreditBullet>Credit that feels like part of your normal money</CreditBullet>
-                <CreditBullet>Automatic repayment from your next deposit</CreditBullet>
-                <CreditBullet>Safe limit based on your actual income — not promises</CreditBullet>
-                <CreditBullet>No applications, no forms, no waiting</CreditBullet>
-                <CreditBullet>
-                  Build credit behavior while building wealth simultaneously
-                </CreditBullet>
-              </CreditSection>
-              <CreditSection title="Your Safe Credit Limit">
-                Your limit is calculated from your average net inflow, income stability, past
-                repayment behavior, and how much Rail can safely lend. New users start with a
-                conservative limit that grows as you use Rail consistently.
-              </CreditSection>
-              <View className="mb-4 rounded-2xl bg-parchment-card p-4">
-                <Text className="font-body text-[13px] leading-[20px] text-ash">
-                  Rail Credit is designed for short-term liquidity — not long-term debt. Advances
-                  are automatically repaid from your next deposit. Only spend what you can repay.
-                </Text>
+            <View className="px-5">
+              <Text className="font-subtitle text-[20px] text-charcoal-primary">Rail Credit</Text>
+              <Text className="mt-1 font-body text-[14px] text-ash">
+                Spend beyond your balance. Repay automatically.
+              </Text>
+              <View className="mt-5">
+                <CreditSection title="How It Works">
+                  Money comes in — Rail detects your inflow and automatically gives you a safe
+                  credit advance based on your cashflow. Spend beyond your balance when you need to.
+                  Your next deposit repays it automatically. No applications, no billing cycles, no
+                  stress.
+                </CreditSection>
+                <CreditSection title="What You Get">
+                  <CreditBullet>Credit that feels like part of your normal money</CreditBullet>
+                  <CreditBullet>Automatic repayment from your next deposit</CreditBullet>
+                  <CreditBullet>Safe limit based on your actual income — not promises</CreditBullet>
+                  <CreditBullet>No applications, no forms, no waiting</CreditBullet>
+                  <CreditBullet>
+                    Build credit behavior while building wealth simultaneously
+                  </CreditBullet>
+                </CreditSection>
+                <CreditSection title="Your Safe Credit Limit">
+                  Your limit is calculated from your average net inflow, income stability, past
+                  repayment behavior, and how much Rail can safely lend. New users start with a
+                  conservative limit that grows as you use Rail consistently.
+                </CreditSection>
+                <View className="mb-4 rounded-2xl bg-parchment-card p-4">
+                  <Text className="font-body text-[13px] leading-[20px] text-ash">
+                    Rail Credit is designed for short-term liquidity — not long-term debt. Advances
+                    are automatically repaid from your next deposit. Only spend what you can repay.
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
-        </GorhomBottomSheet>
+          </GorhomBottomSheet>
         )}
         {showCardComingSheet && (
           <GorhomBottomSheet
             visible={showCardComingSheet}
             onClose={() => setShowCardComingSheet(false)}>
-          <View className="px-5">
-            <Text className="font-subtitle text-[20px] text-charcoal-primary">Rail Card</Text>
-            <Text className="mt-1 font-body text-[14px] text-ash">
-              Your USDC balance. Anywhere Visa is accepted.
-            </Text>
-            <View className="mt-5">
-              <CreditSection title="What It Is">
-                A virtual Visa debit card powered directly by your Rail spend balance. No bank
-                account needed. No currency conversion delays. Your USDC converts instantly at
-                checkout — spend it like regular money, anywhere in the world.
-              </CreditSection>
-              <CreditSection title="What You Get">
-                <CreditBullet>Virtual Visa card — works online and in-app instantly</CreditBullet>
-                <CreditBullet>Apple Pay and Google Pay support</CreditBullet>
-                <CreditBullet>Round-ups on every purchase go straight to your stash</CreditBullet>
-                <CreditBullet>Real-time transaction notifications</CreditBullet>
-                <CreditBullet>Freeze and unfreeze from the app in one tap</CreditBullet>
-                <CreditBullet>Daily spending limits you control</CreditBullet>
-              </CreditSection>
-              <CreditSection title="How Round-Ups Work">
-                Every card purchase rounds up to the nearest dollar. The difference goes
-                automatically to your stash — earning yield while you spend. Small amounts,
-                compounded over time, add up.
-              </CreditSection>
-              <View className="mb-4 rounded-2xl bg-parchment-card p-4">
-                <Text className="font-body text-[13px] leading-[20px] text-ash">
-                  Rail Card is coming soon. You&apos;ll be notified when it&apos;s available for
-                  your account. KYC verification is required to activate the card.
-                </Text>
+            <View className="px-5">
+              <Text className="font-subtitle text-[20px] text-charcoal-primary">Rail Card</Text>
+              <Text className="mt-1 font-body text-[14px] text-ash">
+                Your USDC balance. Anywhere Visa is accepted.
+              </Text>
+              <View className="mt-5">
+                <CreditSection title="What It Is">
+                  A virtual Visa debit card powered directly by your Rail spend balance. No bank
+                  account needed. No currency conversion delays. Your USDC converts instantly at
+                  checkout — spend it like regular money, anywhere in the world.
+                </CreditSection>
+                <CreditSection title="What You Get">
+                  <CreditBullet>Virtual Visa card — works online and in-app instantly</CreditBullet>
+                  <CreditBullet>Apple Pay and Google Pay support</CreditBullet>
+                  <CreditBullet>Round-ups on every purchase go straight to your stash</CreditBullet>
+                  <CreditBullet>Real-time transaction notifications</CreditBullet>
+                  <CreditBullet>Freeze and unfreeze from the app in one tap</CreditBullet>
+                  <CreditBullet>Daily spending limits you control</CreditBullet>
+                </CreditSection>
+                <CreditSection title="How Round-Ups Work">
+                  Every card purchase rounds up to the nearest dollar. The difference goes
+                  automatically to your stash — earning yield while you spend. Small amounts,
+                  compounded over time, add up.
+                </CreditSection>
+                <View className="mb-4 rounded-2xl bg-parchment-card p-4">
+                  <Text className="font-body text-[13px] leading-[20px] text-ash">
+                    Rail Card is coming soon. You&apos;ll be notified when it&apos;s available for
+                    your account. KYC verification is required to activate the card.
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
-        </GorhomBottomSheet>
+          </GorhomBottomSheet>
         )}
       </ScrollView>
+
+      <MiriamActivitySheet
+        visible={showMiriamActivity}
+        onClose={() => setShowMiriamActivity(false)}
+        onOpenMandates={() => {
+          setShowMiriamActivity(false);
+          setShowMiriamMandates(true);
+        }}
+      />
+      <MiriamSuggestionsSheet
+        visible={showMiriamSuggestions}
+        onClose={() => setShowMiriamSuggestions(false)}
+        onMandateCreated={() => {
+          setPendingSuggestionsCount((n) => Math.max(0, n - 1));
+          setShowMiriamMandates(true);
+        }}
+      />
+      <MiriamMandateSheet
+        visible={showMiriamMandates}
+        onClose={() => setShowMiriamMandates(false)}
+      />
+      <MiriamIntroSheet onDismiss={() => {}} />
     </View>
   );
 }

@@ -66,8 +66,8 @@ export function useStation() {
       (queryClient.getQueryData(queryKeys.station.home()) as StationResponse | undefined) ??
       inMemoryStationCache ??
       undefined,
-    staleTime: 30 * 1000, // 30 seconds stale time
-    refetchInterval: 120 * 1000, // Refetch every 2 minutes (battery-friendly; refetchOnWindowFocus handles tab switches)
+    staleTime: 2 * 60 * 1000, // 2 minutes stale time
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 min; refetchOnWindowFocus/Reconnect cover the cases that matter
     refetchOnMount: 'always',
     refetchOnWindowFocus: true, // Update when user brings app to foreground
     refetchOnReconnect: true, // Update when network connection restored

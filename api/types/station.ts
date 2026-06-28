@@ -35,4 +35,5 @@ export interface StationResponse {
   balance_trends?: BalanceTrends;
   recent_activity: ActivityItem[];
   unread_alert_count: number;
+  has_card: boolean;
 }

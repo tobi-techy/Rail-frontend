@@ -8,22 +8,27 @@ interface SplashScreenProps {
 }
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onMounted }) => {
-  const logoScale = useRef(new Animated.Value(0.85)).current;
+  const logoScale = useRef(new Animated.Value(0.92)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     onMounted?.();
     Animated.parallel([
-      Animated.timing(logoOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
-      Animated.spring(logoScale, { toValue: 1, friction: 10, tension: 80, useNativeDriver: true }),
+      Animated.timing(logoOpacity, { toValue: 1, duration: 80, useNativeDriver: true }),
+      Animated.spring(logoScale, { toValue: 1, friction: 12, tension: 120, useNativeDriver: true }),
     ]).start();
   }, []);
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={SPLASH_BG} translucent />
-      <Animated.View style={[styles.logoContainer, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
-        <Image source={require('@/assets/app-icon/logo-transparent.png')} style={styles.logo} resizeMode="contain" />
+      <Animated.View
+        style={[styles.logoContainer, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
+        <Image
+          source={require('@/assets/app-icon/logo-transparent.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
       </Animated.View>
     </View>
   );
@@ -31,6 +36,10 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onMounted }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: SPLASH_BG },
-  logoContainer: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' },
+  logoContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   logo: { width: 140, height: 140 },
 });

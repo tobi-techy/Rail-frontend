@@ -36,13 +36,15 @@ export const Button = forwardRef<View, ButtonProps>(
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const triggerFeedback = useButtonFeedback(enableHaptics);
 
+    // Crisp press feedback — no bounce on release. A primary button is pressed
+    // constantly, so the response must feel instant and settled, not wobbly.
     const handlePressIn = useCallback(() => {
       triggerFeedback();
       Animated.spring(scaleAnim, {
         toValue: 0.97,
         useNativeDriver: true,
         speed: 50,
-        bounciness: 4,
+        bounciness: 0,
       }).start();
     }, [scaleAnim, triggerFeedback]);
 
@@ -50,8 +52,8 @@ export const Button = forwardRef<View, ButtonProps>(
       Animated.spring(scaleAnim, {
         toValue: 1,
         useNativeDriver: true,
-        speed: 50,
-        bounciness: 8,
+        speed: 60,
+        bounciness: 0,
       }).start();
     }, [scaleAnim]);
 

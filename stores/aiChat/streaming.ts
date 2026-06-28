@@ -1,9 +1,113 @@
 import type { StateCreator } from 'zustand';
 import { aiService } from '@/api/services/ai.service';
+import { presentCanvas } from '@/stores/miriamCanvasStore';
 import type { AIMessage, InsightCard, PendingAction, ToneMode } from '@/api/types/ai';
 import type { AIChatStore } from './types';
 
-export const createStreamingSlice: StateCreator<AIChatStore, [], [], Pick<AIChatStore, 'sendMessage' | 'sendImage' | 'stopStreaming' | 'retryLastMessage' | 'deleteMessage' | 'retryFromMessage' | 'processQueue'>> = (set, get) => ({
+// Derive contextually relevant follow-up suggestions from Miriam's last reply.
+// Runs client-side instantly — no extra network call.
+function deriveSmartSuggestions(reply: string, cards: InsightCard[]): string[] {
+  const lower = reply.toLowerCase();
+  const chips: string[] = [];
+
+  // Topic-based follow-ups from the reply text
+  if (
+    lower.includes('spend') ||
+    lower.includes('spent') ||
+    lower.includes('food') ||
+    lower.includes('uber')
+  ) {
+    chips.push('Break it down by category', 'Show recent transactions');
+  }
+  if (lower.includes('stash') || lower.includes('savings') || lower.includes('yield')) {
+    chips.push('Move money to stash', 'Show stash history');
+  }
+  if (lower.includes('budget')) {
+    chips.push('Update my budget', 'Show spending vs budget');
+  }
+  if (lower.includes('automat') || lower.includes('rule') || lower.includes('every week')) {
+    chips.push('Show my automations', 'Set up another rule');
+  }
+  if (lower.includes('obligation') || lower.includes('bill') || lower.includes('rent')) {
+    chips.push('Show all my bills', 'Mark one as paid');
+  }
+  if (lower.includes('goal')) {
+    chips.push('Update my savings goal', 'How long until I hit it?');
+  }
+  if (lower.includes('withdrawal') || lower.includes('withdraw')) {
+    chips.push('Show withdrawal history', 'Move more to spend');
+  }
+
+  // Card-type follow-ups
+  const cardTypes = new Set(cards.map((c) => c.type));
+  if (cardTypes.has('financial_audit')) chips.push('What should I fix first?');
+  if (cardTypes.has('runway')) chips.push('How do I extend my runway?');
+  if (cardTypes.has('subscription_audit')) chips.push('Which can I cancel?');
+
+  // Deduplicate and cap at 5
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const c of chips) {
+    const key = c.toLowerCase();
+    if (!seen.has(key) && result.length < 5) {
+      seen.add(key);
+      result.push(c);
+    }
+  }
+
+  // Always include a sensible fallback
+  if (result.length === 0) {
+    return ['How am I doing overall?', "What's my balance?", 'Show my spending breakdown'];
+  }
+  return result;
+}
+
+// Extract a celebration trigger from a set of cards, if present.
+function celebrationFromCards(
+  cards: InsightCard[]
+): { level: 'small' | 'big' | 'epic'; title: string; subtitle?: string; at: number } | null {
+  const card = cards.find((c) => c.type === 'celebration');
+  if (!card) return null;
+  const level = (card.data?.level as string) ?? 'big';
+  return {
+    level: level === 'small' || level === 'epic' ? level : 'big',
+    title: card.title || (card.data?.title as string) || 'Nice work!',
+    subtitle: card.subtitle || (card.data?.subtitle as string) || undefined,
+    at: Date.now(),
+  };
+}
+
+export const createStreamingSlice: StateCreator<
+  AIChatStore,
+  [],
+  [],
+  Pick<
+    AIChatStore,
+    | 'sendMessage'
+    | 'sendImage'
+    | 'stopStreaming'
+    | 'retryLastMessage'
+    | 'deleteMessage'
+    | 'retryFromMessage'
+    | 'processQueue'
+    | 'addReaction'
+    | 'clearCelebration'
+  >
+> = (set, get) => ({
+  clearCelebration: () => set({ celebration: null }),
+
+  addReaction: (messageIndex: number, emoji: string) => {
+    set((s) => {
+      if (messageIndex < 0 || messageIndex >= s.messages.length) return s;
+      const messages = [...s.messages];
+      const msg = { ...messages[messageIndex] };
+      const existing = (msg.metadata?.reactions ?? {}) as Record<string, boolean>;
+      const reactions = { ...existing, [emoji]: !existing[emoji] };
+      msg.metadata = { ...msg.metadata, reactions };
+      messages[messageIndex] = msg;
+      return { messages };
+    });
+  },
   stopStreaming: () => {
     const { streamAbortController } = get();
     if (streamAbortController) {
@@ -30,7 +134,9 @@ export const createStreamingSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
     const targetIndex =
       typeof id === 'string'
         ? messages.findIndex((m) => m.id === id)
-        : typeof index === 'number' ? index : -1;
+        : typeof index === 'number'
+          ? index
+          : -1;
     if (targetIndex < 0 || targetIndex >= messages.length) return;
     const next = messages.filter((_, i) => i !== targetIndex);
     const removedWasLast = targetIndex === messages.length - 1;
@@ -43,17 +149,28 @@ export const createStreamingSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
     const targetIndex =
       typeof id === 'string'
         ? messages.findIndex((m) => m.id === id)
-        : typeof index === 'number' ? index : -1;
+        : typeof index === 'number'
+          ? index
+          : -1;
     if (targetIndex < 0 || targetIndex >= messages.length) return;
     let userIndex = targetIndex;
     while (userIndex >= 0 && messages[userIndex].role !== 'user') userIndex -= 1;
     if (userIndex < 0) return;
     const userContent = messages[userIndex].content;
-    set({ messages: messages.slice(0, userIndex + 1), cards: [], lastError: null, retryCount: retryCount + 1 });
+    set({
+      messages: messages.slice(0, userIndex + 1),
+      cards: [],
+      lastError: null,
+      retryCount: retryCount + 1,
+    });
     void get().sendMessage(userContent);
   },
 
-  sendMessage: async (message: string, conversationId?: string, options?: { toneMode?: ToneMode }) => {
+  sendMessage: async (
+    message: string,
+    conversationId?: string,
+    options?: { toneMode?: ToneMode }
+  ) => {
     const state = get();
     const toneMode = options?.toneMode ?? state.tonePreference;
 
@@ -63,7 +180,11 @@ export const createStreamingSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
     }
 
     const convId = conversationId ?? state.activeConversationId;
-    const userMsg: AIMessage = { role: 'user', content: message, created_at: new Date().toISOString() };
+    const userMsg: AIMessage = {
+      role: 'user',
+      content: message,
+      created_at: new Date().toISOString(),
+    };
 
     set((s) => ({
       messages: [...s.messages, userMsg],
@@ -73,7 +194,7 @@ export const createStreamingSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
       pendingAction: null,
       overCeiling: false,
       lastError: null,
-      streamingPhase: 'Thinking...',
+      streamingPhase: '',
       connectionStatus: 'streaming',
     }));
 
@@ -89,17 +210,26 @@ export const createStreamingSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
       (event) => {
         receivedAnyEvent = true;
         switch (event.type) {
+          case 'thinking':
+            // No phase text — the iMessage typing dots (TypingBubble) are the loader.
+            break;
           case 'token':
             accumulated += event.content;
-            set({ streamedContent: accumulated, streamingPhase: 'Writing...' });
+            set({ streamedContent: accumulated });
             break;
           case 'tool_result':
-            set({ streamingPhase: `Using ${event.data.tool.replace(/_/g, ' ')}...` });
             break;
-          case 'cards':
+          case 'ui_directive':
+            // Render the card on the global Miriam Canvas — pops over the chat
+            // screen with the same fluid animation as voice.
+            presentCanvas(event.data);
+            break;
+          case 'cards': {
             finalCards = event.data;
-            set({ cards: event.data });
+            const celebration = celebrationFromCards(event.data);
+            set({ cards: event.data, ...(celebration ? { celebration } : {}) });
             break;
+          }
           case 'action_chips':
             set({ actionChips: event.data });
             break;
@@ -117,7 +247,9 @@ export const createStreamingSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
         }
       },
       () => {
-        const content = accumulated || (receivedAnyEvent ? '' : "I'm having a moment — try again in a few seconds");
+        const content =
+          accumulated ||
+          (receivedAnyEvent ? '' : "I'm having a moment — try again in a few seconds");
         const assistantMsg: AIMessage = {
           role: 'assistant',
           content,
@@ -136,6 +268,7 @@ export const createStreamingSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
           connectionStatus: 'online',
           streamAbortController: null,
           lastError: null,
+          suggestions: content ? deriveSmartSuggestions(content, finalCards) : s.suggestions,
         }));
         void get().processQueue();
       },
@@ -190,7 +323,12 @@ export const createStreamingSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
   sendImage: async (base64Image: string, message?: string, conversationId?: string) => {
     const state = get();
     if (state.isStreaming) {
-      set({ messageQueue: [...state.messageQueue, { message: message ?? 'Image analysis', image: base64Image }] });
+      set({
+        messageQueue: [
+          ...state.messageQueue,
+          { message: message ?? 'Image analysis', image: base64Image },
+        ],
+      });
       return;
     }
 
@@ -200,8 +338,11 @@ export const createStreamingSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
     // exchange is persisted and follow-up messages stay in the same thread.
     let convId = conversationId ?? state.activeConversationId;
     if (!convId) {
-      try { convId = await get().createConversation(userContent.slice(0, 50)); }
-      catch { /* proceed without — image still analyzed */ }
+      try {
+        convId = await get().createConversation(userContent.slice(0, 50));
+      } catch {
+        /* proceed without — image still analyzed */
+      }
     }
 
     const userMsg: AIMessage = {
@@ -232,6 +373,7 @@ export const createStreamingSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
       const receiptSuggestions: string[] = (response as any).suggestions
         ? (response as any).suggestions.map((s: any) => s.prompt ?? s.label)
         : [];
+      const imgCelebration = celebrationFromCards(response.cards ?? []);
       set((s) => ({
         messages: [...s.messages, assistantMsg],
         cards: response.cards ?? [],
@@ -241,6 +383,7 @@ export const createStreamingSlice: StateCreator<AIChatStore, [], [], Pick<AIChat
         activeConversationId: convId ?? s.activeConversationId,
         lastError: null,
         ...(receiptSuggestions.length > 0 ? { suggestions: receiptSuggestions } : {}),
+        ...(imgCelebration ? { celebration: imgCelebration } : {}),
       }));
       if (convId) void get().fetchConversations();
       void get().processQueue();

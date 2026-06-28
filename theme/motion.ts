@@ -7,7 +7,7 @@ export const MOTION = {
   timing: {
     fast: 150,
     normal: 250,
-    slow: 400,
+    decorative: 350,
   },
   stagger: {
     delay: 50,

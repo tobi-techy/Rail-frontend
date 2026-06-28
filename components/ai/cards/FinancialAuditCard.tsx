@@ -61,19 +61,27 @@ export function FinancialAuditCard({ card }: { card: InsightCard }) {
 
   return (
     <CardContainer>
-      <View className="gap-4 py-2">
+      <View className="gap-4 px-4 py-2">
         <View className="flex-row items-start justify-between gap-4">
           <View className="flex-1">
-            <Text className="font-heading-semibold text-base text-text-primary">{card.title || 'Miriam Audit'}</Text>
-            <Text className="mt-1 font-body text-sm text-text-secondary">{formatLabel(score.status ?? card.subtitle)}</Text>
+            <Text className="font-heading-semibold text-base text-text-primary">
+              {card.title || 'Miriam Audit'}
+            </Text>
+            <Text className="mt-1 font-body text-sm text-text-secondary">
+              {formatLabel(score.status ?? card.subtitle)}
+            </Text>
             {(period.label || coverage.months_analyzed) && (
               <Text className="mt-1 font-body text-xs text-text-secondary">
-                {period.label ? String(period.label) : `${coverage.months_analyzed} months analyzed`}
+                {period.label
+                  ? String(period.label)
+                  : `${coverage.months_analyzed} months analyzed`}
               </Text>
             )}
           </View>
           <View className="items-end">
-            <Text className={`font-heading-semibold text-2xl ${toneClass(card.sentiment)}`}>{totalScore}</Text>
+            <Text className={`font-heading-semibold text-2xl ${toneClass(card.sentiment)}`}>
+              {totalScore}
+            </Text>
             <Text className="font-body text-xs text-text-secondary">/100</Text>
           </View>
         </View>
@@ -83,7 +91,10 @@ export function FinancialAuditCard({ card }: { card: InsightCard }) {
             {metrics.map((metric, index) => (
               <View key={`${metric.label}-${index}`} className="w-1/2 pr-4">
                 <Text className="font-body text-xs text-text-secondary">{metric.label}</Text>
-                <Text className={`mt-0.5 font-body-medium text-[15px] ${toneClass(metric.sentiment)}`}>{metric.value}</Text>
+                <Text
+                  className={`mt-0.5 font-body-medium text-[15px] ${toneClass(metric.sentiment)}`}>
+                  {metric.value}
+                </Text>
               </View>
             ))}
           </View>
@@ -94,10 +105,19 @@ export function FinancialAuditCard({ card }: { card: InsightCard }) {
             <View className="gap-4">
               {donutData.length > 0 && (
                 <View className="flex-row items-center gap-4">
-                  <PieChart data={donutData} donut radius={56} innerRadius={38} innerCircleColor="#FFFFFF" isAnimated animationDuration={600}
+                  <PieChart
+                    data={donutData}
+                    donut
+                    radius={56}
+                    innerRadius={38}
+                    innerCircleColor="#FFFFFF"
+                    isAnimated
+                    animationDuration={600}
                     centerLabelComponent={() => (
                       <View className="items-center">
-                        <Text className="font-body-medium text-sm text-text-primary">{compactMoney(totalOut)}</Text>
+                        <Text className="font-body-medium text-sm text-text-primary">
+                          {compactMoney(totalOut)}
+                        </Text>
                         <Text className="font-body text-[10px] text-text-secondary">out</Text>
                       </View>
                     )}
@@ -107,13 +127,22 @@ export function FinancialAuditCard({ card }: { card: InsightCard }) {
                       { label: 'Money in', value: moneyIn, color: '#1A7A6D' },
                       { label: 'Digital out', value: digitalOut, color: '#FF3E00' },
                       { label: 'Cash receipts', value: cashOut, color: '#FFB199' },
-                    ].filter((item) => item.value > 0).map((item) => (
-                      <View key={item.label} className="flex-row items-center gap-2">
-                        <View className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
-                        <Text className="flex-1 font-body text-xs text-text-secondary">{item.label}</Text>
-                        <Text className="font-body-medium text-xs tabular-nums text-text-primary">{compactMoney(item.value)}</Text>
-                      </View>
-                    ))}
+                    ]
+                      .filter((item) => item.value > 0)
+                      .map((item) => (
+                        <View key={item.label} className="flex-row items-center gap-2">
+                          <View
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <Text className="flex-1 font-body text-xs text-text-secondary">
+                            {item.label}
+                          </Text>
+                          <Text className="font-body-medium text-xs tabular-nums text-text-primary">
+                            {compactMoney(item.value)}
+                          </Text>
+                        </View>
+                      ))}
                   </View>
                 </View>
               )}
@@ -122,10 +151,25 @@ export function FinancialAuditCard({ card }: { card: InsightCard }) {
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="font-body text-xs text-text-secondary">Monthly money out</Text>
                     {coverage.average_monthly_money_out && (
-                      <Text className="font-body-medium text-xs tabular-nums text-text-primary">Avg {compactMoney(coverage.average_monthly_money_out)}</Text>
+                      <Text className="font-body-medium text-xs tabular-nums text-text-primary">
+                        Avg {compactMoney(coverage.average_monthly_money_out)}
+                      </Text>
                     )}
                   </View>
-                  <BarChart data={trendData} height={140} barWidth={22} spacing={14} barBorderRadius={6} hideRules hideYAxisText isAnimated animationDuration={600} xAxisLabelTextStyle={{ fontSize: 10, color: '#8C8C8C' }} yAxisTextStyle={{ fontSize: 10, color: '#8C8C8C' }} noOfSections={3} />
+                  <BarChart
+                    data={trendData}
+                    height={140}
+                    barWidth={22}
+                    spacing={14}
+                    barBorderRadius={6}
+                    hideRules
+                    hideYAxisText
+                    isAnimated
+                    animationDuration={600}
+                    xAxisLabelTextStyle={{ fontSize: 10, color: '#8C8C8C' }}
+                    yAxisTextStyle={{ fontSize: 10, color: '#8C8C8C' }}
+                    noOfSections={3}
+                  />
                 </View>
               )}
             </View>
@@ -134,7 +178,9 @@ export function FinancialAuditCard({ card }: { card: InsightCard }) {
 
         {damage.primary_issue && (
           <AuditSection title="The read">
-            <Text className="font-body text-sm leading-5 text-text-primary">{String(damage.primary_issue)}</Text>
+            <Text className="font-body text-sm leading-5 text-text-primary">
+              {String(damage.primary_issue)}
+            </Text>
           </AuditSection>
         )}
 
@@ -148,11 +194,20 @@ export function FinancialAuditCard({ card }: { card: InsightCard }) {
                 return (
                   <View key={`${item.category}-${index}`} className="gap-1.5">
                     <View className="flex-row items-center justify-between gap-3">
-                      <Text className="flex-1 font-body text-sm text-text-primary" numberOfLines={1}>{formatLabel(item.category)}</Text>
-                      <Text className="font-body-medium text-sm tabular-nums text-text-primary">{formatMoney(item.total)}</Text>
+                      <Text
+                        className="flex-1 font-body text-sm text-text-primary"
+                        numberOfLines={1}>
+                        {formatLabel(item.category)}
+                      </Text>
+                      <Text className="font-body-medium text-sm tabular-nums text-text-primary">
+                        {formatMoney(item.total)}
+                      </Text>
                     </View>
                     <View className="h-1 overflow-hidden rounded-full bg-black/[0.06]">
-                      <View className="h-full rounded-full bg-text-primary" style={{ width: `${width}%` }} />
+                      <View
+                        className="h-full rounded-full bg-text-primary"
+                        style={{ width: `${width}%` }}
+                      />
                     </View>
                   </View>
                 );
@@ -165,7 +220,9 @@ export function FinancialAuditCard({ card }: { card: InsightCard }) {
           <AuditSection title="Contradictions">
             <View className="gap-2">
               {contradictions.map((item, index) => (
-                <Text key={`${item.code}-${index}`} className="font-body text-sm leading-5 text-text-primary">
+                <Text
+                  key={`${item.code}-${index}`}
+                  className="font-body text-sm leading-5 text-text-primary">
                   {String(item.take || item.reality || item.claim)}
                 </Text>
               ))}
@@ -177,7 +234,11 @@ export function FinancialAuditCard({ card }: { card: InsightCard }) {
           <AuditSection title="Pattern">
             <View className="gap-2">
               {patterns.map((pattern, index) => (
-                <Text key={`${pattern}-${index}`} className="font-body text-sm leading-5 text-text-secondary">{pattern}</Text>
+                <Text
+                  key={`${pattern}-${index}`}
+                  className="font-body text-sm leading-5 text-text-secondary">
+                  {pattern}
+                </Text>
               ))}
             </View>
           </AuditSection>
@@ -188,8 +249,12 @@ export function FinancialAuditCard({ card }: { card: InsightCard }) {
             <View className="gap-2">
               {risks.map((risk, index) => (
                 <View key={`${risk.code}-${index}`} className="flex-row justify-between gap-3">
-                  <Text className="flex-1 font-body text-sm text-text-primary">{String(risk.title ?? risk.code)}</Text>
-                  <Text className="font-body text-sm text-text-secondary">{formatLabel(risk.severity)}</Text>
+                  <Text className="flex-1 font-body text-sm text-text-primary">
+                    {String(risk.title ?? risk.code)}
+                  </Text>
+                  <Text className="font-body text-sm text-text-secondary">
+                    {formatLabel(risk.severity)}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -202,12 +267,20 @@ export function FinancialAuditCard({ card }: { card: InsightCard }) {
               {actions.map((action, index) => (
                 <Pressable
                   key={`${action.title}-${index}`}
-                  onPress={() => track(ANALYTICS_EVENTS.FINANCIAL_AUDIT_ACTION_TAPPED, { action_title: String(action.title ?? ''), action_index: index, score: totalScore })}
+                  onPress={() =>
+                    track(ANALYTICS_EVENTS.FINANCIAL_AUDIT_ACTION_TAPPED, {
+                      action_title: String(action.title ?? ''),
+                      action_index: index,
+                      score: totalScore,
+                    })
+                  }
                   className="min-h-10 flex-row gap-2"
                   accessibilityRole="button"
                   accessibilityLabel={`Audit action ${index + 1}`}>
                   <Text className="font-body-medium text-sm text-text-secondary">{index + 1}.</Text>
-                  <Text className="flex-1 font-body text-sm leading-5 text-text-primary">{String(action.title)}</Text>
+                  <Text className="flex-1 font-body text-sm leading-5 text-text-primary">
+                    {String(action.title)}
+                  </Text>
                 </Pressable>
               ))}
             </View>

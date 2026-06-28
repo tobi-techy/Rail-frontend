@@ -6,10 +6,10 @@ import { GlassView } from '@/components/ui/GlassView';
 import { useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useHaptics } from '@/hooks/useHaptics';
+import { SPRING_PRESS } from '@/lib/motion';
 
 import { useAIChatStore } from '@/stores/aiChatStore';
 import { MiriamCharacter } from '@/components/ai';
-
 
 // ─── Tab Item ────────────────────────────────────────────────────
 
@@ -50,10 +50,10 @@ function TabBarItem({
       accessibilityState={{ selected: isFocused }}
       onPress={onPress}
       onPressIn={() => {
-        scale.value = withSpring(0.85, { damping: 15 });
+        scale.value = withSpring(0.92, SPRING_PRESS);
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 15 });
+        scale.value = withSpring(1, SPRING_PRESS);
       }}
       hitSlop={8}
       style={{ alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 }}>
@@ -91,10 +91,10 @@ function AIButton() {
       <Pressable
         onPress={handlePress}
         onPressIn={() => {
-          scale.value = withSpring(0.88, { damping: 15 });
+          scale.value = withSpring(0.9, SPRING_PRESS);
         }}
         onPressOut={() => {
-          scale.value = withSpring(1, { damping: 15 });
+          scale.value = withSpring(1, SPRING_PRESS);
         }}
         hitSlop={8}
         accessibilityLabel="Miriam AI"

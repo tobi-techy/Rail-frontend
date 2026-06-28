@@ -1,16 +1,19 @@
-import { View, Text, Pressable, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Passkey } from 'react-native-passkey';
-import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { useVerifyPasscode } from '@/api/hooks';
 import { useAuthStore } from '@/stores/authStore';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useHaptics } from '@/hooks/useHaptics';
-import { ArrowLeft01Icon, FingerPrintIcon } from '@/lib/icons';
-import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { ArrowLeft01Icon, EyeIcon, ViewOffIcon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { logger } from '@/lib/logger';
+import Animated, {
+  FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 
 export default function AuthorizeTransactionScreen() {
   const params = useLocalSearchParams();
@@ -48,21 +51,40 @@ export default function AuthorizeTransactionScreen() {
 
   const { mutate: verifyPasscode, isPending: isLoading } = useVerifyPasscode();
 
-  const {
-    isPasskeyLoading,
-    authError,
-    authPasscode,
-    setAuthError,
-    onAuthPasscodeChange,
-    onPasskeyAuthorize,
-  } = usePasskeyAuthorize({
-    email: user?.email,
-    passkeyPromptScope,
-    autoTrigger: isBiometricEnabled,
-    onAuthorized: () => router.back(),
-  });
+  const { isPasskeyLoading, authError, authPasscode, setAuthError, onAuthPasscodeChange } =
+    usePasskeyAuthorize({
+      email: user?.email,
+      passkeyPromptScope,
+      autoTrigger: isBiometricEnabled,
+      onAuthorized: () => router.back(),
+    });
 
   const { notification, impact } = useHaptics();
+  const [showPin, setShowPin] = useState(false);
+
+  // Crossfade between eye / eye-slash icons
+  const eyeOpacity = useSharedValue(0);
+  const eyeSlashOpacity = useSharedValue(1);
+  const eyeScale = useSharedValue(0.25);
+  const eyeSlashScale = useSharedValue(1);
+
+  useEffect(() => {
+    eyeOpacity.value = withTiming(showPin ? 1 : 0, { duration: 180 });
+    eyeSlashOpacity.value = withTiming(showPin ? 0 : 1, { duration: 180 });
+    eyeScale.value = withTiming(showPin ? 1 : 0.25, { duration: 180 });
+    eyeSlashScale.value = withTiming(showPin ? 0.25 : 1, { duration: 180 });
+  }, [showPin]);
+
+  const eyeAnimStyle = useAnimatedStyle(() => ({
+    opacity: eyeOpacity.value,
+    transform: [{ scale: eyeScale.value }],
+    position: 'absolute',
+  }));
+  const eyeSlashAnimStyle = useAnimatedStyle(() => ({
+    opacity: eyeSlashOpacity.value,
+    transform: [{ scale: eyeSlashScale.value }],
+    position: 'absolute',
+  }));
 
   const handlePasscodeSubmit = useCallback(
     (code: string) => {
@@ -101,58 +123,70 @@ export default function AuthorizeTransactionScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-warm-canvas">
+    <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
       <View className="flex-1">
         {/* Back button */}
-        <View className="mt-2 px-6">
+        <Animated.View entering={FadeInUp.duration(220)} className="mt-2 px-6">
           <Pressable
             onPress={() => router.back()}
-            className="h-10 w-10 items-center justify-center rounded-full bg-[#f7f2e8]">
+            className="h-11 w-11 items-center justify-center rounded-full bg-[#F0F0F0] active:scale-[0.96]">
             <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" strokeWidth={2} />
           </Pressable>
-        </View>
+        </Animated.View>
 
         {/* Title */}
-        <View className="mt-6 px-6">
-          <Text className="font-heading text-[32px] leading-[38px] text-[#343433]">
+        <Animated.View entering={FadeInUp.delay(60).duration(250)} className="mt-6 px-6">
+          <Text className="font-heading text-[32px] leading-[38px] text-[#1a1a1a]">
             Authorize{'\n'}transaction
           </Text>
-        </View>
+        </Animated.View>
 
         {/* Subtitle */}
-        <View className="mt-4 px-6">
+        <Animated.View entering={FadeInUp.delay(100).duration(250)} className="mt-4 px-6">
           <Text className="font-body text-[15px] text-[#848281]">Enter Your Account Pin</Text>
-        </View>
+        </Animated.View>
 
         {/* PIN boxes + eye toggle */}
-        <View className="mt-5 flex-row items-center justify-between px-6">
+        <Animated.View
+          entering={FadeInUp.delay(140).duration(260)}
+          className="mt-5 flex-row items-center justify-between px-6">
           <View className="flex-row gap-x-3">
             {[0, 1, 2, 3].map((i) => {
               const filled = i < authPasscode.length;
               return (
                 <View
                   key={i}
-                  className="h-[56px] w-[56px] items-center justify-center rounded-lg bg-[#f7f2e8]">
-                  {filled && <View className="h-3 w-3 rounded-full bg-[#343433]" />}
+                  className="h-[56px] w-[56px] items-center justify-center rounded-xl bg-[#F0F0F0]">
+                  {filled &&
+                    (showPin ? (
+                      <Text
+                        className="font-subtitle text-[22px] text-[#1a1a1a]"
+                        style={{ fontVariant: ['tabular-nums'] }}>
+                        {authPasscode[i]}
+                      </Text>
+                    ) : (
+                      <View className="h-3 w-3 rounded-full bg-[#343433]" />
+                    ))}
                 </View>
               );
             })}
           </View>
-          {isBiometricEnabled && Passkey.isSupported() && (
-            <Pressable
-              onPress={onPasskeyAuthorize}
-              disabled={isPasskeyLoading || isLoading}
-              className="h-12 w-12 items-center justify-center rounded-full bg-[#EEF2FF]">
-              {isPasskeyLoading ? (
-                <ActivityIndicator size="small" color="#343433" />
-              ) : (
-                <HugeiconsIcon icon={FingerPrintIcon} size={22} color="#6366F1" />
-              )}
-            </Pressable>
-          )}
-        </View>
+          <Pressable
+            onPress={() => setShowPin((v) => !v)}
+            className="h-12 w-12 items-center justify-center rounded-full bg-[#EEF2FF] active:scale-[0.96]">
+            {/* Two icons cross-fading */}
+            <View className="size-[22px] items-center justify-center">
+              <Animated.View style={eyeAnimStyle}>
+                <HugeiconsIcon icon={EyeIcon} size={22} color="#6366F1" />
+              </Animated.View>
+              <Animated.View style={eyeSlashAnimStyle}>
+                <HugeiconsIcon icon={ViewOffIcon} size={22} color="#6366F1" />
+              </Animated.View>
+            </View>
+          </Pressable>
+        </Animated.View>
 
         {/* Error */}
         {authError ? (
@@ -165,7 +199,7 @@ export default function AuthorizeTransactionScreen() {
         <View className="flex-1" />
 
         {/* Number pad */}
-        <View className="px-6 pb-2">
+        <Animated.View entering={FadeInUp.delay(180).duration(280)} className="px-6 pb-2">
           {[
             [1, 2, 3],
             [4, 5, 6],
@@ -182,8 +216,12 @@ export default function AuthorizeTransactionScreen() {
                       if (next.length === 4) handlePasscodeSubmit(next);
                     }
                   }}
-                  className="h-[64px] flex-1 items-center justify-center">
-                  <Text className="font-subtitle text-[28px] text-[#343433]">{n}</Text>
+                  className="h-[64px] flex-1 items-center justify-center active:scale-[0.96]">
+                  <Text
+                    className="font-subtitle text-[28px] text-[#343433]"
+                    style={{ fontVariant: ['tabular-nums'] }}>
+                    {n}
+                  </Text>
                 </Pressable>
               ))}
             </View>
@@ -198,8 +236,12 @@ export default function AuthorizeTransactionScreen() {
                   if (next.length === 4) handlePasscodeSubmit(next);
                 }
               }}
-              className="h-[64px] flex-1 items-center justify-center">
-              <Text className="font-subtitle text-[28px] text-[#343433]">0</Text>
+              className="h-[64px] flex-1 items-center justify-center active:scale-[0.96]">
+              <Text
+                className="font-subtitle text-[28px] text-[#343433]"
+                style={{ fontVariant: ['tabular-nums'] }}>
+                0
+              </Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -207,18 +249,21 @@ export default function AuthorizeTransactionScreen() {
                   onAuthPasscodeChange(authPasscode.slice(0, -1));
                 }
               }}
-              className="h-[64px] flex-1 items-center justify-center">
+              className="h-[64px] flex-1 items-center justify-center active:scale-[0.96]">
               <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#343433" strokeWidth={2} />
             </Pressable>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Forgot PIN */}
-        <View className="mb-6 items-center">
-          <Pressable onPress={() => router.push('/(auth)/forgot-password')}>
+        <Animated.View entering={FadeInUp.delay(220).duration(280)} className="mb-6 items-center">
+          <Pressable
+            onPress={() => router.push('/(auth)/forgot-password')}
+            className="active:opacity-70"
+            hitSlop={8}>
             <Text className="font-body text-[15px] text-[#0090ff] underline">Forgot PIN?</Text>
           </Pressable>
-        </View>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );

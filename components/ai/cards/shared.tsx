@@ -5,11 +5,16 @@ import type { InsightCard } from '@/api/types/ai';
 
 /* ─── Error Boundary ─── */
 
-interface EBProps { children: React.ReactNode; cardType: string }
+interface EBProps {
+  children: React.ReactNode;
+  cardType: string;
+}
 
 export class InsightCardErrorBoundary extends Component<EBProps, { hasError: boolean }> {
   state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.warn(`Insight card error (${this.props.cardType}):`, error, info);
   }
@@ -17,7 +22,9 @@ export class InsightCardErrorBoundary extends Component<EBProps, { hasError: boo
     if (!this.state.hasError) return this.props.children;
     return (
       <View className="my-2 rounded-2xl border border-red-100 bg-coral-red/10 p-4">
-        <Text className="font-body-medium text-sm text-red-800">Unable to display this insight</Text>
+        <Text className="font-body-medium text-sm text-red-800">
+          Unable to display this insight
+        </Text>
       </View>
     );
   }
@@ -31,10 +38,28 @@ export function CardErrorFallback() {
   );
 }
 
-export function CardContainer({ children }: { children: React.ReactNode; accent?: boolean }) {
+export function CardContainer({
+  children,
+  accent,
+}: {
+  children: React.ReactNode;
+  accent?: boolean;
+}) {
   return (
-    <Animated.View entering={FadeInUp.springify().damping(18).stiffness(120)} className="my-3">
-      <View className="overflow-hidden rounded-3xl">{children}</View>
+    <Animated.View
+      entering={FadeInUp.springify().damping(22).stiffness(260)}
+      className="my-2 w-full">
+      <View
+        className={`overflow-hidden rounded-[22px] border bg-white ${accent ? 'border-ember-orange/25' : 'border-black/[0.06]'}`}
+        style={{
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.04,
+          shadowRadius: 8,
+          elevation: 1,
+        }}>
+        {children}
+      </View>
     </Animated.View>
   );
 }
@@ -58,7 +83,9 @@ export function asArray<T = AuditItem>(value: unknown): T[] {
 }
 
 export function formatLabel(value: unknown) {
-  return String(value ?? '').replace(/_/g, ' ').trim();
+  return String(value ?? '')
+    .replace(/_/g, ' ')
+    .trim();
 }
 
 export function formatMoney(value: unknown) {

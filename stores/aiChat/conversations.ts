@@ -3,7 +3,29 @@ import { aiService } from '@/api/services/ai.service';
 import type { InsightCard } from '@/api/types/ai';
 import type { AIChatStore } from './types';
 
-export const createConversationSlice: StateCreator<AIChatStore, [], [], Pick<AIChatStore, 'open' | 'close' | 'fetchConversations' | 'createConversation' | 'selectConversation' | 'deleteConversation' | 'clearActiveConversation' | 'setTonePreference' | 'fetchSuggestions' | 'fetchProactiveOpener' | 'dismissActionChip' | 'clearPendingAction' | 'setPendingScannedReceipt' | 'consumePendingScannedReceipt' | 'reset'>> = (set, get) => ({
+export const createConversationSlice: StateCreator<
+  AIChatStore,
+  [],
+  [],
+  Pick<
+    AIChatStore,
+    | 'open'
+    | 'close'
+    | 'fetchConversations'
+    | 'createConversation'
+    | 'selectConversation'
+    | 'deleteConversation'
+    | 'clearActiveConversation'
+    | 'setTonePreference'
+    | 'fetchSuggestions'
+    | 'fetchProactiveOpener'
+    | 'dismissActionChip'
+    | 'clearPendingAction'
+    | 'setPendingScannedReceipt'
+    | 'consumePendingScannedReceipt'
+    | 'reset'
+  >
+> = (set, get) => ({
   open: () => {
     set({ isOpen: true });
     get().fetchConversations();
@@ -20,17 +42,7 @@ export const createConversationSlice: StateCreator<AIChatStore, [], [], Pick<AIC
     set({ conversationsLoading: true });
     try {
       const res = await aiService.listConversations();
-      const convs = res.data ?? [];
-      set({ conversations: convs });
-
-      // Auto-resume most recent conversation if chat is fresh (no active conv,
-      // no pending receipt, no messages already in view). Like ChatGPT — you
-      // pick up where you left off.
-      const state = get();
-      if (!state.activeConversationId && !state.pendingScannedReceipt && state.messages.length === 0 && convs.length > 0) {
-        const recent = convs[0]; // sorted most-recent-first by backend
-        void get().selectConversation(recent.id);
-      }
+      set({ conversations: res.data ?? [] });
     } catch {
       // silent fail — conversations are non-critical
     } finally {

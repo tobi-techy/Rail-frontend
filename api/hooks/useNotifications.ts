@@ -19,8 +19,8 @@ export function useNotifications(limit = 20, offset = 0) {
   return useQuery({
     queryKey: NOTIFICATION_KEYS.list(limit, offset),
     queryFn: () => notificationService.getNotifications(limit, offset),
-    staleTime: 30 * 1000,
-    refetchInterval: 60 * 1000,
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 3 * 60 * 1000,
   });
 }
 
@@ -31,8 +31,8 @@ export function useUnreadCount() {
   return useQuery({
     queryKey: NOTIFICATION_KEYS.unreadCount,
     queryFn: () => notificationService.getUnreadCount(),
-    staleTime: 30 * 1000,
-    refetchInterval: 60 * 1000, // Refetch every minute
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 min; mutations invalidate for instant updates
   });
 }
 

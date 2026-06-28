@@ -44,11 +44,26 @@ export interface InsightCard {
     | 'runway'
     | 'deposit_pattern'
     | 'yield_summary'
-    | 'comparison';
+    | 'comparison'
+    | 'meme'
+    | 'voice_message'
+    | 'celebration'
+    | 'poll';
   title: string;
   subtitle?: string;
   sentiment?: 'positive' | 'negative' | 'neutral';
   data?: Record<string, any>;
+}
+
+// Payload of a `meme` InsightCard — a generated meme Miriam texts into the chat.
+export interface MemeCardData {
+  meme_id?: string;
+  template?: string;
+  top_text?: string;
+  bottom_text?: string;
+  caption?: string;
+  image_url?: string;
+  alt?: string;
 }
 
 export interface PendingAction {
@@ -99,6 +114,53 @@ export interface AIChatResponse {
   over_ceiling?: boolean;
   fallback?: boolean;
   pending_action?: PendingAction | null;
+}
+
+// ============= Miriam Canvas (UI directives) =============
+// Mirrors the backend `display` block emitted by tools (web_search, etc.).
+// One typed contract drives the global Miriam Canvas overlay.
+
+export type CanvasCard =
+  | 'places'
+  | 'flights'
+  | 'recommendations'
+  | 'confirm'
+  | 'automation'
+  | 'info';
+
+export type CanvasIntent = 'confirm_action' | 'info' | 'choose';
+
+export interface DisplayItem {
+  title: string;
+  subtitle?: string;
+  description?: string;
+  image_url?: string;
+  url?: string;
+  price?: string;
+  rating?: string;
+  location?: string;
+  meta?: string;
+}
+
+export interface DisplayData {
+  query?: string;
+  items?: DisplayItem[];
+  budget_note?: string;
+  user_spend_balance?: string;
+  /** confirm cards carry the pending action through here */
+  pending_action?: PendingAction;
+  [key: string]: unknown;
+}
+
+export interface UIDirective {
+  card: CanvasCard;
+  intent?: CanvasIntent;
+  title: string;
+  subtitle?: string;
+  data?: DisplayData;
+  /** conversation_id for confirm cards */
+  action_id?: string;
+  ttl_seconds?: number;
 }
 
 export interface ActionConfirmResponse {
@@ -430,7 +492,9 @@ export interface ActionChip {
 
 // SSE stream event types
 export type AIStreamEvent =
+  | { type: 'thinking'; content: string }
   | { type: 'tool_result'; data: { tool: string } }
+  | { type: 'ui_directive'; data: UIDirective }
   | { type: 'cards'; data: InsightCard[] }
   | { type: 'token'; content: string }
   | { type: 'action_chips'; data: ActionChip[] }
@@ -667,4 +731,120 @@ export interface StatementSummary {
   monthly_avg_spending?: string;
   period_start?: string;
   period_end?: string;
+}
+
+// ============= Miriam Intelligence Types =============
+
+export interface MiriamHealthScore {
+  id: string;
+  overall_score: number;
+  budget_score: number;
+  savings_score: number;
+  debt_score: number;
+  runway_score: number;
+  stability_score: number;
+  trend: 'improving' | 'stable' | 'declining';
+  previous_score: number;
+  reasoning: string;
+  created_at: string;
+}
+
+export interface MiriamHealthSummary {
+  latest: MiriamHealthScore | null;
+  trend: MiriamHealthScore[];
+}
+
+export type MiriamPredictionType =
+  | 'cash_shortfall'
+  | 'bill_pressure'
+  | 'spending_anomaly'
+  | 'income_gap'
+  | 'idle_surplus'
+  | 'stash_opportunity';
+
+export type MiriamSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type MiriamHorizon = '3_day' | '7_day' | '14_day' | '30_day';
+
+export interface MiriamPrediction {
+  id: string;
+  prediction_type: MiriamPredictionType;
+  horizon: MiriamHorizon;
+  probability: number;
+  severity: MiriamSeverity;
+  projected_amount: string;
+  reasoning: string;
+  expires_at: string;
+}
+
+export interface MiriamPredictionSummary {
+  active_predictions: MiriamPrediction[];
+  risk_score: number;
+  top_risk: string;
+  recommended_action: string;
+}
+
+export interface MiriamDecisionReceipt {
+  id: string;
+  mandate_id?: string;
+  event_type: string;
+  action_type: string;
+  amount: string;
+  currency: string;
+  status: 'suggested' | 'executed' | 'skipped' | 'failed';
+  reason: string;
+  created_at: string;
+}
+
+export interface MiriamMandate {
+  id: string;
+  name: string;
+  action_type: string;
+  status: 'active' | 'paused' | 'expired';
+  max_amount_per_action: string;
+  max_amount_per_day: string;
+  min_spend_balance: string;
+  cooldown_minutes: number;
+  last_executed_at?: string;
+  created_at: string;
+}
+
+export interface CreateMiriamMandateRequest {
+  name?: string;
+  max_amount_per_action: string;
+  max_amount_per_day: string;
+  min_spend_balance?: string;
+  min_safe_to_spend?: string;
+  cooldown_minutes?: number;
+}
+
+export interface MiriamMandateSuggestion {
+  id: string;
+  name: string;
+  action_type: string;
+  reasoning: string;
+  suggested_max_amount: string;
+  suggested_max_day: string;
+  suggested_min_balance: string;
+  suggested_cooldown_minutes: number;
+  confidence: number;
+  status: 'pending' | 'accepted' | 'dismissed';
+  created_at: string;
+}
+
+export interface MiriamMoneyState {
+  income_cadence: string;
+  avg_monthly_income: string;
+  upcoming_obligations: string;
+  safe_to_spend_daily: string;
+  liquidity_runway_days: number;
+  stash_target: string;
+  recurring_spend_monthly: string;
+  anomaly_count: number;
+  confidence_level: 'low' | 'medium' | 'high';
+  confidence_score: number;
+  monthly_spend: string;
+  monthly_savings: string;
+  spend_balance: string;
+  stash_balance: string;
+  last_evaluated_at: string;
 }

@@ -14,7 +14,7 @@ export default function TabLayout() {
           headerShown: true,
           headerStyle: { backgroundColor: '#ffffff' },
           headerShadowVisible: false,
-          headerTitleStyle: { fontFamily: 'SFProDisplay-Bold', fontSize: 28, width: '100%' },
+          headerTitleStyle: { fontFamily: 'Geist-Bold', fontSize: 28, width: '100%' },
           headerTitleAlign: 'left',
           headerTitleContainerStyle: { width: '60%' },
           sceneStyle: { backgroundColor: '#ffffff' },

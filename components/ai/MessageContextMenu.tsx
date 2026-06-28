@@ -1,9 +1,19 @@
 import React, { useEffect, useMemo, memo } from 'react';
 import {
-  View, Text, Pressable, Modal, TouchableWithoutFeedback,
-  Dimensions, type LayoutRectangle,
+  View,
+  Text,
+  Pressable,
+  Modal,
+  TouchableWithoutFeedback,
+  Dimensions,
+  type LayoutRectangle,
 } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { Copy01Icon, Delete02Icon, RefreshIcon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { PencilSimpleIcon } from 'phosphor-react-native';
 
@@ -23,61 +33,102 @@ const ITEM_HEIGHT = 50;
 const ICON_COLOR = '#1C1C1E';
 
 export const MessageContextMenu = memo(function MessageContextMenu({
-  visible, onClose, onCopy, onEdit, onRetry, onDelete, anchor, isUser,
+  visible,
+  onClose,
+  onCopy,
+  onEdit,
+  onRetry,
+  onDelete,
+  anchor,
+  isUser,
 }: MessageContextMenuProps) {
-  const scale = useSharedValue(0.88);
+  const scale = useSharedValue(0.92);
   const opacity = useSharedValue(0);
   const backdropOpacity = useSharedValue(0);
+  const originY = useSharedValue(0);
 
   useEffect(() => {
     if (visible) {
+      // Offset toward anchor for origin-aware scaling
+      originY.value = anchor ? -4 : 0;
       opacity.value = withTiming(1, { duration: 140 });
       backdropOpacity.value = withTiming(1, { duration: 160 });
-      scale.value = withSpring(1, { damping: 20, stiffness: 320 });
+      scale.value = withSpring(1, { damping: 22, stiffness: 320 });
     } else {
-      opacity.value = withTiming(0, { duration: 110 });
-      backdropOpacity.value = withTiming(0, { duration: 110 });
-      scale.value = withTiming(0.9, { duration: 110 });
+      opacity.value = withTiming(0, { duration: 100 });
+      backdropOpacity.value = withTiming(0, { duration: 100 });
+      scale.value = withTiming(0.92, { duration: 100 });
     }
   }, [visible]);
 
   const menuStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ scale: scale.value }],
+    transform: [{ translateY: originY.value * (1 - scale.value) * 8 }, { scale: scale.value }],
   }));
 
   const backdropStyle = useAnimatedStyle(() => ({ opacity: backdropOpacity.value }));
 
-  const items = useMemo(() => [
-    {
-      id: 'copy',
-      label: 'Copy',
-      icon: <HugeiconsIcon icon={Copy01Icon} size={20} color={ICON_COLOR} weight="regular" />,
-      onPress: () => { onClose(); setTimeout(onCopy, 120); },
-      destructive: false,
-    },
-    ...(isUser && onEdit ? [{
-      id: 'edit',
-      label: 'Edit',
-      icon: <PencilSimpleIcon size={20} color={ICON_COLOR} weight="regular" />,
-      onPress: () => { onClose(); setTimeout(onEdit, 120); },
-      destructive: false,
-    }] : []),
-    ...(onRetry ? [{
-      id: 'retry',
-      label: isUser ? 'Retry' : 'Regenerate',
-      icon: <HugeiconsIcon icon={RefreshIcon} size={20} color={ICON_COLOR} weight="regular" />,
-      onPress: () => { onClose(); setTimeout(onRetry, 120); },
-      destructive: false,
-    }] : []),
-    ...(onDelete ? [{
-      id: 'delete',
-      label: 'Delete',
-      icon: <HugeiconsIcon icon={Delete02Icon} size={20} color="#FF3B30" weight="regular" />,
-      onPress: () => { onClose(); setTimeout(onDelete, 120); },
-      destructive: true,
-    }] : []),
-  ], [isUser, onCopy, onEdit, onRetry, onDelete, onClose]);
+  const items = useMemo(
+    () => [
+      {
+        id: 'copy',
+        label: 'Copy',
+        icon: <HugeiconsIcon icon={Copy01Icon} size={20} color={ICON_COLOR} weight="regular" />,
+        onPress: () => {
+          onClose();
+          setTimeout(onCopy, 120);
+        },
+        destructive: false,
+      },
+      ...(isUser && onEdit
+        ? [
+            {
+              id: 'edit',
+              label: 'Edit',
+              icon: <PencilSimpleIcon size={20} color={ICON_COLOR} weight="regular" />,
+              onPress: () => {
+                onClose();
+                setTimeout(onEdit, 120);
+              },
+              destructive: false,
+            },
+          ]
+        : []),
+      ...(onRetry
+        ? [
+            {
+              id: 'retry',
+              label: isUser ? 'Retry' : 'Regenerate',
+              icon: (
+                <HugeiconsIcon icon={RefreshIcon} size={20} color={ICON_COLOR} weight="regular" />
+              ),
+              onPress: () => {
+                onClose();
+                setTimeout(onRetry, 120);
+              },
+              destructive: false,
+            },
+          ]
+        : []),
+      ...(onDelete
+        ? [
+            {
+              id: 'delete',
+              label: 'Delete',
+              icon: (
+                <HugeiconsIcon icon={Delete02Icon} size={20} color="#FF3B30" weight="regular" />
+              ),
+              onPress: () => {
+                onClose();
+                setTimeout(onDelete, 120);
+              },
+              destructive: true,
+            },
+          ]
+        : []),
+    ],
+    [isUser, onCopy, onEdit, onRetry, onDelete, onClose]
+  );
 
   if (!anchor) return null;
 
@@ -118,7 +169,8 @@ export const MessageContextMenu = memo(function MessageContextMenu({
               style={{ height: ITEM_HEIGHT }}
               accessibilityRole="button"
               accessibilityLabel={item.label}>
-              <Text className={`font-body-medium text-[16px] ${item.destructive ? 'text-[#FF3B30]' : 'text-[#1C1C1E]'}`}>
+              <Text
+                className={`font-body-medium text-[16px] ${item.destructive ? 'text-[#FF3B30]' : 'text-[#1C1C1E]'}`}>
                 {item.label}
               </Text>
               {item.icon}

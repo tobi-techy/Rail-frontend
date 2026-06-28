@@ -29,7 +29,7 @@ const screenOptions = {
   },
   transitionSpec: {
     open: { stiffness: 380, damping: 38, mass: 1 },
-    close: { stiffness: 380, damping: 38, mass: 1 },
+    close: { stiffness: 420, damping: 44, mass: 0.9 },
   },
 };
 

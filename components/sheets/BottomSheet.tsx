@@ -11,11 +11,11 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withTiming,
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
 import { layout, responsive } from '@/utils/layout';
 import { useHaptics } from '@/hooks/useHaptics';
 import * as Haptics from '@/utils/platformHaptics';
@@ -44,6 +44,7 @@ export function BottomSheet({
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(screenHeight);
   const keyboardOffset = useSharedValue(0);
+  const backdropOpacity = useSharedValue(0);
   const sheetBottomBase = layout.isSeekerDevice
     ? 14
     : responsive({ default: 24, tall: 20, android: 18 });
@@ -64,16 +65,18 @@ export function BottomSheet({
 
   const animateClose = useCallback(() => {
     impact(Haptics.ImpactFeedbackStyle.Light);
+    backdropOpacity.value = withTiming(0, { duration: 200 });
     translateY.value = withSpring(screenHeight, SPRING_CONFIG, () => {
       runOnJS(onClose)();
     });
-  }, [impact, onClose, screenHeight, translateY]);
+  }, [impact, onClose, screenHeight, translateY, backdropOpacity]);
 
   useEffect(() => {
     if (visible) {
+      backdropOpacity.value = withTiming(1, { duration: 220 });
       translateY.value = withSpring(0, SPRING_CONFIG);
     }
-  }, [visible, translateY]);
+  }, [visible, translateY, backdropOpacity]);
 
   // Track keyboard to lift the sheet
   useEffect(() => {
@@ -114,22 +117,26 @@ export function BottomSheet({
     bottom: sheetBottomBase + keyboardOffset.value,
   }));
 
+  const backdropAnimStyle = useAnimatedStyle(() => ({
+    backgroundColor: `rgba(0,0,0,${backdropOpacity.value * 0.45})`,
+  }));
+
   if (!visible) return null;
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="none"
       statusBarTranslucent
       onRequestClose={dismissible ? animateClose : undefined}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill}>
+        <Animated.View style={[StyleSheet.absoluteFill, backdropAnimStyle]}>
           <Pressable
             style={StyleSheet.absoluteFill}
             onPress={dismissible ? animateClose : undefined}
           />
-        </BlurView>
+        </Animated.View>
 
         <GestureDetector gesture={pan}>
           <Animated.View

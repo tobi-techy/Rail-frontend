@@ -18,6 +18,8 @@ import { safeName } from '@/components/withdraw/method-screen/utils';
 import { clearAutoFired } from '@/utils/passkeyPromptGuard';
 import { PASSCODE_SESSION_MS } from '@/utils/sessionConstants';
 import { consumeReturnRoute } from '@/utils/returnRoute';
+import queryClient, { queryKeys } from '@/api/queryClient';
+import { stationService } from '@/api/services/station.service';
 
 type ProfileNamePayload = {
   firstName?: string;
@@ -46,6 +48,17 @@ export default function LoginPasscodeScreen() {
   const profileFetchAttemptedRef = useRef(false);
 
   const userName = safeName(user?.firstName) || safeName(user?.fullName)?.split(' ')[0] || 'User';
+
+  // Prefetch station data while user is entering passcode
+  useEffect(() => {
+    if (isAuthenticated) {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.station.home(),
+        queryFn: () => stationService.getStation(),
+        staleTime: 30_000,
+      });
+    }
+  }, [isAuthenticated]);
 
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');

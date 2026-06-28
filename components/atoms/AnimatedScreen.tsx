@@ -19,7 +19,7 @@ export function StaggeredChild({ children, index = 0, delay = 50, style }: Stagg
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    progress.value = withDelay(index * delay, withSpring(1, { damping: 18, stiffness: 100 }));
+    progress.value = withDelay(index * delay, withSpring(1, { damping: 18, stiffness: 180 }));
   }, [index, delay, progress]);
 
   const animatedStyle = useAnimatedStyle(() => ({

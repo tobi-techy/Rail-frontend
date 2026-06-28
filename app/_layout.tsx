@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Stack } from 'expo-router';
 import { AppState, Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { focusManager, QueryClientProvider } from '@tanstack/react-query';
@@ -18,10 +18,12 @@ import { initEncryption } from '@/utils/encryption';
 import { SplashScreen as CustomSplash } from '@/components/SplashScreen';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { FeedbackPopupHost } from '@/components/ui';
+import { MiriamCanvasHost } from '@/components/ai/canvas/MiriamCanvasHost';
+import { MiriamAmbientLayer } from '@/components/ai/ambient/MiriamAmbientLayer';
 import queryClient, { queryKeys } from '@/api/queryClient';
 import { stationService } from '@/api/services/station.service';
 import SessionManager from '@/utils/sessionManager';
-import { PostHogProvider, usePostHog } from 'posthog-react-native';
+import { PostHogProvider as _PostHogProvider, usePostHog } from 'posthog-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores';
 import '../global.css';
@@ -45,11 +47,29 @@ if (Platform.OS === 'android') {
 }
 
 const SPLASH_BG = '#ff3e00';
-const SPLASH_MIN_MS = 600; // Just a flash of branding — dismiss as soon as ready
-const SPLASH_MAX_MS = 1000; // Hard cap — never wait longer than this
 
 // Lazy-loaded heavy components (not needed at startup)
 const BlurView = lazy(() => import('expo-blur').then((m) => ({ default: m.BlurView })));
+
+// Defer PostHog initialization until after first meaningful paint
+function DeferredPostHogProvider({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const { InteractionManager } = require('react-native');
+    const handle = InteractionManager.runAfterInteractions(() => setReady(true));
+    return () => handle.cancel();
+  }, []);
+
+  if (!ready) return <>{children}</>;
+  return (
+    <_PostHogProvider
+      apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
+      autocapture={false}
+      options={{ host: 'https://us.i.posthog.com', disabled: __DEV__ }}>
+      {children}
+    </_PostHogProvider>
+  );
+}
 
 function AppReadyTracker() {
   const posthog = usePostHog();
@@ -82,14 +102,19 @@ function AppNavigator() {
   useBiometricLock();
 
   return (
-    <Stack initialRouteName="index" screenOptions={{ headerShown: false, contentStyle: styles.white }}>
+    <Stack
+      initialRouteName="index"
+      screenOptions={{ headerShown: false, contentStyle: styles.white }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="login-passcode" />
       <Stack.Screen name="intro" options={{ contentStyle: styles.black }} />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="market-asset/[symbol]" options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="market-asset/trade" options={{ animation: 'slide_from_bottom', contentStyle: styles.black }} />
+      <Stack.Screen
+        name="market-asset/trade"
+        options={{ animation: 'slide_from_bottom', contentStyle: styles.black }}
+      />
       <Stack.Screen name="spending-stash" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="investment-stash" />
       <Stack.Screen name="gameplay" options={{ animation: 'slide_from_right' }} />
@@ -100,11 +125,23 @@ function AppNavigator() {
       <Stack.Screen name="passkey-settings" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="settings-notifications" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="fund-crosschain" options={{ animation: 'slide_from_bottom', contentStyle: styles.primary }} />
-      <Stack.Screen name="fund-stash" options={{ animation: 'slide_from_bottom', contentStyle: styles.primary }} />
-      <Stack.Screen name="fund-naira" options={{ animation: 'slide_from_bottom', contentStyle: styles.primary }} />
+      <Stack.Screen
+        name="fund-crosschain"
+        options={{ animation: 'slide_from_bottom', contentStyle: styles.primary }}
+      />
+      <Stack.Screen
+        name="fund-stash"
+        options={{ animation: 'slide_from_bottom', contentStyle: styles.primary }}
+      />
+      <Stack.Screen
+        name="fund-naira"
+        options={{ animation: 'slide_from_bottom', contentStyle: styles.primary }}
+      />
       <Stack.Screen name="paj-verify" options={{ animation: 'slide_from_bottom' }} />
-      <Stack.Screen name="ai-chat" options={{ animation: 'fade_from_bottom', animationDuration: 250, gestureEnabled: false }} />
+      <Stack.Screen
+        name="ai-chat"
+        options={{ animation: 'fade_from_bottom', animationDuration: 250, gestureEnabled: false }}
+      />
     </Stack>
   );
 }
@@ -112,8 +149,7 @@ function AppNavigator() {
 export default function Layout() {
   const { fontsLoaded, error: fontError } = useFonts();
   const [showSplash, setShowSplash] = useState(true);
-  const [securityChecked, setSecurityChecked] = useState(false);
-  const splashStart = useRef<number | null>(null);
+  const [nativeSplashHidden, setNativeSplashHidden] = useState(false);
   const refreshCurrencyRates = useUIStore((s) => s.refreshCurrencyRates);
   const [isBlurred, setIsBlurred] = useState(false);
 
@@ -126,37 +162,28 @@ export default function Layout() {
     return () => sub.remove();
   }, []);
 
-  // Security checks in parallel
+  // Security checks — run in background, don't block splash
   useEffect(() => {
-    Promise.all([
-      enforceDeviceSecurity({ allowContinue: __DEV__ }),
-      initEncryption(),
-      import('@/utils/deviceFingerprint').then((m) => m.getDeviceFingerprint()),
-    ]).finally(() => setSecurityChecked(true));
+    enforceDeviceSecurity({ allowContinue: __DEV__ });
+    // Defer heavy crypto init — not needed until first sensitive action
+    const { InteractionManager } = require('react-native');
+    InteractionManager.runAfterInteractions(() => {
+      initEncryption();
+      import('@/utils/deviceFingerprint').then((m) => m.getDeviceFingerprint());
+    });
   }, []);
 
   // Hide native splash as soon as custom splash mounts
   const onCustomSplashReady = useCallback(async () => {
-    if (splashStart.current === null) {
-      await SplashScreen.hideAsync();
-      splashStart.current = Date.now();
-    }
+    await SplashScreen.hideAsync().catch(() => {});
+    setNativeSplashHidden(true);
   }, []);
 
-  // Dismiss splash when ready
+  // Dismiss splash the instant fonts are ready AND the native splash is gone —
+  // either ordering works, so there's no lingering frame. Don't wait for security.
   useEffect(() => {
-    if (!(fontsLoaded || fontError) || !securityChecked || splashStart.current === null) return;
-    const elapsed = Date.now() - splashStart.current;
-    const remaining = Math.max(0, SPLASH_MIN_MS - elapsed);
-    const t = setTimeout(() => setShowSplash(false), remaining);
-    return () => clearTimeout(t);
-  }, [fontsLoaded, fontError, securityChecked]);
-
-  // Hard timeout fallback
-  useEffect(() => {
-    const t = setTimeout(() => setShowSplash(false), SPLASH_MAX_MS);
-    return () => clearTimeout(t);
-  }, []);
+    if ((fontsLoaded || fontError) && nativeSplashHidden) setShowSplash(false);
+  }, [fontsLoaded, fontError, nativeSplashHidden]);
 
   // Post-splash: initialize session, prefetch data
   useEffect(() => {
@@ -165,15 +192,24 @@ export default function Layout() {
     SessionManager.initialize();
 
     // Deferred SDK init
-    import('@/utils/gleap').then((m) => {
-      const token = process.env.EXPO_PUBLIC_GLEAP_TOKEN ?? '';
-      if (token) { m.default.initialize(token); m.default.showFeedbackButton(false); }
-    }).catch(() => {});
+    import('@/utils/gleap')
+      .then((m) => {
+        const token = process.env.EXPO_PUBLIC_GLEAP_TOKEN ?? '';
+        if (token) {
+          m.default.initialize(token);
+          m.default.showFeedbackButton(false);
+        }
+      })
+      .catch(() => {});
 
     // Prefetch if authenticated
     const state = useAuthStore.getState();
     if (state?.isAuthenticated && state?.accessToken) {
-      queryClient.prefetchQuery({ queryKey: queryKeys.station.home(), queryFn: () => stationService.getStation(), staleTime: 0 });
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.station.home(),
+        queryFn: () => stationService.getStation(),
+        staleTime: 0,
+      });
       refreshCurrencyRates();
     }
   }, [showSplash, refreshCurrencyRates]);
@@ -189,20 +225,19 @@ export default function Layout() {
             <QueryClientProvider client={queryClient}>
               <SafeAreaProvider style={styles.root}>
                 <View style={styles.root}>
-                  <PostHogProvider
-                    apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
-                    autocapture={false}
-                    options={{ host: 'https://us.i.posthog.com', disabled: __DEV__ }}>
+                  <DeferredPostHogProvider>
                     {isReady && <AppReadyTracker />}
                     {isReady && <PostReadyHooks />}
                     <AppNavigator />
+                    <MiriamAmbientLayer />
                     <FeedbackPopupHost />
+                    <MiriamCanvasHost />
                     {isBlurred && (
                       <Suspense fallback={null}>
                         <BlurView intensity={50} tint="regular" style={StyleSheet.absoluteFill} />
                       </Suspense>
                     )}
-                  </PostHogProvider>
+                  </DeferredPostHogProvider>
                 </View>
               </SafeAreaProvider>
             </QueryClientProvider>

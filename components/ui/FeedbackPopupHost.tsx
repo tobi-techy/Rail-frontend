@@ -69,15 +69,15 @@ export function FeedbackPopupHost() {
       clearTimer();
       opacity.value = withTiming(
         0,
-        { duration: 180, easing: Easing.in(Easing.cubic) },
+        { duration: 160, easing: Easing.out(Easing.cubic) },
         (finished) => {
           if (!finished) return;
           runOnJS(dismissPopup)();
           if (onHidden) runOnJS(onHidden)();
         }
       );
-      translateY.value = withTiming(-18, { duration: 180, easing: Easing.in(Easing.cubic) });
-      scale.value = withTiming(0.98, { duration: 180, easing: Easing.in(Easing.cubic) });
+      translateY.value = withTiming(-18, { duration: 160, easing: Easing.out(Easing.cubic) });
+      scale.value = withTiming(0.98, { duration: 160, easing: Easing.out(Easing.cubic) });
     },
     [clearTimer, dismissPopup, opacity, scale, translateY]
   );

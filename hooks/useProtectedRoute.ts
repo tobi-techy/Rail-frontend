@@ -2,18 +2,18 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { router, useSegments, usePathname, useGlobalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
-import { authService, passcodeService } from '@/api/services';
+import { authService, passcodeService, userService } from '@/api/services';
 import { logger } from '@/lib/logger';
 import type { AuthState } from '@/types/routing.types';
 import {
   buildRouteConfig,
   determineRoute,
-  validateAccessToken,
   checkWelcomeStatus,
   normalizeRoutePath,
 } from '@/utils/routeHelpers';
 import { SessionManager } from '@/utils/sessionManager';
 import { setReturnRoute } from '@/utils/returnRoute';
+import { isAuthSessionInvalidError } from '@/utils/authErrorClassifier';
 import { BACKGROUND_LOCK_GRACE_MS } from '@/utils/sessionConstants';
 
 const LOCAL_ADVANCED_STATUSES = new Set(['kyc_pending', 'kyc_approved', 'completed']);
@@ -50,13 +50,13 @@ export function useProtectedRoute() {
   const paramsRef = useRef(globalParams);
   paramsRef.current = globalParams;
 
-  const refreshBackendAuthState = useCallback(async () => {
+  const refreshBackendAuthState = useCallback(async (prefetchedProfile?: any) => {
     const state = useAuthStore.getState();
     if (!state.isAuthenticated || !state.accessToken) return;
 
-    // Fetch user profile and passcode status in parallel
+    // Fetch user profile (reuse if already fetched) and passcode status in parallel
     const [userResult, passcodeResult] = await Promise.allSettled([
-      authService.getCurrentUser(),
+      prefetchedProfile ? Promise.resolve(prefetchedProfile) : authService.getCurrentUser(),
       passcodeService.getStatus(),
     ]);
 
@@ -123,11 +123,22 @@ export function useProtectedRoute() {
       });
 
       try {
-        const welcomed = await checkWelcomeStatus();
-        if (isMounted) setHasSeenWelcome(welcomed);
-
         const freshState = useAuthStore.getState();
         const hasValidAuthData = freshState.isAuthenticated && freshState.accessToken;
+        const shouldValidate = hasValidAuthData && (__DEV__ ? freshState.lastActivityAt : true);
+
+        // Fire welcome check + token validation in parallel
+        const [welcomed, profileResult] = await Promise.all([
+          checkWelcomeStatus(),
+          shouldValidate
+            ? userService.getProfile().then(
+                (data) => ({ ok: true as const, data }),
+                (err) => ({ ok: false as const, err })
+              )
+            : Promise.resolve(null),
+        ]);
+
+        if (isMounted) setHasSeenWelcome(welcomed);
 
         // CRITICAL: Add detailed logging for debugging old user routing issues
         logger.debug('[Auth] State after hydration (DETAILED)', {
@@ -145,11 +156,11 @@ export function useProtectedRoute() {
         });
 
         if (hasValidAuthData) {
-          const shouldValidate = __DEV__ ? freshState.lastActivityAt : true;
-          if (shouldValidate) {
-            try {
-              const isValid = await validateAccessToken();
-              if (!isValid) {
+          let profileData: any = undefined;
+          if (profileResult) {
+            if (profileResult.ok) {
+              profileData = profileResult.data;
+              if (!profileData) {
                 logger.info('[Auth] Token invalid on app load', {
                   component: 'useProtectedRoute',
                   action: 'token-validation-failed',
@@ -157,19 +168,24 @@ export function useProtectedRoute() {
                 SessionManager.handleSessionExpired();
                 return;
               }
-            } catch (validationError) {
+            } else {
+              const isSessionInvalid = isAuthSessionInvalidError(profileResult.err);
+              if (isSessionInvalid) {
+                SessionManager.handleSessionExpired();
+                return;
+              }
               logger.warn('[Auth] Token validation failed, continuing', {
                 component: 'useProtectedRoute',
                 action: 'token-validation-error',
                 error:
-                  validationError instanceof Error
-                    ? validationError.message
-                    : String(validationError),
+                  profileResult.err instanceof Error
+                    ? profileResult.err.message
+                    : String(profileResult.err),
               });
             }
           }
 
-          await refreshBackendAuthState();
+          await refreshBackendAuthState(profileData);
         } else if (freshState.user) {
           // CRITICAL: User has stored credentials but no valid auth tokens
           // This is the case for old users after app backgrounding

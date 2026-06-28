@@ -42,6 +42,14 @@ export interface AIChatState {
   pendingStatementRetry: { fileUri: string; bankName: string; text?: string } | null;
   lastStatementUploadId: string | null;
   isStatementProcessing: boolean;
+  celebration: Celebration | null;
+}
+
+export interface Celebration {
+  level: 'small' | 'big' | 'epic';
+  title: string;
+  subtitle?: string;
+  at?: number; // timestamp to disambiguate repeat celebrations
 }
 
 export interface AIChatActions {
@@ -69,6 +77,8 @@ export interface AIChatActions {
   fetchProactiveOpener: () => Promise<void>;
   dismissActionChip: (chipId: string) => void;
   clearPendingAction: () => void;
+  addReaction: (messageIndex: number, emoji: string) => void;
+  clearCelebration: () => void;
   reset: () => void;
   setPendingScannedReceipt: (receipt: { uri: string; base64: string }) => void;
   consumePendingScannedReceipt: () => { uri: string; base64: string } | null;
@@ -107,4 +117,5 @@ export const initialState: AIChatState = {
   pendingStatementRetry: null,
   lastStatementUploadId: null,
   isStatementProcessing: false,
+  celebration: null,
 };

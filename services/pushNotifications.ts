@@ -324,6 +324,15 @@ class PushNotificationService {
         }
         break;
       }
+      case 'miriam_action_executed':
+        router.push({ pathname: '/(tabs)', params: { openMiriamActivity: 'true' } } as any);
+        break;
+      case 'miriam_suggestion':
+        router.push({ pathname: '/(tabs)', params: { openMiriamSuggestions: 'true' } } as any);
+        break;
+      case 'miriam_health_update':
+        router.push('/miriam-health' as never);
+        break;
       default:
         // SECURITY FIX (R4-H1): Validate screen against allowlist to prevent
         // arbitrary navigation via crafted push notification payloads.

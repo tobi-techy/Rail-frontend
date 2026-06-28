@@ -5,6 +5,7 @@ import Animated, {
   useAnimatedStyle,
   withDelay,
   withTiming,
+  useReducedMotion,
 } from 'react-native-reanimated';
 import { MOTION } from '@/theme/motion';
 
@@ -66,12 +67,17 @@ interface ConfettiProps {
   count?: number;
 }
 
-export const Confetti = ({ count = MOTION.confetti.count }: ConfettiProps) => (
-  <View
-    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}
-    pointerEvents="none">
-    {Array.from({ length: count }, (_, i) => (
-      <ConfettiPiece key={i} delay={Math.random() * 500} startX={Math.random() * width} />
-    ))}
-  </View>
-);
+export const Confetti = ({ count = MOTION.confetti.count }: ConfettiProps) => {
+  const reducedMotion = useReducedMotion();
+  if (reducedMotion) return null;
+
+  return (
+    <View
+      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}
+      pointerEvents="none">
+      {Array.from({ length: count }, (_, i) => (
+        <ConfettiPiece key={i} delay={Math.random() * 500} startX={Math.random() * width} />
+      ))}
+    </View>
+  );
+};

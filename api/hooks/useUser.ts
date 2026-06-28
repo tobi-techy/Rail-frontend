@@ -144,7 +144,7 @@ export function useUserKYCStatus() {
   return useQuery({
     queryKey: queryKeys.user.kycStatus(),
     queryFn: () => userService.getKYCStatus(),
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 

@@ -3,6 +3,7 @@
  * Handles all AI chat endpoints — conversations, streaming, suggestions, wrapped
  */
 
+import { fetch as expoFetch } from 'expo/fetch';
 import apiClient from '../client';
 import { API_CONFIG } from '../config';
 import { useAuthStore } from '@/stores/authStore';
@@ -18,6 +19,7 @@ import type {
   AIStreamEvent,
   ActionConfirmResponse,
   ActionReceiptsResponse,
+  PendingAction,
   CashFlowForecast,
   FinancialAdvice,
   FinancialAudit,
@@ -44,6 +46,14 @@ import type {
   GoalMember,
   CreateSharedGoalRequest,
   StatementSummary,
+  MiriamHealthSummary,
+  MiriamHealthScore,
+  MiriamPredictionSummary,
+  MiriamDecisionReceipt,
+  MiriamMandate,
+  CreateMiriamMandateRequest,
+  MiriamMandateSuggestion,
+  MiriamMoneyState,
 } from '../types/ai';
 
 const BASE = '/v1/ai';
@@ -72,7 +82,12 @@ export const aiService = {
     const { accessToken, csrfToken } = useAuthStore.getState();
     const baseURL = API_CONFIG.baseURL;
 
+    // expo/fetch exposes a real ReadableStream body, so tokens arrive
+    // incrementally (true iMessage-style streaming). RN's XMLHttpRequest does
+    // not reliably deliver partial responseText and re-slicing it is O(n²) on
+    // long replies — that was the source of the lag and "random" failures.
     (async () => {
+      let sawData = false;
       try {
         const { generateRequestId } = await import('@/utils/requestId');
         let fingerprint = '';
@@ -81,80 +96,72 @@ export const aiService = {
           fingerprint = await getDeviceFingerprint();
         } catch {}
 
-        const url = `${baseURL}${BASE}/chat/stream`;
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', url);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('Accept', 'text/event-stream');
-        xhr.setRequestHeader('X-Requested-With', 'RailApp');
-        xhr.setRequestHeader('X-Request-ID', generateRequestId());
-        if (accessToken) xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-        if (csrfToken) xhr.setRequestHeader('X-CSRF-Token', csrfToken);
-        if (fingerprint) xhr.setRequestHeader('X-Device-Fingerprint', fingerprint);
-
-        let seenBytes = 0;
-        let settled = false;
-
-        const settle = (fn: () => void) => {
-          if (settled) return;
-          settled = true;
-          fn();
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+          'X-Requested-With': 'RailApp',
+          'X-Request-ID': generateRequestId(),
         };
+        if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+        if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+        if (fingerprint) headers['X-Device-Fingerprint'] = fingerprint;
 
-        const parseSSEChunk = (text: string) => {
-          const lines = text.split('\n');
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const payload = line.slice(6).trim();
-            if (!payload || payload === '[DONE]') continue;
-            try {
-              onEvent(JSON.parse(payload) as AIStreamEvent);
-            } catch {}
-          }
-        };
+        const res = await expoFetch(`${baseURL}${BASE}/chat/stream`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(req),
+          signal: controller.signal,
+        });
 
-        xhr.onreadystatechange = () => {
-          if (xhr.readyState >= 3 && xhr.responseText) {
-            const newText = xhr.responseText.slice(seenBytes);
-            seenBytes = xhr.responseText.length;
-            if (newText) parseSSEChunk(newText);
-          }
-          if (xhr.readyState === 4) {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              settle(onDone);
-            } else if (xhr.status === 0) {
-              if (seenBytes > 0) {
-                settle(onDone);
-              } else {
-                settle(() => onError('Stream connection failed'));
-              }
-            } else {
-              // If we already received streamed data, treat as success
-              // (backend may close connection after streaming completes)
-              if (seenBytes > 0) {
-                settle(onDone);
-              } else {
-                settle(() => onError(`Stream failed: ${xhr.status}`));
-              }
+        if (!res.ok || !res.body) {
+          onError(`Stream failed: ${res.status}`);
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        // SSE events are separated by a blank line; an event may span chunks,
+        // so we keep a buffer and only emit complete events.
+        const drain = () => {
+          let sep: number;
+          while ((sep = buffer.indexOf('\n\n')) !== -1) {
+            const block = buffer.slice(0, sep);
+            buffer = buffer.slice(sep + 2);
+            for (const line of block.split('\n')) {
+              if (!line.startsWith('data:')) continue;
+              const payload = line.slice(5).trim();
+              if (!payload || payload === '[DONE]') continue;
+              sawData = true;
+              try {
+                onEvent(JSON.parse(payload) as AIStreamEvent);
+              } catch {}
             }
           }
         };
 
-        xhr.onerror = () => {
-          if (seenBytes > 0) {
-            settle(onDone);
-          } else {
-            settle(() => onError('Stream connection failed'));
-          }
-        };
-        xhr.ontimeout = () => settle(() => onError('Stream timed out'));
-        xhr.timeout = 180000;
-
-        controller.signal.addEventListener('abort', () => xhr.abort());
-
-        xhr.send(JSON.stringify(req));
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          drain();
+        }
+        // Flush any trailing event not terminated by a blank line.
+        buffer += decoder.decode();
+        if (buffer.length > 0) {
+          buffer += '\n\n';
+          drain();
+        }
+        onDone();
       } catch (e: any) {
-        if (e?.name !== 'AbortError') onError(e?.message ?? 'Stream failed');
+        // User-initiated stop: keep whatever streamed so far.
+        if (e?.name === 'AbortError') {
+          onDone();
+          return;
+        }
+        if (sawData) onDone();
+        else onError(e?.message ?? 'Stream connection failed');
       }
     })();
     return controller;
@@ -535,6 +542,24 @@ export const aiService = {
     return unwrapData<{ result: unknown; is_error?: boolean }>(payload);
   },
 
+  // Creates a pending money action from voice so the app can show a confirm
+  // card (with biometric) instead of executing immediately. Confirm/cancel then
+  // reuse the existing conversation confirm/cancel endpoints.
+  async prepareVoiceAction(params: {
+    conversation_id?: string;
+    action: string;
+    params: Record<string, unknown>;
+  }): Promise<{ pending_action?: PendingAction; conversation_id?: string; error?: string }> {
+    const payload = await apiClient.post<any>(`${BASE}/voice/prepare-action`, params, {
+      timeout: 15000,
+    });
+    return unwrapData<{
+      pending_action?: PendingAction;
+      conversation_id?: string;
+      error?: string;
+    }>(payload);
+  },
+
   // ── Bank Statement Upload ──────────────────────────────────
 
   async uploadStatement(
@@ -597,6 +622,62 @@ export const aiService = {
 
   async deleteStatement(uploadId: string): Promise<{ data: { deleted: boolean } }> {
     return apiClient.delete(`${BASE}/statement/${uploadId}`);
+  },
+
+  // ── Miriam Intelligence ──────────────────────────────────────────────────
+
+  async getMiriamState(): Promise<{ data: MiriamMoneyState }> {
+    return apiClient.get(`${BASE}/miriam/state`);
+  },
+
+  async getMiriamHealthScore(): Promise<{ data: MiriamHealthSummary }> {
+    return apiClient.get(`${BASE}/miriam/health-score`);
+  },
+
+  async getMiriamHealthScoreTrend(limit = 30): Promise<{ data: MiriamHealthScore[] }> {
+    return apiClient.get(`${BASE}/miriam/health-score/trend?limit=${limit}`);
+  },
+
+  async getMiriamPredictions(): Promise<{ data: MiriamPredictionSummary }> {
+    return apiClient.get(`${BASE}/miriam/predictions`);
+  },
+
+  async getMiriamReceipts(limit = 50): Promise<{ data: MiriamDecisionReceipt[] }> {
+    return apiClient.get(`${BASE}/miriam/receipts?limit=${limit}`);
+  },
+
+  async recordMiriamFeedback(
+    receiptId: string,
+    signal: 'positive' | 'negative' | 'neutral'
+  ): Promise<{ recorded: boolean }> {
+    return apiClient.post(`${BASE}/miriam/receipts/${receiptId}/feedback`, { signal });
+  },
+
+  async getMiriamMandates(): Promise<{ data: MiriamMandate[] }> {
+    return apiClient.get(`${BASE}/miriam/mandates`);
+  },
+
+  async createMiriamMandate(req: CreateMiriamMandateRequest): Promise<{ data: MiriamMandate }> {
+    return apiClient.post(`${BASE}/miriam/mandates`, req);
+  },
+
+  async updateMiriamMandateStatus(
+    id: string,
+    status: 'active' | 'paused' | 'expired'
+  ): Promise<{ updated: boolean }> {
+    return apiClient.patch(`${BASE}/miriam/mandates/${id}/status`, { status });
+  },
+
+  async getMiriamSuggestions(): Promise<{ data: MiriamMandateSuggestion[] }> {
+    return apiClient.get(`${BASE}/miriam/suggestions`);
+  },
+
+  async acceptMiriamSuggestion(id: string): Promise<{ data: MiriamMandate }> {
+    return apiClient.post(`${BASE}/miriam/suggestions/${id}/accept`, {});
+  },
+
+  async dismissMiriamSuggestion(id: string): Promise<{ dismissed: boolean }> {
+    return apiClient.post(`${BASE}/miriam/suggestions/${id}/dismiss`, {});
   },
 };
 

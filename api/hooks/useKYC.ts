@@ -12,7 +12,9 @@ export function useKYCStatus(enabled = true) {
     queryKey: queryKeys.user.kycStatus(),
     queryFn: () => kycService.getKYCStatus(),
     enabled: isAuthenticated && enabled,
-    staleTime: 0,
+    // Active verification transitions are handled by useKycStatusPolling; mutations
+    // invalidate this key. 5 min staleTime stops a refetch on every mount/focus.
+    staleTime: 5 * 60 * 1000,
   });
 }
 

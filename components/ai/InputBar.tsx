@@ -149,7 +149,7 @@ export function InputBar({
       );
     } else {
       cancelAnimation(borderProgress);
-      borderProgress.value = withTiming(0, { duration: 200 });
+      borderProgress.value = withTiming(0, { duration: 150, easing: Easing.out(Easing.ease) });
     }
   }, [isListening, borderProgress]);
 
@@ -202,23 +202,10 @@ export function InputBar({
   }, [isStreaming]);
 
   return (
-    <Animated.View
-      className="mx-4 rounded-[24px] bg-[#F5F4F0]"
-      style={[
-        {
-          minHeight: 56,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.04,
-          shadowRadius: 8,
-          elevation: 2,
-          overflow: 'hidden',
-        },
-        animatedBorderStyle,
-      ]}>
+    <View className="mx-4 mb-1">
       {/* Attached image preview */}
       {attachedImage && !isListening && (
-        <Animated.View entering={FadeIn.duration(150)} className="px-4 pt-3">
+        <Animated.View entering={FadeIn.duration(150)} className="mb-2 pl-12">
           <View className="relative self-start">
             {imageLoading && (
               <View className="h-20 w-20 items-center justify-center rounded-lg bg-[#1C1C1E]">
@@ -245,147 +232,128 @@ export function InputBar({
 
       {/* Attached document — Perplexity-style: thumbnail with spinner → PDF icon */}
       {attachedDocument && !isListening && (
-        <Animated.View entering={FadeIn.duration(150)} className="px-4 pt-3">
-          <DocumentAttachmentChip
-            name={attachedDocument.name}
-            onClear={onClearDocument}
-          />
+        <Animated.View entering={FadeIn.duration(150)} className="mb-2 pl-12">
+          <DocumentAttachmentChip name={attachedDocument.name} onClear={onClearDocument} />
         </Animated.View>
       )}
 
-      {/* Text input */}
-      <TextInput
-        ref={inputRef}
-        value={text}
-        onChangeText={setText}
-        placeholder={
-          isListening
-            ? 'Listening...'
-            : attachedDocument
-              ? 'Add context, or send as-is...'
-              : (placeholder ?? 'Ask anything...')
-        }
-        placeholderTextColor={isListening ? LISTENING_COLOR : '#9C9C9C'}
-        multiline
-        maxLength={4000}
-        autoFocus={autoFocus}
-        returnKeyType="default"
-        blurOnSubmit={false}
-        enablesReturnKeyAutomatically
-        editable={!isListening}
-        className="max-h-[120px] px-5 pb-2 pt-4 font-body text-[16px] leading-[24px] text-[#1C1C1E]"
-      />
+      {/* iMessage-style composer row: [ + ]  [ pill: input · mic ]  [ accent ] */}
+      <View className="flex-row items-end gap-2">
+        {/* Plus — tap: attachments · long-press: toggle Agent mode */}
+        {onPlusPress && (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Keyboard.dismiss();
+              onPlusPress();
+            }}
+            onLongPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              onAgentModeToggle?.();
+            }}
+            disabled={isStreaming}
+            className="mb-0.5 h-10 w-10 items-center justify-center rounded-full border border-black/[0.08] bg-white"
+            accessibilityRole="button"
+            accessibilityLabel="Add attachment (long-press for Agent mode)">
+            <HugeiconsIcon
+              icon={Add01Icon}
+              size={20}
+              color={isStreaming ? '#D4D4D4' : agentMode ? ACCENT : '#1C1C1E'}
+            />
+          </Pressable>
+        )}
 
-      {/* Action row */}
-      <View className="flex-row items-center justify-between px-3 pb-3.5">
-        <View className="flex-row items-center gap-1.5">
+        {/* Pill */}
+        <Animated.View
+          className="flex-1 flex-row items-end rounded-[22px] bg-[#F1F0EC] pl-4 pr-1.5"
+          style={[{ minHeight: 44 }, animatedBorderStyle]}>
+          <TextInput
+            ref={inputRef}
+            value={text}
+            onChangeText={setText}
+            placeholder={
+              isListening
+                ? 'Listening...'
+                : attachedDocument
+                  ? 'Add context, or send as-is...'
+                  : (placeholder ?? 'Message Miriam')
+            }
+            placeholderTextColor={isListening ? LISTENING_COLOR : '#9C9C9C'}
+            multiline
+            maxLength={4000}
+            autoFocus={autoFocus}
+            returnKeyType="default"
+            blurOnSubmit={false}
+            enablesReturnKeyAutomatically
+            editable={!isListening}
+            className="max-h-[120px] flex-1 py-2.5 pr-1 font-body text-[16px] leading-[22px] text-[#1C1C1E]"
+          />
+
+          {/* Trailing mic inside the pill — tap: dictate · long-press: live voice */}
           {isListening ? (
             <Pressable
               onPress={handleMicPress}
-              className="h-9 w-9 items-center justify-center rounded-full bg-[#1C1C1E]"
+              className="mb-1 h-8 w-8 items-center justify-center rounded-full bg-[#1C1C1E]"
               accessibilityRole="button"
               accessibilityLabel="Stop listening">
               <View className="h-3 w-3 rounded-sm bg-white" />
             </Pressable>
-          ) : (
-            <>
-              {onPlusPress && (
-                <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    Keyboard.dismiss();
-                    onPlusPress();
-                  }}
-                  disabled={isStreaming}
-                  className="h-9 w-9 items-center justify-center rounded-full border border-black/[0.08]"
-                  accessibilityRole="button"
-                  accessibilityLabel="Options">
-                  <HugeiconsIcon
-                    icon={Add01Icon}
-                    size={18}
-                    color={isStreaming ? '#D4D4D4' : '#1C1C1E'}
-                  />
-                </Pressable>
-              )}
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onAgentModeToggle?.();
-                }}
-                disabled={isStreaming}
-                className="rounded-full border px-3 py-1.5"
-                style={{
-                  borderColor: agentMode ? ACCENT : 'rgba(0,0,0,0.08)',
-                  backgroundColor: agentMode ? `${ACCENT}10` : 'transparent',
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Agent mode">
-                <Text
-                  className="font-body-medium text-[13px]"
-                  style={{ color: isStreaming ? '#D4D4D4' : agentMode ? ACCENT : '#1C1C1E' }}>
-                  Agent
-                </Text>
-              </Pressable>
-            </>
-          )}
-        </View>
-
-        <View className="flex-row items-center gap-2">
-          {!isListening && (
+          ) : !hasContent ? (
             <Pressable
               onPress={handleMicPress}
+              onLongPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push('/voice-mode');
+              }}
               hitSlop={8}
               disabled={isStreaming}
-              className="h-9 w-9 items-center justify-center rounded-full"
+              className="mb-1 h-8 w-8 items-center justify-center"
               accessibilityRole="button"
-              accessibilityLabel="Voice input">
+              accessibilityLabel="Dictate (long-press for live voice)">
               <HugeiconsIcon
                 icon={Mic01Icon}
                 size={20}
                 color={isStreaming ? '#D4D4D4' : '#5F5F5F'}
               />
             </Pressable>
-          )}
+          ) : null}
+        </Animated.View>
 
-          {/* Voice mode — red-orange circle with phone icon */}
-          {!isListening && (
+        {/* Accent circle — live voice when empty, send when typing */}
+        {!isListening &&
+          (hasContent ? (
+            <Animated.View style={sendStyle}>
+              <Pressable
+                onPress={handleSend}
+                onPressIn={() => {
+                  sendScale.value = withSpring(0.88, { damping: 15 });
+                }}
+                onPressOut={() => {
+                  sendScale.value = withSpring(1, { damping: 15 });
+                }}
+                disabled={isStreaming}
+                className="mb-0.5 h-10 w-10 items-center justify-center rounded-full"
+                style={{ backgroundColor: ACCENT }}
+                accessibilityRole="button"
+                accessibilityLabel="Send message">
+                <HugeiconsIcon icon={ArrowUp01Icon} size={20} color="#FFF" />
+              </Pressable>
+            </Animated.View>
+          ) : (
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 router.push('/voice-mode');
               }}
               disabled={isStreaming}
-              className="h-9 w-9 items-center justify-center rounded-full"
+              className="mb-0.5 h-10 w-10 items-center justify-center rounded-full"
               style={{ backgroundColor: ACCENT }}
               accessibilityRole="button"
-              accessibilityLabel="Voice conversation mode">
+              accessibilityLabel="Talk to Miriam">
               <HugeiconsIcon icon={PhoneIcon} size={18} color="#FFFFFF" />
             </Pressable>
-          )}
-
-          <Animated.View style={sendStyle}>
-            <Pressable
-              onPress={handleSend}
-              onPressIn={() => {
-                sendScale.value = withSpring(0.88, { damping: 15 });
-              }}
-              onPressOut={() => {
-                sendScale.value = withSpring(1, { damping: 15 });
-              }}
-              disabled={!hasContent || isStreaming}
-              className="h-9 w-9 items-center justify-center rounded-full"
-              style={{ backgroundColor: hasContent ? ACCENT : '#DCDCDA' }}
-              accessibilityRole="button"
-              accessibilityLabel="Send message">
-              <HugeiconsIcon
-                icon={ArrowUp01Icon}
-                size={18}
-                color={hasContent ? '#FFF' : '#A0A0A0'}
-              />
-            </Pressable>
-          </Animated.View>
-        </View>
+          ))}
       </View>
-    </Animated.View>
+    </View>
   );
 }

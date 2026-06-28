@@ -3,9 +3,7 @@ import { View, Pressable, Platform, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Canvas, RoundedRect } from '@shopify/react-native-skia';
-import Animated, {
-  FadeIn,
-} from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { IconComponent as HugeiconsIcon, Cancel01Icon, Mic01Icon } from '@/lib/icons';
 import { ConversationProvider, useConversation } from '@elevenlabs/react-native';
 import { MiriamCharacter } from '@/components/ai/MiriamCharacter';
@@ -15,6 +13,7 @@ import { useBiometric } from '@/hooks/useBiometric';
 import { aiService } from '@/api/services/ai.service';
 import { useWalletStore } from '@/stores/walletStore';
 import { logger } from '@/lib/logger';
+import { buildMiriamClientTools } from '@/lib/miriamClientTools';
 import type { MiriamEmotion } from '@/components/ai/MiriamCharacter';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -107,7 +106,10 @@ function SessionTimer({ active }: { active: boolean }) {
   const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
-    if (!active) { setSeconds(0); return; }
+    if (!active) {
+      setSeconds(0);
+      return;
+    }
     const id = setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, [active]);
@@ -143,7 +145,11 @@ function VoiceModeContent() {
   const router = useRouter();
   const { impact, notification } = useHaptics();
   const showPopup = useFeedbackPopupStore((s) => s.showPopup);
-  const { verifyWithBiometric, isAvailable: biometricAvailable, isBiometricEnabled } = useBiometric();
+  const {
+    verifyWithBiometric,
+    isAvailable: biometricAvailable,
+    isBiometricEnabled,
+  } = useBiometric();
   const tokens = useWalletStore((s) => s.tokens);
   const totalBalanceUSD = useWalletStore((s) => s.totalBalanceUSD);
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
@@ -152,13 +158,11 @@ function VoiceModeContent() {
   const sessionActive = voiceState === 'listening' || voiceState === 'speaking';
 
   const conversation = useConversation({
-    clientTools: {
-      getBalance: async () => buildFinancialContext(tokens, totalBalanceUSD),
-      navigateToScreen: async (params: { screen: string }) => {
-        router.push(params.screen as any);
-        return `Navigated to ${params.screen}`;
-      },
-    },
+    clientTools: buildMiriamClientTools({
+      tokens,
+      totalBalanceUSD,
+      navigate: (screen) => router.push(screen as never),
+    }),
     onConnect: () => {
       setVoiceState('listening');
       notification('success');
@@ -169,7 +173,9 @@ function VoiceModeContent() {
             conversation.sendContextualUpdate(
               `Financial snapshot: ${buildFinancialContext(tokens, totalBalanceUSD)}`
             );
-          } catch { /* session may have ended */ }
+          } catch {
+            /* session may have ended */
+          }
         }, 600);
       }
     },
@@ -241,14 +247,22 @@ function VoiceModeContent() {
     start();
     return () => {
       cancelled = true;
-      try { conversation.endSession(); } catch { /* noop */ }
+      try {
+        conversation.endSession();
+      } catch {
+        /* noop */
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleClose = useCallback(() => {
     impact();
-    try { conversation.endSession(); } catch { /* noop */ }
+    try {
+      conversation.endSession();
+    } catch {
+      /* noop */
+    }
     router.back();
   }, [conversation, impact, router]);
 
@@ -260,7 +274,9 @@ function VoiceModeContent() {
   }, [conversation, impact, isMuted]);
 
   return (
-    <View className="flex-1 bg-[#FAFAF7]" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
+    <View
+      className="flex-1 bg-[#FAFAF7]"
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 py-3">
         <SessionTimer active={sessionActive} />

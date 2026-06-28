@@ -35,6 +35,10 @@ export interface ActivityItem {
   destination?: string;
   receiverName?: string;
   bankName?: string;
+  accountNumber?: string;
+  rate?: string;
+  tokenAmount?: string;
+  fee?: string;
   narration?: string;
   sourceId: string;
   sourceType: string;

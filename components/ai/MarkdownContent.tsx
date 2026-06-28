@@ -140,10 +140,37 @@ const selectableRules = {
   ),
 };
 
-export function MarkdownContent({ content, selectable = false }: { content: string; selectable?: boolean }) {
+// Tighter styles for text rendered inside an iMessage-style bubble: smaller body,
+// less vertical breathing room, headings scaled down so they sit naturally in a bubble.
+const bubbleStyles = {
+  ...markdownStyles,
+  body: { ...markdownStyles.body, fontSize: 17, lineHeight: 23 },
+  strong: { ...markdownStyles.strong, fontSize: 17 },
+  heading1: { ...markdownStyles.heading1, fontSize: 22, marginTop: 8, marginBottom: 6 },
+  heading2: { ...markdownStyles.heading2, fontSize: 20, marginTop: 8, marginBottom: 6 },
+  heading3: { ...markdownStyles.heading3, fontSize: 18, marginTop: 6, marginBottom: 4 },
+  paragraph: { marginTop: 0, marginBottom: 0 },
+  bullet_list: { marginVertical: 2 },
+  ordered_list: { marginVertical: 2 },
+  list_item: { ...markdownStyles.list_item, marginVertical: 2 },
+  bullet_list_icon: { ...markdownStyles.bullet_list_icon, fontSize: 17, lineHeight: 23 },
+  ordered_list_icon: { ...markdownStyles.ordered_list_icon, fontSize: 17, lineHeight: 23 },
+};
+
+export function MarkdownContent({
+  content,
+  selectable = false,
+  variant = 'default',
+}: {
+  content: string;
+  selectable?: boolean;
+  variant?: 'default' | 'bubble';
+}) {
   if (!content) return null;
   return (
-    <Markdown style={markdownStyles} rules={selectable ? selectableRules : undefined}>
+    <Markdown
+      style={variant === 'bubble' ? bubbleStyles : markdownStyles}
+      rules={selectable ? selectableRules : undefined}>
       {content}
     </Markdown>
   );

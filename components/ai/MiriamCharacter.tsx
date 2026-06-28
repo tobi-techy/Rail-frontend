@@ -13,7 +13,20 @@ import Animated, {
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-export type MiriamEmotion = 'neutral' | 'happy' | 'sad' | 'thinking' | 'surprised' | 'sleepy' | 'annoyed' | 'dizzy' | 'nervous' | 'smug' | 'idle' | 'bored' | 'confused';
+export type MiriamEmotion =
+  | 'neutral'
+  | 'happy'
+  | 'sad'
+  | 'thinking'
+  | 'surprised'
+  | 'sleepy'
+  | 'annoyed'
+  | 'dizzy'
+  | 'nervous'
+  | 'smug'
+  | 'idle'
+  | 'bored'
+  | 'confused';
 
 export type MiriamFacing = 'front' | 'left' | 'right' | 'auto';
 
@@ -629,45 +642,60 @@ export function MiriamCharacter({
               backgroundColor: color,
               overflow: 'hidden',
             }}>
-            {/* Top-left warm highlight — subtle */}
+            {/* Glossy left sheen — the left half catches the light (the lit side) */}
             <View
               style={{
                 position: 'absolute',
-                left: -r * 0.1,
-                top: -r * 0.15,
-                width: r * 1.2,
-                height: r * 1.2,
-                borderRadius: r * 0.6,
-                backgroundColor: '#FF9E80',
-                opacity: 0.3,
-              }}
-            />
-
-            {/* Bottom-right depth — subtle */}
-            <View
-              style={{
-                position: 'absolute',
-                right: -r * 0.1,
-                bottom: -r * 0.1,
-                width: r * 1.1,
-                height: r * 1.1,
-                borderRadius: r * 0.55,
-                backgroundColor: '#A02010',
-                opacity: 0.2,
-              }}
-            />
-
-            {/* Tiny specular dot */}
-            <View
-              style={{
-                position: 'absolute',
-                left: r * 0.25,
-                top: r * 0.28,
-                width: r * 0.12,
-                height: r * 0.09,
-                borderRadius: r * 0.06,
+                left: -r * 0.15,
+                top: -r * 0.2,
+                width: r * 1.35,
+                height: r * 2.4,
+                borderRadius: r * 0.9,
                 backgroundColor: '#FFFFFF',
-                opacity: 0.3,
+                opacity: 0.1,
+                transform: [{ rotate: '-18deg' }],
+              }}
+            />
+
+            {/* Bottom-right depth — keeps the sphere round */}
+            <View
+              style={{
+                position: 'absolute',
+                right: -r * 0.12,
+                bottom: -r * 0.12,
+                width: r * 1.15,
+                height: r * 1.15,
+                borderRadius: r * 0.58,
+                backgroundColor: '#A02010',
+                opacity: 0.22,
+              }}
+            />
+
+            {/* Soft highlight dot — small, top-left */}
+            <View
+              style={{
+                position: 'absolute',
+                left: r * 0.28,
+                top: r * 0.34,
+                width: r * 0.3,
+                height: r * 0.3,
+                borderRadius: r * 0.15,
+                backgroundColor: '#FFFFFF',
+                opacity: 0.16,
+              }}
+            />
+
+            {/* Soft highlight dot — medium, mid-right */}
+            <View
+              style={{
+                position: 'absolute',
+                left: r * 1.28,
+                top: r * 0.62,
+                width: r * 0.42,
+                height: r * 0.42,
+                borderRadius: r * 0.21,
+                backgroundColor: '#FFFFFF',
+                opacity: 0.18,
               }}
             />
           </View>

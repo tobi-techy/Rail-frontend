@@ -85,17 +85,18 @@ export default function EnterAddressScreen() {
     loadRecent(chain).then(setRecent);
   }, [chain]);
 
-  const error = address.length > 0
-    ? getDestinationError({
-        destinationInput: address,
-        isCryptoDestinationMethod: true,
-        isFiatMethod: false,
-        isAssetTradeMethod: false,
-        isMobileWalletFundingFlow: false,
-        destinationChain: chain,
-        fiatCurrency: 'USD',
-      })
-    : null;
+  const error =
+    address.length > 0
+      ? getDestinationError({
+          destinationInput: address,
+          isCryptoDestinationMethod: true,
+          isFiatMethod: false,
+          isAssetTradeMethod: false,
+          isMobileWalletFundingFlow: false,
+          destinationChain: chain,
+          fiatCurrency: 'USD',
+        })
+      : null;
 
   const canContinue = address.length > 0 && !error;
   const [showWarning, setShowWarning] = useState(false);
@@ -108,9 +109,8 @@ export default function EnterAddressScreen() {
     setShowWarning(false);
     await saveRecent(address, chain);
     router.push({
-      pathname: '/withdraw/[method]',
+      pathname: '/withdraw/crypto-send' as never,
       params: {
-        method: 'crypto',
         destinationInput: address,
         destinationChain: chain,
         currency,

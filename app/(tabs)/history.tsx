@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useEnableMiriamAmbient } from '@/hooks/useEnableMiriamAmbient';
 import { Text, View, RefreshControl, TextInput, Pressable, ScrollView } from 'react-native';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { Search01Icon } from '@/lib/icons';
@@ -79,6 +80,10 @@ function activityToTransaction(item: ActivityItem): Transaction {
       groupId: item.groupId,
       bankName: item.bankName,
       bankAccountName: item.receiverName,
+      bankAccountNumber: item.accountNumber,
+      rate: item.rate,
+      tokenAmount: item.tokenAmount,
+      fee: item.fee,
       narration: item.narration,
     },
   };
@@ -87,6 +92,7 @@ function activityToTransaction(item: ActivityItem): Transaction {
 type FilterId = 'all' | 'deposit' | 'withdraw' | 'naira' | 'p2p';
 
 export default function History() {
+  useEnableMiriamAmbient();
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterId>('all');
@@ -137,7 +143,17 @@ export default function History() {
     <View className="flex-1">
       {/* Search */}
       <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 2 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 12, paddingHorizontal: 12, height: 40, backgroundColor: '#F2F2F2', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            height: 40,
+            backgroundColor: '#F2F2F2',
+            borderWidth: 1,
+            borderColor: 'rgba(0,0,0,0.07)',
+          }}>
           <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
           <TextInput
             value={search}

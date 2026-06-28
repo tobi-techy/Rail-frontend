@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { launchScanner } from '@dariyd/react-native-document-scanner';
 import { useAIChatStore } from '@/stores/aiChatStore';
@@ -8,7 +8,6 @@ import { logger } from '@/lib/logger';
 export default function ReceiptScannerScreen() {
   const router = useRouter();
   const setPendingScannedReceipt = useAIChatStore((s) => s.setPendingScannedReceipt);
-  const [status, setStatus] = useState('Opening scanner...');
 
   useEffect(() => {
     let cancelled = false;
@@ -60,7 +59,6 @@ export default function ReceiptScannerScreen() {
   return (
     <View className="flex-1 items-center justify-center bg-black">
       <ActivityIndicator size="large" color="#fff" />
-      <Text className="mt-4 font-body text-[15px] text-white/70">{status}</Text>
     </View>
   );
 }
