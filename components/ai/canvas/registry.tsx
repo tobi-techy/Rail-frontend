@@ -1,9 +1,14 @@
-import type { ComponentType } from 'react';
+import { lazy, type ComponentType } from 'react';
 import type { CanvasCard, UIDirective } from '@/api/types/ai';
 import { RecommendationsCard } from './cards/RecommendationsCard';
-import { MapPlacesCard } from './cards/MapPlacesCard';
 import { ConfirmCard } from './cards/ConfirmCard';
 import { InfoCard } from './cards/InfoCard';
+
+// Lazy so that react-native-maps doesn't throw at module load when the native
+// module hasn't been compiled into the current build yet.
+const MapPlacesCard = lazy(() =>
+  import('./cards/MapPlacesCard').then((m) => ({ default: m.MapPlacesCard }))
+);
 
 export interface CanvasCardProps {
   directive: UIDirective;

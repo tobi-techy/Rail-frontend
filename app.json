@@ -4,10 +4,7 @@
     "slug": "rail-money",
     "version": "1.1.0",
     "scheme": "rail",
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "web": {
       "bundler": "metro",
       "output": "static",
@@ -19,10 +16,14 @@
       "expo-secure-store",
       "expo-local-authentication",
       "expo-font",
-      ["@jamsch/expo-speech-recognition", {
-        "speechRecognitionPermission": "Allow Rail Money to transcribe your voice input.",
-        "microphonePermission": "Allow Rail Money to access the microphone for voice input."
-      }],
+      "expo-asset",
+      [
+        "@jamsch/expo-speech-recognition",
+        {
+          "speechRecognitionPermission": "Allow Rail Money to transcribe your voice input.",
+          "microphonePermission": "Allow Rail Money to access the microphone for voice input."
+        }
+      ],
       "./plugins/withStatementActivity",
       [
         "expo-splash-screen",
@@ -57,7 +58,6 @@
       "expo-localization",
       "expo-notifications",
       "@didit-protocol/sdk-react-native",
-      "@sentry/react-native",
       "expo-sharing",
       "expo-audio",
       "@livekit/react-native-expo-plugin",
@@ -87,9 +87,7 @@
       "barStyle": "dark-content",
       "backgroundColor": "#FFFFFF"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "splash": {
       "image": "./assets/app-icon/logo-transparent.png",
       "resizeMode": "contain",
@@ -103,10 +101,7 @@
         "resizeMode": "contain",
         "backgroundColor": "#FF2E01"
       },
-      "associatedDomains": [
-        "webcredentials:api.userail.money",
-        "webcredentials:userail.money"
-      ],
+      "associatedDomains": ["webcredentials:api.userail.money", "webcredentials:userail.money"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSFaceIDUsageDescription": "Use Face ID to authenticate and secure your account",
@@ -116,12 +111,8 @@
         "NSContactsUsageDescription": "Access your contacts to send money to friends and family",
         "NSMicrophoneUsageDescription": "Microphone access may be required during identity verification",
         "NSNearbyInteractionUsageDescription": "This app does not use nearby interaction features directly, but a third-party SDK requires this permission",
-        "UIRequiredDeviceCapabilities": [
-          "armv7"
-        ],
-        "UISupportedInterfaceOrientations": [
-          "UIInterfaceOrientationPortrait"
-        ],
+        "UIRequiredDeviceCapabilities": ["armv7"],
+        "UISupportedInterfaceOrientations": ["UIInterfaceOrientationPortrait"],
         "UIStatusBarStyle": "UIStatusBarStyleDefault"
       },
       "icon": "./assets/app-icon/app-icon.png",

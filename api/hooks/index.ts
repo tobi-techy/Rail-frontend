@@ -57,6 +57,9 @@ export * from './useP2P';
 // Paj Cash NGN ramp hooks
 export * from './usePaj';
 
+// RampHub unified NGN on/off ramp hooks (primary, Paj fallback)
+export * from './useRamp';
+
 // Withdrawal limits hooks
 export * from './useWithdrawalLimits';
 

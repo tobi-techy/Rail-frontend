@@ -1,15 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import Animated, { FadeIn, FadeInDown, SlideInUp, BounceIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, SlideInUp } from 'react-native-reanimated';
 import * as Haptics from '@/utils/platformHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { Button } from '@/components/ui';
-import { Confetti } from '@/components/atoms/Confetti';
-import { CheckmarkCircle02Icon, Cancel01Icon, Clock01Icon } from '@/lib/icons';
-import { IconComponent as HugeiconsIcon } from '@/lib/icons';
-import { MiriamCharacter } from '@/components/ai/MiriamCharacter';
-import type { MiriamEmotion } from '@/components/ai/MiriamCharacter';
+import { Confetti } from '@/components/ai/Confetti';
+import { AnimatedStatusIcon } from './AnimatedStatusIcon';
 
 export type WithdrawalStatusType = 'success' | 'pending' | 'failed';
 
@@ -32,8 +30,17 @@ export function WithdrawalStatusScreen({
   onDone,
   onRetry,
 }: WithdrawalStatusScreenProps) {
+  // Confetti burst controller — a second wave re-fires ~1.3s in so success
+  // feels like a genuine celebration rather than a single puff.
+  const [burstKey, setBurstKey] = useState(0);
+
   useEffect(() => {
-    if (status === 'success') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (status === 'success') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      playUISound('transactionSuccess');
+      const t = setTimeout(() => setBurstKey((k) => k + 1), 1300);
+      return () => clearTimeout(t);
+    }
     if (status === 'failed') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
   }, [status]);
 
@@ -42,32 +49,11 @@ export function WithdrawalStatusScreen({
   const getStatusConfig = () => {
     switch (status) {
       case 'success':
-        return {
-          icon: CheckmarkCircle02Icon,
-          iconColor: '#00C853',
-          iconBg: '#E8F5E9',
-          title: title ?? 'Sent successfully',
-          showConfetti: true,
-          miriamEmotion: 'happy' as MiriamEmotion,
-        };
+        return { title: title ?? 'Sent successfully', showConfetti: true };
       case 'failed':
-        return {
-          icon: Cancel01Icon,
-          iconColor: '#EF4444',
-          iconBg: '#FEF2F2',
-          title: title ?? 'Transfer failed',
-          showConfetti: false,
-          miriamEmotion: 'sad' as MiriamEmotion,
-        };
+        return { title: title ?? 'Transfer failed', showConfetti: false };
       case 'pending':
-        return {
-          icon: Clock01Icon,
-          iconColor: '#F59E0B',
-          iconBg: '#FFF7ED',
-          title: title ?? 'Processing',
-          showConfetti: false,
-          miriamEmotion: 'thinking' as MiriamEmotion,
-        };
+        return { title: title ?? 'Processing', showConfetti: false };
     }
   };
 
@@ -75,14 +61,20 @@ export function WithdrawalStatusScreen({
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      {config.showConfetti && <Confetti count={80} />}
+      {config.showConfetti && (
+        <>
+          <Confetti burstKey={burstKey} intensity="epic" count={150} />
+          {/* A second, offset layer so the sky stays full of confetti. */}
+          <Confetti burstKey={burstKey + 1000} intensity="epic" count={110} />
+        </>
+      )}
 
       {/* Content */}
       <View className="flex-1 items-center justify-center px-6">
-        {/* Miriam Character */}
-        <Animated.View entering={BounceIn.delay(100).duration(600)} className="mb-8">
-          <MiriamCharacter size={160} emotion={config.miriamEmotion} animate />
-        </Animated.View>
+        {/* Animated line status icon (isocons style) */}
+        <View className="mb-8">
+          <AnimatedStatusIcon status={status} size={148} />
+        </View>
 
         {/* Amount */}
         {amount && (

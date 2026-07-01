@@ -1,12 +1,14 @@
 /**
  * Cross-platform glass effect:
- * - iOS 26+: native UIGlassEffect via @callstack/liquid-glass
- * - Android / iOS < 26: expo-blur BlurView with translucent overlay
+ * - iOS: expo-blur BlurView with translucent overlay
  * - Reduce Transparency on: opaque solid surface (HIG accessibility requirement)
+ *
+ * @callstack/liquid-glass was removed — it linked against Apple's private
+ * SwiftUICore framework which the simulator SDK rejects at link time and which
+ * caused runtime crashes on iOS 26.2 devices.
  */
 import React, { useEffect, useState } from 'react';
 import { View, Platform, AccessibilityInfo, type ViewStyle, type StyleProp } from 'react-native';
-import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { BlurView } from 'expo-blur';
 
 interface GlassViewProps {
@@ -19,17 +21,21 @@ interface GlassViewProps {
   white?: boolean;
 }
 
-const USE_NATIVE_GLASS = Platform.OS === 'ios' && isLiquidGlassSupported;
-
 // Honors the system "Reduce Transparency" accessibility setting so glass
 // surfaces collapse to an opaque fill instead of staying see-through.
 function useReduceTransparency() {
   const [reduce, setReduce] = useState(false);
   useEffect(() => {
     let mounted = true;
-    AccessibilityInfo.isReduceTransparencyEnabled?.()
-      .then((v) => { if (mounted) setReduce(!!v); })
-      .catch(() => { /* deterministic fallback: keep reduce = false */ });
+    // Use optional chaining on the result too — if the API returns undefined
+    // (API not available on some runtimes), .then() on undefined throws a
+    // synchronous TypeError out of useEffect → RCTFatal crash.
+    const promise = AccessibilityInfo.isReduceTransparencyEnabled?.();
+    promise
+      ?.then((v) => {
+        if (mounted) setReduce(!!v);
+      })
+      ?.catch(() => {});
     const sub = AccessibilityInfo.addEventListener('reduceTransparencyChanged', (v) => {
       if (mounted) setReduce(!!v);
     });
@@ -41,30 +47,29 @@ function useReduceTransparency() {
   return reduce;
 }
 
-export function GlassView({ children, style, fallbackColor, interactive, effect = 'regular', white = false }: GlassViewProps) {
+export function GlassView({
+  children,
+  style,
+  fallbackColor,
+  effect = 'regular',
+  white = false,
+}: GlassViewProps) {
   const reduceTransparency = useReduceTransparency();
 
-  // Accessibility: opaque surface, no blur. Use the caller-provided fallbackColor
-  // when supplied (e.g. TabBar's custom surface), otherwise pick a built-in opaque tone.
   if (reduceTransparency) {
     const opaqueDefault = white ? '#FFFFFF' : '#ECEBE7';
-    return <View style={[{ backgroundColor: fallbackColor ?? opaqueDefault }, style]}>{children}</View>;
-  }
-
-  if (USE_NATIVE_GLASS) {
     return (
-      <LiquidGlassView effect={effect} interactive={interactive} style={style}>
-        {children}
-      </LiquidGlassView>
+      <View style={[{ backgroundColor: fallbackColor ?? opaqueDefault }, style]}>{children}</View>
     );
   }
 
-  // Android + iOS < 26: BlurView with white-tinted overlay for non-tabbar glass.
+  const intensity = effect === 'clear' ? 40 : white ? 80 : 60;
   const defaultFallback = white ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.18)';
+
   return (
     <BlurView
-      intensity={white ? 80 : 60}
-      tint="light"
+      intensity={intensity}
+      tint={Platform.OS === 'ios' ? 'systemChromeMaterial' : 'light'}
       style={[{ backgroundColor: fallbackColor ?? defaultFallback }, style]}>
       {children}
     </BlurView>

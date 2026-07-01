@@ -19,6 +19,7 @@ export { investmentService } from './investment.service';
 export { notificationService } from './notification.service';
 export { cardService } from './card.service';
 export { pajService } from './paj.service';
+export { rampService } from './ramp.service';
 export { aiService } from './ai.service';
 export { premiumService } from './premium.service';
 export { gameplayService } from './gameplay.service';

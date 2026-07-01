@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Stack } from 'expo-router';
 import { AppState, Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { focusManager, QueryClientProvider } from '@tanstack/react-query';
@@ -10,12 +10,14 @@ import * as SplashScreen from 'expo-splash-screen';
 import { initSentry } from '@/lib/sentry';
 import { initGlobalErrorHandlers, logger } from '@/lib/logger';
 import { validateEnvironmentVariables } from '@/utils/envValidator';
+import { installLogSuppressor } from '@/utils/logSuppressor';
 import { useFonts } from '@/hooks/useFonts';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { useBiometricLock } from '@/hooks/useBiometricLock';
 import { enforceDeviceSecurity } from '@/utils/deviceSecurity';
 import { initEncryption } from '@/utils/encryption';
-import { SplashScreen as CustomSplash } from '@/components/SplashScreen';
+// Custom splash disabled for now — using the Expo default native splash (see app.json).
+// import { SplashScreen as CustomSplash } from '@/components/SplashScreen';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { FeedbackPopupHost } from '@/components/ui';
 import { MiriamCanvasHost } from '@/components/ai/canvas/MiriamCanvasHost';
@@ -29,8 +31,12 @@ import { useUIStore } from '@/stores';
 import '../global.css';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+// Cross-fade the native splash out instead of a hard cut — smoother handoff to
+// the first screen. Must be set before hideAsync() runs.
+SplashScreen.setOptions({ duration: 300, fade: true });
 
 // Critical synchronous inits only
+installLogSuppressor(); // Install FIRST to suppress noisy logs
 initSentry();
 initGlobalErrorHandlers();
 
@@ -149,7 +155,6 @@ function AppNavigator() {
 export default function Layout() {
   const { fontsLoaded, error: fontError } = useFonts();
   const [showSplash, setShowSplash] = useState(true);
-  const [nativeSplashHidden, setNativeSplashHidden] = useState(false);
   const refreshCurrencyRates = useUIStore((s) => s.refreshCurrencyRates);
   const [isBlurred, setIsBlurred] = useState(false);
 
@@ -162,28 +167,34 @@ export default function Layout() {
     return () => sub.remove();
   }, []);
 
-  // Security checks — run in background, don't block splash
+  // Security + warm-up: fire as early as possible, nothing here blocks the splash
   useEffect(() => {
+    // Device security check — async, never blocks UI
     enforceDeviceSecurity({ allowContinue: __DEV__ });
-    // Defer heavy crypto init — not needed until first sensitive action
+
+    // Pre-warm device fingerprint NOW so the cache is hot before the first API
+    // request fires in useProtectedRoute. Previously this was deferred to
+    // InteractionManager.runAfterInteractions which meant every parallel startup
+    // request had to await fingerprint generation (SecureStore + SHA-256).
+    import('@/utils/deviceFingerprint').then((m) => m.getDeviceFingerprint()).catch(() => {});
+
+    // Encryption key derivation (PBKDF2 100k iterations) is still deferred — it
+    // is only needed for encrypt/decrypt calls, not for routing or API auth.
     const { InteractionManager } = require('react-native');
     InteractionManager.runAfterInteractions(() => {
       initEncryption();
-      import('@/utils/deviceFingerprint').then((m) => m.getDeviceFingerprint());
     });
   }, []);
 
-  // Hide native splash as soon as custom splash mounts
-  const onCustomSplashReady = useCallback(async () => {
-    await SplashScreen.hideAsync().catch(() => {});
-    setNativeSplashHidden(true);
-  }, []);
-
-  // Dismiss splash the instant fonts are ready AND the native splash is gone —
-  // either ordering works, so there's no lingering frame. Don't wait for security.
+  // Custom splash disabled — reveal the app under the Expo default native splash
+  // once fonts resolve (embedded assets, so this is tens of ms) to avoid a flash
+  // of unstyled text. Proceeds anyway if fonts error so we never hang on the splash.
   useEffect(() => {
-    if ((fontsLoaded || fontError) && nativeSplashHidden) setShowSplash(false);
-  }, [fontsLoaded, fontError, nativeSplashHidden]);
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync().catch(() => {});
+      setShowSplash(false);
+    }
+  }, [fontsLoaded, fontError]);
 
   // Post-splash: initialize session, prefetch data
   useEffect(() => {
@@ -214,7 +225,7 @@ export default function Layout() {
     }
   }, [showSplash, refreshCurrencyRates]);
 
-  const isReady = !showSplash && (fontsLoaded || !!fontError);
+  const isReady = !showSplash;
 
   return (
     <GestureHandlerRootView style={styles.root}>
@@ -244,11 +255,8 @@ export default function Layout() {
           </KeyboardProvider>
         </ErrorBoundary>
       </BottomSheetModalProvider>
-      {((!fontsLoaded && !fontError) || showSplash) && (
-        <View style={[StyleSheet.absoluteFill, styles.splash]}>
-          <CustomSplash onMounted={onCustomSplashReady} />
-        </View>
-      )}
+      {/* Custom splash overlay disabled — the Expo default native splash covers
+          startup and is dismissed via SplashScreen.hideAsync() above. */}
     </GestureHandlerRootView>
   );
 }

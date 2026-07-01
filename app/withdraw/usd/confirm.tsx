@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -16,6 +16,7 @@ import {
   type WithdrawalStatusType,
 } from '@/components/withdraw/WithdrawalStatusScreen';
 import { parseApiError } from '@/utils/apiError';
+import { useWithdrawalEventStore } from '@/stores/withdrawalEventStore';
 
 export default function UsdConfirmScreen() {
   const insets = useSafeAreaInsets();
@@ -40,11 +41,23 @@ export default function UsdConfirmScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<WithdrawalStatusType | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [withdrawalId, setWithdrawalId] = useState<string | null>(null);
+
+  const lastEvent = useWithdrawalEventStore((s) => s.lastEvent);
+  const consume = useWithdrawalEventStore((s) => s.consume);
+
+  useEffect(() => {
+    if (!withdrawalId || !lastEvent || lastEvent.withdrawalId !== withdrawalId) return;
+    consume(withdrawalId);
+    setStatus(lastEvent.status === 'completed' ? 'success' : 'failed');
+    if (lastEvent.status === 'failed')
+      setErrorMsg('Transfer failed. Please check your balance and try again.');
+  }, [lastEvent, withdrawalId, consume]);
 
   const executeWithdrawal = useCallback(async () => {
     setIsSubmitting(true);
     try {
-      await initiateFiat({
+      const response = await initiateFiat({
         amount: numericAmount,
         currency: 'USD',
         account_holder_name: (params.accountHolderName ?? '').trim(),
@@ -53,7 +66,8 @@ export default function UsdConfirmScreen() {
         category: params.category?.trim(),
         narration: params.narration?.trim(),
       });
-      setStatus('success');
+      setWithdrawalId(response.withdrawal_id ?? null);
+      setStatus('pending');
     } catch (err) {
       setErrorMsg(parseApiError(err, 'Withdrawal failed. Please try again.'));
       setStatus('failed');
@@ -88,9 +102,11 @@ export default function UsdConfirmScreen() {
         amount={`$${formatCurrency(numericAmount)}`}
         recipient={params.accountHolderName}
         message={
-          status === 'failed'
-            ? errorMsg
-            : "Usually arrives in 2–5 minutes. We'll notify you when it lands."
+          status === 'success'
+            ? 'Your USD transfer has been sent successfully.'
+            : status === 'failed'
+              ? errorMsg
+              : "Your USD transfer is being processed. We'll notify you when the funds arrive."
         }
         onDone={() => router.replace('/(tabs)' as never)}
         onRetry={

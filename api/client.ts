@@ -104,6 +104,7 @@ function isPasscodeProtectedEndpoint(method?: string, url?: string): boolean {
   if (normalizedMethod === 'POST' && path === '/v1/withdrawals/emergency/to-spending') return true;
   if (normalizedMethod === 'POST' && path === '/v1/funding/stash') return true;
   if (normalizedMethod === 'POST' && path === '/v1/funding/paj/offramp') return true;
+  if (normalizedMethod === 'POST' && path === '/v1/funding/ramp/offramp') return true;
   if (normalizedMethod === 'POST' && path === '/v1/security/ip-whitelist') return true;
   if (normalizedMethod === 'POST' && path === '/v1/security/withdrawals/confirm') return true;
   if (normalizedMethod === 'POST' && path === '/v1/p2p/tap/confirm') return true;

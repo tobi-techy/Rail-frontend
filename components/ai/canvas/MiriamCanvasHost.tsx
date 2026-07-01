@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, Suspense } from 'react';
 import { AccessibilityInfo, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Animated, {
@@ -154,7 +154,9 @@ export function MiriamCanvasHost() {
               </View>
             )}
 
-            <CardBody directive={current} onClose={close} />
+            <Suspense fallback={null}>
+              <CardBody directive={current} onClose={close} />
+            </Suspense>
           </View>
         </Animated.View>
       </GestureDetector>

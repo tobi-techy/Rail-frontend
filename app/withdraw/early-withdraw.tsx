@@ -136,7 +136,7 @@ export default function EarlyWithdrawScreen() {
     try {
       await executeWithdrawal(numericAmount.toFixed(2));
       setShowAuthScreen(false);
-      setStatus('success');
+      setStatus('pending');
     } catch (err) {
       if (isPasscodeSessionError(err)) {
         setShowAuthScreen(true);
@@ -283,8 +283,8 @@ export default function EarlyWithdrawScreen() {
         status={status}
         amount={`$${formatCurrency(numericAmount)}`}
         message={
-          status === 'success'
-            ? `$${preview?.net_amount ?? numericAmount.toFixed(2)} moved to your spending balance.`
+          status === 'pending'
+            ? `$${preview?.net_amount ?? numericAmount.toFixed(2)} is being redeemed from your stash. Your spending balance will update within a few minutes.`
             : errorMsg
         }
         onDone={() => router.replace('/(tabs)' as never)}

@@ -50,66 +50,71 @@ export function useProtectedRoute() {
   const paramsRef = useRef(globalParams);
   paramsRef.current = globalParams;
 
-  const refreshBackendAuthState = useCallback(async (prefetchedProfile?: any) => {
-    const state = useAuthStore.getState();
-    if (!state.isAuthenticated || !state.accessToken) return;
+  const refreshBackendAuthState = useCallback(
+    async (prefetchedProfile?: any, prefetchedPasscode?: any) => {
+      const state = useAuthStore.getState();
+      if (!state.isAuthenticated || !state.accessToken) return;
 
-    // Fetch user profile (reuse if already fetched) and passcode status in parallel
-    const [userResult, passcodeResult] = await Promise.allSettled([
-      prefetchedProfile ? Promise.resolve(prefetchedProfile) : authService.getCurrentUser(),
-      passcodeService.getStatus(),
-    ]);
+      // Reuse pre-fetched results when available (cold start path via initializeApp).
+      // Only make live network calls on the foreground-resume path where no data
+      // was pre-fetched. This eliminates one full round-trip on every cold start.
+      const [userResult, passcodeResult] = await Promise.allSettled([
+        prefetchedProfile ? Promise.resolve(prefetchedProfile) : authService.getCurrentUser(),
+        prefetchedPasscode ? Promise.resolve(prefetchedPasscode) : passcodeService.getStatus(),
+      ]);
 
-    // Re-check auth state — session may have been cleared while requests were in flight
-    const currentState = useAuthStore.getState();
-    if (!currentState.isAuthenticated || !currentState.accessToken) return;
+      // Re-check auth state — session may have been cleared while requests were in flight
+      const currentState = useAuthStore.getState();
+      if (!currentState.isAuthenticated || !currentState.accessToken) return;
 
-    if (userResult.status === 'fulfilled') {
-      const currentUserResponse = userResult.value;
-      const backendUser = currentUserResponse?.user ?? currentUserResponse;
-      const backendOnboardingStatus =
-        currentUserResponse?.onboarding?.onboardingStatus ?? backendUser?.onboardingStatus;
+      if (userResult.status === 'fulfilled') {
+        const currentUserResponse = userResult.value;
+        const backendUser = currentUserResponse?.user ?? currentUserResponse;
+        const backendOnboardingStatus =
+          currentUserResponse?.onboarding?.onboardingStatus ?? backendUser?.onboardingStatus;
 
-      if (backendUser) {
-        const localStatus = currentState.onboardingStatus;
-        const resolvedStatus =
-          localStatus &&
-          LOCAL_ADVANCED_STATUSES.has(localStatus) &&
-          !LOCAL_ADVANCED_STATUSES.has(backendOnboardingStatus ?? '')
-            ? localStatus
-            : (backendOnboardingStatus ?? currentState.onboardingStatus);
+        if (backendUser) {
+          const localStatus = currentState.onboardingStatus;
+          const resolvedStatus =
+            localStatus &&
+            LOCAL_ADVANCED_STATUSES.has(localStatus) &&
+            !LOCAL_ADVANCED_STATUSES.has(backendOnboardingStatus ?? '')
+              ? localStatus
+              : (backendOnboardingStatus ?? currentState.onboardingStatus);
 
-        useAuthStore.setState({
-          user: backendUser,
-          onboardingStatus: resolvedStatus,
+          useAuthStore.setState({
+            user: backendUser,
+            onboardingStatus: resolvedStatus,
+          });
+        }
+      } else {
+        logger.warn('[Auth] Failed to refresh user profile state', {
+          component: 'useProtectedRoute',
+          action: 'refresh-user-profile',
+          error:
+            userResult.reason instanceof Error
+              ? userResult.reason.message
+              : String(userResult.reason),
         });
       }
-    } else {
-      logger.warn('[Auth] Failed to refresh user profile state', {
-        component: 'useProtectedRoute',
-        action: 'refresh-user-profile',
-        error:
-          userResult.reason instanceof Error
-            ? userResult.reason.message
-            : String(userResult.reason),
-      });
-    }
 
-    if (passcodeResult.status === 'fulfilled') {
-      useAuthStore.setState({
-        hasPasscode: Boolean(passcodeResult.value.enabled),
-      });
-    } else {
-      logger.warn('[Auth] Failed to refresh passcode status', {
-        component: 'useProtectedRoute',
-        action: 'refresh-passcode-status',
-        error:
-          passcodeResult.reason instanceof Error
-            ? passcodeResult.reason.message
-            : String(passcodeResult.reason),
-      });
-    }
-  }, []);
+      if (passcodeResult.status === 'fulfilled') {
+        useAuthStore.setState({
+          hasPasscode: Boolean(passcodeResult.value.enabled),
+        });
+      } else {
+        logger.warn('[Auth] Failed to refresh passcode status', {
+          component: 'useProtectedRoute',
+          action: 'refresh-passcode-status',
+          error:
+            passcodeResult.reason instanceof Error
+              ? passcodeResult.reason.message
+              : String(passcodeResult.reason),
+        });
+      }
+    },
+    []
+  );
 
   // Initialize app: validate token and check welcome status
   // Runs on every mount (app reload) and re-validates routing
@@ -127,8 +132,13 @@ export function useProtectedRoute() {
         const hasValidAuthData = freshState.isAuthenticated && freshState.accessToken;
         const shouldValidate = hasValidAuthData && (__DEV__ ? freshState.lastActivityAt : true);
 
-        // Fire welcome check + token validation in parallel
-        const [welcomed, profileResult] = await Promise.all([
+        // Fire all three requests in parallel to avoid serial round-trips:
+        //   1. welcome status (AsyncStorage, fast)
+        //   2. user profile (validates token + fetches user data)
+        //   3. passcode status (avoids a second serial call in refreshBackendAuthState)
+        // Previously: welcome → profile → (getCurrentUser + passcode) = 2 serial hops + 1 extra fetch
+        // Now:        all three fire simultaneously = 1 hop for everything
+        const [welcomed, profileResult, passcodeResult] = await Promise.all([
           checkWelcomeStatus(),
           shouldValidate
             ? userService.getProfile().then(
@@ -136,11 +146,16 @@ export function useProtectedRoute() {
                 (err) => ({ ok: false as const, err })
               )
             : Promise.resolve(null),
+          shouldValidate
+            ? passcodeService.getStatus().then(
+                (data) => ({ ok: true as const, data }),
+                () => ({ ok: false as const, data: null })
+              )
+            : Promise.resolve(null),
         ]);
 
         if (isMounted) setHasSeenWelcome(welcomed);
 
-        // CRITICAL: Add detailed logging for debugging old user routing issues
         logger.debug('[Auth] State after hydration (DETAILED)', {
           component: 'useProtectedRoute',
           action: 'hydration-complete',
@@ -157,6 +172,9 @@ export function useProtectedRoute() {
 
         if (hasValidAuthData) {
           let profileData: any = undefined;
+          // Extract pre-fetched passcode result to pass through (avoids re-fetch)
+          const prefetchedPasscodeData = passcodeResult?.ok ? passcodeResult.data : undefined;
+
           if (profileResult) {
             if (profileResult.ok) {
               profileData = profileResult.data;
@@ -185,7 +203,9 @@ export function useProtectedRoute() {
             }
           }
 
-          await refreshBackendAuthState(profileData);
+          // Pass both pre-fetched results — refreshBackendAuthState will use them
+          // directly instead of making additional network calls.
+          await refreshBackendAuthState(profileData, prefetchedPasscodeData);
         } else if (freshState.user) {
           // CRITICAL: User has stored credentials but no valid auth tokens
           // This is the case for old users after app backgrounding
@@ -206,22 +226,27 @@ export function useProtectedRoute() {
       }
     };
 
+    // Subscribe BEFORE checking hasHydrated to close the TOCTOU race where
+    // hydration could complete in the gap between the check and the subscribe.
+    // onFinishHydration is a no-op if already hydrated — it just won't fire again,
+    // so we do a synchronous check immediately after subscribing.
+    const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
+      void initializeApp();
+    });
+
     if (useAuthStore.persist.hasHydrated()) {
+      unsubscribe(); // Don't need the listener — hydration already done
       void initializeApp();
       return () => {
         isMounted = false;
       };
     }
 
-    const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
-      void initializeApp();
-    });
-
     return () => {
       isMounted = false;
       unsubscribe();
     };
-  }, [refreshBackendAuthState]); // Run once on mount (which happens on every app reload)
+  }, [refreshBackendAuthState]);
 
   // Listen for app state changes (foreground/background)
   // Reset passcode session timer on foreground (activity-based timeout)

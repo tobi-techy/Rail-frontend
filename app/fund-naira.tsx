@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StatusBar, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -15,6 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from '@/utils/platformHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { Cancel01Icon, Copy01Icon, CheckmarkCircle01Icon, AlertCircleIcon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -22,10 +23,10 @@ import { Keypad } from '@/components/molecules/Keypad';
 import { Button } from '@/components/ui';
 import { AnimatedAmount } from '@/components/withdraw/method-screen/AnimatedAmount';
 import { normalizeAmount } from '@/components/withdraw/method-screen/utils';
-import { usePajRates, usePajOnramp, usePajOrderStatus } from '@/api/hooks';
+import { useRampQuote, useRampOnramp, useRampOrderStatus } from '@/api/hooks';
 import { invalidateQueries } from '@/api/queryClient';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import type { PajOnrampOrder } from '@/api/types/paj';
+import type { RampOnrampOrder } from '@/api/types/ramp';
 import { MIN_NGN_TRANSACTION_AMOUNT } from '@/constants/transactionLimits';
 
 type Step = 'amount' | 'bank-details' | 'waiting';
@@ -40,15 +41,12 @@ export default function FundNairaScreen() {
   // ── State ─────────────────────────────────────────────────────────────────
   const [step, setStep] = useState<Step>('amount');
   const [rawAmount, setRawAmount] = useState('0');
-  const [order, setOrder] = useState<PajOnrampOrder | null>(null);
+  const [order, setOrder] = useState<RampOnrampOrder | null>(null);
 
-  const { data: rates } = usePajRates();
-  const onramp = usePajOnramp();
+  const { data: quote } = useRampQuote('onramp');
+  const onramp = useRampOnramp();
 
-  const onRampRate = rates?.onRampRate?.rate ?? 0;
-
-  // ── PAJ verification gate ─────────────────────────────────────────────────
-  const needsVerification = useRef(false);
+  const onRampRate = quote?.rate ?? 0;
 
   // ── Derived amounts ───────────────────────────────────────────────────────
   const numericAmount = useMemo(() => {
@@ -92,29 +90,13 @@ export default function FundNairaScreen() {
     if (!canContinue || onramp.isPending) return;
     try {
       const result = await onramp.mutateAsync({ amount: numericAmount, currency: 'NGN' });
-      needsVerification.current = false;
       setOrder(result);
       setStep('bank-details');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: any) {
-      const code = err?.code || err?.error || '';
-      if (code === 'PAJ_VERIFICATION_REQUIRED') {
-        needsVerification.current = true;
-        router.push('/paj-verify');
-        return;
-      }
       showError('Failed to create deposit', err?.message || 'Please try again.');
     }
   }, [canContinue, numericAmount, onramp, showError]);
-
-  // Re-attempt order when returning from paj-verify (triggers redirect if still unverified)
-  useFocusEffect(
-    useCallback(() => {
-      if (needsVerification.current && canContinue) {
-        handleContinue();
-      }
-    }, [canContinue, handleContinue])
-  );
 
   // ── Proceed to waiting ────────────────────────────────────────────────────
   const handleTransferred = useCallback(() => {
@@ -146,7 +128,7 @@ export default function FundNairaScreen() {
   if (step === 'waiting' && order) {
     return (
       <WaitingStep
-        orderId={order.orderId}
+        transactionId={order.transactionId}
         order={order}
         onClose={() => router.back()}
         insets={insets}
@@ -249,14 +231,18 @@ function BankDetailsStep({
   onClose,
   insets,
 }: {
-  order: PajOnrampOrder;
+  order: RampOnrampOrder;
   onTransferred: () => void;
   onClose: () => void;
   insets: { bottom: number };
 }) {
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
   const copyToClipboard = useCallback(async (text: string, label: string) => {
     await Clipboard.setStringAsync(text);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setCopiedField(label);
+    setTimeout(() => setCopiedField((cur) => (cur === label ? null : cur)), 2000);
   }, []);
 
   return (
@@ -287,7 +273,7 @@ function BankDetailsStep({
             ₦{order.fiatAmount.toLocaleString()}
           </Text>
           <Text className="mt-1 font-body text-[14px] text-text-secondary">
-            ≈ ${order.tokenAmount.toFixed(2)} USDC
+            ≈ ${order.rate > 0 ? (order.fiatAmount / order.rate).toFixed(2) : '—'} USDC
           </Text>
         </Animated.View>
 
@@ -299,12 +285,14 @@ function BankDetailsStep({
             label="Bank"
             value={order.bank}
             onCopy={() => copyToClipboard(order.bank, 'Bank')}
+            copied={copiedField === 'Bank'}
           />
           <View className="my-4 h-px bg-fog/40" />
           <BankDetailRow
             label="Account Number"
             value={order.accountNumber}
             onCopy={() => copyToClipboard(order.accountNumber, 'Account number')}
+            copied={copiedField === 'Account number'}
             mono
           />
           <View className="my-4 h-px bg-fog/40" />
@@ -312,6 +300,7 @@ function BankDetailsStep({
             label="Account Name"
             value={order.accountName}
             onCopy={() => copyToClipboard(order.accountName, 'Account name')}
+            copied={copiedField === 'Account name'}
           />
         </Animated.View>
 
@@ -337,11 +326,13 @@ function BankDetailRow({
   value,
   onCopy,
   mono,
+  copied,
 }: {
   label: string;
   value: string;
   onCopy: () => void;
   mono?: boolean;
+  copied?: boolean;
 }) {
   return (
     <View className="flex-row items-center justify-between">
@@ -359,7 +350,11 @@ function BankDetailRow({
         onPress={onCopy}
         accessibilityRole="button"
         accessibilityLabel={`Copy ${label}`}>
-        <HugeiconsIcon icon={Copy01Icon} size={18} color="#848281" />
+        <HugeiconsIcon
+          icon={copied ? CheckmarkCircle01Icon : Copy01Icon}
+          size={18}
+          color={copied ? '#22c55e' : '#848281'}
+        />
       </Pressable>
     </View>
   );
@@ -397,33 +392,37 @@ const STEPS = [
 
 function deriveStepStatuses(orderStatus: string | undefined): TimelineStepStatus[] {
   switch (orderStatus) {
-    case 'COMPLETED':
+    case 'completed':
       return ['done', 'done', 'done'];
-    case 'FAILED':
-      return ['failed', 'failed', 'failed'];
-    case 'PAID':
+    case 'paid':
       return ['done', 'active', 'pending'];
-    default: // INIT or undefined
+    case 'processing':
+      return ['done', 'done', 'active'];
+    case 'failed':
+      // Mark only the first non-completed step as failed so the user sees
+      // exactly where in the pipeline things broke, not all steps as red.
+      return ['failed', 'pending', 'pending'];
+    default: // pending or undefined
       return ['active', 'pending', 'pending'];
   }
 }
 
 function WaitingStep({
-  orderId,
+  transactionId,
   order,
   onClose,
   insets,
   showSuccess,
 }: {
-  orderId: string;
-  order: PajOnrampOrder;
+  transactionId: string;
+  order: RampOnrampOrder;
   onClose: () => void;
   insets: { bottom: number };
   showSuccess: (title: string, message?: string) => void;
 }) {
-  const { data: status } = usePajOrderStatus(orderId);
-  const isCompleted = status?.status === 'COMPLETED';
-  const isFailed = status?.status === 'FAILED';
+  const { data: status } = useRampOrderStatus(transactionId);
+  const isCompleted = status?.status === 'completed';
+  const isFailed = status?.status === 'failed';
   const isTerminal = isCompleted || isFailed;
 
   const stepStatuses = useMemo(() => deriveStepStatuses(status?.status), [status?.status]);
@@ -438,6 +437,7 @@ function WaitingStep({
   useEffect(() => {
     if (isCompleted) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      playUISound('transactionSuccess');
       invalidateQueries.station();
       invalidateQueries.wallet();
       invalidateQueries.funding();

@@ -1,10 +1,10 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from '@/components/ui';
-import { usePajRates, usePajOfframp, usePajAddBankAccount } from '@/api/hooks/usePaj';
+import { useRampQuote, useRampOfframp, useRampOrderStatus } from '@/api/hooks/useRamp';
 import { useAuthStore } from '@/stores/authStore';
 import { SessionManager } from '@/utils/sessionManager';
 import { NgnIcon } from '@/assets/svg';
@@ -16,28 +16,34 @@ import {
   type WithdrawalStatusType,
 } from '@/components/withdraw/WithdrawalStatusScreen';
 
+/** Normalized RampHub status → what the status screen should show.
+ *  Backend emits: pending | paid | processing | completed | failed. */
+const mapRampStatus = (status?: string): WithdrawalStatusType => {
+  if (status === 'completed') return 'success';
+  if (status === 'failed') return 'failed';
+  return 'pending'; // pending | paid | processing → still settling
+};
+
+const FAILED_FALLBACK =
+  'This withdrawal could not be completed. Any debited funds have been returned to your balance.';
+
 export default function NgnConfirmScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     amount: string;
     currency: string;
-    bankId: string;
+    bankCode: string;
     bankName: string;
     accountNumber: string;
     accountName: string;
   }>();
 
   const numericAmount = parseFloat(params.amount ?? '0') || 0;
-  const { data: pajRates } = usePajRates();
-  const pajOfframp = usePajOfframp();
-  const pajAddBank = usePajAddBankAccount();
+  const { data: rampQuote } = useRampQuote('offramp', numericAmount);
+  const rampOfframp = useRampOfframp();
 
-  // Rates & fees
-  const offRampRate = pajRates?.offRampRate?.rate ?? 0;
-  const railFeeBase = pajRates?.railFee ?? 50;
-  const stampDuty = pajRates?.stampDuty ?? 50;
-  const stampDutyAbove = pajRates?.stampDutyAbove ?? 10000;
-  const railFeeNGN = numericAmount > stampDutyAbove ? railFeeBase + stampDuty : railFeeBase;
+  // Rates & fees (railFee is the developer fee % applied by RampHub on the NGN payout)
+  const offRampRate = rampQuote?.rate ?? 0;
   const ngnUsdEquivalent = offRampRate > 0 ? numericAmount / offRampRate : 0;
 
   // State
@@ -46,30 +52,41 @@ export default function NgnConfirmScreen() {
   const [status, setStatus] = useState<WithdrawalStatusType | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [awaitingAuth, setAwaitingAuth] = useState(false);
+  const [transactionId, setTransactionId] = useState<string | null>(null);
+
+  // Poll the real settlement status once an order exists. The USDC is already
+  // debited at creation; the NGN payout settles async, so we track it to
+  // completion (or failure) instead of assuming success up front. Polling stops
+  // on its own once the order reaches a terminal state.
+  const orderStatus = useRampOrderStatus(transactionId ?? '', !!transactionId);
+
+  useEffect(() => {
+    const polled = orderStatus.data?.status;
+    if (!polled) return;
+    setStatus((prev) => (prev === 'success' || prev === 'failed' ? prev : mapRampStatus(polled)));
+  }, [orderStatus.data?.status]);
 
   const executeOfframp = useCallback(async () => {
-    if (!params.bankId || !params.accountNumber) return;
+    if (!params.bankCode || !params.accountNumber) return;
     setIsSubmitting(true);
+    setErrorMsg('');
     try {
-      // Save bank for future use
-      pajAddBank.mutate({ bankId: params.bankId, accountNumber: params.accountNumber });
-      await pajOfframp.mutateAsync({
-        bankId: params.bankId,
+      const res = await rampOfframp.mutateAsync({
+        bankCode: params.bankCode,
         accountNumber: params.accountNumber,
         amount: numericAmount,
       });
-      setStatus('success');
+      setTransactionId(res.transactionId);
+      // Honest "Processing" — the poller advances this to success/failed as the
+      // payout reconciles server-side.
+      setStatus(mapRampStatus(res.status));
     } catch (err: any) {
-      if (err?.code === 'PAJ_VERIFICATION_REQUIRED') {
-        router.push('/paj-verify' as never);
-        return;
-      }
       setErrorMsg(err?.message || 'Withdrawal failed. Please try again.');
       setStatus('failed');
     } finally {
       setIsSubmitting(false);
     }
-  }, [params.bankId, params.accountNumber, numericAmount, pajOfframp, pajAddBank]);
+  }, [params.bankCode, params.accountNumber, numericAmount, rampOfframp]);
 
   // Auto-execute after returning from authorize with valid session
   useFocusEffect(
@@ -96,18 +113,27 @@ export default function NgnConfirmScreen() {
 
   // ── Status screens ─────────────────────────────────────────────────────
   if (status) {
+    const message =
+      status === 'failed'
+        ? errorMsg || FAILED_FALLBACK
+        : status === 'pending'
+          ? "Your withdrawal is on its way. We'll notify you the moment it lands — you can safely leave this screen."
+          : undefined;
+
     return (
       <WithdrawalStatusScreen
         status={status}
+        title={status === 'pending' ? 'Processing withdrawal' : undefined}
         amount={`₦${formatCurrency(numericAmount)}`}
         recipient={params.accountName}
-        message={status === 'failed' ? errorMsg : undefined}
+        message={message}
         onDone={() => router.replace('/(tabs)' as never)}
         onRetry={
           status === 'failed'
             ? () => {
                 setStatus(null);
                 setErrorMsg('');
+                setTransactionId(null);
               }
             : undefined
         }
@@ -186,15 +212,10 @@ export default function NgnConfirmScreen() {
                 <Sep />
               </>
             )}
-            <DetailRow label="Rail fee" value={`₦${railFeeNGN.toLocaleString()}`} />
-            <Sep />
             <View className="flex-row items-center justify-between px-5 py-4">
-              <Text className="font-subtitle text-[14px] text-text-primary">Total</Text>
+              <Text className="font-subtitle text-[14px] text-text-primary">You send</Text>
               <Text className="font-subtitle text-[16px] text-text-primary">
-                ₦
-                {offRampRate > 0
-                  ? Math.round(numericAmount + railFeeNGN).toLocaleString()
-                  : formatCurrency(numericAmount)}
+                ₦{formatCurrency(numericAmount)}
               </Text>
             </View>
           </ReviewCard>

@@ -14,30 +14,29 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { CheckmarkCircle02Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { Button } from '@/components/ui';
 import { ScreenHeader } from '@/components/withdraw/shared';
-import { usePajResolveBankAccount } from '@/api/hooks/usePaj';
+import { useRampResolveBankAccount } from '@/api/hooks/useRamp';
 
 export default function NgnEnterAccountScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     amount: string;
     currency: string;
-    bankId: string;
+    bankCode: string;
     bankName: string;
-    bankLogo: string;
   }>();
 
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
-  const { mutate: resolve, isPending: isResolving } = usePajResolveBankAccount();
+  const { mutate: resolve, isPending: isResolving } = useRampResolveBankAccount();
 
   useEffect(() => {
-    if (accountNumber.length !== 10 || !params.bankId) {
+    if (accountNumber.length !== 10 || !params.bankCode) {
       setAccountName('');
       return;
     }
     let stale = false;
     resolve(
-      { bankId: params.bankId, accountNumber },
+      { bankCode: params.bankCode, accountNumber },
       {
         onSuccess: (d) => {
           if (!stale) setAccountName(d.accountName);
@@ -50,7 +49,7 @@ export default function NgnEnterAccountScreen() {
     return () => {
       stale = true;
     };
-  }, [accountNumber, params.bankId, resolve]);
+  }, [accountNumber, params.bankCode, resolve]);
 
   const onContinue = useCallback(() => {
     router.replace({
@@ -58,7 +57,7 @@ export default function NgnEnterAccountScreen() {
       params: {
         amount: params.amount,
         currency: params.currency ?? 'NGN',
-        bankId: params.bankId,
+        bankCode: params.bankCode,
         bankName: params.bankName,
         accountNumber,
         accountName,

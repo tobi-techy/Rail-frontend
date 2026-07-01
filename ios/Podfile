@@ -24,7 +24,7 @@ prepare_react_native_project!
 
 target 'RailMoney' do
   use_expo_modules!
-# @generated begin didit-sdk-react-native-pod - expo prebuild (DO NOT MODIFY) sync-d47b24d386f13a245e2cde106769569b727f3dce
+# @generated begin didit-sdk-react-native-pod - expo prebuild (DO NOT MODIFY) sync-5debe1b80a61a13e014dffd4e15e7912fdb38a15
 didit_sdk_ios_nfc_enabled = ENV.fetch('DIDIT_SDK_IOS_NFC_ENABLED', podfile_properties.fetch('didit.iosNfcEnabled', 'true')).downcase != 'false'
 didit_sdk_ios_pod = didit_sdk_ios_nfc_enabled ? 'DiditSDK' : 'DiditSDK/Core'
 pod didit_sdk_ios_pod, :podspec => 'https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.6.1/DiditSDK.podspec'
@@ -69,16 +69,54 @@ pod 'RecaptchaInterop', :modular_headers => true
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
 
-    # Fix AFNetworking private header import error (Xcode 16+/iOS 26 SDK)
-    af_dir = File.join(installer.sandbox.root, 'AFNetworking')
-    if Dir.exist?(af_dir)
-      Dir.glob("#{af_dir}/**/*.{m,h}").each do |f|
-        content = File.read(f)
-        if content.include?('netinet6/in6.h')
-          content.gsub!('netinet6/in6.h', 'netinet/in.h')
-          File.write(f, content)
+    # Force C++20 for all targets — React Native 0.83 uses C++20 features
+    # (concepts, std::identity, std::bit_width) in its public headers, so any
+    # pod compiling them must match. Downgrading to c++17 breaks the build.
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
+      end
+    end
+
+    # Disable strict warnings on AFNetworking legacy modules
+    installer.pods_project.targets.each do |target|
+      if target.name == 'AFNetworking'
+        target.build_configurations.each do |config|
+          config.build_settings['CLANG_WARN_PRIVATE_MODULE'] = 'NO'
+          config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         end
       end
     end
+
+    # Patch 1: Comment out netinet6 inside AFNetworking files
+    %w[
+      AFNetworking/AFNetworking/AFHTTPSessionManager.m
+      AFNetworking/AFNetworking/AFNetworkReachabilityManager.m
+    ].each do |relative_path|
+      path = File.join(installer.sandbox.root, relative_path)
+      if File.exist?(path)
+        File.chmod(0644, path)
+        content = File.read(path)
+        patched_content = content.gsub('#import <netinet6/in6.h>', '// #import <netinet6/in6.h>')
+        File.write(path, patched_content)
+      end
+    end
+
+    # Patch 2: Fix C++17+ rvalue std::string::data() issue in jsi.h
+    # buffer.data() returns const char* on rvalues in C++17+; &buffer[0] works in all standards.
+    # Patch all copies: Public header, Private symlink target, and all xcframework slices.
+    jsi_header_paths = Dir.glob(File.join(installer.sandbox.root, '**/jsi/jsi.h')) +
+                       Dir.glob(File.join(installer.sandbox.root, '**/React_jsi/jsi.h')) +
+                       Dir.glob(File.join(installer.sandbox.root, 'hermes-engine/destroot/include/jsi/jsi.h'))
+    jsi_header_paths.uniq.each do |jsi_path|
+      next unless File.file?(jsi_path) # skip symlinks (their targets are patched above)
+      File.chmod(0644, jsi_path)
+      content = File.read(jsi_path)
+      if content.include?('buffer.data(),')
+        File.write(jsi_path, content.gsub('buffer.data(),', '&buffer[0],'))
+        puts "Patched jsi.h: #{jsi_path}"
+      end
+    end
+
   end
 end

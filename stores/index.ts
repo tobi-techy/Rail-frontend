@@ -13,6 +13,10 @@ export type { Token, Transaction } from './walletStore';
 export { useWithdrawalStore } from './withdrawalStore';
 export type { Network, BridgeProvider, Recipient, TransactionDetails } from './withdrawalStore';
 
+// Withdrawal event store (push-notification driven status updates)
+export { useWithdrawalEventStore } from './withdrawalEventStore';
+export type { WithdrawalEvent, WithdrawalEventStatus } from './withdrawalEventStore';
+
 // UI store
 export { useUIStore } from './uiStore';
 export { useFeedbackPopupStore } from './feedbackPopupStore';

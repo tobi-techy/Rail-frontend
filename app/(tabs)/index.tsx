@@ -28,7 +28,6 @@ import { MiriamIntroSheet } from '@/components/ai/MiriamIntroSheet';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { useAmbientHomescreen } from '@/hooks/useAmbientHomescreen';
 import aiService from '@/api/services/ai.service';
-import { ROUTES } from '@/constants/routes';
 import { getKycResumeRoute } from '@/utils/onboardingFlow';
 import { useStation, useKYCStatus, useTOSStatus, useAcceptTOS } from '@/api/hooks';
 import { useAuthStore } from '@/stores/authStore';
@@ -45,7 +44,6 @@ import {
   BankIcon,
   InternetIcon,
   Message01Icon,
-  UserGroupIcon,
   Wallet01Icon,
   ChartIncreaseIcon,
   IconComponent as HugeiconsIcon,
@@ -86,8 +84,6 @@ interface FundingAction {
   badge?: string;
   disabled?: boolean;
 }
-
-const PEOPLE_TRANSFER_FEATURES_ENABLED = false;
 
 const CreditSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View className="mb-6">
@@ -253,7 +249,7 @@ function DashboardScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => <HomeHeader />,
-      headerTitleContainerStyle: { width: '70%' },
+      headerTitleContainerStyle: { width: '100%' },
       headerRight: () => (
         <View className="flex-row items-center gap-x-4 pr-md">
           <Pressable onPress={() => gleap.open()} hitSlop={8}>

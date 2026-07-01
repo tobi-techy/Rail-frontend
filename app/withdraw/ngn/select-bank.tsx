@@ -9,50 +9,64 @@ import {
   Building04Icon,
   IconComponent as HugeiconsIcon,
 } from '@/lib/icons';
+import { useRampBanks } from '@/api/hooks/useRamp';
 import { usePajBanks } from '@/api/hooks/usePaj';
-import type { PajBank } from '@/api/types/paj';
+import type { RampBank } from '@/api/types/ramp';
 import { ScreenHeader } from '@/components/withdraw/shared';
 
 const BankRow = React.memo(function BankRow({
   bank,
+  logo,
   onPress,
 }: {
-  bank: PajBank;
+  bank: RampBank;
+  logo?: string;
   onPress: () => void;
 }) {
   return (
     <Pressable
       onPress={onPress}
       className="flex-row items-center gap-4 px-5 py-3.5 active:bg-surface">
-      {bank.logo ? (
-        <Image source={{ uri: bank.logo }} className="size-12 rounded-full" />
+      {logo ? (
+        <Image source={{ uri: logo }} className="size-12 rounded-full" />
       ) : (
         <View className="size-12 items-center justify-center rounded-full bg-[#f2f2f2]">
           <HugeiconsIcon icon={Building04Icon} size={20} color="#848281" />
         </View>
       )}
-      <Text className="flex-1 font-subtitle text-[16px] text-text-primary">{bank.name}</Text>
+      <Text className="flex-1 font-subtitle text-[16px] text-text-primary">{bank.bankName}</Text>
     </Pressable>
   );
 });
 
 export default function NgnSelectBankScreen() {
   const params = useLocalSearchParams<{ amount: string; currency: string }>();
+  const { data: rampBanksData } = useRampBanks();
   const { data: pajBanksData } = usePajBanks();
-  const banks = useMemo<PajBank[]>(() => pajBanksData?.banks ?? [], [pajBanksData?.banks]);
   const [search, setSearch] = useState('');
+
+  // code → logo from PAJ's bank list
+  const logoMap = useMemo<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    for (const b of pajBanksData?.banks ?? []) {
+      if (b.code && b.logo) map[b.code] = b.logo;
+    }
+    return map;
+  }, [pajBanksData?.banks]);
+
+  const banks = useMemo<RampBank[]>(() => rampBanksData?.banks ?? [], [rampBanksData?.banks]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return banks;
     const q = search.toLowerCase();
-    return banks.filter((b) => b.name.toLowerCase().includes(q));
+    return banks.filter((b) => b.bankName.toLowerCase().includes(q));
   }, [banks, search]);
 
   const onSelect = useCallback(
-    (bank: PajBank) => {
+    (bank: RampBank) => {
       router.push({
         pathname: '/withdraw/ngn/enter-account' as never,
-        params: { ...params, bankId: bank.id, bankName: bank.name, bankLogo: bank.logo ?? '' },
+        params: { ...params, bankCode: bank.bankCode, bankName: bank.bankName },
       } as never);
     },
     [params]
@@ -93,8 +107,10 @@ export default function NgnSelectBankScreen() {
 
       <FlatList
         data={filtered}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <BankRow bank={item} onPress={() => onSelect(item)} />}
+        keyExtractor={(item) => item.bankCode}
+        renderItem={({ item }) => (
+          <BankRow bank={item} logo={logoMap[item.bankCode]} onPress={() => onSelect(item)} />
+        )}
         className="mt-4"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}

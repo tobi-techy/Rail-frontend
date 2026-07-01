@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -19,6 +19,7 @@ import {
   type WithdrawalStatusType,
 } from '@/components/withdraw/WithdrawalStatusScreen';
 import { parseApiError } from '@/utils/apiError';
+import { useWithdrawalEventStore } from '@/stores/withdrawalEventStore';
 
 export default function CryptoConfirmScreen() {
   const insets = useSafeAreaInsets();
@@ -48,16 +49,29 @@ export default function CryptoConfirmScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<WithdrawalStatusType | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [withdrawalId, setWithdrawalId] = useState<string | null>(null);
+
+  const lastEvent = useWithdrawalEventStore((s) => s.lastEvent);
+  const consume = useWithdrawalEventStore((s) => s.consume);
+
+  useEffect(() => {
+    if (!withdrawalId || !lastEvent || lastEvent.withdrawalId !== withdrawalId) return;
+    consume(withdrawalId);
+    setStatus(lastEvent.status === 'completed' ? 'success' : 'failed');
+    if (lastEvent.status === 'failed')
+      setErrorMsg('Transfer failed. Please check your balance and try again.');
+  }, [lastEvent, withdrawalId, consume]);
 
   const executeWithdrawal = useCallback(async () => {
     setIsSubmitting(true);
     try {
-      await initiateWithdrawal({
+      const response = await initiateWithdrawal({
         amount: numericAmount,
         destination_address: (params.destinationInput ?? '').trim(),
         destination_chain: params.destinationChain ?? 'SOL',
       });
-      setStatus('success');
+      setWithdrawalId(response.withdrawal_id ?? null);
+      setStatus('pending');
     } catch (err) {
       setErrorMsg(parseApiError(err, 'Withdrawal failed. Please try again.'));
       setStatus('failed');
@@ -95,7 +109,9 @@ export default function CryptoConfirmScreen() {
         amount={`${prefix}${formatCurrency(numericAmount)} ${assetLabel}`}
         recipient={maskAddr(params.destinationInput ?? '')}
         message={
-          status === 'failed' ? errorMsg : 'Your withdrawal has been submitted to the network.'
+          status === 'failed'
+            ? errorMsg
+            : "Your withdrawal is being processed. We'll notify you once it's confirmed on-chain."
         }
         onDone={() => router.replace('/(tabs)' as never)}
         onRetry={

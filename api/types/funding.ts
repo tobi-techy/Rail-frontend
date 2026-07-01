@@ -67,6 +67,7 @@ export interface InitiateWithdrawalRequest {
   amount: number | string;
   destination_address: string;
   destination_chain?: string;
+  source_account?: 'spending_balance' | 'stash_balance';
   category?: string;
   narration?: string;
 }
@@ -79,6 +80,7 @@ export interface InitiateFiatWithdrawalRequest {
   routing_number: string;
   iban?: string;
   bic?: string;
+  source_account?: 'spending_balance' | 'stash_balance';
   category?: string;
   narration?: string;
 }

@@ -18,6 +18,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import * as Haptics from '@/utils/platformHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { useTapToPay, type NearbyPeer } from '@/hooks/useTapToPay';
 import { useNearbyPermissions } from '@/hooks/useNearbyPermissions';
 import { useAuthStore } from '@/stores/authStore';
@@ -377,6 +378,7 @@ function TapToPayActiveScreen() {
         const idempotencyKey = `tap-${pending.nonce}-${Date.now()}`;
         await p2pService.tapConfirm({ nonce: pending.nonce, idempotencyKey });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        playUISound('transactionSuccess');
         setSuccess(true);
       } catch (e) {
         setSendError(parseApiError(e, 'Transfer failed. Please try again.'));

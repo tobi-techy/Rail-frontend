@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import apiClient from '@/api/client';
 import { queryKeys } from '@/api/queryClient';
 import { logger } from '@/lib/logger';
+import { useWithdrawalEventStore } from '@/stores/withdrawalEventStore';
 
 // Configure how notifications appear when app is in foreground
 Notifications.setNotificationHandler({
@@ -149,7 +150,7 @@ class PushNotificationService {
     this.notificationListener = Notifications.addNotificationReceivedListener((notification) => {
       const data = notification.request.content.data as PushNotificationData;
       if (queryClient) {
-        this.invalidateForType(data.type, queryClient);
+        this.invalidateForType(data.type, queryClient, data);
       }
     });
 
@@ -162,7 +163,8 @@ class PushNotificationService {
 
   private invalidateForType(
     type: string | undefined,
-    qc: import('@tanstack/react-query').QueryClient
+    qc: import('@tanstack/react-query').QueryClient,
+    data?: PushNotificationData
   ) {
     switch (type) {
       case 'deposit_confirmed':
@@ -173,6 +175,9 @@ class PushNotificationService {
         qc.invalidateQueries({ queryKey: queryKeys.funding.all });
         qc.invalidateQueries({ queryKey: queryKeys.allocation.all });
         qc.invalidateQueries({ queryKey: queryKeys.gameplay.all });
+        // Snap the RampHub WaitingStep to "completed" immediately instead of
+        // waiting for the next 8-second poll.
+        qc.invalidateQueries({ queryKey: ['ramp'] });
         break;
       case 'investment_complete':
         qc.invalidateQueries({ queryKey: queryKeys.investment.all });
@@ -185,6 +190,19 @@ class PushNotificationService {
         qc.invalidateQueries({ queryKey: queryKeys.station.all });
         qc.invalidateQueries({ queryKey: queryKeys.wallet.all });
         qc.invalidateQueries({ queryKey: queryKeys.funding.all });
+        // Dispatch to the withdrawal event store so any in-app pending screen
+        // can flip to success/failed without the user having to poll.
+        if (
+          data &&
+          (type === 'withdrawal_completed' || type === 'withdrawal_failed') &&
+          typeof data.withdrawal_id === 'string' &&
+          data.withdrawal_id
+        ) {
+          useWithdrawalEventStore.getState().dispatch({
+            withdrawalId: data.withdrawal_id as string,
+            status: type === 'withdrawal_completed' ? 'completed' : 'failed',
+          });
+        }
         break;
       case 'kyc_approved':
       case 'kyc_rejected':

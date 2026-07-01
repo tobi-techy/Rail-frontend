@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, StatusBar, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -10,10 +10,9 @@ import {
   Cancel01Icon,
   IconComponent as HugeiconsIcon,
 } from '@/lib/icons';
-import { usePajBanks, usePajSavedBanks } from '@/api/hooks/usePaj';
-import type { PajBank, PajSavedBankAccount } from '@/api/types/paj';
+import { useRampBanks } from '@/api/hooks/useRamp';
 import { useHaptics } from '@/hooks/useHaptics';
-import { ScreenHeader, RecipientRow } from '@/components/withdraw/shared';
+import { ScreenHeader } from '@/components/withdraw/shared';
 import { formatCurrency } from '@/components/withdraw/method-screen/utils';
 
 export default function NgnRecipientsScreen() {
@@ -21,36 +20,10 @@ export default function NgnRecipientsScreen() {
   const params = useLocalSearchParams<{ amount: string; currency: string }>();
   const numericAmount = parseFloat(params.amount ?? '0') || 0;
 
-  const { data: pajBanksData } = usePajBanks();
-  const { data: pajSavedBanks } = usePajSavedBanks();
-  const pajBanks = useMemo<PajBank[]>(() => pajBanksData?.banks ?? [], [pajBanksData?.banks]);
-  const savedBanksList: PajSavedBankAccount[] = (pajSavedBanks as any)?.accounts ?? [];
+  // Bank list preloaded so select-bank renders instantly
+  useRampBanks();
 
   const [searchQuery, setSearchQuery] = useState('');
-
-  const filteredRecipients = useMemo(() => {
-    if (!searchQuery.trim()) return savedBanksList;
-    const q = searchQuery.toLowerCase();
-    return savedBanksList.filter(
-      (s) => s.accountName.toLowerCase().includes(q) || s.bank.toLowerCase().includes(q)
-    );
-  }, [savedBanksList, searchQuery]);
-
-  const handleSelectRecipient = (s: PajSavedBankAccount) => {
-    selection();
-    const bank = pajBanks.find((b) => b.name === s.bank || b.id === s.bank);
-    router.push({
-      pathname: '/withdraw/ngn/confirm' as never,
-      params: {
-        amount: params.amount,
-        currency: params.currency ?? 'NGN',
-        bankId: bank?.id ?? s.bank,
-        bankName: bank?.name ?? s.bank,
-        accountNumber: s.accountNumber,
-        accountName: s.accountName,
-      },
-    } as never);
-  };
 
   return (
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
@@ -116,29 +89,14 @@ export default function NgnRecipientsScreen() {
 
         <View className="my-5 h-px bg-stone-surface" />
 
-        {/* Saved recipients */}
+        {/* Saved recipients — not available with RampHub */}
         <Animated.View entering={FadeInUp.delay(140).duration(250)}>
           <Text className="mb-3 font-subtitle text-[15px] text-text-primary">
             Recent Recipients
           </Text>
-          {filteredRecipients.length === 0 ? (
-            <Text className="py-6 text-center font-body text-[14px] text-text-secondary">
-              No saved recipients yet
-            </Text>
-          ) : (
-            filteredRecipients.map((s, i) => {
-              const bank = pajBanks.find((b) => b.name === s.bank || b.id === s.bank);
-              return (
-                <RecipientRow
-                  key={s.id}
-                  name={s.accountName}
-                  subtitle={`${bank?.name ?? s.bank} · ••${s.accountNumber.slice(-4)}`}
-                  index={i}
-                  onPress={() => handleSelectRecipient(s)}
-                />
-              );
-            })
-          )}
+          <Text className="py-6 text-center font-body text-[14px] text-text-secondary">
+            No saved recipients yet
+          </Text>
         </Animated.View>
 
         <View style={{ height: 40 }} />
