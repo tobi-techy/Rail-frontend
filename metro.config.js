@@ -16,17 +16,6 @@ if (process.env.EXPO_PUBLIC_SUPPRESS_DEV_WARNINGS === 'true') {
 config.transformer = {
   ...config.transformer,
   babelTransformerPath: require.resolve('react-native-svg-transformer'),
-  // Defer module evaluation until first `require` instead of running every
-  // module's top-level code at bundle load. Big cold-start win for an app this
-  // size on Hermes. Side-effect imports in the entry chain (global.css, Sentry,
-  // gesture-handler, polyfills) still run eagerly because they're required from
-  // the entry/_layout top level.
-  getTransformOptions: async () => ({
-    transform: {
-      experimentalImportSupport: false,
-      inlineRequires: true,
-    },
-  }),
 };
 
 config.resolver = {

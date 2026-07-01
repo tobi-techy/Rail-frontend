@@ -1,5 +1,5 @@
 import { createAvatar } from '@dicebear/core';
-import { glass, thumbs } from '@dicebear/collection';
+import { thumbs } from '@dicebear/collection';
 
 /**
  * Generates a deterministic DiceBear SVG string from a seed.

@@ -72,6 +72,8 @@ function DeferredPostHogProvider({ children }: { children: React.ReactNode }) {
       apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
       autocapture={false}
       options={{ host: 'https://us.i.posthog.com', disabled: __DEV__ }}>
+      {/* Rendered inside the provider so usePostHog() always has a client. */}
+      <AppReadyTracker />
       {children}
     </_PostHogProvider>
   );
@@ -153,7 +155,7 @@ function AppNavigator() {
 }
 
 export default function Layout() {
-  const { fontsLoaded, error: fontError } = useFonts();
+  useFonts(); // load embedded fonts in the background (splash no longer gates on this)
   const [showSplash, setShowSplash] = useState(true);
   const refreshCurrencyRates = useUIStore((s) => s.refreshCurrencyRates);
   const [isBlurred, setIsBlurred] = useState(false);
@@ -186,15 +188,13 @@ export default function Layout() {
     });
   }, []);
 
-  // Custom splash disabled — reveal the app under the Expo default native splash
-  // once fonts resolve (embedded assets, so this is tens of ms) to avoid a flash
-  // of unstyled text. Proceeds anyway if fonts error so we never hang on the splash.
+  // Custom splash disabled — hide the Expo default native splash as soon as the
+  // JS layer mounts. Independent of font loading (embedded fonts resolve in the
+  // background) so we can never hang on the splash.
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {});
-      setShowSplash(false);
-    }
-  }, [fontsLoaded, fontError]);
+    SplashScreen.hideAsync().catch(() => {});
+    setShowSplash(false);
+  }, []);
 
   // Post-splash: initialize session, prefetch data
   useEffect(() => {
@@ -237,7 +237,6 @@ export default function Layout() {
               <SafeAreaProvider style={styles.root}>
                 <View style={styles.root}>
                   <DeferredPostHogProvider>
-                    {isReady && <AppReadyTracker />}
                     {isReady && <PostReadyHooks />}
                     <AppNavigator />
                     <MiriamAmbientLayer />

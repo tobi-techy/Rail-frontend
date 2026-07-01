@@ -124,6 +124,10 @@ import {
   BuildingIcon,
   ImagesIcon,
   GridFourIcon,
+  HeartIcon,
+  PencilSimpleIcon,
+  ShoppingCartIcon,
+  ForkKnifeIcon,
 } from 'phosphor-react-native';
 
 // ─── Icon type (matches HugeiconsProps['icon']) ─────────────────────────────
@@ -282,6 +286,29 @@ export const iconMap: Record<string, PhosphorIcon> = {
 
   // Swap / transfer
   SwapIcon: PhSwapIcon,
+
+  // ─── Legacy kebab-case names (used by the <Icon name="…"> atom) ───────────
+  // The atoms/Icon component passes lucide/feather-style names. Without these
+  // aliases resolveIcon() falls back to XIcon, which is why the passcode screen
+  // (Need help?, eye toggle) and others showed an X.
+  eye: PhEyeIcon,
+  'eye-off': EyeSlashIcon,
+  'message-circle': ChatTextIcon,
+  'alert-circle': WarningCircleIcon,
+  'check-circle': CheckCircleIcon,
+  'chevron-down': CaretDownIcon,
+  close: XIcon,
+  'close-circle': XCircleIcon,
+  x: XIcon,
+  info: InfoIcon,
+  settings: GearIcon,
+  edit: PencilSimpleIcon,
+  // Spending category icons
+  'cup-soda': CoffeeIcon,
+  'heart-pulse': HeartIcon,
+  'shopping-bag': ShoppingBagIcon,
+  'shopping-cart': ShoppingCartIcon,
+  'utensils-crossed': ForkKnifeIcon,
 };
 
 // ─── Fallback: returns X icon if no mapping found ───────────────────────────
