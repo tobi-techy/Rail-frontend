@@ -84,11 +84,24 @@ export interface PendingAction {
     | 'mark_obligation_paid'
     | 'protect_subscription'
     | 'mark_subscription_cancelled'
-    | 'ignore_subscription';
+    | 'ignore_subscription'
+    // Execution Engine (spec 5.2) — actions Miriam stages over iMessage/WhatsApp.
+    | 'optimize_yield'
+    | 'execute_investment'
+    | 'copy_trader'
+    | 'setup_bill_autopay'
+    | 'cancel_subscription'
+    | 'block_merchant'
+    | 'unblock_merchant'
+    | 'pause_trade_copying'
+    | 'resume_trade_copying'
+    | 'stop_trade_copying';
   description: string;
   params: Record<string, any>;
   expires_at: string;
-  created_at: string;
+  created_at?: string;
+  /** Set by the /pending peek endpoint: true when this needs an in-app Face ID step-up. */
+  is_fund_moving?: boolean;
 }
 
 export interface ToolSourceDoc {
@@ -122,12 +135,7 @@ export interface AIChatResponse {
 // One typed contract drives the global Miriam Canvas overlay.
 
 export type CanvasCard =
-  | 'places'
-  | 'flights'
-  | 'recommendations'
-  | 'confirm'
-  | 'automation'
-  | 'info';
+  'places' | 'flights' | 'recommendations' | 'confirm' | 'automation' | 'info';
 
 export type CanvasIntent = 'confirm_action' | 'info' | 'choose';
 
@@ -350,12 +358,7 @@ export type FinancialObligationType =
   | 'other';
 
 export type FinancialObligationCadence =
-  | 'one_time'
-  | 'weekly'
-  | 'biweekly'
-  | 'monthly'
-  | 'quarterly'
-  | 'annual';
+  'one_time' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annual';
 
 export type FinancialObligationPriority = 'critical' | 'high' | 'medium' | 'low';
 
@@ -565,12 +568,7 @@ export interface Automation {
   name: string;
   description?: string;
   trigger_type:
-    | 'schedule'
-    | 'balance_threshold'
-    | 'income_detected'
-    | 'spending_spike'
-    | 'payday'
-    | 'custom';
+    'schedule' | 'balance_threshold' | 'income_detected' | 'spending_spike' | 'payday' | 'custom';
   trigger_config: Record<string, any>;
   action_type:
     | 'transfer_to_stash'

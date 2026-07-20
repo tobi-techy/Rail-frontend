@@ -39,7 +39,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await Clipboard.setStringAsync(value);
     setCopied(true);
     showInfo('Copied', `${label} copied`);
@@ -53,8 +53,13 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       accessibilityRole="button"
       accessibilityLabel={`Copy ${label}`}>
       <View className="flex-1 pr-4">
-        <Text className="font-body text-[13px] text-[#848281]">{label}</Text>
-        <Text className="mt-1.5 font-subtitle text-[16px] text-[#343433]" selectable>
+        <Text className="font-body text-[13px] text-[#848281]" maxFontSizeMultiplier={1.4}>
+          {label}
+        </Text>
+        <Text
+          className="mt-1.5 font-subtitle text-[16px] text-[#343433]"
+          selectable
+          maxFontSizeMultiplier={1.3}>
           {value}
         </Text>
       </View>
@@ -89,7 +94,9 @@ function CurrencyPicker({
         <View className="size-6 overflow-hidden rounded-full">
           <CountryFlag isoCode={flagCode} size={20} />
         </View>
-        <Text className="font-subtitle text-[14px] text-[#343433]">{selected}</Text>
+        <Text className="font-subtitle text-[14px] text-[#343433]" maxFontSizeMultiplier={1.4}>
+          {selected}
+        </Text>
         <HugeiconsIcon icon={ArrowDown01Icon} size={14} color="#848281" />
       </Pressable>
 
@@ -119,8 +126,16 @@ function CurrencyPicker({
                   <CountryFlag isoCode={cFlagCode} size={22} />
                 </View>
                 <View>
-                  <Text className="font-subtitle text-[14px] text-[#343433]">{c}</Text>
-                  <Text className="font-body text-[12px] text-[#848281]">{CURRENCY_LABEL[c]}</Text>
+                  <Text
+                    className="font-subtitle text-[14px] text-[#343433]"
+                    maxFontSizeMultiplier={1.4}>
+                    {c}
+                  </Text>
+                  <Text
+                    className="font-body text-[12px] text-[#848281]"
+                    maxFontSizeMultiplier={1.4}>
+                    {CURRENCY_LABEL[c]}
+                  </Text>
                 </View>
               </Pressable>
             );
@@ -205,7 +220,9 @@ function AccountDetails({ account }: { account: VirtualAccount }) {
           onPress={handleShare}
           className="mt-5 flex-row items-center justify-center gap-2 rounded-2xl bg-[#EEF2FF] py-4 active:opacity-80">
           <HugeiconsIcon icon={Share01Icon} size={18} color="#6366F1" />
-          <Text className="font-subtitle text-[15px] text-[#6366F1]">Share details</Text>
+          <Text className="font-subtitle text-[15px] text-[#6366F1]" maxFontSizeMultiplier={1.3}>
+            Share details
+          </Text>
         </Pressable>
       </View>
     </Animated.View>
@@ -219,10 +236,14 @@ function EmptyState({ currency, onSetup }: { currency: Currency; onSetup: () => 
       <View className="mb-5 size-20 items-center justify-center overflow-hidden rounded-full bg-stone-surface">
         <CountryFlag isoCode={CURRENCY_ISO[currency]} size={36} />
       </View>
-      <Text className="mb-2 text-center font-subtitle text-[20px] text-[#343433]">
+      <Text
+        className="mb-2 text-center font-subtitle text-[20px] text-[#343433]"
+        maxFontSizeMultiplier={1.3}>
         No {currency} account yet
       </Text>
-      <Text className="mb-8 text-center font-body text-[14px] leading-5 text-[#848281]">
+      <Text
+        className="mb-8 text-center font-body text-[14px] leading-5 text-[#848281]"
+        maxFontSizeMultiplier={1.4}>
         Create a virtual {CURRENCY_LABEL[currency]} account to receive deposits.
       </Text>
       <Button title={`Create ${currency} Account`} onPress={onSetup} />
@@ -289,11 +310,13 @@ export default function VirtualAccountScreen() {
           }>
           {/* Title */}
           <View className="px-6 pt-6">
-            <Text className="font-headline-1 text-[30px] leading-[36px] text-[#343433]">
+            <Text
+              className="font-headline-1 text-[30px] leading-[36px] text-[#343433]"
+              maxFontSizeMultiplier={1.3}>
               Add money to your{'\n'}
               {selectedCurrency} account
             </Text>
-            <Text className="mt-2 font-body text-[15px] text-[#848281]">
+            <Text className="mt-2 font-body text-[15px] text-[#848281]" maxFontSizeMultiplier={1.4}>
               Make a transfer to your account details below
             </Text>
           </View>

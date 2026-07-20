@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { Canvas, RoundedRect, Group } from '@shopify/react-native-skia';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -152,6 +154,7 @@ function PeriodButton({
   onPress: (period: string) => void;
 }) {
   const scale = useSharedValue(1);
+  const haptics = useHaptics();
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -159,7 +162,11 @@ function PeriodButton({
 
   return (
     <Pressable
-      onPress={() => onPress(period)}
+      onPress={() => {
+        playUISound('buttonClick');
+        haptics.selection();
+        onPress(period);
+      }}
       onPressIn={() => {
         scale.value = withSpring(0.92, { damping: 15 });
       }}

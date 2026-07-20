@@ -1,8 +1,11 @@
 import React, { useMemo } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import { router } from 'expo-router';
 import { SvgXml } from 'react-native-svg';
 import { getAvatarSvg } from '@/utils/avatarConfig';
 import { useAuthStore } from '@/stores/authStore';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 const AVATAR_SIZE = 44;
 
@@ -36,14 +39,25 @@ function SquareAvatar({ seed }: { seed: string }) {
 
 export function HomeHeader() {
   const user = useAuthStore((s) => s.user);
+  const { impact } = useHaptics();
 
   const firstName = user?.firstName?.trim() || user?.fullName?.trim()?.split(' ')[0] || 'there';
   const displayName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
   const seed = user?.id || user?.email || firstName;
   const greeting = getGreeting();
 
+  const openProfile = () => {
+    impact();
+    playUISound('buttonClick');
+    router.push('/profile' as never);
+  };
+
   return (
-    <View className="flex-row items-center gap-3">
+    <Pressable
+      onPress={openProfile}
+      className="flex-row items-center gap-3 active:opacity-70"
+      accessibilityRole="button"
+      accessibilityLabel="Open profile">
       <SquareAvatar seed={seed} />
       <View>
         <Text className="font-body text-[13px] leading-[16px] text-ash">{greeting}</Text>
@@ -51,6 +65,6 @@ export function HomeHeader() {
           {displayName}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }

@@ -53,18 +53,22 @@ class PushNotificationService {
       return null;
     }
 
-    // Get native device push token (APNs for iOS, FCM for Android)
-    // This is required for AWS SNS delivery — Expo tokens only work with Expo's push service
+    // Get the Expo push token — the backend delivers exclusively via Expo's
+    // push service (AWS SNS was decommissioned; native APNs/FCM tokens are
+    // undeliverable there and get dropped server-side).
     try {
-      const deviceToken = await Notifications.getDevicePushTokenAsync();
-      this.expoPushToken = deviceToken.data;
+      const projectId =
+        Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+      const tokenResponse = await Notifications.getExpoPushTokenAsync(
+        projectId ? { projectId } : undefined
+      );
+      this.expoPushToken = tokenResponse.data;
 
-      logger.debug('Got native device push token', {
+      logger.debug('Got Expo push token', {
         component: 'PushNotifications',
-        platform: deviceToken.type,
         tokenPrefix:
-          typeof deviceToken.data === 'string'
-            ? deviceToken.data.substring(0, 20) + '...'
+          typeof tokenResponse.data === 'string'
+            ? tokenResponse.data.substring(0, 24) + '...'
             : 'unknown',
       });
 
@@ -242,8 +246,6 @@ class PushNotificationService {
         qc.invalidateQueries({ queryKey: queryKeys.station.all });
         qc.invalidateQueries({ queryKey: queryKeys.wallet.all });
         break;
-      case 'miriam_proactive':
-      case 'miriam_action_required':
       case 'automation':
         qc.invalidateQueries({ queryKey: queryKeys.station.all });
         qc.invalidateQueries({ queryKey: queryKeys.wallet.all });
@@ -332,25 +334,7 @@ class PushNotificationService {
         }
         break;
       }
-      case 'miriam_proactive':
-      case 'miriam_action_required': {
-        const msg = typeof data.preloaded_message === 'string' ? data.preloaded_message : '';
-        if (msg) {
-          router.push({ pathname: '/ai-chat', params: { preloaded_message: msg } } as any);
-        } else {
-          router.push('/ai-chat' as never);
-        }
-        break;
-      }
-      case 'miriam_action_executed':
-        router.push({ pathname: '/(tabs)', params: { openMiriamActivity: 'true' } } as any);
-        break;
-      case 'miriam_suggestion':
-        router.push({ pathname: '/(tabs)', params: { openMiriamSuggestions: 'true' } } as any);
-        break;
-      case 'miriam_health_update':
-        router.push('/miriam-health' as never);
-        break;
+
       default:
         // SECURITY FIX (R4-H1): Validate screen against allowlist to prevent
         // arbitrary navigation via crafted push notification payloads.

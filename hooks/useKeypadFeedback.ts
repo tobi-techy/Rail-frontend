@@ -7,7 +7,9 @@ export function useKeypadFeedback() {
   const { impact } = useHaptics();
 
   const trigger = useCallback(() => {
-    impact(Haptics.ImpactFeedbackStyle.Light);
+    // Medium impact: Light is barely perceptible on many devices — keys
+    // should feel like keys.
+    impact(Haptics.ImpactFeedbackStyle.Medium);
     playUISound('keypress');
   }, [impact]);
 

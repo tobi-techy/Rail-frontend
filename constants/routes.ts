@@ -7,10 +7,12 @@ export const ROUTES = {
     FORGOT_PASSWORD: '/(auth)/forgot-password',
     CREATE_PASSCODE: '/(auth)/create-passcode',
     CONFIRM_PASSCODE: '/(auth)/confirm-passcode',
-    CREATE_RAILTAG: '/(auth)/create-railtag',
     COMPLETE_PROFILE: {
       PERSONAL_INFO: '/(auth)/complete-profile/personal-info',
-      CREATE_PASSWORD: '/(auth)/complete-profile/create-password',
+      CREATE_RAILTAG: '/(auth)/complete-profile/create-railtag',
+      EMPLOYMENT_STATUS: '/(auth)/complete-profile/employment-status',
+      ACCOUNT_PURPOSE: '/(auth)/complete-profile/account-purpose',
+      SOURCE_OF_FUNDS: '/(auth)/complete-profile/source-of-funds',
     },
     COMPLETE_KYC: {
       DATE_OF_BIRTH: '/(auth)/complete-kyc/date-of-birth',

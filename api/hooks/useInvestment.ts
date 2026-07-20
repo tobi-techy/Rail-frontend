@@ -12,8 +12,7 @@ export function useInvestmentStash() {
     queryKey: queryKeys.investment.stash(),
     queryFn: () => investmentService.getInvestmentStash(),
     enabled: isAuthenticated,
-    staleTime: 15 * 1000,
-    refetchInterval: 60 * 1000,
+    staleTime: 2 * 60 * 1000, // no background interval (Redis cost); refresh on focus + mutation invalidation
     refetchOnWindowFocus: true,
   });
 }
@@ -53,8 +52,7 @@ export function useInvestmentTransactions(params?: InvestmentTransactionsParams)
     queryKey: queryKeys.investment.transactions(safeParams),
     queryFn: () => investmentService.getInvestmentTransactions(safeParams),
     enabled: isAuthenticated,
-    staleTime: 10 * 1000,
-    refetchInterval: 60 * 1000,
+    staleTime: 2 * 60 * 1000, // no background interval (Redis cost); refresh on focus + mutation invalidation
     refetchOnWindowFocus: true,
   });
 }
@@ -82,7 +80,6 @@ export function useMarketStatus() {
   return useQuery<MarketStatus>({
     queryKey: ['market', 'status'],
     queryFn: () => apiClient.get<MarketStatus>(ENDPOINTS.MARKET.STATUS),
-    staleTime: 60 * 1000,
-    refetchInterval: 60 * 1000, // re-check every minute
+    staleTime: 5 * 60 * 1000, // no background interval (Redis cost); refresh on focus
   });
 }

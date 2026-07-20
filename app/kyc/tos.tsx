@@ -3,10 +3,12 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 export default function KycTosScreen() {
   const { url } = useLocalSearchParams<{ url: string }>();
   const [loading, setLoading] = useState(true);
+  const triggerFeedback = useButtonFeedback();
 
   const handleDone = () => {
     router.back();
@@ -35,12 +37,19 @@ export default function KycTosScreen() {
   return (
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
       <View className="flex-row items-center justify-between border-b border-stone-surface px-4 py-3">
-        <Text className="font-subtitle text-base text-charcoal-primary">Terms of Service</Text>
+        <Text className="font-subtitle text-base text-charcoal-primary" maxFontSizeMultiplier={1.3}>
+          Terms of Service
+        </Text>
         <Pressable
-          onPress={handleDone}
+          onPress={() => {
+            triggerFeedback();
+            handleDone();
+          }}
           className="rounded-full bg-primary px-4 py-1.5"
           accessibilityRole="button">
-          <Text className="font-subtitle text-sm text-white">Done</Text>
+          <Text className="font-subtitle text-sm text-white" maxFontSizeMultiplier={1.3}>
+            Done
+          </Text>
         </Pressable>
       </View>
       {loading && (

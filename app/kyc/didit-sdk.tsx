@@ -10,6 +10,9 @@ import { logger } from '@/lib/logger';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
 import type { TransformedApiError } from '@/api/types';
 import type { KycDisclosures } from '@/api/types/kyc';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { Alert02Icon, Cancel01Icon, RefreshIcon, MessageIcon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
@@ -17,6 +20,8 @@ export default function KycDiditSdkScreen() {
   const { diditSessionToken, setLocalSubmissionPendingAt } = useKycStore();
   const startSession = useStartDiditSession();
   const { track } = useAnalytics();
+  const triggerFeedback = useButtonFeedback();
+  const { impact } = useHaptics();
   const [initError, setInitError] = useState(false);
   const [errorType, setErrorType] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -197,10 +202,14 @@ export default function KycDiditSdkScreen() {
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       <View className="flex-row items-center justify-between px-4 pb-2 pt-1">
         <View className="size-11" />
-        <Text className="font-subtitle text-[13px] text-ash">Identity verification</Text>
+        <Text className="font-subtitle text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
+          Identity verification
+        </Text>
         <Pressable
           className="size-11 items-center justify-center"
-          onPress={handleClose}
+          onPress={() => {
+            handleClose();
+          }}
           accessibilityRole="button"
           accessibilityLabel="Close identity verification">
           <HugeiconsIcon icon={Cancel01Icon} size={22} color="#343433" />
@@ -210,8 +219,12 @@ export default function KycDiditSdkScreen() {
       {!initError && (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#343433" />
-          <Text className="mt-4 font-body text-[15px] text-ash">Launching verification…</Text>
-          <Text className="mt-2 font-caption text-[13px] text-smoke">This may take a moment</Text>
+          <Text className="mt-4 font-body text-[15px] text-ash" maxFontSizeMultiplier={1.4}>
+            Launching verification…
+          </Text>
+          <Text className="mt-2 font-caption text-[13px] text-smoke" maxFontSizeMultiplier={1.4}>
+            This may take a moment
+          </Text>
         </View>
       )}
 
@@ -220,16 +233,23 @@ export default function KycDiditSdkScreen() {
           <View className="mb-6 items-center">
             <HugeiconsIcon icon={Alert02Icon} size={48} color="#ff2b3a" />
           </View>
-          <Text className="mb-2 text-center font-display text-[22px] text-charcoal-primary">
+          <Text
+            className="mb-2 text-center font-display text-[22px] text-charcoal-primary"
+            maxFontSizeMultiplier={1.3}>
             {getErrorTitle()}
           </Text>
-          <Text className="mb-8 text-center font-body text-[15px] leading-6 text-ash">
+          <Text
+            className="mb-8 text-center font-body text-[15px] leading-6 text-ash"
+            maxFontSizeMultiplier={1.4}>
             {getErrorMessage()}
           </Text>
 
           <View className="w-full flex-row gap-3">
             <Pressable
-              onPress={handleRetry}
+              onPress={() => {
+                triggerFeedback();
+                handleRetry();
+              }}
               disabled={isRetrying}
               className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-6 py-4"
               accessibilityRole="button"
@@ -239,22 +259,29 @@ export default function KycDiditSdkScreen() {
               ) : (
                 <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />
               )}
-              <Text className="font-subtitle text-[15px] text-white">
+              <Text className="font-subtitle text-[15px] text-white" maxFontSizeMultiplier={1.3}>
                 {isRetrying ? 'Creating session…' : 'Try Again'}
               </Text>
             </Pressable>
 
             <Pressable
-              onPress={handleContactSupport}
+              onPress={() => {
+                triggerFeedback();
+                handleContactSupport();
+              }}
               className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full border border-fog px-6 py-4"
               accessibilityRole="button"
               accessibilityLabel="Contact support">
               <HugeiconsIcon icon={MessageIcon} size={18} color="#474645" />
-              <Text className="font-subtitle text-[15px] text-graphite">Contact Support</Text>
+              <Text className="font-subtitle text-[15px] text-graphite" maxFontSizeMultiplier={1.3}>
+                Contact Support
+              </Text>
             </Pressable>
           </View>
 
-          <Text className="mt-8 text-center font-caption text-[12px] text-ash">
+          <Text
+            className="mt-8 text-center font-caption text-[12px] text-ash"
+            maxFontSizeMultiplier={1.4}>
             Having trouble? Our support team is here to help.
           </Text>
         </View>

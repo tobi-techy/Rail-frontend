@@ -6,6 +6,9 @@ import { useKycStore } from '@/stores/kycStore';
 import { useStartDiditSession } from '@/api/hooks/useKYC';
 import type { TransformedApiError } from '@/api/types';
 import type { KycDisclosures } from '@/api/types/kyc';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { ArrowLeft01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
@@ -60,14 +63,19 @@ function OptionRow({
   selected: boolean;
   onPress: () => void;
 }) {
+  const { selection } = useHaptics();
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        selection();
+        onPress();
+      }}
       className={`mb-2 flex-row items-center justify-between rounded-2xl border px-4 py-3.5 ${
         selected ? 'border-midnight bg-black' : 'border-fog bg-white'
       }`}>
       <Text
-        className={`font-body text-[15px] ${selected ? 'text-white' : 'text-charcoal-primary'}`}>
+        className={`font-body text-[15px] ${selected ? 'text-white' : 'text-charcoal-primary'}`}
+        maxFontSizeMultiplier={1.4}>
         {label}
       </Text>
       <View
@@ -105,6 +113,8 @@ export default function SourceOfFundsScreen() {
   } = useKycStore();
 
   const startSession = useStartDiditSession();
+  const triggerFeedback = useButtonFeedback();
+  const { impact } = useHaptics();
 
   // Pre-fill from store so retry after SDK failure doesn't lose data
   const [funds, setFunds] = useState<string | null>(savedFunds);
@@ -146,17 +156,26 @@ export default function SourceOfFundsScreen() {
     return (
       <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
         <View className="flex-1 items-center justify-center px-8">
-          <Text className="mb-4 text-center font-display text-[22px] text-charcoal-primary">
+          <Text
+            className="mb-4 text-center font-display text-[22px] text-charcoal-primary"
+            maxFontSizeMultiplier={1.3}>
             Session interrupted
           </Text>
-          <Text className="mb-8 text-center font-body text-[15px] leading-6 text-ash">
+          <Text
+            className="mb-8 text-center font-body text-[15px] leading-6 text-ash"
+            maxFontSizeMultiplier={1.4}>
             Your session was interrupted. Please re-enter your tax ID to continue with verification.
           </Text>
           <Pressable
-            onPress={() => router.replace('/kyc/tax-id')}
+            onPress={() => {
+              triggerFeedback();
+              router.replace('/kyc/tax-id');
+            }}
             className="rounded-full bg-primary px-8 py-4"
             accessibilityRole="button">
-            <Text className="font-subtitle text-[15px] text-white">Re-enter Tax ID</Text>
+            <Text className="font-subtitle text-[15px] text-white" maxFontSizeMultiplier={1.3}>
+              Re-enter Tax ID
+            </Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -224,7 +243,9 @@ export default function SourceOfFundsScreen() {
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
       <View className="flex-row items-center px-4 pb-2 pt-1">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            router.back();
+          }}
           className="size-11 items-center justify-center"
           accessibilityRole="button">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#343433" />
@@ -242,20 +263,26 @@ export default function SourceOfFundsScreen() {
         className="flex-1 px-5"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}>
-        <Text className="mb-1 font-display text-[28px] text-charcoal-primary">
+        <Text
+          className="mb-1 font-display text-[28px] text-charcoal-primary"
+          maxFontSizeMultiplier={1.3}>
           About your funds
         </Text>
-        <Text className="mb-6 font-body text-[15px] leading-6 text-ash">
+        <Text className="mb-6 font-body text-[15px] leading-6 text-ash" maxFontSizeMultiplier={1.4}>
           This helps our financial partner verify your account and comply with regulations.
         </Text>
 
         <View className="mb-6 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
-          <Text className="font-body text-[13px] leading-5 text-blue-800">
+          <Text
+            className="font-body text-[13px] leading-5 text-blue-800"
+            maxFontSizeMultiplier={1.4}>
             Your information is securely encrypted and only used for account verification.
           </Text>
         </View>
 
-        <Text className="mb-3 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
+        <Text
+          className="mb-3 font-subtitle text-[13px] uppercase tracking-wide text-smoke"
+          maxFontSizeMultiplier={1.4}>
           Source of funds
         </Text>
         {SOURCE_OF_FUNDS.map((o) => (
@@ -275,7 +302,9 @@ export default function SourceOfFundsScreen() {
           onLayout={(e) => {
             sectionYRef.current.monthly = e.nativeEvent.layout.y;
           }}>
-          <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
+          <Text
+            className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke"
+            maxFontSizeMultiplier={1.4}>
             Expected monthly deposits
           </Text>
         </View>
@@ -296,7 +325,9 @@ export default function SourceOfFundsScreen() {
           onLayout={(e) => {
             sectionYRef.current.purpose = e.nativeEvent.layout.y;
           }}>
-          <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
+          <Text
+            className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke"
+            maxFontSizeMultiplier={1.4}>
             Account purpose
           </Text>
         </View>
@@ -327,7 +358,9 @@ export default function SourceOfFundsScreen() {
           onLayout={(e) => {
             sectionYRef.current.occupation = e.nativeEvent.layout.y;
           }}>
-          <Text className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke">
+          <Text
+            className="mb-3 mt-6 font-subtitle text-[13px] uppercase tracking-wide text-smoke"
+            maxFontSizeMultiplier={1.4}>
             Most recent occupation
           </Text>
         </View>
@@ -350,16 +383,21 @@ export default function SourceOfFundsScreen() {
           }}>
           <View className="mt-6 flex-row items-center justify-between rounded-2xl border border-fog px-4 py-3.5">
             <View className="flex-1 pr-4">
-              <Text className="font-body text-[15px] text-charcoal-primary">
+              <Text
+                className="font-body text-[15px] text-charcoal-primary"
+                maxFontSizeMultiplier={1.4}>
                 Acting as intermediary?
               </Text>
-              <Text className="mt-0.5 font-body text-[13px] text-smoke">
+              <Text className="mt-0.5 font-body text-[13px] text-smoke" maxFontSizeMultiplier={1.4}>
                 Are you transacting on behalf of another person or entity?
               </Text>
             </View>
             <Switch
               value={intermediary}
-              onValueChange={setIntermediary}
+              onValueChange={(v) => {
+                playUISound('toggle');
+                setIntermediary(v);
+              }}
               trackColor={{ false: '#e5e7eb', true: '#000' }}
               thumbColor="#fff"
             />
@@ -368,18 +406,26 @@ export default function SourceOfFundsScreen() {
 
         {!!submitError && (
           <View className="mt-3 rounded-2xl bg-coral-red/10 px-4 py-3">
-            <Text className="font-body text-[12px] leading-5 text-red-700">{submitError}</Text>
+            <Text
+              className="font-body text-[12px] leading-5 text-red-700"
+              maxFontSizeMultiplier={1.4}>
+              {submitError}
+            </Text>
           </View>
         )}
       </ScrollView>
 
       <View className="px-5 pb-4 pt-2">
         <Pressable
-          onPress={handleContinue}
+          onPress={() => {
+            triggerFeedback();
+            handleContinue();
+          }}
           disabled={!canContinue}
           className={`items-center rounded-full py-4 ${canContinue ? 'bg-primary' : 'bg-fog'}`}>
           <Text
-            className={`font-subtitle text-[16px] ${canContinue ? 'text-white' : 'text-smoke'}`}>
+            className={`font-subtitle text-[16px] ${canContinue ? 'text-white' : 'text-smoke'}`}
+            maxFontSizeMultiplier={1.3}>
             {startSession.isPending ? 'Starting verification…' : 'Continue'}
           </Text>
         </Pressable>

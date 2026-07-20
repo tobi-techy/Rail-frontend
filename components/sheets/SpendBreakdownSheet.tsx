@@ -11,6 +11,7 @@ import { useUIStore } from '@/stores';
 import { cn } from '@/utils/cn';
 import type { Currency } from '@/stores/uiStore';
 import { ArrowRight01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 interface SpendBreakdownSheetProps {
   visible: boolean;
@@ -127,6 +128,7 @@ function CategoryRow({
 export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBreakdownSheetProps) {
   const { data, isLoading } = useSpendingStash();
   const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
+  const triggerFeedback = useButtonFeedback();
 
   const currency = migrateLegacyCurrency(data?.balance?.currency);
   const totalSpent = toNumber(data?.spending_summary?.this_month_total);
@@ -238,7 +240,10 @@ export function SpendBreakdownSheet({ visible, onClose, onViewDetails }: SpendBr
         {onViewDetails && !showEmpty ? (
           <Animated.View entering={FadeInUp.duration(300).delay(400)}>
             <Pressable
-              onPress={onViewDetails}
+              onPress={() => {
+                triggerFeedback();
+                onViewDetails();
+              }}
               className="flex-row items-center justify-center gap-1.5 rounded-xl bg-stone-surface py-3">
               <Text className="font-body-medium text-sm text-charcoal-primary">
                 View full breakdown

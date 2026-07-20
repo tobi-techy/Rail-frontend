@@ -15,6 +15,7 @@ import {
 } from '@/lib/icons';
 import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { Button } from '@/components/ui';
 import { getDestinationError } from '@/components/withdraw/method-screen/utils';
 import { QRScanSheet } from '@/components/sheets/QRScanSheet';
@@ -105,6 +106,7 @@ export default function EnterAddressScreen() {
   const isNewAddress = canContinue && !recent.some((r) => r.address === address);
 
   const proceedToAmount = useCallback(async () => {
+    playUISound('buttonClick');
     impact();
     setShowWarning(false);
     await saveRecent(address, chain);
@@ -140,6 +142,7 @@ export default function EnterAddressScreen() {
   const handlePaste = useCallback(async () => {
     const text = await Clipboard.getStringAsync();
     if (text?.trim()) {
+      playUISound('buttonClick');
       selection();
       setAddress(text.trim());
     }
@@ -147,6 +150,7 @@ export default function EnterAddressScreen() {
 
   const handleSelectRecent = useCallback(
     (addr: string) => {
+      playUISound('buttonClick');
       selection();
       setAddress(addr);
     },
@@ -155,6 +159,7 @@ export default function EnterAddressScreen() {
 
   const handleRemoveRecent = useCallback(
     (addr: string) => {
+      playUISound('buttonClick');
       selection();
       removeRecent(addr);
       setRecent((prev) => prev.filter((r) => r.address !== addr));
@@ -193,7 +198,9 @@ export default function EnterAddressScreen() {
 
         {/* Title */}
         <Animated.View entering={FadeIn.duration(200)} className="px-5 pt-4">
-          <Text className="font-subtitle text-[30px] text-text-primary">Receiving address</Text>
+          <Text className="font-subtitle text-[30px] text-text-primary" maxFontSizeMultiplier={1.3}>
+            Receiving address
+          </Text>
         </Animated.View>
 
         {/* Main content — FlatList as single scrollable surface */}
@@ -224,7 +231,11 @@ export default function EnterAddressScreen() {
               {/* Error */}
               {error && address.length > 5 && (
                 <Animated.View entering={FadeIn.duration(150)} className="mt-2">
-                  <Text className="font-body text-[13px] text-[#E53935]">{error}</Text>
+                  <Text
+                    className="font-body text-[13px] text-[#E53935]"
+                    maxFontSizeMultiplier={1.4}>
+                    {error}
+                  </Text>
                 </Animated.View>
               )}
 
@@ -236,7 +247,11 @@ export default function EnterAddressScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Paste address from clipboard">
                   <HugeiconsIcon icon={Copy01Icon} size={16} color="#343433" />
-                  <Text className="font-body-medium text-[14px] text-text-primary">Paste</Text>
+                  <Text
+                    className="font-body-medium text-[14px] text-text-primary"
+                    maxFontSizeMultiplier={1.4}>
+                    Paste
+                  </Text>
                 </Pressable>
               </Animated.View>
 
@@ -246,13 +261,19 @@ export default function EnterAddressScreen() {
               {/* Recent tab */}
               <View className="mb-4 mt-5 flex-row items-center">
                 <View className="rounded-full bg-[#1C1C1E] px-4 py-2">
-                  <Text className="font-body-medium text-[13px] text-white">Recent</Text>
+                  <Text
+                    className="font-body-medium text-[13px] text-white"
+                    maxFontSizeMultiplier={1.4}>
+                    Recent
+                  </Text>
                 </View>
               </View>
             </View>
           }
           ListEmptyComponent={
-            <Text className="px-5 py-8 text-center font-body text-[14px] text-text-secondary">
+            <Text
+              className="px-5 py-8 text-center font-body text-[14px] text-text-secondary"
+              maxFontSizeMultiplier={1.4}>
               No recent addresses on {chainLabel}
             </Text>
           }
@@ -265,12 +286,15 @@ export default function EnterAddressScreen() {
                 <DiceBearAvatar seed={item.address} size={40} />
               </View>
               <View className="ml-3 flex-1">
-                <Text className="font-subtitle text-[15px] text-text-primary">
+                <Text
+                  className="font-subtitle text-[15px] text-text-primary"
+                  maxFontSizeMultiplier={1.3}>
                   {truncateAddress(item.address)}
                 </Text>
                 <Text
                   className="mt-0.5 font-body text-[12px] text-text-secondary"
-                  numberOfLines={1}>
+                  numberOfLines={1}
+                  maxFontSizeMultiplier={1.4}>
                   {item.address}
                 </Text>
               </View>

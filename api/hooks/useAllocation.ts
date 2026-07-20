@@ -19,8 +19,7 @@ export function useAllocationBalances() {
     queryKey: queryKeys.allocation.balances(),
     queryFn: () => allocationService.getBalances(),
     enabled: isAuthenticated,
-    staleTime: 20 * 1000, // 20 seconds - balance-critical, refresh often
-    refetchInterval: 120 * 1000, // Refetch every 2 minutes
+    staleTime: 2 * 60 * 1000, // 2 min — no background interval (Redis cost); refresh on focus/reconnect + mutation invalidation
     refetchOnWindowFocus: true, // Update when app comes to foreground
     refetchOnReconnect: true, // Update when network restored
   });

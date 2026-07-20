@@ -8,6 +8,7 @@ import { AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { useHaptics } from '@/hooks/useHaptics';
 
 const MIN_AGE = 18;
 
@@ -30,6 +31,7 @@ export default function DateOfBirth() {
   const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
   const setOnboardingStatus = useAuthStore((state) => state.setOnboardingStatus);
   const { showWarning } = useFeedbackPopup();
+  const { selection } = useHaptics();
   const initialDob = registrationData.dob ? new Date(registrationData.dob) : maxDate;
   const [dob, setDob] = useState<Date>(Number.isNaN(initialDob.getTime()) ? maxDate : initialDob);
   const [showPicker, setShowPicker] = useState(false);
@@ -73,27 +75,36 @@ export default function DateOfBirth() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
+              <Text
+                className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
                 Date of Birth
               </Text>
-              <Text className="mt-2 font-body text-caption text-ash">
+              <Text className="mt-2 font-body text-caption text-ash" maxFontSizeMultiplier={1.4}>
                 Enter the date of birth shown on your ID. You must be at least {MIN_AGE} to use
                 Rail.
               </Text>
-              <Text className="mt-8 font-body text-caption text-ash">
+              <Text className="mt-8 font-body text-caption text-ash" maxFontSizeMultiplier={1.4}>
                 Select your date of birth
               </Text>
               <Pressable
-                onPress={() => setShowPicker(true)}
+                onPress={() => {
+                  selection();
+                  setShowPicker(true);
+                }}
                 className="mt-2 h-14 w-full flex-row items-center rounded-lg border border-fog bg-warm-canvas px-4"
                 style={({ pressed }) => ({
                   opacity: pressed ? 0.7 : 1,
                   transform: [{ scale: pressed ? 0.98 : 1 }],
                 })}>
-                <Text className="flex-1 font-body text-lg text-charcoal-primary">
+                <Text
+                  className="flex-1 font-body text-lg text-charcoal-primary"
+                  maxFontSizeMultiplier={1.4}>
                   {formatDate(dob)}
                 </Text>
-                <Text className="text-smoke">Date</Text>
+                <Text className="text-smoke" maxFontSizeMultiplier={1.3}>
+                  Date
+                </Text>
               </Pressable>
             </View>
           </StaggeredChild>

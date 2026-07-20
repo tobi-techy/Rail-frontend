@@ -15,6 +15,9 @@ import { useKycStore } from '@/stores/kycStore';
 import { useAuthStore } from '@/stores/authStore';
 import { invalidateQueries } from '@/api/queryClient';
 import type { KycStatus } from '@/api/types/kyc';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import {
   CancelCircleIcon,
   CheckmarkCircle02Icon,
@@ -25,6 +28,8 @@ import {
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export default function KycPendingScreen() {
+  const triggerFeedback = useButtonFeedback();
+  const { impact } = useHaptics();
   const { resetKycState, localSubmissionPendingAt, setLocalSubmissionPendingAt } = useKycStore();
 
   const opacity = useSharedValue(1);
@@ -124,10 +129,14 @@ export default function KycPendingScreen() {
         {isError ? (
           <>
             <HugeiconsIcon icon={CancelCircleIcon} size={56} color="#ff2b3a" />
-            <Text className="mt-6 text-center font-display text-[26px] text-charcoal-primary">
+            <Text
+              className="mt-6 text-center font-display text-[26px] text-charcoal-primary"
+              maxFontSizeMultiplier={1.3}>
               Connection error
             </Text>
-            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-ash">
+            <Text
+              className="mt-2 text-center font-body text-[15px] leading-6 text-ash"
+              maxFontSizeMultiplier={1.4}>
               Unable to check your verification status. Please try again later.
             </Text>
             <Pressable
@@ -140,20 +149,27 @@ export default function KycPendingScreen() {
               }}
               className="mt-8 rounded-full bg-primary px-8 py-4"
               accessibilityRole="button">
-              <Text className="font-subtitle text-[15px] text-white">Close</Text>
+              <Text className="font-subtitle text-[15px] text-white" maxFontSizeMultiplier={1.3}>
+                Close
+              </Text>
             </Pressable>
           </>
         ) : status === 'approved' ? (
           <>
             <HugeiconsIcon icon={CheckmarkCircle02Icon} size={56} color="#00ca48" />
-            <Text className="mt-6 text-center font-display text-[26px] text-charcoal-primary">
+            <Text
+              className="mt-6 text-center font-display text-[26px] text-charcoal-primary"
+              maxFontSizeMultiplier={1.3}>
               You&apos;re verified
             </Text>
-            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-ash">
+            <Text
+              className="mt-2 text-center font-body text-[15px] leading-6 text-ash"
+              maxFontSizeMultiplier={1.4}>
               Your identity has been confirmed. Rail is ready.
             </Text>
             <Pressable
               onPress={() => {
+                triggerFeedback();
                 resetKycState();
                 if (router.canDismiss()) {
                   router.dismissAll();
@@ -163,32 +179,50 @@ export default function KycPendingScreen() {
               }}
               className="mt-8 rounded-full bg-primary px-8 py-4"
               accessibilityRole="button">
-              <Text className="font-subtitle text-[15px] text-white">Get started</Text>
+              <Text className="font-subtitle text-[15px] text-white" maxFontSizeMultiplier={1.3}>
+                Get started
+              </Text>
             </Pressable>
           </>
         ) : status === 'rejected' || status === 'expired' ? (
           <>
             <HugeiconsIcon icon={CancelCircleIcon} size={56} color="#ff2b3a" />
-            <Text className="mt-6 text-center font-display text-[26px] text-charcoal-primary">
+            <Text
+              className="mt-6 text-center font-display text-[26px] text-charcoal-primary"
+              maxFontSizeMultiplier={1.3}>
               Verification unsuccessful
             </Text>
-            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-ash">
+            <Text
+              className="mt-2 text-center font-body text-[15px] leading-6 text-ash"
+              maxFontSizeMultiplier={1.4}>
               {getRejectionMessage()}
             </Text>
             <View className="mt-6 w-full flex-row gap-3">
               <Pressable
-                onPress={handleRetry}
+                onPress={() => {
+                  triggerFeedback();
+                  handleRetry();
+                }}
                 className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-8 py-4"
                 accessibilityRole="button">
                 <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />
-                <Text className="font-subtitle text-[15px] text-white">Try Again</Text>
+                <Text className="font-subtitle text-[15px] text-white" maxFontSizeMultiplier={1.3}>
+                  Try Again
+                </Text>
               </Pressable>
               <Pressable
-                onPress={handleContactSupport}
+                onPress={() => {
+                  triggerFeedback();
+                  handleContactSupport();
+                }}
                 className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full border border-fog px-8 py-4"
                 accessibilityRole="button">
                 <HugeiconsIcon icon={MessageIcon} size={18} color="#474645" />
-                <Text className="font-subtitle text-[15px] text-graphite">Contact Support</Text>
+                <Text
+                  className="font-subtitle text-[15px] text-graphite"
+                  maxFontSizeMultiplier={1.3}>
+                  Contact Support
+                </Text>
               </Pressable>
             </View>
           </>
@@ -196,26 +230,42 @@ export default function KycPendingScreen() {
           // Timeout state - show retry and support options
           <>
             <HugeiconsIcon icon={Clock01Icon} size={56} color="#F59E0B" />
-            <Text className="mt-6 text-center font-display text-[26px] text-charcoal-primary">
+            <Text
+              className="mt-6 text-center font-display text-[26px] text-charcoal-primary"
+              maxFontSizeMultiplier={1.3}>
               Taking longer than expected
             </Text>
-            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-ash">
+            <Text
+              className="mt-2 text-center font-body text-[15px] leading-6 text-ash"
+              maxFontSizeMultiplier={1.4}>
               {getTimeoutMessage()}
             </Text>
             <View className="mt-6 w-full flex-row gap-3">
               <Pressable
-                onPress={handleRetry}
+                onPress={() => {
+                  triggerFeedback();
+                  handleRetry();
+                }}
                 className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full bg-primary px-8 py-4"
                 accessibilityRole="button">
                 <HugeiconsIcon icon={RefreshIcon} size={18} color="#FFFFFF" />
-                <Text className="font-subtitle text-[15px] text-white">Start New Verification</Text>
+                <Text className="font-subtitle text-[15px] text-white" maxFontSizeMultiplier={1.3}>
+                  Start New Verification
+                </Text>
               </Pressable>
               <Pressable
-                onPress={handleContactSupport}
+                onPress={() => {
+                  triggerFeedback();
+                  handleContactSupport();
+                }}
                 className="flex-1 flex-row items-center justify-center gap-x-2 rounded-full border border-fog px-8 py-4"
                 accessibilityRole="button">
                 <HugeiconsIcon icon={MessageIcon} size={18} color="#474645" />
-                <Text className="font-subtitle text-[15px] text-graphite">Contact Support</Text>
+                <Text
+                  className="font-subtitle text-[15px] text-graphite"
+                  maxFontSizeMultiplier={1.3}>
+                  Contact Support
+                </Text>
               </Pressable>
               <Pressable
                 onPress={() => {
@@ -227,7 +277,11 @@ export default function KycPendingScreen() {
                 }}
                 className="mt-2 py-2"
                 accessibilityRole="button">
-                <Text className="text-center font-body text-[14px] text-ash">Continue to app</Text>
+                <Text
+                  className="text-center font-body text-[14px] text-ash"
+                  maxFontSizeMultiplier={1.4}>
+                  Continue to app
+                </Text>
               </Pressable>
             </View>
           </>
@@ -237,10 +291,14 @@ export default function KycPendingScreen() {
             <Animated.View style={animatedStyle}>
               <HugeiconsIcon icon={Clock01Icon} size={56} color="#343433" />
             </Animated.View>
-            <Text className="mt-6 text-center font-display text-[26px] text-charcoal-primary">
+            <Text
+              className="mt-6 text-center font-display text-[26px] text-charcoal-primary"
+              maxFontSizeMultiplier={1.3}>
               Verifying your identity
             </Text>
-            <Text className="mt-2 text-center font-body text-[15px] leading-6 text-ash">
+            <Text
+              className="mt-2 text-center font-body text-[15px] leading-6 text-ash"
+              maxFontSizeMultiplier={1.4}>
               {getTimeoutMessage()}
             </Text>
             <Pressable
@@ -253,7 +311,9 @@ export default function KycPendingScreen() {
               }}
               className="mt-8 rounded-full border border-fog px-8 py-4"
               accessibilityRole="button">
-              <Text className="font-subtitle text-[15px] text-graphite">Close</Text>
+              <Text className="font-subtitle text-[15px] text-graphite" maxFontSizeMultiplier={1.3}>
+                Close
+              </Text>
             </Pressable>
           </>
         )}

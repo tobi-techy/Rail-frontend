@@ -1,5 +1,6 @@
-import React, { forwardRef, useMemo, useState } from 'react';
+import React, { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   NativeSyntheticEvent,
   Text,
   TextInput,
@@ -8,6 +9,9 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from './SafeIonicons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import { ImpactFeedbackStyle } from 'expo-haptics';
 
 export interface InputFieldProps extends Omit<TextInputProps, 'onFocus' | 'onBlur'> {
   label?: string;
@@ -42,6 +46,9 @@ const getKeyboardType = (type: InputFieldProps['type']) => {
   }
 };
 
+const SHAKE_DURATION = 50;
+const SHAKE_AMOUNT = 6;
+
 export const InputField = forwardRef<TextInput, InputFieldProps>(
   (
     {
@@ -75,11 +82,51 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
     },
     ref
   ) => {
+    const haptics = useHaptics();
     const [focused, setFocused] = useState(false);
     const hasError = Boolean(error);
     const isPassword = type === 'password';
     const isDark = variant === 'dark';
     const isCompact = density === 'compact';
+
+    const shakeAnim = useRef(new Animated.Value(0)).current;
+    const prevErrorRef = useRef(hasError);
+
+    // Shake + haptic + sound on error
+    useEffect(() => {
+      if (hasError && !prevErrorRef.current) {
+        haptics.notification('error');
+        playUISound('error');
+        Animated.sequence([
+          Animated.timing(shakeAnim, {
+            toValue: SHAKE_AMOUNT,
+            duration: SHAKE_DURATION,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnim, {
+            toValue: -SHAKE_AMOUNT,
+            duration: SHAKE_DURATION,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnim, {
+            toValue: SHAKE_AMOUNT * 0.6,
+            duration: SHAKE_DURATION,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnim, {
+            toValue: -SHAKE_AMOUNT * 0.6,
+            duration: SHAKE_DURATION,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnim, {
+            toValue: 0,
+            duration: SHAKE_DURATION,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+      prevErrorRef.current = hasError;
+    }, [hasError]);
 
     const labelColorClass = isDark ? 'text-white/70' : 'text-text-secondary';
     const textColorClass = isDark ? 'text-white' : 'text-text-primary';
@@ -111,7 +158,9 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
     );
 
     return (
-      <View className={`w-full ${containerClassName}`}>
+      <Animated.View
+        className={`w-full ${containerClassName}`}
+        style={{ transform: [{ translateX: shakeAnim }] }}>
         {label ? (
           <View className="mb-2 flex-row items-center">
             <Text className={`font-subtitle text-[13px] leading-[18px] ${labelColorClass}`}>
@@ -175,7 +224,11 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
                 rightAccessory
               ) : isPassword && onTogglePasswordVisibility ? (
                 <TouchableOpacity
-                  onPress={onTogglePasswordVisibility}
+                  onPress={() => {
+                    haptics.selection();
+                    playUISound('buttonClick');
+                    onTogglePasswordVisibility?.();
+                  }}
                   className="min-h-[44px] min-w-[44px] items-center justify-center"
                   accessibilityRole="button"
                   accessibilityLabel={isPasswordVisible ? 'Hide password' : 'Show password'}>
@@ -187,7 +240,11 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
                 </TouchableOpacity>
               ) : rightIcon && onRightIconPress ? (
                 <TouchableOpacity
-                  onPress={onRightIconPress}
+                  onPress={() => {
+                    haptics.selection();
+                    playUISound('buttonClick');
+                    onRightIconPress?.();
+                  }}
                   className="min-h-[44px] min-w-[44px] items-center justify-center"
                   accessibilityRole="button"
                   accessibilityLabel="Input action">
@@ -208,7 +265,7 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(
             {helperText}
           </Text>
         ) : null}
-      </View>
+      </Animated.View>
     );
   }
 );

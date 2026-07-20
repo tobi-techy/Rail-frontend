@@ -23,8 +23,7 @@ export function usePajRates() {
     queryKey: pajKeys.rates(),
     queryFn: () => pajService.getRates(),
     enabled: isAuthenticated,
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 5 * 60_000, // no background interval (Redis cost); refresh on focus — rates move slowly enough
   });
 }
 
@@ -142,7 +141,7 @@ export function usePajOrderStatus(orderId: string, enabled = true) {
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       if (status === 'COMPLETED' || status === 'FAILED') return false;
-      return 5_000; // poll every 5s until terminal
+      return 15_000; // poll until terminal; push notifications handle the fast path, so 15s keeps Redis cost low
     },
     staleTime: 0,
   });

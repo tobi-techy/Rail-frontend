@@ -14,3 +14,13 @@ export const REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes before expiry
 export const HEALTH_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 export const MIN_TIMER_MS = 1000; // 1 second minimum for setTimeout
 export const BACKGROUND_LOCK_GRACE_MS = 60 * 1000; // 1 minute grace before locking on background
+
+/** Format a lockout duration (seconds) as "Xm Ys" when >= 60s, "Xs" otherwise. */
+export function formatLockoutTime(totalSeconds: number): string {
+  if (totalSeconds <= 0) return '0s';
+  if (totalSeconds < 60) return `${totalSeconds}s`;
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  if (s === 0) return `${m}m`;
+  return `${m}m ${s}s`;
+}

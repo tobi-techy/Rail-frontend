@@ -12,6 +12,9 @@ import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { profileEditSchema, fieldError } from '@/utils/schemas';
 import { ArrowLeft01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import { ImpactFeedbackStyle } from '@/utils/platformHaptics';
 
 const COUNTRY_NAMES: Record<string, string> = {
   US: 'United States',
@@ -56,6 +59,7 @@ const normalizeOptional = (value: string) => {
 
 export default function ProfileEdit() {
   const insets = useSafeAreaInsets();
+  const { impact } = useHaptics();
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { showError, showSuccess } = useFeedbackPopup();
 
@@ -218,12 +222,14 @@ export default function ProfileEdit() {
     <View className="flex-1 bg-background-main" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center justify-between px-md py-3">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            router.back();
+          }}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           className="h-9 w-9 items-center justify-center rounded-full bg-surface">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#121212" strokeWidth={2} />
         </Pressable>
-        <Text className="font-subtitle text-body text-text-primary">
+        <Text className="font-subtitle text-body text-text-primary" maxFontSizeMultiplier={1.3}>
           {isReturningToKyc ? 'Complete Profile' : 'Edit Profile'}
         </Text>
         <View className="w-9" />
@@ -235,16 +241,24 @@ export default function ProfileEdit() {
         keyboardShouldPersistTaps="handled">
         <View className="items-center py-8">
           <DiceBearAvatar seed={avatarName} size={88} />
-          <Text className="mt-4 font-subtitle text-[20px] text-text-primary">
+          <Text
+            className="mt-4 font-subtitle text-[20px] text-text-primary"
+            maxFontSizeMultiplier={1.3}>
             {[firstName, lastName].filter(Boolean).join(' ') || 'Rail User'}
           </Text>
-          <Text className="mt-1 font-caption text-caption text-text-secondary">{user?.email}</Text>
+          <Text
+            className="mt-1 font-caption text-caption text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
+            {user?.email}
+          </Text>
         </View>
 
         <View className="mx-md mb-2 h-px bg-surface" />
 
         {(isNameLocked || isDobLocked) && (
-          <Text className="mx-md mb-4 font-body text-[12px] leading-5 text-text-secondary">
+          <Text
+            className="mx-md mb-4 font-body text-[12px] leading-5 text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
             Name, date of birth, and email cannot be changed as they must match your verified ID.
           </Text>
         )}
@@ -334,11 +348,15 @@ export default function ProfileEdit() {
           />
 
           <View>
-            <Text className="mb-1.5 font-caption text-caption text-text-secondary">
+            <Text
+              className="mb-1.5 font-caption text-caption text-text-secondary"
+              maxFontSizeMultiplier={1.4}>
               Email {isEmailLocked && '(locked)'}
             </Text>
             <View className="rounded-lg border border-surface bg-surface px-4 py-4">
-              <Text className="font-body text-body text-text-secondary">{user?.email}</Text>
+              <Text className="font-body text-body text-text-secondary" maxFontSizeMultiplier={1.4}>
+                {user?.email}
+              </Text>
             </View>
           </View>
         </View>

@@ -5,6 +5,8 @@ import { CHAT_BG } from './ChatBubble';
 import { bubbleEnter } from '@/lib/motion';
 import { MarkdownContent } from './MarkdownContent';
 import { TypingBubble } from './TypingBubble';
+import { useHaptics } from '@/hooks/useHaptics';
+import * as Haptics from '@/utils/platformHaptics';
 
 // Timing constants — fast delivery, just enough stagger to feel sequential.
 const INITIAL_PAUSE_MS = 120; // brief pause before first bubble
@@ -89,6 +91,7 @@ export const StaggeredMiriamBubbles = React.memo(function StaggeredMiriamBubbles
   measureRef,
   onAllVisible,
 }: Props) {
+  const haptics = useHaptics();
   const [visibleCount, setVisibleCount] = useState(0);
   const [showTyping, setShowTyping] = useState(true);
   const onAllVisibleRef = useRef(onAllVisible);
@@ -137,7 +140,10 @@ export const StaggeredMiriamBubbles = React.memo(function StaggeredMiriamBubbles
         return (
           <Pressable
             key={`seg-${i}`}
-            onLongPress={onLongPress}
+            onLongPress={() => {
+              haptics.impact(Haptics.ImpactFeedbackStyle.Medium);
+              onLongPress?.();
+            }}
             delayLongPress={300}
             className="max-w-[88%]"
             accessibilityRole="text">

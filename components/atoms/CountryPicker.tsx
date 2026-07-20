@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, Modal, FlatList } from 'react-native';
 import { Ionicons } from './SafeIonicons';
 import { InputField } from './InputField';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 interface Country {
   code: string;
@@ -96,6 +98,7 @@ export function CountryPicker({
   required = false,
   variant = 'blended',
 }: CountryPickerProps) {
+  const haptics = useHaptics();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const isDark = variant === 'dark';
@@ -121,6 +124,8 @@ export function CountryPicker({
   };
 
   const handleCountrySelect = (country: Country) => {
+    haptics.selection();
+    playUISound('buttonClick');
     onSelect(country);
     setIsModalVisible(false);
     setSearchQuery('');
@@ -154,7 +159,11 @@ export function CountryPicker({
       )}
 
       <Pressable
-        onPress={() => setIsModalVisible(true)}
+        onPress={() => {
+          haptics.selection();
+          playUISound('buttonClick');
+          setIsModalVisible(true);
+        }}
         className={`flex-row items-center justify-between ${getContainerStyle()}`}>
         <View className="flex-1 flex-row items-center">
           {selectedCountry ? (
@@ -190,7 +199,13 @@ export function CountryPicker({
         <View className="flex-1 bg-parchment-card">
           <View className="flex-row items-center justify-between border-b border-fog/40 px-5 py-4">
             <Text className="font-subtitle text-[30px] text-text-primary">Select Country</Text>
-            <Pressable onPress={() => setIsModalVisible(false)} className="p-2">
+            <Pressable
+              onPress={() => {
+                haptics.selection();
+                playUISound('dismiss');
+                setIsModalVisible(false);
+              }}
+              className="p-2">
               <Ionicons name="close" size={24} color="#000000" />
             </Pressable>
           </View>

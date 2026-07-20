@@ -3,6 +3,8 @@ import { View, Text, Pressable, Modal, Platform, StyleSheet, Linking } from 'rea
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Cancel01Icon, ScanIcon, IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 interface Props {
   visible: boolean;
@@ -11,6 +13,7 @@ interface Props {
 }
 
 export function QRScanSheet({ visible, onClose, onScanned }: Props) {
+  const haptics = useHaptics();
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const scannedRef = useRef(false);
@@ -20,13 +23,16 @@ export function QRScanSheet({ visible, onClose, onScanned }: Props) {
       if (scannedRef.current) return;
       scannedRef.current = true;
       onScanned(data);
-      setTimeout(() => { scannedRef.current = false; }, 1500);
+      setTimeout(() => {
+        scannedRef.current = false;
+      }, 1500);
     },
     [onScanned]
   );
 
   const permissionDenied =
-    permission?.status === 'denied' || (permission && !permission.granted && !permission.canAskAgain);
+    permission?.status === 'denied' ||
+    (permission && !permission.granted && !permission.canAskAgain);
 
   return (
     <Modal
@@ -54,7 +60,11 @@ export function QRScanSheet({ visible, onClose, onScanned }: Props) {
                 : 'Allow camera access to scan wallet QR codes.'}
             </Text>
             <Pressable
-              onPress={() => (permissionDenied ? Linking.openSettings() : requestPermission())}
+              onPress={() => {
+                playUISound('buttonClick');
+                haptics.selection();
+                permissionDenied ? Linking.openSettings() : requestPermission();
+              }}
               className="mt-6 rounded-xl bg-white/10 px-6 py-3">
               <Text className="text-center font-subtitle text-base text-white">
                 {permissionDenied ? 'Open Settings' : 'Allow Camera'}
@@ -65,7 +75,11 @@ export function QRScanSheet({ visible, onClose, onScanned }: Props) {
 
         {/* Close button */}
         <Pressable
-          onPress={onClose}
+          onPress={() => {
+            playUISound('buttonClick');
+            haptics.selection();
+            onClose();
+          }}
           style={{ top: insets.top + 12 }}
           className="absolute right-5 size-11 items-center justify-center rounded-full bg-black/50"
           accessibilityRole="button"

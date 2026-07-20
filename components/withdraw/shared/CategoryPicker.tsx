@@ -17,6 +17,7 @@ import {
 } from '@/lib/icons';
 import { GorhomBottomSheet } from '@/components/sheets/GorhomBottomSheet';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 const CATEGORIES = [
   { label: 'Transfer', icon: MoneyReceiveSquareIcon, color: '#0090ff' },
@@ -47,6 +48,7 @@ export function CategoryPicker({ value, onChange }: CategoryPickerProps) {
         <Text className="mb-2 font-subtitle text-[13px] text-text-secondary">Category</Text>
         <Pressable
           onPress={() => {
+            playUISound('buttonClick');
             selection();
             setIsOpen(true);
           }}
@@ -75,6 +77,7 @@ export function CategoryPicker({ value, onChange }: CategoryPickerProps) {
               <Pressable
                 key={cat.label}
                 onPress={() => {
+                  playUISound('buttonClick');
                   selection();
                   onChange(cat.label);
                   setIsOpen(false);

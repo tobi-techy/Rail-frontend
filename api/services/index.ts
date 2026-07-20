@@ -25,6 +25,7 @@ export { premiumService } from './premium.service';
 export { gameplayService } from './gameplay.service';
 export { securityService } from './security.service';
 export { statementV2Service } from './statementV2.service';
+export { spendingCommitmentService } from './spendingCommitment.service';
 
 // Re-export for convenience
 export { default as auth } from './auth.service';

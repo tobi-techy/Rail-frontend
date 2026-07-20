@@ -8,13 +8,16 @@ import { InputField } from '@/components/atoms/InputField';
 import { Button } from '@/components/ui';
 import { COUNTRY_TAX_CONFIG, validateTaxId } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { ArrowLeft01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 export default function KycTaxIdScreen() {
   const insets = useSafeAreaInsets();
-  const { country, taxIdType, taxId, setTaxId, hasCompletedStep, addCompletedStep } =
-    useKycStore();
+  const { country, taxIdType, taxId, setTaxId, hasCompletedStep, addCompletedStep } = useKycStore();
+
+  const { impact } = useHaptics();
 
   const [taxIdError, setTaxIdError] = useState('');
 
@@ -48,12 +51,16 @@ export default function KycTaxIdScreen() {
         <View className="flex-row items-center justify-between px-4 pb-2 pt-1">
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-stone-surface"
-            onPress={() => router.back()}
+            onPress={() => {
+              router.back();
+            }}
             accessibilityRole="button"
             accessibilityLabel="Go back">
             <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" />
           </Pressable>
-          <Text className="font-subtitle text-[13px] text-ash">Step 2</Text>
+          <Text className="font-subtitle text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
+            Step 2
+          </Text>
           <View className="size-11" />
         </View>
 
@@ -69,10 +76,14 @@ export default function KycTaxIdScreen() {
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}>
-            <Text className="font-display text-[30px] leading-[34px] text-charcoal-primary">
+            <Text
+              className="font-display text-[30px] leading-[34px] text-charcoal-primary"
+              maxFontSizeMultiplier={1.3}>
               Tax ID
             </Text>
-            <Text className="mt-2 font-body text-[15px] leading-6 text-ash">
+            <Text
+              className="mt-2 font-body text-[15px] leading-6 text-ash"
+              maxFontSizeMultiplier={1.4}>
               Enter your tax identifier. We use this for regulatory compliance.
             </Text>
 

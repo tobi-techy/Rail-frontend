@@ -14,6 +14,7 @@ import { useNotifications, useMarkAsRead, useMarkAllAsRead, useUnreadCount } fro
 import type { Notification } from '@/api/types/notification';
 import { ArrowLeft01Icon, CheckUnread01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 const formatTimeAgo = (dateString: string): string => {
   const date = new Date(dateString);
@@ -36,25 +37,35 @@ function NotificationItem({
   notification: Notification;
   onPress: () => void;
 }) {
+  const triggerFeedback = useButtonFeedback();
   const timeAgo = formatTimeAgo(notification.created_at);
 
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={() => {
+        triggerFeedback();
+        onPress();
+      }}
       className={`border-b border-stone-surface px-4 py-4 ${!notification.read ? 'bg-blue-50/30' : 'bg-white'}`}
       activeOpacity={0.7}>
       <View className="mb-1 flex-row items-start justify-between">
         <Text
           className={`mr-3 flex-1 text-[15px] font-medium ${!notification.read ? 'text-charcoal-primary' : 'text-graphite'}`}
-          numberOfLines={1}>
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.3}>
           {notification.title}
         </Text>
         <View className="flex-row items-center gap-1.5">
           {!notification.read && <View className="h-2 w-2 rounded-full bg-blue-500" />}
-          <Text className="text-[12px] text-smoke">{timeAgo}</Text>
+          <Text className="text-[12px] text-smoke" maxFontSizeMultiplier={1.4}>
+            {timeAgo}
+          </Text>
         </View>
       </View>
-      <Text className="text-[14px] leading-5 text-ash" numberOfLines={2}>
+      <Text
+        className="text-[14px] leading-5 text-ash"
+        numberOfLines={2}
+        maxFontSizeMultiplier={1.4}>
         {notification.body}
       </Text>
     </TouchableOpacity>
@@ -64,8 +75,12 @@ function NotificationItem({
 function EmptyState() {
   return (
     <View className="flex-1 items-center justify-center py-20">
-      <Text className="mb-1 text-lg font-semibold text-charcoal-primary">No notifications yet</Text>
-      <Text className="px-8 text-center text-ash">
+      <Text
+        className="mb-1 text-lg font-semibold text-charcoal-primary"
+        maxFontSizeMultiplier={1.3}>
+        No notifications yet
+      </Text>
+      <Text className="px-8 text-center text-ash" maxFontSizeMultiplier={1.3}>
         Deposits, investments, and account updates will appear here.
       </Text>
     </View>
@@ -74,6 +89,7 @@ function EmptyState() {
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
+  const triggerFeedback = useButtonFeedback();
   const { data, isLoading, refetch, isRefetching } = useNotifications();
   const { data: unreadData } = useUnreadCount();
   const markAsRead = useMarkAsRead();
@@ -160,14 +176,22 @@ export default function NotificationsScreen() {
           headerShadowVisible: false,
           headerTitleStyle: { fontWeight: '600', fontSize: 17 },
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} className="-ml-2 p-2">
+            <TouchableOpacity
+              onPress={() => {
+                triggerFeedback();
+                router.back();
+              }}
+              className="-ml-2 p-2">
               <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#111" />
             </TouchableOpacity>
           ),
           headerRight: () =>
             unreadCount > 0 ? (
               <TouchableOpacity
-                onPress={handleMarkAllRead}
+                onPress={() => {
+                  triggerFeedback();
+                  handleMarkAllRead();
+                }}
                 className="flex-row items-center"
                 disabled={markAllAsRead.isPending}>
                 {markAllAsRead.isPending ? (
@@ -175,7 +199,11 @@ export default function NotificationsScreen() {
                 ) : (
                   <>
                     <HugeiconsIcon icon={CheckUnread01Icon} size={18} color="#0090ff" />
-                    <Text className="ml-1 text-[14px] font-medium text-sky-blue">Read all</Text>
+                    <Text
+                      className="ml-1 text-[14px] font-medium text-sky-blue"
+                      maxFontSizeMultiplier={1.4}>
+                      Read all
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>

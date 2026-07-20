@@ -26,3 +26,6 @@ export * from './auth/types';
 
 // AI Chat store
 export { useAIChatStore } from './aiChatStore';
+
+// Transaction detail (transient hand-off for the full-screen detail route)
+export { useTransactionDetailStore } from './transactionDetailStore';

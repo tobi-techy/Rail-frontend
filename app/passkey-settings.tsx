@@ -35,10 +35,15 @@ function PasskeyRow({
         <HugeiconsIcon icon={Key01Icon} size={18} color="#848281" />
       </View>
       <View className="flex-1">
-        <Text className="font-subtitle text-body text-text-primary" numberOfLines={1}>
+        <Text
+          className="font-subtitle text-body text-text-primary"
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.3}>
           {credential.name || 'Passkey'}
         </Text>
-        <Text className="mt-0.5 font-caption text-caption text-text-secondary">
+        <Text
+          className="mt-0.5 font-caption text-caption text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
           Last used {formatDate(credential.lastUsedAt)}
         </Text>
       </View>
@@ -73,16 +78,22 @@ export default function PasskeySettingsScreen() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
           </Pressable>
-          <Text className="flex-1 font-subtitle text-headline-1">Passkeys</Text>
+          <Text className="flex-1 font-subtitle text-headline-1" maxFontSizeMultiplier={1.3}>
+            Passkeys
+          </Text>
         </View>
         <View className="flex-1 items-center justify-center px-8">
           <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-surface">
             <HugeiconsIcon icon={Key01Icon} size={24} color="#848281" />
           </View>
-          <Text className="mb-2 text-center font-subtitle text-base text-text-primary">
+          <Text
+            className="mb-2 text-center font-subtitle text-base text-text-primary"
+            maxFontSizeMultiplier={1.3}>
             Passkeys not supported
           </Text>
-          <Text className="text-center font-body text-sm text-text-secondary">
+          <Text
+            className="text-center font-body text-sm text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
             Passkeys require iOS 16+ or Android with Digital Asset Links configured.
           </Text>
         </View>
@@ -173,7 +184,9 @@ export default function PasskeySettingsScreen() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
         </Pressable>
-        <Text className="flex-1 font-subtitle text-headline-1">Passkeys</Text>
+        <Text className="flex-1 font-subtitle text-headline-1" maxFontSizeMultiplier={1.3}>
+          Passkeys
+        </Text>
         <Pressable
           onPress={openRegisterSheet}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface"
@@ -184,7 +197,9 @@ export default function PasskeySettingsScreen() {
 
       <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Description */}
-        <Text className="mb-6 mt-2 font-body text-base leading-6 text-text-secondary">
+        <Text
+          className="mb-6 mt-2 font-body text-base leading-6 text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
           Passkeys let you sign in with Face ID or Touch ID — no password needed. Add one for each
           device you use.
         </Text>
@@ -199,7 +214,7 @@ export default function PasskeySettingsScreen() {
         {/* Error */}
         {isError && !isLoading && (
           <View className="bg-surface-secondary items-center rounded-2xl border border-surface py-10">
-            <Text className="font-body text-base text-text-secondary">
+            <Text className="font-body text-base text-text-secondary" maxFontSizeMultiplier={1.4}>
               Failed to load passkeys.
             </Text>
           </View>
@@ -211,8 +226,14 @@ export default function PasskeySettingsScreen() {
             <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-surface">
               <HugeiconsIcon icon={Key01Icon} size={24} color="#848281" />
             </View>
-            <Text className="mb-1 font-subtitle text-base text-text-primary">No passkeys yet</Text>
-            <Text className="mb-6 font-body text-sm text-text-secondary">
+            <Text
+              className="mb-1 font-subtitle text-base text-text-primary"
+              maxFontSizeMultiplier={1.3}>
+              No passkeys yet
+            </Text>
+            <Text
+              className="mb-6 font-body text-sm text-text-secondary"
+              maxFontSizeMultiplier={1.4}>
               Add a passkey to sign in faster
             </Text>
             <Button title="Add Passkey" variant="black" onPress={openRegisterSheet} />
@@ -244,8 +265,10 @@ export default function PasskeySettingsScreen() {
 
       {/* Delete confirm sheet */}
       <BottomSheet visible={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
-        <Text className="mb-2 font-subtitle text-xl">Remove Passkey</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-ash">
+        <Text className="mb-2 font-subtitle text-xl" maxFontSizeMultiplier={1.3}>
+          Remove Passkey
+        </Text>
+        <Text className="mb-6 font-body text-base leading-6 text-ash" maxFontSizeMultiplier={1.4}>
           Remove &quot;{deleteTarget?.name ?? 'this passkey'}&quot;? You won&apos;t be able to use
           it to sign in.
         </Text>
@@ -264,8 +287,10 @@ export default function PasskeySettingsScreen() {
 
       {/* Register sheet */}
       <BottomSheet visible={showRegisterSheet} onClose={() => setShowRegisterSheet(false)}>
-        <Text className="mb-2 font-subtitle text-xl">Add Passkey</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-ash">
+        <Text className="mb-2 font-subtitle text-xl" maxFontSizeMultiplier={1.3}>
+          Add Passkey
+        </Text>
+        <Text className="mb-6 font-body text-base leading-6 text-ash" maxFontSizeMultiplier={1.4}>
           Give this passkey a name so you can identify it later (e.g. &quot;iPhone 15&quot;).
         </Text>
 

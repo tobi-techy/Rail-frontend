@@ -5,6 +5,8 @@ import { DateSeparator, isDifferentDay } from '@/components/ai/DateSeparator';
 import { ThumbsUpIcon, ThumbsDownIcon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import aiService from '@/api/services/ai.service';
 import type { MiriamDecisionReceipt } from '@/api/types/ai';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 function timeAgo(iso: string): string {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -40,6 +42,7 @@ interface ReceiptRowProps {
 }
 
 function ReceiptRow({ item, onFeedback, feedbackSent, isLast }: ReceiptRowProps) {
+  const haptics = useHaptics();
   const statusColor = STATUS_COLORS[item.status] ?? '#848281';
   const sent = feedbackSent[item.id];
   const amount = parseFloat(item.amount);
@@ -87,7 +90,13 @@ function ReceiptRow({ item, onFeedback, feedbackSent, isLast }: ReceiptRowProps)
             {item.status === 'executed' && (
               <View className="flex-row gap-4">
                 <Pressable
-                  onPress={() => !sent && onFeedback(item.id, 'positive')}
+                  onPress={() => {
+                    if (!sent) {
+                      haptics.selection();
+                      playUISound('buttonClick');
+                      onFeedback(item.id, 'positive');
+                    }
+                  }}
                   hitSlop={12}
                   className="active:scale-[0.85]"
                   accessibilityLabel="Good move">
@@ -98,7 +107,13 @@ function ReceiptRow({ item, onFeedback, feedbackSent, isLast }: ReceiptRowProps)
                   />
                 </Pressable>
                 <Pressable
-                  onPress={() => !sent && onFeedback(item.id, 'negative')}
+                  onPress={() => {
+                    if (!sent) {
+                      haptics.selection();
+                      playUISound('buttonClick');
+                      onFeedback(item.id, 'negative');
+                    }
+                  }}
                   hitSlop={12}
                   className="active:scale-[0.85]"
                   accessibilityLabel="Undo this">
@@ -124,6 +139,7 @@ interface Props {
 }
 
 export function MiriamActivitySheet({ visible, onClose, onOpenMandates }: Props) {
+  const haptics = useHaptics();
   const [receipts, setReceipts] = useState<MiriamDecisionReceipt[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -194,7 +210,11 @@ export function MiriamActivitySheet({ visible, onClose, onOpenMandates }: Props)
           {onOpenMandates && (
             <Pressable
               className="mt-6 rounded-full bg-charcoal-primary px-6 py-3.5 active:scale-[0.96]"
-              onPress={onOpenMandates}>
+              onPress={() => {
+                haptics.selection();
+                playUISound('buttonClick');
+                onOpenMandates();
+              }}>
               <Text className="font-button text-[14px] text-white">Set up autopilot</Text>
             </Pressable>
           )}

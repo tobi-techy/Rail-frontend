@@ -16,6 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Copy01Icon, Delete02Icon, RefreshIcon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { PencilSimpleIcon } from 'phosphor-react-native';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 export interface MessageContextMenuProps {
   visible: boolean;
@@ -46,6 +47,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
   const opacity = useSharedValue(0);
   const backdropOpacity = useSharedValue(0);
   const originY = useSharedValue(0);
+  const triggerFeedback = useButtonFeedback();
 
   useEffect(() => {
     if (visible) {
@@ -164,7 +166,10 @@ export const MessageContextMenu = memo(function MessageContextMenu({
         {items.map((item, i) => (
           <React.Fragment key={item.id}>
             <Pressable
-              onPress={item.onPress}
+              onPress={() => {
+                triggerFeedback();
+                item.onPress();
+              }}
               className="flex-row items-center justify-between px-[18px] active:bg-black/[0.05]"
               style={{ height: ITEM_HEIGHT }}
               accessibilityRole="button"

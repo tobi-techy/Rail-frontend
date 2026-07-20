@@ -21,7 +21,7 @@ export function configureAndroidVisualBaseline() {
 
   const androidTextStyle = {
     includeFontPadding: false,
-    fontFamily: FONT_FAMILIES.GEIST.REGULAR,
+    fontFamily: FONT_FAMILIES.SATOSHI.REGULAR,
   };
 
   const text = Text as unknown as DefaultPropsTarget;

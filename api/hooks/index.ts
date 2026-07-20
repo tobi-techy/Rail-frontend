@@ -71,3 +71,6 @@ export * from './useSecurity';
 
 // AI hooks
 export * from './useAI';
+
+// Daily spending limit (commitment device) hooks
+export * from './useSpendingCommitment';

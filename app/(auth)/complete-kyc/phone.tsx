@@ -10,6 +10,7 @@ import { useOnboardingComplete } from '@/api/hooks/useOnboarding';
 import type { OnboardingCompleteRequest } from '@/api/types';
 import { addressSchema, fieldError } from '@/utils/schemas';
 import { ROUTES } from '@/constants/routes';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 const E164_REGEX = /^\+[1-9]\d{7,14}$/;
 
@@ -39,6 +40,7 @@ export default function Phone() {
   const [phone, setPhone] = useState(registrationData.phone || '');
   const { showWarning, showError } = useFeedbackPopup();
   const { mutate: completeOnboarding, isPending } = useOnboardingComplete();
+  const triggerFeedback = useButtonFeedback();
 
   const ensureAddressIsValid = (data: typeof registrationData) => {
     const result = addressSchema.safeParse({
@@ -145,10 +147,12 @@ export default function Phone() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
+              <Text
+                className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
                 Phone Number
               </Text>
-              <Text className="mt-2 font-body text-[14px] text-ash">
+              <Text className="mt-2 font-body text-[14px] text-ash" maxFontSizeMultiplier={1.4}>
                 Add a phone number (Optional)
               </Text>
             </View>
@@ -167,11 +171,18 @@ export default function Phone() {
             <View className="pb-4">
               <Button title="Continue" onPress={handleNext} loading={isPending} variant="orange" />
               <Pressable
-                onPress={handleSkip}
+                onPress={() => {
+                  triggerFeedback();
+                  handleSkip();
+                }}
                 className="mt-3 py-2"
                 accessibilityRole="button"
                 accessibilityLabel="Skip phone number">
-                <Text className="text-center font-body text-[14px] text-ash">Skip for now</Text>
+                <Text
+                  className="text-center font-body text-[14px] text-ash"
+                  maxFontSizeMultiplier={1.4}>
+                  Skip for now
+                </Text>
               </Pressable>
             </View>
           </StaggeredChild>

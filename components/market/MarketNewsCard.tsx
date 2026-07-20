@@ -4,6 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import type { MarketNewsItem } from '@/api/types';
 import { Tag01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 const toRelativeTime = (iso: string): string => {
   const date = new Date(iso);
@@ -56,10 +57,14 @@ export function MarketNewsCard({
 
   const readTime = estimateReadTime(item.content_preview || item.summary);
   const metaText = [toRelativeTime(item.published_at), readTime].filter(Boolean).join(' • ');
+  const triggerFeedback = useButtonFeedback();
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        triggerFeedback();
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={`Open news: ${item.title}`}
       className={`rounded-md border border-surface bg-parchment-card ${compact ? 'mb-2 p-3' : 'mb-3 p-md'}`}>

@@ -11,6 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from '@/utils/platformHaptics';
 import { Cancel01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { GlassView } from '@/components/ui/GlassView';
+import { playUISound } from '@/lib/uiSounds';
+import { useUIStore } from '@/stores';
 
 interface GorhomBottomSheetProps {
   visible: boolean;
@@ -21,6 +23,13 @@ interface GorhomBottomSheetProps {
   scrollable?: boolean;
   snapPoints?: (string | number)[];
   glassBackground?: boolean;
+  /**
+   * How this modal behaves when presented over another. Default `'switch'`
+   * minimizes the modal below it — which breaks a sheet nested inside another
+   * sheet's content (the parent unmounts our children). Use `'push'` to stack
+   * on top and keep the parent mounted. See CurrencySelectorPill.
+   */
+  stackBehavior?: 'push' | 'replace' | 'switch';
 }
 
 function GlassBackground({ style }: BottomSheetBackgroundProps) {
@@ -43,20 +52,26 @@ export function GorhomBottomSheet({
   scrollable = true,
   snapPoints,
   glassBackground = false,
+  stackBehavior,
 }: GorhomBottomSheetProps) {
   const ref = useRef<BottomSheetModal>(null);
   const insets = useSafeAreaInsets();
+  const hapticsEnabled = useUIStore((s) => s.hapticsEnabled);
 
   useEffect(() => {
     if (visible) {
       ref.current?.present();
+      // Subtle confirmation as the sheet rises.
+      if (hapticsEnabled) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      playUISound('buttonClick');
     } else {
       ref.current?.dismiss();
     }
-  }, [visible]);
+  }, [visible, hapticsEnabled]);
 
   const handleDismiss = useCallback(() => {
     Keyboard.dismiss();
+    playUISound('buttonClick');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onClose();
   }, [onClose]);
@@ -86,6 +101,7 @@ export function GorhomBottomSheet({
             maxDynamicContentSize: Dimensions.get('window').height * 0.8,
           })}
       enablePanDownToClose={dismissible}
+      {...(stackBehavior ? { stackBehavior } : {})}
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
       {...(glassBackground
@@ -95,7 +111,7 @@ export function GorhomBottomSheet({
           }
         : {
             backgroundStyle: {
-              backgroundColor: '#f7f4ef',
+              backgroundColor: '#FFFFFF',
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
             },

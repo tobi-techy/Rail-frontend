@@ -57,18 +57,10 @@ export type TaxIdType =
   | 'personnummer';
 
 export type KycIdentityDocumentType =
-  | 'passport'
-  | 'drivers_license'
-  | 'national_id'
-  | 'residence_permit';
+  'passport' | 'drivers_license' | 'national_id' | 'residence_permit';
 
 export type EmploymentStatus =
-  | 'employed'
-  | 'self_employed'
-  | 'student'
-  | 'retired'
-  | 'unemployed'
-  | 'other';
+  'employed' | 'self_employed' | 'student' | 'retired' | 'unemployed' | 'other';
 
 export type InvestmentPurpose =
   | 'build_portfolio'
@@ -133,12 +125,25 @@ export interface SubmitKYCResponse {
 // --- KYC Status ---
 
 export type KycStatus =
-  | 'not_started'
-  | 'pending'
-  | 'processing'
-  | 'approved'
-  | 'rejected'
-  | 'expired';
+  'not_started' | 'pending' | 'processing' | 'approved' | 'rejected' | 'expired';
+
+// --- Tier System (3-tier progressive KYC) ---
+
+export type KycTierName = 'unverified' | 'non_kyc' | 'basic' | 'advanced';
+
+/**
+ * Capability flags returned on the KYC status response. Gate every feature on
+ * these booleans — tier math lives on the server and tiers can move up or down.
+ */
+export interface TierCapabilities {
+  tier: number;
+  can_deposit_crypto: boolean; // tier >= 1
+  can_receive_ngn: boolean; // tier >= 2 → named NGN account
+  can_deposit_fiat_usd: boolean; // tier >= 3 → USD virtual account
+  can_use_card: boolean; // tier >= 3 → cards
+  can_invest: boolean; // tier >= 3 → brokerage investing
+  can_invest_tokenized: boolean; // tier >= 3 → tokenized-asset investing
+}
 
 export interface KYCStatusResponse {
   user_id?: string;
@@ -152,12 +157,95 @@ export interface KYCStatusResponse {
   rejection_reason?: string | null;
   provider_reference?: string | null;
   next_steps?: string[];
+  // Tier system (authoritative)
+  kyc_tier?: number;
+  kyc_tier_name?: KycTierName;
+  tier_capabilities?: TierCapabilities;
+  bvn_verified?: boolean;
+  nin_verified?: boolean;
   // Legacy fields from Bridge/Alpaca era — kept for backward compat
   overall_status?: KycStatus;
   supported_tax_id_type?: TaxIdType;
   bridge?: KYCProviderStatus;
   alpaca?: KYCProviderStatus;
   capabilities?: KYCCapabilities;
+}
+
+/**
+ * Resolves capability flags for the UI. Prefers the server's `tier_capabilities`;
+ * falls back to the legacy single-gate model (`status === 'approved'` ⇒ full
+ * Tier 3 access) so screens keep working if the field is briefly absent.
+ */
+export function getTierCapabilities(status?: KYCStatusResponse | null): TierCapabilities {
+  if (status?.tier_capabilities) return status.tier_capabilities;
+
+  const approved = status?.status === 'approved' || status?.bridge?.status === 'active';
+  const tier = approved ? 3 : status?.has_submitted ? 1 : status?.verified ? 1 : 0;
+  return {
+    tier,
+    can_deposit_crypto: tier >= 1,
+    can_receive_ngn: approved || tier >= 2,
+    can_deposit_fiat_usd: approved,
+    can_use_card: approved,
+    can_invest: approved,
+    can_invest_tokenized: approved,
+  };
+}
+
+export type TierNextStep = 'NGN_BVN_NIN' | 'BRIDGE_KYC' | null;
+
+export interface TierMetaEntry {
+  tier: number;
+  key: KycTierName;
+  /** Plant-metaphor display name shown in the Account Level hub. */
+  name: string;
+  /** One-line status shown under the name. */
+  tagline: string;
+  /** Accent color for the active tier card. */
+  color: string;
+  /** "What you unlock" bullets. */
+  unlocks: string[];
+}
+
+export const TIER_META: TierMetaEntry[] = [
+  {
+    tier: 1,
+    key: 'non_kyc',
+    name: 'Seed',
+    tagline: 'Your starting point',
+    color: '#00ca48',
+    unlocks: [
+      'Receive crypto deposits into your wallet.',
+      'Send and receive Naira within starter limits.',
+    ],
+  },
+  {
+    tier: 2,
+    key: 'basic',
+    name: 'Sprout',
+    tagline: 'Your own Naira account',
+    color: '#d48f00',
+    unlocks: [
+      'Get a named Naira account number to receive transfers.',
+      'Unlock higher Naira deposit and withdrawal limits.',
+    ],
+  },
+  {
+    tier: 3,
+    key: 'advanced',
+    name: 'Bloom',
+    tagline: 'The full Rail experience',
+    color: '#0090ff',
+    unlocks: [
+      'Open a USD account and spend with the Rail card.',
+      'Access naira and USD investments, including tokenized assets.',
+      'Enjoy a streamlined, priority support experience.',
+    ],
+  },
+];
+
+export function getTierMeta(tier: number): TierMetaEntry {
+  return TIER_META.find((t) => t.tier === tier) ?? TIER_META[0];
 }
 
 /**

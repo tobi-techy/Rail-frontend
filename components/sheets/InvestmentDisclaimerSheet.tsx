@@ -5,6 +5,8 @@ import { Button } from '@/components/ui';
 import { WebView } from 'react-native-webview';
 import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import { logger } from '@/lib/logger';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -31,6 +33,7 @@ const AUTO_ACCEPT_JS = `
 
 export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDisclaimerSheetProps) {
   const [loading, setLoading] = useState(false);
+  const haptics = useHaptics();
   const [tosUrl, setTosUrl] = useState<string | null>(null);
   const tosResolveRef = useRef<(() => void) | null>(null);
 
@@ -101,7 +104,11 @@ export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDiscl
         {/* Buttons */}
         <View className="mt-6 flex-row gap-3">
           <Pressable
-            onPress={onAccept}
+            onPress={() => {
+              haptics.selection();
+              playUISound('dismiss');
+              onAccept();
+            }}
             className="flex-1 items-center justify-center rounded-full bg-ash/10 py-4">
             <Text className="font-button text-[15px] text-charcoal-primary">Maybe later</Text>
           </Pressable>

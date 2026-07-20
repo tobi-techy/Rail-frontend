@@ -17,16 +17,18 @@ import {
   StashPerformanceSheet,
   VirtualAccountSheet,
 } from '@/components/sheets';
-import { SheetHeader, ExpandableOptionList } from '@/components/sheets/FundingSheetComponents';
+import {
+  SheetHeader,
+  ExpandableOptionList,
+  CurrencyPickerContent,
+} from '@/components/sheets/FundingSheetComponents';
 import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
 import { SolanaPayScanSheet } from '@/components/sheets/SolanaPayScanSheet';
-import { MiriamHealthWidget } from '@/components/ai/MiriamHealthWidget';
 import { MiriamActivitySheet } from '@/components/ai/MiriamActivitySheet';
 import { MiriamSuggestionsSheet } from '@/components/ai/MiriamSuggestionsSheet';
 import { MiriamMandateSheet } from '@/components/ai/MiriamMandateSheet';
 import { MiriamIntroSheet } from '@/components/ai/MiriamIntroSheet';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
-import { useAmbientHomescreen } from '@/hooks/useAmbientHomescreen';
 import aiService from '@/api/services/ai.service';
 import { getKycResumeRoute } from '@/utils/onboardingFlow';
 import { useStation, useKYCStatus, useTOSStatus, useAcceptTOS } from '@/api/hooks';
@@ -36,6 +38,8 @@ import type { Currency } from '@/stores/uiStore';
 import { invalidateQueries } from '@/api/queryClient';
 import { convertFromUsd, formatCurrencyAmount, type FxRates } from '@/utils/currency';
 import gleap from '@/utils/gleap';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import type { Transaction } from '@/components/molecules/TransactionItem';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
@@ -87,9 +91,15 @@ interface FundingAction {
 
 const CreditSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View className="mb-6">
-    <Text className="mb-2 font-button text-[15px] text-charcoal-primary">{title}</Text>
+    <Text
+      className="mb-2 font-button text-[15px] text-charcoal-primary"
+      maxFontSizeMultiplier={1.3}>
+      {title}
+    </Text>
     {typeof children === 'string' ? (
-      <Text className="font-body text-[14px] leading-[22px] text-ash">{children}</Text>
+      <Text className="font-body text-[14px] leading-[22px] text-ash" maxFontSizeMultiplier={1.4}>
+        {children}
+      </Text>
     ) : (
       children
     )}
@@ -98,8 +108,14 @@ const CreditSection = ({ title, children }: { title: string; children: React.Rea
 
 const CreditBullet = ({ children }: { children: React.ReactNode }) => (
   <View className="mb-2 flex-row">
-    <Text className="mr-3 font-body text-[14px] text-smoke">•</Text>
-    <Text className="flex-1 font-body text-[14px] leading-[22px] text-ash">{children}</Text>
+    <Text className="mr-3 font-body text-[14px] text-smoke" maxFontSizeMultiplier={1.4}>
+      •
+    </Text>
+    <Text
+      className="flex-1 font-body text-[14px] leading-[22px] text-ash"
+      maxFontSizeMultiplier={1.4}>
+      {children}
+    </Text>
   </View>
 );
 
@@ -117,7 +133,7 @@ function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const isAndroid = Platform.OS === 'android';
   const navigation = useNavigation();
-  useAmbientHomescreen(); // "Hey Miriam" listens while this screen is focused
+  const haptics = useHaptics();
 
   const [refreshing, setRefreshing] = useState(false);
   const [showReceiveSheet, setShowReceiveSheet] = useState(false);
@@ -149,15 +165,19 @@ function DashboardScreen() {
 
   // Local currency for send/receive sheets — does NOT affect balance card
   const [sheetCurrency, setSheetCurrency] = useState<Currency>('USD');
+  const [showReceiveCurrencyPicker, setShowReceiveCurrencyPicker] = useState(false);
+  const [showSendCurrencyPicker, setShowSendCurrencyPicker] = useState(false);
   const onSheetCurrencyChange = useCallback((c: Currency) => setSheetCurrency(c), []);
 
   const openReceiveSheet = useCallback(() => {
     setSheetCurrency('USD');
+    setShowReceiveCurrencyPicker(false);
     setShowReceiveSheet(true);
   }, []);
   const openSendSheet = useCallback(() => {
     // NGN is the default currency when sending funds
     setSheetCurrency('NGN');
+    setShowSendCurrencyPicker(false);
     setShowSendSheet(true);
   }, []);
 
@@ -252,7 +272,13 @@ function DashboardScreen() {
       headerTitleContainerStyle: { width: '100%' },
       headerRight: () => (
         <View className="flex-row items-center gap-x-4 pr-md">
-          <Pressable onPress={() => gleap.open()} hitSlop={8}>
+          <Pressable
+            onPress={() => {
+              haptics.selection();
+              playUISound('buttonClick');
+              gleap.open();
+            }}
+            hitSlop={8}>
             <HugeiconsIcon icon={Message01Icon} size={22} color="#343433" strokeWidth={1.8} />
           </Pressable>
           <NotificationBell />
@@ -286,6 +312,12 @@ function DashboardScreen() {
           pathname: '/withdraw/select-chain',
           params: { currency: sheetCurrency },
         } as never);
+        return;
+      }
+
+      // NGN has its own in-flow amount screen — skip [method] entirely
+      if (method === 'fiat' && sheetCurrency === 'NGN') {
+        router.push({ pathname: '/withdraw/ngn/recipients' } as never);
         return;
       }
 
@@ -336,10 +368,20 @@ function DashboardScreen() {
             ...(sheetCurrency === 'NGN'
               ? [
                   {
+                    id: 'naira-account',
+                    label: 'Receive NGN',
+                    sublabel: 'Your named Naira account for bank transfers',
+                    icon: <HugeiconsIcon icon={BankIcon} size={20} color="#008751" />,
+                    onPress: () => {
+                      setShowReceiveSheet(false);
+                      setShowVirtualAccountSheet(true);
+                    },
+                  },
+                  {
                     id: 'naira-fund',
                     label: 'Fund with Naira',
-                    sublabel: 'Deposit NGN via bank transfer',
-                    icon: <HugeiconsIcon icon={BankIcon} size={20} color="#008751" />,
+                    sublabel: 'Deposit NGN at the live exchange rate',
+                    icon: <HugeiconsIcon icon={ArrowDownLeft01Icon} size={20} color="#008751" />,
                     onPress: () => {
                       setShowReceiveSheet(false);
                       router.push('/fund-naira' as never);
@@ -596,7 +638,9 @@ function DashboardScreen() {
           />
 
           {isStationError && !isStationPending && (
-            <Text className="mb-2 text-center font-body text-[12px] text-coral-red">
+            <Text
+              className="mb-2 text-center font-body text-[12px] text-coral-red"
+              maxFontSizeMultiplier={1.4}>
               Unable to load balance — pull to refresh
             </Text>
           )}
@@ -658,13 +702,14 @@ function DashboardScreen() {
             )}
           </View>
 
-          {/* Miriam: Health widget + suggestions badge */}
-          <MiriamHealthWidget />
+          {/* Miriam: suggestions badge */}
           {pendingSuggestionsCount > 0 && (
             <Pressable
               onPress={() => setShowMiriamSuggestions(true)}
               className="mt-2 flex-row items-center justify-between rounded-2xl bg-[#ff3e0010] px-4 py-3">
-              <Text className="font-body text-[13px] text-charcoal-primary">
+              <Text
+                className="font-body text-[13px] text-charcoal-primary"
+                maxFontSizeMultiplier={1.4}>
                 {pendingSuggestionsCount} new suggestion{pendingSuggestionsCount !== 1 ? 's' : ''}{' '}
                 from Miriam
               </Text>
@@ -678,13 +723,26 @@ function DashboardScreen() {
             visible={showReceiveSheet}
             onClose={() => setShowReceiveSheet(false)}
             showCloseButton={false}>
-            <SheetHeader
-              title="Receive Funds"
-              showCurrencySelector
-              selectedCurrency={sheetCurrency}
-              onCurrencyChange={onSheetCurrencyChange}
-            />
-            <ExpandableOptionList main={receiveMainActions} more={receiveMoreActions} />
+            {showReceiveCurrencyPicker ? (
+              <CurrencyPickerContent
+                selectedCurrency={sheetCurrency}
+                onCurrencyChange={(c) => {
+                  onSheetCurrencyChange(c);
+                  setShowReceiveCurrencyPicker(false);
+                }}
+                onBack={() => setShowReceiveCurrencyPicker(false)}
+              />
+            ) : (
+              <>
+                <SheetHeader
+                  title="Receive Funds"
+                  showCurrencySelector
+                  selectedCurrency={sheetCurrency}
+                  onOpenCurrencyPicker={() => setShowReceiveCurrencyPicker(true)}
+                />
+                <ExpandableOptionList main={receiveMainActions} more={receiveMoreActions} />
+              </>
+            )}
           </GorhomBottomSheet>
         )}
         {showSendSheet && (
@@ -692,13 +750,26 @@ function DashboardScreen() {
             visible={showSendSheet}
             onClose={() => setShowSendSheet(false)}
             showCloseButton={false}>
-            <SheetHeader
-              title="Send Funds"
-              showCurrencySelector
-              selectedCurrency={sheetCurrency}
-              onCurrencyChange={onSheetCurrencyChange}
-            />
-            <ExpandableOptionList main={sendMainActions} more={sendMoreActions} />
+            {showSendCurrencyPicker ? (
+              <CurrencyPickerContent
+                selectedCurrency={sheetCurrency}
+                onCurrencyChange={(c) => {
+                  onSheetCurrencyChange(c);
+                  setShowSendCurrencyPicker(false);
+                }}
+                onBack={() => setShowSendCurrencyPicker(false)}
+              />
+            ) : (
+              <>
+                <SheetHeader
+                  title="Send Funds"
+                  showCurrencySelector
+                  selectedCurrency={sheetCurrency}
+                  onOpenCurrencyPicker={() => setShowSendCurrencyPicker(true)}
+                />
+                <ExpandableOptionList main={sendMainActions} more={sendMoreActions} />
+              </>
+            )}
           </GorhomBottomSheet>
         )}
         <SpendBreakdownSheet
@@ -753,8 +824,12 @@ function DashboardScreen() {
             visible={showMicroLoanSheet}
             onClose={() => setShowMicroLoanSheet(false)}>
             <View className="px-5">
-              <Text className="font-subtitle text-[20px] text-charcoal-primary">Rail Credit</Text>
-              <Text className="mt-1 font-body text-[14px] text-ash">
+              <Text
+                className="font-subtitle text-[20px] text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
+                Rail Credit
+              </Text>
+              <Text className="mt-1 font-body text-[14px] text-ash" maxFontSizeMultiplier={1.4}>
                 Spend beyond your balance. Repay automatically.
               </Text>
               <View className="mt-5">
@@ -779,7 +854,9 @@ function DashboardScreen() {
                   conservative limit that grows as you use Rail consistently.
                 </CreditSection>
                 <View className="mb-4 rounded-2xl bg-parchment-card p-4">
-                  <Text className="font-body text-[13px] leading-[20px] text-ash">
+                  <Text
+                    className="font-body text-[13px] leading-[20px] text-ash"
+                    maxFontSizeMultiplier={1.4}>
                     Rail Credit is designed for short-term liquidity — not long-term debt. Advances
                     are automatically repaid from your next deposit. Only spend what you can repay.
                   </Text>
@@ -793,8 +870,12 @@ function DashboardScreen() {
             visible={showCardComingSheet}
             onClose={() => setShowCardComingSheet(false)}>
             <View className="px-5">
-              <Text className="font-subtitle text-[20px] text-charcoal-primary">Rail Card</Text>
-              <Text className="mt-1 font-body text-[14px] text-ash">
+              <Text
+                className="font-subtitle text-[20px] text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
+                Rail Card
+              </Text>
+              <Text className="mt-1 font-body text-[14px] text-ash" maxFontSizeMultiplier={1.4}>
                 Your USDC balance. Anywhere Visa is accepted.
               </Text>
               <View className="mt-5">
@@ -817,7 +898,9 @@ function DashboardScreen() {
                   compounded over time, add up.
                 </CreditSection>
                 <View className="mb-4 rounded-2xl bg-parchment-card p-4">
-                  <Text className="font-body text-[13px] leading-[20px] text-ash">
+                  <Text
+                    className="font-body text-[13px] leading-[20px] text-ash"
+                    maxFontSizeMultiplier={1.4}>
                     Rail Card is coming soon. You&apos;ll be notified when it&apos;s available for
                     your account. KYC verification is required to activate the card.
                   </Text>

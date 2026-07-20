@@ -38,7 +38,8 @@ function PeriodSelector({
             className={`rounded-2xl px-[18px] py-2 ${active ? 'bg-stone-surface' : 'bg-transparent'}`}
             accessibilityRole="button">
             <Text
-              className={`text-sm ${active ? 'font-button text-black' : 'font-caption text-ash'}`}>
+              className={`text-sm ${active ? 'font-button text-black' : 'font-caption text-ash'}`}
+              maxFontSizeMultiplier={1.4}>
               {p}
             </Text>
           </Pressable>
@@ -116,7 +117,9 @@ function MonthlyBarChart({ data }: { data: ChartBar[] }) {
             key={bar.month}
             style={{ width: barW + (i < data.length - 1 ? gap : 0) }}
             className="items-center">
-            <Text className="font-caption text-[11px] text-ash">{bar.month.slice(0, 3)}</Text>
+            <Text className="font-caption text-[11px] text-ash" maxFontSizeMultiplier={1.4}>
+              {bar.month.slice(0, 3)}
+            </Text>
           </View>
         ))}
       </View>
@@ -130,7 +133,9 @@ function MonthlyBarChart({ data }: { data: ChartBar[] }) {
         ].map(({ color, label }) => (
           <View key={label} className="flex-row items-center gap-1.5">
             <View style={{ backgroundColor: color }} className="h-2 w-2 rounded-full" />
-            <Text className="font-caption text-xs text-ash">{label}</Text>
+            <Text className="font-caption text-xs text-ash" maxFontSizeMultiplier={1.4}>
+              {label}
+            </Text>
           </View>
         ))}
       </View>
@@ -162,10 +167,16 @@ function CategoryRow({
           <Icon name={iconName} size={20} color={color} strokeWidth={1.5} />
         </View>
         <View className="flex-1">
-          <Text className="font-button text-base text-charcoal-primary">{title}</Text>
-          <Text className="mt-0.5 font-caption text-[13px] text-ash">{percentage}%</Text>
+          <Text className="font-button text-base text-charcoal-primary" maxFontSizeMultiplier={1.3}>
+            {title}
+          </Text>
+          <Text className="mt-0.5 font-caption text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
+            {percentage}%
+          </Text>
         </View>
-        <Text className="font-button text-base text-charcoal-primary">-${amount.toFixed(2)}</Text>
+        <Text className="font-button text-base text-charcoal-primary" maxFontSizeMultiplier={1.3}>
+          -${amount.toFixed(2)}
+        </Text>
       </View>
       {showSep && <View className="ml-[74px] h-px bg-stone-surface" />}
     </View>
@@ -231,7 +242,11 @@ export default function SpendingScreen() {
           accessibilityLabel="Go back">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#000000" strokeWidth={2} />
         </Pressable>
-        <Text className="font-subtitle text-[17px] text-charcoal-primary">Spend</Text>
+        <Text
+          className="font-subtitle text-[17px] text-charcoal-primary"
+          maxFontSizeMultiplier={1.3}>
+          Spend
+        </Text>
       </View>
 
       <ScrollView
@@ -241,7 +256,9 @@ export default function SpendingScreen() {
         bounces>
         {/* ── Hero ── */}
         <View className="mb-7 mt-2">
-          <Text className="font-caption text-[15px] text-ash">Spent</Text>
+          <Text className="font-caption text-[15px] text-ash" maxFontSizeMultiplier={1.4}>
+            Spent
+          </Text>
           {isLoading ? (
             <View className="mt-2 gap-2.5">
               <Skeleton style={{ width: 180, height: 56, borderRadius: 12 }} />
@@ -254,13 +271,19 @@ export default function SpendingScreen() {
                 style={{ fontSize: 56, letterSpacing: -2, lineHeight: 64 }}
                 numberOfLines={1}
                 adjustsFontSizeToFit
-                minimumFontScale={0.5}>
+                minimumFontScale={0.5}
+                maxFontSizeMultiplier={1.3}>
                 {mask(`$${thisMonthSpend.toFixed(2)}`)}
               </Text>
               <View className="mt-1.5 flex-row items-center gap-3">
-                <Text className="font-caption text-sm text-ash">{rangeLabel}</Text>
+                <Text className="font-caption text-sm text-ash" maxFontSizeMultiplier={1.4}>
+                  {rangeLabel}
+                </Text>
                 {trend !== 'stable' && (
-                  <Text className="font-button text-[13px]" style={{ color: trendTextColor }}>
+                  <Text
+                    className="font-button text-[13px]"
+                    style={{ color: trendTextColor }}
+                    maxFontSizeMultiplier={1.4}>
                     {trendLabel}
                   </Text>
                 )}
@@ -302,8 +325,12 @@ export default function SpendingScreen() {
               { label: 'Transactions', value: String(transactionCount) },
             ].map(({ label, value }) => (
               <View key={label} className="flex-1 rounded-2xl bg-stone-surface p-3.5">
-                <Text className="font-caption text-[11px] text-ash">{label}</Text>
-                <Text className="mt-1.5 font-button text-[17px] text-charcoal-primary">
+                <Text className="font-caption text-[11px] text-ash" maxFontSizeMultiplier={1.4}>
+                  {label}
+                </Text>
+                <Text
+                  className="mt-1.5 font-button text-[17px] text-charcoal-primary"
+                  maxFontSizeMultiplier={1.3}>
                   {value}
                 </Text>
               </View>
@@ -315,9 +342,15 @@ export default function SpendingScreen() {
         {(isLoading || categories.length > 0) && (
           <View className="mb-4">
             <View className="mb-3.5 flex-row items-center justify-between">
-              <Text className="font-headline text-xl text-charcoal-primary">By Category</Text>
+              <Text
+                className="font-headline text-xl text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
+                By Category
+              </Text>
               <Pressable onPress={() => router.push('/card' as never)} accessibilityRole="button">
-                <Text className="font-body text-sm text-sky-blue">Manage</Text>
+                <Text className="font-body text-sm text-sky-blue" maxFontSizeMultiplier={1.4}>
+                  Manage
+                </Text>
               </Pressable>
             </View>
             <View className="overflow-hidden rounded-[20px] bg-stone-surface">
@@ -359,12 +392,20 @@ export default function SpendingScreen() {
                 <HugeiconsIcon icon={RefreshIcon} size={20} color={ACCENT} strokeWidth={1.5} />
               </View>
               <View className="flex-1">
-                <Text className="font-button text-base text-charcoal-primary">Round-ups</Text>
-                <Text className="mt-0.5 font-caption text-[13px] text-ash">
+                <Text
+                  className="font-button text-base text-charcoal-primary"
+                  maxFontSizeMultiplier={1.3}>
+                  Round-ups
+                </Text>
+                <Text
+                  className="mt-0.5 font-caption text-[13px] text-ash"
+                  maxFontSizeMultiplier={1.4}>
                   {roundUps.transaction_count} transactions
                 </Text>
               </View>
-              <Text className="font-button text-[17px] text-charcoal-primary">
+              <Text
+                className="font-button text-[17px] text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
                 {mask(`$${parseFloat(roundUps.total_accumulated).toFixed(2)}`)}
               </Text>
             </View>
@@ -374,10 +415,13 @@ export default function SpendingScreen() {
         {/* ── Available ── */}
         {!isLoading && (
           <View className="mt-7 items-center">
-            <Text className="font-caption text-[13px] text-ash">Available to spend</Text>
+            <Text className="font-caption text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
+              Available to spend
+            </Text>
             <Text
               className="mt-1 font-headline text-2xl text-charcoal-primary"
-              style={{ letterSpacing: -0.5 }}>
+              style={{ letterSpacing: -0.5 }}
+              maxFontSizeMultiplier={1.3}>
               {mask(`$${availableBalance.toFixed(2)}`)}
             </Text>
           </View>

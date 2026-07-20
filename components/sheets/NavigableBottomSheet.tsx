@@ -11,6 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { ArrowLeft01Icon, Cancel01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
 
@@ -65,6 +67,7 @@ export function NavigableBottomSheet({
   );
   const defaultScreenId = initialStack[0];
   const localNavigation = useNavigableBottomSheet(defaultScreenId);
+  const haptics = useHaptics();
   const { screenStack, setScreenStack, goBack, reset } = navigation ?? localNavigation;
 
   useEffect(() => {
@@ -140,7 +143,15 @@ export function NavigableBottomSheet({
         <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill}>
           <Pressable
             style={StyleSheet.absoluteFill}
-            onPress={dismissible && !canGoBack ? animateClose : undefined}
+            onPress={
+              dismissible && !canGoBack
+                ? () => {
+                    playUISound('buttonClick');
+                    haptics.selection();
+                    animateClose();
+                  }
+                : undefined
+            }
           />
         </BlurView>
 
@@ -152,7 +163,11 @@ export function NavigableBottomSheet({
             <View className="mb-6 flex-row items-center justify-between">
               {canGoBack ? (
                 <Pressable
-                  onPress={goToPreviousScreen}
+                  onPress={() => {
+                    playUISound('buttonClick');
+                    haptics.selection();
+                    goToPreviousScreen();
+                  }}
                   className="p-1"
                   hitSlop={12}
                   accessibilityLabel="Back"
@@ -177,7 +192,11 @@ export function NavigableBottomSheet({
               {showCloseButton ? (
                 <Pressable
                   className="p-1"
-                  onPress={animateClose}
+                  onPress={() => {
+                    playUISound('buttonClick');
+                    haptics.selection();
+                    animateClose();
+                  }}
                   hitSlop={12}
                   accessibilityLabel="Close"
                   accessibilityRole="button">

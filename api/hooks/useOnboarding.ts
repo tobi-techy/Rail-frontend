@@ -10,16 +10,16 @@ import { queryKeys } from '../queryClient';
 import type { OnboardingCompleteRequest, KYCVerificationRequest } from '../types';
 
 /**
- * Basic complete onboarding mutation (slim signup — name + password)
+ * Basic complete onboarding mutation (slim signup — name only, OTP-only auth)
  */
 export function useOnboardingBasicComplete() {
   return useMutation({
-    mutationFn: (data: { firstName: string; lastName: string; password: string }) =>
+    mutationFn: (data: { firstName: string; middleName?: string; lastName: string }) =>
       onboardingService.basicComplete(data),
     onSuccess: (response, variables) => {
       const firstName = variables.firstName.trim();
       const lastName = variables.lastName.trim();
-      const fullName = [firstName, lastName].filter(Boolean).join(' ');
+      const fullName = [firstName, variables.middleName, lastName].filter(Boolean).join(' ');
 
       useAuthStore.setState((state) => ({
         user: state.user ? { ...state.user, firstName, lastName, fullName } : state.user,

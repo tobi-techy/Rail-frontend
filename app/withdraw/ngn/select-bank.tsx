@@ -1,58 +1,43 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, Pressable, StatusBar, TextInput, FlatList, Image } from 'react-native';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { View, Text, Pressable, StatusBar, TextInput, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import {
-  Search01Icon,
-  Cancel01Icon,
-  Building04Icon,
-  IconComponent as HugeiconsIcon,
-} from '@/lib/icons';
+import { Search01Icon, Cancel01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { useRampBanks } from '@/api/hooks/useRamp';
-import { usePajBanks } from '@/api/hooks/usePaj';
 import type { RampBank } from '@/api/types/ramp';
 import { ScreenHeader } from '@/components/withdraw/shared';
+import { BankLogo } from '@/components/molecules/BankLogo';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import * as Haptics from '@/utils/platformHaptics';
 
 const BankRow = React.memo(function BankRow({
   bank,
-  logo,
   onPress,
 }: {
   bank: RampBank;
-  logo?: string;
   onPress: () => void;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center gap-4 px-5 py-3.5 active:bg-surface">
-      {logo ? (
-        <Image source={{ uri: logo }} className="size-12 rounded-full" />
-      ) : (
-        <View className="size-12 items-center justify-center rounded-full bg-[#f2f2f2]">
-          <HugeiconsIcon icon={Building04Icon} size={20} color="#848281" />
-        </View>
-      )}
-      <Text className="flex-1 font-subtitle text-[16px] text-text-primary">{bank.bankName}</Text>
+      className="flex-row items-center gap-4 px-5 py-3.5 active:scale-[0.98] active:bg-surface">
+      <BankLogo bankName={bank.bankName} bankCode={bank.bankCode} size={48} />
+      <Text
+        className="flex-1 font-subtitle text-[16px] text-text-primary"
+        maxFontSizeMultiplier={1.3}>
+        {bank.bankName}
+      </Text>
     </Pressable>
   );
 });
 
 export default function NgnSelectBankScreen() {
-  const params = useLocalSearchParams<{ amount: string; currency: string }>();
   const { data: rampBanksData } = useRampBanks();
-  const { data: pajBanksData } = usePajBanks();
+  const { impact } = useHaptics();
   const [search, setSearch] = useState('');
-
-  // code → logo from PAJ's bank list
-  const logoMap = useMemo<Record<string, string>>(() => {
-    const map: Record<string, string> = {};
-    for (const b of pajBanksData?.banks ?? []) {
-      if (b.code && b.logo) map[b.code] = b.logo;
-    }
-    return map;
-  }, [pajBanksData?.banks]);
+  const scrollRef = useRef<FlatList>(null);
 
   const banks = useMemo<RampBank[]>(() => rampBanksData?.banks ?? [], [rampBanksData?.banks]);
 
@@ -64,13 +49,34 @@ export default function NgnSelectBankScreen() {
 
   const onSelect = useCallback(
     (bank: RampBank) => {
+      impact(Haptics.ImpactFeedbackStyle.Medium);
+      playUISound('buttonClick');
       router.push({
         pathname: '/withdraw/ngn/enter-account' as never,
-        params: { ...params, bankCode: bank.bankCode, bankName: bank.bankName },
+        params: { bankCode: bank.bankCode, bankName: bank.bankName },
       } as never);
     },
-    [params]
+    [impact]
   );
+
+  const onClearSearch = useCallback(() => {
+    impact(Haptics.ImpactFeedbackStyle.Light);
+    playUISound('buttonClick');
+    setSearch('');
+  }, [impact]);
+
+  const scrollHapticFired = useRef(false);
+
+  const onScrollBeginDrag = useCallback(() => {
+    if (!scrollHapticFired.current) {
+      impact(Haptics.ImpactFeedbackStyle.Light);
+      scrollHapticFired.current = true;
+    }
+  }, [impact]);
+
+  const onScrollEndDrag = useCallback(() => {
+    scrollHapticFired.current = false;
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
@@ -98,7 +104,7 @@ export default function NgnSelectBankScreen() {
             autoCorrect={false}
           />
           {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')} hitSlop={8}>
+            <Pressable onPress={onClearSearch} hitSlop={8}>
               <HugeiconsIcon icon={Cancel01Icon} size={15} color="#848281" />
             </Pressable>
           )}
@@ -106,11 +112,10 @@ export default function NgnSelectBankScreen() {
       </Animated.View>
 
       <FlatList
+        ref={scrollRef}
         data={filtered}
         keyExtractor={(item) => item.bankCode}
-        renderItem={({ item }) => (
-          <BankRow bank={item} logo={logoMap[item.bankCode]} onPress={() => onSelect(item)} />
-        )}
+        renderItem={({ item }) => <BankRow bank={item} onPress={() => onSelect(item)} />}
         className="mt-4"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -119,6 +124,8 @@ export default function NgnSelectBankScreen() {
         windowSize={7}
         removeClippedSubviews
         getItemLayout={(_, index) => ({ length: 68, offset: 68 * index, index })}
+        onScrollBeginDrag={onScrollBeginDrag}
+        onScrollEndDrag={onScrollEndDrag}
       />
     </SafeAreaView>
   );

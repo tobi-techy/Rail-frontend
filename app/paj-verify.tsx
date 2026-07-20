@@ -133,10 +133,14 @@ export default function PajVerifyScreen() {
             {step === 'initiate' ? (
               <Animated.View entering={FadeInDown.duration(300)} className="flex-1">
                 <View className="mb-8 mt-6">
-                  <Text className="font-subtitle text-[34px] text-charcoal-primary">
+                  <Text
+                    className="font-subtitle text-[34px] text-charcoal-primary"
+                    maxFontSizeMultiplier={1.3}>
                     Enable Naira{'\n'}transactions
                   </Text>
-                  <Text className="mt-4 font-body text-[18px] leading-6 text-ash">
+                  <Text
+                    className="mt-4 font-body text-[18px] leading-6 text-ash"
+                    maxFontSizeMultiplier={1.4}>
                     To fund or withdraw Naira, we need to verify your identity with our payment
                     partner. You{"'"}ll receive a one-time code.
                   </Text>
@@ -150,7 +154,9 @@ export default function PajVerifyScreen() {
                     loading={initiate.isPending}
                     onPress={handleInitiate}
                   />
-                  <Text className="mt-6 text-center font-body text-[11px] text-[#848281]">
+                  <Text
+                    className="mt-6 text-center font-body text-[11px] text-[#848281]"
+                    maxFontSizeMultiplier={1.4}>
                     Powered by Paj Cash
                   </Text>
                 </View>
@@ -158,21 +164,25 @@ export default function PajVerifyScreen() {
             ) : (
               <Animated.View entering={FadeInDown.duration(300)} className="flex-1">
                 <View className="mb-8 mt-6">
-                  <Text className="font-subtitle text-[34px] text-charcoal-primary">
+                  <Text
+                    className="font-subtitle text-[34px] text-charcoal-primary"
+                    maxFontSizeMultiplier={1.3}>
                     Enter code
                   </Text>
                   <View className="mt-4">
-                    <Text className="font-body text-[18px] text-ash">
+                    <Text className="font-body text-[18px] text-ash" maxFontSizeMultiplier={1.4}>
                       We sent a 4-digit code to
                     </Text>
-                    <Text className="mt-1 font-subtitle text-[28px] text-charcoal-primary">
+                    <Text
+                      className="mt-1 font-subtitle text-[28px] text-charcoal-primary"
+                      maxFontSizeMultiplier={1.3}>
                       {maskedEmail || 'your email'}
                     </Text>
                   </View>
                 </View>
 
                 <View className="mb-8">
-                  <Text className="mb-4 font-body text-base text-ash">
+                  <Text className="mb-4 font-body text-base text-ash" maxFontSizeMultiplier={1.4}>
                     Check your inbox and enter the code below
                   </Text>
                   <OTPInput
@@ -197,19 +207,25 @@ export default function PajVerifyScreen() {
 
                   <View className="mt-6 items-center">
                     {resendTimer > 0 ? (
-                      <Text className="py-2 font-caption text-base text-smoke">
+                      <Text
+                        className="py-2 font-caption text-base text-smoke"
+                        maxFontSizeMultiplier={1.4}>
                         Resend code in {resendTimer}s
                       </Text>
                     ) : (
                       <Pressable onPress={handleResend} disabled={initiate.isPending}>
-                        <Text className="py-2 font-body text-base text-charcoal-primary">
+                        <Text
+                          className="py-2 font-body text-base text-charcoal-primary"
+                          maxFontSizeMultiplier={1.4}>
                           {initiate.isPending ? 'Resending...' : "Didn't receive the code? Resend"}
                         </Text>
                       </Pressable>
                     )}
                   </View>
 
-                  <Text className="mt-4 text-center font-body text-[11px] text-[#848281]">
+                  <Text
+                    className="mt-4 text-center font-body text-[11px] text-[#848281]"
+                    maxFontSizeMultiplier={1.4}>
                     Powered by Paj Cash
                   </Text>
                 </View>

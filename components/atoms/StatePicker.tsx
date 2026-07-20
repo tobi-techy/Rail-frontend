@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, Pressable, Modal, FlatList } from 'react-native';
 import { Ionicons } from './SafeIonicons';
 import { InputField } from './InputField';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 interface Subdivision {
   code: string;
@@ -343,6 +345,7 @@ export function StatePicker({
 }: StatePickerProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const haptics = useHaptics();
   const hasError = !!error;
 
   const subdivisions = SUBDIVISIONS[countryCode] || [];
@@ -366,6 +369,8 @@ export function StatePicker({
   );
 
   const handleSelect = (subdivision: Subdivision) => {
+    haptics.selection();
+    playUISound('buttonClick');
     onSelect(subdivision);
     setIsModalVisible(false);
     setSearchQuery('');
@@ -389,7 +394,11 @@ export function StatePicker({
         <Text className="mb-1 font-subtitle text-body text-text-primary">{subdivisionLabel}</Text>
       )}
       <Pressable
-        onPress={() => setIsModalVisible(true)}
+        onPress={() => {
+          haptics.selection();
+          playUISound('buttonClick');
+          setIsModalVisible(true);
+        }}
         className={`h-[56px] flex-row items-center justify-between rounded-lg border px-4 ${
           hasError ? 'border-destructive' : isModalVisible ? 'border-fog' : 'border-[#f7f2e8]'
         } bg-white`}>
@@ -407,7 +416,13 @@ export function StatePicker({
             <Text className="font-headline-3 text-xl text-text-primary">
               Select {subdivisionLabel}
             </Text>
-            <Pressable onPress={() => setIsModalVisible(false)} className="p-2">
+            <Pressable
+              onPress={() => {
+                haptics.selection();
+                playUISound('dismiss');
+                setIsModalVisible(false);
+              }}
+              className="p-2">
               <Ionicons name="close" size={24} color="#111827" />
             </Pressable>
           </View>

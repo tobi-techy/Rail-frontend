@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import Animated, { FadeIn, FadeInDown, SlideInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import * as Haptics from '@/utils/platformHaptics';
 import { playUISound } from '@/lib/uiSounds';
 import { Button } from '@/components/ui';
@@ -33,6 +33,7 @@ export function WithdrawalStatusScreen({
   // Confetti burst controller — a second wave re-fires ~1.3s in so success
   // feels like a genuine celebration rather than a single puff.
   const [burstKey, setBurstKey] = useState(0);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (status === 'success') {
@@ -60,11 +61,10 @@ export function WithdrawalStatusScreen({
   const config = getStatusConfig();
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      {config.showConfetti && (
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
+      {config.showConfetti && !reduceMotion && (
         <>
           <Confetti burstKey={burstKey} intensity="epic" count={150} />
-          {/* A second, offset layer so the sky stays full of confetti. */}
           <Confetti burstKey={burstKey + 1000} intensity="epic" count={110} />
         </>
       )}
@@ -89,7 +89,7 @@ export function WithdrawalStatusScreen({
         {/* Title */}
         <Animated.Text
           entering={FadeInDown.delay(300).duration(400)}
-          className="mt-4 font-headline text-headline-1 text-charcoal-primary">
+          className="mt-4 font-subtitle text-[20px] text-charcoal-primary">
           {config.title}
         </Animated.Text>
 
@@ -113,7 +113,7 @@ export function WithdrawalStatusScreen({
       </View>
 
       {/* Actions */}
-      <Animated.View entering={SlideInUp.delay(500).duration(400)} className="px-6 pb-6">
+      <Animated.View entering={FadeInUp.delay(250).duration(250)} className="px-6 pb-6">
         {status === 'failed' && onRetry ? (
           <View className="flex-row gap-3">
             <Button title="Try again" variant="black" onPress={onRetry} size="large" flex />

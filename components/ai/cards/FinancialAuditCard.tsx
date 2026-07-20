@@ -14,8 +14,11 @@ import {
   type InsightCard,
   type AuditMetric,
 } from './shared';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 export function FinancialAuditCard({ card }: { card: InsightCard }) {
+  const haptics = useHaptics();
   const { track } = useAnalytics();
   const data = (card.data ?? {}) as Record<string, any>;
   const score = (data.score ?? {}) as Record<string, any>;
@@ -267,13 +270,15 @@ export function FinancialAuditCard({ card }: { card: InsightCard }) {
               {actions.map((action, index) => (
                 <Pressable
                   key={`${action.title}-${index}`}
-                  onPress={() =>
+                  onPress={() => {
+                    haptics.selection();
+                    playUISound('buttonClick');
                     track(ANALYTICS_EVENTS.FINANCIAL_AUDIT_ACTION_TAPPED, {
                       action_title: String(action.title ?? ''),
                       action_index: index,
                       score: totalScore,
-                    })
-                  }
+                    });
+                  }}
                   className="min-h-10 flex-row gap-2"
                   accessibilityRole="button"
                   accessibilityLabel={`Audit action ${index + 1}`}>

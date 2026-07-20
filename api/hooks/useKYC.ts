@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { kycService } from '../services';
 import { queryKeys } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
+import { getTierCapabilities, type TierNextStep } from '../types/kyc';
 import type { StartDiditSessionRequest, KycStatus, SubmitKYCRequest } from '../types';
 
 export function useKYCStatus(enabled = true) {
@@ -16,6 +17,37 @@ export function useKYCStatus(enabled = true) {
     // invalidate this key. 5 min staleTime stops a refetch on every mount/focus.
     staleTime: 5 * 60 * 1000,
   });
+}
+
+/**
+ * Capability-driven view of KYC status. Drive UI off `capabilities` (and the
+ * BVN/NIN flags), never off inferred tier math. `nextStep` is the single unlock
+ * action the user should take next.
+ */
+export function useTierCapabilities(enabled = true) {
+  const { data: status, isLoading, refetch } = useKYCStatus(enabled);
+
+  return useMemo(() => {
+    const capabilities = getTierCapabilities(status);
+    const tier = capabilities.tier;
+    const bvnVerified = status?.bvn_verified ?? false;
+    const ninVerified = status?.nin_verified ?? false;
+
+    return {
+      status,
+      isLoading,
+      refetch,
+      capabilities,
+      tier,
+      tierName: status?.kyc_tier_name,
+      bvnVerified,
+      ninVerified,
+      /** Next step to reach the named NGN account (Tier 2). */
+      ngnNextStep: (capabilities.can_receive_ngn ? null : 'NGN_BVN_NIN') as TierNextStep,
+      /** Next step to reach USD / cards / investing (Tier 3). */
+      advancedNextStep: (capabilities.can_use_card ? null : 'BRIDGE_KYC') as TierNextStep,
+    };
+  }, [status, isLoading, refetch]);
 }
 
 export function useStartDiditSession() {
@@ -41,8 +73,11 @@ export function useSubmitKYC() {
 }
 
 const TERMINAL_STATUSES: KycStatus[] = ['approved', 'rejected', 'expired'];
-const FAST_INTERVAL = 8_000;
-const SLOW_INTERVAL = 30_000;
+// Verification-status poll (active only while the user is on the KYC screen).
+// Push notifications drive the real completion signal, so these are fallbacks —
+// kept modest to limit Redis cost during the wait.
+const FAST_INTERVAL = 12_000;
+const SLOW_INTERVAL = 45_000;
 const SLOW_THRESHOLD = 2 * 60 * 1000;
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 

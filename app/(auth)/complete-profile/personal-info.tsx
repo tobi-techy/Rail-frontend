@@ -13,6 +13,7 @@ export default function PersonalInfo() {
   const registrationData = useAuthStore((state) => state.registrationData);
   const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
   const [firstName, setFirstName] = useState(registrationData.firstName || '');
+  const [middleName, setMiddleName] = useState(registrationData.middleName || '');
   const [lastName, setLastName] = useState(registrationData.lastName || '');
   const [firstNameError, setFirstNameError] = useState('');
   const [lastNameError, setLastNameError] = useState('');
@@ -32,9 +33,10 @@ export default function PersonalInfo() {
     setLastNameError('');
     updateRegistrationData({
       firstName: result.data.firstName,
+      middleName: middleName.trim() || undefined,
       lastName: result.data.lastName,
     });
-    router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_PASSWORD as never);
+    router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_RAILTAG as never);
   };
 
   return (
@@ -48,10 +50,12 @@ export default function PersonalInfo() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
+              <Text
+                className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
                 Personal Info
               </Text>
-              <Text className="mt-2 font-body text-caption text-ash">
+              <Text className="mt-2 font-body text-caption text-ash" maxFontSizeMultiplier={1.4}>
                 Enter your legal name exactly as it appears on your ID document.
               </Text>
             </View>
@@ -72,6 +76,14 @@ export default function PersonalInfo() {
             </StaggeredChild>
             <StaggeredChild index={2}>
               <InputField
+                label="Middle Name"
+                placeholder="Middle Name (optional)"
+                value={middleName}
+                onChangeText={setMiddleName}
+              />
+            </StaggeredChild>
+            <StaggeredChild index={3}>
+              <InputField
                 label="Last Name"
                 placeholder="Last Name"
                 value={lastName}
@@ -84,7 +96,7 @@ export default function PersonalInfo() {
             </StaggeredChild>
           </View>
 
-          <StaggeredChild index={3} delay={80} style={{ marginTop: 'auto' }}>
+          <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
               <Button title="Next" onPress={handleNext} variant="orange" />
             </View>

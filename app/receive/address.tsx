@@ -100,7 +100,9 @@ export default function ReceiveAddressScreen() {
             style={{ backgroundColor: chainConfig.color + '18' }}>
             <ChainLogo chain={chain} size={18} />
           </View>
-          <Text className="font-subtitle text-[17px] text-text-primary">{chainConfig.label}</Text>
+          <Text className="font-subtitle text-[17px] text-text-primary" maxFontSizeMultiplier={1.3}>
+            {chainConfig.label}
+          </Text>
         </View>
         <Pressable
           className="size-11 items-center justify-center rounded-full bg-surface"
@@ -142,15 +144,20 @@ export default function ReceiveAddressScreen() {
               </View>
             </View>
             {/* Warning */}
-            <Text className="mt-5 text-center font-body text-[13px] text-text-secondary">
-              Only send <Text className="font-subtitle text-text-primary">{chainConfig.label}</Text>{' '}
+            <Text
+              className="mt-5 text-center font-body text-[13px] text-text-secondary"
+              maxFontSizeMultiplier={1.4}>
+              Only send{' '}
+              <Text className="font-subtitle text-text-primary" maxFontSizeMultiplier={1.3}>
+                {chainConfig.label}
+              </Text>{' '}
               USDC to this address.
             </Text>
           </View>
         ) : (
           <View className="items-center gap-3">
             <ActivityIndicator size="large" color="#343433" />
-            <Text className="font-body text-[14px] text-text-secondary">
+            <Text className="font-body text-[14px] text-text-secondary" maxFontSizeMultiplier={1.4}>
               {provisioning ? 'Setting up your wallet…' : 'Loading address…'}
             </Text>
           </View>
@@ -158,17 +165,25 @@ export default function ReceiveAddressScreen() {
 
         {isError && !provisioning && !address && (
           <View className="items-center gap-3">
-            <Text className="font-subtitle text-[16px] text-text-primary">
+            <Text
+              className="font-subtitle text-[16px] text-text-primary"
+              maxFontSizeMultiplier={1.3}>
               Unable to load wallet
             </Text>
-            <Text className="text-center font-body text-[13px] text-text-secondary">
+            <Text
+              className="text-center font-body text-[13px] text-text-secondary"
+              maxFontSizeMultiplier={1.4}>
               Check your connection and try again.
             </Text>
             <Pressable
               onPress={() => refetch()}
               className="flex-row items-center gap-2 rounded-full bg-surface px-5 py-2.5">
               <HugeiconsIcon icon={RefreshIcon} size={16} color="#474645" />
-              <Text className="font-subtitle text-[14px] text-text-primary">Retry</Text>
+              <Text
+                className="font-subtitle text-[14px] text-text-primary"
+                maxFontSizeMultiplier={1.4}>
+                Retry
+              </Text>
             </Pressable>
           </View>
         )}
@@ -180,15 +195,22 @@ export default function ReceiveAddressScreen() {
         style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
         {/* Token + network */}
         <View className="mb-3 flex-row items-center gap-2">
-          <Text className="font-subtitle text-[22px] text-text-primary">USDC</Text>
+          <Text className="font-subtitle text-[22px] text-text-primary" maxFontSizeMultiplier={1.3}>
+            USDC
+          </Text>
           <View className="rounded-lg bg-surface px-2.5 py-1">
-            <Text className="font-body text-[13px] text-text-secondary">{chainConfig.label}</Text>
+            <Text className="font-body text-[13px] text-text-secondary" maxFontSizeMultiplier={1.4}>
+              {chainConfig.label}
+            </Text>
           </View>
         </View>
 
         {/* Address + copy */}
         <Pressable onPress={handleCopy} className="mb-5 flex-row items-start justify-between gap-3">
-          <Text className="flex-1 font-body text-[14px] leading-5 text-text-secondary" selectable>
+          <Text
+            className="flex-1 font-body text-[14px] leading-5 text-text-secondary"
+            selectable
+            maxFontSizeMultiplier={1.4}>
             {address || '—'}
           </Text>
           <HugeiconsIcon
@@ -208,7 +230,9 @@ export default function ReceiveAddressScreen() {
               size={18}
               color={copied ? '#00ca48' : '#343433'}
             />
-            <Text className="font-subtitle text-[15px] text-text-primary">
+            <Text
+              className="font-subtitle text-[15px] text-text-primary"
+              maxFontSizeMultiplier={1.3}>
               {copied ? 'Copied!' : 'Copy address'}
             </Text>
           </Pressable>
@@ -216,7 +240,9 @@ export default function ReceiveAddressScreen() {
             onPress={handleShare}
             className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-[#343433] py-4">
             <HugeiconsIcon icon={Share01Icon} size={18} color="white" />
-            <Text className="font-subtitle text-[15px] text-white">Share QR</Text>
+            <Text className="font-subtitle text-[15px] text-white" maxFontSizeMultiplier={1.3}>
+              Share QR
+            </Text>
           </Pressable>
         </View>
       </View>

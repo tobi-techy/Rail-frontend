@@ -7,6 +7,7 @@ import { ArrowLeft01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { ChainLogo } from '@/components/ChainLogo';
 import { getWithdrawalChainsForCurrency, type ChainConfig } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 /** Estimated arrival time per chain */
 const CHAIN_SPEED: Record<string, string> = {
@@ -33,10 +34,18 @@ function ChainRow({ chain, onPress }: { chain: ChainConfig; onPress: () => void 
         <ChainLogo chain={chain.chain} size={44} />
       </View>
       <View className="flex-1">
-        <Text className="font-subtitle text-[16px] text-text-primary">{chain.shortLabel}</Text>
-        <Text className="mt-0.5 font-body text-[13px] text-text-secondary">{chain.label}</Text>
+        <Text className="font-subtitle text-[16px] text-text-primary" maxFontSizeMultiplier={1.3}>
+          {chain.shortLabel}
+        </Text>
+        <Text
+          className="mt-0.5 font-body text-[13px] text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
+          {chain.label}
+        </Text>
       </View>
-      <Text className="font-body text-[14px] text-text-secondary">{speed}</Text>
+      <Text className="font-body text-[14px] text-text-secondary" maxFontSizeMultiplier={1.4}>
+        {speed}
+      </Text>
     </Pressable>
   );
 }
@@ -49,6 +58,7 @@ export default function SelectChainScreen() {
   const chains = useMemo(() => getWithdrawalChainsForCurrency(currency), [currency]);
 
   const handleSelect = (chain: ChainConfig) => {
+    playUISound('buttonClick');
     impact();
     router.push({
       pathname: '/withdraw/enter-address' as never,
@@ -73,7 +83,9 @@ export default function SelectChainScreen() {
 
       {/* Title */}
       <Animated.View entering={FadeIn.duration(200)} className="px-5 pb-4 pt-4">
-        <Text className="font-subtitle text-[30px] text-text-primary">Select network</Text>
+        <Text className="font-subtitle text-[30px] text-text-primary" maxFontSizeMultiplier={1.3}>
+          Select network
+        </Text>
       </Animated.View>
 
       {/* Chain list */}

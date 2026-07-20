@@ -14,7 +14,7 @@ export const initialState: AuthState = {
   pendingVerificationEmail: null,
   _pendingPasscode: null,
   hasPasscode: false,
-  isBiometricEnabled: false,
+  isBiometricEnabled: true,
   passcodeSessionToken: undefined,
   passcodeSessionExpiresAt: undefined,
   appLockExpiresAt: undefined,

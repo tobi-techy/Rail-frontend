@@ -4,19 +4,21 @@ import * as ExpoCrypto from 'expo-crypto';
 import { logger } from '../lib/logger';
 
 const SECURE_STORE_KEY = 'rail_encryption_key';
-// Fixed salt — not secret, just ensures the PBKDF2 output is domain-separated
-const PBKDF2_SALT = CryptoJS.enc.Hex.parse('7261696c6d6f6e657961707076310000');
-const PBKDF2_ITERATIONS = 100_000; // SECURITY FIX (NEW-L1): Increased from 10k to 100k per OWASP recommendations
-const KEY_SIZE = 256 / 32; // 256-bit key
+// Fixed salt — not secret, just domain-separates the derived key.
+const KEY_SALT = CryptoJS.enc.Hex.parse('7261696c6d6f6e657961707076310000');
 
 let _cachedKey: CryptoJS.lib.WordArray | null = null;
 
 function deriveKey(rawKey: string): CryptoJS.lib.WordArray {
-  return CryptoJS.PBKDF2(rawKey, PBKDF2_SALT, {
-    keySize: KEY_SIZE,
-    iterations: PBKDF2_ITERATIONS,
-    hasher: CryptoJS.algo.SHA256,
-  });
+  // `rawKey` is already a 256-bit CSPRNG value from SecureStore (or an ephemeral
+  // random dev key). Heavy PBKDF2 stretching exists to harden LOW-entropy
+  // passwords — applied to an already full-entropy key it adds no security while
+  // running 100k SHA-256 rounds synchronously on the JS thread, which froze the
+  // app for seconds at startup (blocking touches, passcode entry, and biometric
+  // prompts). A single domain-separated SHA-256 is sufficient here and instant.
+  return CryptoJS.algo.SHA256.create().finalize(
+    KEY_SALT.clone().concat(CryptoJS.enc.Utf8.parse(rawKey))
+  );
 }
 
 /**

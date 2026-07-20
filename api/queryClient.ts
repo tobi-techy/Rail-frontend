@@ -32,6 +32,15 @@ export const queryClient = new QueryClient({
         return failureCount < 2;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      // COST GUARD: every request hits the backend's Redis (rate-limiter +
+      // session). Continuous background polling (refetchInterval) fires forever
+      // while a screen is open — even when the user is idle — and was the main
+      // Upstash cost driver. Default it OFF; freshness comes from focus/reconnect
+      // refetch + mutation invalidation + push notifications. Only short-lived,
+      // self-terminating pollers (active deposit/withdrawal order status) may
+      // opt back in per-hook.
+      refetchInterval: false,
+      refetchIntervalInBackground: false,
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
       refetchOnMount: true,
@@ -103,6 +112,7 @@ export const queryKeys = {
   virtualAccount: {
     all: ['virtual-account'] as const,
     list: () => [...queryKeys.virtualAccount.all, 'list'] as const,
+    ngn: () => [...queryKeys.virtualAccount.all, 'ngn'] as const,
   },
   market: {
     all: ['market'] as const,
@@ -133,6 +143,10 @@ export const queryKeys = {
   spending: {
     all: ['spending'] as const,
     stash: () => [...queryKeys.spending.all, 'stash'] as const,
+  },
+  spendingCommitment: {
+    all: ['spending-commitment'] as const,
+    status: () => [...queryKeys.spendingCommitment.all, 'status'] as const,
   },
   investment: {
     all: ['investment'] as const,
@@ -187,6 +201,7 @@ export const invalidateQueries = {
   wallet: () => queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all }),
   funding: () => queryClient.invalidateQueries({ queryKey: queryKeys.funding.all }),
   virtualAccount: () => queryClient.invalidateQueries({ queryKey: queryKeys.virtualAccount.all }),
+  kycStatus: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.kycStatus() }),
   market: () => queryClient.invalidateQueries({ queryKey: queryKeys.market.all }),
   news: () => queryClient.invalidateQueries({ queryKey: queryKeys.news.all }),
   investment: () => queryClient.invalidateQueries({ queryKey: queryKeys.investment.all }),

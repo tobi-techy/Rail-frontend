@@ -6,6 +6,8 @@ import { PhantomIcon, SolflareIcon, SolanaIcon } from '@/assets/svg';
 import { BankIcon } from '@/assets/svg/filled';
 import { ArrowRight01Icon, Mail01Icon, MailAtSign01Icon, UserGroupIcon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 interface FundingOption {
   id: string;
@@ -26,7 +28,11 @@ interface MoreFundingOptionsSheetProps {
 export function MoreFundingOptionsSheet({ visible, onClose, mode }: MoreFundingOptionsSheetProps) {
   const showWalletOptions = Platform.OS === 'android' || mode === 'send';
 
+  const haptics = useHaptics();
+
   const openMethodFlow = (method: string) => {
+    haptics.selection();
+    playUISound('dismiss');
     onClose();
     requestAnimationFrame(() => {
       router.push({

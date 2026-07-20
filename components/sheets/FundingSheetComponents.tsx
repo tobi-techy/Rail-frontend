@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Image } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from '@/utils/platformHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { IconComponent as HugeiconsIcon, type PhosphorIcon } from '@/lib/icons';
-import { ArrowDown01Icon, ArrowUp01Icon, Tick02Icon } from '@/lib/icons';
-import { GorhomBottomSheet } from './GorhomBottomSheet';
+import { ArrowDown01Icon, ArrowLeft01Icon, Tick02Icon } from '@/lib/icons';
 import { useUIStore } from '@/stores';
 import type { Currency } from '@/stores/uiStore';
 import {
@@ -40,6 +40,7 @@ export function OptionCard({ option, index }: { option: FundingOption; index: nu
         onPress={() => {
           if (option.disabled) return;
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          playUISound('buttonClick');
           option.onPress();
         }}
         disabled={option.disabled}
@@ -143,22 +144,24 @@ export function SheetHeader({
   rightElement,
   showCurrencySelector = false,
   selectedCurrency,
-  onCurrencyChange,
+  onOpenCurrencyPicker,
 }: {
   title: string;
   rightElement?: React.ReactNode;
   showCurrencySelector?: boolean;
   selectedCurrency?: Currency;
-  onCurrencyChange?: (currency: Currency) => void;
+  /**
+   * Opens the currency picker. The picker itself (`CurrencyPickerSheet`) must be
+   * rendered by the screen as a sibling of the parent sheet — a bottom sheet
+   * nested inside another sheet's content won't present reliably.
+   */
+  onOpenCurrencyPicker?: () => void;
 }) {
   return (
     <View className="mb-4 flex-row items-center justify-between pt-2">
       <Text className="font-subtitle text-[20px] text-[#343433]">{title}</Text>
       {showCurrencySelector ? (
-        <CurrencySelectorPill
-          selectedCurrency={selectedCurrency}
-          onCurrencyChange={onCurrencyChange}
-        />
+        <CurrencySelectorPill selectedCurrency={selectedCurrency} onPress={onOpenCurrencyPicker} />
       ) : (
         rightElement
       )}
@@ -220,105 +223,113 @@ function CurrencyIcon({ currency, size = 20 }: { currency: CurrencyOption; size?
 }
 
 function CurrencySelectorPill({
-  selectedCurrency: externalCurrency,
-  onCurrencyChange,
+  selectedCurrency,
+  onPress,
 }: {
   selectedCurrency?: Currency;
-  onCurrencyChange?: (currency: Currency) => void;
+  onPress?: () => void;
 }) {
-  const [pickerVisible, setPickerVisible] = useState(false);
   const storeCurrency = useUIStore((s) => s.currency);
-  const setCurrency = useUIStore((s) => s.setCurrency);
-  const currency = externalCurrency ?? storeCurrency;
-  const handleSelect = onCurrencyChange ?? setCurrency;
+  const currency = selectedCurrency ?? storeCurrency;
   const current = CURRENCIES.find((c) => c.code === currency) ?? CURRENCIES[0];
 
   return (
+    <Pressable
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        playUISound('buttonClick');
+        onPress?.();
+      }}
+      className="flex-row items-center gap-1.5 rounded-full border border-[#f7f2e8] bg-[#f8f7f4] px-3 py-1.5"
+      accessibilityRole="button"
+      accessibilityLabel="Select currency">
+      <CurrencyIcon currency={current} size={20} />
+      <Text className="font-subtitle text-[13px] text-[#343433]">{current.code}</Text>
+      <HugeiconsIcon icon={ArrowDown01Icon} size={12} color="#848281" strokeWidth={2} />
+    </Pressable>
+  );
+}
+
+/**
+ * The currency/asset picker as *in-sheet content* — render it inside the same
+ * Send/Receive sheet (swapping out the funding options) instead of opening a
+ * second bottom sheet. A modal presented over an already-open modal doesn't
+ * reliably appear, so we keep everything in one sheet and swap the content.
+ */
+export function CurrencyPickerContent({
+  selectedCurrency,
+  onCurrencyChange,
+  onBack,
+}: {
+  selectedCurrency?: Currency;
+  onCurrencyChange?: (currency: Currency) => void;
+  onBack?: () => void;
+}) {
+  const storeCurrency = useUIStore((s) => s.currency);
+  const setCurrency = useUIStore((s) => s.setCurrency);
+  const currency = selectedCurrency ?? storeCurrency;
+  const handleSelect = onCurrencyChange ?? setCurrency;
+
+  const select = (c: CurrencyOption) => {
+    if (c.disabled) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    handleSelect(c.code);
+  };
+
+  const renderRow = (c: CurrencyOption) => (
+    <Pressable
+      key={c.code}
+      disabled={c.disabled}
+      onPress={() => select(c)}
+      className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f7f2e8] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]"
+      style={c.disabled ? { opacity: 0.4 } : undefined}>
+      <CurrencyIcon currency={c} size={36} />
+      <View className="flex-1">
+        <View className="flex-row items-center gap-2">
+          <Text className="font-subtitle text-[15px] text-[#343433]">{c.code}</Text>
+          {c.disabled && (
+            <View className="rounded-md bg-[#f7f2e8] px-1.5 py-0.5">
+              <Text className="font-caption text-[10px] text-[#848281]">Soon</Text>
+            </View>
+          )}
+        </View>
+        <Text className="font-body text-[13px] text-[#848281]">{c.label}</Text>
+      </View>
+      {currency === c.code && !c.disabled && (
+        <View className="h-5 w-5 items-center justify-center rounded-full bg-[#343433]">
+          <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFF" />
+        </View>
+      )}
+    </Pressable>
+  );
+
+  return (
     <>
-      <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setPickerVisible(true);
-        }}
-        className="flex-row items-center gap-1.5 rounded-full border border-[#f7f2e8] bg-[#f8f7f4] px-3 py-1.5"
-        accessibilityRole="button"
-        accessibilityLabel="Select currency">
-        <CurrencyIcon currency={current} size={20} />
-        <Text className="font-subtitle text-[13px] text-[#343433]">{current.code}</Text>
-        <HugeiconsIcon icon={ArrowDown01Icon} size={12} color="#848281" strokeWidth={2} />
-      </Pressable>
-
-      <GorhomBottomSheet
-        visible={pickerVisible}
-        onClose={() => setPickerVisible(false)}
-        showCloseButton={false}>
-        <Text className="mb-2 font-subtitle text-[20px] text-[#343433]">Asset</Text>
-        <Text className="mb-5 font-body text-[13px] text-[#848281]">
-          Choose what to send or receive
-        </Text>
-
-        {/* Fiat currencies */}
-        <Text className="mb-2 font-caption text-[11px] uppercase tracking-wider text-[#848281]">
-          Fiat
-        </Text>
-        {CURRENCIES.filter((c) => c.type === 'fiat').map((c) => (
+      <View className="mb-4 flex-row items-center gap-3 pt-2">
+        {onBack && (
           <Pressable
-            key={c.code}
-            disabled={c.disabled}
-            onPress={() => {
-              if (c.disabled) return;
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              handleSelect(c.code);
-              setPickerVisible(false);
-            }}
-            className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f7f2e8] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]"
-            style={c.disabled ? { opacity: 0.4 } : undefined}>
-            <CurrencyIcon currency={c} size={36} />
-            <View className="flex-1">
-              <View className="flex-row items-center gap-2">
-                <Text className="font-subtitle text-[15px] text-[#343433]">{c.code}</Text>
-                {c.disabled && (
-                  <View className="rounded-md bg-[#f7f2e8] px-1.5 py-0.5">
-                    <Text className="font-caption text-[10px] text-[#848281]">Soon</Text>
-                  </View>
-                )}
-              </View>
-              <Text className="font-body text-[13px] text-[#848281]">{c.label}</Text>
-            </View>
-            {currency === c.code && !c.disabled && (
-              <View className="h-5 w-5 items-center justify-center rounded-full bg-[#343433]">
-                <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFF" />
-              </View>
-            )}
+            onPress={onBack}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Back">
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" strokeWidth={1.8} />
           </Pressable>
-        ))}
+        )}
+        <Text className="font-subtitle text-[20px] text-[#343433]">Asset</Text>
+      </View>
+      <Text className="mb-5 font-body text-[13px] text-[#848281]">
+        Choose what to send or receive
+      </Text>
 
-        {/* Crypto stablecoins */}
-        <Text className="mb-2 mt-3 font-caption text-[11px] uppercase tracking-wider text-[#848281]">
-          Stablecoins
-        </Text>
-        {CURRENCIES.filter((c) => c.type === 'stablecoin').map((c) => (
-          <Pressable
-            key={c.code}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              handleSelect(c.code);
-              setPickerVisible(false);
-            }}
-            className="mb-2 flex-row items-center gap-4 rounded-2xl border border-[#f7f2e8] bg-parchment-card px-4 py-3.5 active:bg-[#f8f7f4]">
-            <CurrencyIcon currency={c} size={36} />
-            <View className="flex-1">
-              <Text className="font-subtitle text-[15px] text-[#343433]">{c.code}</Text>
-              <Text className="font-body text-[13px] text-[#848281]">{c.label}</Text>
-            </View>
-            {currency === c.code && (
-              <View className="h-5 w-5 items-center justify-center rounded-full bg-[#343433]">
-                <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFF" />
-              </View>
-            )}
-          </Pressable>
-        ))}
-      </GorhomBottomSheet>
+      <Text className="mb-2 font-caption text-[11px] uppercase tracking-wider text-[#848281]">
+        Fiat
+      </Text>
+      {CURRENCIES.filter((c) => c.type === 'fiat').map(renderRow)}
+
+      <Text className="mb-2 mt-3 font-caption text-[11px] uppercase tracking-wider text-[#848281]">
+        Stablecoins
+      </Text>
+      {CURRENCIES.filter((c) => c.type === 'stablecoin').map(renderRow)}
     </>
   );
 }

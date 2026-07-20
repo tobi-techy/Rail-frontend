@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -11,27 +11,40 @@ import { getCurrencyConfig } from '@/utils/currencyConfig';
 import { formatCurrency } from '@/components/withdraw/method-screen/utils';
 import { ReviewCard, DetailRow, Sep } from '@/components/withdraw/shared';
 import { ArrowLeft01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import * as Haptics from '@/utils/platformHaptics';
 import { useInitiateWithdrawal } from '@/api/hooks/useFunding';
+import { useWithdrawalFee } from '@/api/hooks/useWallet';
 import { useAuthStore } from '@/stores/authStore';
 import { SessionManager } from '@/utils/sessionManager';
 import {
   WithdrawalStatusScreen,
   type WithdrawalStatusType,
 } from '@/components/withdraw/WithdrawalStatusScreen';
-import { parseApiError } from '@/utils/apiError';
+import { parseApiError, isPasscodeSessionError } from '@/utils/apiError';
+import { commitmentDeclineMessage, isCommitmentExceededError } from '@/utils/spendingCommitment';
 import { useWithdrawalEventStore } from '@/stores/withdrawalEventStore';
+import { useWithdrawalSessionStore } from '@/stores/withdrawalSessionStore';
 
 export default function CryptoConfirmScreen() {
   const insets = useSafeAreaInsets();
+  const { impact } = useHaptics();
   const params = useLocalSearchParams<{
     amount: string;
     destinationInput: string;
     destinationChain: string;
     currency: string;
+    sourceAccount?: string;
   }>();
 
   const numericAmount = parseFloat(params.amount ?? '0') || 0;
-  const feeAmount = numericAmount > 0 ? 0.1 : 0;
+  const { data: feeData } = useWithdrawalFee({
+    amount: numericAmount,
+    type: 'crypto',
+    destChain: params.destinationChain,
+  });
+  const feeAmount = feeData?.fee ?? 0.1;
   const totalAmount = numericAmount + feeAmount;
 
   const storeCurrency = useUIStore((s) => s.currency);
@@ -49,7 +62,14 @@ export default function CryptoConfirmScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<WithdrawalStatusType | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
-  const [withdrawalId, setWithdrawalId] = useState<string | null>(null);
+  const isExecutingRef = useRef(false);
+
+  // Session key for persisting withdrawalId across remounts
+  const sessionKey = `crypto-${numericAmount}-${params.destinationInput}-${params.destinationChain}`;
+  const sessionStore = useWithdrawalSessionStore();
+  const [withdrawalId, setWithdrawalId] = useState<string | null>(() =>
+    sessionStore.get(sessionKey)
+  );
 
   const lastEvent = useWithdrawalEventStore((s) => s.lastEvent);
   const consume = useWithdrawalEventStore((s) => s.consume);
@@ -63,22 +83,72 @@ export default function CryptoConfirmScreen() {
   }, [lastEvent, withdrawalId, consume]);
 
   const executeWithdrawal = useCallback(async () => {
+    if (isExecutingRef.current) return;
+
+    // Client-side validation
+    const addr = (params.destinationInput ?? '').trim();
+    const chain = params.destinationChain ?? 'SOL';
+    if (!chain) {
+      setErrorMsg('Destination chain is required. Please go back and select a chain.');
+      return;
+    }
+    if (!addr) {
+      setErrorMsg('Destination address is required.');
+      return;
+    }
+    if (addr.length < 32 || addr.length > 80) {
+      setErrorMsg('Invalid destination address length.');
+      return;
+    }
+    if (chain === 'SOL' && !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr)) {
+      setErrorMsg('Invalid Solana address format.');
+      return;
+    }
+    if (chain !== 'SOL' && !/^0x[0-9a-fA-F]{40}$/.test(addr)) {
+      setErrorMsg('Invalid EVM address format. Must start with 0x followed by 40 hex characters.');
+      return;
+    }
+
+    isExecutingRef.current = true;
     setIsSubmitting(true);
     try {
+      const idempotencyKey = `crypto-${numericAmount}-${addr.toLowerCase()}-${chain}`;
       const response = await initiateWithdrawal({
         amount: numericAmount,
-        destination_address: (params.destinationInput ?? '').trim(),
-        destination_chain: params.destinationChain ?? 'SOL',
+        destination_address: addr,
+        destination_chain: chain,
+        source_account: params.sourceAccount as 'spending_balance' | 'stash_balance' | undefined,
+        idempotencyKey,
       });
-      setWithdrawalId(response.withdrawal_id ?? null);
+      const id = response.withdrawal_id ?? null;
+      setWithdrawalId(id);
+      if (id) sessionStore.set(sessionKey, id);
       setStatus('pending');
     } catch (err) {
-      setErrorMsg(parseApiError(err, 'Withdrawal failed. Please try again.'));
+      if (isPasscodeSessionError(err)) {
+        setAwaitingAuth(true);
+        setIsSubmitting(false);
+        isExecutingRef.current = false;
+        router.push({
+          pathname: '/withdraw/authorize' as never,
+          params: {
+            amount: String(numericAmount),
+            label: `${prefix}${formatCurrency(numericAmount)} ${assetLabel}`,
+          },
+        } as never);
+        return;
+      }
+      setErrorMsg(
+        isCommitmentExceededError(err)
+          ? commitmentDeclineMessage(err)
+          : parseApiError(err, 'Withdrawal failed. Please try again.')
+      );
       setStatus('failed');
     } finally {
       setIsSubmitting(false);
+      isExecutingRef.current = false;
     }
-  }, [initiateWithdrawal, numericAmount, params]);
+  }, [initiateWithdrawal, numericAmount, params, prefix, assetLabel]);
 
   useFocusEffect(
     useCallback(() => {
@@ -92,6 +162,7 @@ export default function CryptoConfirmScreen() {
   );
 
   const onConfirm = () => {
+    useAuthStore.getState().clearPasscodeSession();
     setAwaitingAuth(true);
     router.push({
       pathname: '/withdraw/authorize' as never,
@@ -113,12 +184,17 @@ export default function CryptoConfirmScreen() {
             ? errorMsg
             : "Your withdrawal is being processed. We'll notify you once it's confirmed on-chain."
         }
-        onDone={() => router.replace('/(tabs)' as never)}
+        onDone={() => {
+          sessionStore.clear(sessionKey);
+          router.replace('/(tabs)' as never);
+        }}
         onRetry={
           status === 'failed'
             ? () => {
                 setStatus(null);
                 setErrorMsg('');
+                setWithdrawalId(null);
+                setAwaitingAuth(false);
               }
             : undefined
         }
@@ -132,7 +208,9 @@ export default function CryptoConfirmScreen() {
         className="flex-1 items-center justify-center bg-warm-canvas"
         edges={['top', 'bottom']}>
         <ActivityIndicator size="small" color="#EA580C" />
-        <Text className="mt-4 font-subtitle text-[17px] text-text-primary">
+        <Text
+          className="mt-4 font-subtitle text-[17px] text-text-primary"
+          maxFontSizeMultiplier={1.3}>
           Submitting withdrawal…
         </Text>
       </SafeAreaView>
@@ -145,12 +223,16 @@ export default function CryptoConfirmScreen() {
       <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
         <Pressable
           className="size-11 items-center justify-center rounded-full bg-surface"
-          onPress={() => router.back()}
+          onPress={() => {
+            router.back();
+          }}
           accessibilityRole="button"
           accessibilityLabel="Go back">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
         </Pressable>
-        <Text className="font-subtitle text-[17px] text-text-primary">Review</Text>
+        <Text className="font-subtitle text-[17px] text-text-primary" maxFontSizeMultiplier={1.3}>
+          Review
+        </Text>
         <View className="size-11" />
       </View>
 
@@ -162,11 +244,17 @@ export default function CryptoConfirmScreen() {
           <View className="mb-3 size-14 items-center justify-center rounded-full bg-surface">
             <CurrencyIcon width={32} height={32} />
           </View>
-          <Text className="font-subtitle text-[42px] leading-[46px] text-text-primary">
+          <Text
+            className="font-subtitle text-[42px] leading-[46px] text-text-primary"
+            maxFontSizeMultiplier={1.3}>
             {prefix}
             {formatCurrency(numericAmount)}
           </Text>
-          <Text className="mt-1 font-body text-[14px] text-text-secondary">{assetLabel}</Text>
+          <Text
+            className="mt-1 font-body text-[14px] text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
+            {assetLabel}
+          </Text>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(40).duration(250)}>
@@ -174,14 +262,20 @@ export default function CryptoConfirmScreen() {
             <DetailRow label="Address" value={maskAddr(params.destinationInput ?? '')} />
             <Sep />
             <View className="flex-row items-center justify-between px-5 py-4">
-              <Text className="font-body text-[14px] text-text-secondary">Network</Text>
+              <Text
+                className="font-body text-[14px] text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
+                Network
+              </Text>
               <View className="flex-row items-center gap-2">
                 <View
                   className="size-5 items-center justify-center rounded-full"
                   style={{ backgroundColor: chainConfig.color + '14' }}>
                   <ChainLogo chain={params.destinationChain ?? 'SOL'} size={12} />
                 </View>
-                <Text className="font-subtitle text-[14px] text-text-primary">
+                <Text
+                  className="font-subtitle text-[14px] text-text-primary"
+                  maxFontSizeMultiplier={1.4}>
                   {chainConfig.label}
                   {isEVMChain(chainConfig.chain) ? ' (EVM)' : ''}
                 </Text>
@@ -199,8 +293,14 @@ export default function CryptoConfirmScreen() {
             <DetailRow label="Network fee" value={`$${formatCurrency(feeAmount)}`} />
             <Sep />
             <View className="flex-row items-center justify-between px-5 py-4">
-              <Text className="font-subtitle text-[14px] text-text-primary">Total</Text>
-              <Text className="font-subtitle text-[16px] text-text-primary">
+              <Text
+                className="font-subtitle text-[14px] text-text-primary"
+                maxFontSizeMultiplier={1.4}>
+                Total
+              </Text>
+              <Text
+                className="font-subtitle text-[16px] text-text-primary"
+                maxFontSizeMultiplier={1.3}>
                 {prefix}
                 {formatCurrency(totalAmount)} {assetLabel}
               </Text>
@@ -208,7 +308,9 @@ export default function CryptoConfirmScreen() {
           </ReviewCard>
         </Animated.View>
 
-        <Text className="mt-2 font-body text-[12px] leading-[18px] text-text-secondary">
+        <Text
+          className="mt-2 font-body text-[12px] leading-[18px] text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
           * Please verify the address and network. {assetLabel} withdrawals cannot be reversed.
         </Text>
       </ScrollView>
@@ -220,7 +322,12 @@ export default function CryptoConfirmScreen() {
           <Button title="Cancel" variant="ghost" onPress={() => router.back()} />
         </View>
         <View className="flex-[2]">
-          <Button title="Confirm & Send" variant="orange" onPress={onConfirm} />
+          <Button
+            title="Confirm & Send"
+            variant="orange"
+            onPress={onConfirm}
+            disabled={awaitingAuth}
+          />
         </View>
       </View>
     </SafeAreaView>

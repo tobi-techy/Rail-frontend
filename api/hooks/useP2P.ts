@@ -6,8 +6,7 @@ export function useP2PTransfers() {
   return useQuery({
     queryKey: ['p2p', 'transfers'],
     queryFn: () => p2pService.getTransfers(),
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 2 * 60 * 1000, // no background interval (Redis cost); refresh on focus + mutation invalidation
   });
 }
 

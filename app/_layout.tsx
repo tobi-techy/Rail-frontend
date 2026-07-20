@@ -21,7 +21,6 @@ import { initEncryption } from '@/utils/encryption';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { FeedbackPopupHost } from '@/components/ui';
 import { MiriamCanvasHost } from '@/components/ai/canvas/MiriamCanvasHost';
-import { MiriamAmbientLayer } from '@/components/ai/ambient/MiriamAmbientLayer';
 import queryClient, { queryKeys } from '@/api/queryClient';
 import { stationService } from '@/api/services/station.service';
 import SessionManager from '@/utils/sessionManager';
@@ -102,6 +101,21 @@ function PostReadyHooks() {
   const { useForceUpdate } = require('@/hooks/useForceUpdate');
   usePushNotifications();
   useForceUpdate();
+  // Sync the soundsEnabled preference from the store to the sound modules.
+  // The actual player warmup happens earlier in the root useEffect.
+  useEffect(() => {
+    const { setUISoundsEnabled } = require('@/lib/uiSounds');
+    const { setChatSoundsEnabled } = require('@/lib/chatSounds');
+    const { useUIStore } = require('@/stores');
+    const unsub = useUIStore.subscribe((state: any) => {
+      setUISoundsEnabled(state.soundsEnabled);
+      setChatSoundsEnabled(state.soundsEnabled);
+    });
+    // Initialize to current value
+    setUISoundsEnabled(useUIStore.getState().soundsEnabled);
+    setChatSoundsEnabled(useUIStore.getState().soundsEnabled);
+    return unsub;
+  }, []);
   return null;
 }
 
@@ -130,8 +144,11 @@ function AppNavigator() {
       <Stack.Screen name="withdraw" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="kyc" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="virtual-account" />
+      <Stack.Screen name="profile" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="account-level" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="passkey-settings" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="settings-notifications" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="daily-spending-limit" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen
         name="fund-crosschain"
@@ -147,9 +164,15 @@ function AppNavigator() {
       />
       <Stack.Screen name="paj-verify" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen
+        name="authorize"
+        options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
+      />
+      <Stack.Screen name="link-miriam" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen
         name="ai-chat"
         options={{ animation: 'fade_from_bottom', animationDuration: 250, gestureEnabled: false }}
       />
+      <Stack.Screen name="transaction-detail" options={{ animation: 'slide_from_bottom' }} />
     </Stack>
   );
 }
@@ -180,12 +203,11 @@ export default function Layout() {
     // request had to await fingerprint generation (SecureStore + SHA-256).
     import('@/utils/deviceFingerprint').then((m) => m.getDeviceFingerprint()).catch(() => {});
 
-    // Encryption key derivation (PBKDF2 100k iterations) is still deferred — it
-    // is only needed for encrypt/decrypt calls, not for routing or API auth.
-    const { InteractionManager } = require('react-native');
-    InteractionManager.runAfterInteractions(() => {
-      initEncryption();
-    });
+    // Eagerly create every UI sound player so the first keypad / sheet / button
+    // tap doesn't pay the asset-decode cost inline and feel stuck. This must
+    // happen at mount — not deferred behind InteractionManager — because users
+    // can tap buttons before that fires, especially on low-end Android devices.
+    import('@/lib/uiSounds').then((m) => m.warmUpUISounds()).catch(() => {});
   }, []);
 
   // Custom splash disabled — hide the Expo default native splash as soon as the
@@ -201,6 +223,13 @@ export default function Layout() {
     if (showSplash) return;
 
     SessionManager.initialize();
+
+    // Encryption key init — deferred until after splash so it never competes
+    // with the first screen becoming interactive. Derivation is cheap now, but
+    // keep it off the critical path and never let it throw into startup.
+    Promise.resolve()
+      .then(() => initEncryption())
+      .catch(() => {});
 
     // Deferred SDK init
     import('@/utils/gleap')
@@ -239,7 +268,6 @@ export default function Layout() {
                   <DeferredPostHogProvider>
                     {isReady && <PostReadyHooks />}
                     <AppNavigator />
-                    <MiriamAmbientLayer />
                     <FeedbackPopupHost />
                     <MiriamCanvasHost />
                     {isBlurred && (

@@ -4,6 +4,10 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { MoreHorizontalIcon } from '@/lib/icons';
 import type { AIConversation } from '@/api/types/ai';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import { ImpactFeedbackStyle } from '@/utils/platformHaptics';
 
 function relativeDateLabel(iso: string): string {
   if (!iso) return '';
@@ -34,6 +38,8 @@ export function ThreadRow({ conv, onPress, onDelete }: Props) {
   const swipeRef = useRef<Swipeable>(null);
   const [showUndo, setShowUndo] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggerFeedback = useButtonFeedback();
+  const { impact } = useHaptics();
 
   const handleDelete = useCallback(() => {
     setShowUndo(true);
@@ -56,6 +62,7 @@ export function ThreadRow({ conv, onPress, onDelete }: Props) {
         <Text className="font-body text-[15px] text-text-tertiary">Thread deleted</Text>
         <Pressable
           onPress={() => {
+            triggerFeedback();
             if (timerRef.current) clearTimeout(timerRef.current);
             setShowUndo(false);
           }}
@@ -84,7 +91,10 @@ export function ThreadRow({ conv, onPress, onDelete }: Props) {
       friction={2}
       rightThreshold={40}>
       <Pressable
-        onPress={onPress}
+        onPress={() => {
+          triggerFeedback();
+          onPress();
+        }}
         className="mx-5 border-b border-black/[0.06] py-5"
         accessibilityRole="button"
         accessibilityLabel={`Thread: ${title}. Swipe left to delete`}>
@@ -97,6 +107,8 @@ export function ThreadRow({ conv, onPress, onDelete }: Props) {
           </Text>
           <Pressable
             onPress={(e) => {
+              impact(ImpactFeedbackStyle.Light);
+              playUISound('buttonClick');
               e.stopPropagation?.();
             }}
             hitSlop={12}

@@ -138,14 +138,18 @@ export default function AuthorizeTransactionScreen() {
 
         {/* Title */}
         <Animated.View entering={FadeInUp.delay(60).duration(250)} className="mt-6 px-6">
-          <Text className="font-heading text-[32px] leading-[38px] text-[#1a1a1a]">
+          <Text
+            className="font-heading text-[32px] leading-[38px] text-[#1a1a1a]"
+            maxFontSizeMultiplier={1.3}>
             Authorize{'\n'}transaction
           </Text>
         </Animated.View>
 
         {/* Subtitle */}
         <Animated.View entering={FadeInUp.delay(100).duration(250)} className="mt-4 px-6">
-          <Text className="font-body text-[15px] text-[#848281]">Enter Your Account Pin</Text>
+          <Text className="font-body text-[15px] text-[#848281]" maxFontSizeMultiplier={1.4}>
+            Enter Your Account Pin
+          </Text>
         </Animated.View>
 
         {/* PIN boxes + eye toggle */}
@@ -162,8 +166,9 @@ export default function AuthorizeTransactionScreen() {
                   {filled &&
                     (showPin ? (
                       <Text
-                        className="font-subtitle text-[22px] text-[#1a1a1a]"
-                        style={{ fontVariant: ['tabular-nums'] }}>
+                        className="font-mono-semibold text-[22px] text-[#1a1a1a]"
+                        style={{ fontVariant: ['tabular-nums'] }}
+                        maxFontSizeMultiplier={1.3}>
                         {authPasscode[i]}
                       </Text>
                     ) : (
@@ -191,7 +196,9 @@ export default function AuthorizeTransactionScreen() {
         {/* Error */}
         {authError ? (
           <View className="mt-3 px-6">
-            <Text className="font-body text-[13px] text-coral-red">{authError}</Text>
+            <Text className="font-body text-[13px] text-coral-red" maxFontSizeMultiplier={1.4}>
+              {authError}
+            </Text>
           </View>
         ) : null}
 
@@ -218,8 +225,9 @@ export default function AuthorizeTransactionScreen() {
                   }}
                   className="h-[64px] flex-1 items-center justify-center active:scale-[0.96]">
                   <Text
-                    className="font-subtitle text-[28px] text-[#343433]"
-                    style={{ fontVariant: ['tabular-nums'] }}>
+                    className="font-mono-semibold text-[28px] text-[#343433]"
+                    style={{ fontVariant: ['tabular-nums'] }}
+                    maxFontSizeMultiplier={1.3}>
                     {n}
                   </Text>
                 </Pressable>
@@ -238,8 +246,9 @@ export default function AuthorizeTransactionScreen() {
               }}
               className="h-[64px] flex-1 items-center justify-center active:scale-[0.96]">
               <Text
-                className="font-subtitle text-[28px] text-[#343433]"
-                style={{ fontVariant: ['tabular-nums'] }}>
+                className="font-mono-semibold text-[28px] text-[#343433]"
+                style={{ fontVariant: ['tabular-nums'] }}
+                maxFontSizeMultiplier={1.3}>
                 0
               </Text>
             </Pressable>
@@ -261,7 +270,11 @@ export default function AuthorizeTransactionScreen() {
             onPress={() => router.push('/(auth)/forgot-password')}
             className="active:opacity-70"
             hitSlop={8}>
-            <Text className="font-body text-[15px] text-[#0090ff] underline">Forgot PIN?</Text>
+            <Text
+              className="font-body text-[15px] text-[#0090ff] underline"
+              maxFontSizeMultiplier={1.4}>
+              Forgot PIN?
+            </Text>
           </Pressable>
         </Animated.View>
       </View>

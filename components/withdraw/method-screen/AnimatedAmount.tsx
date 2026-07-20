@@ -1,12 +1,20 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { View, Text } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import React, { useEffect, useRef } from 'react';
+import { View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { layout, moderateScale, responsive } from '@/utils/layout';
 
 type AnimatedAmountProps = { amount: string; prefix?: string };
 
 const glideSpring = { damping: 14, stiffness: 200, mass: 0.7 };
 const fadeSpring = { damping: 22, stiffness: 100, mass: 0.8 };
+// Size-tier transitions: settle quickly with no bounce so the number feels
+// like it's making room, not wobbling.
+const sizeSpring = { damping: 24, stiffness: 260, mass: 0.9 };
 
 function AnimatedChar({
   char,
@@ -14,7 +22,7 @@ function AnimatedChar({
   animate,
 }: {
   char: string;
-  fontSize: number;
+  fontSize: SharedValue<number>;
   animate: boolean;
 }) {
   const translateY = useSharedValue(animate ? 24 : 0);
@@ -32,17 +40,23 @@ function AnimatedChar({
     opacity: opacity.value,
   }));
 
+  const textStyle = useAnimatedStyle(() => ({
+    fontSize: fontSize.value,
+  }));
+
   return (
     <Animated.View style={style}>
-      <Text
-        style={{
-          fontFamily: 'Geist-Bold',
-          fontSize,
-          color: '#FFFFFF',
-          fontVariant: ['tabular-nums'],
-        }}>
+      <Animated.Text
+        style={[
+          {
+            fontFamily: 'CommitMono-700',
+            color: '#FFFFFF',
+            fontVariant: ['tabular-nums'],
+          },
+          textStyle,
+        ]}>
         {char}
-      </Text>
+      </Animated.Text>
     </Animated.View>
   );
 }
@@ -66,7 +80,12 @@ export function AnimatedAmount({ amount, prefix = '$' }: AnimatedAmountProps) {
           : len <= 14
             ? responsive({ default: 50, tall: 50, android: 42 })
             : responsive({ default: 42, tall: 39, android: 37 });
-  const fontSize = moderateScale(baseSize, layout.isSeekerDevice ? 0.35 : 0.45);
+  const targetSize = moderateScale(baseSize, layout.isSeekerDevice ? 0.35 : 0.45);
+
+  const fontSize = useSharedValue(targetSize);
+  useEffect(() => {
+    fontSize.value = withSpring(targetSize, sizeSpring);
+  }, [targetSize]);
 
   return (
     <View

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, StatusBar, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import {
   Search01Icon,
@@ -12,13 +12,12 @@ import {
 } from '@/lib/icons';
 import { useRampBanks } from '@/api/hooks/useRamp';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import * as Haptics from '@/utils/platformHaptics';
 import { ScreenHeader } from '@/components/withdraw/shared';
-import { formatCurrency } from '@/components/withdraw/method-screen/utils';
 
 export default function NgnRecipientsScreen() {
-  const { selection } = useHaptics();
-  const params = useLocalSearchParams<{ amount: string; currency: string }>();
-  const numericAmount = parseFloat(params.amount ?? '0') || 0;
+  const { impact } = useHaptics();
 
   // Bank list preloaded so select-bank renders instantly
   useRampBanks();
@@ -36,9 +35,13 @@ export default function NgnRecipientsScreen() {
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInUp.duration(250)}>
-          <Text className="font-subtitle text-[28px] text-text-primary">Send to bank</Text>
-          <Text className="mt-1 font-body text-[14px] text-text-secondary">
-            Send ₦{formatCurrency(numericAmount)} to a recent or new recipient
+          <Text className="font-subtitle text-[28px] text-text-primary" maxFontSizeMultiplier={1.3}>
+            Send to bank
+          </Text>
+          <Text
+            className="mt-1 font-body text-[14px] text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
+            Pick a saved recipient or send to a new bank account
           </Text>
         </Animated.View>
 
@@ -58,7 +61,13 @@ export default function NgnRecipientsScreen() {
               autoCorrect={false}
             />
             {searchQuery.length > 0 && (
-              <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+              <Pressable
+                onPress={() => {
+                  impact(Haptics.ImpactFeedbackStyle.Light);
+                  playUISound('buttonClick');
+                  setSearchQuery('');
+                }}
+                hitSlop={8}>
                 <HugeiconsIcon icon={Cancel01Icon} size={15} color="#848281" />
               </Pressable>
             )}
@@ -68,18 +77,21 @@ export default function NgnRecipientsScreen() {
         {/* New recipient */}
         <Animated.View entering={FadeInUp.delay(100).duration(250)} className="mt-5">
           <Pressable
-            className="flex-row items-center justify-between rounded-2xl bg-[#f8f7f4] px-4 py-4"
+            className="flex-row items-center justify-between rounded-2xl bg-[#f8f7f4] px-4 py-4 active:scale-[0.98]"
             onPress={() => {
+              impact(Haptics.ImpactFeedbackStyle.Medium);
+              playUISound('buttonClick');
               router.push({
                 pathname: '/withdraw/ngn/select-bank' as never,
-                params: { amount: params.amount, currency: params.currency ?? 'NGN' },
               } as never);
             }}>
             <View className="flex-row items-center gap-3">
               <View className="size-11 items-center justify-center rounded-full bg-[#0090ff]">
                 <HugeiconsIcon icon={Add01Icon} size={20} color="#fff" />
               </View>
-              <Text className="font-subtitle text-[15px] text-text-primary">
+              <Text
+                className="font-subtitle text-[15px] text-text-primary"
+                maxFontSizeMultiplier={1.3}>
                 Send to a new recipient
               </Text>
             </View>
@@ -91,10 +103,14 @@ export default function NgnRecipientsScreen() {
 
         {/* Saved recipients — not available with RampHub */}
         <Animated.View entering={FadeInUp.delay(140).duration(250)}>
-          <Text className="mb-3 font-subtitle text-[15px] text-text-primary">
+          <Text
+            className="mb-3 font-subtitle text-[15px] text-text-primary"
+            maxFontSizeMultiplier={1.3}>
             Recent Recipients
           </Text>
-          <Text className="py-6 text-center font-body text-[14px] text-text-secondary">
+          <Text
+            className="py-6 text-center font-body text-[14px] text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
             No saved recipients yet
           </Text>
         </Animated.View>

@@ -19,6 +19,7 @@ import { Button } from '@/components/ui';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
 import { parseApiError, isPasscodeSessionError } from '@/utils/apiError';
+import { commitmentDeclineMessage, isCommitmentExceededError } from '@/utils/spendingCommitment';
 import {
   WithdrawalStatusScreen,
   type WithdrawalStatusType,
@@ -35,6 +36,10 @@ import {
 import { MAX_INTEGER_DIGITS } from '@/components/withdraw/method-screen/constants';
 import { Cancel01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import * as Haptics from '@/utils/platformHaptics';
 import { useAuthStore } from '@/stores/authStore';
 import { Passkey } from 'react-native-passkey';
 
@@ -44,6 +49,8 @@ const springConfig = { damping: 15, stiffness: 200, mass: 0.8 };
 
 export default function EarlyWithdrawScreen() {
   const { showError } = useFeedbackPopup();
+  const triggerFeedback = useButtonFeedback();
+  const { impact } = useHaptics();
   const { data: station } = useStation();
   const { mutateAsync: executeWithdrawal, isPending: isSubmitting } = useEmergencyStashToSpending();
   const { mutate: verifyPasscode, isPending: isPasscodeVerifying } = useVerifyPasscode();
@@ -144,7 +151,9 @@ export default function EarlyWithdrawScreen() {
         return;
       }
       setShowAuthScreen(false);
-      const msg = parseApiError(err, 'Withdrawal failed. Please try again.');
+      const msg = isCommitmentExceededError(err)
+        ? commitmentDeclineMessage(err)
+        : parseApiError(err, 'Withdrawal failed. Please try again.');
       setErrorMsg(msg);
       setStatus('failed');
       showError(msg);
@@ -314,17 +323,23 @@ export default function EarlyWithdrawScreen() {
           className="flex-row items-center justify-between pb-2 pt-1">
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-white/20"
-            onPress={() => router.back()}
+            onPress={() => {
+              router.back();
+            }}
             accessibilityRole="button"
             accessibilityLabel="Close">
             <HugeiconsIcon icon={Cancel01Icon} size={20} color="#FFFFFF" />
           </Pressable>
-          <Text className="font-subtitle text-[20px] text-white">Early Withdraw</Text>
+          <Text className="font-subtitle text-[20px] text-white" maxFontSizeMultiplier={1.3}>
+            Early Withdraw
+          </Text>
           <View className="size-11" />
         </Animated.View>
 
         <View className="flex-1 items-center justify-center px-2">
-          <Text className="font-body text-[13px] text-white/80">From Stash</Text>
+          <Text className="font-body text-[13px] text-white/80" maxFontSizeMultiplier={1.4}>
+            From Stash
+          </Text>
           <View className="mt-2">
             <AnimatedAmount amount={displayAmount} prefix="$" />
           </View>
@@ -334,7 +349,7 @@ export default function EarlyWithdrawScreen() {
             style={pillsAnimatedStyle}
             className="mt-6 flex-row items-center justify-center gap-2">
             <View className="flex-row items-center rounded-full bg-white/20 px-3 py-2">
-              <Text className="font-body text-[13px] text-white/90">
+              <Text className="font-body text-[13px] text-white/90" maxFontSizeMultiplier={1.4}>
                 Stash: ${formatCurrency(stashBalance)}
               </Text>
             </View>
@@ -342,17 +357,25 @@ export default function EarlyWithdrawScreen() {
               <Animated.View
                 entering={FadeIn.springify()}
                 className="flex-row items-center rounded-full bg-amber-400/90 px-3 py-2">
-                <Text className="font-body text-[13px] font-semibold text-charcoal-primary">
+                <Text
+                  className="font-body text-[13px] font-semibold text-charcoal-primary"
+                  maxFontSizeMultiplier={1.4}>
                   ${formatCurrency(feeAmount)} fee
                 </Text>
               </Animated.View>
             )}
             <Pressable
-              onPress={onMaxPress}
+              onPress={() => {
+                triggerFeedback();
+                onMaxPress();
+              }}
               className="rounded-full bg-parchment-card px-4 py-2"
               accessibilityRole="button"
               accessibilityLabel="Set maximum amount">
-              <Text className="font-subtitle text-[13px]" style={{ color: BRAND_RED }}>
+              <Text
+                className="font-subtitle text-[13px]"
+                style={{ color: BRAND_RED }}
+                maxFontSizeMultiplier={1.4}>
                 Max
               </Text>
             </Pressable>

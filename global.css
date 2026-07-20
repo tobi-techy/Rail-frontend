@@ -32,10 +32,14 @@
     --font-sans-medium: 'SFProDisplay-Medium';
     --font-sans-semibold: 'SFProDisplay-Semibold';
     --font-sans-bold: 'SFProDisplay-Bold';
-    --font-mono: 'SFMono-Regular';
-    --font-mono-medium: 'SFMono-Medium';
-    --font-mono-semibold: 'SFMono-Semibold';
-    --font-mono-bold: 'SFMono-Bold';
+    --font-mono: 'CommitMono';
+    --font-mono-light: 'CommitMono-350';
+    --font-mono-book: 'CommitMono-450';
+    --font-mono-medium: 'CommitMono-500';
+    --font-mono-strong: 'CommitMono-550';
+    --font-mono-semibold: 'CommitMono-600';
+    --font-mono-heavy: 'CommitMono-625';
+    --font-mono-bold: 'CommitMono-700';
   }
 
   html,

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { ArrowRight01Icon, type PhosphorIcon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 type HugeIconType = PhosphorIcon;
 
@@ -41,7 +42,9 @@ export function ActionSheet({
   subtitle,
   actions,
 }: ActionSheetProps) {
+  const triggerFeedback = useButtonFeedback();
   const handleActionPress = (action: ActionItem) => {
+    triggerFeedback();
     action.onPress();
     onClose();
   };

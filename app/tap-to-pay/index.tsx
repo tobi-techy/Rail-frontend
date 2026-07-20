@@ -167,18 +167,23 @@ function PeerAvatar({
             shadowOffset: { width: 0, height: 2 },
             elevation: 4,
           }}>
-          <Text className="font-subtitle text-[20px] text-[#ff3e00]">
+          <Text className="font-subtitle text-[20px] text-[#ff3e00]" maxFontSizeMultiplier={1.3}>
             {peer.displayName.charAt(0).toUpperCase()}
           </Text>
         </View>
-        <Text className="font-subtitle text-[12px] text-[#343433]" numberOfLines={1}>
+        <Text
+          className="font-subtitle text-[12px] text-[#343433]"
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.4}>
           {peer.displayName.split(' ')[0]}
         </Text>
         {dist && (
           <View
             className="mt-0.5 rounded-full px-2 py-0.5"
             style={{ backgroundColor: `${color}18` }}>
-            <Text style={{ color, fontSize: 9, fontWeight: '600' }}>{dist}</Text>
+            <Text style={{ color, fontSize: 9, fontWeight: '600' }} maxFontSizeMultiplier={1.3}>
+              {dist}
+            </Text>
           </View>
         )}
       </Pressable>
@@ -204,13 +209,19 @@ function IncomingRequest({
       entering={FadeInUp.duration(400)}
       className="flex-1 items-center justify-center px-6">
       <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-[#FFF0ED]">
-        <Text className="font-heading text-[32px] text-[#ff3e00]">
+        <Text className="font-heading text-[32px] text-[#ff3e00]" maxFontSizeMultiplier={1.3}>
           {senderName.charAt(0).toUpperCase()}
         </Text>
       </View>
-      <Text className="font-subtitle text-[18px] text-[#343433]">{senderName}</Text>
-      <Text className="mt-2 font-body text-[15px] text-[#848281]">wants to send you</Text>
-      <Text className="mt-4 font-heading text-[48px] text-[#343433]">${amount}</Text>
+      <Text className="font-subtitle text-[18px] text-[#343433]" maxFontSizeMultiplier={1.3}>
+        {senderName}
+      </Text>
+      <Text className="mt-2 font-body text-[15px] text-[#848281]" maxFontSizeMultiplier={1.4}>
+        wants to send you
+      </Text>
+      <Text className="mt-4 font-heading text-[48px] text-[#343433]" maxFontSizeMultiplier={1.3}>
+        ${amount}
+      </Text>
       <View className="mt-12 w-full flex-row gap-3">
         <Pressable
           onPress={() => {
@@ -218,7 +229,9 @@ function IncomingRequest({
             onDecline();
           }}
           className="flex-1 items-center rounded-2xl bg-[#FEF2F2] py-4">
-          <Text className="font-subtitle text-[15px] text-[#ff2b3a]">Decline</Text>
+          <Text className="font-subtitle text-[15px] text-[#ff2b3a]" maxFontSizeMultiplier={1.3}>
+            Decline
+          </Text>
         </Pressable>
         <Pressable
           onPress={() => {
@@ -226,7 +239,9 @@ function IncomingRequest({
             onAccept();
           }}
           className="flex-1 items-center rounded-2xl bg-[#343433] py-4">
-          <Text className="font-subtitle text-[15px] text-white">Accept</Text>
+          <Text className="font-subtitle text-[15px] text-white" maxFontSizeMultiplier={1.3}>
+            Accept
+          </Text>
         </Pressable>
       </View>
     </Animated.View>
@@ -256,8 +271,14 @@ function TapToPayPausedScreen() {
           <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-[#FFF0ED]">
             <HugeiconsIcon icon={Wifi01Icon} size={34} color={BRAND_COLOR} />
           </View>
-          <Text className="text-center font-heading text-[28px] text-[#343433]">Paused</Text>
-          <Text className="mt-3 max-w-[280px] text-center font-body text-[15px] leading-[22px] text-[#848281]">
+          <Text
+            className="text-center font-heading text-[28px] text-[#343433]"
+            maxFontSizeMultiplier={1.3}>
+            Paused
+          </Text>
+          <Text
+            className="mt-3 max-w-[280px] text-center font-body text-[15px] leading-[22px] text-[#848281]"
+            maxFontSizeMultiplier={1.4}>
             Tap to Pay is temporarily unavailable.
           </Text>
           <Button
@@ -496,10 +517,14 @@ function TapToPayActiveScreen() {
         <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-[#FFF0ED]">
           <HugeiconsIcon icon={Wifi01Icon} size={28} color="#ff3e00" />
         </View>
-        <Text className="text-center font-subtitle text-[18px] text-[#343433]">
+        <Text
+          className="text-center font-subtitle text-[18px] text-[#343433]"
+          maxFontSizeMultiplier={1.3}>
           Permissions required
         </Text>
-        <Text className="mt-2 text-center font-body text-[14px] text-[#848281]">
+        <Text
+          className="mt-2 text-center font-body text-[14px] text-[#848281]"
+          maxFontSizeMultiplier={1.4}>
           Tap to Pay needs Bluetooth and location access to find nearby users
         </Text>
         {permStatus === 'blocked' ? (
@@ -526,10 +551,14 @@ function TapToPayActiveScreen() {
         <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-[#FFF0ED]">
           <HugeiconsIcon icon={Wifi01Icon} size={28} color="#ff3e00" />
         </View>
-        <Text className="text-center font-subtitle text-[18px] text-[#343433]">
+        <Text
+          className="text-center font-subtitle text-[18px] text-[#343433]"
+          maxFontSizeMultiplier={1.3}>
           Tap to Pay is not available on this device
         </Text>
-        <Text className="mt-2 text-center font-body text-[14px] text-[#848281]">
+        <Text
+          className="mt-2 text-center font-body text-[14px] text-[#848281]"
+          maxFontSizeMultiplier={1.4}>
           This feature requires a compatible device
         </Text>
         <Button title="Go back" variant="ghost" className="mt-6" onPress={() => router.back()} />
@@ -548,7 +577,9 @@ function TapToPayActiveScreen() {
             onPress={() => setShowAuth(false)}>
             <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111" />
           </Pressable>
-          <Text className="font-subtitle text-[20px] text-text-primary">Confirm send</Text>
+          <Text className="font-subtitle text-[20px] text-text-primary" maxFontSizeMultiplier={1.3}>
+            Confirm send
+          </Text>
           <View className="size-11" />
         </View>
         <PasscodeInput
@@ -574,8 +605,14 @@ function TapToPayActiveScreen() {
           <View className="mb-2 h-20 w-20 items-center justify-center rounded-full bg-[#f0fdf4]">
             <HugeiconsIcon icon={CheckmarkCircle02Icon} size={48} color="#00ca48" />
           </View>
-          <Text className="mt-3 font-subtitle text-[22px] text-[#343433]">Sent!</Text>
-          <Text className="mt-2 text-center font-body text-[15px] text-[#848281]">
+          <Text
+            className="mt-3 font-subtitle text-[22px] text-[#343433]"
+            maxFontSizeMultiplier={1.3}>
+            Sent!
+          </Text>
+          <Text
+            className="mt-2 text-center font-body text-[15px] text-[#848281]"
+            maxFontSizeMultiplier={1.4}>
             ${formatCurrency(numericAmount)} sent to {selectedPeer?.displayName}
           </Text>
           <Button
@@ -624,11 +661,15 @@ function TapToPayActiveScreen() {
               <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#fff" />
             </Pressable>
             <View className="items-center">
-              <Text className="font-subtitle text-[17px] text-white">
+              <Text className="font-subtitle text-[17px] text-white" maxFontSizeMultiplier={1.3}>
                 Send to {selectedPeer.displayName}
               </Text>
               {dist && (
-                <Text className="mt-0.5 font-body text-[12px] text-white/60">{dist} away</Text>
+                <Text
+                  className="mt-0.5 font-body text-[12px] text-white/60"
+                  maxFontSizeMultiplier={1.4}>
+                  {dist} away
+                </Text>
               )}
             </View>
             <View className="size-11" />
@@ -643,7 +684,11 @@ function TapToPayActiveScreen() {
               entering={FadeIn.duration(200)}
               exiting={FadeOut.duration(200)}
               className="mb-2">
-              <Text className="text-center font-body text-[13px] text-white/90">{sendError}</Text>
+              <Text
+                className="text-center font-body text-[13px] text-white/90"
+                maxFontSizeMultiplier={1.4}>
+                {sendError}
+              </Text>
             </Animated.View>
           ) : null}
 
@@ -684,13 +729,17 @@ function TapToPayActiveScreen() {
           <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" strokeWidth={2} />
         </Pressable>
         <View className="flex-1">
-          <Text className="font-subtitle text-[18px] text-[#343433]">Tap to Pay</Text>
+          <Text className="font-subtitle text-[18px] text-[#343433]" maxFontSizeMultiplier={1.3}>
+            Tap to Pay
+          </Text>
         </View>
         {peers.length > 0 && (
           <Animated.View
             entering={FadeIn.duration(300)}
             className="rounded-full bg-[#f0fdf4] px-3 py-1">
-            <Text className="font-caption text-[11px] text-[#00ca48]">{peers.length} nearby</Text>
+            <Text className="font-caption text-[11px] text-[#00ca48]" maxFontSizeMultiplier={1.4}>
+              {peers.length} nearby
+            </Text>
           </Animated.View>
         )}
       </View>
@@ -733,8 +782,12 @@ function TapToPayActiveScreen() {
 
         {/* Status text */}
         <View className="absolute bottom-24 items-center px-6">
-          <Text className="font-subtitle text-[16px] text-[#343433]">{statusText}</Text>
-          <Text className="mt-1 font-body text-[13px] text-[#848281]">{subtitleText}</Text>
+          <Text className="font-subtitle text-[16px] text-[#343433]" maxFontSizeMultiplier={1.3}>
+            {statusText}
+          </Text>
+          <Text className="mt-1 font-body text-[13px] text-[#848281]" maxFontSizeMultiplier={1.4}>
+            {subtitleText}
+          </Text>
           {discoveryTimedOut && peers.length === 0 && (
             <Button
               title="Retry"
@@ -756,7 +809,9 @@ function TapToPayActiveScreen() {
           entering={FadeInUp.duration(200)}
           exiting={FadeOut.duration(300)}
           className="absolute bottom-10 left-6 right-6 items-center rounded-2xl bg-[#FEF2F2] py-3">
-          <Text className="font-body text-[14px] text-[#ff2b3a]">Transfer was declined</Text>
+          <Text className="font-body text-[14px] text-[#ff2b3a]" maxFontSizeMultiplier={1.4}>
+            Transfer was declined
+          </Text>
         </Animated.View>
       )}
     </SafeAreaView>

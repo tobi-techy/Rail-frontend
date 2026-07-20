@@ -10,6 +10,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@/components/atoms/SafeIonicons';
 import { useFeedbackPopupStore } from '@/stores/feedbackPopupStore';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 const DEFAULT_DURATION = 3200;
 
@@ -47,6 +49,7 @@ export function FeedbackPopupHost() {
   const popup = useFeedbackPopupStore((state) => state.popup);
   const dismissPopup = useFeedbackPopupStore((state) => state.dismissPopup);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const haptics = useHaptics();
 
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(-24);
@@ -116,12 +119,19 @@ export function FeedbackPopupHost() {
       pointerEvents="box-none"
       style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}>
       <Pressable
-        onPress={() => hidePopup()}
+        onPress={() => {
+          haptics.selection();
+          playUISound('dismiss');
+          hidePopup();
+        }}
         style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
       />
 
       <AnimatedPressable
-        onPress={() => {}}
+        onPress={() => {
+          haptics.selection();
+          playUISound('buttonClick');
+        }}
         style={[
           cardStyle,
           {
@@ -170,29 +180,37 @@ export function FeedbackPopupHost() {
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text
               className="text-[15px] text-charcoal-primary"
-              style={{ fontFamily: 'Geist-SemiBold' }}>
+              style={{ fontFamily: 'Satoshi-Medium' }}>
               {popup.title}
             </Text>
             {popup.message ? (
               <Text
                 className="mt-1 text-[13px] text-graphite"
-                style={{ fontFamily: 'Geist-Regular' }}>
+                style={{ fontFamily: 'Satoshi-Regular' }}>
                 {popup.message}
               </Text>
             ) : null}
           </View>
           {popup.action ? (
             <Pressable
-              onPress={() => hidePopup(popup.action?.onPress)}
+              onPress={() => {
+                haptics.selection();
+                playUISound('buttonClick');
+                hidePopup(popup.action?.onPress);
+              }}
               hitSlop={6}
               style={{ marginLeft: 10, alignSelf: 'center' }}>
-              <Text style={{ fontFamily: 'Geist-SemiBold', fontSize: 13, color: '#343433' }}>
+              <Text style={{ fontFamily: 'Satoshi-Medium', fontSize: 13, color: '#343433' }}>
                 {popup.action.label}
               </Text>
             </Pressable>
           ) : (
             <Pressable
-              onPress={() => hidePopup()}
+              onPress={() => {
+                haptics.selection();
+                playUISound('dismiss');
+                hidePopup();
+              }}
               hitSlop={6}
               style={{ marginLeft: 10, alignSelf: 'center' }}>
               <Ionicons name="close" size={16} color="#6B7280" />

@@ -153,13 +153,17 @@ export default function FundNairaScreen() {
               accessibilityLabel="Close">
               <HugeiconsIcon icon={Cancel01Icon} size={20} color="#FFFFFF" />
             </Pressable>
-            <Text className="font-subtitle text-[20px] text-white">Fund with Naira</Text>
+            <Text className="font-subtitle text-[20px] text-white" maxFontSizeMultiplier={1.3}>
+              Fund with Naira
+            </Text>
             <View className="size-11" />
           </Animated.View>
 
           {/* Amount display */}
           <View className="flex-1 items-center justify-center px-2">
-            <Text className="font-body text-[13px] text-white/80">Enter amount in Naira</Text>
+            <Text className="font-body text-[13px] text-white/80" maxFontSizeMultiplier={1.4}>
+              Enter amount in Naira
+            </Text>
             <View className="mt-2">
               <AnimatedAmount amount={displayAmount} prefix="₦" />
             </View>
@@ -172,14 +176,14 @@ export default function FundNairaScreen() {
                 <Animated.View
                   entering={FadeIn.springify()}
                   className="flex-row items-center rounded-full bg-white/20 px-3 py-2">
-                  <Text className="font-body text-[13px] text-white/90">
+                  <Text className="font-body text-[13px] text-white/90" maxFontSizeMultiplier={1.4}>
                     ≈ ${usdEquivalent.toFixed(2)} USDC
                   </Text>
                 </Animated.View>
               )}
               {onRampRate > 0 && (
                 <View className="flex-row items-center rounded-full bg-white/20 px-3 py-2">
-                  <Text className="font-body text-[13px] text-white/90">
+                  <Text className="font-body text-[13px] text-white/90" maxFontSizeMultiplier={1.4}>
                     ₦{onRampRate.toLocaleString()}/USD
                   </Text>
                 </View>
@@ -198,7 +202,9 @@ export default function FundNairaScreen() {
               className="bg-warm-canvas"
             />
             {numericAmount > 0 && numericAmount < MIN_NGN_TRANSACTION_AMOUNT && (
-              <Text className="mt-2 text-center font-body text-[12px] text-white/70">
+              <Text
+                className="mt-2 text-center font-body text-[12px] text-white/70"
+                maxFontSizeMultiplier={1.4}>
                 Minimum deposit is ₦{MIN_NGN_TRANSACTION_AMOUNT.toLocaleString()}
               </Text>
             )}
@@ -260,19 +266,26 @@ function BankDetailsStep({
             accessibilityLabel="Close">
             <HugeiconsIcon icon={Cancel01Icon} size={20} color="#343433" />
           </Pressable>
-          <Text className="font-subtitle text-[20px] text-text-primary">Transfer Details</Text>
+          <Text className="font-subtitle text-[20px] text-text-primary" maxFontSizeMultiplier={1.3}>
+            Transfer Details
+          </Text>
           <View className="size-11" />
         </Animated.View>
 
         {/* Amount summary */}
         <Animated.View entering={FadeInDown.delay(100).duration(400)} className="mt-6 items-center">
-          <Text className="font-body text-[14px] text-text-secondary">Transfer exactly</Text>
+          <Text className="font-body text-[14px] text-text-secondary" maxFontSizeMultiplier={1.4}>
+            Transfer exactly
+          </Text>
           <Text
             className="mt-1 font-mono-semibold text-[40px] text-text-primary"
-            style={{ fontVariant: ['tabular-nums'] }}>
+            style={{ fontVariant: ['tabular-nums'] }}
+            maxFontSizeMultiplier={1.3}>
             ₦{order.fiatAmount.toLocaleString()}
           </Text>
-          <Text className="mt-1 font-body text-[14px] text-text-secondary">
+          <Text
+            className="mt-1 font-body text-[14px] text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
             ≈ ${order.rate > 0 ? (order.fiatAmount / order.rate).toFixed(2) : '—'} USDC
           </Text>
         </Animated.View>
@@ -306,7 +319,9 @@ function BankDetailsStep({
 
         {/* Instructions */}
         <Animated.View entering={FadeInDown.delay(300).duration(400)} className="mt-6 px-2">
-          <Text className="text-center font-body text-[13px] leading-5 text-text-secondary">
+          <Text
+            className="text-center font-body text-[13px] leading-5 text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
             Transfer the exact amount above to this account. Your deposit will be credited
             automatically once confirmed.
           </Text>
@@ -337,11 +352,14 @@ function BankDetailRow({
   return (
     <View className="flex-row items-center justify-between">
       <View className="mr-3 flex-1">
-        <Text className="font-caption text-caption text-text-secondary">{label}</Text>
+        <Text className="font-caption text-caption text-text-secondary" maxFontSizeMultiplier={1.4}>
+          {label}
+        </Text>
         <Text
           className={`mt-1 text-[16px] text-text-primary ${mono ? 'font-mono-semibold' : 'font-subtitle'}`}
           style={mono ? { fontVariant: ['tabular-nums'], letterSpacing: 0.5 } : undefined}
-          selectable>
+          selectable
+          maxFontSizeMultiplier={1.3}>
           {value}
         </Text>
       </View>
@@ -477,20 +495,24 @@ function WaitingStep({
         {/* Header */}
         <View className="flex-row items-center justify-between pb-2 pt-1">
           <View className="size-11" />
-          <Text className="font-subtitle text-[20px] text-text-primary">Deposit Status</Text>
+          <Text className="font-subtitle text-[20px] text-text-primary" maxFontSizeMultiplier={1.3}>
+            Deposit Status
+          </Text>
           <View className="size-11" />
         </View>
 
         {/* Hero */}
         <Animated.View entering={FadeInDown.delay(100).duration(400)} className="mt-8 items-center">
-          <Text className="font-subtitle text-[24px] text-text-primary">
+          <Text className="font-subtitle text-[24px] text-text-primary" maxFontSizeMultiplier={1.3}>
             {isCompleted
               ? 'Deposit complete'
               : isFailed
                 ? 'Something went wrong'
                 : 'We received your request'}
           </Text>
-          <Text className="mt-2 text-center font-body text-[15px] leading-[22px] text-text-secondary">
+          <Text
+            className="mt-2 text-center font-body text-[15px] leading-[22px] text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
             {isCompleted
               ? `₦${fiatDisplay} has been converted and credited.`
               : isFailed
@@ -524,7 +546,9 @@ function WaitingStep({
         {!isTerminal && (
           <Animated.View entering={FadeIn.delay(400).duration(300)} className="mt-5 items-center">
             <View className="rounded-full bg-surface px-4 py-2">
-              <Text className="font-body text-[13px] text-text-secondary">
+              <Text
+                className="font-body text-[13px] text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
                 Usually takes 1–5 minutes
               </Text>
             </View>
@@ -613,10 +637,15 @@ function TimelineRow({
 
       {/* Content */}
       <View className={`flex-1 ${isLast ? '' : 'pb-5'}`}>
-        <Text className="font-subtitle text-body" style={{ color: titleColor }}>
+        <Text
+          className="font-subtitle text-body"
+          style={{ color: titleColor }}
+          maxFontSizeMultiplier={1.3}>
           {title}
         </Text>
-        <Text className="mt-0.5 font-body text-caption leading-[18px] text-text-secondary">
+        <Text
+          className="mt-0.5 font-body text-caption leading-[18px] text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
           {description}
         </Text>
       </View>

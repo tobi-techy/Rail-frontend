@@ -10,6 +10,8 @@ import { BankIcon } from '@/assets/svg/filled';
 import CountryFlag from 'react-native-country-flag';
 import { Building04Icon, ShieldKeyIcon, ZapIcon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 interface VirtualAccountIntroSheetProps {
   visible: boolean;
@@ -45,6 +47,7 @@ export function VirtualAccountIntroSheet({
   onSuccess,
   currency = 'USD',
 }: VirtualAccountIntroSheetProps) {
+  const haptics = useHaptics();
   const [awaitingTos, setAwaitingTos] = useState(false);
   const { mutate: create, isPending, error, reset } = useCreateVirtualAccount();
 
@@ -156,7 +159,13 @@ export function VirtualAccountIntroSheet({
       />
 
       {/* Cancel */}
-      <TouchableOpacity onPress={onClose} className="mt-3 items-center py-2">
+      <TouchableOpacity
+        onPress={() => {
+          haptics.selection();
+          playUISound('dismiss');
+          onClose();
+        }}
+        className="mt-3 items-center py-2">
         <Text className="font-body text-[15px] text-smoke">Cancel</Text>
       </TouchableOpacity>
     </GorhomBottomSheet>

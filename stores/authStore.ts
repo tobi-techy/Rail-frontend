@@ -63,6 +63,7 @@ export interface User extends ApiUser {
 
 export interface RegistrationData {
   firstName: string;
+  middleName: string;
   lastName: string;
   dob: string;
   street: string;
@@ -71,8 +72,10 @@ export interface RegistrationData {
   postalCode: string;
   country: string;
   phone: string;
-  password: string;
   authMethod: 'password' | 'passkey';
+  sourceOfFunds: string;
+  employmentStatus: string;
+  accountPurpose: string;
 }
 
 interface AuthState {
@@ -152,7 +155,9 @@ const initialState: AuthState = {
   pendingVerificationEmail: null,
   _pendingPasscode: null,
   hasPasscode: false,
-  isBiometricEnabled: false,
+  // On by default — devices without enrolled biometrics degrade gracefully
+  // (the runtime hardware check simply doesn't offer the prompt).
+  isBiometricEnabled: true,
   passcodeSessionToken: undefined,
   passcodeSessionExpiresAt: undefined,
   appLockExpiresAt: undefined,
@@ -162,6 +167,7 @@ const initialState: AuthState = {
   error: null,
   registrationData: {
     firstName: '',
+    middleName: '',
     lastName: '',
     dob: '',
     street: '',
@@ -170,8 +176,10 @@ const initialState: AuthState = {
     postalCode: '',
     country: '',
     phone: '',
-    password: '',
     authMethod: 'password',
+    sourceOfFunds: '',
+    employmentStatus: '',
+    accountPurpose: '',
   },
 };
 

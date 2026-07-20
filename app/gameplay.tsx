@@ -19,6 +19,7 @@ import {
   useActivityHeatmap,
 } from '@/api/hooks/useGameplay';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import { ProgressBar } from '@/components/atoms/ProgressBar';
 import type { Achievement, UserChallenge } from '@/api/services/gameplay.service';
@@ -70,14 +71,17 @@ export default function GameplayScreen() {
         <View className="flex-row items-center justify-between px-5 pb-4 pt-3">
           <Pressable
             onPress={() => {
-              impact();
               router.back();
             }}
             className="h-10 w-10 items-center justify-center rounded-full bg-surface"
             hitSlop={12}>
             <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#000" />
           </Pressable>
-          <Text className="font-heading text-headline-3 text-text-primary">Progress</Text>
+          <Text
+            className="font-heading text-headline-3 text-text-primary"
+            maxFontSizeMultiplier={1.3}>
+            Progress
+          </Text>
           <View className="w-10" />
         </View>
 
@@ -96,31 +100,49 @@ export default function GameplayScreen() {
                 <View
                   className="absolute items-center justify-center rounded-full bg-black"
                   style={{ width: 102, height: 102 }}>
-                  <Text className="font-mono-bold text-[40px] text-white">{level}</Text>
+                  <Text
+                    className="font-mono-bold text-[40px] text-white"
+                    maxFontSizeMultiplier={1.3}>
+                    {level}
+                  </Text>
                 </View>
               </View>
 
               <View className="mt-4 flex-row items-center gap-2">
-                <Text className="font-heading text-headline-2 text-text-primary">{title}</Text>
+                <Text
+                  className="font-heading text-headline-2 text-text-primary"
+                  maxFontSizeMultiplier={1.3}>
+                  {title}
+                </Text>
                 {isPro && (
                   <View className="flex-row items-center gap-1 rounded-full bg-primary px-2 py-0.5">
                     <HugeiconsIcon icon={CrownIcon} size={12} color="#fff" />
-                    <Text className="font-mono-semibold text-[10px] text-white">PRO</Text>
+                    <Text
+                      className="font-mono-semibold text-[10px] text-white"
+                      maxFontSizeMultiplier={1.4}>
+                      PRO
+                    </Text>
                   </View>
                 )}
               </View>
 
-              <Text className="mt-1 font-mono text-caption text-text-secondary">
+              <Text
+                className="mt-1 font-mono text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.3}>
                 {totalXP.toLocaleString()} XP
               </Text>
 
               <View className="mt-5 w-full">
                 <ProgressBar progress={progressPct} height={10} className="w-full" />
                 <View className="mt-2 flex-row justify-between">
-                  <Text className="font-mono text-[11px] text-text-tertiary">
+                  <Text
+                    className="font-mono text-[11px] text-text-tertiary"
+                    maxFontSizeMultiplier={1.4}>
                     {totalXP.toLocaleString()} XP
                   </Text>
-                  <Text className="font-mono text-[11px] text-text-tertiary">
+                  <Text
+                    className="font-mono text-[11px] text-text-tertiary"
+                    maxFontSizeMultiplier={1.4}>
                     {nextLevelXP > 0 ? `${nextLevelXP.toLocaleString()} XP` : 'MAX'}
                   </Text>
                 </View>
@@ -131,7 +153,9 @@ export default function GameplayScreen() {
 
         {/* ── Streak ──────────────────────────────────────────── */}
         <Animated.View entering={FadeInDown.delay(80).duration(400)} className="mt-8 px-5">
-          <Text className="mb-4 font-subtitle text-body text-text-secondary">
+          <Text
+            className="mb-4 font-subtitle text-body text-text-secondary"
+            maxFontSizeMultiplier={1.3}>
             Deposit consistency
           </Text>
 
@@ -140,10 +164,14 @@ export default function GameplayScreen() {
               <HugeiconsIcon icon={Target01Icon} size={22} color="#ff3e00" strokeWidth={1.8} />
             </View>
             <View>
-              <Text className="font-heading text-headline-2 text-text-primary">
+              <Text
+                className="font-heading text-headline-2 text-text-primary"
+                maxFontSizeMultiplier={1.3}>
                 {depositStreak?.current_count ?? 0} active days
               </Text>
-              <Text className="mt-0.5 font-mono text-caption text-text-secondary">
+              <Text
+                className="mt-0.5 font-mono text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.3}>
                 Longest: {depositStreak?.longest_count ?? 0} days
               </Text>
             </View>
@@ -162,8 +190,14 @@ export default function GameplayScreen() {
         {/* ── Challenges ───────────────────────────────────────── */}
         <Animated.View entering={FadeInDown.delay(160).duration(400)} className="mt-6 px-5">
           <View className="mb-4 flex-row items-center justify-between">
-            <Text className="font-subtitle text-body text-text-secondary">Goals</Text>
-            <Text className="font-mono-semibold text-small text-primary">
+            <Text
+              className="font-subtitle text-body text-text-secondary"
+              maxFontSizeMultiplier={1.3}>
+              Goals
+            </Text>
+            <Text
+              className="font-mono-semibold text-small text-primary"
+              maxFontSizeMultiplier={1.3}>
               {challenges.filter((c: UserChallenge) => c.status === 'completed').length}/
               {challenges.length}
             </Text>
@@ -191,10 +225,13 @@ export default function GameplayScreen() {
                   <View className="flex-row items-center justify-between">
                     <Text
                       className="flex-1 font-subtitle text-body text-text-primary"
-                      numberOfLines={1}>
+                      numberOfLines={1}
+                      maxFontSizeMultiplier={1.3}>
                       {uc.challenge?.title ?? 'Goal'}
                     </Text>
-                    <Text className="ml-2 font-mono-semibold text-small text-success">
+                    <Text
+                      className="ml-2 font-mono-semibold text-small text-success"
+                      maxFontSizeMultiplier={1.3}>
                       +{uc.challenge?.xp_reward ?? 0}
                     </Text>
                   </View>
@@ -205,7 +242,9 @@ export default function GameplayScreen() {
                         style={{ width: `${Math.min(pct, 100)}%` }}
                       />
                     </View>
-                    <Text className="font-mono text-[10px] text-text-tertiary">
+                    <Text
+                      className="font-mono text-[10px] text-text-tertiary"
+                      maxFontSizeMultiplier={1.4}>
                       {uc.progress}/{uc.challenge?.target_value ?? 0}
                     </Text>
                   </View>
@@ -222,7 +261,9 @@ export default function GameplayScreen() {
           {challenges.length === 0 && (
             <View className="items-center rounded-lg border border-stone-surface py-8">
               <HugeiconsIcon icon={Target01Icon} size={28} color="#c6c6c6" />
-              <Text className="mt-3 font-body text-caption text-text-secondary">
+              <Text
+                className="mt-3 font-body text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
                 {isPro ? 'New goals Monday' : 'New goals arrive Monday'}
               </Text>
             </View>
@@ -232,8 +273,14 @@ export default function GameplayScreen() {
         {/* ── Badges ───────────────────────────────────────────── */}
         <Animated.View entering={FadeInDown.delay(260).duration(400)} className="mt-6 px-5">
           <View className="mb-5 flex-row items-center justify-between">
-            <Text className="font-subtitle text-body text-text-secondary">Milestones</Text>
-            <Text className="font-mono-semibold text-small text-primary">
+            <Text
+              className="font-subtitle text-body text-text-secondary"
+              maxFontSizeMultiplier={1.3}>
+              Milestones
+            </Text>
+            <Text
+              className="font-mono-semibold text-small text-primary"
+              maxFontSizeMultiplier={1.3}>
               {earnedCount}/{achievements.length}
             </Text>
           </View>

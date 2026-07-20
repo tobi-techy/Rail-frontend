@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { useEnableMiriamAmbient } from '@/hooks/useEnableMiriamAmbient';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Text, View, RefreshControl, TextInput, Pressable, ScrollView } from 'react-native';
+import { router } from 'expo-router';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { Search01Icon } from '@/lib/icons';
 import { TransactionList } from '@/components/molecules/TransactionList';
@@ -10,11 +10,14 @@ import type {
   TransactionStatus,
   WithdrawalMethod,
 } from '@/components/molecules/TransactionItem';
-import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
+import { useTransactionDetailStore } from '@/stores';
 import { useActivityFeed } from '@/api/hooks/useActivity';
 import type { ActivityItem } from '@/api/types/activity';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
 import { NgnIcon, UsdcIcon } from '@/assets/svg';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import * as Haptics from '@/utils/platformHaptics';
 
 // Convert unified ActivityItem → existing Transaction type for TransactionList/TransactionDetailSheet
 function activityToTransaction(item: ActivityItem): Transaction {
@@ -92,10 +95,17 @@ function activityToTransaction(item: ActivityItem): Transaction {
 type FilterId = 'all' | 'deposit' | 'withdraw' | 'naira' | 'p2p';
 
 export default function History() {
-  useEnableMiriamAmbient();
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterId>('all');
+  const { impact } = useHaptics();
+
+  const openTransaction = useCallback((transaction: Transaction) => {
+    // The Transaction carries live SVG components in `icon`, which can't ride
+    // through router params — stash it in the transient store, then navigate to
+    // the full-screen detail route (mirrors every other entry point).
+    useTransactionDetailStore.getState().open(transaction);
+    router.push('/transaction-detail' as never);
+  }, []);
 
   const filters: { id: FilterId; label: string }[] = [
     { id: 'all', label: 'All' },
@@ -162,7 +172,7 @@ export default function History() {
             placeholderTextColor="#a7a7a7"
             style={{
               flex: 1,
-              fontFamily: 'Geist-Regular',
+              fontFamily: 'Satoshi-Regular',
               fontSize: 15,
               color: '#343433',
               marginLeft: 8,
@@ -185,7 +195,11 @@ export default function History() {
         {filters.map((f) => (
           <Pressable
             key={f.id}
-            onPress={() => setActiveFilter(f.id)}
+            onPress={() => {
+              setActiveFilter(f.id);
+              impact(Haptics.ImpactFeedbackStyle.Light);
+              playUISound('buttonClick');
+            }}
             style={{
               paddingHorizontal: 16,
               paddingVertical: 8,
@@ -197,7 +211,8 @@ export default function History() {
                 fontFamily: 'SFProDisplay-Medium',
                 fontSize: 13,
                 color: activeFilter === f.id ? '#FFF' : '#848281',
-              }}>
+              }}
+              maxFontSizeMultiplier={1.3}>
               {f.label}
             </Text>
           </Pressable>
@@ -207,17 +222,21 @@ export default function History() {
       {!showSkeleton && filteredTransactions.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
           <TransactionsEmptyIllustration width={220} height={140} />
-          <Text className="mt-4 text-center font-subtitle text-subtitle text-text-primary">
+          <Text
+            className="mt-4 text-center font-subtitle text-subtitle text-text-primary"
+            maxFontSizeMultiplier={1.3}>
             No transactions yet
           </Text>
-          <Text className="mt-2 text-center font-body text-caption text-text-secondary">
+          <Text
+            className="mt-2 text-center font-body text-caption text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
             Your transaction history will appear here once you start using Rail
           </Text>
         </View>
       ) : (
         <TransactionList
           transactions={filteredTransactions}
-          onTransactionPress={setSelectedTransaction}
+          onTransactionPress={openTransaction}
           className="flex-1 px-md pt-md"
           isLoading={showSkeleton}
           loadingItems={6}
@@ -230,12 +249,6 @@ export default function History() {
           }
         />
       )}
-
-      <TransactionDetailSheet
-        visible={!!selectedTransaction}
-        onClose={() => setSelectedTransaction(null)}
-        transaction={selectedTransaction}
-      />
     </View>
   );
 }

@@ -9,6 +9,7 @@ import apiClient from '../client';
 import { passcodeRateLimiter } from '../../utils/passcodeRateLimiter';
 import { useAuthStore } from '../../stores/authStore';
 import { logger } from '../../lib/logger';
+import { formatLockoutTime } from '../../utils/sessionConstants';
 import type {
   PasscodeStatus,
   CreatePasscodeRequest,
@@ -70,7 +71,7 @@ export const passcodeService = {
     const allowance = await passcodeRateLimiter.checkAllowance(userId);
     if (!allowance.canAttempt) {
       const remainingSeconds = Math.ceil((allowance.remainingMs || 0) / 1000);
-      const message = `Too many passcode attempts. Try again in ${remainingSeconds} seconds.`;
+      const message = `Too many passcode attempts. Try again in ${formatLockoutTime(remainingSeconds)}.`;
 
       logger.warn('[PasscodeService] Passcode attempt blocked by rate limiter', {
         component: 'PasscodeService',
@@ -115,7 +116,7 @@ export const passcodeService = {
       if (attemptInfo.isLocked) {
         const lockoutSeconds = attemptInfo.lockoutRemainingSeconds || 300;
         const lockoutError = new Error(
-          `Too many failed attempts. Account locked for ${lockoutSeconds} seconds.`
+          `Too many failed attempts. Account locked for ${formatLockoutTime(lockoutSeconds)}.`
         );
         (lockoutError as any).isLockedOut = true;
         throw lockoutError;

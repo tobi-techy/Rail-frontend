@@ -9,6 +9,7 @@ import { ConversationProvider, useConversation } from '@elevenlabs/react-native'
 import { MiriamCharacter } from '@/components/ai/MiriamCharacter';
 import { useFeedbackPopupStore } from '@/stores/feedbackPopupStore';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { useBiometric } from '@/hooks/useBiometric';
 import { aiService } from '@/api/services/ai.service';
 import { useWalletStore } from '@/stores/walletStore';
@@ -118,7 +119,7 @@ function SessionTimer({ active }: { active: boolean }) {
 
   return (
     <Animated.View entering={FadeIn.duration(300)}>
-      <Text style={styles.timer}>
+      <Text style={styles.timer} maxFontSizeMultiplier={1.3}>
         {Math.floor(seconds / 60)}:{(seconds % 60).toString().padStart(2, '0')}
       </Text>
     </Animated.View>
@@ -257,7 +258,6 @@ function VoiceModeContent() {
   }, []);
 
   const handleClose = useCallback(() => {
-    impact();
     try {
       conversation.endSession();
     } catch {
@@ -267,6 +267,7 @@ function VoiceModeContent() {
   }, [conversation, impact, router]);
 
   const handleMicToggle = useCallback(() => {
+    playUISound('toggle');
     impact();
     const next = !isMuted;
     setIsMuted(next);
@@ -296,7 +297,9 @@ function VoiceModeContent() {
 
         {/* State label */}
         {STATE_LABELS[voiceState] ? (
-          <Text style={styles.stateLabel}>{STATE_LABELS[voiceState]}</Text>
+          <Text style={styles.stateLabel} maxFontSizeMultiplier={1.3}>
+            {STATE_LABELS[voiceState]}
+          </Text>
         ) : null}
 
         {/* Waveform */}

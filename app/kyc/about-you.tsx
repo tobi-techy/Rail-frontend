@@ -8,6 +8,8 @@ import { GorhomBottomSheet } from '@/components/sheets/GorhomBottomSheet';
 import { Button } from '@/components/ui';
 import { EMPLOYMENT_STATUS_OPTIONS, INVESTMENT_PURPOSE_OPTIONS } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { ArrowDown01Icon, ArrowLeft01Icon, CheckmarkCircle01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
@@ -22,6 +24,8 @@ export default function KycAboutYouScreen() {
     hasCompletedStep,
     addCompletedStep,
   } = useKycStore();
+
+  const { impact, selection } = useHaptics();
 
   const [showEmployment, setShowEmployment] = useState(false);
   const [showPurpose, setShowPurpose] = useState(false);
@@ -54,12 +58,16 @@ export default function KycAboutYouScreen() {
         <View className="flex-row items-center justify-between px-4 pb-2 pt-1">
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-stone-surface"
-            onPress={() => router.back()}
+            onPress={() => {
+              router.back();
+            }}
             accessibilityRole="button"
             accessibilityLabel="Go back">
             <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" />
           </Pressable>
-          <Text className="font-subtitle text-[13px] text-ash">Step 3</Text>
+          <Text className="font-subtitle text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
+            Step 3
+          </Text>
           <View className="size-11" />
         </View>
 
@@ -72,20 +80,29 @@ export default function KycAboutYouScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 120 }}>
-          <Text className="font-display text-[30px] leading-[34px] text-charcoal-primary">
+          <Text
+            className="font-display text-[30px] leading-[34px] text-charcoal-primary"
+            maxFontSizeMultiplier={1.3}>
             Just a few more questions
           </Text>
-          <Text className="mt-2 font-body text-[15px] leading-6 text-ash">
+          <Text
+            className="mt-2 font-body text-[15px] leading-6 text-ash"
+            maxFontSizeMultiplier={1.4}>
             Financial regulations require us to collect this information.
           </Text>
 
           {/* Employment Status */}
           <View className="mt-8">
-            <Text className="mb-2 font-subtitle text-[14px] text-charcoal-primary">
+            <Text
+              className="mb-2 font-subtitle text-[14px] text-charcoal-primary"
+              maxFontSizeMultiplier={1.4}>
               Employment Status
             </Text>
             <Pressable
-              onPress={() => setShowEmployment(true)}
+              onPress={() => {
+                selection();
+                setShowEmployment(true);
+              }}
               className="flex-row items-center justify-between rounded-2xl border border-fog px-4 py-4"
               accessibilityRole="button"
               accessibilityLabel="Select employment status">
@@ -93,7 +110,8 @@ export default function KycAboutYouScreen() {
                 className={`flex-1 font-body text-[15px] ${
                   employmentStatus ? 'text-charcoal-primary' : 'text-smoke'
                 }`}
-                numberOfLines={1}>
+                numberOfLines={1}
+                maxFontSizeMultiplier={1.4}>
                 {employmentLabel}
               </Text>
               <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#848281" />
@@ -103,13 +121,20 @@ export default function KycAboutYouScreen() {
           {/* Investment Purpose - Now Optional */}
           <View className="mt-6">
             <View className="flex-row items-center justify-between">
-              <Text className="mb-2 font-subtitle text-[14px] text-charcoal-primary">
+              <Text
+                className="mb-2 font-subtitle text-[14px] text-charcoal-primary"
+                maxFontSizeMultiplier={1.4}>
                 Purpose of account
               </Text>
-              <Text className="font-caption text-[12px] text-smoke">Optional</Text>
+              <Text className="font-caption text-[12px] text-smoke" maxFontSizeMultiplier={1.4}>
+                Optional
+              </Text>
             </View>
             <Pressable
-              onPress={() => setShowPurpose(true)}
+              onPress={() => {
+                selection();
+                setShowPurpose(true);
+              }}
               className="flex-row items-center justify-between rounded-2xl border border-fog px-4 py-4"
               accessibilityRole="button"
               accessibilityLabel="Select investment goals">
@@ -117,16 +142,23 @@ export default function KycAboutYouScreen() {
                 className={`flex-1 font-body text-[15px] ${
                   investmentPurposes.length > 0 ? 'text-charcoal-primary' : 'text-smoke'
                 }`}
-                numberOfLines={1}>
+                numberOfLines={1}
+                maxFontSizeMultiplier={1.4}>
                 {purposeLabel}
               </Text>
               <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#848281" />
             </Pressable>
             {investmentPurposes.length > 0 && (
               <Pressable
-                onPress={() => clearInvestmentPurposes()}
+                onPress={() => {
+                  impact();
+                  playUISound('buttonClick');
+                  clearInvestmentPurposes();
+                }}
                 className="mt-2 flex-row items-center gap-x-1">
-                <Text className="font-caption text-[12px] text-ash">Clear selection</Text>
+                <Text className="font-caption text-[12px] text-ash" maxFontSizeMultiplier={1.4}>
+                  Clear selection
+                </Text>
               </Pressable>
             )}
           </View>
@@ -152,7 +184,9 @@ export default function KycAboutYouScreen() {
             className="mt-2 py-2"
             accessibilityRole="button"
             accessibilityLabel="Skip investment goals">
-            <Text className="text-center font-body text-[14px] text-ash">
+            <Text
+              className="text-center font-body text-[14px] text-ash"
+              maxFontSizeMultiplier={1.4}>
               Skip investment goals
             </Text>
           </Pressable>
@@ -163,7 +197,9 @@ export default function KycAboutYouScreen() {
           visible={showEmployment}
           onClose={() => setShowEmployment(false)}
           showCloseButton={false}>
-          <Text className="mb-4 font-display text-[22px] text-charcoal-primary">
+          <Text
+            className="mb-4 font-display text-[22px] text-charcoal-primary"
+            maxFontSizeMultiplier={1.3}>
             Employment status
           </Text>
           {EMPLOYMENT_STATUS_OPTIONS.map((option, index) => {
@@ -181,7 +217,11 @@ export default function KycAboutYouScreen() {
                     : ''
                 }`}
                 accessibilityRole="button">
-                <Text className="font-body text-[16px] text-charcoal-primary">{option.label}</Text>
+                <Text
+                  className="font-body text-[16px] text-charcoal-primary"
+                  maxFontSizeMultiplier={1.4}>
+                  {option.label}
+                </Text>
                 {selected && (
                   <HugeiconsIcon
                     icon={CheckmarkCircle01Icon}
@@ -203,10 +243,12 @@ export default function KycAboutYouScreen() {
           visible={showPurpose}
           onClose={() => setShowPurpose(false)}
           showCloseButton={false}>
-          <Text className="mb-1 font-display text-[22px] text-charcoal-primary">
+          <Text
+            className="mb-1 font-display text-[22px] text-charcoal-primary"
+            maxFontSizeMultiplier={1.3}>
             Purpose of account
           </Text>
-          <Text className="mb-4 font-body text-[13px] text-ash">
+          <Text className="mb-4 font-body text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
             Select all that apply (optional)
           </Text>
           {INVESTMENT_PURPOSE_OPTIONS.map((option, index) => {
@@ -222,7 +264,9 @@ export default function KycAboutYouScreen() {
                 }`}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: selected }}>
-                <Text className="flex-1 font-body text-[16px] text-charcoal-primary">
+                <Text
+                  className="flex-1 font-body text-[16px] text-charcoal-primary"
+                  maxFontSizeMultiplier={1.4}>
                   {option.label}
                 </Text>
                 <View

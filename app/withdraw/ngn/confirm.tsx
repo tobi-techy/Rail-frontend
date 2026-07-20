@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -9,19 +9,22 @@ import { useAuthStore } from '@/stores/authStore';
 import { SessionManager } from '@/utils/sessionManager';
 import { NgnIcon } from '@/assets/svg';
 import { ArrowLeft01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
-import { ReviewCard, DetailRow, Sep, CategoryPicker } from '@/components/withdraw/shared';
+import { ReviewCard, DetailRow, Sep } from '@/components/withdraw/shared';
 import { formatCurrency } from '@/components/withdraw/method-screen/utils';
+import { commitmentDeclineMessage, isCommitmentExceededError } from '@/utils/spendingCommitment';
 import {
   WithdrawalStatusScreen,
   type WithdrawalStatusType,
 } from '@/components/withdraw/WithdrawalStatusScreen';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import * as Haptics from '@/utils/platformHaptics';
+import { isPasscodeSessionError } from '@/utils/apiError';
 
-/** Normalized RampHub status → what the status screen should show.
- *  Backend emits: pending | paid | processing | completed | failed. */
 const mapRampStatus = (status?: string): WithdrawalStatusType => {
   if (status === 'completed') return 'success';
   if (status === 'failed') return 'failed';
-  return 'pending'; // pending | paid | processing → still settling
+  return 'pending';
 };
 
 const FAILED_FALLBACK =
@@ -39,25 +42,31 @@ export default function NgnConfirmScreen() {
   }>();
 
   const numericAmount = parseFloat(params.amount ?? '0') || 0;
-  const { data: rampQuote } = useRampQuote('offramp', numericAmount);
+  const rampQuoteQuery = useRampQuote('offramp', numericAmount);
+  const rampQuote = rampQuoteQuery.data;
   const rampOfframp = useRampOfframp();
+  const { impact } = useHaptics();
 
-  // Rates & fees (railFee is the developer fee % applied by RampHub on the NGN payout)
   const offRampRate = rampQuote?.rate ?? 0;
   const ngnUsdEquivalent = offRampRate > 0 ? numericAmount / offRampRate : 0;
 
-  // State
-  const [category, setCategory] = useState('Transfer');
+  const [quoteAge, setQuoteAge] = useState(0);
+  useEffect(() => {
+    if (!rampQuoteQuery.dataUpdatedAt) return;
+    const tick = () => setQuoteAge(Date.now() - rampQuoteQuery.dataUpdatedAt);
+    tick();
+    const id = setInterval(tick, 5_000);
+    return () => clearInterval(id);
+  }, [rampQuoteQuery.dataUpdatedAt]);
+  const isQuoteStale = quoteAge > 30_000;
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<WithdrawalStatusType | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [awaitingAuth, setAwaitingAuth] = useState(false);
   const [transactionId, setTransactionId] = useState<string | null>(null);
+  const isExecutingRef = useRef(false);
 
-  // Poll the real settlement status once an order exists. The USDC is already
-  // debited at creation; the NGN payout settles async, so we track it to
-  // completion (or failure) instead of assuming success up front. Polling stops
-  // on its own once the order reaches a terminal state.
   const orderStatus = useRampOrderStatus(transactionId ?? '', !!transactionId);
 
   useEffect(() => {
@@ -68,6 +77,8 @@ export default function NgnConfirmScreen() {
 
   const executeOfframp = useCallback(async () => {
     if (!params.bankCode || !params.accountNumber) return;
+    if (isExecutingRef.current) return;
+    isExecutingRef.current = true;
     setIsSubmitting(true);
     setErrorMsg('');
     try {
@@ -75,20 +86,37 @@ export default function NgnConfirmScreen() {
         bankCode: params.bankCode,
         accountNumber: params.accountNumber,
         amount: numericAmount,
+        bankName: params.bankName,
+        expectedRate: offRampRate > 0 ? offRampRate : undefined,
       });
       setTransactionId(res.transactionId);
-      // Honest "Processing" — the poller advances this to success/failed as the
-      // payout reconciles server-side.
       setStatus(mapRampStatus(res.status));
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Withdrawal failed. Please try again.');
+      if (isPasscodeSessionError(err)) {
+        setAwaitingAuth(true);
+        setIsSubmitting(false);
+        isExecutingRef.current = false;
+        router.push({
+          pathname: '/withdraw/authorize' as never,
+          params: {
+            amount: String(numericAmount),
+            label: `₦${numericAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+          },
+        } as never);
+        return;
+      }
+      setErrorMsg(
+        isCommitmentExceededError(err)
+          ? commitmentDeclineMessage(err)
+          : err?.message || 'Withdrawal failed. Please try again.'
+      );
       setStatus('failed');
     } finally {
       setIsSubmitting(false);
+      isExecutingRef.current = false;
     }
-  }, [params.bankCode, params.accountNumber, numericAmount, rampOfframp]);
+  }, [params.bankCode, params.accountNumber, numericAmount, params.bankName, rampOfframp]);
 
-  // Auto-execute after returning from authorize with valid session
   useFocusEffect(
     useCallback(() => {
       if (!awaitingAuth) return;
@@ -100,7 +128,16 @@ export default function NgnConfirmScreen() {
     }, [awaitingAuth, executeOfframp])
   );
 
-  const handleConfirm = () => {
+  const handleBack = useCallback(() => {
+    router.back();
+  }, []);
+
+  const handleConfirm = useCallback(() => {
+    impact(Haptics.ImpactFeedbackStyle.Medium);
+    playUISound('holdToSend');
+    // SECURITY: Clear any existing passcode session (e.g. from login) so the
+    // authorize screen must create a FRESH session before we can proceed.
+    useAuthStore.getState().clearPasscodeSession();
     setAwaitingAuth(true);
     router.push({
       pathname: '/withdraw/authorize' as never,
@@ -109,7 +146,7 @@ export default function NgnConfirmScreen() {
         label: `₦${numericAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
       },
     } as never);
-  };
+  }, [numericAmount, impact]);
 
   // ── Status screens ─────────────────────────────────────────────────────
   if (status) {
@@ -134,6 +171,7 @@ export default function NgnConfirmScreen() {
                 setStatus(null);
                 setErrorMsg('');
                 setTransactionId(null);
+                setAwaitingAuth(false);
               }
             : undefined
         }
@@ -147,8 +185,10 @@ export default function NgnConfirmScreen() {
         className="flex-1 items-center justify-center bg-warm-canvas"
         edges={['top', 'bottom']}>
         <ActivityIndicator size="small" color="#EA580C" />
-        <Text className="mt-4 font-subtitle text-[17px] text-text-primary">
-          Processing withdrawal…
+        <Text
+          className="mt-4 font-subtitle text-[17px] text-text-primary"
+          maxFontSizeMultiplier={1.3}>
+          Processing withdrawal...
         </Text>
       </SafeAreaView>
     );
@@ -162,13 +202,15 @@ export default function NgnConfirmScreen() {
 
       <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
         <Pressable
-          className="size-11 items-center justify-center rounded-full bg-surface"
-          onPress={() => router.back()}
+          className="size-11 items-center justify-center rounded-full bg-surface active:scale-95"
+          onPress={handleBack}
           accessibilityRole="button"
           accessibilityLabel="Go back">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
         </Pressable>
-        <Text className="font-subtitle text-[17px] text-text-primary">Review</Text>
+        <Text className="font-subtitle text-[17px] text-text-primary" maxFontSizeMultiplier={1.3}>
+          Review
+        </Text>
         <View className="size-11" />
       </View>
 
@@ -180,13 +222,23 @@ export default function NgnConfirmScreen() {
           </View>
           <Text
             className="font-mono-semibold text-[42px] leading-[46px] text-text-primary"
-            style={{ letterSpacing: -1 }}>
+            style={{ letterSpacing: -1 }}
+            maxFontSizeMultiplier={1.3}>
             ₦{formatCurrency(numericAmount)}
           </Text>
           {ngnUsdEquivalent > 0 && (
-            <Text className="mt-1 font-body text-[14px] text-text-secondary">
+            <Text
+              className="mt-1 font-body text-[14px] text-text-secondary"
+              maxFontSizeMultiplier={1.4}>
               ≈ ${ngnUsdEquivalent.toFixed(2)} USDC
             </Text>
+          )}
+          {isQuoteStale && (
+            <View className="mt-2 flex-row items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2">
+              <Text className="font-body text-[12px] text-amber-700" maxFontSizeMultiplier={1.3}>
+                ⚠ Rate may have changed. Pull down to refresh.
+              </Text>
+            </View>
           )}
         </Animated.View>
 
@@ -213,20 +265,23 @@ export default function NgnConfirmScreen() {
               </>
             )}
             <View className="flex-row items-center justify-between px-5 py-4">
-              <Text className="font-subtitle text-[14px] text-text-primary">You send</Text>
-              <Text className="font-subtitle text-[16px] text-text-primary">
+              <Text
+                className="font-subtitle text-[14px] text-text-primary"
+                maxFontSizeMultiplier={1.4}>
+                You send
+              </Text>
+              <Text
+                className="font-subtitle text-[16px] text-text-primary"
+                maxFontSizeMultiplier={1.3}>
                 ₦{formatCurrency(numericAmount)}
               </Text>
             </View>
           </ReviewCard>
         </Animated.View>
 
-        {/* Category */}
-        <Animated.View entering={FadeInUp.delay(120).duration(250)} className="mt-2">
-          <CategoryPicker value={category} onChange={setCategory} />
-        </Animated.View>
-
-        <Text className="mt-4 font-body text-[12px] leading-[18px] text-text-secondary">
+        <Text
+          className="mt-4 font-body text-[12px] leading-[18px] text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
           * Please verify bank details. Incorrect details may result in failed or delayed transfers.
         </Text>
       </ScrollView>

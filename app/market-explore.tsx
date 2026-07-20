@@ -12,6 +12,7 @@ import { sanitizeAssets } from '@/utils/market';
 import { MarketAssetRow } from '@/components/market/MarketAssetRow';
 import { ArrowLeft01Icon, Cancel01Icon, FilterIcon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 type TypeFilter = 'all' | MarketInstrumentType;
 type SortFilter = 'symbol' | 'top_movers' | 'top_traded';
@@ -54,13 +55,19 @@ function FilterChip({
   active: boolean;
   onPress: () => void;
 }) {
+  const triggerFeedback = useButtonFeedback();
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        triggerFeedback();
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={label}
       className={`mb-2 mr-2 min-h-[44px] rounded-full px-4 py-3 ${active ? 'bg-black' : 'bg-surface'}`}>
-      <Text className={`font-body text-caption ${active ? 'text-white' : 'text-text-primary'}`}>
+      <Text
+        className={`font-body text-caption ${active ? 'text-white' : 'text-text-primary'}`}
+        maxFontSizeMultiplier={1.4}>
         {label}
       </Text>
     </Pressable>
@@ -71,6 +78,7 @@ export default function MarketExploreScreen() {
   const params = useLocalSearchParams();
   const currency = useUIStore((s) => s.currency);
   const rates = useUIStore((s) => s.currencyRates);
+  const triggerFeedback = useButtonFeedback();
 
   const [searchInput, setSearchInput] = useState(typeof params.q === 'string' ? params.q : '');
   const [debouncedSearch, setDebouncedSearch] = useState(
@@ -143,13 +151,18 @@ export default function MarketExploreScreen() {
     <SafeAreaView className="flex-1 bg-background-main" edges={['top']}>
       <View className="flex-row items-center px-md py-sm">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            triggerFeedback();
+            router.back();
+          }}
           accessibilityRole="button"
           accessibilityLabel="Go back"
           className="mr-2 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-surface">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color="#111111" />
         </Pressable>
-        <Text className="font-subtitle text-subtitle text-text-primary">Explore assets</Text>
+        <Text className="font-subtitle text-subtitle text-text-primary" maxFontSizeMultiplier={1.3}>
+          Explore assets
+        </Text>
       </View>
 
       <View className="px-md pb-md">
@@ -169,6 +182,7 @@ export default function MarketExploreScreen() {
                 searchInput.length > 0 ? (
                   <TouchableOpacity
                     onPress={() => {
+                      triggerFeedback();
                       setSearchInput('');
                       setDebouncedSearch('');
                     }}
@@ -183,7 +197,10 @@ export default function MarketExploreScreen() {
           </View>
 
           <Pressable
-            onPress={() => setShowFilterSheet(true)}
+            onPress={() => {
+              triggerFeedback();
+              setShowFilterSheet(true);
+            }}
             className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black"
             accessibilityRole="button"
             accessibilityLabel="Open market filters">
@@ -191,7 +208,9 @@ export default function MarketExploreScreen() {
           </Pressable>
         </View>
 
-        <Text className="mt-sm font-caption text-caption text-text-secondary">
+        <Text
+          className="mt-sm font-caption text-caption text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
           {appliedType === 'all' ? 'All types' : appliedType === 'stock' ? 'Stocks' : 'ETFs'} •{' '}
           {SORT_OPTIONS.find((option) => option.id === appliedSort)?.label}
           {appliedTradableOnly ? ' • Tradable only' : ''}
@@ -200,7 +219,9 @@ export default function MarketExploreScreen() {
 
       {marketExploreQuery.isPending && displayedAssets.length === 0 ? (
         <View className="px-md py-lg">
-          <Text className="font-caption text-caption text-text-secondary">
+          <Text
+            className="font-caption text-caption text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
             Loading market assets…
           </Text>
         </View>
@@ -223,15 +244,23 @@ export default function MarketExploreScreen() {
           )}
           ListHeaderComponent={
             <View className="px-md pb-sm">
-              <Text className="font-caption text-caption text-text-secondary">
+              <Text
+                className="font-caption text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
                 {firstPage?.pagination.total_items ?? displayedAssets.length} instruments
               </Text>
             </View>
           }
           ListEmptyComponent={
             <View className="px-md py-lg">
-              <Text className="font-subtitle text-body text-text-primary">No matching assets</Text>
-              <Text className="mt-1 font-caption text-caption text-text-secondary">
+              <Text
+                className="font-subtitle text-body text-text-primary"
+                maxFontSizeMultiplier={1.3}>
+                No matching assets
+              </Text>
+              <Text
+                className="mt-1 font-caption text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
                 Try broader filters or search by a ticker symbol.
               </Text>
             </View>
@@ -259,9 +288,17 @@ export default function MarketExploreScreen() {
 
       <BottomSheet visible={showFilterSheet} onClose={() => setShowFilterSheet(false)}>
         <View className="pb-2">
-          <Text className="font-subtitle text-subtitle text-text-primary">Filters</Text>
+          <Text
+            className="font-subtitle text-subtitle text-text-primary"
+            maxFontSizeMultiplier={1.3}>
+            Filters
+          </Text>
 
-          <Text className="mb-2 mt-lg font-caption text-caption text-text-secondary">Type</Text>
+          <Text
+            className="mb-2 mt-lg font-caption text-caption text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
+            Type
+          </Text>
           <View className="mb-md flex-row">
             {TYPE_OPTIONS.map((option) => (
               <FilterChip
@@ -273,7 +310,11 @@ export default function MarketExploreScreen() {
             ))}
           </View>
 
-          <Text className="mb-2 font-caption text-caption text-text-secondary">Sort by</Text>
+          <Text
+            className="mb-2 font-caption text-caption text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
+            Sort by
+          </Text>
           <View className="mb-md flex-row flex-wrap">
             {SORT_OPTIONS.map((option) => (
               <FilterChip
@@ -285,7 +326,11 @@ export default function MarketExploreScreen() {
             ))}
           </View>
 
-          <Text className="mb-2 font-caption text-caption text-text-secondary">Liquidity</Text>
+          <Text
+            className="mb-2 font-caption text-caption text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
+            Liquidity
+          </Text>
           <FilterChip
             label="Tradable only"
             active={draftTradableOnly}

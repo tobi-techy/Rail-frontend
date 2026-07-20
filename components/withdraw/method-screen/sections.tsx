@@ -23,6 +23,7 @@ import { SolanaIcon, MaticIcon, UsdcIcon, BnbIcon, StarknetIcon } from '@/assets
 import AvalancheIcon from '@/assets/svg/avalanche.svg';
 import { SUPPORTED_CHAINS } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { useKycStore } from '@/stores/kycStore';
 import { isKycInReview } from '@/api/types/kyc';
 import { formatCurrency, formatSortCode } from './utils';
@@ -64,15 +65,11 @@ type AuthorizeScreenProps = {
   authorizeTitle: string;
   authError: string;
   authPasscode: string;
-  isAuthorizing: boolean;
-  isSubmitting: boolean;
-  authorizingTitle?: string;
   onClose: () => void;
   onPasscodeAuthorize: (code: string) => void;
   onPasskeyPress: () => void;
   onValueChange: (value: string) => void;
   showPasskey: boolean;
-  submittingTitle: string;
   // transaction summary
   summaryAmount?: number;
   // lockout
@@ -276,6 +273,7 @@ function ChainPill({
         },
       ]}
       onPress={() => {
+        playUISound('buttonClick');
         selection();
         onPress();
       }}
@@ -458,6 +456,7 @@ function FiatCurrencyPicker({
           <Pressable
             key={c.value}
             onPress={() => {
+              playUISound('buttonClick');
               selection();
               onChange(c.value);
             }}
@@ -604,15 +603,11 @@ export function AuthorizeScreen({
   authorizeTitle,
   authError,
   authPasscode,
-  isAuthorizing,
-  isSubmitting,
-  authorizingTitle,
   onClose,
   onPasscodeAuthorize,
   onPasskeyPress,
   onValueChange,
   showPasskey,
-  submittingTitle,
   summaryAmount,
   pinAttemptsRemaining,
   isLockedOut,
@@ -622,8 +617,6 @@ export function AuthorizeScreen({
     summaryAmount !== undefined
       ? `Enter your 4-digit PIN to approve $${formatCurrency(summaryAmount)} withdrawal.`
       : 'Enter your 4-digit PIN to approve this withdrawal.';
-
-  const statusLabel = isSubmitting ? submittingTitle : authorizingTitle || 'Authorizing...';
 
   return (
     <ErrorBoundary>
@@ -642,13 +635,6 @@ export function AuthorizeScreen({
         </View>
 
         <View className="px-4 pt-2">
-          {(isAuthorizing || isSubmitting) && (
-            <View className="mt-2 flex-row items-center gap-2">
-              <ActivityIndicator size="small" color="#111111" />
-              <Text className="font-body text-sm text-text-secondary">{statusLabel}</Text>
-            </View>
-          )}
-
           {isLockedOut && lockoutSecondsRemaining !== undefined && (
             <View className="mt-3 rounded-lg bg-coral-red/10 px-4 py-3">
               <Text className="font-subtitle text-sm text-coral-red">
@@ -669,6 +655,7 @@ export function AuthorizeScreen({
 
         <PasscodeInput
           title={authorizeTitle}
+          titleClassName="text-[28px]"
           subtitle={subtitle}
           length={4}
           value={authPasscode}
@@ -904,7 +891,7 @@ export function WithdrawDetailsSheet({
                   : 'Withdrawal amount'}
             </Text>
             <Text
-              className="font-subtitle text-[15px] text-text-primary"
+              className="font-mono-medium text-[15px] text-text-primary"
               style={{ fontVariant: ['tabular-nums'] }}>
               ${formatCurrency(numericAmount)}
             </Text>
@@ -912,7 +899,7 @@ export function WithdrawDetailsSheet({
           <View className="mt-2 flex-row items-center justify-between">
             <Text className="font-body text-[13px] text-text-secondary">Fees</Text>
             <Text
-              className="font-subtitle text-[15px] text-text-primary"
+              className="font-mono-medium text-[15px] text-text-primary"
               style={{ fontVariant: ['tabular-nums'] }}>
               ${formatCurrency(feeAmount)}
             </Text>
@@ -920,7 +907,7 @@ export function WithdrawDetailsSheet({
           <View className="mt-2 flex-row items-center justify-between">
             <Text className="font-body text-[13px] text-text-secondary">Total cost</Text>
             <Text
-              className="font-subtitle text-[15px] text-text-primary"
+              className="font-mono-medium text-[15px] text-text-primary"
               style={{ fontVariant: ['tabular-nums'] }}>
               ${formatCurrency(totalAmount)}
             </Text>
@@ -1064,8 +1051,10 @@ export function WithdrawConfirmSheet({
 
         {/* Big amount */}
         <View className="mt-6 items-center">
-          <Text className="font-subtitle text-[52px] leading-[56px] text-text-primary">
-            <Text style={{ fontVariant: ['tabular-nums'] }}>${formatCurrency(numericAmount)}</Text>
+          <Text
+            className="font-mono-semibold text-[52px] leading-[56px] text-text-primary"
+            style={{ fontVariant: ['tabular-nums'], letterSpacing: -1 }}>
+            ${formatCurrency(numericAmount)}
           </Text>
           <View className="mt-1 flex-row items-center gap-1">
             <HugeiconsIcon icon={Building04Icon} size={13} color="#848281" />

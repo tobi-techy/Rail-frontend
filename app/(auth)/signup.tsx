@@ -18,6 +18,7 @@ import { useRegister } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { signupSchema, fieldError } from '@/utils/schemas';
 import { useAuthStore } from '@/stores/authStore';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 const normalizeRegistrationMethod = (value?: string): 'password' | 'passkey' => {
   const normalized = value?.trim().toLowerCase();
@@ -32,6 +33,7 @@ export default function SignUp() {
   const [emailError, setEmailError] = useState('');
   const { mutate: register, isPending } = useRegister();
   const { showError, showWarning, showSuccess } = useFeedbackPopup();
+  const triggerFeedback = useButtonFeedback();
   const registrationMethod = normalizeRegistrationMethod(
     typeof params.authMethod === 'string'
       ? params.authMethod
@@ -80,10 +82,12 @@ export default function SignUp() {
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
-              <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
+              <Text
+                className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
                 Enter your email
               </Text>
-              <Text className="mt-2 font-body text-body text-ash">
+              <Text className="mt-2 font-body text-body text-ash" maxFontSizeMultiplier={1.4}>
                 Sign up to start your journey
               </Text>
             </View>
@@ -107,17 +111,27 @@ export default function SignUp() {
 
           <StaggeredChild index={2} delay={120} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
-              <Text className="mb-5 text-center font-caption text-small text-ash">
+              <Text
+                className="mb-5 text-center font-caption text-small text-ash"
+                maxFontSizeMultiplier={1.4}>
                 By signing up, you agree to our{' '}
                 <Text
                   className="underline"
-                  onPress={() => Linking.openURL('https://userail.money/terms')}>
+                  onPress={() => {
+                    triggerFeedback();
+                    Linking.openURL('https://userail.money/terms');
+                  }}
+                  maxFontSizeMultiplier={1.3}>
                   Terms
                 </Text>
                 {' & '}
                 <Text
                   className="underline"
-                  onPress={() => Linking.openURL('https://userail.money/privacy')}>
+                  onPress={() => {
+                    triggerFeedback();
+                    Linking.openURL('https://userail.money/privacy');
+                  }}
+                  maxFontSizeMultiplier={1.3}>
                   Privacy Policy
                 </Text>
               </Text>
@@ -128,11 +142,20 @@ export default function SignUp() {
                 variant="orange"
               />
               <TouchableOpacity
-                onPress={() => router.push(ROUTES.AUTH.SIGNIN as never)}
+                onPress={() => {
+                  triggerFeedback();
+                  router.push(ROUTES.AUTH.SIGNIN as never);
+                }}
                 className="mt-4">
-                <Text className="text-center font-body text-caption text-ash">
+                <Text
+                  className="text-center font-body text-caption text-ash"
+                  maxFontSizeMultiplier={1.4}>
                   Already have an account?{' '}
-                  <Text className="font-subtitle text-charcoal-primary underline">Sign In</Text>
+                  <Text
+                    className="font-subtitle text-charcoal-primary underline"
+                    maxFontSizeMultiplier={1.3}>
+                    Sign In
+                  </Text>
                 </Text>
               </TouchableOpacity>
             </View>

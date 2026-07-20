@@ -53,6 +53,8 @@ import { AnimatedAmount } from './AnimatedAmount';
 import { parseApiError, isPasscodeSessionError } from '@/utils/apiError';
 import { ArrowLeft01Icon, Cancel01Icon, CheckmarkCircle02Icon, Search01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 const MAX_DIGITS = 9;
 const P2P_LIMIT = 10_000;
@@ -84,7 +86,7 @@ function Avatar({ chars, size = 44 }: { chars: string; size?: number }) {
     <View
       style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#f7f2e8' }}
       className="items-center justify-center">
-      <Text style={{ fontSize: size * 0.38, fontFamily: 'Geist-Medium', color: '#111' }}>
+      <Text style={{ fontSize: size * 0.38, fontFamily: 'Satoshi-Medium', color: '#111' }}>
         {chars}
       </Text>
     </View>
@@ -102,10 +104,15 @@ function RecipientRow({
   chars: string;
   onPress: () => void;
 }) {
+  const haptics = useHaptics();
   return (
     <Pressable
       className="flex-row items-center gap-3 rounded-2xl px-4 py-3 active:bg-surface"
-      onPress={onPress}>
+      onPress={() => {
+        haptics.selection();
+        playUISound('buttonClick');
+        onPress();
+      }}>
       <Avatar chars={chars} />
       <View className="flex-1">
         <Text className="font-subtitle text-[15px] text-text-primary">{name}</Text>
@@ -116,12 +123,17 @@ function RecipientRow({
 }
 
 function TabSelector({ active, onSelect }: { active: Tab; onSelect: (t: Tab) => void }) {
+  const haptics = useHaptics();
   return (
     <View className="mb-4 flex-row rounded-lg bg-surface p-1">
       {(['railtag', 'email'] as Tab[]).map((t) => (
         <Pressable
           key={t}
-          onPress={() => onSelect(t)}
+          onPress={() => {
+            haptics.selection();
+            playUISound('buttonClick');
+            onSelect(t);
+          }}
           className="flex-1 items-center rounded-lg py-2.5"
           style={active === t ? { backgroundColor: '#fff' } : undefined}>
           <Text
@@ -141,6 +153,7 @@ function P2PSendScreenContent() {
   const { data: station } = useStation();
   const balance = Math.max(0, parseFloat(station?.spend_balance ?? '0') || 0);
   const user = useAuthStore((s) => s.user as { email?: string } | undefined);
+  const haptics = useHaptics();
 
   // flow
   const [step, setStep] = useState<Step>('amount');
@@ -346,7 +359,11 @@ function P2PSendScreenContent() {
         <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-surface"
-            onPress={() => setShowAuthScreen(false)}>
+            onPress={() => {
+              haptics.selection();
+              playUISound('dismiss');
+              setShowAuthScreen(false);
+            }}>
             <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111" />
           </Pressable>
           <Text className="font-subtitle text-[17px] text-text-primary">Confirm Send</Text>
@@ -421,7 +438,11 @@ function P2PSendScreenContent() {
             className="flex-row items-center justify-between pb-2 pt-1">
             <Pressable
               className="size-11 items-center justify-center rounded-full bg-white/20"
-              onPress={() => router.back()}>
+              onPress={() => {
+                haptics.selection();
+                playUISound('dismiss');
+                router.back();
+              }}>
               <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#fff" />
             </Pressable>
             <Text className="font-subtitle text-[17px] text-white">Send to People</Text>
@@ -438,7 +459,11 @@ function P2PSendScreenContent() {
               </View>
               <Pressable
                 className="rounded-full bg-parchment-card px-4 py-1.5"
-                onPress={() => setRawAmount(formatMaxAmount(maxSend))}>
+                onPress={() => {
+                  haptics.selection();
+                  playUISound('buttonClick');
+                  setRawAmount(formatMaxAmount(maxSend));
+                }}>
                 <Text className="font-subtitle text-[13px]" style={{ color: BRAND_RED }}>
                   Max
                 </Text>
@@ -454,13 +479,7 @@ function P2PSendScreenContent() {
             />
           </Animated.View>
           <Animated.View entering={FadeInUp.delay(120).duration(400)}>
-            <Keypad
-              className="pb-2"
-              onKeyPress={onKey}
-              backspaceIcon="delete"
-              variant="dark"
-              leftKey="decimal"
-            />
+            <Keypad className="pb-2" onKeyPress={onKey} variant="dark" leftKey="decimal" />
           </Animated.View>
         </View>
         <View style={{ paddingBottom: Math.max(insets.bottom, 12) }} />
@@ -477,6 +496,8 @@ function P2PSendScreenContent() {
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-surface"
             onPress={() => {
+              haptics.selection();
+              playUISound('dismiss');
               setStep('amount');
               setQuery('');
               setLookupResult(null);
@@ -537,6 +558,8 @@ function P2PSendScreenContent() {
                 ) : query.length > 0 ? (
                   <Pressable
                     onPress={() => {
+                      haptics.selection();
+                      playUISound('buttonClick');
                       setQuery('');
                       setLookupResult(null);
                     }}
@@ -634,6 +657,8 @@ function P2PSendScreenContent() {
         <Pressable
           className="size-11 items-center justify-center rounded-full bg-surface"
           onPress={() => {
+            haptics.selection();
+            playUISound('dismiss');
             setStep('recipient');
             setNote('');
             setSubmitError('');

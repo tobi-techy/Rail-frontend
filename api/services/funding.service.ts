@@ -68,12 +68,22 @@ export const fundingService = {
     if (req.narration) {
       payload.narration = req.narration;
     }
+    if (req.source_account) {
+      payload.source_account = req.source_account;
+    }
+
+    const headers: Record<string, string> = {};
+    if (req.idempotencyKey) {
+      headers['Idempotency-Key'] = req.idempotencyKey;
+    }
 
     try {
-      return await apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals/crypto', payload);
+      return await apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals/crypto', payload, {
+        headers,
+      });
     } catch (error) {
       if (isNotFoundError(error)) {
-        return apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals', payload);
+        return apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals', payload, { headers });
       }
       throw error;
     }
@@ -83,10 +93,19 @@ export const fundingService = {
   async initiateFiatWithdrawal(
     req: InitiateFiatWithdrawalRequest
   ): Promise<InitiateWithdrawalResponse> {
-    return apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals/fiat', {
-      ...req,
-      amount: typeof req.amount === 'number' ? req.amount.toFixed(2) : req.amount,
-    });
+    const { idempotencyKey, ...body } = req;
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+    return apiClient.post<InitiateWithdrawalResponse>(
+      '/v1/withdrawals/fiat',
+      {
+        ...body,
+        amount: typeof body.amount === 'number' ? body.amount.toFixed(2) : body.amount,
+      },
+      { headers }
+    );
   },
 
   // Cancel a pending withdrawal

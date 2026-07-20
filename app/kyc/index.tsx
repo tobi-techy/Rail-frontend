@@ -5,6 +5,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import {
   COUNTRY_HELP_TEXT,
   COUNTRY_KYC_REQUIREMENTS,
@@ -74,6 +76,7 @@ const COUNTRIES: { code: Country; flag: string }[] = [
 
 export default function KycCountryScreen() {
   const insets = useSafeAreaInsets();
+  const { impact, selection } = useHaptics();
   const { country, setCountry } = useKycStore();
   const userCountry = useAuthStore((s) => s.user?.country);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
@@ -160,35 +163,48 @@ export default function KycCountryScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 160 }}>
           <View className="mb-6">
-            <Text className="font-subtitle text-[13px] text-ash">Step 1</Text>
+            <Text className="font-subtitle text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
+              Step 1
+            </Text>
             <View className="mt-3 h-1.5 overflow-hidden rounded-full bg-fog">
               <View className="h-full w-1/5 rounded-full bg-midnight" />
             </View>
           </View>
 
           <View>
-            <Text className="font-display text-[30px] leading-[34px] text-charcoal-primary">
+            <Text
+              className="font-display text-[30px] leading-[34px] text-charcoal-primary"
+              maxFontSizeMultiplier={1.3}>
               Verify your identity
             </Text>
-            <Text className="mt-2 font-body text-[15px] leading-6 text-ash">
+            <Text
+              className="mt-2 font-body text-[15px] leading-6 text-ash"
+              maxFontSizeMultiplier={1.4}>
               Select the country that issued your ID. We use this to tailor your KYC requirements.
             </Text>
           </View>
 
           <View className="mt-6">
-            <Text className="mb-2 font-subtitle text-[13px] text-ash">Issuing country</Text>
+            <Text className="mb-2 font-subtitle text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
+              Issuing country
+            </Text>
             <Pressable
-              onPress={() => setShowCountryPicker(true)}
+              onPress={() => {
+                selection();
+                setShowCountryPicker(true);
+              }}
               className="flex-row items-center justify-between rounded-2xl border border-fog bg-parchment-card px-4 py-4"
               accessibilityRole="button"
               accessibilityLabel="Select issuing country">
               <View className="flex-row items-center gap-3">
                 <CountryFlag isoCode={KYC_TO_ISO2[currentCountry.code] || 'US'} size={24} />
                 <View>
-                  <Text className="font-subtitle text-[16px] text-charcoal-primary">
+                  <Text
+                    className="font-subtitle text-[16px] text-charcoal-primary"
+                    maxFontSizeMultiplier={1.3}>
                     {COUNTRY_LABELS[country]}
                   </Text>
-                  <Text className="mt-1 font-body text-[12px] text-ash">
+                  <Text className="mt-1 font-body text-[12px] text-ash" maxFontSizeMultiplier={1.4}>
                     {COUNTRY_HELP_TEXT[country]}
                   </Text>
                 </View>
@@ -198,7 +214,9 @@ export default function KycCountryScreen() {
           </View>
 
           <View className="mt-6 rounded-2xl border border-fog bg-parchment-card px-4 py-4">
-            <Text className="mb-3 font-subtitle text-[14px] text-charcoal-primary">
+            <Text
+              className="mb-3 font-subtitle text-[14px] text-charcoal-primary"
+              maxFontSizeMultiplier={1.4}>
               Accepted documents
             </Text>
             {requirements.acceptedDocuments.map((document, index) => (
@@ -210,10 +228,12 @@ export default function KycCountryScreen() {
                     : ''
                 }`}>
                 <View className="flex-1 pr-4">
-                  <Text className="font-subtitle text-[14px] text-charcoal-primary">
+                  <Text
+                    className="font-subtitle text-[14px] text-charcoal-primary"
+                    maxFontSizeMultiplier={1.4}>
                     {document.label}
                   </Text>
-                  <Text className="mt-1 font-body text-[12px] text-ash">
+                  <Text className="mt-1 font-body text-[12px] text-ash" maxFontSizeMultiplier={1.4}>
                     {document.description}
                   </Text>
                 </View>
@@ -222,7 +242,9 @@ export default function KycCountryScreen() {
             ))}
           </View>
 
-          <Text className="mt-6 font-body text-[12px] leading-5 text-ash">
+          <Text
+            className="mt-6 font-body text-[12px] leading-5 text-ash"
+            maxFontSizeMultiplier={1.4}>
             Need another issuing country? Contact support and we&apos;ll enable it for your account.
           </Text>
         </ScrollView>
@@ -250,7 +272,9 @@ export default function KycCountryScreen() {
           }}>
           <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
             <View className="flex-row items-center justify-between border-b border-stone-surface px-4 py-4">
-              <Text className="font-subtitle text-[18px] text-charcoal-primary">
+              <Text
+                className="font-subtitle text-[18px] text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
                 Select issuing country
               </Text>
               <Pressable
@@ -268,7 +292,9 @@ export default function KycCountryScreen() {
             {/* Search input */}
             <View className="border-b border-stone-surface px-4 pb-4">
               <View className="flex-row items-center rounded-full border border-fog bg-stone-surface px-4 py-3">
-                <Text className="mr-2 text-lg">Search</Text>
+                <Text className="mr-2 text-lg" maxFontSizeMultiplier={1.3}>
+                  Search
+                </Text>
                 <TextInput
                   className="flex-1 font-body text-[15px] text-charcoal-primary"
                   placeholder="Search countries..."
@@ -280,13 +306,17 @@ export default function KycCountryScreen() {
                   returnKeyType="search"
                 />
                 {searchQuery.length > 0 && (
-                  <Pressable onPress={() => setSearchQuery('')}>
+                  <Pressable
+                    onPress={() => {
+                      selection();
+                      setSearchQuery('');
+                    }}>
                     <HugeiconsIcon icon={Cancel01Icon} size={16} color="#848281" />
                   </Pressable>
                 )}
               </View>
               {searchQuery.length > 0 && filteredCountries.length === 0 && (
-                <Text className="mt-2 font-body text-[14px] text-ash">
+                <Text className="mt-2 font-body text-[14px] text-ash" maxFontSizeMultiplier={1.4}>
                   No countries found. Contact support for additional options.
                 </Text>
               )}
@@ -299,6 +329,7 @@ export default function KycCountryScreen() {
                   <Pressable
                     key={item.code}
                     onPress={() => {
+                      selection();
                       setCountry(item.code);
                       setShowCountryPicker(false);
                       setSearchQuery('');
@@ -311,7 +342,9 @@ export default function KycCountryScreen() {
                     <View className="flex-row items-center gap-3">
                       <CountryFlag isoCode={KYC_TO_ISO2[item.code] || 'US'} size={20} />
                       <View>
-                        <Text className="font-subtitle text-[15px] text-charcoal-primary">
+                        <Text
+                          className="font-subtitle text-[15px] text-charcoal-primary"
+                          maxFontSizeMultiplier={1.3}>
                           {COUNTRY_LABELS[item.code]}
                         </Text>
                       </View>

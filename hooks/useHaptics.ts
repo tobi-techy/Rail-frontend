@@ -17,20 +17,20 @@ export function useHaptics() {
   const impact = useCallback(
     (style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light) => {
       if (!hapticsEnabled) return;
-      void Haptics.impactAsync(style);
+      Haptics.impactAsync(style);
     },
     [hapticsEnabled]
   );
 
   const selection = useCallback(() => {
     if (!hapticsEnabled) return;
-    void Haptics.selectionAsync();
+    Haptics.selectionAsync();
   }, [hapticsEnabled]);
 
   const notification = useCallback(
     (type: NotificationInput = Haptics.NotificationFeedbackType.Success) => {
       if (!hapticsEnabled) return;
-      void Haptics.notificationAsync(normalizeNotificationType(type));
+      Haptics.notificationAsync(normalizeNotificationType(type));
     },
     [hapticsEnabled]
   );

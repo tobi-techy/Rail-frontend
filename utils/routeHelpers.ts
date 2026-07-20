@@ -66,7 +66,10 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname === normalizeRoutePath(ROUTES.AUTH.FORGOT_PASSWORD) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_PASSCODE) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CONFIRM_PASSCODE) ||
-    pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_RAILTAG) ||
+    pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_RAILTAG) ||
+    pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.EMPLOYMENT_STATUS) ||
+    pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.ACCOUNT_PURPOSE) ||
+    pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.SOURCE_OF_FUNDS) ||
     pathname.startsWith('/complete-profile/') ||
     pathname.startsWith('/complete-kyc/'),
   inTabsGroup: segments[0] === '(tabs)',
@@ -88,7 +91,11 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     segments[0] === 'paj-verify' ||
     segments[0] === 'ai-chat' ||
     segments[0] === 'voice-mode' ||
+    segments[0] === 'transaction-detail' ||
     segments[0] === 'tap-to-pay' ||
+    segments[0] === 'account-level' ||
+    segments[0] === 'profile' ||
+    segments[0] === 'daily-spending-limit' ||
     pathname.startsWith('/spending-stash') ||
     pathname.startsWith('/investment-stash') ||
     pathname.startsWith('/withdraw') ||
@@ -108,7 +115,10 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/paj-verify') ||
     pathname.startsWith('/ai-chat') ||
     pathname.startsWith('/voice-mode') ||
+    pathname.startsWith('/transaction-detail') ||
     pathname.startsWith('/tap-to-pay') ||
+    pathname.startsWith('/account-level') ||
+    pathname.startsWith('/daily-spending-limit') ||
     pathname.startsWith('/receipt-scanner') ||
     pathname.startsWith('/kyc') ||
     pathname.startsWith('/card') ||
@@ -121,7 +131,11 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
   isOnVerifyEmail: pathname === normalizeRoutePath(ROUTES.AUTH.VERIFY_EMAIL),
   isOnCreatePasscode: pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_PASSCODE),
   isOnConfirmPasscode: pathname === normalizeRoutePath(ROUTES.AUTH.CONFIRM_PASSCODE),
-  isOnCreateRailTag: pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_RAILTAG),
+  isOnCreateRailTag: pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_RAILTAG),
+  isOnEmploymentStatus:
+    pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.EMPLOYMENT_STATUS),
+  isOnAccountPurpose: pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.ACCOUNT_PURPOSE),
+  isOnSourceOfFunds: pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.SOURCE_OF_FUNDS),
   isOnCompleteProfile: pathname.startsWith('/complete-profile/'),
   isOnCompleteKyc: pathname.startsWith('/complete-kyc/'),
 });

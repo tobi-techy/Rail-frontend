@@ -29,7 +29,6 @@ export interface KeypadProps extends ViewProps {
   showFingerprint?: boolean;
   showPasskey?: boolean;
   leftKey?: 'empty' | 'fingerprint' | 'decimal' | 'passkey';
-  backspaceIcon?: 'trash' | 'delete';
   disabled?: boolean;
   className?: string;
   variant?: 'light' | 'dark';
@@ -40,7 +39,6 @@ export const Keypad: React.FC<KeypadProps> = ({
   showFingerprint = false,
   showPasskey = false,
   leftKey = 'fingerprint',
-  backspaceIcon = 'trash',
   disabled = false,
   className = '',
   variant = 'light',
@@ -102,7 +100,7 @@ export const Keypad: React.FC<KeypadProps> = ({
                 accessibilityRole="button"
                 accessibilityLabel={
                   isBackspace
-                    ? 'Delete01Icon digit'
+                    ? 'Delete digit'
                     : isFingerprint
                       ? 'Use biometrics'
                       : isPasskey
@@ -112,11 +110,7 @@ export const Keypad: React.FC<KeypadProps> = ({
                           : `Digit ${key}`
                 }>
                 {isBackspace ? (
-                  backspaceIcon === 'delete' ? (
-                    <HugeiconsIcon icon={Delete01Icon} size={24} color={iconColor} />
-                  ) : (
-                    <HugeiconsIcon icon={Delete01Icon} size={24} color={iconColor} />
-                  )
+                  <HugeiconsIcon icon={Delete01Icon} size={24} color={iconColor} />
                 ) : isFingerprint ? (
                   <HugeiconsIcon icon={FingerPrintIcon} size={24} color={iconColor} />
                 ) : isPasskey ? (

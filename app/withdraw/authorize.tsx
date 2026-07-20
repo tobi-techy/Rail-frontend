@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { View, Text, Pressable, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -38,6 +38,8 @@ export default function WithdrawAuthorizeScreen() {
   const [pinAttempts, setPinAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
   const [lockoutSecondsRemaining, setLockoutSecondsRemaining] = useState(0);
+  const [processing, setProcessing] = useState(false);
+  const processingRef = useRef(false);
 
   const passkeySupported = Passkey.isSupported() && Boolean(safeName(user?.email));
   const hasPasskey = (passkeys?.length ?? 0) > 0;
@@ -48,6 +50,9 @@ export default function WithdrawAuthorizeScreen() {
     : 'Enter your 4-digit PIN to approve this withdrawal.';
 
   const onAuthorized = useCallback(() => {
+    // Show processing state briefly before navigating back
+    setProcessing(true);
+    processingRef.current = true;
     // If we have confirm params, dismiss back to [method] with _confirm flag
     if (params._confirmParams && params.method) {
       try {
@@ -85,7 +90,7 @@ export default function WithdrawAuthorizeScreen() {
   const passkey = usePasskeyAuthorize({
     email: user?.email,
     passkeyPromptScope,
-    autoTrigger: passkeyAvailable,
+    autoTrigger: false,
     onAuthorized,
   });
 
@@ -176,7 +181,9 @@ export default function WithdrawAuthorizeScreen() {
         <Pressable
           className="size-11 items-center justify-center rounded-full bg-stone-surface"
           onPress={() => {
-            if (!isAuthorizing) router.back();
+            if (!isAuthorizing && !processing) {
+              router.back();
+            }
           }}
           accessibilityRole="button"
           accessibilityLabel="Go back">
@@ -185,18 +192,22 @@ export default function WithdrawAuthorizeScreen() {
       </View>
 
       <View className="px-4 pt-2">
-        {isAuthorizing && (
+        {(isAuthorizing || processing) && (
           <View className="mt-2 flex-row items-center gap-2">
             <ActivityIndicator size="small" color="#111111" />
-            <Text className="font-body text-sm text-text-secondary">
-              {isRegisteringPasskey ? 'Creating passkey...' : 'Authorizing...'}
+            <Text className="font-body text-sm text-text-secondary" maxFontSizeMultiplier={1.4}>
+              {isRegisteringPasskey
+                ? 'Creating passkey...'
+                : processing
+                  ? 'Processing withdrawal...'
+                  : 'Authorizing...'}
             </Text>
           </View>
         )}
 
         {!!lockoutUntil && (
           <View className="mt-3 rounded-lg bg-coral-red/10 px-4 py-3">
-            <Text className="font-subtitle text-sm text-coral-red">
+            <Text className="font-subtitle text-sm text-coral-red" maxFontSizeMultiplier={1.3}>
               Too many failed attempts. Try again in {lockoutSecondsRemaining}s.
             </Text>
           </View>
@@ -204,7 +215,7 @@ export default function WithdrawAuthorizeScreen() {
 
         {!lockoutUntil && pinAttempts > 0 && MAX_PIN_ATTEMPTS - pinAttempts <= 3 && (
           <View className="mt-3 rounded-lg bg-sunburst-yellow/10 px-4 py-3">
-            <Text className="font-body text-sm text-amber-700">
+            <Text className="font-body text-sm text-amber-700" maxFontSizeMultiplier={1.4}>
               {MAX_PIN_ATTEMPTS - pinAttempts} attempt
               {MAX_PIN_ATTEMPTS - pinAttempts !== 1 ? 's' : ''} remaining before lockout.
             </Text>

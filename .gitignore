@@ -107,3 +107,4 @@ docker-compose.yml
 *.crt
 secrets/
 credentials/
+CLAUDE.local.md

@@ -15,6 +15,9 @@ import {
   Tag01Icon,
 } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import { ImpactFeedbackStyle } from '@/utils/platformHaptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -121,13 +124,18 @@ function CardStack() {
 
 export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps) {
   const [showLearnMore, setShowLearnMore] = useState(false);
+  const { impact } = useHaptics();
 
   return (
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center px-4 pt-2">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            impact(ImpactFeedbackStyle.Light);
+            playUISound('dismiss');
+            router.back();
+          }}
           className="size-11 items-center justify-center"
           hitSlop={8}>
           <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#343433" />

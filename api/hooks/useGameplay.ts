@@ -12,8 +12,7 @@ export function useGameplayProfile() {
   return useQuery({
     queryKey: queryKeys.gameplay.profile(),
     queryFn: () => gameplayService.getProfile(),
-    staleTime: 30 * 1000,
-    refetchInterval: 60 * 1000,
+    staleTime: 5 * 60 * 1000, // no background interval (Redis cost); refresh on focus + mutation invalidation
   });
 }
 

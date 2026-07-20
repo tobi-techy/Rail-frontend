@@ -13,7 +13,7 @@ export interface VirtualAccount {
   beneficiary_address?: string;
   payment_rails?: string[];
   status: 'pending' | 'active' | 'closed' | 'failed';
-  currency: 'USD' | 'EUR' | 'GBP';
+  currency: 'USD' | 'EUR' | 'GBP' | 'NGN';
   created_at: string;
   updated_at: string;
 }
@@ -21,6 +21,39 @@ export interface VirtualAccount {
 export interface CreateVirtualAccountResponse {
   virtual_account: VirtualAccount;
   message: string;
+}
+
+// ============= NGN Named Virtual Account =============
+
+export interface NgnVirtualAccount {
+  id: string;
+  provider: string;
+  account_number: string;
+  bank_name: string;
+  bank_code: string;
+  beneficiary_name: string;
+  currency: 'NGN';
+  status: 'pending' | 'active' | 'closed' | 'failed';
+  created_at: string;
+  updated_at: string;
+}
+
+export type NgnIdType = 'nin' | 'voters_card' | 'drivers_license' | 'passport';
+
+export interface ProvisionNgnAccountRequest {
+  /** Transient — used once to create the Graph person, never persisted/logged. */
+  bvn: string;
+  id_number: string;
+  id_type?: NgnIdType;
+  id_document_url?: string;
+  employment_status?: string;
+  occupation?: string;
+  source_of_funds?: string;
+  primary_purpose?: string;
+}
+
+export interface NgnVirtualAccountResponse {
+  virtual_account: NgnVirtualAccount;
 }
 
 // ============= Deposit Types (GET /v1/deposits) =============
@@ -70,6 +103,7 @@ export interface InitiateWithdrawalRequest {
   source_account?: 'spending_balance' | 'stash_balance';
   category?: string;
   narration?: string;
+  idempotencyKey?: string;
 }
 
 export interface InitiateFiatWithdrawalRequest {
@@ -83,6 +117,7 @@ export interface InitiateFiatWithdrawalRequest {
   source_account?: 'spending_balance' | 'stash_balance';
   category?: string;
   narration?: string;
+  idempotencyKey?: string;
 }
 
 export interface InitiateWithdrawalResponse {

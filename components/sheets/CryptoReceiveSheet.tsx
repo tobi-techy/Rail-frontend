@@ -7,6 +7,7 @@ import { Button } from '../ui';
 import { useWalletAddresses, useGetDepositAddress } from '@/api/hooks/useWallet';
 import { getChainConfig, isEVMChain, isSolanaChain } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { UsdcIcon } from '@/assets/svg';
 import { ChainLogo } from '@/components/ChainLogo';
 import type { WalletChain } from '@/api/types';
@@ -63,6 +64,7 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
   const handleCopy = useCallback(async () => {
     if (!address) return;
     await Clipboard.setStringAsync(address);
+    playUISound('buttonClick');
     notification();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -120,6 +122,7 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
           {!errCode && (
             <Pressable
               onPress={() => {
+                playUISound('buttonClick');
                 selection();
                 refetch();
               }}

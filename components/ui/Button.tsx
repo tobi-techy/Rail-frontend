@@ -1,7 +1,7 @@
 import React, { forwardRef, useRef, useCallback } from 'react';
 import { Pressable, PressableProps, Text, ActivityIndicator, View, Animated } from 'react-native';
+import ReAnimated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useButtonFeedback } from '@/hooks/useButtonFeedback';
-
 interface ButtonProps extends Omit<PressableProps, 'style'> {
   title: string;
   variant?: 'black' | 'white' | 'orange' | 'destructive' | 'ghost';
@@ -12,7 +12,11 @@ interface ButtonProps extends Omit<PressableProps, 'style'> {
   disabled?: boolean;
   className?: string;
   enableHaptics?: boolean;
+  enableSound?: boolean;
   flex?: boolean;
+  /** Crossfade the label when `title` changes — for buttons that carry state
+   *  (e.g. "Enter amount" → "Minimum is ₦1,000" → "Send"). */
+  morphTitle?: boolean;
 }
 
 export const Button = forwardRef<View, ButtonProps>(
@@ -27,14 +31,16 @@ export const Button = forwardRef<View, ButtonProps>(
       disabled,
       className = '',
       enableHaptics = true,
+      enableSound = true,
       flex = false,
+      morphTitle = false,
       onPress,
       ...props
     },
     ref
   ) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
-    const triggerFeedback = useButtonFeedback(enableHaptics);
+    const triggerFeedback = useButtonFeedback(enableHaptics, enableSound);
 
     // Crisp press feedback — no bounce on release. A primary button is pressed
     // constantly, so the response must feel instant and settled, not wobbly.
@@ -46,7 +52,7 @@ export const Button = forwardRef<View, ButtonProps>(
         speed: 50,
         bounciness: 0,
       }).start();
-    }, [scaleAnim, triggerFeedback]);
+    }, [scaleAnim, triggerFeedback, enableSound]);
 
     const handlePressOut = useCallback(() => {
       Animated.spring(scaleAnim, {
@@ -108,6 +114,24 @@ export const Button = forwardRef<View, ButtonProps>(
               color={variant === 'white' ? '#343433' : variant === 'ghost' ? '#ff3e00' : '#fff'}
               size="small"
             />
+          ) : morphTitle ? (
+            // Keyed remount: old label exits via overlay (takes no layout space)
+            // while the new one fades in — reads as one label morphing.
+            <ReAnimated.View
+              key={title}
+              entering={FadeIn.duration(150)}
+              exiting={FadeOut.duration(100)}
+              className="max-w-full flex-shrink flex-row items-center justify-center">
+              {leftIcon && <View className="mr-2 flex-shrink-0">{leftIcon}</View>}
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+                className={`min-w-0 flex-shrink text-center font-button ${textSize} ${textStyles}`}>
+                {title}
+              </Text>
+              {rightIcon && <View className="ml-2 flex-shrink-0">{rightIcon}</View>}
+            </ReAnimated.View>
           ) : (
             <View className="max-w-full flex-shrink flex-row items-center justify-center">
               {leftIcon && <View className="mr-2 flex-shrink-0">{leftIcon}</View>}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Switch } from 'react-native';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
+import { playUISound } from '@/lib/uiSounds';
 
 interface SettingsSheetProps {
   visible: boolean;
@@ -58,7 +59,10 @@ export function SettingsSheet({
           <Text className="font-subtitle text-lg text-text-primary">{toggleLabel}</Text>
           <Switch
             value={toggleValue}
-            onValueChange={onToggleChange}
+            onValueChange={(v) => {
+              playUISound('toggle');
+              onToggleChange(v);
+            }}
             trackColor={{ false: '#E5E5E5', true: '#121212' }}
             thumbColor="#FFFFFF"
           />

@@ -20,6 +20,7 @@ import { layout, responsive } from '@/utils/layout';
 import { useHaptics } from '@/hooks/useHaptics';
 import * as Haptics from '@/utils/platformHaptics';
 import { Cancel01Icon } from '@/lib/icons';
+import { playUISound } from '@/lib/uiSounds';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
@@ -64,6 +65,7 @@ export function BottomSheet({
   const { impact } = useHaptics();
 
   const animateClose = useCallback(() => {
+    playUISound('buttonClick');
     impact(Haptics.ImpactFeedbackStyle.Light);
     backdropOpacity.value = withTiming(0, { duration: 200 });
     translateY.value = withSpring(screenHeight, SPRING_CONFIG, () => {

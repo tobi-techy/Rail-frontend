@@ -3,6 +3,7 @@ import { View, Text, Image, Dimensions, Pressable } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GorhomBottomSheet } from '@/components/sheets/GorhomBottomSheet';
 import { Button } from '@/components/ui';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SEEN_KEY = '@miriam_intro_seen_v1';
@@ -19,6 +20,7 @@ interface Props {
  */
 export function MiriamIntroSheet({ onDismiss }: Props) {
   const [visible, setVisible] = useState(false);
+  const triggerFeedback = useButtonFeedback();
 
   useEffect(() => {
     AsyncStorage.getItem(SEEN_KEY).then((v) => {
@@ -63,7 +65,10 @@ export function MiriamIntroSheet({ onDismiss }: Props) {
         {/* Buttons — clear CTA hierarchy */}
         <View className="mt-6 flex-row gap-3">
           <Pressable
-            onPress={dismiss}
+            onPress={() => {
+              triggerFeedback();
+              dismiss();
+            }}
             className="flex-1 items-center justify-center rounded-full bg-ash/10 py-4 active:scale-[0.96]">
             <Text className="font-button text-[15px] text-charcoal-primary">Skip for later</Text>
           </Pressable>

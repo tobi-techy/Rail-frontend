@@ -15,12 +15,13 @@ import { CheckmarkCircle02Icon, IconComponent as HugeiconsIcon } from '@/lib/ico
 import { Button } from '@/components/ui';
 import { ScreenHeader } from '@/components/withdraw/shared';
 import { useRampResolveBankAccount } from '@/api/hooks/useRamp';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import * as Haptics from '@/utils/platformHaptics';
 
 export default function NgnEnterAccountScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
-    amount: string;
-    currency: string;
     bankCode: string;
     bankName: string;
   }>();
@@ -28,6 +29,7 @@ export default function NgnEnterAccountScreen() {
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
   const { mutate: resolve, isPending: isResolving } = useRampResolveBankAccount();
+  const { notification, impact } = useHaptics();
 
   useEffect(() => {
     if (accountNumber.length !== 10 || !params.bankCode) {
@@ -39,7 +41,11 @@ export default function NgnEnterAccountScreen() {
       { bankCode: params.bankCode, accountNumber },
       {
         onSuccess: (d) => {
-          if (!stale) setAccountName(d.accountName);
+          if (!stale) {
+            setAccountName(d.accountName);
+            notification('success');
+            playUISound('transactionSuccess');
+          }
         },
         onError: () => {
           if (!stale) setAccountName('');
@@ -49,21 +55,22 @@ export default function NgnEnterAccountScreen() {
     return () => {
       stale = true;
     };
-  }, [accountNumber, params.bankCode, resolve]);
+  }, [accountNumber, params.bankCode, resolve, notification]);
 
   const onContinue = useCallback(() => {
-    router.replace({
-      pathname: '/withdraw/ngn/confirm' as never,
+    impact(Haptics.ImpactFeedbackStyle.Medium);
+    playUISound('buttonClick');
+    router.push({
+      pathname: '/withdraw/ngn/enter-amount' as never,
       params: {
-        amount: params.amount,
-        currency: params.currency ?? 'NGN',
+        currency: 'NGN',
         bankCode: params.bankCode,
         bankName: params.bankName,
         accountNumber,
         accountName,
       },
     } as never);
-  }, [params, accountNumber, accountName]);
+  }, [params, accountNumber, accountName, impact]);
 
   return (
     <Pressable
@@ -103,14 +110,20 @@ export default function NgnEnterAccountScreen() {
             entering={FadeIn.duration(250)}
             className="mt-4 flex-row items-center gap-2 rounded-xl bg-[#F0FDF4] px-4 py-3">
             <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} color="#00ca48" />
-            <Text className="flex-1 font-subtitle text-[14px] text-[#00ca48]">{accountName}</Text>
+            <Text
+              className="flex-1 font-subtitle text-[14px] text-[#00ca48]"
+              maxFontSizeMultiplier={1.4}>
+              {accountName}
+            </Text>
           </Animated.View>
         ) : isResolving ? (
           <Animated.View
             entering={FadeIn.duration(150)}
             className="mt-4 flex-row items-center gap-2 rounded-xl bg-[#f8f7f4] px-4 py-3">
             <ActivityIndicator size="small" color="#848281" />
-            <Text className="font-body text-[13px] text-text-secondary">Resolving account…</Text>
+            <Text className="font-body text-[13px] text-text-secondary" maxFontSizeMultiplier={1.4}>
+              Resolving account...
+            </Text>
           </Animated.View>
         ) : null}
       </View>

@@ -3,6 +3,7 @@ import type {
   StartDiditSessionRequest,
   StartDiditSessionResponse,
   KYCStatusResponse,
+  KYCProviderStatus,
   BridgeKYCLinkResponse,
   SubmitKYCRequest,
   SubmitKYCResponse,
@@ -13,6 +14,7 @@ const KYC_ENDPOINTS = {
   SUBMIT: '/v1/kyc/submit',
   STATUS: '/v1/kyc/status',
   BRIDGE_LINK: '/v1/kyc/bridge/link',
+  BRIDGE_STATUS: '/v1/kyc/bridge/status',
 } as const;
 
 export const kycService = {
@@ -28,9 +30,13 @@ export const kycService = {
     return apiClient.get<KYCStatusResponse>(KYC_ENDPOINTS.STATUS);
   },
 
-  // Legacy — kept for backward compat
+  // Tier 3 — Bridge hosted KYC
   async getBridgeKYCLink(): Promise<BridgeKYCLinkResponse> {
     return apiClient.get<BridgeKYCLinkResponse>(KYC_ENDPOINTS.BRIDGE_LINK);
+  },
+
+  async getBridgeKYCStatus(): Promise<KYCProviderStatus> {
+    return apiClient.get<KYCProviderStatus>(KYC_ENDPOINTS.BRIDGE_STATUS);
   },
 };
 

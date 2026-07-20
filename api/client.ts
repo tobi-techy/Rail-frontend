@@ -215,7 +215,6 @@ axiosInstance.interceptors.request.use(
         }
         _passcodeRequestInFlight = true;
         config.headers['X-Passcode-Session'] = passcodeSessionToken;
-        clearPasscodeSession();
       } else if (!hasPasscodeHeader && passcodeSessionToken && isPasscodeSessionExpired) {
         clearPasscodeSession();
       }
@@ -281,7 +280,10 @@ axiosInstance.interceptors.response.use(
     // SECURITY FIX (H-2): Release passcode request mutex on success
     if (isPasscodeProtectedEndpoint(response.config?.method, response.config?.url)) {
       _passcodeRequestInFlight = false;
-      // Token was already cleared in request interceptor (consumed before send)
+      // Token is invalidated server-side on success; clear locally so a stale
+      // token doesn't sit in state. If the request failed, keep the token so
+      // the user can retry without re-verifying.
+      useAuthStore.getState().clearPasscodeSession();
     }
     return response.data;
   },

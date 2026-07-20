@@ -19,8 +19,7 @@ export function useNotifications(limit = 20, offset = 0) {
   return useQuery({
     queryKey: NOTIFICATION_KEYS.list(limit, offset),
     queryFn: () => notificationService.getNotifications(limit, offset),
-    staleTime: 2 * 60 * 1000,
-    refetchInterval: 3 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // no background interval (Redis cost); push notifications + focus refetch drive updates
   });
 }
 
@@ -31,8 +30,7 @@ export function useUnreadCount() {
   return useQuery({
     queryKey: NOTIFICATION_KEYS.unreadCount,
     queryFn: () => notificationService.getUnreadCount(),
-    staleTime: 5 * 60 * 1000,
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 min; mutations invalidate for instant updates
+    staleTime: 10 * 60 * 1000, // no background interval (Redis cost); push notifications + mutations invalidate for instant updates
   });
 }
 

@@ -10,6 +10,8 @@ import {
   type PhosphorIcon,
 } from '@/lib/icons';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 // ─── Grid option tile ────────────────────────────────────────────
 
@@ -26,13 +28,7 @@ const GRID_OPTIONS: GridOption[] = [
   { id: 'file', label: 'File', icon: File01Icon },
 ];
 
-function OptionTile({
-  option,
-  onPress,
-}: {
-  option: GridOption;
-  onPress: (id: string) => void;
-}) {
+function OptionTile({ option, onPress }: { option: GridOption; onPress: (id: string) => void }) {
   return (
     <Pressable
       onPress={() => onPress(option.id)}
@@ -64,8 +60,12 @@ export function AttachmentSheet({
   onUploadStatement,
   onApps,
 }: AttachmentSheetProps) {
+  const haptics = useHaptics();
+
   const handleOption = useCallback(
     (id: string) => {
+      haptics.selection();
+      playUISound('dismiss');
       onClose();
       const delay = id === 'camera' || id === 'scan' || id === 'image' || id === 'file' ? 400 : 150;
       setTimeout(() => {
@@ -78,13 +78,15 @@ export function AttachmentSheet({
   );
 
   const handleConnections = useCallback(() => {
+    haptics.selection();
+    playUISound('dismiss');
     onClose();
     setTimeout(() => onApps(), 200);
   }, [onClose, onApps]);
 
   return (
     <GorhomBottomSheet visible={visible} onClose={onClose} glassBackground scrollable={false}>
-      <View className="pt-2 pb-2">
+      <View className="pb-2 pt-2">
         {/* Header */}
         <Text className="mb-5 font-body-medium text-[22px] text-[#1C1C1E]">Options</Text>
 

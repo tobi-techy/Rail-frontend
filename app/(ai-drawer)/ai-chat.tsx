@@ -287,7 +287,9 @@ export default function AIChatScreen() {
           />
           {item.role === 'user' && isLast && !isStreaming ? (
             <Animated.View entering={FadeIn.duration(150)} className="mb-1 items-end pr-1">
-              <Text className="font-body text-[11px] text-ash">Delivered</Text>
+              <Text className="font-body text-[11px] text-ash" maxFontSizeMultiplier={1.4}>
+                Delivered
+              </Text>
             </Animated.View>
           ) : null}
         </View>

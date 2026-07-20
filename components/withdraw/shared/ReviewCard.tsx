@@ -11,15 +11,25 @@ export function ReviewCard({ title, children }: { title: string; children: React
   );
 }
 
-export function DetailRow({ label, value }: { label: string; value: string }) {
+export function DetailRow({
+  label,
+  value,
+  leading,
+}: {
+  label: string;
+  value: string;
+  /** Optional accessory rendered just before the value (e.g. a bank logo). */
+  leading?: React.ReactNode;
+}) {
   return (
     <View className="flex-row items-center justify-between px-5 py-4">
       <Text className="font-body text-[14px] text-text-secondary">{label}</Text>
-      <Text
-        className="ml-6 max-w-[60%] text-right font-subtitle text-[14px] text-text-primary"
-        numberOfLines={1}>
-        {value}
-      </Text>
+      <View className="ml-6 max-w-[60%] flex-row items-center gap-2">
+        {leading}
+        <Text className="text-right font-subtitle text-[14px] text-text-primary" numberOfLines={1}>
+          {value}
+        </Text>
+      </View>
     </View>
   );
 }

@@ -3,6 +3,9 @@ import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import Animated, { useSharedValue, withSpring, useAnimatedStyle } from 'react-native-reanimated';
 import { Icon } from '@/components/atoms/Icon';
 import { IconComponent as HugeiconsIcon, ScanEyeIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 export const C = {
   text: '#343433',
@@ -36,6 +39,7 @@ export function PeriodSelector({
   onSelect: (p: Period) => void;
 }) {
   const { width: sw } = useWindowDimensions();
+  const { selection } = useHaptics();
   const tabsAreaW = sw - PAD * 2;
   const tabW = tabsAreaW / PERIODS.length;
   const selectedIdx = PERIODS.indexOf(selected);
@@ -54,7 +58,11 @@ export function PeriodSelector({
           {PERIODS.map((p) => (
             <Pressable
               key={p}
-              onPress={() => onSelect(p)}
+              onPress={() => {
+                playUISound('buttonClick');
+                selection();
+                onSelect(p);
+              }}
               style={{ width: tabW }}
               className="items-center py-2"
               accessibilityRole="button"
@@ -100,12 +108,16 @@ export function SectionHeader({
   action?: string;
   onAction?: () => void;
 }) {
+  const triggerFeedback = useButtonFeedback();
   return (
     <View className="mx-4 mb-3 flex-row items-center justify-between">
       <Text className="font-button text-[17px] text-text-primary">{title}</Text>
       {action && (
         <Pressable
-          onPress={onAction}
+          onPress={() => {
+            triggerFeedback();
+            onAction?.();
+          }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityRole="button"
           accessibilityLabel={action}>

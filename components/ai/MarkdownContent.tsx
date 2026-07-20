@@ -4,14 +4,14 @@ import Markdown from 'react-native-markdown-display';
 
 const markdownStyles = {
   body: {
-    fontFamily: 'Geist-Regular',
+    fontFamily: 'Satoshi-Regular',
     fontSize: 18,
     color: '#343433',
     lineHeight: 30,
     backgroundColor: 'transparent',
   },
   heading1: {
-    fontFamily: 'Geist-Bold',
+    fontFamily: 'Satoshi-Bold',
     fontSize: 30,
     color: '#1C1C1E',
     marginTop: 22,
@@ -19,7 +19,7 @@ const markdownStyles = {
     letterSpacing: -0.5,
   },
   heading2: {
-    fontFamily: 'Geist-Bold',
+    fontFamily: 'Satoshi-Bold',
     fontSize: 26,
     color: '#1C1C1E',
     marginTop: 20,
@@ -27,14 +27,14 @@ const markdownStyles = {
     letterSpacing: -0.3,
   },
   heading3: {
-    fontFamily: 'Geist-SemiBold',
+    fontFamily: 'Satoshi-Medium',
     fontSize: 22,
     color: '#1C1C1E',
     marginTop: 16,
     marginBottom: 8,
   },
   strong: {
-    fontFamily: 'Geist-Bold',
+    fontFamily: 'Satoshi-Bold',
     fontSize: 19,
     color: '#1C1C1E',
     letterSpacing: -0.2,
@@ -43,7 +43,7 @@ const markdownStyles = {
     fontStyle: 'italic' as const,
   },
   code_inline: {
-    fontFamily: 'Geist-Bold',
+    fontFamily: 'Satoshi-Bold',
     fontSize: 17,
     backgroundColor: '#f7f2e8',
     color: '#343433',
@@ -52,7 +52,7 @@ const markdownStyles = {
     borderRadius: 4,
   },
   fence: {
-    fontFamily: 'Geist-Regular',
+    fontFamily: 'Satoshi-Regular',
     fontSize: 15,
     backgroundColor: '#343433',
     color: '#f7f2e8',
@@ -80,14 +80,14 @@ const markdownStyles = {
   ordered_list: { marginVertical: 6 },
   list_item: { flexDirection: 'row' as const, marginVertical: 4 },
   bullet_list_icon: {
-    fontFamily: 'Geist-Regular',
+    fontFamily: 'Satoshi-Regular',
     fontSize: 18,
     color: '#343433',
     marginRight: 8,
     lineHeight: 30,
   },
   ordered_list_icon: {
-    fontFamily: 'Geist-Bold',
+    fontFamily: 'Satoshi-Bold',
     fontSize: 18,
     color: '#1C1C1E',
     marginRight: 10,
@@ -106,7 +106,7 @@ const markdownStyles = {
   },
   thead: { backgroundColor: '#f7f2e8' },
   th: {
-    fontFamily: 'Geist-SemiBold',
+    fontFamily: 'Satoshi-Medium',
     fontSize: 15,
     color: '#343433',
     padding: 10,
@@ -114,7 +114,7 @@ const markdownStyles = {
     borderRightColor: 'rgba(0,0,0,0.04)',
   },
   td: {
-    fontFamily: 'Geist-Regular',
+    fontFamily: 'Satoshi-Regular',
     fontSize: 16,
     color: '#343433',
     padding: 10,

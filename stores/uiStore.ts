@@ -10,17 +10,7 @@ import {
 import { getBestAvailableFxRates } from '@/utils/currencyRates';
 
 export type Currency =
-  | 'USD'
-  | 'EUR'
-  | 'GBP'
-  | 'NGN'
-  | 'GHS'
-  | 'KES'
-  | 'CAD'
-  | 'USDC'
-  | 'USDT'
-  | 'EURC'
-  | 'PYUSD';
+  'USD' | 'EUR' | 'GBP' | 'NGN' | 'GHS' | 'KES' | 'CAD' | 'USDC' | 'USDT' | 'EURC' | 'PYUSD';
 export type AppTheme = 'system' | 'light' | 'dark';
 export type AppLanguage = 'en' | 'fr' | 'es' | 'de';
 
@@ -34,6 +24,7 @@ interface UIState {
   isCurrencyRatesRefreshing: boolean;
   // Preferences
   hapticsEnabled: boolean;
+  soundsEnabled: boolean;
   pushNotificationsEnabled: boolean;
   emailNotificationsEnabled: boolean;
   requireBiometricOnResume: boolean;
@@ -48,6 +39,7 @@ interface UIActions {
   setCurrencyRates: (rates: FxRates, updatedAt?: string) => void;
   refreshCurrencyRates: (options?: { forceRefresh?: boolean }) => Promise<void>;
   setHapticsEnabled: (enabled: boolean) => void;
+  setSoundsEnabled: (enabled: boolean) => void;
   setPushNotificationsEnabled: (enabled: boolean) => void;
   setEmailNotificationsEnabled: (enabled: boolean) => void;
   setRequireBiometricOnResume: (enabled: boolean) => void;
@@ -62,9 +54,11 @@ const initialState: UIState = {
   currencyRatesUpdatedAt: null,
   isCurrencyRatesRefreshing: false,
   hapticsEnabled: true,
+  soundsEnabled: true,
   pushNotificationsEnabled: true,
   emailNotificationsEnabled: true,
-  requireBiometricOnResume: false,
+  // On by default: re-authenticate when the app returns from background.
+  requireBiometricOnResume: true,
   theme: 'system',
   language: 'en',
 };
@@ -97,6 +91,7 @@ export const useUIStore = create<UIState & UIActions>()(
         }
       },
       setHapticsEnabled: (enabled) => set({ hapticsEnabled: enabled }),
+      setSoundsEnabled: (enabled) => set({ soundsEnabled: enabled }),
       setPushNotificationsEnabled: (enabled) => set({ pushNotificationsEnabled: enabled }),
       setEmailNotificationsEnabled: (enabled) => set({ emailNotificationsEnabled: enabled }),
       setRequireBiometricOnResume: (enabled) => set({ requireBiometricOnResume: enabled }),
@@ -106,7 +101,7 @@ export const useUIStore = create<UIState & UIActions>()(
     {
       name: 'ui-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 5,
+      version: 6,
       migrate: (persistedState: any, version: number) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState;
@@ -157,6 +152,15 @@ export const useUIStore = create<UIState & UIActions>()(
             ...migrated,
             currency: migrateLegacyCurrency((migrated as any).currency),
             currencyRates: sanitizeFxRates((migrated as any).currencyRates),
+          };
+        }
+
+        if (version < 6) {
+          // Biometric-on-resume became on-by-default; flip it on once for
+          // existing installs. Users can still disable it in Settings.
+          migrated = {
+            ...migrated,
+            requireBiometricOnResume: true,
           };
         }
 

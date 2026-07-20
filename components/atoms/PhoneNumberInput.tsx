@@ -3,6 +3,8 @@ import { View, Text, Pressable, Modal, FlatList, Keyboard } from 'react-native';
 import type { TextInput } from 'react-native';
 import { Ionicons } from './SafeIonicons';
 import { InputField } from './InputField';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 interface CountryCode {
   code: string;
@@ -144,6 +146,7 @@ export function PhoneNumberInput({
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const inputRef = useRef<TextInput>(null);
+  const haptics = useHaptics();
   const isDark = variant === 'dark';
   const hasError = !!error;
 
@@ -158,6 +161,8 @@ export function PhoneNumberInput({
   );
 
   const handleCountrySelect = (country: CountryCode) => {
+    haptics.selection();
+    playUISound('buttonClick');
     setSelectedCountry(country);
     setIsModalVisible(false);
     setSearchQuery('');
@@ -206,7 +211,11 @@ export function PhoneNumberInput({
         error={error}
         leftAccessory={
           <Pressable
-            onPress={() => setIsModalVisible(true)}
+            onPress={() => {
+              haptics.selection();
+              playUISound('buttonClick');
+              setIsModalVisible(true);
+            }}
             className={`mr-1 min-h-[44px] min-w-[44px] flex-row items-center border-r pr-3 ${
               isDark ? 'border-white/30' : 'border-fog'
             }`}>
@@ -228,6 +237,8 @@ export function PhoneNumberInput({
           value.length > 0 ? (
             <Pressable
               onPress={() => {
+                haptics.selection();
+                playUISound('buttonClick');
                 onChangeText('');
                 Keyboard.dismiss();
               }}
@@ -248,7 +259,13 @@ export function PhoneNumberInput({
         <View className="flex-1 bg-parchment-card">
           <View className="flex-row items-center justify-between border-b border-fog/40 px-5 py-4">
             <Text className="font-subtitle text-[30px] text-text-primary">Select Country Code</Text>
-            <Pressable onPress={() => setIsModalVisible(false)} className="p-2">
+            <Pressable
+              onPress={() => {
+                haptics.selection();
+                playUISound('dismiss');
+                setIsModalVisible(false);
+              }}
+              className="p-2">
               <Ionicons name="close" size={24} color="#000000" />
             </Pressable>
           </View>

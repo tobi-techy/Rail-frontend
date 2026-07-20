@@ -40,7 +40,7 @@ function StatusBadge({ address }: { address: WhitelistedAddress }) {
     return (
       <View className="flex-row items-center rounded-full bg-yellow-50 px-2.5 py-1">
         <HugeiconsIcon icon={Clock01Icon} size={12} color="#CA8A04" />
-        <Text className="ml-1 font-caption text-xs text-yellow-700">
+        <Text className="ml-1 font-caption text-xs text-yellow-700" maxFontSizeMultiplier={1.4}>
           {hours > 0 ? `Active in ${hours}h` : 'Pending'}
         </Text>
       </View>
@@ -49,7 +49,9 @@ function StatusBadge({ address }: { address: WhitelistedAddress }) {
   return (
     <View className="flex-row items-center rounded-full bg-green-50 px-2.5 py-1">
       <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} color="#00ca48" />
-      <Text className="ml-1 font-caption text-xs text-green-700">Active</Text>
+      <Text className="ml-1 font-caption text-xs text-green-700" maxFontSizeMultiplier={1.4}>
+        Active
+      </Text>
     </View>
   );
 }
@@ -58,13 +60,20 @@ function AddressRow({ item, onDelete }: { item: WhitelistedAddress; onDelete: ()
   return (
     <View className="bg-surface-secondary mb-3 flex-row items-center rounded-2xl border border-surface p-4">
       <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-surface">
-        <Text className="font-body-bold text-xs text-text-secondary">{item.chain}</Text>
+        <Text className="font-body-bold text-xs text-text-secondary" maxFontSizeMultiplier={1.4}>
+          {item.chain}
+        </Text>
       </View>
       <View className="flex-1">
-        <Text className="font-subtitle text-body text-text-primary" numberOfLines={1}>
+        <Text
+          className="font-subtitle text-body text-text-primary"
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.3}>
           {item.label || truncateAddress(item.address)}
         </Text>
-        <Text className="mt-0.5 font-caption text-caption text-text-secondary">
+        <Text
+          className="mt-0.5 font-caption text-caption text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
           {truncateAddress(item.address)}
         </Text>
       </View>
@@ -135,7 +144,9 @@ export default function WhitelistScreen() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" />
         </Pressable>
-        <Text className="flex-1 font-subtitle text-headline-1">Whitelist</Text>
+        <Text className="flex-1 font-subtitle text-headline-1" maxFontSizeMultiplier={1.3}>
+          Whitelist
+        </Text>
         <Pressable
           onPress={openAddSheet}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface"
@@ -148,7 +159,9 @@ export default function WhitelistScreen() {
         className="flex-1 px-4"
         contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}>
-        <Text className="mb-6 mt-2 font-body text-base leading-6 text-text-secondary">
+        <Text
+          className="mb-6 mt-2 font-body text-base leading-6 text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
           Whitelisted addresses can receive withdrawals. New addresses require a 24-hour cooling
           period.
         </Text>
@@ -161,7 +174,7 @@ export default function WhitelistScreen() {
 
         {isError && !isLoading && (
           <View className="bg-surface-secondary items-center rounded-2xl border border-surface py-10">
-            <Text className="font-body text-base text-text-secondary">
+            <Text className="font-body text-base text-text-secondary" maxFontSizeMultiplier={1.4}>
               Failed to load addresses.
             </Text>
           </View>
@@ -172,10 +185,14 @@ export default function WhitelistScreen() {
             <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-surface">
               <HugeiconsIcon icon={ShieldKeyIcon} size={24} color="#848281" />
             </View>
-            <Text className="mb-1 font-subtitle text-base text-text-primary">
+            <Text
+              className="mb-1 font-subtitle text-base text-text-primary"
+              maxFontSizeMultiplier={1.3}>
               No whitelisted addresses
             </Text>
-            <Text className="mb-6 font-body text-sm text-text-secondary">
+            <Text
+              className="mb-6 font-body text-sm text-text-secondary"
+              maxFontSizeMultiplier={1.4}>
               Add an address to enable withdrawals
             </Text>
             <Button title="Add Address" variant="black" onPress={openAddSheet} />
@@ -200,8 +217,10 @@ export default function WhitelistScreen() {
 
       {/* Delete confirm sheet */}
       <BottomSheet visible={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
-        <Text className="mb-2 font-subtitle text-xl">Remove Address</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-ash">
+        <Text className="mb-2 font-subtitle text-xl" maxFontSizeMultiplier={1.3}>
+          Remove Address
+        </Text>
+        <Text className="mb-6 font-body text-base leading-6 text-ash" maxFontSizeMultiplier={1.4}>
           Remove &quot;{deleteTarget?.label || truncateAddress(deleteTarget?.address ?? '')}&quot;
           from your whitelist?
         </Text>
@@ -220,13 +239,17 @@ export default function WhitelistScreen() {
 
       {/* Add address sheet */}
       <BottomSheet visible={showAddSheet} onClose={() => setShowAddSheet(false)}>
-        <Text className="mb-2 font-subtitle text-xl">Add Address</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-ash">
+        <Text className="mb-2 font-subtitle text-xl" maxFontSizeMultiplier={1.3}>
+          Add Address
+        </Text>
+        <Text className="mb-6 font-body text-base leading-6 text-ash" maxFontSizeMultiplier={1.4}>
           New addresses have a 24-hour cooling period before withdrawals are enabled.
         </Text>
 
         {/* Chain selector */}
-        <Text className="mb-2 font-caption text-sm text-text-secondary">Chain</Text>
+        <Text className="mb-2 font-caption text-sm text-text-secondary" maxFontSizeMultiplier={1.4}>
+          Chain
+        </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
           <View className="flex-row gap-2">
             {CHAINS.map((c) => (
@@ -235,7 +258,8 @@ export default function WhitelistScreen() {
                 onPress={() => setChain(c)}
                 className={`rounded-full px-4 py-2 ${chain === c ? 'bg-black' : 'bg-surface-secondary'}`}>
                 <Text
-                  className={`font-body-bold text-sm ${chain === c ? 'text-white' : 'text-text-primary'}`}>
+                  className={`font-body-bold text-sm ${chain === c ? 'text-white' : 'text-text-primary'}`}
+                  maxFontSizeMultiplier={1.4}>
                   {c}
                 </Text>
               </Pressable>

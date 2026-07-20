@@ -99,6 +99,26 @@ export const getAmountError = ({
   return '';
 };
 
+/** Compact counterpart to getAmountError, sized for a button label. The CTA
+ *  carries the blocking reason so the user's eye never has to leave the
+ *  button they just tried to press. */
+export const getAmountCtaError = ({
+  availableBalance,
+  isFundFlow,
+  numericAmount,
+  withdrawalLimit,
+  feeAmount = 0,
+  currencySymbol = '$',
+  minAmount = 1,
+}: AmountErrorInput) => {
+  if (numericAmount <= 0) return '';
+  if (numericAmount < minAmount) return `Minimum is ${currencySymbol}${formatCurrency(minAmount)}`;
+  if (numericAmount > withdrawalLimit)
+    return `Limit is ${currencySymbol}${formatCurrency(withdrawalLimit)}`;
+  if (!isFundFlow && numericAmount + feeAmount > availableBalance) return 'Insufficient balance';
+  return '';
+};
+
 export const getDestinationError = ({
   destinationInput,
   isAssetTradeMethod,
@@ -157,16 +177,9 @@ export const getDestinationError = ({
     // Starknet: 0x + up to 64 hex chars
     const isStarknetLike = /^0x[0-9a-fA-F]{1,64}$/.test(trimmedAddress);
     const isStarknetChain = destinationChain === 'STARKNET';
-    const isEvmChain = [
-      'ETH',
-      'BASE',
-      'ARB',
-      'OP',
-      'MATIC',
-      'AVAX',
-      'BSC',
-      'LISK',
-    ].includes(destinationChain ?? '');
+    const isEvmChain = ['ETH', 'BASE', 'ARB', 'OP', 'MATIC', 'AVAX', 'BSC', 'LISK'].includes(
+      destinationChain ?? ''
+    );
     const isSolChain = !isEvmChain && !isStarknetChain;
 
     if (isStarknetChain) {

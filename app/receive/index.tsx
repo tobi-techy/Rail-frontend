@@ -37,13 +37,20 @@ function ChainRow({ config, onPress }: { config: ChainConfig; onPress: () => voi
         <ChainLogo chain={config.chain} size={44} />
       </View>
       <View className="flex-1">
-        <Text className="font-subtitle text-[16px] text-text-primary">{config.shortLabel}</Text>
-        <Text className="mt-0.5 font-body text-[13px] text-text-secondary">{config.label}</Text>
+        <Text className="font-subtitle text-[16px] text-text-primary" maxFontSizeMultiplier={1.3}>
+          {config.shortLabel}
+        </Text>
+        <Text
+          className="mt-0.5 font-body text-[13px] text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
+          {config.label}
+        </Text>
       </View>
       {arrivalTime ? (
         <Text
           className="font-body text-[14px] text-text-secondary"
-          style={{ fontVariant: ['tabular-nums'] }}>
+          style={{ fontVariant: ['tabular-nums'] }}
+          maxFontSizeMultiplier={1.4}>
           {arrivalTime}
         </Text>
       ) : null}
@@ -87,7 +94,9 @@ export default function ReceiveChainSelectScreen() {
 
           {/* Title */}
           <Animated.View entering={FadeInUp.delay(60).duration(250)} className="mb-6 mt-6 px-5">
-            <Text className="font-heading text-[32px] leading-[38px] text-[#1a1a1a]">
+            <Text
+              className="font-heading text-[32px] leading-[38px] text-[#1a1a1a]"
+              maxFontSizeMultiplier={1.3}>
               Select network
             </Text>
           </Animated.View>

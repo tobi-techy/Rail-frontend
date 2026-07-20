@@ -4,7 +4,9 @@ export const BRAND_RED = '#FF2E01';
 
 export const springConfig = { damping: 15, stiffness: 200, mass: 0.8 };
 export const gentleSpring = { damping: 20, stiffness: 150, mass: 1 };
-export const FUNDING_POLL_INTERVAL_MS = 2_000;
+// Active mobile-wallet-funding confirmation poll. 4s (was 2s) roughly halves
+// the Redis cost of the 90s wait while staying responsive for a wallet confirm.
+export const FUNDING_POLL_INTERVAL_MS = 4_000;
 export const FUNDING_POLL_TIMEOUT_MS = 90_000;
 export const FALLBACK_AVAILABLE_BALANCE = 0;
 export const MAX_INTEGER_DIGITS = 9;

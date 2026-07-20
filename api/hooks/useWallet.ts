@@ -4,6 +4,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import apiClient from '../client';
 import { walletService } from '../services';
 import { queryKeys, invalidateQueries } from '../queryClient';
 import { useAnalytics, ANALYTICS_EVENTS } from '../../utils/analytics';
@@ -30,8 +31,7 @@ export function useWalletBalance() {
   return useQuery({
     queryKey: queryKeys.wallet.balance(),
     queryFn: () => walletService.getBalance(),
-    staleTime: 15 * 1000, // 15 seconds - balance becomes stale faster
-    refetchInterval: 90 * 1000, // Refetch every 90 seconds
+    staleTime: 2 * 60 * 1000, // 2 min — no background interval (Redis cost); refresh on focus/reconnect + mutation invalidation
     refetchOnWindowFocus: true, // Refetch when app comes to foreground
     refetchOnReconnect: true, // Refetch when connection restored
   });
@@ -108,6 +108,43 @@ export function useEstimateFee() {
 }
 
 /**
+ * Query-based withdrawal fee — auto-fetches the actual backend fee for a withdrawal.
+ * Falls back to hardcoded values ($0.10 crypto, $1.00 fiat) while loading.
+ */
+export function useWithdrawalFee(params: {
+  amount: number;
+  type: 'crypto' | 'fiat';
+  currency?: string;
+  destChain?: string;
+}) {
+  return useQuery({
+    queryKey: [...queryKeys.wallet.all, 'withdrawal-fee', params],
+    queryFn: async () => {
+      const response = await apiClient.get<any>('/v1/withdrawals/fees', {
+        params: {
+          type: params.type,
+          amount: params.amount,
+          currency: params.currency || (params.type === 'crypto' ? 'USDC' : 'USD'),
+          dest_chain: params.destChain || 'SOL',
+        },
+      });
+      return {
+        fee: Number(response?.amount ?? 0),
+        networkFee: Number(response?.breakdown?.network_fee ?? 0),
+        serviceFee: Number(response?.breakdown?.service_fee ?? 0),
+      };
+    },
+    enabled: params.amount > 0,
+    staleTime: 60_000,
+    placeholderData: {
+      fee: params.type === 'crypto' ? 0.1 : 1.0,
+      networkFee: params.type === 'crypto' ? 0.1 : 0,
+      serviceFee: params.type === 'crypto' ? 0 : 1.0,
+    },
+  });
+}
+
+/**
  * Get deposit address mutation
  */
 export function useGetDepositAddress() {
@@ -135,8 +172,7 @@ export function useTokenPrices(tokenIds: string[]) {
   return useQuery({
     queryKey: queryKeys.wallet.prices(tokenIds),
     queryFn: () => walletService.getPrices({ tokenIds }),
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
+    staleTime: 2 * 60 * 1000, // 2 min — no background interval (Redis cost); refresh on focus
     enabled: tokenIds.length > 0,
   });
 }

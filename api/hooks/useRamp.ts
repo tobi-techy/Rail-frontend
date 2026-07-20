@@ -26,8 +26,7 @@ export function useRampQuote(side: 'onramp' | 'offramp', amount = 10_000, curren
     queryKey: rampKeys.quote(side, amount, currency),
     queryFn: () => rampService.getQuote(side, amount, currency),
     enabled: isAuthenticated,
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 5 * 60_000, // no background interval (Redis cost); refresh on focus — rates move slowly enough
   });
 }
 
@@ -45,8 +44,15 @@ export function useRampBanks() {
 /** Resolve a bank account number to get the account holder name */
 export function useRampResolveBankAccount() {
   return useMutation({
-    mutationFn: ({ bankCode, accountNumber }: { bankCode: string; accountNumber: string }) =>
-      rampService.resolveBankAccount(bankCode, accountNumber),
+    mutationFn: ({
+      bankCode,
+      accountNumber,
+      bankName,
+    }: {
+      bankCode: string;
+      accountNumber: string;
+      bankName?: string;
+    }) => rampService.resolveBankAccount(bankCode, accountNumber, bankName),
   });
 }
 
@@ -73,12 +79,27 @@ export function useRampOfframp() {
       accountNumber,
       amount,
       currency = 'NGN',
+      bankName,
+      category,
+      expectedRate,
     }: {
       bankCode: string;
       accountNumber: string;
       amount: number;
       currency?: string;
-    }) => rampService.createOfframp(bankCode, accountNumber, amount, currency),
+      bankName?: string;
+      category?: string;
+      expectedRate?: number;
+    }) =>
+      rampService.createOfframp(
+        bankCode,
+        accountNumber,
+        amount,
+        currency,
+        bankName,
+        category,
+        expectedRate
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['funding'] });
       queryClient.invalidateQueries({ queryKey: ['station'] });
@@ -99,10 +120,11 @@ export function useRampOrders() {
   });
 }
 
-/** Poll order status every 8 s until terminal (completed | failed).
- *  8 s gives enough headroom above the backend's 5-s Redis rate-limit window
- *  so network jitter doesn't cause silent 429s. Push notifications via
- *  deposit_confirmed also invalidate ['ramp'] so the screen snaps instantly. */
+/** Poll order status until terminal (completed | failed).
+ *  Push notifications via deposit_confirmed invalidate ['ramp'] and snap the
+ *  screen instantly, so this poll is only a fallback — 15 s keeps it well above
+ *  the backend's 5-s Redis rate-limit window and roughly halves the Redis cost
+ *  of an in-progress deposit/withdrawal versus the old 8 s. */
 export function useRampOrderStatus(transactionId: string, enabled = true) {
   return useQuery({
     queryKey: rampKeys.orderStatus(transactionId),
@@ -110,7 +132,7 @@ export function useRampOrderStatus(transactionId: string, enabled = true) {
     enabled: enabled && !!transactionId,
     refetchInterval: (query) => {
       if (isTerminalStatus(query.state.data?.status)) return false;
-      return 8_000;
+      return 15_000;
     },
     staleTime: 0,
   });

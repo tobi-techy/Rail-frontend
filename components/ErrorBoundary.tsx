@@ -6,6 +6,8 @@ import { safeError } from '../utils/logSanitizer';
 import { Sentry } from '../lib/sentry';
 import { Alert02Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { haptics } from '@/utils/haptics';
+import { playUISound } from '@/lib/uiSounds';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -125,7 +127,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
           {/* CTA pinned to bottom */}
           <View style={styles.footer}>
-            <TouchableOpacity style={styles.button} onPress={this.resetError} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => {
+                playUISound('buttonClick');
+                haptics.tap();
+                this.resetError();
+              }}
+              activeOpacity={0.85}>
               <Text style={styles.buttonText}>Try again</Text>
             </TouchableOpacity>
           </View>
@@ -152,14 +161,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: 'Geist-Bold',
+    fontFamily: 'Satoshi-Bold',
     color: '#343433',
     marginBottom: 12,
     lineHeight: 34,
   },
   message: {
     fontSize: 16,
-    fontFamily: 'Geist-Regular',
+    fontFamily: 'Satoshi-Regular',
     color: '#848281',
     lineHeight: 24,
   },
@@ -172,7 +181,7 @@ const styles = StyleSheet.create({
   devText: {
     fontSize: 11,
     color: '#ff2b3a',
-    fontFamily: 'Geist-Regular',
+    fontFamily: 'Satoshi-Regular',
   },
   footer: {
     paddingHorizontal: 20,
@@ -186,7 +195,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 15,
-    fontFamily: 'Geist-SemiBold',
+    fontFamily: 'Satoshi-Medium',
     color: '#FFFFFF',
   },
 });

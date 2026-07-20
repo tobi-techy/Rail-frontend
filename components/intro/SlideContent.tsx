@@ -14,7 +14,7 @@ export const SlideContent = memo(function SlideContent({ item, isCompactWidth }:
       <Text
         style={{
           color: '#FFFFFF',
-          fontFamily: FONT_FAMILIES.GEIST.BOLD,
+          fontFamily: FONT_FAMILIES.SATOSHI.BOLD,
           fontSize: isCompactWidth ? 32 : 38,
           lineHeight: isCompactWidth ? 38 : 44,
           letterSpacing: -0.8,
@@ -24,7 +24,7 @@ export const SlideContent = memo(function SlideContent({ item, isCompactWidth }:
       <Text
         style={{
           color: 'rgba(255,255,255,0.65)',
-          fontFamily: FONT_FAMILIES.GEIST.REGULAR,
+          fontFamily: FONT_FAMILIES.SATOSHI.REGULAR,
           fontSize: 14,
           lineHeight: 20,
           marginTop: 10,

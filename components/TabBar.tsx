@@ -3,12 +3,12 @@ import { View, Pressable } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassView } from '@/components/ui/GlassView';
-import { useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useHaptics } from '@/hooks/useHaptics';
 import { SPRING_PRESS } from '@/lib/motion';
+import { playUISound } from '@/lib/uiSounds';
 
-import { useAIChatStore } from '@/stores/aiChatStore';
+import { useMiriamIntro } from '@/stores/miriamIntro';
 import { MiriamCharacter } from '@/components/ai';
 
 // ─── Tab Item ────────────────────────────────────────────────────
@@ -33,6 +33,7 @@ function TabBarItem({
   }));
 
   const onPress = () => {
+    playUISound('buttonClick');
     impact();
     const event = navigation.emit({
       type: 'tabPress',
@@ -71,20 +72,21 @@ function TabBarItem({
 // ─── AI Button ───────────────────────────────────────────────────
 
 function AIButton() {
-  const router = useRouter();
   const { impact } = useHaptics();
-  const open = useAIChatStore((s) => s.open);
+  const openIntro = useMiriamIntro((s) => s.open);
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
+  // Miriam now lives on iMessage/WhatsApp — the tab button opens the connect
+  // intro instead of the in-app chat.
   const handlePress = useCallback(() => {
+    playUISound('buttonClick');
     impact();
-    open();
-    router.push('/ai-chat');
-  }, [impact, open, router]);
+    openIntro();
+  }, [impact, openIntro]);
 
   return (
     <View style={{ alignItems: 'center' }}>

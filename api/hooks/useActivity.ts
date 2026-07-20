@@ -8,8 +8,6 @@ export function useActivityFeed(limit = 20, offset = 0) {
     queryKey: ['activity', 'feed', { limit, offset }],
     queryFn: () => activityService.getActivityFeed(limit, offset),
     enabled: isAuthenticated,
-    staleTime: 15_000,
-    refetchOnMount: 'always' as const,
-    refetchInterval: 90_000,
+    staleTime: 2 * 60 * 1000, // 2 min — no background interval (Redis cost); refresh on focus + mutation invalidation
   });
 }

@@ -8,7 +8,7 @@ export interface FontLoadingResult {
 
 /**
  * Thin wrapper around expo-font's useFonts.
- * Loads all Geist font variants in a single call.
+ * Loads all Satoshi and CommitMono variants in a single call.
  */
 export const useFonts = (): FontLoadingResult => {
   const [loaded, error] = useExpoFonts(FONT_FILES);

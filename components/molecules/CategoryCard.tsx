@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { SvgProps } from 'react-native-svg';
 import { Icon } from '../atoms/Icon';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 export interface CategoryCardProps extends Omit<TouchableOpacityProps, 'children'> {
   /** Unique identifier */
@@ -68,12 +70,18 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
     [title, basketLabel, isPositive, performanceLabel]
   );
 
+  const haptics = useHaptics();
+
   const iconColor =
     Array.isArray(iconGradient) && iconGradient.length === 2 ? iconGradient[0] : DEFAULT_ICON_COLOR;
 
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={() => {
+        haptics.selection();
+        playUISound('buttonClick');
+        onPress?.();
+      }}
       activeOpacity={0.9}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}

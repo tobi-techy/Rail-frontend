@@ -201,6 +201,19 @@ export const aiService = {
     return apiClient.post(`${BASE}/conversations/${conversationId}/cancel`);
   },
 
+  /**
+   * Fetch the action Miriam staged in a conversation but hasn't executed yet.
+   * Used by the authorize deep-link screen to render exactly what's about to
+   * happen before the user approves it with Face ID / passcode.
+   */
+  async getPendingAction(
+    conversationId: string
+  ): Promise<{ pending_action: PendingAction | null }> {
+    const payload = await apiClient.get<any>(`${BASE}/conversations/${conversationId}/pending`);
+    const data = unwrapData<{ pending_action: PendingAction | null }>(payload);
+    return { pending_action: data?.pending_action ?? null };
+  },
+
   async createVoiceSessionToken(): Promise<{ token: string; expires_at: string }> {
     const payload = await apiClient.post<any>(`${BASE}/voice/session-token`);
     return unwrapData<{ token: string; expires_at: string }>(payload);

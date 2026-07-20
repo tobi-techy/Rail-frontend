@@ -11,7 +11,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { OTPInput, Button } from '../../components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
@@ -19,8 +19,13 @@ import { useVerifyCode, useResendCode } from '@/api/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { getPostAuthRoute } from '@/utils/onboardingFlow';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
+import apiClient from '@/api/client';
 
 export default function VerifyEmail() {
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
+  const isSigninMode = mode === 'signin';
+
   const [otp, setOtp] = useState('');
   const [resendTimer, setResendTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
@@ -32,6 +37,7 @@ export default function VerifyEmail() {
   const { mutate: resendCode, isPending: isResending } = useResendCode();
   const otpRef = useRef<any>(null);
   const { showError, showInfo, showWarning } = useFeedbackPopup();
+  const triggerFeedback = useButtonFeedback();
 
   useEffect(() => {
     if (!pendingEmail && !isAuthenticated && !isVerifying && !isTransitioning) {
@@ -59,29 +65,59 @@ export default function VerifyEmail() {
     }
   };
 
-  const handleVerifyWithCode = (code: string) => {
-    verifyCode(
-      { email: pendingEmail!, code },
-      {
-        onSuccess: (response) => {
-          setIsTransitioning(true);
-          if (response.accessToken) {
-            const onboardingStatus = response.onboarding_status || response.user?.onboardingStatus;
-            router.replace(getPostAuthRoute(onboardingStatus) as never);
-            return;
-          }
-          router.replace(ROUTES.AUTH.SIGNIN as never);
-        },
-        onError: (error: any) => {
-          setIsTransitioning(false);
-          const message = error?.message || 'Invalid or expired verification code';
-          setErrorMessage(message);
-          setOtp('');
-          otpRef.current?.clear?.();
-          showError('Verification Failed', message);
-        },
+  const handleVerifyWithCode = async (code: string) => {
+    if (isSigninMode) {
+      // Signin mode: call email OTP login endpoint
+      setIsTransitioning(true);
+      try {
+        const response: any = await apiClient.post('/v1/auth/email/login', {
+          email: pendingEmail,
+          code,
+        });
+        // Store tokens and user
+        const { setTokens, setUser, setOnboardingStatus, setHasPasscode } = useAuthStore.getState();
+        if (response.accessToken) setTokens(response.accessToken, response.refreshToken);
+        if (response.user) setUser(response.user);
+        if (response.user?.onboardingStatus) setOnboardingStatus(response.user.onboardingStatus);
+        if (response.user?.hasPasscode !== undefined) setHasPasscode(response.user.hasPasscode);
+        useAuthStore.setState({ isAuthenticated: true });
+        // Route based on onboarding status (handles incomplete profiles)
+        const route = getPostAuthRoute(response.user?.onboardingStatus);
+        router.replace(route as never);
+      } catch (error: any) {
+        setIsTransitioning(false);
+        const message = error?.message || 'Invalid or expired verification code';
+        setErrorMessage(message);
+        setOtp('');
+        otpRef.current?.clear?.();
+        showError('Verification Failed', message);
       }
-    );
+    } else {
+      // Signup mode: use existing verify code
+      verifyCode(
+        { email: pendingEmail!, code },
+        {
+          onSuccess: (response) => {
+            setIsTransitioning(true);
+            if (response.accessToken) {
+              const onboardingStatus =
+                response.onboarding_status || response.user?.onboardingStatus;
+              router.replace(getPostAuthRoute(onboardingStatus) as never);
+              return;
+            }
+            router.replace(ROUTES.AUTH.SIGNIN as never);
+          },
+          onError: (error: any) => {
+            setIsTransitioning(false);
+            const message = error?.message || 'Invalid or expired verification code';
+            setErrorMessage(message);
+            setOtp('');
+            otpRef.current?.clear?.();
+            showError('Verification Failed', message);
+          },
+        }
+      );
+    }
   };
 
   const handleResend = () => {
@@ -126,14 +162,18 @@ export default function VerifyEmail() {
               showsVerticalScrollIndicator={false}>
               <StaggeredChild index={0}>
                 <View className="mb-8 mt-8">
-                  <Text className="font-subtitle text-[34px] text-charcoal-primary">
+                  <Text
+                    className="font-subtitle text-[34px] text-charcoal-primary"
+                    maxFontSizeMultiplier={1.3}>
                     Confirm email
                   </Text>
                   <View className="mt-4">
-                    <Text className="font-body text-[18px] text-ash">
+                    <Text className="font-body text-[18px] text-ash" maxFontSizeMultiplier={1.4}>
                       The code has been sent to
                     </Text>
-                    <Text className="mt-1 font-subtitle text-[28px] text-charcoal-primary">
+                    <Text
+                      className="mt-1 font-subtitle text-[28px] text-charcoal-primary"
+                      maxFontSizeMultiplier={1.3}>
                       {pendingEmail || 'your email'}
                     </Text>
                   </View>
@@ -142,7 +182,7 @@ export default function VerifyEmail() {
 
               <StaggeredChild index={1}>
                 <View className="mb-8">
-                  <Text className="font-body text-base text-ash">
+                  <Text className="font-body text-base text-ash" maxFontSizeMultiplier={1.4}>
                     Please check your inbox and{'\n'}paste the code from the email below
                   </Text>
                 </View>
@@ -176,15 +216,22 @@ export default function VerifyEmail() {
                   <View className="items-center">
                     {canResend ? (
                       <TouchableOpacity
-                        onPress={handleResend}
+                        onPress={() => {
+                          triggerFeedback();
+                          handleResend();
+                        }}
                         className="py-2"
                         disabled={isResending}>
-                        <Text className="font-body text-base text-charcoal-primary">
+                        <Text
+                          className="font-body text-base text-charcoal-primary"
+                          maxFontSizeMultiplier={1.4}>
                           {isResending ? 'Resending...' : "Didn't receive the code? Resend"}
                         </Text>
                       </TouchableOpacity>
                     ) : (
-                      <Text className="py-2 font-caption text-base text-smoke">
+                      <Text
+                        className="py-2 font-caption text-base text-smoke"
+                        maxFontSizeMultiplier={1.4}>
                         Resend code in {resendTimer}s
                       </Text>
                     )}

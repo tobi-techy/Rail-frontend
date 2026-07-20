@@ -37,6 +37,10 @@ import { Cancel01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { useAuthStore } from '@/stores/authStore';
 import { Passkey } from 'react-native-passkey';
+import { useHaptics } from '@/hooks/useHaptics';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
+import { playUISound } from '@/lib/uiSounds';
+import { ImpactFeedbackStyle } from '@/utils/platformHaptics';
 
 const BRAND_COLOR = '#ff3e00';
 const gentleSpring = { damping: 20, stiffness: 150, mass: 1 };
@@ -44,6 +48,8 @@ const springConfig = { damping: 15, stiffness: 200, mass: 0.8 };
 
 export default function FundStashScreen() {
   const { showError } = useFeedbackPopup();
+  const triggerFeedback = useButtonFeedback();
+  const { impact } = useHaptics();
   const { data: station } = useStation();
   const { mutateAsync: executeFundStash, isPending: isSubmitting } = useFundStash();
   const { mutate: verifyPasscode, isPending: isPasscodeVerifying } = useVerifyPasscode();
@@ -292,17 +298,23 @@ export default function FundStashScreen() {
           className="flex-row items-center justify-between pb-2 pt-1">
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-white/20"
-            onPress={() => router.back()}
+            onPress={() => {
+              router.back();
+            }}
             accessibilityRole="button"
             accessibilityLabel="Close">
             <HugeiconsIcon icon={Cancel01Icon} size={20} color="#FFFFFF" />
           </Pressable>
-          <Text className="font-subtitle text-[20px] text-white">Fund Stash</Text>
+          <Text className="font-subtitle text-[20px] text-white" maxFontSizeMultiplier={1.3}>
+            Fund Stash
+          </Text>
           <View className="size-11" />
         </Animated.View>
 
         <View className="flex-1 items-center justify-center px-2">
-          <Text className="font-body text-[13px] text-white/80">From Spend</Text>
+          <Text className="font-body text-[13px] text-white/80" maxFontSizeMultiplier={1.4}>
+            From Spend
+          </Text>
           <View className="mt-2">
             <AnimatedAmount amount={displayAmount} prefix="$" />
           </View>
@@ -311,16 +323,22 @@ export default function FundStashScreen() {
             style={pillsAnimatedStyle}
             className="mt-6 flex-row items-center justify-center gap-2">
             <View className="flex-row items-center rounded-full bg-white/20 px-3 py-2">
-              <Text className="font-body text-[13px] text-white/90">
+              <Text className="font-body text-[13px] text-white/90" maxFontSizeMultiplier={1.4}>
                 Spend: ${formatCurrency(spendBalance)}
               </Text>
             </View>
             <Pressable
-              onPress={onMaxPress}
+              onPress={() => {
+                triggerFeedback();
+                onMaxPress();
+              }}
               className="rounded-full bg-parchment-card px-4 py-2"
               accessibilityRole="button"
               accessibilityLabel="Set maximum amount">
-              <Text className="font-subtitle text-[13px]" style={{ color: BRAND_COLOR }}>
+              <Text
+                className="font-subtitle text-[13px]"
+                style={{ color: BRAND_COLOR }}
+                maxFontSizeMultiplier={1.4}>
                 Max
               </Text>
             </Pressable>

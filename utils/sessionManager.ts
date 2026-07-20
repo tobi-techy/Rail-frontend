@@ -314,8 +314,8 @@ export class SessionManager {
   }
 
   /**
-   * Reset passcode session timer on activity (app foreground)
-   * Call this when app comes to foreground to extend session
+   * Re-schedule the passcode session expiry timer when the app returns to foreground.
+   * Does NOT extend the session — the backend Redis TTL is absolute from creation.
    */
   static resetPasscodeSessionTimer(): void {
     const state = useAuthStore.getState();
@@ -337,19 +337,16 @@ export class SessionManager {
       return;
     }
 
-    // Extend session by PASSCODE_SESSION_MS from now (activity-based timeout)
-    const newExpiresAt = new Date(now + PASSCODE_SESSION_MS).toISOString();
-    useAuthStore.setState({
-      passcodeSessionExpiresAt: newExpiresAt,
-    });
+    // Re-schedule the expiry timer using the ORIGINAL backend-issued expiry.
+    // Do NOT extend passcodeSessionExpiresAt — the backend Redis TTL is absolute
+    // from creation (10 min) and does not get refreshed on foreground activity.
+    this.schedulePasscodeSessionExpiry(state.passcodeSessionExpiresAt);
 
-    this.schedulePasscodeSessionExpiry(newExpiresAt);
-
-    logger.debug('[SessionManager] Passcode session timer reset on activity', {
+    logger.debug('[SessionManager] Passcode session timer rescheduled on activity (no extension)', {
       component: 'SessionManager',
-      action: 'reset-timer',
-      previousExpiry: state.passcodeSessionExpiresAt,
-      newExpiry: newExpiresAt,
+      action: 'reschedule-timer',
+      expiresAt: state.passcodeSessionExpiresAt,
+      timeUntilExpiry,
     });
   }
 

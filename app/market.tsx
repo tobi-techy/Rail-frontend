@@ -11,6 +11,7 @@ import { sanitizeAssets } from '@/utils/market';
 import { MarketAssetRow } from '@/components/market/MarketAssetRow';
 import { MarketNewsCard } from '@/components/market/MarketNewsCard';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { MarketCategoryCard } from '@/components/market/MarketCategoryCard';
 import { useMarketFilters, SORT_OPTIONS, TYPE_OPTIONS } from '@/hooks/useMarketFilters';
 import {
@@ -41,6 +42,7 @@ function FilterChip({
     <AnimatedPressable
       style={animStyle}
       onPress={() => {
+        playUISound('buttonClick');
         impact();
         onPress();
       }}
@@ -53,7 +55,9 @@ function FilterChip({
       accessibilityRole="button"
       accessibilityLabel={label}
       className={`mr-2 min-h-[44px] rounded-full px-4 py-3 ${active ? 'bg-black' : 'bg-surface'}`}>
-      <Text className={`font-body text-caption ${active ? 'text-white' : 'text-text-primary'}`}>
+      <Text
+        className={`font-body text-caption ${active ? 'text-white' : 'text-text-primary'}`}
+        maxFontSizeMultiplier={1.4}>
         {label}
       </Text>
     </AnimatedPressable>
@@ -151,7 +155,11 @@ export default function MarketScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}>
         <View className="px-md pb-lg pt-sm">
-          <Text className="font-headline text-headline-1 text-text-primary">Market</Text>
+          <Text
+            className="font-headline text-headline-1 text-text-primary"
+            maxFontSizeMultiplier={1.3}>
+            Market
+          </Text>
 
           <View className="mt-lg flex-row items-center">
             <View className="mr-2 flex-1">
@@ -188,7 +196,9 @@ export default function MarketScreen() {
             </Pressable>
           </View>
 
-          <Text className="mt-sm font-caption text-caption text-text-secondary">
+          <Text
+            className="mt-sm font-caption text-caption text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
             {appliedType === 'all' ? 'All types' : appliedType === 'stock' ? 'Stocks' : 'ETFs'} •{' '}
             {SORT_OPTIONS.find((o) => o.id === appliedSort)?.label}
             {appliedTradableOnly ? ' • Tradable only' : ''}
@@ -197,13 +207,21 @@ export default function MarketScreen() {
 
         <View className="pb-lg">
           <View className="mb-md flex-row items-center justify-between px-md">
-            <Text className="font-subtitle text-subtitle text-text-primary">Categories</Text>
+            <Text
+              className="font-subtitle text-subtitle text-text-primary"
+              maxFontSizeMultiplier={1.3}>
+              Categories
+            </Text>
             <Pressable
               onPress={onOpenExplore}
               accessibilityRole="button"
               accessibilityLabel="See all market categories"
               className="min-h-[44px] flex-row items-center">
-              <Text className="mr-1 font-caption text-caption text-text-secondary">See all</Text>
+              <Text
+                className="mr-1 font-caption text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
+                See all
+              </Text>
               <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#757575" />
             </Pressable>
           </View>
@@ -250,13 +268,21 @@ export default function MarketScreen() {
 
         <View className="px-md">
           <View className="mb-sm flex-row items-center justify-between">
-            <Text className="font-subtitle text-subtitle text-text-primary">Popular assets</Text>
+            <Text
+              className="font-subtitle text-subtitle text-text-primary"
+              maxFontSizeMultiplier={1.3}>
+              Popular assets
+            </Text>
             <Pressable
               onPress={onOpenExplore}
               accessibilityRole="button"
               accessibilityLabel="See more assets"
               className="min-h-[44px] flex-row items-center">
-              <Text className="mr-1 font-caption text-caption text-text-secondary">See more</Text>
+              <Text
+                className="mr-1 font-caption text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
+                See more
+              </Text>
               <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#757575" />
             </Pressable>
           </View>
@@ -282,10 +308,14 @@ export default function MarketScreen() {
             </View>
           ) : marketExploreQuery.isError ? (
             <View className="rounded-md border border-surface bg-parchment-card p-md">
-              <Text className="font-subtitle text-body text-text-primary">
+              <Text
+                className="font-subtitle text-body text-text-primary"
+                maxFontSizeMultiplier={1.3}>
                 Unable to load assets
               </Text>
-              <Text className="mt-1 font-caption text-caption text-text-secondary">
+              <Text
+                className="mt-1 font-caption text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
                 {marketExploreQuery.error?.message?.trim() || 'Please try again.'}
               </Text>
               <View className="mt-4 flex-row gap-2">
@@ -307,8 +337,14 @@ export default function MarketScreen() {
             </View>
           ) : (
             <View className="rounded-md border border-surface bg-parchment-card p-md">
-              <Text className="font-subtitle text-body text-text-primary">No assets available</Text>
-              <Text className="mt-1 font-caption text-caption text-text-secondary">
+              <Text
+                className="font-subtitle text-body text-text-primary"
+                maxFontSizeMultiplier={1.3}>
+                No assets available
+              </Text>
+              <Text
+                className="mt-1 font-caption text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
                 Try changing filters or open full explorer.
               </Text>
               <Button title="Open explorer" size="small" className="mt-4" onPress={onOpenExplore} />
@@ -318,24 +354,36 @@ export default function MarketScreen() {
 
         <View className="mt-lg px-md">
           <View className="mb-md flex-row items-center justify-between">
-            <Text className="font-subtitle text-subtitle text-text-primary">Market news</Text>
-            <Text className="font-caption text-caption text-text-secondary">
+            <Text
+              className="font-subtitle text-subtitle text-text-primary"
+              maxFontSizeMultiplier={1.3}>
+              Market news
+            </Text>
+            <Text
+              className="font-caption text-caption text-text-secondary"
+              maxFontSizeMultiplier={1.4}>
               {marketNewsQuery.isPending ? '' : `${marketNewsItems.length} stories`}
             </Text>
           </View>
 
           {marketNewsQuery.isPending && marketNewsItems.length === 0 ? (
             <View className="rounded-md border border-surface bg-parchment-card p-md">
-              <Text className="font-caption text-caption text-text-secondary">
+              <Text
+                className="font-caption text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
                 Loading latest market news…
               </Text>
             </View>
           ) : marketNewsQuery.isError && marketNewsItems.length === 0 ? (
             <View className="rounded-md border border-surface bg-parchment-card p-md">
-              <Text className="font-subtitle text-body text-text-primary">
+              <Text
+                className="font-subtitle text-body text-text-primary"
+                maxFontSizeMultiplier={1.3}>
                 Unable to load market news
               </Text>
-              <Text className="mt-1 font-caption text-caption text-text-secondary">
+              <Text
+                className="mt-1 font-caption text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
                 Pull to refresh or try again shortly.
               </Text>
             </View>
@@ -356,8 +404,14 @@ export default function MarketScreen() {
             </>
           ) : (
             <View className="rounded-md border border-surface bg-parchment-card p-md">
-              <Text className="font-subtitle text-body text-text-primary">No market news yet</Text>
-              <Text className="mt-1 font-caption text-caption text-text-secondary">
+              <Text
+                className="font-subtitle text-body text-text-primary"
+                maxFontSizeMultiplier={1.3}>
+                No market news yet
+              </Text>
+              <Text
+                className="mt-1 font-caption text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
                 Fresh stories will appear here shortly.
               </Text>
             </View>
@@ -367,9 +421,17 @@ export default function MarketScreen() {
 
       <BottomSheet visible={showFilterSheet} onClose={() => setShowFilterSheet(false)}>
         <View className="pb-2">
-          <Text className="font-subtitle text-subtitle text-text-primary">Filters</Text>
+          <Text
+            className="font-subtitle text-subtitle text-text-primary"
+            maxFontSizeMultiplier={1.3}>
+            Filters
+          </Text>
 
-          <Text className="mb-2 mt-lg font-caption text-caption text-text-secondary">Type</Text>
+          <Text
+            className="mb-2 mt-lg font-caption text-caption text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
+            Type
+          </Text>
           <View className="mb-md flex-row">
             {TYPE_OPTIONS.map((o) => (
               <FilterChip
@@ -381,7 +443,11 @@ export default function MarketScreen() {
             ))}
           </View>
 
-          <Text className="mb-2 font-caption text-caption text-text-secondary">Sort by</Text>
+          <Text
+            className="mb-2 font-caption text-caption text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
+            Sort by
+          </Text>
           <View className="mb-md flex-row flex-wrap">
             {SORT_OPTIONS.map((o) => (
               <FilterChip
@@ -393,7 +459,11 @@ export default function MarketScreen() {
             ))}
           </View>
 
-          <Text className="mb-2 font-caption text-caption text-text-secondary">Liquidity</Text>
+          <Text
+            className="mb-2 font-caption text-caption text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
+            Liquidity
+          </Text>
           <FilterChip
             label="Tradable only"
             active={draftTradableOnly}

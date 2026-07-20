@@ -26,9 +26,9 @@ const ONBOARDING_ENDPOINTS = {
 
 export const onboardingService = {
   /**
-   * Basic complete — slim signup with name + password only
+   * Basic complete — slim signup with name only (OTP-only auth, no password)
    */
-  async basicComplete(data: { firstName: string; lastName: string; password: string }) {
+  async basicComplete(data: { firstName: string; middleName?: string; lastName: string }) {
     return apiClient.post<{ userId: string; onboardingStatus: string; message: string }>(
       ONBOARDING_ENDPOINTS.BASIC_COMPLETE,
       data

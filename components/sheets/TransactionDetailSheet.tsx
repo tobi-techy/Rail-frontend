@@ -14,6 +14,7 @@ import { useCancelWithdrawal } from '@/api/hooks/useFunding';
 import { usePajBanks } from '@/api/hooks/usePaj';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { safeError } from '@/utils/logSanitizer';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 import {
   ArrowDownLeft01Icon,
   ArrowUpRight01Icon,
@@ -78,6 +79,7 @@ const DetailRow = ({
   isGreen?: boolean;
   isDanger?: boolean;
 }) => {
+  const triggerFeedback = useButtonFeedback();
   const handleCopy = async () => {
     await Clipboard.setStringAsync(value);
   };
@@ -93,7 +95,13 @@ const DetailRow = ({
           {copyable ? truncateAddress(value) : value}
         </Text>
         {copyable && (
-          <TouchableOpacity onPress={handleCopy} className="ml-2 p-1" hitSlop={8}>
+          <TouchableOpacity
+            onPress={() => {
+              triggerFeedback();
+              handleCopy();
+            }}
+            className="ml-2 p-1"
+            hitSlop={8}>
             <HugeiconsIcon icon={Copy01Icon} size={16} color="#757575" />
           </TouchableOpacity>
         )}
@@ -221,6 +229,7 @@ export function TransactionDetailSheet({
   const cancelWithdrawal = useCancelWithdrawal();
   const { showSuccess, showError } = useFeedbackPopup();
   const { data: pajBanksData } = usePajBanks();
+  const triggerFeedback = useButtonFeedback();
   const [showMore, setShowMore] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const receiptRef = useRef<ViewShot>(null);
@@ -256,7 +265,7 @@ export function TransactionDetailSheet({
   const resolvedBankName = meta.bankName
     ? String(meta.bankName)
     : meta.bankId
-      ? (pajBanksData?.banks ?? []).find((b) => b.id === meta.bankId)?.name ?? String(meta.bankId)
+      ? ((pajBanksData?.banks ?? []).find((b) => b.id === meta.bankId)?.name ?? String(meta.bankId))
       : undefined;
 
   const handleCancel = () => {
@@ -420,16 +429,10 @@ export function TransactionDetailSheet({
 
         {/* Fiat details — amount in naira, bank, account */}
         {meta.fiatAmount && (
-          <DetailRow
-            label="Naira Amount"
-            value={`₦${Number(meta.fiatAmount).toLocaleString()}`}
-          />
+          <DetailRow label="Naira Amount" value={`₦${Number(meta.fiatAmount).toLocaleString()}`} />
         )}
         {meta.secondaryCurrency && meta.fiatAmount && meta.rate && (
-          <DetailRow
-            label="Rate"
-            value={`₦${Number(meta.rate).toLocaleString()}/$1`}
-          />
+          <DetailRow label="Rate" value={`₦${Number(meta.rate).toLocaleString()}/$1`} />
         )}
         {resolvedBankName && <DetailRow label="Bank" value={resolvedBankName} />}
         {!resolvedBankName && type === 'withdraw' && transaction.subtitle?.includes('•') && (
@@ -462,7 +465,10 @@ export function TransactionDetailSheet({
       {/* See More expandable */}
       {hasExtra && !showMore && (
         <TouchableOpacity
-          onPress={() => setShowMore(true)}
+          onPress={() => {
+            triggerFeedback();
+            setShowMore(true);
+          }}
           className="mt-1 flex-row items-center justify-center gap-1 py-2">
           <Text className="font-subtitle text-[13px] text-primary">See More</Text>
           <HugeiconsIcon icon={ArrowDown01Icon} size={14} color="#1B84FF" />
@@ -479,7 +485,10 @@ export function TransactionDetailSheet({
             />
           ))}
           <TouchableOpacity
-            onPress={() => setShowMore(false)}
+            onPress={() => {
+              triggerFeedback();
+              setShowMore(false);
+            }}
             className="mt-1 flex-row items-center justify-center gap-1 py-2">
             <Text className="font-subtitle text-[13px] text-primary">See Less</Text>
             <HugeiconsIcon icon={ArrowUp01Icon} size={14} color="#1B84FF" />
@@ -490,7 +499,10 @@ export function TransactionDetailSheet({
       {/* Cancel */}
       {/* Share receipt button */}
       <TouchableOpacity
-        onPress={handleShareReceipt}
+        onPress={() => {
+          triggerFeedback();
+          handleShareReceipt();
+        }}
         className="mt-3 flex-row items-center justify-center gap-2 rounded-full border border-fog py-3">
         <HugeiconsIcon icon={Share01Icon} size={18} color="#848281" />
         <Text className="font-subtitle text-caption text-text-secondary">Share Receipt</Text>
@@ -555,7 +567,8 @@ function ReceiptImage({ transaction, bankName }: { transaction: Transaction; ban
         </View>
         <Text
           style={{
-            fontFamily: 'Geist-Bold',
+            fontFamily: 'CommitMono-600',
+            fontVariant: ['tabular-nums'],
             fontSize: 28,
             color: '#343433',
             marginTop: 12,

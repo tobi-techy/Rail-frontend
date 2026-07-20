@@ -7,6 +7,7 @@ import type { Currency } from '@/stores/uiStore';
 import { formatCurrencyAmount, convertFromUsd, type FxRates } from '@/utils/currency';
 import { EyeIcon, ViewOffIcon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 export interface BalanceCardProps extends ViewProps {
   balance?: string;
@@ -32,10 +33,10 @@ function AnimatedBalance({ value, isVisible }: { value: string; isVisible: boole
         style={{
           height: DIGIT_H,
           lineHeight: DIGIT_H,
-          fontFamily: 'Geist-SemiBold',
+          fontFamily: 'CommitMono-600',
           fontVariant: ['tabular-nums'],
           fontSize: 50,
-          // letterSpacing: -3.8,
+          letterSpacing: -1.5,
           color: '#343433',
         }}>
         {display}
@@ -60,11 +61,18 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   const rawUsd = parseFloat(balance.replace(/[^0-9.-]/g, '')) || 0;
   const dataLoading = isLoading === true;
   const displayBalance = dataLoading ? '---' : formatBalance(rawUsd, currency, currencyRates);
+  const triggerFeedback = useButtonFeedback();
 
   return (
     <View
       className={`overflow-hidden ${className || ''}`}
-      style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}
+      style={{
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+      }}
       {...props}>
       <View className="items-start pb-4 pt-6">
         <Text className="mb-2 font-caption text-caption text-text-secondary">Total balance</Text>
@@ -80,7 +88,10 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
               <AnimatedBalance value={displayBalance} isVisible={isBalanceVisible} />
               <TouchableOpacity
                 className="ml-2 shrink-0"
-                onPress={toggleBalanceVisibility}
+                onPress={() => {
+                  triggerFeedback();
+                  toggleBalanceVisibility();
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={isBalanceVisible ? 'Hide balance' : 'Show balance'}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>

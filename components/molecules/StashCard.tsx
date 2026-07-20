@@ -4,6 +4,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-na
 import { useUIStore } from '@/stores';
 import { MaskedBalance } from './MaskedBalance';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { Skeleton } from '@/components/atoms/Skeleton';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -55,9 +56,21 @@ export const StashCard: React.FC<StashCardProps> = ({
 
   return (
     <AnimatedPressable
-      style={[animStyle, isColored ? { backgroundColor: cardColor } : { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 }]}
+      style={[
+        animStyle,
+        isColored
+          ? { backgroundColor: cardColor }
+          : {
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.06,
+              shadowRadius: 6,
+              elevation: 2,
+            },
+      ]}
       className={`flex-1 rounded-3xl ${isColored ? '' : 'border border-black/[0.07] bg-[#F8F8F8]'} px-4 py-4 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
       onPress={() => {
+        playUISound('buttonClick');
         impact();
         onPress?.();
       }}

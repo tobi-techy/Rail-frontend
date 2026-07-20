@@ -20,6 +20,7 @@ import {
   useCancelSubscriptionMutation,
 } from '@/api/hooks/useGameplay';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -52,6 +53,7 @@ export default function SubscriptionScreen() {
   const btnStyle = useAnimatedStyle(() => ({ transform: [{ scale: btnScale.value }] }));
 
   const handleSubscribe = () => {
+    playUISound('buttonClick');
     impact();
     const plan = billing === 'yearly' ? 'pro_yearly' : 'pro_monthly';
     const desc = billing === 'yearly' ? '$49.99/year ($4.17/mo)' : '$4.99/month';
@@ -74,6 +76,7 @@ export default function SubscriptionScreen() {
   };
 
   const handleCancel = () => {
+    playUISound('buttonClick');
     impact();
     Alert.alert('Cancel Rail Pro?', 'Access continues until your billing period ends.', [
       { text: 'Keep Pro', style: 'cancel' },
@@ -105,7 +108,6 @@ export default function SubscriptionScreen() {
             <View className="flex-row justify-end pt-2">
               <Pressable
                 onPress={() => {
-                  impact();
                   router.back();
                 }}
                 className="h-10 w-10 items-center justify-center rounded-full bg-white/10"
@@ -115,9 +117,15 @@ export default function SubscriptionScreen() {
             </View>
             <Animated.View entering={FadeInDown.duration(350)}>
               <View className="mt-1 self-start rounded-sm bg-[#00c454] px-2.5 py-1">
-                <Text className="font-mono-bold text-[10px] text-charcoal-primary">PRO</Text>
+                <Text
+                  className="font-mono-bold text-[10px] text-charcoal-primary"
+                  maxFontSizeMultiplier={1.4}>
+                  PRO
+                </Text>
               </View>
-              <Text className="mt-3 font-heading text-[30px] leading-[1.05] text-white">
+              <Text
+                className="mt-3 font-heading text-[30px] leading-[1.05] text-white"
+                maxFontSizeMultiplier={1.3}>
                 Unlock your{'\n'}full potential.
               </Text>
             </Animated.View>
@@ -127,16 +135,26 @@ export default function SubscriptionScreen() {
           <Animated.View entering={FadeInDown.delay(80).duration(400)}>
             <View className="mb-2 flex-row items-center">
               <View className="flex-1" />
-              <Text className="w-14 text-center font-mono text-[9px] tracking-[1.5px] text-ash">
+              <Text
+                className="w-14 text-center font-mono text-[9px] tracking-[1.5px] text-ash"
+                maxFontSizeMultiplier={1.3}>
                 FREE
               </Text>
               <View className="w-14 items-center rounded-sm bg-[#00c454] py-0.5">
-                <Text className="font-mono-bold text-[9px] text-charcoal-primary">PRO</Text>
+                <Text
+                  className="font-mono-bold text-[9px] text-charcoal-primary"
+                  maxFontSizeMultiplier={1.3}>
+                  PRO
+                </Text>
               </View>
             </View>
             {ROWS.map(([feature, free, pro], i) => (
               <View key={i} className="flex-row items-center border-t border-white/[0.05] py-2">
-                <Text className="flex-1 font-body text-[12px] text-gray-300">{feature}</Text>
+                <Text
+                  className="flex-1 font-body text-[12px] text-gray-300"
+                  maxFontSizeMultiplier={1.4}>
+                  {feature}
+                </Text>
                 <View className="w-14 items-center">
                   {free ? (
                     <HugeiconsIcon icon={CheckmarkCircle01Icon} size={15} color="#00c454" />
@@ -156,7 +174,9 @@ export default function SubscriptionScreen() {
             {isPro && sub ? (
               <>
                 <View className="mb-4 self-center rounded-full bg-[#00c454]/15 px-4 py-1.5">
-                  <Text className="font-mono-medium text-small text-[#00c454]">
+                  <Text
+                    className="font-mono-medium text-small text-[#00c454]"
+                    maxFontSizeMultiplier={1.3}>
                     {sub.status === 'cancelled' ? 'Active until period end' : "You're Pro"}
                   </Text>
                 </View>
@@ -168,7 +188,11 @@ export default function SubscriptionScreen() {
                     {cancelMutation.isPending ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
-                      <Text className="font-button text-body text-smoke">Cancel subscription</Text>
+                      <Text
+                        className="font-button text-body text-smoke"
+                        maxFontSizeMultiplier={1.3}>
+                        Cancel subscription
+                      </Text>
                     )}
                   </Pressable>
                 )}
@@ -179,28 +203,34 @@ export default function SubscriptionScreen() {
                 <View className="mb-4 flex-row items-center justify-center gap-2">
                   <Pressable
                     onPress={() => {
+                      playUISound('buttonClick');
                       impact();
                       setBilling('monthly');
                     }}
                     className={`rounded-full px-5 py-2.5 ${billing === 'monthly' ? 'bg-white' : 'bg-white/[0.06]'}`}>
                     <Text
-                      className={`font-button text-small ${billing === 'monthly' ? 'text-black' : 'text-smoke'}`}>
+                      className={`font-button text-small ${billing === 'monthly' ? 'text-black' : 'text-smoke'}`}
+                      maxFontSizeMultiplier={1.3}>
                       Monthly
                     </Text>
                   </Pressable>
                   <Pressable
                     onPress={() => {
+                      playUISound('buttonClick');
                       impact();
                       setBilling('yearly');
                     }}
                     className={`flex-row items-center gap-2 rounded-full px-5 py-2.5 ${billing === 'yearly' ? 'bg-white' : 'bg-white/[0.06]'}`}>
                     <Text
-                      className={`font-button text-small ${billing === 'yearly' ? 'text-black' : 'text-smoke'}`}>
+                      className={`font-button text-small ${billing === 'yearly' ? 'text-black' : 'text-smoke'}`}
+                      maxFontSizeMultiplier={1.3}>
                       Yearly
                     </Text>
                     {billing === 'yearly' && (
                       <View className="rounded-full bg-[#00c454] px-2 py-0.5">
-                        <Text className="font-mono-bold text-[9px] text-charcoal-primary">
+                        <Text
+                          className="font-mono-bold text-[9px] text-charcoal-primary"
+                          maxFontSizeMultiplier={1.3}>
                           -17%
                         </Text>
                       </View>
@@ -213,32 +243,55 @@ export default function SubscriptionScreen() {
                   <View className="flex-row items-end">
                     {billing === 'monthly' ? (
                       <>
-                        <Text className="font-mono-bold text-[40px] leading-none text-white">
+                        <Text
+                          className="font-mono-bold text-[40px] leading-none text-white"
+                          maxFontSizeMultiplier={1.3}>
                           $4
                         </Text>
-                        <Text className="mb-1 font-mono-semibold text-headline-3 text-ash">
+                        <Text
+                          className="mb-1 font-mono-semibold text-headline-3 text-ash"
+                          maxFontSizeMultiplier={1.3}>
                           .99
                         </Text>
-                        <Text className="mb-1.5 ml-1 font-body text-small text-ash">/mo</Text>
+                        <Text
+                          className="mb-1.5 ml-1 font-body text-small text-ash"
+                          maxFontSizeMultiplier={1.4}>
+                          /mo
+                        </Text>
                       </>
                     ) : (
                       <>
-                        <Text className="font-mono-bold text-[40px] leading-none text-white">
+                        <Text
+                          className="font-mono-bold text-[40px] leading-none text-white"
+                          maxFontSizeMultiplier={1.3}>
                           $49
                         </Text>
-                        <Text className="mb-1 font-mono-semibold text-headline-3 text-ash">
+                        <Text
+                          className="mb-1 font-mono-semibold text-headline-3 text-ash"
+                          maxFontSizeMultiplier={1.3}>
                           .99
                         </Text>
-                        <Text className="mb-1.5 ml-1 font-body text-small text-ash">/yr</Text>
+                        <Text
+                          className="mb-1.5 ml-1 font-body text-small text-ash"
+                          maxFontSizeMultiplier={1.4}>
+                          /yr
+                        </Text>
                       </>
                     )}
                   </View>
                   {billing === 'yearly' ? (
-                    <Text className="mt-1 font-mono text-[11px] text-ash">
-                      $4.17/mo · <Text className="text-[#00c454]">Save $9.89</Text>
+                    <Text
+                      className="mt-1 font-mono text-[11px] text-ash"
+                      maxFontSizeMultiplier={1.4}>
+                      $4.17/mo ·{' '}
+                      <Text className="text-[#00c454]" maxFontSizeMultiplier={1.3}>
+                        Save $9.89
+                      </Text>
                     </Text>
                   ) : (
-                    <Text className="mt-1 font-mono text-[11px] text-ash">
+                    <Text
+                      className="mt-1 font-mono text-[11px] text-ash"
+                      maxFontSizeMultiplier={1.4}>
                       $59.88/yr at monthly price
                     </Text>
                   )}
@@ -259,12 +312,16 @@ export default function SubscriptionScreen() {
                   {subscribeMutation.isPending ? (
                     <ActivityIndicator color="#000" />
                   ) : (
-                    <Text className="font-button text-button-lg text-charcoal-primary">
+                    <Text
+                      className="font-button text-button-lg text-charcoal-primary"
+                      maxFontSizeMultiplier={1.3}>
                       Subscribe to Pro
                     </Text>
                   )}
                 </AnimatedPressable>
-                <Text className="mt-2.5 text-center font-body text-[10px] text-ash">
+                <Text
+                  className="mt-2.5 text-center font-body text-[10px] text-ash"
+                  maxFontSizeMultiplier={1.4}>
                   From your spend balance · Cancel anytime
                 </Text>
               </>

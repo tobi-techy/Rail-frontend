@@ -52,8 +52,12 @@ export default function GbpRecipientsScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInUp.duration(250)}>
-          <Text className="font-subtitle text-[28px] text-text-primary">Send GBP</Text>
-          <Text className="mt-1 font-body text-[14px] text-text-secondary">
+          <Text className="font-subtitle text-[28px] text-text-primary" maxFontSizeMultiplier={1.3}>
+            Send GBP
+          </Text>
+          <Text
+            className="mt-1 font-body text-[14px] text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
             Send £{formatCurrency(numericAmount)} to a recent or new recipient
           </Text>
         </Animated.View>
@@ -93,7 +97,11 @@ export default function GbpRecipientsScreen() {
               <View className="size-11 items-center justify-center rounded-full bg-[#0090ff]">
                 <HugeiconsIcon icon={Add01Icon} size={20} color="#fff" />
               </View>
-              <Text className="font-subtitle text-[15px] text-text-primary">New recipient</Text>
+              <Text
+                className="font-subtitle text-[15px] text-text-primary"
+                maxFontSizeMultiplier={1.3}>
+                New recipient
+              </Text>
             </View>
             <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#848281" />
           </Pressable>
@@ -102,11 +110,15 @@ export default function GbpRecipientsScreen() {
         <View className="my-5 h-px bg-stone-surface" />
 
         <Animated.View entering={FadeInUp.delay(140).duration(250)}>
-          <Text className="mb-3 font-subtitle text-[15px] text-text-primary">
+          <Text
+            className="mb-3 font-subtitle text-[15px] text-text-primary"
+            maxFontSizeMultiplier={1.3}>
             Recent Recipients
           </Text>
           {filtered.length === 0 ? (
-            <Text className="py-6 text-center font-body text-[14px] text-text-secondary">
+            <Text
+              className="py-6 text-center font-body text-[14px] text-text-secondary"
+              maxFontSizeMultiplier={1.4}>
               {searchQuery ? 'No matching recipients' : 'No recent recipients yet'}
             </Text>
           ) : (

@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { FireIcon, Award01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import type { GameplayProfile } from '@/api/services/gameplay.service';
 
@@ -33,6 +34,7 @@ export const GameplayCard: React.FC<GameplayCardProps> = ({ data, isLoading, cla
       style={[animStyle, { backgroundColor: '#121212' }]}
       className={`rounded-3xl px-4 py-4 ${className ?? ''}`}
       onPress={() => {
+        playUISound('buttonClick');
         impact();
         router.push('/gameplay' as never);
       }}

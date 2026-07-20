@@ -4,6 +4,7 @@ import { GorhomBottomSheet } from '@/components/sheets/GorhomBottomSheet';
 import { Button } from '@/components/ui';
 import aiService from '@/api/services/ai.service';
 import type { MiriamMandateSuggestion } from '@/api/types/ai';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 function formatParam(value: string, prefix: string, suffix: string): string {
   const n = parseFloat(value);
@@ -20,6 +21,7 @@ interface SuggestionCardProps {
 
 function SuggestionCard({ suggestion: s, onAccept, onDismiss, actioning }: SuggestionCardProps) {
   const busy = actioning === s.id;
+  const triggerFeedback = useButtonFeedback();
 
   const params = [
     formatParam(s.suggested_max_amount, 'up to ', '/move'),
@@ -41,7 +43,12 @@ function SuggestionCard({ suggestion: s, onAccept, onDismiss, actioning }: Sugge
 
       <View className="mt-5 flex-row gap-3">
         <Pressable
-          onPress={() => !busy && onDismiss(s.id)}
+          onPress={() => {
+            if (!busy) {
+              triggerFeedback();
+              onDismiss(s.id);
+            }
+          }}
           className="flex-1 items-center justify-center rounded-full py-3.5 active:scale-[0.96]"
           style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}>
           <Text className="font-button text-[14px] text-graphite">Not now</Text>

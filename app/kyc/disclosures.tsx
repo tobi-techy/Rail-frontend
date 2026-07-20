@@ -7,6 +7,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui';
 import { COUNTRY_KYC_REQUIREMENTS, COUNTRY_LABELS, type KycDisclosures } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { ArrowLeft01Icon, CheckmarkCircle01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
@@ -39,6 +41,8 @@ export default function KycDisclosuresScreen() {
     hasCompletedStep,
     addCompletedStep,
   } = useKycStore();
+
+  const { impact, selection } = useHaptics();
 
   // Skip if already completed
   useEffect(() => {
@@ -79,12 +83,16 @@ export default function KycDisclosuresScreen() {
         <View className="flex-row items-center justify-between px-4 pb-2 pt-1">
           <Pressable
             className="size-11 items-center justify-center rounded-full bg-stone-surface"
-            onPress={() => router.back()}
+            onPress={() => {
+              router.back();
+            }}
             accessibilityRole="button"
             accessibilityLabel="Go back">
             <HugeiconsIcon icon={ArrowLeft01Icon} size={22} color="#343433" />
           </Pressable>
-          <Text className="font-subtitle text-[13px] text-ash">Step 4</Text>
+          <Text className="font-subtitle text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
+            Step 4
+          </Text>
           <View className="size-11" />
         </View>
 
@@ -100,10 +108,14 @@ export default function KycDisclosuresScreen() {
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}>
-            <Text className="font-display text-[30px] leading-[34px] text-charcoal-primary">
+            <Text
+              className="font-display text-[30px] leading-[34px] text-charcoal-primary"
+              maxFontSizeMultiplier={1.3}>
               Declarations
             </Text>
-            <Text className="mt-2 font-body text-[15px] leading-6 text-ash">
+            <Text
+              className="mt-2 font-body text-[15px] leading-6 text-ash"
+              maxFontSizeMultiplier={1.4}>
               Required for {COUNTRY_LABELS[country]} account compliance.
             </Text>
 
@@ -112,10 +124,14 @@ export default function KycDisclosuresScreen() {
                 <View
                   key={key}
                   className={`py-4 ${index < requiredDisclosureKeys.length - 1 ? 'border-b border-stone-surface' : ''}`}>
-                  <Text className="font-body text-[14px] leading-5 text-gray-800">
+                  <Text
+                    className="font-body text-[14px] leading-5 text-gray-800"
+                    maxFontSizeMultiplier={1.4}>
                     {DISCLOSURE_COPY[key]}
                   </Text>
-                  <Text className="mt-2 font-caption text-[12px] leading-4 text-ash">
+                  <Text
+                    className="mt-2 font-caption text-[12px] leading-4 text-ash"
+                    maxFontSizeMultiplier={1.4}>
                     {DISCLOSURE_HELP[key]}
                   </Text>
                   <View className="mt-3 flex-row gap-2">
@@ -125,7 +141,10 @@ export default function KycDisclosuresScreen() {
                       return (
                         <Pressable
                           key={label}
-                          onPress={() => setDisclosure(key, isYes)}
+                          onPress={() => {
+                            selection();
+                            setDisclosure(key, isYes);
+                          }}
                           className={`min-h-[44px] flex-1 items-center justify-center rounded-full border ${
                             isActive ? 'border-gray-900 bg-midnight' : 'border-fog bg-white'
                           }`}
@@ -134,7 +153,8 @@ export default function KycDisclosuresScreen() {
                           <Text
                             className={`font-subtitle text-[14px] ${
                               isActive ? 'text-white' : 'text-graphite'
-                            }`}>
+                            }`}
+                            maxFontSizeMultiplier={1.4}>
                             {label}
                           </Text>
                         </Pressable>
@@ -146,7 +166,10 @@ export default function KycDisclosuresScreen() {
             </View>
 
             <Pressable
-              onPress={() => setDisclosuresConfirmed(!disclosuresConfirmed)}
+              onPress={() => {
+                selection();
+                setDisclosuresConfirmed(!disclosuresConfirmed);
+              }}
               className="mt-6 flex-row items-start gap-3 rounded-2xl bg-stone-surface px-4 py-4"
               accessibilityRole="checkbox"
               accessibilityState={{ checked: disclosuresConfirmed }}
@@ -164,7 +187,9 @@ export default function KycDisclosuresScreen() {
                   />
                 )}
               </View>
-              <Text className="flex-1 font-body text-[13px] leading-5 text-graphite">
+              <Text
+                className="flex-1 font-body text-[13px] leading-5 text-graphite"
+                maxFontSizeMultiplier={1.4}>
                 I confirm all submitted information is accurate and belongs to me.
               </Text>
             </Pressable>

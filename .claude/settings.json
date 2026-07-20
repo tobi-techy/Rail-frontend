@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_response.filePath // .tool_input.file_path' | { read -r f; case \"$f\" in *.ts|*.tsx|*.js|*.jsx) NODE_ENV=development ./node_modules/.bin/eslint --fix \"$f\"; ./node_modules/.bin/prettier --write \"$f\";; *.json|*.md|*.yml|*.yaml) ./node_modules/.bin/prettier --write \"$f\";; esac; } 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "Formatting (eslint --fix + prettier)…"
+          }
+        ]
+      }
+    ]
+  }
+}

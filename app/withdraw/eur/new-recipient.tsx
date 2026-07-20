@@ -77,7 +77,11 @@ export default function EurNewRecipientScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 24 }}>
           <Animated.View entering={FadeInUp.duration(250)} className="mb-5 mt-2">
-            <Text className="font-subtitle text-[28px] text-text-primary">New Recipient</Text>
+            <Text
+              className="font-subtitle text-[28px] text-text-primary"
+              maxFontSizeMultiplier={1.3}>
+              New Recipient
+            </Text>
           </Animated.View>
 
           <Animated.View entering={FadeInUp.delay(40).duration(250)} className="gap-4">
@@ -138,19 +142,31 @@ export default function EurNewRecipientScreen() {
         style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
         <View className="mb-3 gap-1.5">
           <View className="flex-row items-center justify-between px-1">
-            <Text className="font-body text-[13px] text-text-secondary">Amount</Text>
-            <Text className="font-body text-[13px] text-text-primary">
+            <Text className="font-body text-[13px] text-text-secondary" maxFontSizeMultiplier={1.4}>
+              Amount
+            </Text>
+            <Text className="font-body text-[13px] text-text-primary" maxFontSizeMultiplier={1.4}>
               €{formatCurrency(numericAmount)}
             </Text>
           </View>
           <View className="flex-row items-center justify-between px-1">
-            <Text className="font-body text-[13px] text-text-secondary">Network fee</Text>
-            <Text className="font-body text-[13px] text-text-primary">$1.00</Text>
+            <Text className="font-body text-[13px] text-text-secondary" maxFontSizeMultiplier={1.4}>
+              Network fee
+            </Text>
+            <Text className="font-body text-[13px] text-text-primary" maxFontSizeMultiplier={1.4}>
+              $1.00
+            </Text>
           </View>
           <View className="mx-1 my-1 h-px bg-stone-surface" />
           <View className="flex-row items-center justify-between px-1">
-            <Text className="font-subtitle text-[14px] text-text-primary">Total</Text>
-            <Text className="font-subtitle text-[16px] text-text-primary">
+            <Text
+              className="font-subtitle text-[14px] text-text-primary"
+              maxFontSizeMultiplier={1.4}>
+              Total
+            </Text>
+            <Text
+              className="font-subtitle text-[16px] text-text-primary"
+              maxFontSizeMultiplier={1.3}>
               €{formatCurrency(numericAmount + 1)}
             </Text>
           </View>

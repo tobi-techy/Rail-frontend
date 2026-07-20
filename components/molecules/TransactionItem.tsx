@@ -20,6 +20,7 @@ import {
   Wallet01Icon,
 } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 export type TransactionType = 'send' | 'receive' | 'swap' | 'deposit' | 'withdraw';
 export type TransactionStatus = 'completed' | 'pending' | 'failed';
@@ -235,72 +236,82 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export const TransactionItem: React.FC<TransactionItemProps> = React.memo(({ transaction, onPress }) => {
-  const { text: amountText, isCredit } = formatTransactionAmount(
-    transaction.amount,
-    transaction.type,
-    transaction.currency
-  );
-  const isPending = transaction.status === 'pending';
-  const isFailed = transaction.status === 'failed';
-  const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+export const TransactionItem: React.FC<TransactionItemProps> = React.memo(
+  ({ transaction, onPress }) => {
+    const { text: amountText, isCredit } = formatTransactionAmount(
+      transaction.amount,
+      transaction.type,
+      transaction.currency
+    );
+    const isPending = transaction.status === 'pending';
+    const isFailed = transaction.status === 'failed';
+    const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
+    const scale = useSharedValue(1);
+    const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+    const triggerFeedback = useButtonFeedback();
 
-  return (
-    <AnimatedPressable
-      style={animStyle}
-      className="flex-row items-center py-[14px]"
-      onPress={onPress}
-      onPressIn={() => {
-        scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={`${transaction.title}, ${amountText}`}>
-      <View className="mr-3">
-        <TransactionIcon transaction={transaction} />
-      </View>
-      <View className="flex-1">
-        <Text className="font-subtitle text-[15px] text-text-primary" numberOfLines={1}>
-          {transaction.title}
-        </Text>
-        <Text className="mt-0.5 font-caption text-[13px] text-text-secondary" numberOfLines={1}>
-          {transaction.subtitle}
-        </Text>
-      </View>
-      <View className="ml-3 items-end">
-        <MaskedBalance
-          value={amountText}
-          visible={isBalanceVisible}
-          textClass="text-[15px]"
-          colorClass={
-            isPending
-              ? 'text-text-secondary'
-              : isFailed
-                ? 'text-destructive'
-                : isCredit
-                  ? 'text-success'
-                  : transaction.type === 'withdraw' || transaction.type === 'send'
-                    ? 'text-destructive'
-                    : 'text-text-primary'
-          }
-        />
-        {transaction.amount > 0 && (
-          <Text className="mt-0.5 font-caption text-[12px] text-text-tertiary">
-            ${Math.abs(transaction.amount).toFixed(2)}
+    return (
+      <AnimatedPressable
+        style={animStyle}
+        className="flex-row items-center py-[14px]"
+        onPress={() => {
+          triggerFeedback();
+          onPress?.();
+        }}
+        onPressIn={() => {
+          scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`${transaction.title}, ${amountText}`}>
+        <View className="mr-3">
+          <TransactionIcon transaction={transaction} />
+        </View>
+        <View className="flex-1">
+          <Text className="font-subtitle text-[15px] text-text-primary" numberOfLines={1}>
+            {transaction.title}
           </Text>
-        )}
-        {isPending && <Text className="mt-0.5 font-caption text-[11px] text-primary">Pending</Text>}
-        {isFailed && (
-          <Text className="mt-0.5 font-caption text-[11px] text-destructive">Failed</Text>
-        )}
-      </View>
-    </AnimatedPressable>
-  );
-});
+          <Text className="mt-0.5 font-caption text-[13px] text-text-secondary" numberOfLines={1}>
+            {transaction.subtitle}
+          </Text>
+        </View>
+        <View className="ml-3 items-end">
+          <MaskedBalance
+            value={amountText}
+            visible={isBalanceVisible}
+            textClass="text-[15px]"
+            colorClass={
+              isPending
+                ? 'text-text-secondary'
+                : isFailed
+                  ? 'text-destructive'
+                  : isCredit
+                    ? 'text-success'
+                    : transaction.type === 'withdraw' || transaction.type === 'send'
+                      ? 'text-destructive'
+                      : 'text-text-primary'
+            }
+          />
+          {transaction.amount > 0 && (
+            <Text
+              className="mt-0.5 font-mono-light text-[12px] text-text-tertiary"
+              style={{ fontVariant: ['tabular-nums'] }}>
+              ${Math.abs(transaction.amount).toFixed(2)}
+            </Text>
+          )}
+          {isPending && (
+            <Text className="mt-0.5 font-caption text-[11px] text-primary">Pending</Text>
+          )}
+          {isFailed && (
+            <Text className="mt-0.5 font-caption text-[11px] text-destructive">Failed</Text>
+          )}
+        </View>
+      </AnimatedPressable>
+    );
+  }
+);
 TransactionItem.displayName = 'TransactionItem';
 
 export const TransactionItemSkeleton: React.FC = () => (

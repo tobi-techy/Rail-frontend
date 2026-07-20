@@ -37,9 +37,15 @@ export const rampService = {
     return apiClient.get(RAMP_ENDPOINTS.BANKS);
   },
 
-  /** Verify a bank account number and return the resolved account name */
-  async resolveBankAccount(bankCode: string, accountNumber: string): Promise<RampResolvedAccount> {
-    return apiClient.post(RAMP_ENDPOINTS.BANKS_RESOLVE, { bankCode, accountNumber });
+  /** Verify a bank account number and return the resolved account name.
+   *  bankName is optional but improves matching — RampHub bank codes are
+   *  provider-scoped and the name disambiguates the institution. */
+  async resolveBankAccount(
+    bankCode: string,
+    accountNumber: string,
+    bankName?: string
+  ): Promise<RampResolvedAccount> {
+    return apiClient.post(RAMP_ENDPOINTS.BANKS_RESOLVE, { bankCode, accountNumber, bankName });
   },
 
   /** Create NGN → USDC deposit order. Returns virtual bank account to pay into. */
@@ -47,14 +53,27 @@ export const rampService = {
     return apiClient.post(RAMP_ENDPOINTS.ONRAMP, { amount, currency });
   },
 
-  /** Create USDC → NGN withdrawal order. USDC is debited; NGN arrives at the bank. */
+  /** Create USDC → NGN withdrawal order. USDC is debited; NGN arrives at the bank.
+   *  category tags the transaction for statements (same contract as funding.service). */
   async createOfframp(
     bankCode: string,
     accountNumber: string,
     amount: number,
-    currency = 'NGN'
+    currency = 'NGN',
+    bankName?: string,
+    category?: string,
+    expectedRate?: number
   ): Promise<RampOfframpOrder> {
-    return apiClient.post(RAMP_ENDPOINTS.OFFRAMP, { bankCode, accountNumber, amount, currency });
+    const payload: Record<string, unknown> = {
+      bankCode,
+      accountNumber,
+      bankName,
+      amount,
+      currency,
+    };
+    if (category) payload.category = category;
+    if (expectedRate) payload.expectedRate = expectedRate;
+    return apiClient.post(RAMP_ENDPOINTS.OFFRAMP, payload);
   },
 
   /** Poll the latest status for an order */

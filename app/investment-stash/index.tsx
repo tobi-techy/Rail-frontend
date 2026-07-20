@@ -14,6 +14,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { useUIStore } from '@/stores';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { TransactionItem, TransactionItemSkeleton } from '@/components/molecules/TransactionItem';
 import { MarketClosedBanner } from '@/components/molecules/MarketClosedBanner';
 import { Skeleton } from '@/components/atoms/Skeleton';
@@ -97,7 +98,8 @@ function PeriodPills({
             accessibilityLabel={`${p} period`}
             className={`min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-2 ${active ? 'bg-midnight' : 'bg-transparent'}`}>
             <Text
-              className={`text-[13px] ${active ? 'font-button text-white' : 'font-caption text-text-tertiary'}`}>
+              className={`text-[13px] ${active ? 'font-button text-white' : 'font-caption text-text-tertiary'}`}
+              maxFontSizeMultiplier={1.4}>
               {p}
             </Text>
           </Pressable>
@@ -111,8 +113,12 @@ function PeriodPills({
 function StatsRow({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-center justify-between px-4 py-3.5">
-      <Text className="font-caption text-[14px] text-text-secondary">{label}</Text>
-      <Text className="font-subtitle text-[14px] text-charcoal-primary">{value}</Text>
+      <Text className="font-caption text-[14px] text-text-secondary" maxFontSizeMultiplier={1.4}>
+        {label}
+      </Text>
+      <Text className="font-subtitle text-[14px] text-charcoal-primary" maxFontSizeMultiplier={1.4}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -165,22 +171,35 @@ function AssetRow({
               resizeMode="cover"
             />
           ) : (
-            <Text className="font-subtitle text-[15px] text-graphite">{item.symbol[0]}</Text>
+            <Text className="font-subtitle text-[15px] text-graphite" maxFontSizeMultiplier={1.3}>
+              {item.symbol[0]}
+            </Text>
           )}
         </View>
         <View className="mr-3 flex-1">
-          <Text className="font-subtitle text-[15px] text-charcoal-primary" numberOfLines={1}>
+          <Text
+            className="font-subtitle text-[15px] text-charcoal-primary"
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.3}>
             {item.name}
           </Text>
-          <Text className="mt-0.5 font-caption text-[12px] text-text-tertiary" numberOfLines={1}>
+          <Text
+            className="mt-0.5 font-caption text-[12px] text-text-tertiary"
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.4}>
             {item.symbol} · {item.quantity} shares
           </Text>
         </View>
         <View className="items-end">
-          <Text className="font-subtitle text-[15px] text-charcoal-primary">
+          <Text
+            className="font-subtitle text-[15px] text-charcoal-primary"
+            maxFontSizeMultiplier={1.3}>
             {item.market_value.formatted}
           </Text>
-          <Text className="mt-0.5 font-caption text-[12px]" style={{ color: pnlColor }}>
+          <Text
+            className="mt-0.5 font-caption text-[12px]"
+            style={{ color: pnlColor }}
+            maxFontSizeMultiplier={1.4}>
             {sign}
             {item.unrealized_pnl.formatted} ({sign}
             {item.unrealized_pnl_percent.toFixed(2)}%)
@@ -202,7 +221,10 @@ function PendingOrdersBanner({ transactions }: { transactions: InvestmentTradeTr
       className="mx-4 mt-3 flex-row items-center gap-2 rounded-lg px-3.5 py-2.5"
       style={{ backgroundColor: '#EEF2FF' }}>
       <View className="h-2 w-2 rounded-full" style={{ backgroundColor: ACCENT }} />
-      <Text className="flex-1 font-caption text-[13px]" style={{ color: ACCENT }}>
+      <Text
+        className="flex-1 font-caption text-[13px]"
+        style={{ color: ACCENT }}
+        maxFontSizeMultiplier={1.4}>
         {pending.length} order{pending.length > 1 ? 's' : ''} pending · updating automatically
       </Text>
     </Animated.View>
@@ -278,7 +300,11 @@ function AllocationSection({ items }: { items: InvestmentDistributionItem[] }) {
   if (!items.length) return null;
   return (
     <View className="mt-8 px-4">
-      <Text className="mb-4 font-subtitle text-[18px] text-charcoal-primary">Allocation</Text>
+      <Text
+        className="mb-4 font-subtitle text-[18px] text-charcoal-primary"
+        maxFontSizeMultiplier={1.3}>
+        Allocation
+      </Text>
       <View className="flex-row items-center gap-5">
         <DonutChart items={items} />
         <View className="flex-1 gap-2.5">
@@ -288,10 +314,15 @@ function AllocationSection({ items }: { items: InvestmentDistributionItem[] }) {
                 className="h-2 w-2 rounded-full"
                 style={{ backgroundColor: ALLOC_COLORS[i % ALLOC_COLORS.length] }}
               />
-              <Text className="flex-1 font-caption text-[13px] text-graphite" numberOfLines={1}>
+              <Text
+                className="flex-1 font-caption text-[13px] text-graphite"
+                numberOfLines={1}
+                maxFontSizeMultiplier={1.4}>
                 {item.symbol}
               </Text>
-              <Text className="font-subtitle text-[13px] text-charcoal-primary">
+              <Text
+                className="font-subtitle text-[13px] text-charcoal-primary"
+                maxFontSizeMultiplier={1.4}>
                 {item.weight_percent.toFixed(1)}%
               </Text>
             </View>
@@ -308,24 +339,40 @@ const RISK_COLORS = ['#ff2b3a', '#F97316', '#EAB308', '#84CC16', '#00ca48'];
 function InvestmentRuleSection({ rule }: { rule: InvestmentRule }) {
   return (
     <View className="mt-8 px-4">
-      <Text className="mb-4 font-subtitle text-[18px] text-charcoal-primary">Investment rule</Text>
+      <Text
+        className="mb-4 font-subtitle text-[18px] text-charcoal-primary"
+        maxFontSizeMultiplier={1.3}>
+        Investment rule
+      </Text>
       <View className="rounded-2xl border border-stone-surface bg-stone-surface p-4">
         <View className="mb-4 flex-row items-start justify-between">
           <View className="mr-4 flex-1">
-            <Text className="font-subtitle text-[16px] text-charcoal-primary">
+            <Text
+              className="font-subtitle text-[16px] text-charcoal-primary"
+              maxFontSizeMultiplier={1.3}>
               {rule.strategy_name}
             </Text>
             {rule.age_used !== null && (
-              <Text className="mt-1 font-caption text-[12px] text-text-tertiary">
+              <Text
+                className="mt-1 font-caption text-[12px] text-text-tertiary"
+                maxFontSizeMultiplier={1.4}>
                 Based on age {rule.age_used}
               </Text>
             )}
           </View>
           <View className="items-end">
-            <Text className="font-caption text-[11px] text-text-tertiary">Risk level</Text>
-            <Text className="font-subtitle text-[28px] leading-8 text-charcoal-primary">
+            <Text
+              className="font-caption text-[11px] text-text-tertiary"
+              maxFontSizeMultiplier={1.4}>
+              Risk level
+            </Text>
+            <Text
+              className="font-subtitle text-[28px] leading-8 text-charcoal-primary"
+              maxFontSizeMultiplier={1.3}>
               {rule.risk_level}
-              <Text className="text-[13px] text-text-tertiary">/5</Text>
+              <Text className="text-[13px] text-text-tertiary" maxFontSizeMultiplier={1.4}>
+                /5
+              </Text>
             </Text>
           </View>
         </View>
@@ -340,7 +387,9 @@ function InvestmentRuleSection({ rule }: { rule: InvestmentRule }) {
           className="mb-4">
           <View className="h-3 w-3 rounded-full border-2 border-white bg-midnight" />
         </View>
-        <Text className="mb-4 font-caption text-[13px] leading-5 text-text-secondary">
+        <Text
+          className="mb-4 font-caption text-[13px] leading-5 text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
           {rule.description}
         </Text>
         {[
@@ -349,8 +398,12 @@ function InvestmentRuleSection({ rule }: { rule: InvestmentRule }) {
         ].map(({ label, pct, color }) => (
           <View key={label} className="mb-3">
             <View className="mb-1.5 flex-row justify-between">
-              <Text className="font-caption text-[13px] text-graphite">{label}</Text>
-              <Text className="font-subtitle text-[13px] text-charcoal-primary">
+              <Text className="font-caption text-[13px] text-graphite" maxFontSizeMultiplier={1.4}>
+                {label}
+              </Text>
+              <Text
+                className="font-subtitle text-[13px] text-charcoal-primary"
+                maxFontSizeMultiplier={1.4}>
                 {pct.toFixed(0)}%
               </Text>
             </View>
@@ -369,7 +422,10 @@ function InvestmentRuleSection({ rule }: { rule: InvestmentRule }) {
         <View
           className="mt-1 self-start rounded-full px-3 py-1"
           style={{ backgroundColor: `${ACCENT}15` }}>
-          <Text className="font-subtitle text-[12px]" style={{ color: ACCENT }}>
+          <Text
+            className="font-subtitle text-[12px]"
+            style={{ color: ACCENT }}
+            maxFontSizeMultiplier={1.4}>
             {rule.risk_label}
           </Text>
         </View>
@@ -470,7 +526,9 @@ export default function InvestmentStashScreen() {
               </View>
             ) : (
               <Animated.View entering={FadeIn.duration(200)}>
-                <Text className="mb-1 font-caption text-[13px] text-text-tertiary">
+                <Text
+                  className="mb-1 font-caption text-[13px] text-text-tertiary"
+                  maxFontSizeMultiplier={1.4}>
                   Portfolio value
                 </Text>
                 <Text
@@ -478,7 +536,8 @@ export default function InvestmentStashScreen() {
                   style={{ fontSize: 44, letterSpacing: -1.5, lineHeight: 52 }}
                   numberOfLines={1}
                   adjustsFontSizeToFit
-                  minimumFontScale={0.6}>
+                  minimumFontScale={0.6}
+                  maxFontSizeMultiplier={1.3}>
                   {isBalanceVisible ? totalBalance : mask}
                 </Text>
                 <View className="mt-1.5 flex-row items-center gap-1">
@@ -492,11 +551,16 @@ export default function InvestmentStashScreen() {
                       strokeWidth={2}
                     />
                   )}
-                  <Text className="font-caption text-[14px]" style={{ color: pnlColor }}>
+                  <Text
+                    className="font-caption text-[14px]"
+                    style={{ color: pnlColor }}
+                    maxFontSizeMultiplier={1.4}>
                     {isBalanceVisible
                       ? `${perfReturn ? perfReturn + ' ' : ''}(${isPositive ? '+' : ''}${perfReturnPct.toFixed(2)}%)`
                       : mask}{' '}
-                    <Text className="text-text-tertiary">· {period}</Text>
+                    <Text className="text-text-tertiary" maxFontSizeMultiplier={1.3}>
+                      · {period}
+                    </Text>
                   </Text>
                 </View>
               </Animated.View>
@@ -523,7 +587,11 @@ export default function InvestmentStashScreen() {
               </Animated.View>
             ) : (
               <View style={{ height: chartH }} className="items-center justify-center">
-                <Text className="font-caption text-[13px] text-gray-300">No chart data yet</Text>
+                <Text
+                  className="font-caption text-[13px] text-gray-300"
+                  maxFontSizeMultiplier={1.4}>
+                  No chart data yet
+                </Text>
               </View>
             )}
           </View>
@@ -534,6 +602,7 @@ export default function InvestmentStashScreen() {
           <PeriodPills
             selected={period}
             onSelect={(p) => {
+              playUISound('buttonClick');
               selection();
               setPeriod(p);
             }}
@@ -557,17 +626,26 @@ export default function InvestmentStashScreen() {
         return (
           <View className="mt-8 px-4">
             <View className="mb-4 flex-row items-center justify-between">
-              <Text className="font-subtitle text-[18px] text-charcoal-primary">Holdings</Text>
+              <Text
+                className="font-subtitle text-[18px] text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
+                Holdings
+              </Text>
               {showAllHoldings && !isLoading && !positionsLoading && (
                 <Pressable
                   onPress={() => {
+                    playUISound('buttonClick');
                     impact();
                     router.push('/investment-stash/holdings');
                   }}
                   accessibilityRole="button"
                   accessibilityLabel="View all holdings"
                   className="rounded-lg bg-stone-surface px-3 py-1.5">
-                  <Text className="font-subtitle text-[12px] text-charcoal-primary">View all</Text>
+                  <Text
+                    className="font-subtitle text-[12px] text-charcoal-primary"
+                    maxFontSizeMultiplier={1.4}>
+                    View all
+                  </Text>
                 </Pressable>
               )}
             </View>
@@ -588,10 +666,14 @@ export default function InvestmentStashScreen() {
                 ))
               ) : previewPositions.length === 0 ? (
                 <View className="items-center py-10">
-                  <Text className="font-caption text-[14px] text-text-tertiary">
+                  <Text
+                    className="font-caption text-[14px] text-text-tertiary"
+                    maxFontSizeMultiplier={1.4}>
                     No holdings yet
                   </Text>
-                  <Text className="mt-1 font-caption text-[12px] text-gray-300">
+                  <Text
+                    className="mt-1 font-caption text-[12px] text-gray-300"
+                    maxFontSizeMultiplier={1.4}>
                     Auto-invest will place orders soon
                   </Text>
                 </View>
@@ -602,6 +684,7 @@ export default function InvestmentStashScreen() {
                     item={pos}
                     showSep={i < previewPositions.length - 1}
                     onPress={() => {
+                      playUISound('buttonClick');
                       impact();
                       router.push({
                         pathname: `/market-asset/${pos.symbol}` as any,
@@ -619,9 +702,15 @@ export default function InvestmentStashScreen() {
         return (
           <View className="mt-8 px-4">
             <View className="mb-4 flex-row items-center justify-between">
-              <Text className="font-subtitle text-[18px] text-charcoal-primary">Transactions</Text>
+              <Text
+                className="font-subtitle text-[18px] text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
+                Transactions
+              </Text>
               {(hasPrevTx || hasMoreTx) && (
-                <Text className="font-caption text-[12px] text-text-tertiary">
+                <Text
+                  className="font-caption text-[12px] text-text-tertiary"
+                  maxFontSizeMultiplier={1.4}>
                   Page {currentPage}
                 </Text>
               )}
@@ -631,7 +720,9 @@ export default function InvestmentStashScreen() {
                 [0, 1, 2].map((i) => <TransactionItemSkeleton key={i} />)
               ) : transactions.length === 0 ? (
                 <View className="items-center py-10">
-                  <Text className="font-caption text-[14px] text-text-tertiary">
+                  <Text
+                    className="font-caption text-[14px] text-text-tertiary"
+                    maxFontSizeMultiplier={1.4}>
                     No transactions yet
                   </Text>
                 </View>
@@ -643,6 +734,7 @@ export default function InvestmentStashScreen() {
               <View className="mt-3 flex-row justify-between">
                 <Pressable
                   onPress={() => {
+                    playUISound('buttonClick');
                     impact();
                     prevPage();
                   }}
@@ -652,10 +744,15 @@ export default function InvestmentStashScreen() {
                   className="min-h-[44px] flex-row items-center gap-1 rounded-lg bg-stone-surface px-4 py-2.5"
                   style={{ opacity: hasPrevTx ? 1 : 0 }}>
                   <HugeiconsIcon icon={ArrowLeft01Icon} size={16} color="#343433" strokeWidth={2} />
-                  <Text className="font-subtitle text-[13px] text-charcoal-primary">Prev</Text>
+                  <Text
+                    className="font-subtitle text-[13px] text-charcoal-primary"
+                    maxFontSizeMultiplier={1.4}>
+                    Prev
+                  </Text>
                 </Pressable>
                 <Pressable
                   onPress={() => {
+                    playUISound('buttonClick');
                     impact();
                     nextPage();
                   }}
@@ -664,7 +761,11 @@ export default function InvestmentStashScreen() {
                   accessibilityLabel="Next page"
                   className="min-h-[44px] flex-row items-center gap-1 rounded-lg bg-stone-surface px-4 py-2.5"
                   style={{ opacity: hasMoreTx ? 1 : 0 }}>
-                  <Text className="font-subtitle text-[13px] text-charcoal-primary">Next</Text>
+                  <Text
+                    className="font-subtitle text-[13px] text-charcoal-primary"
+                    maxFontSizeMultiplier={1.4}>
+                    Next
+                  </Text>
                   <HugeiconsIcon
                     icon={ArrowRight01Icon}
                     size={16}
@@ -720,7 +821,6 @@ export default function InvestmentStashScreen() {
       <View className="flex-row items-center px-4 pb-1" style={{ paddingTop: insets.top + 8 }}>
         <Pressable
           onPress={() => {
-            impact();
             router.back();
           }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -729,7 +829,11 @@ export default function InvestmentStashScreen() {
           className="mr-1 h-11 w-11 items-center justify-center">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#343433" strokeWidth={2} />
         </Pressable>
-        <Text className="font-subtitle text-[17px] text-charcoal-primary">Invest</Text>
+        <Text
+          className="font-subtitle text-[17px] text-charcoal-primary"
+          maxFontSizeMultiplier={1.3}>
+          Invest
+        </Text>
       </View>
 
       <FlatList

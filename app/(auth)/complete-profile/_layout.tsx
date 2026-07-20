@@ -12,7 +12,10 @@ export default function CompleteProfileLayout() {
         gestureDirection: 'horizontal',
       }}>
       <Stack.Screen name="personal-info" />
-      <Stack.Screen name="create-password" />
+      <Stack.Screen name="create-railtag" />
+      <Stack.Screen name="employment-status" />
+      <Stack.Screen name="account-purpose" />
+      <Stack.Screen name="source-of-funds" />
     </Stack>
   );
 }

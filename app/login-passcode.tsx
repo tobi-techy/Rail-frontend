@@ -13,6 +13,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { haptics } from '@/utils/haptics';
 import { SessionManager } from '@/utils/sessionManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { playUISound } from '@/lib/uiSounds';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { safeName } from '@/components/withdraw/method-screen/utils';
 import { clearAutoFired } from '@/utils/passkeyPromptGuard';
@@ -224,21 +225,30 @@ export default function LoginPasscodeScreen() {
           <View className="mt-2 flex-row items-center justify-end px-6">
             <TouchableOpacity
               onPress={() => {
+                playUISound('buttonClick');
                 impact(Haptics.ImpactFeedbackStyle.Light);
                 router.push('/(auth)/forgot-password');
               }}
               className="flex-row items-center gap-x-2 rounded-full bg-stone-surface px-4 py-2.5"
               activeOpacity={0.7}>
               <Icon name="message-circle" size={18} color="#474645" strokeWidth={2} />
-              <Text className="font-body text-caption text-graphite">Need help?</Text>
+              <Text className="font-body text-caption text-graphite" maxFontSizeMultiplier={1.4}>
+                Need help?
+              </Text>
             </TouchableOpacity>
           </View>
 
           <View className="mt-8 px-6">
-            <Text className="font-subtitle text-headline-2 leading-[38px] text-text-primary">
+            <Text
+              className="font-subtitle text-headline-2 leading-[38px] text-text-primary"
+              maxFontSizeMultiplier={1.3}>
               Welcome Back,
             </Text>
-            <Text className="font-subtitle text-headline-1 text-text-primary">{userName}</Text>
+            <Text
+              className="font-subtitle text-headline-1 text-text-primary"
+              maxFontSizeMultiplier={1.3}>
+              {userName}
+            </Text>
           </View>
 
           <PasscodeInput
@@ -265,9 +275,14 @@ export default function LoginPasscodeScreen() {
 
           <View className="mb-4 items-center gap-y-3 px-6">
             <View className="flex-row items-center gap-x-1">
-              <Text className="font-body text-caption text-text-secondary">Not {userName}? </Text>
+              <Text
+                className="font-body text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
+                Not {userName}?{' '}
+              </Text>
               <TouchableOpacity
                 onPress={() => {
+                  playUISound('buttonClick');
                   impact(Haptics.ImpactFeedbackStyle.Light);
                   clearAutoFired(
                     `login-passcode:${useAuthStore.getState().user?.id || safeName(user?.email) || 'anonymous'}`
@@ -276,16 +291,23 @@ export default function LoginPasscodeScreen() {
                   router.replace('/(auth)/signin');
                 }}
                 activeOpacity={0.7}>
-                <Text className="font-button text-caption text-primary">Switch Account</Text>
+                <Text className="font-button text-caption text-primary" maxFontSizeMultiplier={1.3}>
+                  Switch Account
+                </Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity
               onPress={() => {
+                playUISound('buttonClick');
                 impact(Haptics.ImpactFeedbackStyle.Light);
                 router.push('/(auth)/signin');
               }}
               activeOpacity={0.7}>
-              <Text className="font-body text-caption text-text-secondary">Sign in with email</Text>
+              <Text
+                className="font-body text-caption text-text-secondary"
+                maxFontSizeMultiplier={1.4}>
+                Sign in with email
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

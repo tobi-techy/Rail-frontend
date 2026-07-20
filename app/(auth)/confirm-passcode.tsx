@@ -6,14 +6,19 @@ import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { AuthGradient } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
+import { useOnboardingBasicComplete } from '@/api/hooks/useOnboarding';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 export default function ConfirmPasscodeScreen() {
   const originalPasscode = useAuthStore((s) => s._pendingPasscode);
   const setPasscode = useAuthStore((s) => s.setPasscode);
-  const setOnboardingStatus = useAuthStore((s) => s.setOnboardingStatus);
+  const registrationData = useAuthStore((s) => s.registrationData);
   const [confirmPasscode, setConfirmPasscode] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { notification } = useHaptics();
+  const { mutate: basicComplete } = useOnboardingBasicComplete();
 
   const handlePasscodeComplete = async (code: string) => {
     if (isLoading) return;
@@ -34,8 +39,27 @@ export default function ConfirmPasscodeScreen() {
       await setPasscode(code);
       useAuthStore.setState({ _pendingPasscode: null });
 
-      setOnboardingStatus('basic_complete');
-      router.replace(ROUTES.TABS as never);
+      // Submit name to backend (basicComplete without password)
+      basicComplete(
+        {
+          firstName: registrationData.firstName,
+          middleName: registrationData.middleName || undefined,
+          lastName: registrationData.lastName,
+        },
+        {
+          onSuccess: () => {
+            notification('success');
+            playUISound('transactionSuccess');
+            // Navigate to employment status (first of 3 onboarding detail screens)
+            router.replace(ROUTES.AUTH.COMPLETE_PROFILE.EMPLOYMENT_STATUS as never);
+          },
+          onError: (err: any) => {
+            // Even if basicComplete fails, continue to employment status
+            console.warn('basicComplete failed:', err);
+            router.replace(ROUTES.AUTH.COMPLETE_PROFILE.EMPLOYMENT_STATUS as never);
+          },
+        }
+      );
     } catch (submitError: any) {
       setError(submitError?.message || 'Failed to create PIN');
       setConfirmPasscode('');

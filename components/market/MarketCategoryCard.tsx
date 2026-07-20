@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { IconComponent as HugeiconsIcon, type PhosphorIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 export type HugeIconType = PhosphorIcon;
 
@@ -15,9 +16,14 @@ export function MarketCategoryCard({
   Icon: HugeIconType;
   onPress: () => void;
 }) {
+  const triggerFeedback = useButtonFeedback();
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        triggerFeedback();
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={`Open ${title} category`}
       className="mr-3 w-[152px] rounded-md border border-surface bg-parchment-card p-md">

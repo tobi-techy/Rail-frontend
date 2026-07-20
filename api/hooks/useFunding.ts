@@ -13,20 +13,28 @@ const toMoneyString = (value: number): string => Math.max(0, value).toFixed(2);
 
 const applyOptimisticStationWithdrawal = (
   queryClient: ReturnType<typeof useQueryClient>,
-  amount: number
+  amount: number,
+  sourceAccount?: 'spending_balance' | 'stash_balance'
 ) => {
   if (!Number.isFinite(amount) || amount <= 0) return;
 
   queryClient.setQueryData(queryKeys.station.home(), (prev: StationResponse | undefined) => {
     if (!prev) return prev;
 
-    const nextSpendBalance = toNumber(prev.spend_balance) - amount;
+    const isStash = sourceAccount === 'stash_balance';
+    const nextSpendBalance = isStash
+      ? toNumber(prev.spend_balance)
+      : toNumber(prev.spend_balance) - amount;
+    const nextInvestBalance = isStash
+      ? toMoneyString(toNumber(prev.invest_balance) - amount)
+      : prev.invest_balance;
     const nextTotalBalance = toNumber(prev.total_balance) - amount;
     const nextPendingAmount = toNumber(prev.pending_amount) + amount;
 
     return {
       ...prev,
       spend_balance: toMoneyString(nextSpendBalance),
+      invest_balance: nextInvestBalance,
       total_balance: toMoneyString(nextTotalBalance),
       pending_amount: toMoneyString(nextPendingAmount),
       pending_transactions_count: Math.max(0, (prev.pending_transactions_count ?? 0) + 1),
@@ -57,9 +65,8 @@ export function useDeposits(limit = 20, offset = 0) {
     queryKey: queryKeys.funding.transactions({ limit, offset, type: 'deposits' }),
     queryFn: () => fundingService.getDeposits(limit, offset),
     enabled: isAuthenticated,
-    staleTime: 30_000,
-    refetchOnMount: 'always',
-    refetchInterval: 60_000,
+    staleTime: 2 * 60 * 1000, // no background interval (Redis cost); refresh on focus + mutation invalidation + deposit push
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -69,8 +76,8 @@ export function useWithdrawals(limit = 20, offset = 0) {
     queryKey: queryKeys.funding.transactions({ limit, offset, type: 'withdrawals' }),
     queryFn: () => fundingService.getWithdrawals(limit, offset),
     enabled: isAuthenticated,
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 2 * 60 * 1000, // no background interval (Redis cost); refresh on focus + mutation invalidation
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -80,7 +87,11 @@ export function useInitiateWithdrawal() {
   return useMutation({
     mutationFn: (req: InitiateWithdrawalRequest) => fundingService.initiateWithdrawal(req),
     onSuccess: async (_data, variables) => {
-      applyOptimisticStationWithdrawal(queryClient, Number(variables?.amount || 0));
+      applyOptimisticStationWithdrawal(
+        queryClient,
+        Number(variables?.amount || 0),
+        variables?.source_account
+      );
       await refreshPostWithdrawalQueries(queryClient);
     },
   });
@@ -101,7 +112,11 @@ export function useInitiateFiatWithdrawal() {
   return useMutation({
     mutationFn: (req: InitiateFiatWithdrawalRequest) => fundingService.initiateFiatWithdrawal(req),
     onSuccess: async (_data, variables) => {
-      applyOptimisticStationWithdrawal(queryClient, Number(variables?.amount || 0));
+      applyOptimisticStationWithdrawal(
+        queryClient,
+        Number(variables?.amount || 0),
+        variables?.source_account
+      );
       await refreshPostWithdrawalQueries(queryClient);
     },
   });

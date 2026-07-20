@@ -20,12 +20,16 @@ import { AnimatedAmount } from '@/components/withdraw/method-screen/AnimatedAmou
 import { normalizeAmount } from '@/components/withdraw/method-screen/utils';
 import { Cancel01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import { ImpactFeedbackStyle } from '@/utils/platformHaptics';
 
 const BRAND_COLOR = '#ff3e00';
 const MAX_INTEGER_DIGITS = 7;
 
 export default function FundCrosschainScreen() {
   const insets = useSafeAreaInsets();
+  const { impact } = useHaptics();
   const [rawAmount, setRawAmount] = useState('0');
   const [loading, setLoading] = useState(false);
   const crSessionMutation = useChainRailsSession();
@@ -108,14 +112,20 @@ export default function FundCrosschainScreen() {
             className="flex-row items-center justify-between pb-2 pt-1">
             <Pressable
               className="size-11 items-center justify-center rounded-full bg-white/20"
-              onPress={() => router.back()}>
+              onPress={() => {
+                router.back();
+              }}>
               <HugeiconsIcon icon={Cancel01Icon} size={20} color="#FFFFFF" />
             </Pressable>
-            <Text className="font-subtitle text-[20px] text-white">Cross-Chain Deposit</Text>
+            <Text className="font-subtitle text-[20px] text-white" maxFontSizeMultiplier={1.3}>
+              Cross-Chain Deposit
+            </Text>
             <View className="size-11" />
           </Animated.View>
           <View className="flex-1 items-center justify-center px-2">
-            <Text className="font-body text-[13px] text-white/80">Enter deposit amount (USD)</Text>
+            <Text className="font-body text-[13px] text-white/80" maxFontSizeMultiplier={1.4}>
+              Enter deposit amount (USD)
+            </Text>
             <View className="mt-2">
               <AnimatedAmount amount={displayAmount} />
             </View>

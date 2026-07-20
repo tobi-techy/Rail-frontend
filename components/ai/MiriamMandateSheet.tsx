@@ -3,6 +3,8 @@ import { View, Text, Pressable, ActivityIndicator, ScrollView, Switch } from 're
 import { GorhomBottomSheet } from '@/components/sheets/GorhomBottomSheet';
 import aiService from '@/api/services/ai.service';
 import type { MiriamMandate } from '@/api/types/ai';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 function timeAgo(iso: string | undefined): string {
   if (!iso) return 'never';
@@ -32,6 +34,7 @@ interface MandateRowProps {
 }
 
 function MandateRow({ mandate: m, onToggle, toggling, isLast }: MandateRowProps) {
+  const haptics = useHaptics();
   const isActive = m.status === 'active';
   const busy = toggling === m.id;
 
@@ -64,7 +67,11 @@ function MandateRow({ mandate: m, onToggle, toggling, isLast }: MandateRowProps)
         ) : (
           <Switch
             value={isActive}
-            onValueChange={(v) => onToggle(m.id, v ? 'active' : 'paused')}
+            onValueChange={(v) => {
+              haptics.selection();
+              playUISound('toggle');
+              onToggle(m.id, v ? 'active' : 'paused');
+            }}
             trackColor={{ false: '#e0ddd8', true: '#ff3e00' }}
             thumbColor="white"
           />

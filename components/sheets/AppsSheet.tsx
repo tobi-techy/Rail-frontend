@@ -2,13 +2,10 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, Pressable, Switch } from 'react-native';
 import type { SvgProps } from 'react-native-svg';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
-import {
-  WhatsappLogo,
-  IMessageLogo,
-  TelegramLogo,
-  PlaidLogo,
-} from '@/assets/svg/company';
+import { WhatsappLogo, IMessageLogo, TelegramLogo, PlaidLogo } from '@/assets/svg/company';
 import { InternetIcon, IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 // ─── Data ────────────────────────────────────────────────────────
 
@@ -103,6 +100,7 @@ interface AppsSheetProps {
 }
 
 export function AppsSheet({ visible, onClose }: AppsSheetProps) {
+  const haptics = useHaptics();
   const [enabled, setEnabled] = useState<Record<string, boolean>>({});
 
   const handleToggle = useCallback((id: string) => {
@@ -111,18 +109,14 @@ export function AppsSheet({ visible, onClose }: AppsSheetProps) {
 
   return (
     <GorhomBottomSheet visible={visible} onClose={onClose} glassBackground>
-      <View className="pt-2 pb-2">
+      <View className="pb-2 pt-2">
         {/* Header */}
         <Text className="mb-2 font-body-medium text-[22px] text-[#1C1C1E]">Connections</Text>
 
         {/* List */}
         {CONNECTIONS.map((item, index) => (
           <View key={item.id}>
-            <ConnectionRow
-              item={item}
-              enabled={!!enabled[item.id]}
-              onToggle={handleToggle}
-            />
+            <ConnectionRow item={item} enabled={!!enabled[item.id]} onToggle={handleToggle} />
             {index < CONNECTIONS.length - 1 && (
               <View className="ml-[54px] border-b border-black/[0.06]" />
             )}
@@ -130,7 +124,14 @@ export function AppsSheet({ visible, onClose }: AppsSheetProps) {
         ))}
 
         {/* Manage link */}
-        <Pressable className="mt-3 flex-row items-center gap-2" accessibilityRole="button">
+        <Pressable
+          className="mt-3 flex-row items-center gap-2"
+          accessibilityRole="button"
+          onPress={() => {
+            haptics.selection();
+            playUISound('buttonClick');
+            onClose();
+          }}>
           <View className="h-5 w-5 items-center justify-center rounded-full border border-[#1A7A6D]">
             <Text className="text-[12px] font-bold text-[#1A7A6D]">+</Text>
           </View>

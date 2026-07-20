@@ -101,7 +101,7 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
             justifyContent: 'center',
           },
           pinCodeTextStyle: {
-            fontFamily: 'Geist-SemiBold',
+            fontFamily: 'Satoshi-Medium',
             fontSize: 24,
             color: colors.text,
             textAlign: 'center',

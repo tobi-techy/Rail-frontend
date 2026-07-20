@@ -10,6 +10,7 @@ import { ROUTES } from '@/constants/routes';
 import { useForgotPassword, useVerifyResetCode, useResetPassword } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { emailSchema, resetPasswordSchema, fieldError } from '@/utils/schemas';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 type Step = 'email' | 'otp' | 'password';
 
@@ -33,6 +34,7 @@ export default function ForgotPassword() {
   const { mutate: verifyCode, isPending: isVerifying } = useVerifyResetCode();
   const { mutate: resetPassword, isPending: isResetting } = useResetPassword();
   const { showError, showSuccess } = useFeedbackPopup();
+  const triggerFeedback = useButtonFeedback();
 
   const sendResetCode = useCallback(
     (targetEmail: string, options?: { isResend?: boolean }) => {
@@ -174,10 +176,12 @@ export default function ForgotPassword() {
             <>
               <StaggeredChild index={0}>
                 <View className="mb-8 mt-4">
-                  <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
+                  <Text
+                    className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
+                    maxFontSizeMultiplier={1.3}>
                     Forgot password
                   </Text>
-                  <Text className="mt-2 font-body text-base text-ash">
+                  <Text className="mt-2 font-body text-base text-ash" maxFontSizeMultiplier={1.4}>
                     Enter your email and we&apos;ll send you a 6-digit code to reset your password.
                   </Text>
                 </View>
@@ -205,9 +209,15 @@ export default function ForgotPassword() {
                   />
                   <Pressable
                     className="mt-6 items-center"
-                    onPress={() => router.replace(ROUTES.AUTH.SIGNIN as never)}>
-                    <Text className="font-body text-caption text-ash">
-                      Remember it? <Text className="text-charcoal-primary underline">Sign in</Text>
+                    onPress={() => {
+                      triggerFeedback();
+                      router.replace(ROUTES.AUTH.SIGNIN as never);
+                    }}>
+                    <Text className="font-body text-caption text-ash" maxFontSizeMultiplier={1.4}>
+                      Remember it?{' '}
+                      <Text className="text-charcoal-primary underline" maxFontSizeMultiplier={1.3}>
+                        Sign in
+                      </Text>
                     </Text>
                   </Pressable>
                 </View>
@@ -219,12 +229,14 @@ export default function ForgotPassword() {
           {step === 'otp' && (
             <>
               <Animated.View entering={FadeInDown.duration(300)} className="mb-8 mt-4">
-                <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
+                <Text
+                  className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
+                  maxFontSizeMultiplier={1.3}>
                   Enter code
                 </Text>
-                <Text className="mt-2 font-body text-base text-ash">
+                <Text className="mt-2 font-body text-base text-ash" maxFontSizeMultiplier={1.4}>
                   We sent a 6-digit code to{' '}
-                  <Text className="font-subtitle text-charcoal-primary">
+                  <Text className="font-subtitle text-charcoal-primary" maxFontSizeMultiplier={1.3}>
                     {email.trim().toLowerCase()}
                   </Text>
                 </Text>
@@ -240,14 +252,25 @@ export default function ForgotPassword() {
               </Animated.View>
               {isVerifying && (
                 <Animated.View entering={FadeIn.duration(200)} className="mt-4">
-                  <Text className="text-center font-body text-[13px] text-smoke">Verifying…</Text>
+                  <Text
+                    className="text-center font-body text-[13px] text-smoke"
+                    maxFontSizeMultiplier={1.4}>
+                    Verifying…
+                  </Text>
                 </Animated.View>
               )}
               <View style={{ marginTop: 'auto' }} className="pt-8">
-                <Pressable onPress={handleResendCode} disabled={isSending || isVerifying}>
-                  <Text className="text-center font-body text-[14px] text-ash">
+                <Pressable
+                  onPress={() => {
+                    triggerFeedback();
+                    handleResendCode();
+                  }}
+                  disabled={isSending || isVerifying}>
+                  <Text
+                    className="text-center font-body text-[14px] text-ash"
+                    maxFontSizeMultiplier={1.4}>
                     Didn&apos;t get it?{' '}
-                    <Text className="text-charcoal-primary underline">
+                    <Text className="text-charcoal-primary underline" maxFontSizeMultiplier={1.3}>
                       {isSending ? 'Sending...' : 'Resend code'}
                     </Text>
                   </Text>
@@ -255,6 +278,7 @@ export default function ForgotPassword() {
                 <Pressable
                   className="mt-4"
                   onPress={() => {
+                    triggerFeedback();
                     setStep('email');
                     setOtpError('');
                     setResetToken('');
@@ -262,9 +286,13 @@ export default function ForgotPassword() {
                     setConfirmPassword('');
                     otpRef.current?.clear?.();
                   }}>
-                  <Text className="text-center font-body text-[14px] text-ash">
+                  <Text
+                    className="text-center font-body text-[14px] text-ash"
+                    maxFontSizeMultiplier={1.4}>
                     Wrong email?{' '}
-                    <Text className="text-charcoal-primary underline">Change email</Text>
+                    <Text className="text-charcoal-primary underline" maxFontSizeMultiplier={1.3}>
+                      Change email
+                    </Text>
                   </Text>
                 </Pressable>
               </View>
@@ -275,10 +303,12 @@ export default function ForgotPassword() {
           {step === 'password' && (
             <>
               <Animated.View entering={FadeInDown.duration(300)} className="mb-8 mt-4">
-                <Text className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary">
+                <Text
+                  className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
+                  maxFontSizeMultiplier={1.3}>
                   New password
                 </Text>
-                <Text className="mt-2 font-body text-base text-ash">
+                <Text className="mt-2 font-body text-base text-ash" maxFontSizeMultiplier={1.4}>
                   Choose a strong password for your account.
                 </Text>
               </Animated.View>

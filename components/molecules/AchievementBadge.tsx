@@ -5,6 +5,8 @@ import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { LockIcon } from '@/lib/icons';
 import type { Achievement } from '@/api/services/gameplay.service';
 import { getAchievementStickerSource } from '@/assets/images/achievements';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 const TIER: Record<string, { ring: string; label: string }> = {
   common: { ring: '#c6c6c6', label: 'Common' },
@@ -26,6 +28,7 @@ export function AchievementBadge({ achievement, size = 'medium', onPress, earned
   const { unlocked, rarity, name } = achievement;
   const tier = TIER[rarity] ?? TIER.common;
   const scale = useSharedValue(1);
+  const haptics = useHaptics();
 
   const dims = size === 'large' ? 88 : size === 'small' ? 64 : 76;
   const stickerSize = size === 'large' ? 72 : size === 'small' ? 52 : 64;
@@ -38,7 +41,11 @@ export function AchievementBadge({ achievement, size = 'medium', onPress, earned
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        haptics.selection();
+        playUISound('buttonClick');
+        onPress?.();
+      }}
       onPressIn={() => {
         scale.value = withSpring(0.92, { damping: 15 });
       }}

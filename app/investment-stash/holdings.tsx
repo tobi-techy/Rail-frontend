@@ -3,6 +3,7 @@ import { FlatList, Image, Pressable, RefreshControl, Text, View } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { useInvestmentPositions } from '@/api/hooks/useInvestment';
 import type { InvestmentPositionDetail } from '@/api/types/investment';
 import { ArrowLeft01Icon, ArrowRight01Icon } from '@/lib/icons';
@@ -37,22 +38,32 @@ function HoldingRow({
           {item.logo_url ? (
             <Image source={{ uri: item.logo_url }} className="h-11 w-11" resizeMode="cover" />
           ) : (
-            <Text className="font-button text-sm text-graphite">{item.symbol[0]}</Text>
+            <Text className="font-button text-sm text-graphite" maxFontSizeMultiplier={1.3}>
+              {item.symbol[0]}
+            </Text>
           )}
         </View>
         <View className="mr-3 flex-1">
-          <Text className="font-button text-[15px] text-charcoal-primary" numberOfLines={1}>
+          <Text
+            className="font-button text-[15px] text-charcoal-primary"
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.3}>
             {item.name}
           </Text>
-          <Text className="mt-0.5 font-caption text-xs text-smoke" numberOfLines={1}>
+          <Text
+            className="mt-0.5 font-caption text-xs text-smoke"
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.4}>
             {item.symbol} · {item.quantity} shares
           </Text>
         </View>
         <View className="items-end">
-          <Text className="font-button text-[15px] text-charcoal-primary">
+          <Text
+            className="font-button text-[15px] text-charcoal-primary"
+            maxFontSizeMultiplier={1.3}>
             {item.market_value.formatted}
           </Text>
-          <Text className={`mt-0.5 font-caption text-xs ${pnlColor}`}>
+          <Text className={`mt-0.5 font-caption text-xs ${pnlColor}`} maxFontSizeMultiplier={1.4}>
             {sign}
             {item.unrealized_pnl.formatted} ({sign}
             {item.unrealized_pnl_percent.toFixed(2)}%)
@@ -91,7 +102,6 @@ export default function InvestmentHoldingsScreen() {
       <View className="flex-row items-center px-4 pb-1" style={{ paddingTop: insets.top + 8 }}>
         <Pressable
           onPress={() => {
-            impact();
             router.back();
           }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -101,8 +111,12 @@ export default function InvestmentHoldingsScreen() {
           <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#343433" strokeWidth={2} />
         </Pressable>
         <View className="flex-1">
-          <Text className="font-button text-[17px] text-charcoal-primary">Holdings</Text>
-          <Text className="font-caption text-xs text-smoke">
+          <Text
+            className="font-button text-[17px] text-charcoal-primary"
+            maxFontSizeMultiplier={1.3}>
+            Holdings
+          </Text>
+          <Text className="font-caption text-xs text-smoke" maxFontSizeMultiplier={1.4}>
             {totalCount} asset{totalCount === 1 ? '' : 's'}
           </Text>
         </View>
@@ -132,7 +146,9 @@ export default function InvestmentHoldingsScreen() {
             </View>
           ) : (
             <View className="items-center py-12">
-              <Text className="font-caption text-sm text-smoke">No holdings yet</Text>
+              <Text className="font-caption text-sm text-smoke" maxFontSizeMultiplier={1.4}>
+                No holdings yet
+              </Text>
             </View>
           )
         }
@@ -141,6 +157,7 @@ export default function InvestmentHoldingsScreen() {
             item={item}
             showSep={index < items.length - 1}
             onPress={() => {
+              playUISound('buttonClick');
               impact();
               router.push({
                 pathname: `/market-asset/${item.symbol}` as any,
@@ -155,6 +172,7 @@ export default function InvestmentHoldingsScreen() {
               <View className="flex-row items-center justify-between">
                 <Pressable
                   onPress={() => {
+                    playUISound('buttonClick');
                     impact();
                     setPage((p) => Math.max(1, p - 1));
                   }}
@@ -163,11 +181,18 @@ export default function InvestmentHoldingsScreen() {
                   accessibilityLabel="Previous page"
                   className={`min-h-[44px] flex-row items-center gap-1 rounded-lg bg-stone-surface px-4 py-2.5 ${!hasPrev ? 'opacity-0' : ''}`}>
                   <HugeiconsIcon icon={ArrowLeft01Icon} size={16} color="#343433" strokeWidth={2} />
-                  <Text className="font-button text-[13px] text-charcoal-primary">Prev</Text>
+                  <Text
+                    className="font-button text-[13px] text-charcoal-primary"
+                    maxFontSizeMultiplier={1.4}>
+                    Prev
+                  </Text>
                 </Pressable>
-                <Text className="font-caption text-xs text-smoke">Page {page}</Text>
+                <Text className="font-caption text-xs text-smoke" maxFontSizeMultiplier={1.4}>
+                  Page {page}
+                </Text>
                 <Pressable
                   onPress={() => {
+                    playUISound('buttonClick');
                     impact();
                     if (hasMore) setPage((p) => p + 1);
                   }}
@@ -175,7 +200,11 @@ export default function InvestmentHoldingsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Next page"
                   className={`min-h-[44px] flex-row items-center gap-1 rounded-lg bg-stone-surface px-4 py-2.5 ${!hasMore ? 'opacity-0' : ''}`}>
-                  <Text className="font-button text-[13px] text-charcoal-primary">Next</Text>
+                  <Text
+                    className="font-button text-[13px] text-charcoal-primary"
+                    maxFontSizeMultiplier={1.4}>
+                    Next
+                  </Text>
                   <HugeiconsIcon
                     icon={ArrowRight01Icon}
                     size={16}
@@ -185,7 +214,11 @@ export default function InvestmentHoldingsScreen() {
                 </Pressable>
               </View>
               {isFetching && (
-                <Text className="mt-2 text-center font-caption text-xs text-smoke">Loading…</Text>
+                <Text
+                  className="mt-2 text-center font-caption text-xs text-smoke"
+                  maxFontSizeMultiplier={1.4}>
+                  Loading…
+                </Text>
               )}
             </View>
           ) : null

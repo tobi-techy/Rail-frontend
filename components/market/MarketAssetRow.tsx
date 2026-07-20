@@ -5,6 +5,7 @@ import type { FxRates } from '@/utils/currency';
 import { convertFromUsd, formatCurrencyAmount } from '@/utils/currency';
 import type { MarketInstrumentCard } from '@/api/types';
 import { getEffectiveChange, getEffectiveChangePct, getEffectivePrice } from '@/utils/market';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 const formatPercent = (value: number): string => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
 
@@ -39,10 +40,14 @@ export function MarketAssetRow({
   const change = getEffectiveChange(item.quote);
   const changePct = getEffectiveChangePct(item.quote);
   const positive = change >= 0;
+  const triggerFeedback = useButtonFeedback();
 
   return (
     <Pressable
-      onPress={() => onPress?.(item)}
+      onPress={() => {
+        triggerFeedback();
+        onPress?.(item);
+      }}
       accessibilityRole="button"
       accessibilityLabel={`Open ${item.name}`}
       className="flex-row items-center justify-between border-b border-surface px-md py-4">
