@@ -11,7 +11,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { CheckmarkCircle02Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
+import {
+  CheckmarkCircle02Icon,
+  AlertCircleIcon,
+  IconComponent as HugeiconsIcon,
+} from '@/lib/icons';
 import { Button } from '@/components/ui';
 import { ScreenHeader } from '@/components/withdraw/shared';
 import { useRampResolveBankAccount } from '@/api/hooks/useRamp';
@@ -28,15 +32,18 @@ export default function NgnEnterAccountScreen() {
 
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
+  const [resolveError, setResolveError] = useState('');
   const { mutate: resolve, isPending: isResolving } = useRampResolveBankAccount();
   const { notification, impact } = useHaptics();
 
   useEffect(() => {
     if (accountNumber.length !== 10 || !params.bankCode) {
       setAccountName('');
+      setResolveError('');
       return;
     }
     let stale = false;
+    setResolveError('');
     resolve(
       { bankCode: params.bankCode, accountNumber },
       {
@@ -48,7 +55,10 @@ export default function NgnEnterAccountScreen() {
           }
         },
         onError: () => {
-          if (!stale) setAccountName('');
+          if (!stale) {
+            setAccountName('');
+            setResolveError('Account not found. Check the number and try again.');
+          }
         },
       }
     );
@@ -123,6 +133,17 @@ export default function NgnEnterAccountScreen() {
             <ActivityIndicator size="small" color="#848281" />
             <Text className="font-body text-[13px] text-text-secondary" maxFontSizeMultiplier={1.4}>
               Resolving account...
+            </Text>
+          </Animated.View>
+        ) : resolveError ? (
+          <Animated.View
+            entering={FadeIn.duration(250)}
+            className="mt-4 flex-row items-center gap-2 rounded-xl bg-[#FEF2F2] px-4 py-3">
+            <HugeiconsIcon icon={AlertCircleIcon} size={18} color="#DC2626" />
+            <Text
+              className="flex-1 font-body text-[13px] text-[#DC2626]"
+              maxFontSizeMultiplier={1.4}>
+              {resolveError}
             </Text>
           </Animated.View>
         ) : null}

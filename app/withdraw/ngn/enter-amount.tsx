@@ -49,6 +49,10 @@ export default function NgnEnterAmountScreen() {
 
   const rampRate = rampQuote?.rate ?? 0;
   const ngnRate = rampRate > 0 ? rampRate : (pajRatesData?.offRampRate?.rate ?? 0);
+
+  // Prefer Ramp quote fee (already in the executing provider's native fee);
+  // fall back to Paj fee schedule when Ramp quote has no fee.
+  const rampFeeUSD = rampQuote?.fee ?? 0;
   const railFeeBase = pajRatesData?.railFee ?? 50;
   const stampDuty = pajRatesData?.stampDuty ?? 50;
   const stampDutyAbove = pajRatesData?.stampDutyAbove ?? 10000;
@@ -84,8 +88,11 @@ export default function NgnEnterAmountScreen() {
 
   const feeNGN = useMemo(() => {
     if (numericAmount <= 0) return 0;
+    // Ramp quote fee is in USD — convert to NGN using the executing rate.
+    if (rampFeeUSD > 0 && ngnRate > 0) return rampFeeUSD * ngnRate;
+    // Paj fallback: flat rail fee + stamp duty above threshold.
     return numericAmount > stampDutyAbove ? railFeeBase + stampDuty : railFeeBase;
-  }, [numericAmount, railFeeBase, stampDuty, stampDutyAbove]);
+  }, [numericAmount, rampFeeUSD, ngnRate, railFeeBase, stampDuty, stampDutyAbove]);
 
   const feeAmount = useMemo(() => {
     if (feeNGN <= 0) return 0;

@@ -191,7 +191,12 @@ function NgnSheetBody() {
   const [showTierSheet, setShowTierSheet] = useState(false);
   const { capabilities, refetch } = useTierCapabilities();
   const canReceiveNgn = capabilities.can_receive_ngn;
-  const { data: ngnResponse, isLoading, refetch: refetchNgn } = useNgnVirtualAccount(canReceiveNgn);
+  const {
+    data: ngnResponse,
+    isLoading,
+    error: ngnError,
+    refetch: refetchNgn,
+  } = useNgnVirtualAccount(canReceiveNgn);
   const account = ngnResponse?.virtual_account;
   const meta = CURRENCY_META.NGN;
 
@@ -213,6 +218,22 @@ function NgnSheetBody() {
         </View>
       ) : canReceiveNgn && account ? (
         <NgnAccountCard account={account} />
+      ) : ngnError && canReceiveNgn ? (
+        <View className="items-center py-6">
+          <Text className="mb-1 font-subtitle text-[17px] text-[#343433]">
+            Couldn&apos;t load account
+          </Text>
+          <Text className="mb-6 text-center font-body text-[13px] text-[#848281]">
+            Something went wrong fetching your Naira account details.
+          </Text>
+          <Button
+            title="Try again"
+            onPress={() => {
+              refetchNgn();
+            }}
+            variant="orange"
+          />
+        </View>
       ) : (
         <View className="items-center py-6">
           <View className="mb-4 size-16 items-center justify-center overflow-hidden rounded-full">

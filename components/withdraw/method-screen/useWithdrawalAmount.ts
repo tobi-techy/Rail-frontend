@@ -48,6 +48,10 @@ export function useWithdrawalAmount({
   const { data: rampQuote } = useRampQuote('offramp');
   const rampRate = isNGNAsset ? (rampQuote?.rate ?? 0) : 0;
   const ngnRate = rampRate > 0 ? rampRate : (pajRatesData?.offRampRate?.rate ?? 0);
+
+  // Prefer Ramp quote fee (already in the executing provider's native fee);
+  // fall back to Paj fee schedule when Ramp quote has no fee.
+  const rampFeeUSD = isNGNAsset ? (rampQuote?.fee ?? 0) : 0;
   const railFeeBase = pajRatesData?.railFee ?? 50;
   const stampDuty = pajRatesData?.stampDuty ?? 50;
   const stampDutyAbove = pajRatesData?.stampDutyAbove ?? 10000;
@@ -99,13 +103,25 @@ export function useWithdrawalAmount({
     if (numericAmount <= 0) return 0;
     if (isFiatMethod) {
       if (asset === 'NGN') {
+        // Ramp quote fee is in USD — use directly.
+        if (rampFeeUSD > 0) return rampFeeUSD;
+        // Paj fallback: flat rail fee + stamp duty above threshold, converted to USD.
         const feeNGN = numericAmount > stampDutyAbove ? railFeeBase + stampDuty : railFeeBase;
         return ngnRate > 0 ? feeNGN / ngnRate : 0.04;
       }
       return 1.0;
     }
     return 0.1;
-  }, [numericAmount, isFiatMethod, asset, ngnRate, railFeeBase, stampDuty, stampDutyAbove]);
+  }, [
+    numericAmount,
+    isFiatMethod,
+    asset,
+    ngnRate,
+    rampFeeUSD,
+    railFeeBase,
+    stampDuty,
+    stampDutyAbove,
+  ]);
 
   const errorInput = useMemo(
     () => ({

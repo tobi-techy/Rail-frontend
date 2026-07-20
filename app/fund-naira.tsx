@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StatusBar, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StatusBar, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, {
@@ -27,7 +27,7 @@ import { useRampQuote, useRampOnramp, useRampOrderStatus } from '@/api/hooks';
 import { invalidateQueries } from '@/api/queryClient';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import type { RampOnrampOrder } from '@/api/types/ramp';
-import { MIN_NGN_TRANSACTION_AMOUNT } from '@/constants/transactionLimits';
+import { MIN_NGN_TRANSACTION_AMOUNT, MAX_NGN_DEPOSIT_AMOUNT } from '@/constants/transactionLimits';
 
 type Step = 'amount' | 'bank-details' | 'waiting';
 
@@ -68,7 +68,8 @@ export default function FundNairaScreen() {
     return hasDecimal ? `${grouped}.${dec}` : grouped;
   }, [rawAmount]);
 
-  const canContinue = numericAmount >= MIN_NGN_TRANSACTION_AMOUNT;
+  const canContinue =
+    numericAmount >= MIN_NGN_TRANSACTION_AMOUNT && numericAmount <= MAX_NGN_DEPOSIT_AMOUNT;
 
   // ── Keypad ────────────────────────────────────────────────────────────────
   const onKeyPress = useCallback((key: string) => {
@@ -488,6 +489,14 @@ function WaitingStep({
     router.replace('/(tabs)');
   }, [isCompleted, showSuccess]);
 
+  const handleContactSupport = useCallback(() => {
+    const subject = encodeURIComponent('Deposit Issue');
+    const body = encodeURIComponent(
+      `Hi, I had an issue with my Naira deposit.\n\nOrder ID: ${transactionId}\nAmount: ₦${fiatDisplay}\nStatus: ${status?.status ?? 'unknown'}\n\nPlease assist.`
+    );
+    Linking.openURL(`mailto:support@userail.money?subject=${subject}&body=${body}`);
+  }, [transactionId, fiatDisplay, status?.status]);
+
   return (
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" />
@@ -563,7 +572,7 @@ function WaitingStep({
                 <Button title="Dismiss" variant="white" onPress={() => router.replace('/(tabs)')} />
               </View>
               <View className="flex-1">
-                <Button title="Contact support" variant="black" onPress={handleDone} />
+                <Button title="Contact support" variant="black" onPress={handleContactSupport} />
               </View>
             </>
           ) : (

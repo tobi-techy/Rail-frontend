@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  RefreshControl,
+  StatusBar,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
@@ -59,6 +67,13 @@ export default function NgnConfirmScreen() {
     return () => clearInterval(id);
   }, [rampQuoteQuery.dataUpdatedAt]);
   const isQuoteStale = quoteAge > 30_000;
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await rampQuoteQuery.refetch();
+    setIsRefreshing(false);
+  }, [rampQuoteQuery]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<WithdrawalStatusType | null>(null);
@@ -214,7 +229,12 @@ export default function NgnConfirmScreen() {
         <View className="size-11" />
       </View>
 
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1 px-5"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#EA580C" />
+        }>
         {/* Amount hero */}
         <Animated.View entering={FadeInUp.duration(250)} className="items-center py-8">
           <View className="mb-3 size-14 items-center justify-center overflow-hidden rounded-full">
@@ -236,7 +256,7 @@ export default function NgnConfirmScreen() {
           {isQuoteStale && (
             <View className="mt-2 flex-row items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2">
               <Text className="font-body text-[12px] text-amber-700" maxFontSizeMultiplier={1.3}>
-                ⚠ Rate may have changed. Pull down to refresh.
+                ⚠ Rate may have changed. Pull down to refresh the rate.
               </Text>
             </View>
           )}
