@@ -52,7 +52,7 @@ export function useMobileWalletFunding({
       setIsFundingPending(false);
       setFundingTimedOut(true);
       onTimedOut();
-      track('deposit_failed', {
+      track(ANALYTICS_EVENTS.DEPOSIT_FAILED, {
         wallet: selectedMethod,
         amount: Number(numericAmount.toFixed(2)),
         signature: fundingSignature || undefined,
@@ -161,7 +161,7 @@ export function useMobileWalletFunding({
       } catch (err: unknown) {
         const e = err as { code?: string; category?: string; message?: string };
         setFundingError(e?.message || 'Funding failed. Please try again.');
-        track('deposit_failed', {
+        track(ANALYTICS_EVENTS.DEPOSIT_FAILED, {
           wallet: selectedMethod,
           amount: Number(numericAmount.toFixed(2)),
           reason: String(e?.code || e?.category || 'UNKNOWN'),

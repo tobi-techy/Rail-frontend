@@ -3,6 +3,7 @@ import { Keyboard } from 'react-native';
 import { useAIChatStore } from '@/stores/aiChatStore';
 import { playChatSound } from '@/lib/chatSounds';
 import { ANALYTICS_EVENTS, useAnalytics } from '@/utils/analytics';
+import { trackFeatureUse } from '@/hooks/useSessionEngagement';
 import type { ToneMode } from '@/api/types/ai';
 import type { AgentAction } from './constants';
 import type { AttachedImage } from './useImagePickers';
@@ -87,6 +88,9 @@ export function useChatActions(deps: {
       // delayed the very first message of a thread from appearing.
       setEditText('');
       await sendMessage(finalMsg, activeConversationId ?? undefined, { toneMode });
+
+      // Track feature stickiness for PostHog retention analysis
+      trackFeatureUse(track, 'miriam_chat');
     },
     [
       activeConversationId,

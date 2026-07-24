@@ -315,32 +315,25 @@ function ChainPill({
 }
 
 function getKycProgressScreen(state: ReturnType<typeof useKycStore.getState>): string {
-  const { taxId, employmentStatus, investmentPurposes, disclosuresConfirmed, diditSessionToken } =
-    state;
+  const { diditSessionToken, completedSteps } = state;
 
   // If user has a Didit session token, they're in the middle of ID verification
   if (diditSessionToken) {
     return '/kyc/didit-sdk';
   }
 
-  // If user has completed disclosures and submitted, they should be going to Didit
-  // But if diditSessionToken is null (failed to get or session expired), go to disclosures to resubmit
-  if (disclosuresConfirmed && taxId && employmentStatus && investmentPurposes.length > 0) {
-    return '/kyc/disclosures';
+  // If user has completed financial step, go to Didit SDK
+  if (completedSteps.includes('financial')) {
+    return '/kyc/didit-sdk';
   }
 
-  // If user has started about-you (employment + investment goals), go to disclosures
-  if (employmentStatus && investmentPurposes.length > 0 && taxId) {
-    return '/kyc/disclosures';
-  }
-
-  // If user has started tax-id, go to about-you
-  if (taxId) {
-    return '/kyc/about-you';
+  // If identity step completed, go to financial
+  if (completedSteps.includes('identity')) {
+    return '/kyc/financial';
   }
 
   // Nothing started, go to beginning
-  return '/kyc/tax-id';
+  return '/kyc';
 }
 
 function CategoryPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {

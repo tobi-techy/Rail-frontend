@@ -47,7 +47,7 @@ export function useMWAWithdrawal({
       });
 
       setWithdrawalId(response.id ?? '');
-      track(ANALYTICS_EVENTS.DEPOSIT_COMPLETED, {
+      track(ANALYTICS_EVENTS.WITHDRAW_COMPLETED, {
         method: 'mwa-withdraw',
         amount: numericAmount,
         destination: destinationAddress,

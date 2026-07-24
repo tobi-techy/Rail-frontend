@@ -1,16 +1,23 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { View, Text, Pressable, Share, ActivityIndicator } from 'react-native';
+import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from '@/utils/platformHaptics';
 import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { UsdIcon, EurIcon, NgnIcon } from '@/assets/svg';
 import { VirtualAccountIntroSheet } from './VirtualAccountIntroSheet';
-import { TierUpgradeSheet } from './TierUpgradeSheet';
 import { Button } from '../ui';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { useVirtualAccounts, useNgnVirtualAccount } from '@/api/hooks/useVirtualAccount';
-import { useKYCStatus, useTierCapabilities } from '@/api/hooks';
+import { useKYCFlow } from '@/api/hooks/useKYCFlow';
+import { useVirtualAccounts } from '@/api/hooks/useVirtualAccount';
+import { useKYCStatus } from '@/api/hooks';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import {
+  NgnAccountLoading,
+  NgnNeedsVerification,
+  NgnReadyToProvision,
+  NgnLoadError,
+} from '@/components/kyc';
 import type { VirtualAccount, NgnVirtualAccount } from '@/api/types/funding';
 import { Copy01Icon, CheckmarkCircle02Icon, Share01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
@@ -126,8 +133,26 @@ interface VirtualAccountSheetProps {
   currency: 'USD' | 'EUR' | 'NGN';
 }
 
-function NgnAccountCard({ account }: { account: NgnVirtualAccount }) {
+function NgnAccountCard({
+  account,
+  onRetry,
+}: {
+  account: NgnVirtualAccount;
+  onRetry?: () => void;
+}) {
   const isPending = account.status === 'pending';
+  const isFailed = account.status === 'failed';
+  const [showSlowNotice, setShowSlowNotice] = useState(false);
+
+  // After 90s of pending, show "taking longer than expected" — polling continues in background.
+  useEffect(() => {
+    if (!isPending) {
+      setShowSlowNotice(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowSlowNotice(true), 90_000);
+    return () => clearTimeout(timer);
+  }, [isPending]);
 
   const handleShare = useCallback(async () => {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -137,6 +162,7 @@ function NgnAccountCard({ account }: { account: NgnVirtualAccount }) {
       account.beneficiary_name ? `Name: ${account.beneficiary_name}` : '',
       `Account Number: ${account.account_number || '\u2014'}`,
       account.bank_name ? `Bank: ${account.bank_name}` : '',
+      account.bank_code ? `Bank Code: ${account.bank_code}` : '',
     ]
       .filter(Boolean)
       .join('\n');
@@ -151,8 +177,22 @@ function NgnAccountCard({ account }: { account: NgnVirtualAccount }) {
           Setting up your Naira account
         </Text>
         <Text className="mt-1 text-center font-body text-[13px] text-[#848281]">
-          This usually takes a moment. Check back shortly.
+          {showSlowNotice
+            ? "Taking longer than usual — we're still working on it."
+            : 'This usually takes a moment. Check back shortly.'}
         </Text>
+      </View>
+    );
+  }
+
+  if (isFailed) {
+    return (
+      <View className="items-center py-6">
+        <Text className="mb-1 font-subtitle text-[17px] text-[#343433]">Account setup failed</Text>
+        <Text className="mb-6 text-center font-body text-[13px] text-[#848281]">
+          Something went wrong setting up your Naira account. You can try again.
+        </Text>
+        <Button title="Try again" onPress={onRetry ?? (() => {})} variant="orange" />
       </View>
     );
   }
@@ -176,6 +216,12 @@ function NgnAccountCard({ account }: { account: NgnVirtualAccount }) {
             <CopyRow label="Bank" value={account.bank_name} />
           </>
         ) : null}
+        {account.bank_code ? (
+          <>
+            <View className="h-px bg-[#f7f2e8]" />
+            <CopyRow label="Bank code" value={account.bank_code} />
+          </>
+        ) : null}
       </View>
       <Pressable
         onPress={handleShare}
@@ -187,17 +233,39 @@ function NgnAccountCard({ account }: { account: NgnVirtualAccount }) {
   );
 }
 
-function NgnSheetBody() {
-  const [showTierSheet, setShowTierSheet] = useState(false);
-  const { capabilities, refetch } = useTierCapabilities();
-  const canReceiveNgn = capabilities.can_receive_ngn;
-  const {
-    data: ngnResponse,
-    isLoading,
-    error: ngnError,
-    refetch: refetchNgn,
-  } = useNgnVirtualAccount(canReceiveNgn);
-  const account = ngnResponse?.virtual_account;
+function NgnSheetBody({ onNavigateToUpgrade }: { onNavigateToUpgrade: () => void }) {
+  const { ngnAccount, isNgnLoading, ngnError, hasBegunVerification, autoProvisionNgn, refetchAll } =
+    useKYCFlow();
+
+  const [isProvisioning, setIsProvisioning] = useState(false);
+  const [provisionError, setProvisionError] = useState<string | null>(null);
+
+  const handleSetupAccount = useCallback(async () => {
+    if (!hasBegunVerification) {
+      onNavigateToUpgrade();
+      return;
+    }
+
+    // Already verified — auto-provision directly
+    setIsProvisioning(true);
+    setProvisionError(null);
+    try {
+      await autoProvisionNgn();
+      await refetchAll();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      // No Graph person — user needs to complete KYC first
+      if (msg.includes('no Graph person')) {
+        onNavigateToUpgrade();
+        return;
+      }
+      // Person not ready yet — show error
+      setProvisionError(msg || 'Unable to set up account automatically. Please try again.');
+    } finally {
+      setIsProvisioning(false);
+    }
+  }, [hasBegunVerification, autoProvisionNgn, refetchAll, onNavigateToUpgrade]);
+
   const meta = CURRENCY_META.NGN;
 
   return (
@@ -207,62 +275,32 @@ function NgnSheetBody() {
           <meta.Icon width={48} height={48} />
         </View>
         <View>
-          <Text className="font-subtitle text-[20px] text-[#343433]">NGN Account</Text>
-          <Text className="font-body text-[13px] text-[#848281]">{meta.label}</Text>
+          <Text className="font-subtitle text-[20px] text-charcoal-primary">NGN Account</Text>
+          <Text className="font-body text-[13px] text-ash">{meta.label}</Text>
         </View>
       </View>
 
-      {canReceiveNgn && isLoading ? (
-        <View className="items-center py-12">
-          <ActivityIndicator size="small" color="#000" />
-        </View>
-      ) : canReceiveNgn && account ? (
-        <NgnAccountCard account={account} />
-      ) : ngnError && canReceiveNgn ? (
-        <View className="items-center py-6">
-          <Text className="mb-1 font-subtitle text-[17px] text-[#343433]">
-            Couldn&apos;t load account
-          </Text>
-          <Text className="mb-6 text-center font-body text-[13px] text-[#848281]">
-            Something went wrong fetching your Naira account details.
-          </Text>
-          <Button
-            title="Try again"
-            onPress={() => {
-              refetchNgn();
-            }}
-            variant="orange"
-          />
-        </View>
+      {isNgnLoading || isProvisioning ? (
+        <NgnAccountLoading />
+      ) : ngnAccount ? (
+        <NgnAccountCard account={ngnAccount} onRetry={onNavigateToUpgrade} />
+      ) : ngnError ? (
+        <NgnLoadError onRetry={() => refetchAll()} />
+      ) : hasBegunVerification ? (
+        <NgnReadyToProvision onPress={handleSetupAccount} />
       ) : (
-        <View className="items-center py-6">
-          <View className="mb-4 size-16 items-center justify-center overflow-hidden rounded-full">
-            <meta.Icon width={64} height={64} />
-          </View>
-          <Text className="mb-1 font-subtitle text-[17px] text-[#343433]">
-            Get your Naira account
-          </Text>
-          <Text className="mb-6 text-center font-body text-[13px] text-[#848281]">
-            Verify your identity to receive Naira transfers into a named account.
-          </Text>
-          <Button
-            title="Verify to continue"
-            onPress={() => setShowTierSheet(true)}
-            variant="orange"
-          />
-        </View>
+        <NgnNeedsVerification onPress={onNavigateToUpgrade} />
       )}
 
-      <TierUpgradeSheet
-        visible={showTierSheet}
-        onClose={() => setShowTierSheet(false)}
-        onUpgraded={() => {
-          setShowTierSheet(false);
-          refetch();
-          refetchNgn();
-        }}
-        mode="overview"
-      />
+      {provisionError && (
+        <View className="mt-4 rounded-2xl bg-coral-red/10 px-4 py-3">
+          <Text
+            className="font-body text-[13px] leading-5 text-coral-red"
+            maxFontSizeMultiplier={1.4}>
+            {provisionError}
+          </Text>
+        </View>
+      )}
     </>
   );
 }
@@ -287,7 +325,13 @@ export function VirtualAccountSheet({ visible, onClose, currency }: VirtualAccou
     return (
       <GorhomBottomSheet visible={visible} onClose={onClose}>
         <ErrorBoundary>
-          <NgnSheetBody />
+          <NgnSheetBody
+            onNavigateToUpgrade={() => {
+              onClose();
+              // Small delay to let the sheet dismiss before navigating
+              setTimeout(() => router.push('/sprout-upgrade'), 300);
+            }}
+          />
         </ErrorBoundary>
       </GorhomBottomSheet>
     );

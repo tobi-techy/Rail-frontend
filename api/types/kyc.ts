@@ -173,18 +173,34 @@ export interface KYCStatusResponse {
 
 /**
  * Resolves capability flags for the UI. Prefers the server's `tier_capabilities`;
- * falls back to the legacy single-gate model (`status === 'approved'` ⇒ full
- * Tier 3 access) so screens keep working if the field is briefly absent.
+ * falls back to the legacy single-gate model so screens keep working if the field
+ * is briefly absent. Uses `kyc_tier` directly when available, and infers tier 2
+ * from BVN+NIN verification for Graph-only users.
  */
 export function getTierCapabilities(status?: KYCStatusResponse | null): TierCapabilities {
   if (status?.tier_capabilities) return status.tier_capabilities;
 
   const approved = status?.status === 'approved' || status?.bridge?.status === 'active';
-  const tier = approved ? 3 : status?.has_submitted ? 1 : status?.verified ? 1 : 0;
+
+  // Use server tier directly when present; otherwise infer from verification state.
+  // Graph-only users get tier 2 via BVN+NIN verification (not Bridge approval).
+  let tier: number;
+  if (typeof status?.kyc_tier === 'number' && status.kyc_tier > 0) {
+    tier = status.kyc_tier;
+  } else if (status?.bvn_verified && status?.nin_verified) {
+    tier = 2;
+  } else if (approved) {
+    tier = 3;
+  } else if (status?.has_submitted || status?.verified) {
+    tier = 1;
+  } else {
+    tier = 0;
+  }
+
   return {
     tier,
     can_deposit_crypto: tier >= 1,
-    can_receive_ngn: approved || tier >= 2,
+    can_receive_ngn: tier >= 2,
     can_deposit_fiat_usd: approved,
     can_use_card: approved,
     can_invest: approved,
@@ -272,6 +288,39 @@ export interface KYCCapabilities {
   can_use_card: boolean;
   can_invest: boolean;
 }
+
+// --- Sprout Upgrade (Tier 2) ---
+
+export type SproutUpgradeRequest = {
+  phone: string;
+  date_of_birth: string;
+  bvn?: string;
+  didit_session_id: string;
+};
+
+export type SproutUpgradeResponse = {
+  message: string;
+  kyc_tier: number;
+  bvn_verified: boolean;
+  nin_verified: boolean;
+};
+
+// --- Bloom Upgrade (Tier 3) ---
+
+export type BloomUpgradeRequest = {
+  employment_status: string;
+  occupation: string;
+  source_of_funds: string;
+  expected_monthly_volume: string;
+  account_purpose: string;
+  proof_of_address_url?: string;
+  proof_of_address_type?: string;
+};
+
+export type BloomUpgradeResponse = {
+  message: string;
+  kyc_tier: number;
+};
 
 // --- UI State Machine ---
 

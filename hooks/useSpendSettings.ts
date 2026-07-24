@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/api/client';
 import { useAuthStore } from '@/stores/authStore';
+import { useAnalytics } from '@/utils/analytics';
+import { recordActivationStep } from '@/utils/activation';
 
 const DEFAULT_BASE_ALLOCATION = 70;
 const MIN_BASE_ALLOCATION = 1;
@@ -22,6 +24,7 @@ interface RoundupSettings {
 export function useSpendSettings() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const qc = useQueryClient();
+  const { track } = useAnalytics();
 
   const { data: settings } = useQuery<RoundupSettings>({
     queryKey: ['roundups', 'settings'],
@@ -51,8 +54,14 @@ export function useSpendSettings() {
   );
 
   const setAutoInvestEnabled = useCallback(
-    (v: boolean) => updateMutation.mutate({ auto_invest_enabled: v }),
-    [updateMutation]
+    (v: boolean) => {
+      updateMutation.mutate({ auto_invest_enabled: v });
+      if (v) {
+        track('auto_invest_enabled', { source: 'spend_settings' });
+        recordActivationStep('first_auto_invest', track);
+      }
+    },
+    [updateMutation, track]
   );
 
   return {

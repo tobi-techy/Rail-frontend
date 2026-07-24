@@ -5,13 +5,11 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui';
-import { TierUpgradeSheet } from '@/components/sheets';
-import { useKYCStatus, useTierCapabilities } from '@/api/hooks';
+import { useKYCFlow } from '@/api/hooks/useKYCFlow';
 import { invalidateQueries } from '@/api/queryClient';
 import { TIER_META, type TierMetaEntry } from '@/api/types/kyc';
 import { useHaptics } from '@/hooks/useHaptics';
 import { playUISound } from '@/lib/uiSounds';
-import gleap from '@/utils/gleap';
 import {
   ArrowLeft01Icon,
   HelpCircleIcon,
@@ -115,20 +113,16 @@ export default function AccountLevelScreen() {
   const insets = useSafeAreaInsets();
   const { impact } = useHaptics();
   const [refreshing, setRefreshing] = useState(false);
-  const [showTierSheet, setShowTierSheet] = useState(false);
-  const [tierSheetMode, setTierSheetMode] = useState<'sprout' | 'bloom'>('sprout');
 
-  const { data: kycStatus } = useKYCStatus();
-  const { capabilities, tier, refetch } = useTierCapabilities();
+  const { capabilities, tier, canReceiveNgn, canUseCard, refetchAll } = useKYCFlow(false);
 
   const currentTier = capabilities.tier || tier || 1;
 
-  // The single next rung: NGN (Tier 2) before advanced (Tier 3).
   const nextTier = useMemo(() => {
-    if (!capabilities.can_receive_ngn) return 2;
-    if (!capabilities.can_use_card) return 3;
+    if (!canReceiveNgn) return 2;
+    if (!canUseCard) return 3;
     return null;
-  }, [capabilities]);
+  }, [canReceiveNgn, canUseCard]);
 
   const nextStepLabelFor = (t: number): string | undefined => {
     if (t === 2) return 'Verify your BVN & NIN to unlock';
@@ -138,7 +132,7 @@ export default function AccountLevelScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refetch(), invalidateQueries.virtualAccount()]);
+    await Promise.all([refetchAll(), invalidateQueries.virtualAccount()]);
     setRefreshing(false);
   };
 
@@ -146,11 +140,9 @@ export default function AccountLevelScreen() {
     impact();
     playUISound('buttonClick');
     if (nextTier === 2) {
-      setTierSheetMode('sprout');
-      setShowTierSheet(true);
+      router.push('/sprout-upgrade');
     } else if (nextTier === 3) {
-      setTierSheetMode('bloom');
-      setShowTierSheet(true);
+      router.push('/bloom-upgrade');
     }
   };
 
@@ -159,16 +151,14 @@ export default function AccountLevelScreen() {
       ? 'Verify BVN & NIN'
       : nextTier === 3
         ? 'Verify my identity'
-        : 'You’re fully verified';
+        : 'You\u2019re fully verified';
 
   return (
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 pb-2 pt-1">
         <Pressable
-          onPress={() => {
-            router.back();
-          }}
+          onPress={() => router.back()}
           className="size-11 items-center justify-center rounded-full bg-stone-surface active:opacity-70"
           hitSlop={8}
           accessibilityRole="button"
@@ -184,7 +174,7 @@ export default function AccountLevelScreen() {
           onPress={() => {
             impact();
             playUISound('buttonClick');
-            gleap.open();
+            router.push('/support');
           }}
           className="size-11 items-center justify-center rounded-full bg-stone-surface active:opacity-70"
           hitSlop={8}
@@ -223,16 +213,6 @@ export default function AccountLevelScreen() {
           <Button title={ctaLabel} onPress={handleCta} variant="black" />
         </View>
       ) : null}
-
-      <TierUpgradeSheet
-        visible={showTierSheet}
-        onClose={() => setShowTierSheet(false)}
-        onUpgraded={(newTier) => {
-          setShowTierSheet(false);
-          void refetch();
-        }}
-        mode={tierSheetMode}
-      />
     </SafeAreaView>
   );
 }

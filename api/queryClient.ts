@@ -183,6 +183,7 @@ export const queryKeys = {
     actionReceipts: () => [...queryKeys.ai.all, 'action-receipts'] as const,
     receiptSplits: () => [...queryKeys.ai.all, 'receipt-splits'] as const,
     receiptSplit: (id: string) => [...queryKeys.ai.all, 'receipt-split', id] as const,
+    financialHealth: () => [...queryKeys.ai.all, 'financial-health'] as const,
   },
   onboarding: {
     all: ['onboarding'] as const,

@@ -142,15 +142,11 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
     const state = useKycStore.getState();
     const { completedSteps, diditSessionToken } = state;
 
-    let screen = '/kyc/tax-id';
-    if (diditSessionToken || completedSteps.includes('source-of-funds')) {
+    let screen = '/kyc';
+    if (diditSessionToken || completedSteps.includes('financial')) {
       screen = '/kyc/didit-sdk';
-    } else if (completedSteps.includes('disclosures')) {
-      screen = '/kyc/source-of-funds';
-    } else if (completedSteps.includes('about-you')) {
-      screen = '/kyc/disclosures';
-    } else if (completedSteps.includes('tax-id')) {
-      screen = '/kyc/about-you';
+    } else if (completedSteps.includes('identity')) {
+      screen = '/kyc/financial';
     }
 
     onClose();

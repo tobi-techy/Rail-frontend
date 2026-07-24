@@ -37,7 +37,6 @@ import { useUIStore } from '@/stores';
 import type { Currency } from '@/stores/uiStore';
 import { invalidateQueries } from '@/api/queryClient';
 import { convertFromUsd, formatCurrencyAmount, type FxRates } from '@/utils/currency';
-import gleap from '@/utils/gleap';
 import { useHaptics } from '@/hooks/useHaptics';
 import { playUISound } from '@/lib/uiSounds';
 import type { Transaction } from '@/components/molecules/TransactionItem';
@@ -276,7 +275,7 @@ function DashboardScreen() {
             onPress={() => {
               haptics.selection();
               playUISound('buttonClick');
-              gleap.open();
+              router.push('/support');
             }}
             hitSlop={8}>
             <HugeiconsIcon icon={Message01Icon} size={22} color="#343433" strokeWidth={1.8} />

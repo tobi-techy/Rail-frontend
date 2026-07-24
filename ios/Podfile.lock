@@ -325,7 +325,6 @@ PODS:
   - EXUpdatesInterface (55.1.6):
     - ExpoModulesCore
   - FBLazyVector (0.83.6)
-  - Gleap (15.3.4)
   - GoogleSignIn (9.2.0):
     - AppAuth (~> 2.1)
     - AppCheckCore (~> 11.0)
@@ -1937,9 +1936,6 @@ PODS:
     - Yoga
   - react-native-get-random-values (1.11.0):
     - React-Core
-  - react-native-gleapsdk (15.3.4):
-    - Gleap (= 15.3.4)
-    - React-Core
   - react-native-keyboard-controller (1.20.7):
     - hermes-engine
     - RCTRequired
@@ -3119,7 +3115,6 @@ DEPENDENCIES:
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - "react-native-document-scanner (from `../node_modules/@dariyd/react-native-document-scanner`)"
   - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
-  - react-native-gleapsdk (from `../node_modules/react-native-gleapsdk`)
   - react-native-keyboard-controller (from `../node_modules/react-native-keyboard-controller`)
   - react-native-maps (from `../node_modules/react-native-maps`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
@@ -3183,7 +3178,6 @@ SPEC REPOS:
     - AFNetworking
     - AppAuth
     - AppCheckCore
-    - Gleap
     - GoogleSignIn
     - GoogleUtilities
     - GTMAppAuth
@@ -3407,8 +3401,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@dariyd/react-native-document-scanner"
   react-native-get-random-values:
     :path: "../node_modules/react-native-get-random-values"
-  react-native-gleapsdk:
-    :path: "../node_modules/react-native-gleapsdk"
   react-native-keyboard-controller:
     :path: "../node_modules/react-native-keyboard-controller"
   react-native-maps:
@@ -3576,7 +3568,6 @@ SPEC CHECKSUMS:
   ExpoWebBrowser: 3f57d6eec40cd76608ee9e660915bc474b7cfa6a
   EXUpdatesInterface: 4c11f4d1594526258f14d09817dc407acbf24e3b
   FBLazyVector: 427fa1856a481856091061293ce865a75aa4f20f
-  Gleap: a6df5c412f61bcdf1bc43653ab68f01d4ee71061
   GoogleSignIn: e449a40a92e9f2eea56e98b5214d13725dc5a00a
   GoogleUtilities: 766ace00c6b10d8148408f329d10c4f051931850
   GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
@@ -3641,7 +3632,6 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: 203b41906d627dac7d697bccba6137b630951fae
   react-native-document-scanner: a64836e42bcde76a0608a4a6b16f749d25e7574e
   react-native-get-random-values: d16467cf726c618e9c7a8c3c39c31faa2244bbba
-  react-native-gleapsdk: 7ce885d277913b32d96daae56263e58760900b5c
   react-native-keyboard-controller: c872321fc580f8d815e9e2ad5558b24c26c18b4f
   react-native-maps: 3c765513d6993ab5f330fb170ebb57caf2f2048d
   react-native-netinfo: f852c868bf5175e46165c7e4db48a204a95c3800

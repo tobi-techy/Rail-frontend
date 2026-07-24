@@ -25,6 +25,7 @@ import queryClient, { queryKeys } from '@/api/queryClient';
 import { stationService } from '@/api/services/station.service';
 import SessionManager from '@/utils/sessionManager';
 import { PostHogProvider as _PostHogProvider, usePostHog } from 'posthog-react-native';
+import { useSessionEngagement, trackFeatureUse } from '@/hooks/useSessionEngagement';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores';
 import '../global.css';
@@ -65,14 +66,22 @@ function DeferredPostHogProvider({ children }: { children: React.ReactNode }) {
     return () => handle.cancel();
   }, []);
 
-  if (!ready) return <>{children}</>;
   return (
     <_PostHogProvider
       apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ''}
       autocapture={false}
-      options={{ host: 'https://us.i.posthog.com', disabled: __DEV__ }}>
-      {/* Rendered inside the provider so usePostHog() always has a client. */}
-      <AppReadyTracker />
+      options={{
+        host: 'https://us.i.posthog.com',
+        disabled: !ready || __DEV__,
+        personProfiles: 'identified_only',
+        enableSessionReplay: ready && !__DEV__,
+        sessionReplayConfig: {
+          maskAllTextInputs: true,
+          maskAllImages: true,
+        },
+      }}>
+      {ready && <AppReadyTracker />}
+      <ScreenTracker />
       {children}
     </_PostHogProvider>
   );
@@ -80,6 +89,7 @@ function DeferredPostHogProvider({ children }: { children: React.ReactNode }) {
 
 function AppReadyTracker() {
   const posthog = usePostHog();
+  useSessionEngagement();
 
   useEffect(() => {
     posthog?.capture('app_opened', { platform: Platform.OS });
@@ -91,6 +101,47 @@ function AppReadyTracker() {
       import('@/hooks/useForceUpdate'),
     ]);
   }, [posthog]);
+
+  return null;
+}
+
+// Auto-track screen views + feature stickiness via expo-router segments
+function ScreenTracker() {
+  const posthog = usePostHog();
+  const segments = require('expo-router').useSegments();
+  const lastFeatureRef = React.useRef<string>('');
+
+  useEffect(() => {
+    if (!posthog || __DEV__) return;
+    const route = segments.join('/');
+    if (route) {
+      posthog.screen(route, { path: route });
+
+      // Map key screens to feature names for stickiness analysis
+      const featureMap: Record<string, string> = {
+        'ai-chat': 'miriam_chat',
+        'spending-stash': 'spending_stash',
+        'investment-stash': 'investment_stash',
+        'market-asset': 'market',
+        'virtual-account': 'virtual_account',
+        withdraw: 'withdraw',
+        'fund-naira': 'fund_naira',
+        'fund-crosschain': 'fund_crosschain',
+        subscription: 'subscription',
+        profile: 'profile',
+        notifications: 'notifications',
+      };
+
+      // Find matching feature
+      for (const [prefix, featureName] of Object.entries(featureMap)) {
+        if (route.startsWith(prefix) && lastFeatureRef.current !== `${featureName}:${route}`) {
+          lastFeatureRef.current = `${featureName}:${route}`;
+          trackFeatureUse((event, props) => posthog.capture(event, props), featureName);
+          break;
+        }
+      }
+    }
+  }, [segments, posthog]);
 
   return null;
 }
@@ -146,6 +197,9 @@ function AppNavigator() {
       <Stack.Screen name="virtual-account" />
       <Stack.Screen name="profile" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="account-level" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="sprout-upgrade" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="bloom-upgrade" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="support" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="passkey-settings" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="settings-notifications" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="daily-spending-limit" options={{ animation: 'slide_from_right' }} />
@@ -231,17 +285,6 @@ export default function Layout() {
       .then(() => initEncryption())
       .catch(() => {});
 
-    // Deferred SDK init
-    import('@/utils/gleap')
-      .then((m) => {
-        const token = process.env.EXPO_PUBLIC_GLEAP_TOKEN ?? '';
-        if (token) {
-          m.default.initialize(token);
-          m.default.showFeedbackButton(false);
-        }
-      })
-      .catch(() => {});
-
     // Prefetch if authenticated
     const state = useAuthStore.getState();
     if (state?.isAuthenticated && state?.accessToken) {
@@ -258,11 +301,11 @@ export default function Layout() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      <BottomSheetModalProvider>
-        <ErrorBoundary>
-          <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-          <KeyboardProvider>
-            <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <BottomSheetModalProvider>
+          <ErrorBoundary>
+            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+            <KeyboardProvider>
               <SafeAreaProvider style={styles.root}>
                 <View style={styles.root}>
                   <DeferredPostHogProvider>
@@ -278,10 +321,10 @@ export default function Layout() {
                   </DeferredPostHogProvider>
                 </View>
               </SafeAreaProvider>
-            </QueryClientProvider>
-          </KeyboardProvider>
-        </ErrorBoundary>
-      </BottomSheetModalProvider>
+            </KeyboardProvider>
+          </ErrorBoundary>
+        </BottomSheetModalProvider>
+      </QueryClientProvider>
       {/* Custom splash overlay disabled — the Expo default native splash covers
           startup and is dismissed via SplashScreen.hideAsync() above. */}
     </GestureHandlerRootView>

@@ -20,13 +20,7 @@ const DEFAULT_DISCLOSURES: KycDisclosures = {
 };
 
 // Steps in the KYC flow, tracked for resume/skip
-export const KYC_STEPS = [
-  'country',
-  'tax-id',
-  'about-you',
-  'disclosures',
-  'source-of-funds',
-] as const;
+export const KYC_STEPS = ['identity', 'financial'] as const;
 
 export type KycStep = (typeof KYC_STEPS)[number];
 

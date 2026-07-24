@@ -13,7 +13,6 @@ import { useUIStore } from '@/stores';
 import type { Currency } from '@/stores/uiStore';
 import { logger } from '@/lib/logger';
 import { useAllocationBalances, useEnableAllocationMode } from '@/api/hooks';
-import gleap from '@/utils/gleap';
 import { formatFxUpdatedAt, migrateLegacyCurrency } from '@/utils/currency';
 import { usePinChange, sanitizePin } from '@/hooks/usePinChange';
 import { useSpendSettings, clampAlloc } from '@/hooks/useSpendSettings';
@@ -496,7 +495,7 @@ export default function Settings() {
           <SettingButton
             icon={<HugeiconsIcon icon={HeadphonesIcon} size={22} color="#121212" />}
             label="Support"
-            onPress={() => gleap.open()}
+            onPress={() => router.push('/support')}
           />
         </Section>
 

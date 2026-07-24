@@ -1,27 +1,34 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { InputField } from '@/components/atoms/InputField';
+import { ProgressBar } from '@/components/atoms/ProgressBar';
 import { Button } from '@/components/ui';
 import { useHaptics } from '@/hooks/useHaptics';
-import { playUISound } from '@/lib/uiSounds';
 import {
   COUNTRY_HELP_TEXT,
   COUNTRY_KYC_REQUIREMENTS,
   COUNTRY_LABELS,
+  COUNTRY_TAX_CONFIG,
+  validateTaxId,
   type Country,
 } from '@/api/types/kyc';
 import { useKycStore } from '@/stores/kycStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useKYCStatus } from '@/api/hooks/useKYC';
-import {
-  ArrowDown01Icon,
-  ArrowRight01Icon,
-  Cancel01Icon,
-  CheckmarkCircle01Icon,
-} from '@/lib/icons';
+import { ArrowDown01Icon, Cancel01Icon, CheckmarkCircle01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import CountryFlag from 'react-native-country-flag';
 
@@ -74,37 +81,41 @@ const COUNTRIES: { code: Country; flag: string }[] = [
   { code: 'SWE', flag: '🇸🇪' },
 ];
 
-export default function KycCountryScreen() {
+export default function KycIdentityScreen() {
   const insets = useSafeAreaInsets();
-  const { impact, selection } = useHaptics();
-  const { country, setCountry } = useKycStore();
+  const { selection } = useHaptics();
+  const { country, setCountry, taxId, setTaxId, hasCompletedStep, addCompletedStep } =
+    useKycStore();
   const userCountry = useAuthStore((s) => s.user?.country);
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const params = useLocalSearchParams<{ autoLaunch?: string }>();
   const { data: kycStatus } = useKYCStatus();
 
-  // Filter countries based on search query
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [taxIdError, setTaxIdError] = useState('');
+
+  const taxConfig = COUNTRY_TAX_CONFIG[country];
+  const requirements = COUNTRY_KYC_REQUIREMENTS[country];
+
   const filteredCountries = useMemo(() => {
     if (!searchQuery.trim()) return COUNTRIES;
-    const query = searchQuery.toLowerCase().trim();
+    const q = searchQuery.toLowerCase().trim();
     return COUNTRIES.filter(
-      (item) =>
-        COUNTRY_LABELS[item.code].toLowerCase().includes(query) ||
-        item.code.toLowerCase().includes(query)
+      (c) => COUNTRY_LABELS[c.code].toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
     );
   }, [searchQuery]);
 
-  // If KYC already submitted, skip to pending/result screen
+  const currentCountry = useMemo(
+    () => COUNTRIES.find((c) => c.code === country) ?? COUNTRIES[0],
+    [country]
+  );
+
+  // If KYC already submitted/approved, skip
   useEffect(() => {
     if (!kycStatus) return;
     if (kycStatus.status === 'approved') {
       useAuthStore.getState().setOnboardingStatus('completed');
-      if (router.canDismiss()) {
-        router.dismissAll();
-      } else {
-        router.replace('/(tabs)');
-      }
+      if (router.canDismiss()) router.dismissAll();
+      else router.replace('/(tabs)');
     } else if (
       kycStatus.has_submitted &&
       kycStatus.status !== 'rejected' &&
@@ -114,154 +125,162 @@ export default function KycCountryScreen() {
     }
   }, [kycStatus]);
 
-  // Auto-set KYC country from address step, then redirect if autoLaunch
+  // Auto-set country from user profile
   useEffect(() => {
-    // Don't auto-redirect if user is already approved or has submitted — kycStatus effect handles that
     if (kycStatus && (kycStatus.status === 'approved' || kycStatus.has_submitted)) return;
-
-    let mapped = false;
     if (userCountry) {
       const kycCountry = ISO2_TO_KYC[userCountry.toUpperCase()];
-      if (kycCountry) {
-        if (kycCountry !== country) setCountry(kycCountry);
-        mapped = true;
-      }
+      if (kycCountry && kycCountry !== country) setCountry(kycCountry);
     }
-    // Only skip country picker if we successfully mapped the user's country
-    if (params.autoLaunch === 'true' && mapped) {
-      router.replace('/kyc/verification-intro');
-    }
-  }, [userCountry, params.autoLaunch, country, setCountry, kycStatus]);
+  }, [userCountry]);
 
-  const currentCountry = useMemo(
-    () => COUNTRIES.find((item) => item.code === country) ?? COUNTRIES[0],
-    [country]
-  );
-  const requirements = COUNTRY_KYC_REQUIREMENTS[country];
+  // Skip to financial if identity step already completed
+  useEffect(() => {
+    if (hasCompletedStep('identity')) {
+      router.replace('/kyc/financial');
+    }
+  }, []);
+
+  const canContinue = taxId.trim().length > 0;
+
+  const handleContinue = () => {
+    if (taxId.trim().length === 0) {
+      setTaxIdError('Please enter your tax ID');
+      return;
+    }
+    const error = validateTaxId(country, useKycStore.getState().taxIdType, taxId);
+    if (error) {
+      setTaxIdError(error);
+      return;
+    }
+    setTaxIdError('');
+    addCompletedStep('identity');
+    router.replace('/kyc/financial');
+  };
 
   return (
     <ErrorBoundary>
       <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
+        {/* Header */}
         <View className="flex-row items-center justify-between px-4 pb-2 pt-1">
           <View className="size-11" />
+          <Text className="font-subtitle text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
+            Step 1 of 2
+          </Text>
           <Pressable
             className="size-11 items-center justify-center"
-            onPress={() => {
-              if (router.canDismiss()) {
-                router.dismissAll();
-              } else {
-                router.replace('/(tabs)');
-              }
-            }}
+            onPress={() => (router.canDismiss() ? router.dismissAll() : router.replace('/(tabs)'))}
             accessibilityRole="button"
             accessibilityLabel="Close verification">
             <HugeiconsIcon icon={Cancel01Icon} size={22} color="#343433" />
           </Pressable>
         </View>
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 160 }}>
-          <View className="mb-6">
-            <Text className="font-subtitle text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
-              Step 1
-            </Text>
-            <View className="mt-3 h-1.5 overflow-hidden rounded-full bg-fog">
-              <View className="h-full w-1/5 rounded-full bg-midnight" />
-            </View>
-          </View>
+        <View className="px-4">
+          <ProgressBar progress={50} height={6} />
+        </View>
 
-          <View>
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 120 }}>
             <Text
-              className="font-display text-[30px] leading-[34px] text-charcoal-primary"
+              className="font-display text-[23px] leading-[28px] text-charcoal-primary"
               maxFontSizeMultiplier={1.3}>
               Verify your identity
             </Text>
             <Text
               className="mt-2 font-body text-[15px] leading-6 text-ash"
               maxFontSizeMultiplier={1.4}>
-              Select the country that issued your ID. We use this to tailor your KYC requirements.
+              Select your issuing country and enter your tax ID. This is a one-time check required
+              by financial regulations.
             </Text>
-          </View>
 
-          <View className="mt-6">
-            <Text className="mb-2 font-subtitle text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
-              Issuing country
-            </Text>
-            <Pressable
-              onPress={() => {
-                selection();
-                setShowCountryPicker(true);
-              }}
-              className="flex-row items-center justify-between rounded-2xl border border-fog bg-parchment-card px-4 py-4"
-              accessibilityRole="button"
-              accessibilityLabel="Select issuing country">
-              <View className="flex-row items-center gap-3">
-                <CountryFlag isoCode={KYC_TO_ISO2[currentCountry.code] || 'US'} size={24} />
-                <View>
-                  <Text
-                    className="font-subtitle text-[16px] text-charcoal-primary"
-                    maxFontSizeMultiplier={1.3}>
-                    {COUNTRY_LABELS[country]}
-                  </Text>
-                  <Text className="mt-1 font-body text-[12px] text-ash" maxFontSizeMultiplier={1.4}>
-                    {COUNTRY_HELP_TEXT[country]}
-                  </Text>
+            {/* Country selector */}
+            <View className="mt-8">
+              <Text className="mb-2 font-subtitle text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
+                Issuing country
+              </Text>
+              <Pressable
+                onPress={() => {
+                  selection();
+                  setShowCountryPicker(true);
+                }}
+                className="flex-row items-center justify-between rounded-2xl border border-fog bg-parchment-card px-4 py-4"
+                accessibilityRole="button">
+                <View className="flex-row items-center gap-3">
+                  <CountryFlag isoCode={KYC_TO_ISO2[currentCountry.code] || 'US'} size={24} />
+                  <View>
+                    <Text
+                      className="font-subtitle text-[16px] text-charcoal-primary"
+                      maxFontSizeMultiplier={1.3}>
+                      {COUNTRY_LABELS[country]}
+                    </Text>
+                    <Text
+                      className="mt-1 font-body text-[12px] text-ash"
+                      maxFontSizeMultiplier={1.4}>
+                      {COUNTRY_HELP_TEXT[country]}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#848281" />
-            </Pressable>
-          </View>
+                <HugeiconsIcon icon={ArrowDown01Icon} size={20} color="#848281" />
+              </Pressable>
+            </View>
 
-          <View className="mt-6 rounded-2xl border border-fog bg-parchment-card px-4 py-4">
-            <Text
-              className="mb-3 font-subtitle text-[14px] text-charcoal-primary"
-              maxFontSizeMultiplier={1.4}>
-              Accepted documents
-            </Text>
-            {requirements.acceptedDocuments.map((document, index) => (
-              <View
-                key={document.type}
-                className={`flex-row items-center justify-between py-3 ${
-                  index < requirements.acceptedDocuments.length - 1
-                    ? 'border-b border-stone-surface'
-                    : ''
-                }`}>
-                <View className="flex-1 pr-4">
-                  <Text
-                    className="font-subtitle text-[14px] text-charcoal-primary"
-                    maxFontSizeMultiplier={1.4}>
-                    {document.label}
-                  </Text>
-                  <Text className="mt-1 font-body text-[12px] text-ash" maxFontSizeMultiplier={1.4}>
-                    {document.description}
-                  </Text>
-                </View>
-                <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#848281" />
+            {/* Accepted documents hint */}
+            <View className="mt-4 rounded-2xl border border-fog bg-parchment-card px-4 py-3">
+              <Text
+                className="mb-2 font-subtitle text-[13px] text-graphite"
+                maxFontSizeMultiplier={1.4}>
+                Accepted IDs:
+              </Text>
+              <View className="flex-row flex-wrap gap-2">
+                {requirements.acceptedDocuments.map((doc) => (
+                  <View
+                    key={doc.type}
+                    className="flex-row items-center gap-1.5 rounded-full border border-fog bg-white px-3 py-1">
+                    <Text
+                      className="font-body text-[12px] text-graphite"
+                      maxFontSizeMultiplier={1.4}>
+                      {doc.label}
+                    </Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
+            </View>
 
-          <Text
-            className="mt-6 font-body text-[12px] leading-5 text-ash"
-            maxFontSizeMultiplier={1.4}>
-            Need another issuing country? Contact support and we&apos;ll enable it for your account.
-          </Text>
-        </ScrollView>
+            {/* Tax ID */}
+            <View className="mt-8">
+              <InputField
+                label={taxConfig.label}
+                value={taxId}
+                onChangeText={(v) => {
+                  setTaxId(v);
+                  if (taxIdError) setTaxIdError('');
+                }}
+                placeholder={taxConfig.placeholder}
+                autoCapitalize="characters"
+                error={taxIdError}
+                helperText={taxConfig.helpText}
+              />
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
 
         <View
           className="absolute bottom-0 left-0 right-0 border-t border-stone-surface bg-parchment-card px-4 pt-3"
           style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           <Button
             title="Continue"
-            onPress={() => {
-              useKycStore.getState().addCompletedStep('country');
-              router.replace('/kyc/tax-id');
-            }}
+            onPress={handleContinue}
             variant="orange"
+            disabled={!canContinue}
           />
         </View>
 
+        {/* Country picker modal */}
         <Modal
           visible={showCountryPicker}
           animationType="slide"
@@ -283,18 +302,13 @@ export default function KycCountryScreen() {
                   setSearchQuery('');
                 }}
                 className="size-11 items-center justify-center"
-                accessibilityRole="button"
-                accessibilityLabel="Close country picker">
+                accessibilityRole="button">
                 <HugeiconsIcon icon={Cancel01Icon} size={22} color="#343433" />
               </Pressable>
             </View>
 
-            {/* Search input */}
             <View className="border-b border-stone-surface px-4 pb-4">
               <View className="flex-row items-center rounded-full border border-fog bg-stone-surface px-4 py-3">
-                <Text className="mr-2 text-lg" maxFontSizeMultiplier={1.3}>
-                  Search
-                </Text>
                 <TextInput
                   className="flex-1 font-body text-[15px] text-charcoal-primary"
                   placeholder="Search countries..."
@@ -315,11 +329,6 @@ export default function KycCountryScreen() {
                   </Pressable>
                 )}
               </View>
-              {searchQuery.length > 0 && filteredCountries.length === 0 && (
-                <Text className="mt-2 font-body text-[14px] text-ash" maxFontSizeMultiplier={1.4}>
-                  No countries found. Contact support for additional options.
-                </Text>
-              )}
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -334,20 +343,15 @@ export default function KycCountryScreen() {
                       setShowCountryPicker(false);
                       setSearchQuery('');
                     }}
-                    className={`flex-row items-center justify-between border-b border-stone-surface px-4 py-4 ${
-                      selected ? 'bg-stone-surface' : 'bg-white'
-                    }`}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Choose ${COUNTRY_LABELS[item.code]}`}>
+                    className={`flex-row items-center justify-between border-b border-stone-surface px-4 py-4 ${selected ? 'bg-stone-surface' : 'bg-white'}`}
+                    accessibilityRole="button">
                     <View className="flex-row items-center gap-3">
                       <CountryFlag isoCode={KYC_TO_ISO2[item.code] || 'US'} size={20} />
-                      <View>
-                        <Text
-                          className="font-subtitle text-[15px] text-charcoal-primary"
-                          maxFontSizeMultiplier={1.3}>
-                          {COUNTRY_LABELS[item.code]}
-                        </Text>
-                      </View>
+                      <Text
+                        className="font-subtitle text-[15px] text-charcoal-primary"
+                        maxFontSizeMultiplier={1.3}>
+                        {COUNTRY_LABELS[item.code]}
+                      </Text>
                     </View>
                     {selected ? (
                       <View className="size-6 items-center justify-center rounded-full bg-midnight">

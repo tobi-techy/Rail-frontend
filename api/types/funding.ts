@@ -29,9 +29,13 @@ export interface NgnVirtualAccount {
   id: string;
   provider: string;
   account_number: string;
+  routing_number: string;
   bank_name: string;
   bank_code: string;
+  bank_address: string;
   beneficiary_name: string;
+  beneficiary_address: string;
+  payment_rails: string[];
   currency: 'NGN';
   status: 'pending' | 'active' | 'closed' | 'failed';
   created_at: string;

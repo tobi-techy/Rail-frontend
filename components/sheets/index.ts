@@ -12,7 +12,6 @@ export { SpendBreakdownSheet } from './SpendBreakdownSheet';
 export { AchievementDetailSheet } from './AchievementDetailSheet';
 export type { BottomSheetScreen } from './NavigableBottomSheet';
 export { VirtualAccountSheet } from './VirtualAccountSheet';
-export { TierUpgradeSheet } from './TierUpgradeSheet';
 export { PajVerificationSheet } from './PajVerificationSheet';
 export { MFAChallengeSheet } from './MFAChallengeSheet';
 export { StashPerformanceSheet } from './StashPerformanceSheet';

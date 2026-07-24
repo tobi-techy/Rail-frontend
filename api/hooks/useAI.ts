@@ -19,6 +19,17 @@ export function useOperatingPlan() {
   });
 }
 
+export function useFinancialHealth() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  return useQuery({
+    queryKey: queryKeys.ai.financialHealth(),
+    queryFn: () => aiService.getFinancialHealth(),
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useMoneyAcrossBordersReport() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 

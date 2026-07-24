@@ -9,6 +9,7 @@ import { authService, passcodeService } from '../services';
 import { queryKeys, invalidateQueries } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
 import { useAnalytics, ANALYTICS_EVENTS } from '../../utils/analytics';
+import { initActivationTracking, checkActivationWindow } from '../../utils/activation';
 import { SESSION_DURATION_MS, PASSCODE_SESSION_MS } from '../../utils/sessionConstants';
 import type {
   LoginRequest,
@@ -49,7 +50,7 @@ const grantPostLoginPasscodeSession = () => {
  * Login mutation
  */
 export function useLogin() {
-  const { track, identify } = useAnalytics();
+  const { track, identify, setUserProperties } = useAnalytics();
 
   return useMutation({
     mutationFn: (data: LoginRequest) => authService.login(data),
@@ -81,12 +82,19 @@ export function useLogin() {
         onboarding_status: response.user.onboardingStatus,
       });
 
-      // Identify user in PostHog
+      // Identify user in PostHog with rich person properties for cohort building
       if (response.user.id) {
         identify(response.user.id, {
           email: response.user.email,
           first_name: response.user.firstName,
           last_name: response.user.lastName,
+          $created: response.user.createdAt || undefined,
+          kyc_status: response.user.kycStatus || 'none',
+          onboarding_status: response.user.onboardingStatus || 'unknown',
+        });
+        setUserProperties({
+          last_login_at: new Date().toISOString(),
+          lifecycle_stage: 'returning',
         });
       }
 
@@ -94,6 +102,9 @@ export function useLogin() {
       invalidateQueries.auth();
       invalidateQueries.wallet();
       invalidateQueries.user();
+
+      // Check if activation window expired (non-blocking)
+      checkActivationWindow(track);
     },
     onError: (error) => {
       track(ANALYTICS_EVENTS.SIGN_IN_STARTED, {
@@ -141,6 +152,7 @@ export function useRegister() {
  */
 export function useVerifyCode() {
   const DEFAULT_ONBOARDING_STATUS = 'started';
+  const { track, identify, setUserProperties } = useAnalytics();
 
   return useMutation({
     mutationFn: (data: VerifyCodeRequest) => authService.verifyCode(data),
@@ -169,6 +181,29 @@ export function useVerifyCode() {
       });
 
       void syncPasscodeStatus();
+
+      // Identify the newly verified user in PostHog so all future events are tied to them
+      if (response.user.id) {
+        identify(response.user.id, {
+          email: response.user.email,
+          $created: now.toISOString(),
+          signup_method: 'email',
+        });
+        setUserProperties({
+          lifecycle_stage: 'new',
+          account_age_days: 0,
+          retention_cohort: `${now.getFullYear()}-W${String(Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7)).padStart(2, '0')}`,
+        });
+      }
+
+      track(ANALYTICS_EVENTS.SIGN_UP_COMPLETED, {
+        user_id: response.user.id,
+        email: response.user.email,
+        onboarding_status: response.user.onboardingStatus || DEFAULT_ONBOARDING_STATUS,
+      });
+
+      // Initialize activation tracking for this new user
+      initActivationTracking(now.toISOString());
     },
   });
 }
@@ -187,7 +222,7 @@ export function useResendCode() {
  */
 export function useLogout() {
   const queryClient = useQueryClient();
-  const { track } = useAnalytics();
+  const { track, reset } = useAnalytics();
 
   return useMutation({
     mutationFn: () => authService.logout(),
@@ -196,6 +231,9 @@ export function useLogout() {
       track(ANALYTICS_EVENTS.SIGN_OUT, {
         timestamp: new Date().toISOString(),
       });
+
+      // Reset PostHog identity so next user gets a fresh anonymous ID
+      reset();
 
       // Clear auth store
       useAuthStore.getState().reset();

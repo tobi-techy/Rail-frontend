@@ -524,6 +524,21 @@ export const aiService = {
     return apiClient.post(`/v1/goals/shared/${goalId}/leave`);
   },
 
+  // ── Support session (ElevenLabs) ─────────────────────────────
+
+  async getSupportSignedUrl(): Promise<{
+    signed_url: string;
+    agent_id: string;
+    dynamic_variables: Record<string, string>;
+  }> {
+    const payload = await apiClient.post<any>(`${BASE}/support/signed-url`);
+    return unwrapData<{
+      signed_url: string;
+      agent_id: string;
+      dynamic_variables: Record<string, string>;
+    }>(payload);
+  },
+
   // ── Voice session (ElevenLabs) ───────────────────────────────
 
   async getVoiceSignedUrl(): Promise<{

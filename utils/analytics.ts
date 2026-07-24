@@ -137,6 +137,25 @@ export function useAnalytics() {
     },
 
     /**
+     * Reset PostHog identity (call on logout)
+     */
+    reset: () => {
+      try {
+        if (!posthog) return;
+        posthog.reset();
+        if (__DEV__) {
+          logger.debug('[Analytics] PostHog identity reset');
+        }
+      } catch (error) {
+        logger.error('[Analytics] Failed to reset identity', {
+          component: 'Analytics',
+          action: 'reset-failed',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+
+    /**
      * Get current user ID
      */
     getUserId: () => user?.id || null,
@@ -167,6 +186,7 @@ export const ANALYTICS_EVENTS = {
   // Funding Events
   DEPOSIT_INITIATED: 'deposit_initiated',
   DEPOSIT_COMPLETED: 'deposit_completed',
+  DEPOSIT_FAILED: 'deposit_failed',
   WITHDRAW_INITIATED: 'withdraw_initiated',
   WITHDRAW_COMPLETED: 'withdraw_completed',
 

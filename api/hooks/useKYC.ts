@@ -4,7 +4,7 @@ import { kycService } from '../services';
 import { queryKeys } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
 import { getTierCapabilities, type TierNextStep } from '../types/kyc';
-import type { StartDiditSessionRequest, KycStatus, SubmitKYCRequest } from '../types';
+import type { StartDiditSessionRequest, KycStatus } from '../types';
 
 export function useKYCStatus(enabled = true) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -55,17 +55,6 @@ export function useStartDiditSession() {
 
   return useMutation({
     mutationFn: (data: StartDiditSessionRequest) => kycService.startDiditSession(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.kycStatus() });
-    },
-  });
-}
-
-export function useSubmitKYC() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: SubmitKYCRequest) => kycService.submitKYC(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.kycStatus() });
     },
@@ -155,16 +144,4 @@ export function useKycStatusPolling(
   }, [query.data?.status, onTerminal]);
 
   return query;
-}
-
-// Legacy hook — kept for backward compat
-export function useBridgeKYCLink(enabled = true) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-
-  return useQuery({
-    queryKey: queryKeys.user.kycBridgeLink(),
-    queryFn: () => kycService.getBridgeKYCLink(),
-    enabled: isAuthenticated && enabled,
-    staleTime: 60 * 1000,
-  });
 }

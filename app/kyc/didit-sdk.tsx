@@ -44,7 +44,7 @@ export default function KycDiditSdkScreen() {
 
     // If taxId was lost (app killed), can't retry in-place — go back to source-of-funds
     if (!taxId) {
-      router.replace('/kyc/source-of-funds');
+      router.replace('/kyc/financial');
       return;
     }
 
@@ -92,7 +92,7 @@ export default function KycDiditSdkScreen() {
       }
 
       // Any other error — fall back to source-of-funds with pre-filled data
-      router.replace('/kyc/source-of-funds');
+      router.replace('/kyc/financial');
     }
   }, [startSession]);
 

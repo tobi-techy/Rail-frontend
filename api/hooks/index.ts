@@ -14,6 +14,7 @@ export * from './useOnboarding';
 
 // KYC hooks
 export * from './useKYC';
+export * from './useKYCFlow';
 
 // Portfolio hooks
 export * from './usePortfolio';

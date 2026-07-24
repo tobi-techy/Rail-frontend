@@ -43,4 +43,8 @@ export const virtualAccountService = {
       id_type: 'nin',
       ...req,
     }),
+
+  /** Auto-provision NGN account — checks Graph person verification and creates bank account. Zero user input. */
+  autoProvisionNgn: () =>
+    apiClient.post<NgnVirtualAccountResponse>('/v1/funding/ngn/auto-provision'),
 };

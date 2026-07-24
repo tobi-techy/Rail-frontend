@@ -87,6 +87,7 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     segments[0] === 'card' ||
     segments[0] === 'fund-crosschain' ||
     segments[0] === 'fund-naira' ||
+    segments[0] === 'fund-stash' ||
     segments[0] === 'withdraw-naira' ||
     segments[0] === 'paj-verify' ||
     segments[0] === 'ai-chat' ||
@@ -96,6 +97,12 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     segments[0] === 'account-level' ||
     segments[0] === 'profile' ||
     segments[0] === 'daily-spending-limit' ||
+    segments[0] === 'sprout-upgrade' ||
+    segments[0] === 'bloom-upgrade' ||
+    segments[0] === 'support' ||
+    segments[0] === 'link-miriam' ||
+    segments[0] === 'passkey-settings' ||
+    segments[0] === 'authorize' ||
     pathname.startsWith('/spending-stash') ||
     pathname.startsWith('/investment-stash') ||
     pathname.startsWith('/withdraw') ||
@@ -125,7 +132,11 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/gameplay') ||
     pathname.startsWith('/subscription') ||
     pathname.startsWith('/complete-profile') ||
-    pathname.startsWith('/complete-kyc'),
+    pathname.startsWith('/complete-kyc') ||
+    pathname.startsWith('/sprout-upgrade') ||
+    pathname.startsWith('/bloom-upgrade') ||
+    pathname.startsWith('/support') ||
+    pathname.startsWith('/link-miriam'),
   isOnWelcomeScreen: pathname === '/' || pathname === normalizeRoutePath(ROUTES.INTRO),
   isOnLoginPasscode: pathname === '/login-passcode',
   isOnVerifyEmail: pathname === normalizeRoutePath(ROUTES.AUTH.VERIFY_EMAIL),

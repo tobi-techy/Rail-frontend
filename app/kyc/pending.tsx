@@ -66,7 +66,7 @@ export default function KycPendingScreen() {
     // Clear stale session so source-of-funds skip effect doesn't redirect back with rejected token
     useKycStore.getState().setDiditSession('', '');
     invalidateQueries.user();
-    router.replace('/kyc/source-of-funds');
+    router.replace('/kyc/financial');
   }, []);
 
   const handleContactSupport = useCallback(() => {
@@ -83,7 +83,7 @@ export default function KycPendingScreen() {
   // don't show the polling spinner — send them back to the submission flow.
   useEffect(() => {
     if (data && !data.has_submitted && !localSubmissionPendingAt && status !== 'approved') {
-      router.replace('/kyc/source-of-funds');
+      router.replace('/kyc/financial');
     }
   }, [data, localSubmissionPendingAt, status]);
 

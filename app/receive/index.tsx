@@ -9,6 +9,7 @@ import { SUPPORTED_CHAINS, type ChainConfig } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import type { WalletChain } from '@/api/types';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
+import { recordActivationStep } from '@/utils/activation';
 import { ArrowLeft01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const ARRIVAL_TIMES: Record<string, string> = {
@@ -67,6 +68,7 @@ export default function ReceiveChainSelectScreen() {
     (chain: WalletChain) => {
       selection();
       track(ANALYTICS_EVENTS.DEPOSIT_INITIATED, { chain });
+      recordActivationStep('first_deposit', track);
       router.push({ pathname: '/receive/address', params: { chain } });
     },
     [selection, track]
