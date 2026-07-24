@@ -60,7 +60,7 @@ export interface KYCFlowState {
 export function useKYCFlow(enabled = true): KYCFlowState {
   const queryClient = useQueryClient();
 
-  const { data: kycStatus, isLoading: isStatusLoading, refetch: refetchStatus } = useKYCStatus();
+  const { data: kycStatus, isLoading: isStatusLoading } = useKYCStatus();
 
   const { capabilities, tier, bvnVerified, ninVerified } = useTierCapabilities();
 
@@ -68,7 +68,6 @@ export function useKYCFlow(enabled = true): KYCFlowState {
     data: ngnResponse,
     isLoading: isNgnLoading,
     error: ngnError,
-    refetch: refetchNgn,
   } = useNgnVirtualAccount(enabled);
 
   const autoProvisionMutation = useAutoProvisionNgn();
@@ -89,13 +88,12 @@ export function useKYCFlow(enabled = true): KYCFlowState {
   }, [autoProvisionMutation]);
 
   const refetchAll = useCallback(async () => {
+    // Invalidate triggers a refetch for each query, so we don't need separate refetch() calls
     await Promise.all([
-      refetchStatus(),
-      refetchNgn(),
       queryClient.invalidateQueries({ queryKey: queryKeys.user.kycStatus() }),
       queryClient.invalidateQueries({ queryKey: queryKeys.virtualAccount.ngn() }),
     ]);
-  }, [refetchStatus, refetchNgn, queryClient]);
+  }, [queryClient]);
 
   const isInitializing = isStatusLoading && !kycStatus;
 

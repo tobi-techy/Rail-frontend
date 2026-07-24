@@ -216,6 +216,21 @@ export function useProtectedRoute() {
             hasPasscode: freshState.hasPasscode,
           });
         }
+
+        // SECURITY: On cold start (app killed and relaunched), ALWAYS force-expire
+        // the passcode lock so users must re-authenticate via passcode/biometrics.
+        // This must run unconditionally (no expiry check) because SessionManager
+        // initialize() → updateLastActivity() may have already extended the lock
+        // to a future time before we get here. Setting it to now overrides that.
+        // The routing effect (Effect 3) will see the expired lock and redirect.
+        if (isMounted) {
+          const freshState2 = useAuthStore.getState();
+          if (freshState2.isAuthenticated && freshState2.hasPasscode) {
+            useAuthStore.setState({
+              appLockExpiresAt: new Date().toISOString(),
+            });
+          }
+        }
       } catch (error) {
         logger.error(
           '[Auth] Error initializing app',

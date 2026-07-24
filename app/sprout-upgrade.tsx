@@ -100,7 +100,7 @@ export default function SproutUpgradeScreen() {
         })
         .catch((err: Error) => {
           notification('error');
-          if (kycStatus.bvn_verified && kycStatus.provider_reference) {
+          if (kycStatus?.bvn_verified && kycStatus?.provider_reference) {
             setUseExistingDidit(true);
           }
           setAutoProvisionError(
@@ -112,7 +112,7 @@ export default function SproutUpgradeScreen() {
     }
 
     // BVN verified + Didit session — simplified form
-    if (kycStatus.bvn_verified && kycStatus.provider_reference) {
+    if (kycStatus?.bvn_verified && kycStatus?.provider_reference) {
       clearTimeout(timeout);
       setUseExistingDidit(true);
       setStep('form');
@@ -122,7 +122,7 @@ export default function SproutUpgradeScreen() {
     clearTimeout(timeout);
     setStep('form');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kycStatus, isNgnLoading, hasNgnAccount, canReceiveNgn]);
+  }, [kycStatus, isNgnLoading, hasNgnAccount, canReceiveNgn, autoProvisionNgn]);
 
   // ── Form submit ──────────────────────────────────────────────────
 

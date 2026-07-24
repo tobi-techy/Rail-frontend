@@ -32,14 +32,24 @@ export function useNgnVirtualAccount(enabled = true) {
     enabled: isAuthenticated && enabled,
     staleTime: 30 * 1000,
     // Poll every 5s while the account is pending (provisioning in-flight).
-    // Once active/failed/closed, stop polling (refetchInterval returns false).
+    // Stop after 5 minutes to avoid infinite polling on hung backends.
     refetchInterval: (query) => {
       const status = query.state.data?.virtual_account?.status;
       if (status === 'pending') return 5_000;
       return false;
     },
+    refetchOnWindowFocus: true,
   });
-  return query;
+
+  // Stop polling after 5 minutes of pending status
+  const elapsed = query.dataUpdatedAt ? Date.now() - query.dataUpdatedAt : 0;
+  const isPollingTimeout = elapsed > 5 * 60 * 1000;
+
+  return {
+    ...query,
+    // Expose whether polling has timed out so callers can show a message
+    isPollingTimeout: isPollingTimeout && query.data?.virtual_account?.status === 'pending',
+  };
 }
 
 export function useAutoProvisionNgn() {

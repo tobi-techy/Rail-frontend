@@ -142,6 +142,7 @@ function NgnAccountCard({
 }) {
   const isPending = account.status === 'pending';
   const isFailed = account.status === 'failed';
+  const isClosed = account.status === 'closed';
   const [showSlowNotice, setShowSlowNotice] = useState(false);
 
   // After 90s of pending, show "taking longer than expected" — polling continues in background.
@@ -193,6 +194,18 @@ function NgnAccountCard({
           Something went wrong setting up your Naira account. You can try again.
         </Text>
         <Button title="Try again" onPress={onRetry ?? (() => {})} variant="orange" />
+      </View>
+    );
+  }
+
+  if (isClosed) {
+    return (
+      <View className="items-center py-6">
+        <Text className="mb-1 font-subtitle text-[17px] text-[#343433]">Account closed</Text>
+        <Text className="mb-6 text-center font-body text-[13px] text-[#848281]">
+          Your Naira account has been closed. Please set up a new one.
+        </Text>
+        <Button title="Set up new account" onPress={onRetry ?? (() => {})} variant="orange" />
       </View>
     );
   }
