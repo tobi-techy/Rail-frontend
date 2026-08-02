@@ -107,7 +107,7 @@ export function useNudge(
           if (res?.show && res.message) {
             setNudge(res);
             if (res.shake) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
             }
           } else if (fallbackNudge?.show && fallbackNudge.message) {
             setNudge(fallbackNudge);
@@ -120,7 +120,7 @@ export function useNudge(
             if (res?.show && res.message) {
               setNudge(res);
               if (res.shake) {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
               }
             } else if (fallbackNudge?.show && fallbackNudge.message) {
               setNudge(fallbackNudge);

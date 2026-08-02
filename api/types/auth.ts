@@ -86,12 +86,7 @@ export interface User {
   phoneVerified: boolean;
   kycStatus: 'pending' | 'processing' | 'approved' | 'rejected' | 'expired';
   onboardingStatus:
-    | 'started'
-    | 'wallets_pending'
-    | 'kyc_pending'
-    | 'kyc_approved'
-    | 'kyc_rejected'
-    | 'completed';
+    'started' | 'wallets_pending' | 'kyc_pending' | 'kyc_approved' | 'kyc_rejected' | 'completed';
   createdAt: string;
 }
 

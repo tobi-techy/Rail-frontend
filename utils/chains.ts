@@ -153,17 +153,7 @@ export function getDefaultReceiveChain(): WalletChain {
  * All 11 deposit chains support USDC.
  */
 export const STABLECOIN_CHAINS: Record<string, WalletChain[]> = {
-  USDC: [
-    'SOL',
-    'ETH',
-    'BASE',
-    'ARB',
-    'OP',
-    'MATIC',
-    'AVAX',
-    'BSC',
-    'STARKNET',
-  ],
+  USDC: ['SOL', 'ETH', 'BASE', 'ARB', 'OP', 'MATIC', 'AVAX', 'BSC', 'STARKNET'],
   USDT: ['SOL'],
   EURC: ['SOL', 'BASE'],
   PYUSD: ['SOL'],
@@ -187,17 +177,7 @@ export const STABLECOIN_CHAINS: Record<string, WalletChain[]> = {
  *   PYUSD → none via ChainRails
  */
 export const WITHDRAWAL_CHAINS: Record<string, WalletChain[]> = {
-  USDC: [
-    'SOL',
-    'ETH',
-    'BASE',
-    'ARB',
-    'OP',
-    'MATIC',
-    'AVAX',
-    'BSC',
-    'STARKNET',
-  ],
+  USDC: ['SOL', 'ETH', 'BASE', 'ARB', 'OP', 'MATIC', 'AVAX', 'BSC', 'STARKNET'],
   USDT: ['SOL', 'ETH', 'BSC', 'STARKNET'],
   EURC: ['SOL', 'ETH', 'BASE'],
   PYUSD: ['SOL', 'ETH'],

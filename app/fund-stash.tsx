@@ -246,10 +246,6 @@ export default function FundStashScreen() {
         authorizeTitle="Authorize Transfer"
         authError={passkey.authError}
         authPasscode={passkey.authPasscode}
-        isAuthorizing={passkey.isPasskeyLoading || isPasscodeVerifying}
-        isSubmitting={isSubmitting}
-        authorizingTitle="Verifying..."
-        submittingTitle="Moving to stash..."
         summaryAmount={numericAmount}
         onClose={() => setShowAuthScreen(false)}
         onPasscodeAuthorize={onPasscodeAuthorize}
@@ -355,13 +351,7 @@ export default function FundStashScreen() {
           />
         </Animated.View>
         <Animated.View entering={SlideInUp.delay(100).duration(500)} style={keypadAnimatedStyle}>
-          <Keypad
-            className="pb-2"
-            onKeyPress={onAmountKeyPress}
-            backspaceIcon="delete"
-            variant="dark"
-            leftKey="decimal"
-          />
+          <Keypad className="pb-2" onKeyPress={onAmountKeyPress} variant="dark" leftKey="decimal" />
         </Animated.View>
       </View>
     </SafeAreaView>

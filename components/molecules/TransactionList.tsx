@@ -57,6 +57,13 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   style,
   className,
 }) => {
+  const renderItem = useCallback(
+    ({ item: tx }: { item: Transaction }) => (
+      <TransactionItem transaction={tx} onPress={() => onTransactionPress?.(tx)} />
+    ),
+    [onTransactionPress]
+  );
+
   if (isLoading) {
     const firstGroupCount = Math.max(1, Math.ceil(loadingItems / 2));
     const secondGroupCount = Math.max(0, loadingItems - firstGroupCount);
@@ -110,13 +117,6 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       </View>
     );
   }
-
-  const renderItem = useCallback(
-    ({ item: tx }: { item: Transaction }) => (
-      <TransactionItem transaction={tx} onPress={() => onTransactionPress?.(tx)} />
-    ),
-    [onTransactionPress]
-  );
 
   return (
     <SectionList

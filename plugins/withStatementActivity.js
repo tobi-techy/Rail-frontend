@@ -24,8 +24,10 @@ function withExtensionTarget(config) {
       // Extension source files don't exist yet (e.g. after --clean). Skip.
       return cfg;
     }
-    const swiftFiles = fs.readdirSync(extensionDir).filter(f => f.endsWith('.swift'));
-    const allFiles = fs.readdirSync(extensionDir).filter(f => f.endsWith('.swift') || f.endsWith('.plist'));
+    const swiftFiles = fs.readdirSync(extensionDir).filter((f) => f.endsWith('.swift'));
+    const allFiles = fs
+      .readdirSync(extensionDir)
+      .filter((f) => f.endsWith('.swift') || f.endsWith('.plist'));
 
     const target = xcodeProject.addTarget(EXTENSION_NAME, 'app_extension', EXTENSION_NAME);
 
@@ -37,7 +39,7 @@ function withExtensionTarget(config) {
     const mainGroup = xcodeProject.getFirstProject().firstProject.mainGroup;
     xcodeProject.addToPbxGroup(group.uuid, mainGroup);
 
-    swiftFiles.forEach(file => {
+    swiftFiles.forEach((file) => {
       xcodeProject.addSourceFile(
         path.join(EXTENSION_NAME, file),
         { target: target.uuid },
