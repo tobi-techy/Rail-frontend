@@ -47,7 +47,7 @@ export default function SproutUpgradeScreen() {
 
   // Consolidated KYC + NGN state
   const { kycStatus, canReceiveNgn, hasNgnAccount, isNgnLoading, autoProvisionNgn, refetchAll } =
-    useKYCFlow(canReceiveNgn);
+    useKYCFlow();
 
   const [step, setStep] = useState<Step>('checking');
   const [formError, setFormError] = useState<string | null>(null);

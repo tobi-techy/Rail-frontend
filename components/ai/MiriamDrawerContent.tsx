@@ -1,7 +1,22 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, FadeOut, useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { GlassView } from '@/components/ui/GlassView';
 import {
@@ -96,14 +111,20 @@ function ThreadOptionsMenu({
           fallbackColor="rgba(255,255,255,0.92)"
           style={{ borderRadius: 14, overflow: 'hidden' }}>
           <Pressable
-            onPress={() => { onClose(); onPin(); }}
+            onPress={() => {
+              onClose();
+              onPin();
+            }}
             className="flex-row items-center justify-between px-4 py-3.5 active:bg-black/[0.05]">
             <Text className="font-body-medium text-[15px] text-[#1C1C1E]">Pin</Text>
             <HugeiconsIcon icon={PinIcon} size={18} color="#1C1C1E" />
           </Pressable>
           <View className="mx-4 h-[0.5px] bg-black/[0.08]" />
           <Pressable
-            onPress={() => { onClose(); onDelete(); }}
+            onPress={() => {
+              onClose();
+              onDelete();
+            }}
             className="flex-row items-center justify-between px-4 py-3.5 active:bg-black/[0.05]">
             <Text className="font-body-medium text-[15px] text-[#FF3B30]">Delete</Text>
             <HugeiconsIcon icon={Delete02Icon} size={18} color="#FF3B30" />
@@ -121,8 +142,14 @@ export function MiriamDrawerContent({ navigation }: DrawerContentComponentProps)
   const [menuAnchor, setMenuAnchor] = useState<{ x: number; y: number } | null>(null);
   const inputRef = useRef<TextInput>(null);
 
-  const { conversations, activeConversationId, selectConversation, clearActiveConversation, fetchProactiveOpener, deleteConversation } =
-    useAIChatStore();
+  const {
+    conversations,
+    activeConversationId,
+    selectConversation,
+    clearActiveConversation,
+    fetchProactiveOpener,
+    deleteConversation,
+  } = useAIChatStore();
 
   // Pre-fetch proactive opener when drawer opens so it's ready for chat
   useEffect(() => {
@@ -145,9 +172,7 @@ export function MiriamDrawerContent({ navigation }: DrawerContentComponentProps)
   }, [clearActiveConversation, closeDrawer]);
 
   const filtered = searchQuery
-    ? (conversations ?? []).filter((c) =>
-        c.title.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? (conversations ?? []).filter((c) => c.title.toLowerCase().includes(searchQuery.toLowerCase()))
     : (conversations ?? []);
 
   // Strip mic/voice emoji prefix from display titles
@@ -166,7 +191,13 @@ export function MiriamDrawerContent({ navigation }: DrawerContentComponentProps)
           effect="regular"
           white
           fallbackColor="#F2F2F2"
-          style={{ borderRadius: 22, height: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 }}>
+          style={{
+            borderRadius: 22,
+            height: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 14,
+          }}>
           <HugeiconsIcon icon={Search01Icon} size={17} color="#9CA3AF" />
           <TextInput
             ref={inputRef}
@@ -251,19 +282,20 @@ export function MiriamDrawerContent({ navigation }: DrawerContentComponentProps)
       </ScrollView>
 
       {/* New Chat button — bottom right */}
-      <View
-        className="absolute bottom-0 right-5"
-        style={{ paddingBottom: insets.bottom + 20 }}>
-        <Pressable
-          onPress={handleNewChat}
-          accessibilityRole="button"
-          accessibilityLabel="New Chat">
+      <View className="absolute bottom-0 right-5" style={{ paddingBottom: insets.bottom + 20 }}>
+        <Pressable onPress={handleNewChat} accessibilityRole="button" accessibilityLabel="New Chat">
           <GlassView
             effect="regular"
             interactive
             white
             fallbackColor="rgba(0,0,0,0.08)"
-            style={{ borderRadius: 100, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 }}>
+            style={{
+              borderRadius: 100,
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 20,
+              paddingVertical: 14,
+            }}>
             <HugeiconsIcon icon={Add01Icon} size={18} color="#1A1A1A" />
             <Text className="ml-2 font-heading-semibold text-[15px] text-[#1A1A1A]">New Chat</Text>
           </GlassView>
@@ -274,8 +306,12 @@ export function MiriamDrawerContent({ navigation }: DrawerContentComponentProps)
         visible={!!menuConvId}
         anchor={menuAnchor}
         onClose={() => setMenuConvId(null)}
-        onPin={() => { /* TODO: pin API */ }}
-        onDelete={() => { if (menuConvId) deleteConversation(menuConvId); }}
+        onPin={() => {
+          /* TODO: pin API */
+        }}
+        onDelete={() => {
+          if (menuConvId) deleteConversation(menuConvId);
+        }}
       />
     </View>
   );

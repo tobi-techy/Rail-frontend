@@ -264,7 +264,6 @@ export default function MarketTradeAmountScreen() {
           <Keypad
             onKeyPress={(key) => onAmountKeyPress(key as KeypadInput)}
             leftKey="decimal"
-            backspaceIcon="delete"
             variant="dark"
           />
 

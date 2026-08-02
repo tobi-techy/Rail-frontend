@@ -26,11 +26,7 @@ export interface StartMobileWalletFundingResult {
 }
 
 export type FundingErrorCategory =
-  | 'wallet_missing'
-  | 'wallet_timeout'
-  | 'wallet_cancelled'
-  | 'transaction_failed'
-  | 'unknown';
+  'wallet_missing' | 'wallet_timeout' | 'wallet_cancelled' | 'transaction_failed' | 'unknown';
 
 export interface NormalizedFundingError {
   category: FundingErrorCategory;

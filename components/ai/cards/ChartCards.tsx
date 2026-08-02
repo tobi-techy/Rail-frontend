@@ -7,8 +7,7 @@ export function ChartCard({ card }: { card: InsightCard }) {
   const raw = (card.data?.points ??
     card.data?.data ??
     (Array.isArray(card.data) ? card.data : undefined)) as
-    | { label: string; value: number }[]
-    | undefined;
+    { label: string; value: number }[] | undefined;
 
   if (!Array.isArray(raw) || raw.length === 0) return <CardErrorFallback />;
 

@@ -9,11 +9,7 @@ import { ChainLogo } from '@/components/ChainLogo';
 import { useUIStore } from '@/stores';
 import { getCurrencyConfig } from '@/utils/currencyConfig';
 import { formatCurrency } from '@/components/withdraw/method-screen/utils';
-import { ReviewCard, DetailRow, Sep } from '@/components/withdraw/shared';
-import { ArrowLeft01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
-import { useHaptics } from '@/hooks/useHaptics';
-import { playUISound } from '@/lib/uiSounds';
-import * as Haptics from '@/utils/platformHaptics';
+import { ArrowLeft01Icon, Wallet01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { useInitiateWithdrawal } from '@/api/hooks/useFunding';
 import { useWithdrawalFee } from '@/api/hooks/useWallet';
 import { useAuthStore } from '@/stores/authStore';
@@ -26,10 +22,19 @@ import { parseApiError, isPasscodeSessionError } from '@/utils/apiError';
 import { commitmentDeclineMessage, isCommitmentExceededError } from '@/utils/spendingCommitment';
 import { useWithdrawalEventStore } from '@/stores/withdrawalEventStore';
 import { useWithdrawalSessionStore } from '@/stores/withdrawalSessionStore';
+import {
+  DetailCard,
+  DetailField,
+  AmountHero,
+  SectionLabel,
+  Hairline,
+  SenderReceiver,
+  CurrencyBadge,
+  STAGGER_MS,
+} from '@/components/withdraw/shared';
 
 export default function CryptoConfirmScreen() {
   const insets = useSafeAreaInsets();
-  const { impact } = useHaptics();
   const params = useLocalSearchParams<{
     amount: string;
     destinationInput: string;
@@ -240,76 +245,61 @@ export default function CryptoConfirmScreen() {
         className="flex-1 px-5"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}>
-        <Animated.View entering={FadeInUp.duration(250)} className="items-center py-8">
+        <Animated.View entering={FadeInUp.duration(250)} className="items-center py-6">
           <View className="mb-3 size-14 items-center justify-center rounded-full bg-surface">
             <CurrencyIcon width={32} height={32} />
           </View>
-          <Text
-            className="font-subtitle text-[42px] leading-[46px] text-text-primary"
-            maxFontSizeMultiplier={1.3}>
-            {prefix}
-            {formatCurrency(numericAmount)}
-          </Text>
-          <Text
-            className="mt-1 font-body text-[14px] text-text-secondary"
-            maxFontSizeMultiplier={1.4}>
-            {assetLabel}
-          </Text>
+          <AmountHero amount={`${prefix}${formatCurrency(numericAmount)}`} subtitle={assetLabel} />
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(40).duration(250)}>
-          <ReviewCard title="Destination">
-            <DetailRow label="Address" value={maskAddr(params.destinationInput ?? '')} />
-            <Sep />
-            <View className="flex-row items-center justify-between px-5 py-4">
-              <Text
-                className="font-body text-[14px] text-text-secondary"
-                maxFontSizeMultiplier={1.4}>
-                Network
-              </Text>
-              <View className="flex-row items-center gap-2">
+        <Animated.View entering={FadeInUp.delay(STAGGER_MS).duration(250)}>
+          <SectionLabel>Destination</SectionLabel>
+          <DetailCard>
+            <SenderReceiver
+              fromLabel="From"
+              fromValue="Spend Wallet"
+              fromIcon={<HugeiconsIcon icon={Wallet01Icon} size={16} color="#848281" />}
+              toLabel="To"
+              toValue={maskAddr(params.destinationInput ?? '')}
+              toIcon={
+                <CurrencyBadge
+                  code={chainConfig.label.slice(0, 3).toUpperCase()}
+                  bgColor={chainConfig.color}
+                />
+              }
+            />
+            <Hairline />
+            <DetailField
+              label="Network"
+              value={`${chainConfig.label}${isEVMChain(chainConfig.chain) ? ' (EVM)' : ''}`}
+              leading={
                 <View
                   className="size-5 items-center justify-center rounded-full"
                   style={{ backgroundColor: chainConfig.color + '14' }}>
                   <ChainLogo chain={params.destinationChain ?? 'SOL'} size={12} />
                 </View>
-                <Text
-                  className="font-subtitle text-[14px] text-text-primary"
-                  maxFontSizeMultiplier={1.4}>
-                  {chainConfig.label}
-                  {isEVMChain(chainConfig.chain) ? ' (EVM)' : ''}
-                </Text>
-              </View>
-            </View>
-            <Sep />
-            <DetailRow label="Asset" value={assetLabel} />
-            <Sep />
-            <DetailRow label="Source" value="Spend Wallet" />
-          </ReviewCard>
+              }
+            />
+            <Hairline />
+            <DetailField label="Asset" value={assetLabel} />
+          </DetailCard>
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(80).duration(250)}>
-          <ReviewCard title="Transaction">
-            <DetailRow label="Network fee" value={`$${formatCurrency(feeAmount)}`} />
-            <Sep />
-            <View className="flex-row items-center justify-between px-5 py-4">
-              <Text
-                className="font-subtitle text-[14px] text-text-primary"
-                maxFontSizeMultiplier={1.4}>
-                Total
-              </Text>
-              <Text
-                className="font-subtitle text-[16px] text-text-primary"
-                maxFontSizeMultiplier={1.3}>
-                {prefix}
-                {formatCurrency(totalAmount)} {assetLabel}
-              </Text>
-            </View>
-          </ReviewCard>
+        <Animated.View entering={FadeInUp.delay(STAGGER_MS * 2).duration(250)} className="mt-6">
+          <SectionLabel>Transaction</SectionLabel>
+          <DetailCard>
+            <DetailField label="Network fee" value={`$${formatCurrency(feeAmount)}`} />
+            <Hairline />
+            <DetailField
+              label="Total"
+              value={`${prefix}${formatCurrency(totalAmount)} ${assetLabel}`}
+              tone="primary"
+            />
+          </DetailCard>
         </Animated.View>
 
         <Text
-          className="mt-2 font-body text-[12px] leading-[18px] text-text-secondary"
+          className="mt-4 font-body text-[12px] leading-[18px] text-text-secondary"
           maxFontSizeMultiplier={1.4}>
           * Please verify the address and network. {assetLabel} withdrawals cannot be reversed.
         </Text>
