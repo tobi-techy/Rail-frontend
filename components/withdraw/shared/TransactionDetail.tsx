@@ -8,6 +8,7 @@ import {
 } from '@/lib/icons';
 import * as Haptics from '@/utils/platformHaptics';
 import * as Clipboard from 'expo-clipboard';
+import { safeError } from '@/utils/logSanitizer';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Constants
@@ -49,8 +50,12 @@ export function DetailField({
 }) {
   const onCopy = async () => {
     if (!copyable) return;
-    await Clipboard.setStringAsync(value);
-    void Haptics.selectionAsync();
+    try {
+      await Clipboard.setStringAsync(value);
+      void Haptics.selectionAsync();
+    } catch (error) {
+      safeError('Failed to copy field value', error);
+    }
   };
 
   const valueColor =
@@ -62,7 +67,10 @@ export function DetailField({
           ? 'text-ember-orange'
           : 'text-charcoal-primary';
 
-  const body = (
+  const displayValue =
+    copyable && value.length > 24 ? `${value.slice(0, 10)}…${value.slice(-8)}` : value;
+
+  const content = (
     <View className="flex-row items-center justify-between border-b border-stone-surface px-5 py-4 last:border-b-0">
       <Text className="font-body text-[14px] text-text-secondary" maxFontSizeMultiplier={1.4}>
         {label}
@@ -74,8 +82,9 @@ export function DetailField({
           style={mono ? { fontVariant: ['tabular-nums'], letterSpacing: 0.3 } : undefined}
           numberOfLines={1}
           maxFontSizeMultiplier={1.3}>
-          {value}
+          {displayValue}
         </Text>
+        {copyable && <HugeiconsIcon icon={Copy01Icon} size={15} color="#848281" />}
       </View>
     </View>
   );
@@ -87,26 +96,12 @@ export function DetailField({
         className="active:scale-[0.98]"
         accessibilityRole="button"
         accessibilityLabel={`Copy ${label}`}>
-        <View className="flex-row items-center justify-between border-b border-stone-surface px-5 py-4 last:border-b-0">
-          <Text className="font-body text-[14px] text-text-secondary" maxFontSizeMultiplier={1.4}>
-            {label}
-          </Text>
-          <View className="ml-4 flex-1 flex-row items-center justify-end gap-2">
-            <Text
-              className={`text-right ${mono ? 'font-mono-semibold text-[15px]' : 'font-subtitle text-[14px]'} ${valueColor}`}
-              style={mono ? { fontVariant: ['tabular-nums'], letterSpacing: 0.3 } : undefined}
-              numberOfLines={1}
-              maxFontSizeMultiplier={1.3}>
-              {value.length > 24 ? `${value.slice(0, 10)}…${value.slice(-8)}` : value}
-            </Text>
-            <HugeiconsIcon icon={Copy01Icon} size={15} color="#848281" />
-          </View>
-        </View>
+        {content}
       </Pressable>
     );
   }
 
-  return body;
+  return content;
 }
 
 /* ── Status pill badge ───────────────────────────────────────────────── */
@@ -124,9 +119,16 @@ export function StatusBadge({
     processing: { bg: '#F0F4FF', text: '#0090ff', icon: null },
   };
 
-  const c = config[status];
+  const c = config[status] || config.pending;
   const text =
-    label ?? (status === 'completed' ? 'Completed' : status === 'failed' ? 'Failed' : 'Processing');
+    label ??
+    (status === 'completed'
+      ? 'Completed'
+      : status === 'failed'
+        ? 'Failed'
+        : status === 'pending'
+          ? 'Pending'
+          : 'Processing');
 
   return (
     <View

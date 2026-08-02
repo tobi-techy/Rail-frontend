@@ -281,7 +281,7 @@ export default function EurConfirmScreen() {
                 <Hairline />
               </>
             )}
-            <DetailField label="Network fee" value={`$${formatCurrency(feeAmount)}`} />
+            <DetailField label="Network fee" value={`€${formatCurrency(feeAmount)}`} />
             <Hairline />
             <DetailField label="Total" value={`€${formatCurrency(totalAmount)}`} tone="primary" />
           </DetailCard>
