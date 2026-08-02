@@ -32,6 +32,8 @@ import {
   SectionLabel,
   Hairline,
   SenderReceiver,
+  CurrencyBadge,
+  STAGGER_MS,
 } from '@/components/withdraw/shared';
 
 export default function CryptoConfirmScreen() {
@@ -254,7 +256,7 @@ export default function CryptoConfirmScreen() {
           <AmountHero amount={`${prefix}${formatCurrency(numericAmount)}`} subtitle={assetLabel} />
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(40).duration(250)}>
+        <Animated.View entering={FadeInUp.delay(STAGGER_MS).duration(250)}>
           <SectionLabel>Destination</SectionLabel>
           <DetailCard>
             <SenderReceiver
@@ -264,6 +266,17 @@ export default function CryptoConfirmScreen() {
               toLabel="To"
               toValue={maskAddr(params.destinationInput ?? '')}
               toIcon={
+                <CurrencyBadge
+                  code={chainConfig.label.slice(0, 3).toUpperCase()}
+                  bgColor={chainConfig.color}
+                />
+              }
+            />
+            <Hairline />
+            <DetailField
+              label="Network"
+              value={`${chainConfig.label}${isEVMChain(chainConfig.chain) ? ' (EVM)' : ''}`}
+              leading={
                 <View
                   className="size-5 items-center justify-center rounded-full"
                   style={{ backgroundColor: chainConfig.color + '14' }}>
@@ -272,32 +285,11 @@ export default function CryptoConfirmScreen() {
               }
             />
             <Hairline />
-            <View className="flex-row items-center justify-between px-5 py-4">
-              <Text
-                className="font-body text-[14px] text-text-secondary"
-                maxFontSizeMultiplier={1.4}>
-                Network
-              </Text>
-              <View className="flex-row items-center gap-2">
-                <View
-                  className="size-5 items-center justify-center rounded-full"
-                  style={{ backgroundColor: chainConfig.color + '14' }}>
-                  <ChainLogo chain={params.destinationChain ?? 'SOL'} size={12} />
-                </View>
-                <Text
-                  className="font-subtitle text-[14px] text-text-primary"
-                  maxFontSizeMultiplier={1.4}>
-                  {chainConfig.label}
-                  {isEVMChain(chainConfig.chain) ? ' (EVM)' : ''}
-                </Text>
-              </View>
-            </View>
-            <Hairline />
-            <DetailField label="Asset" value={assetLabel} last />
+            <DetailField label="Asset" value={assetLabel} />
           </DetailCard>
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(80).duration(250)} className="mt-6">
+        <Animated.View entering={FadeInUp.delay(STAGGER_MS * 2).duration(250)} className="mt-6">
           <SectionLabel>Transaction</SectionLabel>
           <DetailCard>
             <DetailField label="Network fee" value={`$${formatCurrency(feeAmount)}`} />
@@ -306,7 +298,6 @@ export default function CryptoConfirmScreen() {
               label="Total"
               value={`${prefix}${formatCurrency(totalAmount)} ${assetLabel}`}
               tone="primary"
-              last
             />
           </DetailCard>
         </Animated.View>

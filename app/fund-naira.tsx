@@ -3,8 +3,6 @@ import { ActivityIndicator, Linking, Pressable, StatusBar, Text, View } from 're
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, {
-  FadeIn,
-  FadeInDown,
   FadeInUp,
   SlideInUp,
   useAnimatedStyle,
@@ -284,29 +282,29 @@ function BankDetailsStep({
         </Animated.View>
 
         {/* Amount hero */}
-        <Animated.View entering={FadeInDown.delay(100).duration(400)} className="mt-4 items-center">
+        <View className="mt-4 items-center py-6">
           <AmountHero
             amount={`₦${order.fiatAmount.toLocaleString()}`}
             subtitle={`≈ $${usdValue} USDC`}
             status="pending"
-            currency="Transfer exactly this amount"
+            description="Transfer exactly this amount"
           />
-        </Animated.View>
+        </View>
 
         {/* Bank details card */}
-        <Animated.View entering={FadeInDown.delay(200).duration(400)} className="mt-6">
+        <View className="mt-6">
           <SectionLabel>Bank Account</SectionLabel>
           <DetailCard>
-            <DetailField label="Bank" value={order.bank} last={false} />
+            <DetailField label="Bank" value={order.bank} />
             <Hairline />
-            <DetailField label="Account Number" value={order.accountNumber} mono last={false} />
+            <DetailField label="Account Number" value={order.accountNumber} mono />
             <Hairline />
-            <DetailField label="Account Name" value={order.accountName} last={true} />
+            <DetailField label="Account Name" value={order.accountName} />
           </DetailCard>
-        </Animated.View>
+        </View>
 
         {/* Copy-all helper */}
-        <Animated.View entering={FadeInDown.delay(300).duration(400)} className="mt-4">
+        <View className="mt-4">
           <Pressable
             onPress={() =>
               copyToClipboard(
@@ -314,7 +312,7 @@ function BankDetailsStep({
                 'All details'
               )
             }
-            className="flex-row items-center justify-center gap-2 rounded-full bg-stone-surface px-4 py-3 active:opacity-70"
+            className="flex-row items-center justify-center gap-2 rounded-full bg-stone-surface px-4 py-3 active:scale-[0.98]"
             accessibilityRole="button"
             accessibilityLabel="Copy all bank details">
             <HugeiconsIcon
@@ -328,17 +326,17 @@ function BankDetailsStep({
               {copiedField === 'All details' ? 'Copied' : 'Copy all details'}
             </Text>
           </Pressable>
-        </Animated.View>
+        </View>
 
         {/* Instructions */}
-        <Animated.View entering={FadeInDown.delay(350).duration(400)} className="mt-6 px-2">
+        <View className="mt-6 px-2">
           <Text
             className="text-center font-body text-[13px] leading-5 text-text-secondary"
             maxFontSizeMultiplier={1.4}>
             Transfer the exact amount above to this account. Your deposit will be credited
             automatically once confirmed.
           </Text>
-        </Animated.View>
+        </View>
 
         {/* CTA */}
         <View className="mt-auto pb-4">
@@ -483,11 +481,11 @@ function WaitingStep({
         </View>
 
         {/* Hero */}
-        <Animated.View entering={FadeInDown.delay(100).duration(400)} className="mt-4 items-center">
+        <View className="mt-4 items-center py-6">
           <AmountHero
             amount={`₦${fiatDisplay}`}
             status={statusMap}
-            currency={
+            description={
               isCompleted
                 ? 'Deposit converted and credited'
                 : isFailed
@@ -495,13 +493,10 @@ function WaitingStep({
                   : 'Your deposit is being processed'
             }
           />
-        </Animated.View>
+        </View>
 
         {/* Timeline card */}
-        <Animated.View
-          entering={FadeInDown.delay(250).duration(400)}
-          style={cardStyle}
-          className="mt-6">
+        <View style={cardStyle} className="mt-6">
           <SectionLabel>Progress</SectionLabel>
           <DetailCard className="py-5">
             {STEPS.map((step, i) => {
@@ -519,11 +514,11 @@ function WaitingStep({
               );
             })}
           </DetailCard>
-        </Animated.View>
+        </View>
 
         {/* Timing hint */}
         {!isTerminal && (
-          <Animated.View entering={FadeIn.delay(400).duration(300)} className="mt-5 items-center">
+          <View className="mt-5 items-center">
             <View className="rounded-full bg-stone-surface px-4 py-2">
               <Text
                 className="font-body text-[13px] text-text-secondary"
@@ -531,7 +526,7 @@ function WaitingStep({
                 Usually takes 1–5 minutes
               </Text>
             </View>
-          </Animated.View>
+          </View>
         )}
 
         {/* CTAs */}

@@ -23,7 +23,6 @@ import {
   DetailField,
   StatusBadge,
   SenderReceiver,
-  AmountHero,
   SectionLabel,
   Hairline,
 } from '@/components/withdraw/shared';
@@ -529,7 +528,6 @@ export default function TransactionDetailScreen() {
                       label={r.label}
                       value={r.value}
                       copyable={r.copyable}
-                      last={i === extraFields.length - 1}
                     />
                   ))}
                 </DetailCard>

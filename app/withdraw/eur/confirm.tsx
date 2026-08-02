@@ -29,6 +29,8 @@ import {
   SectionLabel,
   Hairline,
   SenderReceiver,
+  CurrencyBadge,
+  STAGGER_MS,
 } from '@/components/withdraw/shared';
 
 export default function EurConfirmScreen() {
@@ -244,7 +246,7 @@ export default function EurConfirmScreen() {
           <AmountHero amount={`€${formatCurrency(numericAmount)}`} subtitle="EUR" />
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(40).duration(250)}>
+        <Animated.View entering={FadeInUp.delay(STAGGER_MS).duration(250)}>
           <SectionLabel>Destination</SectionLabel>
           <DetailCard>
             <SenderReceiver
@@ -253,11 +255,7 @@ export default function EurConfirmScreen() {
               fromIcon={<HugeiconsIcon icon={Wallet01Icon} size={16} color="#848281" />}
               toLabel="To"
               toValue={params.accountHolderName ?? '—'}
-              toIcon={
-                <View className="size-5 items-center justify-center rounded-full bg-[#0090ff]">
-                  <Text className="font-subtitle text-[10px] text-white">EUR</Text>
-                </View>
-              }
+              toIcon={<CurrencyBadge code="EUR" />}
             />
             <Hairline />
             <DetailField label="IBAN" value={maskIban(params.iban ?? '')} mono />
@@ -268,11 +266,11 @@ export default function EurConfirmScreen() {
               </>
             ) : null}
             <Hairline />
-            <DetailField label="Currency" value="EUR" last />
+            <DetailField label="Currency" value="EUR" />
           </DetailCard>
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(80).duration(250)} className="mt-6">
+        <Animated.View entering={FadeInUp.delay(STAGGER_MS * 2).duration(250)} className="mt-6">
           <SectionLabel>Transaction</SectionLabel>
           <DetailCard>
             {params.category && params.category !== 'Transfer' && (
@@ -289,12 +287,7 @@ export default function EurConfirmScreen() {
             )}
             <DetailField label="Network fee" value={`$${formatCurrency(feeAmount)}`} />
             <Hairline />
-            <DetailField
-              label="Total"
-              value={`€${formatCurrency(totalAmount)}`}
-              tone="primary"
-              last
-            />
+            <DetailField label="Total" value={`€${formatCurrency(totalAmount)}`} tone="primary" />
           </DetailCard>
         </Animated.View>
 

@@ -7,8 +7,10 @@ export {
   DetailCard,
   DetailField,
   StatusBadge,
+  CurrencyBadge,
   SenderReceiver,
   AmountHero,
   SectionLabel,
   Hairline,
+  STAGGER_MS,
 } from './TransactionDetail';

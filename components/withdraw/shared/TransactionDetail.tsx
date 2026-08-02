@@ -1,8 +1,19 @@
 import { View, Text, Pressable } from 'react-native';
 import React from 'react';
-import { IconComponent as HugeiconsIcon, Copy01Icon, CheckmarkCircle01Icon } from '@/lib/icons';
+import {
+  IconComponent as HugeiconsIcon,
+  Copy01Icon,
+  CheckmarkCircle01Icon,
+  ArrowRight01Icon,
+} from '@/lib/icons';
 import * as Haptics from '@/utils/platformHaptics';
 import * as Clipboard from 'expo-clipboard';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Constants
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export const STAGGER_MS = 60;
 
 /* ── Clean card with subtle stone border (DESIGN.md surface 2) ───────── */
 export function DetailCard({
@@ -28,7 +39,6 @@ export function DetailField({
   mono,
   tone = 'default',
   leading,
-  last,
 }: {
   label: string;
   value: string;
@@ -36,7 +46,6 @@ export function DetailField({
   mono?: boolean;
   tone?: 'default' | 'success' | 'danger' | 'primary';
   leading?: React.ReactNode;
-  last?: boolean;
 }) {
   const onCopy = async () => {
     if (!copyable) return;
@@ -54,8 +63,7 @@ export function DetailField({
           : 'text-charcoal-primary';
 
   const body = (
-    <View
-      className={`flex-row items-center justify-between px-5 py-4 ${last ? '' : 'border-b border-stone-surface'}`}>
+    <View className="flex-row items-center justify-between border-b border-stone-surface px-5 py-4 last:border-b-0">
       <Text className="font-body text-[14px] text-text-secondary" maxFontSizeMultiplier={1.4}>
         {label}
       </Text>
@@ -76,11 +84,10 @@ export function DetailField({
     return (
       <Pressable
         onPress={onCopy}
-        className="active:opacity-60"
+        className="active:scale-[0.98]"
         accessibilityRole="button"
         accessibilityLabel={`Copy ${label}`}>
-        <View
-          className={`flex-row items-center justify-between px-5 py-4 ${last ? '' : 'border-b border-stone-surface'}`}>
+        <View className="flex-row items-center justify-between border-b border-stone-surface px-5 py-4 last:border-b-0">
           <Text className="font-body text-[14px] text-text-secondary" maxFontSizeMultiplier={1.4}>
             {label}
           </Text>
@@ -136,6 +143,17 @@ export function StatusBadge({
   );
 }
 
+/* ── Currency badge circle ───────────────────────────────────────────── */
+export function CurrencyBadge({ code, bgColor = '#0090ff' }: { code: string; bgColor?: string }) {
+  return (
+    <View
+      className="size-5 items-center justify-center rounded-full"
+      style={{ backgroundColor: bgColor }}>
+      <Text className="font-subtitle text-[10px] text-white">{code}</Text>
+    </View>
+  );
+}
+
 /* ── Sender / Receiver row with avatar/icon ───────────────────────────── */
 export function SenderReceiver({
   fromLabel,
@@ -178,7 +196,7 @@ export function SenderReceiver({
 
       {/* Arrow */}
       <View className="size-8 items-center justify-center rounded-full bg-stone-surface">
-        <Text className="font-mono-semibold text-[12px] text-text-secondary">→</Text>
+        <HugeiconsIcon icon={ArrowRight01Icon} size={14} color="#848281" strokeWidth={2} />
       </View>
 
       {/* To */}
@@ -211,15 +229,15 @@ export function AmountHero({
   amount,
   subtitle,
   status,
-  currency,
+  description,
 }: {
   amount: string;
   subtitle?: string;
   status?: 'completed' | 'failed' | 'pending' | 'processing';
-  currency?: string;
+  description?: string;
 }) {
   return (
-    <View className="items-center py-8">
+    <View className="items-center">
       {status && (
         <View className="mb-4">
           <StatusBadge status={status} />
@@ -231,11 +249,11 @@ export function AmountHero({
         maxFontSizeMultiplier={1.2}>
         {amount}
       </Text>
-      {currency && (
+      {description && (
         <Text
           className="mt-1 font-body text-[14px] text-text-secondary"
           maxFontSizeMultiplier={1.4}>
-          {currency}
+          {description}
         </Text>
       )}
       {subtitle && (

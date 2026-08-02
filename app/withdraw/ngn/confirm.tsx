@@ -34,6 +34,8 @@ import {
   SectionLabel,
   Hairline,
   SenderReceiver,
+  CurrencyBadge,
+  STAGGER_MS,
 } from '@/components/withdraw/shared';
 
 const mapRampStatus = (status?: string): WithdrawalStatusType => {
@@ -261,7 +263,7 @@ export default function NgnConfirmScreen() {
         </Animated.View>
 
         {/* Destination */}
-        <Animated.View entering={FadeInUp.delay(40).duration(250)}>
+        <Animated.View entering={FadeInUp.delay(STAGGER_MS).duration(250)}>
           <SectionLabel>Destination</SectionLabel>
           <DetailCard>
             <SenderReceiver
@@ -270,23 +272,19 @@ export default function NgnConfirmScreen() {
               fromIcon={<HugeiconsIcon icon={Wallet01Icon} size={16} color="#848281" />}
               toLabel="To"
               toValue={params.accountName ?? '—'}
-              toIcon={
-                <View className="size-5 items-center justify-center rounded-full bg-[#0090ff]">
-                  <Text className="font-subtitle text-[10px] text-white">NGN</Text>
-                </View>
-              }
+              toIcon={<CurrencyBadge code="NGN" />}
             />
             <Hairline />
             <DetailField label="Bank" value={params.bankName ?? '—'} />
             <Hairline />
             <DetailField label="Account" value={params.accountNumber ?? '—'} mono />
             <Hairline />
-            <DetailField label="Currency" value="NGN" last />
+            <DetailField label="Currency" value="NGN" />
           </DetailCard>
         </Animated.View>
 
         {/* Transaction */}
-        <Animated.View entering={FadeInUp.delay(80).duration(250)} className="mt-6">
+        <Animated.View entering={FadeInUp.delay(STAGGER_MS * 2).duration(250)} className="mt-6">
           <SectionLabel>Transaction</SectionLabel>
           <DetailCard>
             {offRampRate > 0 && (
@@ -300,7 +298,6 @@ export default function NgnConfirmScreen() {
             <DetailField
               label="Fee"
               value={rampQuote?.fee ? `₦${Number(rampQuote.fee).toLocaleString()}` : '—'}
-              last
             />
           </DetailCard>
         </Animated.View>
