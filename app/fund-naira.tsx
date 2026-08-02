@@ -3,6 +3,8 @@ import { ActivityIndicator, Linking, Pressable, StatusBar, Text, View } from 're
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, {
+  FadeIn,
+  FadeInDown,
   FadeInUp,
   SlideInUp,
   useAnimatedStyle,

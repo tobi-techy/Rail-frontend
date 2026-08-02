@@ -10,9 +10,6 @@ import { useUIStore } from '@/stores';
 import { getCurrencyConfig } from '@/utils/currencyConfig';
 import { formatCurrency } from '@/components/withdraw/method-screen/utils';
 import { ArrowLeft01Icon, Wallet01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
-import { useHaptics } from '@/hooks/useHaptics';
-import { playUISound } from '@/lib/uiSounds';
-import * as Haptics from '@/utils/platformHaptics';
 import { useInitiateWithdrawal } from '@/api/hooks/useFunding';
 import { useWithdrawalFee } from '@/api/hooks/useWallet';
 import { useAuthStore } from '@/stores/authStore';
@@ -38,7 +35,6 @@ import {
 
 export default function CryptoConfirmScreen() {
   const insets = useSafeAreaInsets();
-  const { impact } = useHaptics();
   const params = useLocalSearchParams<{
     amount: string;
     destinationInput: string;
