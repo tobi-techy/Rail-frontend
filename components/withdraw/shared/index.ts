@@ -3,3 +3,12 @@ export { CategoryPicker } from './CategoryPicker';
 export { FeeBreakdown } from './FeeBreakdown';
 export { RecipientRow } from './RecipientRow';
 export { ScreenHeader } from './ScreenHeader';
+export {
+  DetailCard,
+  DetailField,
+  StatusBadge,
+  SenderReceiver,
+  AmountHero,
+  SectionLabel,
+  Hairline,
+} from './TransactionDetail';

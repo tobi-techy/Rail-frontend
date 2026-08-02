@@ -6,8 +6,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from '@/components/ui';
 import { getCurrencyConfig } from '@/utils/currencyConfig';
 import { formatCurrency } from '@/components/withdraw/method-screen/utils';
-import { ReviewCard, DetailRow, Sep } from '@/components/withdraw/shared';
-import { ArrowLeft01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { ArrowLeft01Icon, Wallet01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { useHaptics } from '@/hooks/useHaptics';
 import { playUISound } from '@/lib/uiSounds';
 import * as Haptics from '@/utils/platformHaptics';
@@ -23,6 +22,14 @@ import { parseApiError, isPasscodeSessionError } from '@/utils/apiError';
 import { commitmentDeclineMessage, isCommitmentExceededError } from '@/utils/spendingCommitment';
 import { useWithdrawalEventStore } from '@/stores/withdrawalEventStore';
 import { useWithdrawalSessionStore } from '@/stores/withdrawalSessionStore';
+import {
+  DetailCard,
+  DetailField,
+  AmountHero,
+  SectionLabel,
+  Hairline,
+  SenderReceiver,
+} from '@/components/withdraw/shared';
 
 export default function EurConfirmScreen() {
   const insets = useSafeAreaInsets();
@@ -230,73 +237,69 @@ export default function EurConfirmScreen() {
         className="flex-1 px-5"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}>
-        <Animated.View entering={FadeInUp.duration(250)} className="items-center py-8">
+        <Animated.View entering={FadeInUp.duration(250)} className="items-center py-6">
           <View className="mb-3 size-14 items-center justify-center rounded-full bg-surface">
             <CurrencyIcon width={32} height={32} />
           </View>
-          <Text
-            className="font-subtitle text-[42px] leading-[46px] text-text-primary"
-            maxFontSizeMultiplier={1.3}>
-            €{formatCurrency(numericAmount)}
-          </Text>
-          <Text
-            className="mt-1 font-body text-[14px] text-text-secondary"
-            maxFontSizeMultiplier={1.4}>
-            EUR
-          </Text>
+          <AmountHero amount={`€${formatCurrency(numericAmount)}`} subtitle="EUR" />
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(40).duration(250)}>
-          <ReviewCard title="Bank Details">
-            <DetailRow label="Account holder" value={params.accountHolderName ?? '—'} />
-            <Sep />
-            <DetailRow label="IBAN" value={maskIban(params.iban ?? '')} />
+          <SectionLabel>Destination</SectionLabel>
+          <DetailCard>
+            <SenderReceiver
+              fromLabel="From"
+              fromValue="Spend Wallet"
+              fromIcon={<HugeiconsIcon icon={Wallet01Icon} size={16} color="#848281" />}
+              toLabel="To"
+              toValue={params.accountHolderName ?? '—'}
+              toIcon={
+                <View className="size-5 items-center justify-center rounded-full bg-[#0090ff]">
+                  <Text className="font-subtitle text-[10px] text-white">EUR</Text>
+                </View>
+              }
+            />
+            <Hairline />
+            <DetailField label="IBAN" value={maskIban(params.iban ?? '')} mono />
             {params.bic ? (
               <>
-                <Sep />
-                <DetailRow label="BIC" value={params.bic} />
+                <Hairline />
+                <DetailField label="BIC" value={params.bic} />
               </>
             ) : null}
-            <Sep />
-            <DetailRow label="Currency" value="EUR" />
-            <Sep />
-            <DetailRow label="Source" value="Spend Wallet" />
-          </ReviewCard>
+            <Hairline />
+            <DetailField label="Currency" value="EUR" last />
+          </DetailCard>
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(80).duration(250)}>
-          <ReviewCard title="Transaction">
+        <Animated.View entering={FadeInUp.delay(80).duration(250)} className="mt-6">
+          <SectionLabel>Transaction</SectionLabel>
+          <DetailCard>
             {params.category && params.category !== 'Transfer' && (
               <>
-                <DetailRow label="Category" value={params.category} />
-                <Sep />
+                <DetailField label="Category" value={params.category} />
+                <Hairline />
               </>
             )}
             {params.narration && (
               <>
-                <DetailRow label="Note" value={params.narration} />
-                <Sep />
+                <DetailField label="Note" value={params.narration} />
+                <Hairline />
               </>
             )}
-            <DetailRow label="Network fee" value={`$${formatCurrency(feeAmount)}`} />
-            <Sep />
-            <View className="flex-row items-center justify-between px-5 py-4">
-              <Text
-                className="font-subtitle text-[14px] text-text-primary"
-                maxFontSizeMultiplier={1.4}>
-                Total
-              </Text>
-              <Text
-                className="font-subtitle text-[16px] text-text-primary"
-                maxFontSizeMultiplier={1.3}>
-                €{formatCurrency(totalAmount)}
-              </Text>
-            </View>
-          </ReviewCard>
+            <DetailField label="Network fee" value={`$${formatCurrency(feeAmount)}`} />
+            <Hairline />
+            <DetailField
+              label="Total"
+              value={`€${formatCurrency(totalAmount)}`}
+              tone="primary"
+              last
+            />
+          </DetailCard>
         </Animated.View>
 
         <Text
-          className="mt-2 font-body text-[12px] leading-[18px] text-text-secondary"
+          className="mt-4 font-body text-[12px] leading-[18px] text-text-secondary"
           maxFontSizeMultiplier={1.4}>
           * Please verify bank details. Incorrect details may result in failed or delayed transfers.
         </Text>

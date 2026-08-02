@@ -91,7 +91,6 @@
         "react-native-gesture-handler": "~2.30.0",
         "react-native-get-random-values": "~1.11.0",
         "react-native-gifted-charts": "^1.4.74",
-        "react-native-gleapsdk": "^15.2.1",
         "react-native-graph": "^1.1.0",
         "react-native-keyboard-controller": "1.20.7",
         "react-native-live-audio-stream": "^1.1.1",
@@ -2657,8 +2656,6 @@
     "react-native-get-random-values": ["react-native-get-random-values@1.11.0", "", { "dependencies": { "fast-base64-decode": "^1.0.0" }, "peerDependencies": { "react-native": ">=0.56" } }, "sha512-4BTbDbRmS7iPdhYLRcz3PGFIpFJBwNZg9g42iwa2P6FOv9vZj/xJc678RZXnLNZzd0qd7Q3CCF6Yd+CU2eoXKQ=="],
 
     "react-native-gifted-charts": ["react-native-gifted-charts@1.4.77", "", { "dependencies": { "gifted-charts-core": "0.1.81" }, "peerDependencies": { "expo-linear-gradient": "*", "react": "*", "react-native": "*", "react-native-linear-gradient": "*", "react-native-svg": "*" }, "optionalPeers": ["expo-linear-gradient", "react-native-linear-gradient"] }, "sha512-Ul4juHO0Gicng139i61AzQ3h4kLM25dzid1rU+d3d7PuHsI4UypgeChz/luaHMZaWgXkALjq6DLqaM2Y2AEhrA=="],
-
-    "react-native-gleapsdk": ["react-native-gleapsdk@15.3.4", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-L1DLzIJfdalBCLq+L0HGiez5JojA95PCWH4+zZ+NiGN1rxodvh7kbrM+zVq56TmzT1C9ERO3b32padlJ5wUN+g=="],
 
     "react-native-graph": ["react-native-graph@1.2.0", "", { "peerDependencies": { "react": "*", "react-native": "*", "react-native-reanimated": "*", "react-native-worklets": "*" } }, "sha512-82FGQVw61Hw3c5++gHtQCpfediFbAUGEBdEhtMOvtut5vpw/nIxgQdrUVo2x7DJoCEscELkMycnG7J87pe06kg=="],
 
