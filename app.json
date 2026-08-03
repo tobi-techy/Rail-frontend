@@ -11,6 +11,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "production",
+          "smallIconAccentColor": "#FF2E01",
+          "disableLocation": true
+        }
+      ],
       "expo-router",
       "expo-dev-client",
       "expo-secure-store",
@@ -144,6 +152,7 @@
     },
     "extra": {
       "router": {},
+      "onesignalAppId": "6edf750f-9c17-4fc0-bd22-fca8e5b6a9f9",
       "eas": {
         "projectId": "66c2f975-cad6-4243-a0e9-03680d6433a1"
       }
