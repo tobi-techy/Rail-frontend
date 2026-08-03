@@ -57,18 +57,10 @@ export type TaxIdType =
   | 'personnummer';
 
 export type KycIdentityDocumentType =
-  | 'passport'
-  | 'drivers_license'
-  | 'national_id'
-  | 'residence_permit';
+  'passport' | 'drivers_license' | 'national_id' | 'residence_permit';
 
 export type EmploymentStatus =
-  | 'employed'
-  | 'self_employed'
-  | 'student'
-  | 'retired'
-  | 'unemployed'
-  | 'other';
+  'employed' | 'self_employed' | 'student' | 'retired' | 'unemployed' | 'other';
 
 export type InvestmentPurpose =
   | 'build_portfolio'
@@ -95,7 +87,7 @@ export type StartDiditSessionRequest = {
 };
 
 export type StartDiditSessionResponse = {
-  status: 'pending';
+  status: 'pending' | 'existing_session';
   session_id: string;
   session_token: string;
   url?: string;
@@ -133,12 +125,25 @@ export interface SubmitKYCResponse {
 // --- KYC Status ---
 
 export type KycStatus =
-  | 'not_started'
-  | 'pending'
-  | 'processing'
-  | 'approved'
-  | 'rejected'
-  | 'expired';
+  'not_started' | 'pending' | 'processing' | 'approved' | 'rejected' | 'expired';
+
+// --- Tier System (3-tier progressive KYC) ---
+
+export type KycTierName = 'unverified' | 'non_kyc' | 'basic' | 'advanced';
+
+/**
+ * Capability flags returned on the KYC status response. Gate every feature on
+ * these booleans — tier math lives on the server and tiers can move up or down.
+ */
+export interface TierCapabilities {
+  tier: number;
+  can_deposit_crypto: boolean; // tier >= 1
+  can_receive_ngn: boolean; // tier >= 2 → named NGN account
+  can_deposit_fiat_usd: boolean; // tier >= 3 → USD virtual account
+  can_use_card: boolean; // tier >= 3 → cards
+  can_invest: boolean; // tier >= 3 → brokerage investing
+  can_invest_tokenized: boolean; // tier >= 3 → tokenized-asset investing
+}
 
 export interface KYCStatusResponse {
   user_id?: string;
@@ -152,12 +157,111 @@ export interface KYCStatusResponse {
   rejection_reason?: string | null;
   provider_reference?: string | null;
   next_steps?: string[];
+  // Tier system (authoritative)
+  kyc_tier?: number;
+  kyc_tier_name?: KycTierName;
+  tier_capabilities?: TierCapabilities;
+  bvn_verified?: boolean;
+  nin_verified?: boolean;
   // Legacy fields from Bridge/Alpaca era — kept for backward compat
   overall_status?: KycStatus;
   supported_tax_id_type?: TaxIdType;
   bridge?: KYCProviderStatus;
   alpaca?: KYCProviderStatus;
   capabilities?: KYCCapabilities;
+}
+
+/**
+ * Resolves capability flags for the UI. Prefers the server's `tier_capabilities`;
+ * falls back to the legacy single-gate model so screens keep working if the field
+ * is briefly absent. Uses `kyc_tier` directly when available, and infers tier 2
+ * from BVN+NIN verification for Graph-only users.
+ */
+export function getTierCapabilities(status?: KYCStatusResponse | null): TierCapabilities {
+  if (status?.tier_capabilities) return status.tier_capabilities;
+
+  const approved = status?.status === 'approved' || status?.bridge?.status === 'active';
+
+  // Use server tier directly when present; otherwise infer from verification state.
+  // Graph-only users get tier 2 via BVN+NIN verification (not Bridge approval).
+  let tier: number;
+  if (typeof status?.kyc_tier === 'number' && status.kyc_tier > 0) {
+    tier = status.kyc_tier;
+  } else if (status?.bvn_verified && status?.nin_verified) {
+    tier = 2;
+  } else if (approved) {
+    tier = 3;
+  } else if (status?.has_submitted || status?.verified) {
+    tier = 1;
+  } else {
+    tier = 0;
+  }
+
+  return {
+    tier,
+    can_deposit_crypto: tier >= 1,
+    can_receive_ngn: tier >= 2,
+    can_deposit_fiat_usd: approved,
+    can_use_card: approved,
+    can_invest: approved,
+    can_invest_tokenized: approved,
+  };
+}
+
+export type TierNextStep = 'NGN_BVN_NIN' | 'BRIDGE_KYC' | null;
+
+export interface TierMetaEntry {
+  tier: number;
+  key: KycTierName;
+  /** Plant-metaphor display name shown in the Account Level hub. */
+  name: string;
+  /** One-line status shown under the name. */
+  tagline: string;
+  /** Accent color for the active tier card. */
+  color: string;
+  /** "What you unlock" bullets. */
+  unlocks: string[];
+}
+
+export const TIER_META: TierMetaEntry[] = [
+  {
+    tier: 1,
+    key: 'non_kyc',
+    name: 'Seed',
+    tagline: 'Your starting point',
+    color: '#00ca48',
+    unlocks: [
+      'Receive crypto deposits into your wallet.',
+      'Send and receive Naira within starter limits.',
+    ],
+  },
+  {
+    tier: 2,
+    key: 'basic',
+    name: 'Sprout',
+    tagline: 'Your own Naira account',
+    color: '#d48f00',
+    unlocks: [
+      'Get a named Naira account number to receive transfers.',
+      'Unlock higher Naira deposit and withdrawal limits.',
+    ],
+  },
+  {
+    tier: 3,
+    key: 'advanced',
+    name: 'Bloom',
+    tagline: 'The full Rail experience',
+    color: '#0090ff',
+    unlocks: [
+      'Open a USD account and spend with the Rail card.',
+      'Access naira and USD investments, including tokenized assets.',
+      'Enjoy a streamlined, priority support experience.',
+    ],
+  },
+];
+
+export function getTierMeta(tier: number): TierMetaEntry {
+  return TIER_META.find((t) => t.tier === tier) ?? TIER_META[0];
 }
 
 /**
@@ -184,6 +288,39 @@ export interface KYCCapabilities {
   can_use_card: boolean;
   can_invest: boolean;
 }
+
+// --- Sprout Upgrade (Tier 2) ---
+
+export type SproutUpgradeRequest = {
+  phone: string;
+  date_of_birth: string;
+  bvn?: string;
+  didit_session_id: string;
+};
+
+export type SproutUpgradeResponse = {
+  message: string;
+  kyc_tier: number;
+  bvn_verified: boolean;
+  nin_verified: boolean;
+};
+
+// --- Bloom Upgrade (Tier 3) ---
+
+export type BloomUpgradeRequest = {
+  employment_status: string;
+  occupation: string;
+  source_of_funds: string;
+  expected_monthly_volume: string;
+  account_purpose: string;
+  proof_of_address_url?: string;
+  proof_of_address_type?: string;
+};
+
+export type BloomUpgradeResponse = {
+  message: string;
+  kyc_tier: number;
+};
 
 // --- UI State Machine ---
 
@@ -239,120 +376,140 @@ export const COUNTRY_TAX_CONFIG: Record<Country, TaxFieldConfig> = {
     type: 'ssn',
     label: 'Social Security Number (SSN)',
     placeholder: '123-45-6789',
+    helpText: '9 digits, no dashes needed. Found on your Social Security card.',
     validate: (v) => /^\d{9}$/.test(digitsOnly(v)),
   },
   GBR: {
     type: 'nino',
     label: 'National Insurance Number (NINO)',
     placeholder: 'QQ 12 34 56 C',
+    helpText: 'Format: 2 letters, 6 digits, 1 letter (e.g., AB123456C)',
     validate: (v) => /^[A-CEGHJ-PR-TW-Z]{2}\d{6}[A-D]$/i.test(v.replace(/\s/g, '')),
   },
   NGA: {
     type: 'nin',
     label: 'National Identification Number (NIN)',
     placeholder: '11 digits',
+    helpText: '11-digit number from your National ID card',
     validate: (v) => /^\d{11}$/.test(digitsOnly(v)),
   },
   CAN: {
     type: 'sin',
     label: 'Social Insurance Number (SIN)',
     placeholder: '123 456 789',
+    helpText: '9-digit number found on your Social Insurance Card',
     validate: (v) => /^\d{9}$/.test(digitsOnly(v)),
   },
   AUS: {
     type: 'tfn',
     label: 'Tax File Number (TFN)',
     placeholder: '123 456 789',
+    helpText: '8 or 9 digit number from ATO or your tax documents',
     validate: (v) => /^\d{8,9}$/.test(digitsOnly(v)),
   },
   DEU: {
     type: 'steuer_id',
     label: 'Steueridentifikationsnummer (Steuer-ID)',
     placeholder: '12 345 678 901',
+    helpText: '11-digit number from your tax identification notice',
     validate: (v) => /^\d{11}$/.test(digitsOnly(v)),
   },
   FRA: {
     type: 'tin',
     label: 'Numéro Fiscal (SPI)',
     placeholder: '13 digits',
+    helpText: '13-digit Numéro Fiscal from French tax authority',
     validate: (v) => /^\d{13}$/.test(digitsOnly(v)),
   },
   IND: {
     type: 'pan',
     label: 'Permanent Account Number (PAN)',
     placeholder: 'ABCDE1234F',
+    helpText: '10-character alphanumeric (5 letters + 4 digits + 1 letter)',
     validate: (v) => /^[A-Z]{5}\d{4}[A-Z]$/i.test(v.trim()),
   },
   GHA: {
     type: 'ghana_tin',
     label: 'Ghana TIN',
     placeholder: 'P000000000',
+    helpText: '10-character: 1 letter followed by 9 digits',
     validate: (v) => /^[A-Z]\d{9}$/i.test(v.trim()),
   },
   KEN: {
     type: 'kra_pin',
     label: 'KRA PIN',
     placeholder: 'A000000000Z',
+    helpText: '11-character: letter + 9 digits + letter',
     validate: (v) => /^[A-Z]\d{9}[A-Z]$/i.test(v.trim()),
   },
   ZAF: {
     type: 'sa_id',
     label: 'South African ID Number',
     placeholder: '13 digits',
+    helpText: '13-digit South African identity number',
     validate: (v) => /^\d{13}$/.test(digitsOnly(v)),
   },
   BRA: {
     type: 'cpf',
     label: 'CPF (Cadastro de Pessoas Físicas)',
     placeholder: '000.000.000-00',
+    helpText: '11-digit CPF number from Brazil',
     validate: (v) => /^\d{11}$/.test(digitsOnly(v)),
   },
   MEX: {
     type: 'rfc',
     label: 'RFC (Registro Federal de Contribuyentes)',
     placeholder: 'ABCD123456EFG',
+    helpText: '13-character: 4 letters + 6 digits + 3 alphanumeric',
     validate: (v) => /^[A-Z]{4}\d{6}[A-Z0-9]{3}$/i.test(v.trim()),
   },
   SGP: {
     type: 'nric',
     label: 'NRIC / FIN',
     placeholder: 'S1234567D',
+    helpText: '9-character: Letter (S/T/F/G/M) + 7 digits + 1 letter',
     validate: (v) => /^[STFGM]\d{7}[A-Z]$/i.test(v.trim()),
   },
   ARE: {
     type: 'emirates_id',
     label: 'Emirates ID',
     placeholder: '784-XXXX-XXXXXXX-X',
+    helpText: '15-digit Emirates ID number',
     validate: (v) => /^\d{15}$/.test(digitsOnly(v)),
   },
   NLD: {
     type: 'bsn',
     label: 'Burgerservicenummer (BSN)',
     placeholder: '9 digits',
+    helpText: '9-digit BSN from Dutch municipality',
     validate: (v) => /^\d{9}$/.test(digitsOnly(v)),
   },
   ITA: {
     type: 'codice_fiscale',
     label: 'Codice Fiscale',
     placeholder: 'RSSMRA85T10A562S',
+    helpText: '16-character Italian tax code (letters + digits)',
     validate: (v) => /^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/i.test(v.trim()),
   },
   ESP: {
     type: 'nif',
     label: 'NIF / NIE',
     placeholder: '12345678Z',
+    helpText: '8 digits + letter (NIF) or letter + 7 digits + letter (NIE)',
     validate: (v) => /^(\d{8}[A-Z]|[XYZ]\d{7}[A-Z])$/i.test(v.trim()),
   },
   POL: {
     type: 'pesel',
     label: 'PESEL',
     placeholder: '11 digits',
+    helpText: '11-digit Polish national identification number',
     validate: (v) => /^\d{11}$/.test(digitsOnly(v)),
   },
   SWE: {
     type: 'personnummer',
     label: 'Personnummer',
     placeholder: 'YYYYMMDD-XXXX',
+    helpText: '10 or 12 digits: birthdate + 4 digits',
     validate: (v) => /^\d{10,12}$/.test(digitsOnly(v)),
   },
 };

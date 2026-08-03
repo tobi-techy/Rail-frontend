@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ViewProps } from 'react-native';
-import { Delete, Fingerprint, KeyRound, Trash } from 'lucide-react-native';
 import { useKeypadFeedback } from '@/hooks/useKeypadFeedback';
+import { Delete01Icon, FingerPrintIcon, Key01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const BACKSPACE_KEY = 'backspace';
 const FINGERPRINT_KEY = 'fingerprint';
@@ -28,7 +29,6 @@ export interface KeypadProps extends ViewProps {
   showFingerprint?: boolean;
   showPasskey?: boolean;
   leftKey?: 'empty' | 'fingerprint' | 'decimal' | 'passkey';
-  backspaceIcon?: 'trash' | 'delete';
   disabled?: boolean;
   className?: string;
   variant?: 'light' | 'dark';
@@ -39,7 +39,6 @@ export const Keypad: React.FC<KeypadProps> = ({
   showFingerprint = false,
   showPasskey = false,
   leftKey = 'fingerprint',
-  backspaceIcon = 'trash',
   disabled = false,
   className = '',
   variant = 'light',
@@ -111,23 +110,19 @@ export const Keypad: React.FC<KeypadProps> = ({
                           : `Digit ${key}`
                 }>
                 {isBackspace ? (
-                  backspaceIcon === 'delete' ? (
-                    <Delete size={24} color={iconColor} />
-                  ) : (
-                    <Trash size={24} color={iconColor} />
-                  )
+                  <HugeiconsIcon icon={Delete01Icon} size={24} color={iconColor} />
                 ) : isFingerprint ? (
-                  <Fingerprint size={24} color={iconColor} />
+                  <HugeiconsIcon icon={FingerPrintIcon} size={24} color={iconColor} />
                 ) : isPasskey ? (
-                  <KeyRound size={24} color={iconColor} />
+                  <HugeiconsIcon icon={Key01Icon} size={24} color={iconColor} />
                 ) : isDecimal ? (
                   <Text
-                    className={`font-subtitle text-headline-2 ${isDark ? 'text-white' : 'text-text-primary'}`}>
+                    className={`font-mono-semibold text-headline-2 ${isDark ? 'text-white' : 'text-text-primary'}`}>
                     .
                   </Text>
                 ) : (
                   <Text
-                    className={`font-subtitle text-keypad ${isDark ? 'text-white' : 'text-text-primary'}`}>
+                    className={`font-mono-semibold text-keypad ${isDark ? 'text-white' : 'text-text-primary'}`}>
                     {key}
                   </Text>
                 )}

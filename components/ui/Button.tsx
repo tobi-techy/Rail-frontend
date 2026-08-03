@@ -1,7 +1,7 @@
 import React, { forwardRef, useRef, useCallback } from 'react';
 import { Pressable, PressableProps, Text, ActivityIndicator, View, Animated } from 'react-native';
+import ReAnimated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useButtonFeedback } from '@/hooks/useButtonFeedback';
-
 interface ButtonProps extends Omit<PressableProps, 'style'> {
   title: string;
   variant?: 'black' | 'white' | 'orange' | 'destructive' | 'ghost';
@@ -12,7 +12,11 @@ interface ButtonProps extends Omit<PressableProps, 'style'> {
   disabled?: boolean;
   className?: string;
   enableHaptics?: boolean;
+  enableSound?: boolean;
   flex?: boolean;
+  /** Crossfade the label when `title` changes — for buttons that carry state
+   *  (e.g. "Enter amount" → "Minimum is ₦1,000" → "Send"). */
+  morphTitle?: boolean;
 }
 
 export const Button = forwardRef<View, ButtonProps>(
@@ -27,31 +31,35 @@ export const Button = forwardRef<View, ButtonProps>(
       disabled,
       className = '',
       enableHaptics = true,
+      enableSound = true,
       flex = false,
+      morphTitle = false,
       onPress,
       ...props
     },
     ref
   ) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
-    const triggerFeedback = useButtonFeedback(enableHaptics);
+    const triggerFeedback = useButtonFeedback(enableHaptics, enableSound);
 
+    // Crisp press feedback — no bounce on release. A primary button is pressed
+    // constantly, so the response must feel instant and settled, not wobbly.
     const handlePressIn = useCallback(() => {
       triggerFeedback();
       Animated.spring(scaleAnim, {
         toValue: 0.97,
         useNativeDriver: true,
         speed: 50,
-        bounciness: 4,
+        bounciness: 0,
       }).start();
-    }, [scaleAnim, triggerFeedback]);
+    }, [scaleAnim, triggerFeedback, enableSound]);
 
     const handlePressOut = useCallback(() => {
       Animated.spring(scaleAnim, {
         toValue: 1,
         useNativeDriver: true,
-        speed: 50,
-        bounciness: 8,
+        speed: 60,
+        bounciness: 0,
       }).start();
     }, [scaleAnim]);
 
@@ -63,23 +71,23 @@ export const Button = forwardRef<View, ButtonProps>(
     );
 
     const variantStyles = {
-      black: 'bg-black',
-      white: 'bg-white border border-gray-200',
-      orange: 'bg-[#FF2E01]',
-      destructive: 'bg-[#F44336]',
+      black: 'bg-midnight',
+      white: 'bg-parchment-card border border-fog',
+      orange: 'bg-ember-orange',
+      destructive: 'bg-coral-red',
       ghost: 'bg-transparent',
     }[variant];
 
     const textStyles = {
       black: 'text-white',
-      white: 'text-black',
+      white: 'text-charcoal-primary',
       orange: 'text-white',
       destructive: 'text-white',
-      ghost: 'text-gray-400',
+      ghost: 'text-ember-orange',
     }[variant];
 
-    const sizeStyles = size === 'small' ? 'px-4 py-3' : 'px-6 py-5';
-    const textSize = size === 'small' ? 'text-caption' : 'text-lg';
+    const sizeStyles = size === 'small' ? 'min-h-[44px] px-5 py-3' : 'min-h-[58px] px-7 py-[17px]';
+    const textSize = size === 'small' ? 'text-caption' : 'text-body';
 
     return (
       <Animated.View
@@ -97,20 +105,41 @@ export const Button = forwardRef<View, ButtonProps>(
           accessibilityRole="button"
           accessibilityState={{ disabled: disabled || loading, busy: loading }}
           accessibilityLabel={loading ? `${title}, loading` : title}
-          className={`flex-row items-center justify-center rounded-full ${variantStyles} ${sizeStyles} ${
+          className={`flex-row items-center justify-center overflow-hidden rounded-full ${variantStyles} ${sizeStyles} ${
             disabled ? 'opacity-50' : ''
           } ${className}`}
           {...props}>
           {loading ? (
-            <ActivityIndicator color={variant === 'black' ? '#fff' : '#000'} size="small" />
-          ) : (
-            <View className="flex-shrink flex-row items-center">
+            <ActivityIndicator
+              color={variant === 'white' ? '#343433' : variant === 'ghost' ? '#ff3e00' : '#fff'}
+              size="small"
+            />
+          ) : morphTitle ? (
+            // Keyed remount: old label exits via overlay (takes no layout space)
+            // while the new one fades in — reads as one label morphing.
+            <ReAnimated.View
+              key={title}
+              entering={FadeIn.duration(150)}
+              exiting={FadeOut.duration(100)}
+              className="max-w-full flex-shrink flex-row items-center justify-center">
               {leftIcon && <View className="mr-2 flex-shrink-0">{leftIcon}</View>}
               <Text
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.75}
-                className={`flex-shrink font-button ${textSize} ${textStyles}`}>
+                className={`min-w-0 flex-shrink text-center font-button ${textSize} ${textStyles}`}>
+                {title}
+              </Text>
+              {rightIcon && <View className="ml-2 flex-shrink-0">{rightIcon}</View>}
+            </ReAnimated.View>
+          ) : (
+            <View className="max-w-full flex-shrink flex-row items-center justify-center">
+              {leftIcon && <View className="mr-2 flex-shrink-0">{leftIcon}</View>}
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+                className={`min-w-0 flex-shrink text-center font-button ${textSize} ${textStyles}`}>
                 {title}
               </Text>
               {rightIcon && <View className="ml-2 flex-shrink-0">{rightIcon}</View>}

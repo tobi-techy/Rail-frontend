@@ -1,124 +1,149 @@
-import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
-import { BottomSheet } from './BottomSheet';
+import React, { useState, useRef, useCallback } from 'react';
+import { View, Text, Image, Dimensions, Pressable } from 'react-native';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Button } from '@/components/ui';
+import { WebView } from 'react-native-webview';
+import { virtualAccountService } from '@/api/services/virtualAccount.service';
+import { logger } from '@/lib/logger';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface InvestmentDisclaimerSheetProps {
   visible: boolean;
   onAccept: () => void;
 }
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <View className="mb-6">
-    <Text className="mb-2 font-button text-[15px] text-black">{title}</Text>
-    <Text className="font-body text-[14px] leading-[22px] text-black/70">{children}</Text>
-  </View>
-);
-
-const BulletPoint = ({ children }: { children: React.ReactNode }) => (
-  <View className="mb-2 flex-row">
-    <Text className="mr-3 font-body text-[14px] text-black/40">•</Text>
-    <Text className="flex-1 font-body text-[14px] leading-[22px] text-black/70">{children}</Text>
-  </View>
-);
+const AUTO_ACCEPT_JS = `
+  (function() {
+    function tryAccept() {
+      var btn = document.querySelector('button[type="submit"], input[type="submit"]');
+      if (!btn) btn = Array.from(document.querySelectorAll('button')).find(function(b) {
+        return /accept|agree|confirm|submit/i.test(b.textContent);
+      });
+      if (btn) { btn.click(); return; }
+      setTimeout(tryAccept, 500);
+    }
+    if (document.readyState === 'complete') tryAccept();
+    else window.addEventListener('load', tryAccept);
+  })();
+  true;
+`;
 
 export function InvestmentDisclaimerSheet({ visible, onAccept }: InvestmentDisclaimerSheetProps) {
+  const [loading, setLoading] = useState(false);
+  const haptics = useHaptics();
+  const [tosUrl, setTosUrl] = useState<string | null>(null);
+  const tosResolveRef = useRef<(() => void) | null>(null);
+
+  const handleTosComplete = useCallback(() => {
+    if (!tosResolveRef.current) return;
+    const resolve = tosResolveRef.current;
+    tosResolveRef.current = null;
+    setTosUrl(null);
+    resolve();
+  }, []);
+
+  const handleAccept = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await virtualAccountService.getTOSLink();
+      const url = res?.tos_link;
+      if (url) {
+        await new Promise<void>((resolve) => {
+          const timeout = setTimeout(resolve, 8000);
+          tosResolveRef.current = () => {
+            clearTimeout(timeout);
+            resolve();
+          };
+          setTosUrl(url);
+        });
+      }
+    } catch (error) {
+      logger.warn('[Disclaimer] Failed to accept Bridge TOS', {
+        component: 'InvestmentDisclaimerSheet',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setLoading(false);
+      setTosUrl(null);
+      tosResolveRef.current = null;
+      onAccept();
+    }
+  }, [onAccept]);
+
   return (
-    <BottomSheet visible={visible} onClose={onAccept} showCloseButton={false} dismissible={false}>
-      <View className="max-h-[80vh]">
-        {/* Header */}
-        <View className="mb-6">
-          <Text className="text-center font-subtitle text-[24px] text-black">How Rail Works</Text>
-          <Text className="mt-2 text-center font-body text-[14px] leading-[20px] text-black/50">
-            Understanding your automated wealth system
-          </Text>
+    <GorhomBottomSheet
+      visible={visible}
+      onClose={onAccept}
+      showCloseButton={false}
+      dismissible={false}
+      scrollable={false}>
+      <View>
+        {/* Edge-to-edge image */}
+        <View style={{ marginHorizontal: -20, marginTop: -8 }}>
+          <Image
+            source={require('@/assets/images/onboard-slide-1.jpg')}
+            style={{ width: SCREEN_WIDTH, height: 280 }}
+            resizeMode="cover"
+          />
         </View>
 
-        {/* Scrollable Content */}
-        <ScrollView
-          className="max-h-[50vh]"
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-          contentContainerStyle={{ paddingBottom: 8 }}>
-          <Section title="Automatic Investment">
-            When you add money to Rail, it immediately goes to work. Every deposit is automatically
-            split: 70% goes to Base Rail for stability and capital preservation, while 30% goes to
-            Active Rail for growth through diversified investments. This happens instantly — no
-            buttons to press, no decisions to make.
-          </Section>
+        {/* Title */}
+        <Text className="mt-5 font-subtitle text-[20px] text-charcoal-primary">
+          Your Money, On Autopilot
+        </Text>
 
-          <Section title="The Rail Split Explained">
-            Base Rail (70%) keeps your money stable and accessible. It&apos;s designed for lower
-            volatility and liquidity when you need it. Active Rail (30%) is where growth happens —
-            your money is automatically invested into a diversified portfolio of assets managed by
-            our system. This split applies to every deposit and is designed to balance safety with
-            growth.
-          </Section>
+        {/* Description */}
+        <Text className="mt-3 font-body text-[15px] leading-[22px] text-graphite">
+          Every deposit is instantly split — 70% to Spend, 30% to Stash. Your stash earns yield
+          automatically. No buttons, no decisions. Your money starts working the moment it arrives.
+        </Text>
 
-          <Section title="Following Conductors">
-            Conductors are verified professional investors who create and manage Tracks — curated
-            investment strategies you can follow. When you follow a Track, a portion of your Active
-            Rail automatically mirrors the Conductor&apos;s moves. You can browse different Tracks,
-            see their performance history, and follow or unfollow at any time. Your positions update
-            automatically when the Conductor makes changes.
-          </Section>
-
-          <View className="mb-6">
-            <Text className="mb-3 font-button text-[15px] text-black">Understanding Risk</Text>
-            <BulletPoint>
-              The value of your investments can go up or down — this is completely normal and part
-              of how markets work
-            </BulletPoint>
-            <BulletPoint>
-              Past performance of any investment, Track, or Conductor does not guarantee future
-              results
-            </BulletPoint>
-            <BulletPoint>
-              Only add money you&apos;re comfortable not accessing immediately — investing works
-              best over time
-            </BulletPoint>
-            <BulletPoint>
-              Diversification helps manage risk but cannot eliminate it entirely
-            </BulletPoint>
-            <BulletPoint>
-              Market conditions change daily based on economic factors beyond anyone&apos;s control
-            </BulletPoint>
-            <BulletPoint>
-              You can withdraw your money anytime, but short-term withdrawals may mean missing
-              growth opportunities
-            </BulletPoint>
+        {/* Buttons */}
+        <View className="mt-6 flex-row gap-3">
+          <Pressable
+            onPress={() => {
+              haptics.selection();
+              playUISound('dismiss');
+              onAccept();
+            }}
+            className="flex-1 items-center justify-center rounded-full bg-ash/10 py-4">
+            <Text className="font-button text-[15px] text-charcoal-primary">Maybe later</Text>
+          </Pressable>
+          <View className="flex-1">
+            <Button
+              title={loading ? 'Setting up…' : 'Get Started'}
+              onPress={handleAccept}
+              disabled={loading}
+            />
           </View>
-
-          <Section title="What Rail Does">
-            Rail is an automated wealth system. We provide the infrastructure, the investment
-            engine, and the tools to help your money grow. We handle the complexity of investing so
-            you don&apos;t have to think about asset allocation, market timing, or portfolio
-            rebalancing.
-          </Section>
-
-          <Section title="What Rail Doesn't Do">
-            Rail is not a financial advisor and does not provide personalized financial advice. We
-            don&apos;t tell you how much to invest, when to invest, or whether investing is right
-            for your personal situation. The system operates based on rules and algorithms, not
-            individual recommendations. All investment decisions — including choosing to use Rail —
-            are ultimately yours.
-          </Section>
-
-          <View className="mb-4 rounded-2xl bg-black/[0.03] p-4">
-            <Text className="font-body text-[13px] leading-[20px] text-black/60">
-              By tapping &quot;I Understand&quot; below, you acknowledge that: (1) investing
-              involves risk and you may lose money, (2) Rail does not provide financial advice, (3)
-              past performance does not guarantee future results, and (4) you are responsible for
-              your own investment decisions.
-            </Text>
-          </View>
-        </ScrollView>
-
-        {/* Accept Button */}
-        <View className="mt-4 pt-2">
-          <Button title="I Understand" onPress={onAccept} />
         </View>
+
+        {/* Hidden WebView for silent TOS acceptance */}
+        {tosUrl && (
+          <View style={{ height: 0, width: 0, overflow: 'hidden' }}>
+            <WebView
+              source={{ uri: tosUrl }}
+              injectedJavaScript={AUTO_ACCEPT_JS}
+              javaScriptEnabled
+              onNavigationStateChange={(navState) => {
+                if (
+                  navState.url?.includes('signed_agreement_id') ||
+                  (navState.url &&
+                    !navState.url.includes('accept-terms-of-service') &&
+                    navState.loading === false)
+                ) {
+                  handleTosComplete();
+                }
+              }}
+              onError={() => handleTosComplete()}
+              onHttpError={() => handleTosComplete()}
+            />
+          </View>
+        )}
       </View>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

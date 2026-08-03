@@ -1,5 +1,6 @@
 import { SessionManager } from '../../utils/sessionManager';
 import { useAuthStore } from '../../stores/authStore';
+import { PASSCODE_SESSION_MS } from '../../utils/sessionConstants';
 
 jest.mock('../../stores/authStore');
 jest.mock('../../api/services');
@@ -89,6 +90,43 @@ describe('SessionManager', () => {
       });
 
       expect(SessionManager.isSessionValid()).toBe(false);
+    });
+  });
+
+  describe('isAppUnlockExpired', () => {
+    beforeEach(() => {
+      jest.setSystemTime(new Date('2026-01-01T12:00:00.000Z'));
+    });
+
+    it('returns false while the background grace window is still valid', () => {
+      mockGetState.mockReturnValue({
+        isAuthenticated: true,
+        appLockExpiresAt: new Date(Date.now() + 60 * 1000).toISOString(),
+        lastActivityAt: new Date(Date.now() - PASSCODE_SESSION_MS).toISOString(),
+      });
+
+      expect(SessionManager.isAppUnlockExpired()).toBe(false);
+    });
+
+    it('returns true when the background grace window has elapsed', () => {
+      mockGetState.mockReturnValue({
+        isAuthenticated: true,
+        appLockExpiresAt: new Date(Date.now() - 1000).toISOString(),
+        lastActivityAt: new Date(Date.now()).toISOString(),
+      });
+
+      expect(SessionManager.isAppUnlockExpired()).toBe(true);
+    });
+
+    it('keeps the app unlocked after a backend passcode token is consumed if activity is recent', () => {
+      mockGetState.mockReturnValue({
+        isAuthenticated: true,
+        appLockExpiresAt: undefined,
+        passcodeSessionExpiresAt: undefined,
+        lastActivityAt: new Date(Date.now() - 60 * 1000).toISOString(),
+      });
+
+      expect(SessionManager.isAppUnlockExpired()).toBe(false);
     });
   });
 

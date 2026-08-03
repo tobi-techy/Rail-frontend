@@ -2,21 +2,17 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Pressable } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import QRCodeStyled from 'react-native-qrcode-styled';
-import { Copy, Check, RefreshCw } from 'lucide-react-native';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Button } from '../ui';
-import { useDepositAddress } from '@/api/hooks/useWallet';
-import { getChainConfig } from '@/utils/chains';
+import { useWalletAddresses, useGetDepositAddress } from '@/api/hooks/useWallet';
+import { getChainConfig, isEVMChain, isSolanaChain } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
-import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
+import { playUISound } from '@/lib/uiSounds';
+import { UsdcIcon } from '@/assets/svg';
+import { ChainLogo } from '@/components/ChainLogo';
 import type { WalletChain } from '@/api/types';
-
-const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
-  SOL: SolanaIcon,
-  'SOL-DEVNET': SolanaIcon,
-  'MATIC-AMOY': MaticIcon,
-  'AVAX-FUJI': AvalancheIcon,
-};
+import { CheckmarkCircle01Icon, Copy01Icon, RefreshIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 interface CryptoReceiveSheetProps {
   visible: boolean;
@@ -26,62 +22,84 @@ interface CryptoReceiveSheetProps {
 
 export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoReceiveSheetProps) {
   const chainConfig = getChainConfig(chain);
-  const { data: wallet, isLoading, isError, error, refetch } = useDepositAddress(chain);
+  const { data: wallet, isLoading, isError, error, refetch } = useWalletAddresses(chain);
+  const provisionWallet = useGetDepositAddress();
   const [copied, setCopied] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
   const { notification, selection } = useHaptics();
+  const tokenLabel = chainConfig.token;
+  const TokenBadge = UsdcIcon;
 
+  // Auto-provision wallet when GET returns 404 (wallet not created yet)
   useEffect(() => {
-    if (!visible) setCopied(false);
-  }, [visible]);
+    if (!visible) {
+      setCopied(false);
+      setProvisioning(false);
+      return;
+    }
+    const status = (error as any)?.status;
+    if (isError && (status === 404 || status === undefined) && !provisioning) {
+      setProvisioning(true);
+      provisionWallet.mutate(
+        { tokenId: 'usdc', network: chain },
+        {
+          onSuccess: () => {
+            refetch();
+            setProvisioning(false);
+          },
+          onError: () => setProvisioning(false),
+        }
+      );
+    }
+  }, [visible, isError, error, chain]);
 
   const address = wallet?.address ?? '';
 
+  const isSolana = isSolanaChain(chain);
   const usdcMint =
     process.env.EXPO_PUBLIC_SOLANA_USDC_MINT ?? 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
   const qrValue =
-    (chain === 'SOL' || chain === 'SOL-DEVNET') && address
-      ? `solana:${address}?spl-token=${usdcMint}&label=Rail`
-      : address;
+    isSolana && address ? `solana:${address}?spl-token=${usdcMint}&label=Rail` : address;
 
   const handleCopy = useCallback(async () => {
     if (!address) return;
     await Clipboard.setStringAsync(address);
+    playUISound('buttonClick');
     notification();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [address, notification]);
 
-  const ChainIcon = CHAIN_ICONS[chain];
-
   const header = (
     <View className="mb-5 flex-row items-center gap-3">
-      {/* Chain icon + USDC badge */}
       <View className="relative size-12">
         <View
           className="size-12 items-center justify-center rounded-full"
           style={{ backgroundColor: chainConfig.color + '18' }}>
-          {ChainIcon && <ChainIcon width={28} height={28} />}
+          <ChainLogo chain={chain} size={28} />
         </View>
-        <View className="absolute -bottom-1 -right-1 size-5 items-center justify-center rounded-full bg-white shadow-sm">
-          <UsdcIcon width={14} height={14} />
+        <View className="absolute -bottom-1 -right-1 size-5 items-center justify-center rounded-full bg-parchment-card shadow-sm">
+          <TokenBadge width={14} height={14} />
         </View>
       </View>
       <View>
-        <Text className="font-subtitle text-[20px] text-text-primary">Receive USDC</Text>
+        <Text className="font-subtitle text-[20px] text-text-primary">Receive {tokenLabel}</Text>
         <Text className="font-body text-[13px] text-text-secondary">on {chainConfig.label}</Text>
       </View>
     </View>
   );
 
-  if (isLoading) {
+  if (isLoading || provisioning) {
     return (
-      <BottomSheet visible={visible} onClose={onClose}>
+      <GorhomBottomSheet visible={visible} onClose={onClose}>
         {header}
         <View className="items-center justify-center py-16">
           <ActivityIndicator size="small" color="#000" />
-          <Text className="mt-3 font-body text-sm text-text-secondary">Loading wallet…</Text>
+          <Text className="mt-3 font-body text-sm text-text-secondary">
+            {provisioning ? 'Setting up your wallet…' : 'Loading wallet…'}
+          </Text>
         </View>
-      </BottomSheet>
+      </GorhomBottomSheet>
     );
   }
 
@@ -94,7 +112,7 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
           ? 'Accept the Terms of Service to receive crypto.'
           : 'Please check your connection and try again.';
     return (
-      <BottomSheet visible={visible} onClose={onClose}>
+      <GorhomBottomSheet visible={visible} onClose={onClose}>
         {header}
         <View className="items-center justify-center py-12">
           <Text className="mb-2 font-subtitle text-base text-text-primary">
@@ -104,22 +122,23 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
           {!errCode && (
             <Pressable
               onPress={() => {
+                playUISound('buttonClick');
                 selection();
                 refetch();
               }}
-              className="flex-row items-center gap-2 rounded-full bg-gray-100 px-5 py-2.5"
+              className="flex-row items-center gap-2 rounded-full bg-stone-surface px-5 py-2.5"
               hitSlop={8}>
-              <RefreshCw size={16} color="#374151" />
-              <Text className="font-subtitle text-sm text-gray-700">Retry</Text>
+              <HugeiconsIcon icon={RefreshIcon} size={16} color="#474645" />
+              <Text className="font-subtitle text-sm text-graphite">Retry</Text>
             </Pressable>
           )}
         </View>
-      </BottomSheet>
+      </GorhomBottomSheet>
     );
   }
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
+    <GorhomBottomSheet visible={visible} onClose={onClose}>
       {header}
 
       <View className="items-center">
@@ -157,15 +176,28 @@ export function CryptoReceiveSheet({ visible, onClose, chain = 'SOL' }: CryptoRe
           {'\n'}NFTs and other tokens are not supported.
         </Text>
 
+        {isEVMChain(chain) && (
+          <Text className="mb-4 text-center font-caption text-xs text-text-secondary">
+            This address is shared across EVM networks (Ethereum, Arbitrum, Optimism, Polygon, Base,
+            Avalanche).
+          </Text>
+        )}
+
         <Button
           title={copied ? 'Copied!' : 'Copy address'}
           onPress={handleCopy}
-          leftIcon={copied ? <Check size={18} color="#16a34a" /> : <Copy size={18} color="#000" />}
+          leftIcon={
+            copied ? (
+              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={18} color="#16a34a" />
+            ) : (
+              <HugeiconsIcon icon={Copy01Icon} size={18} color="#000" />
+            )
+          }
           variant="white"
           size="large"
           className="w-full"
         />
       </View>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

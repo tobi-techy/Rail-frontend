@@ -12,7 +12,11 @@ export interface RouteConfig {
   isOnCreatePasscode: boolean;
   isOnConfirmPasscode: boolean;
   isOnCreateRailTag: boolean;
+  isOnEmploymentStatus: boolean;
+  isOnAccountPurpose: boolean;
+  isOnSourceOfFunds: boolean;
   isOnCompleteProfile: boolean;
+  isOnCompleteKyc: boolean;
 }
 
 export interface AuthState {
@@ -24,4 +28,6 @@ export interface AuthState {
   onboardingStatus: string | null;
   pendingVerificationEmail: string | null;
   lastActivityAt?: string | null;
+  passcodeSessionExpiresAt?: string;
+  appLockExpiresAt?: string;
 }

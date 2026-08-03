@@ -24,8 +24,7 @@ export function usePortfolioOverview() {
   return useQuery({
     queryKey: queryKeys.portfolio.overview(),
     queryFn: () => portfolioService.getPortfolioOverview(),
-    staleTime: 15 * 1000, // 15 seconds - fast refresh for balance visibility
-    refetchInterval: 50 * 1000, // Refetch every 50 seconds (more frequent)
+    staleTime: 2 * 60 * 1000, // 2 min — no background interval (Redis cost); refresh on focus/reconnect
     refetchOnWindowFocus: true, // Update when user brings app to foreground
     refetchOnReconnect: true, // Update when network connection restored
     retry: (failureCount, error: any) => {

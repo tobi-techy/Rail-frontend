@@ -5,17 +5,46 @@ export type FxRates = Record<Currency, number>;
 export const DEFAULT_USD_BASE_EXCHANGE_RATES: FxRates = {
   USD: 1,
   EUR: 0.92,
+  GBP: 0.79,
+  NGN: 1550,
+  GHS: 15.5,
+  KES: 129,
+  CAD: 1.36,
+  USDC: 1,
+  USDT: 1,
+  EURC: 1.09,
+  PYUSD: 1,
 };
 
 const CURRENCY_LOCALE: Record<Currency, string> = {
   USD: 'en-US',
   EUR: 'en-IE',
+  GBP: 'en-GB',
+  NGN: 'en-NG',
+  GHS: 'en-GH',
+  KES: 'en-KE',
+  CAD: 'en-CA',
+  USDC: 'en-US',
+  USDT: 'en-US',
+  EURC: 'en-IE',
+  PYUSD: 'en-US',
 };
 
-export const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'EUR'];
+export const SUPPORTED_CURRENCIES: Currency[] = [
+  'USD',
+  'EUR',
+  'GBP',
+  'NGN',
+  'GHS',
+  'KES',
+  'CAD',
+  'USDC',
+  'USDT',
+  'EURC',
+  'PYUSD',
+];
 
 const LEGACY_CURRENCY_FALLBACK: Record<string, Currency> = {
-  GBP: 'EUR',
   NGN: 'USD',
 };
 
@@ -85,11 +114,26 @@ export const formatCurrencyAmount = (
   const max = options?.maximumFractionDigits ?? 2;
   const cacheKey = `${currency}:${min}:${max}`;
 
+  // Stablecoins aren't ISO 4217 currencies — map them to their peg for Intl.NumberFormat
+  const INTL_CURRENCY_CODE: Record<Currency, string> = {
+    USD: 'USD',
+    EUR: 'EUR',
+    GBP: 'GBP',
+    NGN: 'NGN',
+    GHS: 'GHS',
+    KES: 'KES',
+    CAD: 'CAD',
+    USDC: 'USD',
+    USDT: 'USD',
+    EURC: 'EUR',
+    PYUSD: 'USD',
+  };
+
   let formatter = currencyFormatterCache.get(cacheKey);
   if (!formatter) {
     formatter = new Intl.NumberFormat(CURRENCY_LOCALE[currency], {
       style: 'currency',
-      currency,
+      currency: INTL_CURRENCY_CODE[currency] || 'USD',
       minimumFractionDigits: min,
       maximumFractionDigits: max,
     });

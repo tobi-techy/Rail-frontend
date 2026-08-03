@@ -29,7 +29,7 @@ const screenOptions = {
   },
   transitionSpec: {
     open: { stiffness: 380, damping: 38, mass: 1 },
-    close: { stiffness: 380, damping: 38, mass: 1 },
+    close: { stiffness: 420, damping: 44, mass: 0.9 },
   },
 };
 
@@ -43,10 +43,9 @@ export default function AuthLayout() {
           <Stack.Screen name="verify-email" />
           <Stack.Screen name="create-passcode" />
           <Stack.Screen name="confirm-passcode" />
-          <Stack.Screen name="create-railtag" />
-          <Stack.Screen name="forgot-password" />
-          <Stack.Screen name="reset-password" />
+
           <Stack.Screen name="complete-profile" />
+          <Stack.Screen name="complete-kyc" />
         </Stack>
       </View>
     </ErrorBoundary>

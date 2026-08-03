@@ -10,33 +10,35 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@/components/atoms/SafeIonicons';
 import { useFeedbackPopupStore } from '@/stores/feedbackPopupStore';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 const DEFAULT_DURATION = 3200;
 
 const typeStyles = {
   success: {
     icon: 'checkmark-circle' as const,
-    iconColor: '#15803D',
-    iconBgColor: '#DCFCE7',
-    accentColor: '#22C55E',
+    iconColor: '#00ca48',
+    iconBgColor: '#ecfdf3',
+    accentColor: '#00ca48',
   },
   error: {
     icon: 'alert-circle' as const,
-    iconColor: '#B91C1C',
-    iconBgColor: '#FEE2E2',
-    accentColor: '#EF4444',
+    iconColor: '#ff2b3a',
+    iconBgColor: '#fff1f2',
+    accentColor: '#ff2b3a',
   },
   warning: {
     icon: 'warning' as const,
-    iconColor: '#B45309',
-    iconBgColor: '#FEF3C7',
-    accentColor: '#F59E0B',
+    iconColor: '#d48f00',
+    iconBgColor: '#fff7df',
+    accentColor: '#ffbb26',
   },
   info: {
     icon: 'information-circle' as const,
-    iconColor: '#1D4ED8',
-    iconBgColor: '#DBEAFE',
-    accentColor: '#3B82F6',
+    iconColor: '#0090ff',
+    iconBgColor: '#e7f5ff',
+    accentColor: '#0090ff',
   },
 };
 
@@ -47,6 +49,7 @@ export function FeedbackPopupHost() {
   const popup = useFeedbackPopupStore((state) => state.popup);
   const dismissPopup = useFeedbackPopupStore((state) => state.dismissPopup);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const haptics = useHaptics();
 
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(-24);
@@ -69,15 +72,15 @@ export function FeedbackPopupHost() {
       clearTimer();
       opacity.value = withTiming(
         0,
-        { duration: 180, easing: Easing.in(Easing.cubic) },
+        { duration: 160, easing: Easing.out(Easing.cubic) },
         (finished) => {
           if (!finished) return;
           runOnJS(dismissPopup)();
           if (onHidden) runOnJS(onHidden)();
         }
       );
-      translateY.value = withTiming(-18, { duration: 180, easing: Easing.in(Easing.cubic) });
-      scale.value = withTiming(0.98, { duration: 180, easing: Easing.in(Easing.cubic) });
+      translateY.value = withTiming(-18, { duration: 160, easing: Easing.out(Easing.cubic) });
+      scale.value = withTiming(0.98, { duration: 160, easing: Easing.out(Easing.cubic) });
     },
     [clearTimer, dismissPopup, opacity, scale, translateY]
   );
@@ -116,12 +119,19 @@ export function FeedbackPopupHost() {
       pointerEvents="box-none"
       style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}>
       <Pressable
-        onPress={() => hidePopup()}
+        onPress={() => {
+          haptics.selection();
+          playUISound('dismiss');
+          hidePopup();
+        }}
         style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
       />
 
       <AnimatedPressable
-        onPress={() => {}}
+        onPress={() => {
+          haptics.selection();
+          playUISound('buttonClick');
+        }}
         style={[
           cardStyle,
           {
@@ -130,7 +140,7 @@ export function FeedbackPopupHost() {
             left: 14,
             right: 14,
             borderWidth: 1,
-            borderColor: '#E5E7EB',
+            borderColor: '#f7f2e8',
             backgroundColor: '#FFFFFF',
             borderRadius: 20,
             paddingVertical: 12,
@@ -169,31 +179,38 @@ export function FeedbackPopupHost() {
           </View>
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text
-              className="text-[15px] text-black"
-              style={{ fontFamily: 'InstrumentSans-SemiBold' }}>
+              className="text-[15px] text-charcoal-primary"
+              style={{ fontFamily: 'Satoshi-Medium' }}>
               {popup.title}
             </Text>
             {popup.message ? (
               <Text
-                className="mt-1 text-[13px] text-black/70"
-                style={{ fontFamily: 'InstrumentSans-Regular' }}>
+                className="mt-1 text-[13px] text-graphite"
+                style={{ fontFamily: 'Satoshi-Regular' }}>
                 {popup.message}
               </Text>
             ) : null}
           </View>
           {popup.action ? (
             <Pressable
-              onPress={() => hidePopup(popup.action?.onPress)}
+              onPress={() => {
+                haptics.selection();
+                playUISound('buttonClick');
+                hidePopup(popup.action?.onPress);
+              }}
               hitSlop={6}
               style={{ marginLeft: 10, alignSelf: 'center' }}>
-              <Text
-                style={{ fontFamily: 'InstrumentSans-SemiBold', fontSize: 13, color: '#111827' }}>
+              <Text style={{ fontFamily: 'Satoshi-Medium', fontSize: 13, color: '#343433' }}>
                 {popup.action.label}
               </Text>
             </Pressable>
           ) : (
             <Pressable
-              onPress={() => hidePopup()}
+              onPress={() => {
+                haptics.selection();
+                playUISound('dismiss');
+                hidePopup();
+              }}
               hitSlop={6}
               style={{ marginLeft: 10, alignSelf: 'center' }}>
               <Ionicons name="close" size={16} color="#6B7280" />

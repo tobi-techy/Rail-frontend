@@ -25,6 +25,8 @@ const TOKEN_ICON_BY_SYMBOL: Record<string, SvgComponent> = {
   GBP: SvgAssets.GbpIcon,
   EUR: SvgAssets.EurIcon,
   CAD: SvgAssets.CadIcon,
+  GHS: SvgAssets.GhsIcon,
+  KES: SvgAssets.KesIcon,
   MXN: SvgAssets.MxnIcon,
 };
 
@@ -34,6 +36,8 @@ const FIAT_ICON_BY_SYMBOL: Record<string, SvgComponent> = {
   GBP: SvgAssets.GbpIcon,
   NGN: SvgAssets.NgnIcon,
   CAD: SvgAssets.CadIcon,
+  GHS: SvgAssets.GhsIcon,
+  KES: SvgAssets.KesIcon,
   MXN: SvgAssets.MxnIcon,
 };
 
@@ -127,9 +131,9 @@ const resolveSymbolIcon = (symbol?: string): ResolvedAssetIcon | null => {
     const isNgn = n === 'NGN';
     return {
       Token: FIAT_ICON_BY_SYMBOL[n],
-      bgColor: isNgn ? '#008751' : '#FFFFFF',
-      withBorder: !isNgn,
-      isSymbol: isNgn,
+      bgColor: isNgn ? '#FFFFFF' : '#FFFFFF',
+      withBorder: true,
+      isSymbol: !isNgn, // NGN flag fills the circle; other fiat icons are centered symbols
     };
   }
   if (TOKEN_ICON_BY_SYMBOL[n]) return { Token: TOKEN_ICON_BY_SYMBOL[n], bgColor: 'transparent' };

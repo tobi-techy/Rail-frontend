@@ -14,3 +14,5 @@ export const Stack = withLayoutContext<
   StackNavigationState<ParamListBase>,
   BlankStackNavigationEventMap
 >(Navigator);
+
+export default Stack;

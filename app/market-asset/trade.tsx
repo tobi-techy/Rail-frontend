@@ -2,12 +2,14 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Image, Pressable, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft } from 'lucide-react-native';
 import { useMarketInstrument, useStation } from '@/api/hooks';
 import { Keypad } from '@/components/molecules/Keypad';
 import { Button } from '@/components/ui';
 import { getEffectivePrice } from '@/utils/market';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
+import { ArrowLeft01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 type OrderSide = 'buy' | 'sell';
 type KeypadInput =
@@ -76,6 +78,7 @@ const sanitizeInitialAmount = (value?: string): string => {
 export default function MarketTradeAmountScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ symbol?: string; side?: string; amount?: string }>();
+  const triggerFeedback = useButtonFeedback();
 
   const symbol = typeof params.symbol === 'string' ? params.symbol.toUpperCase() : '';
   const side: OrderSide = params.side === 'sell' ? 'sell' : 'buy';
@@ -181,20 +184,26 @@ export default function MarketTradeAmountScreen() {
 
       <View className="flex-row items-center px-5 py-2">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            triggerFeedback();
+            router.back();
+          }}
           accessibilityRole="button"
           accessibilityLabel="Go back"
           className="mr-2 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/10">
-          <ArrowLeft size={20} color="#FFFFFF" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#FFFFFF" />
         </Pressable>
-        <Text className="font-subtitle text-subtitle text-white">Order type: Market</Text>
+        <Text className="font-subtitle text-subtitle text-white" maxFontSizeMultiplier={1.3}>
+          Order type: Market
+        </Text>
       </View>
 
       <View className="flex-1 px-5">
         <View className="items-center pt-10">
           <Text
-            className="font-headline text-balance-lg text-white"
-            style={{ fontVariant: ['tabular-nums'] }}>
+            className="font-mono-bold text-balance-lg text-white"
+            style={{ fontVariant: ['tabular-nums'], letterSpacing: -1 }}
+            maxFontSizeMultiplier={1.3}>
             ${toDisplayAmount(rawAmount)}
           </Text>
 
@@ -207,33 +216,47 @@ export default function MarketTradeAmountScreen() {
                   resizeMode="cover"
                 />
               ) : (
-                <Text className="font-subtitle text-caption text-white">{symbol[0] || '?'}</Text>
+                <Text className="font-subtitle text-caption text-white" maxFontSizeMultiplier={1.3}>
+                  {symbol[0] || '?'}
+                </Text>
               )}
             </View>
             <Text
               className="font-body text-body text-white/80"
-              style={{ fontVariant: ['tabular-nums'] }}>
+              style={{ fontVariant: ['tabular-nums'] }}
+              maxFontSizeMultiplier={1.4}>
               {estimatedShares.toFixed(6)} {symbol || 'ASSET'}
             </Text>
           </View>
 
           <View className="mt-4 flex-row items-center">
-            <Text className="font-caption text-caption text-white/70">
+            <Text className="font-caption text-caption text-white/70" maxFontSizeMultiplier={1.4}>
               You have {formatUsd(availableBalance)} available to {side}.
             </Text>
             {side === 'buy' ? (
               <TouchableOpacity
-                onPress={onBuyAll}
+                onPress={() => {
+                  triggerFeedback();
+                  onBuyAll();
+                }}
                 className="ml-1 min-h-[44px] justify-center"
                 accessibilityRole="button"
                 accessibilityLabel="Use full available balance">
-                <Text className="font-subtitle text-caption text-white underline">Buy all</Text>
+                <Text
+                  className="font-subtitle text-caption text-white underline"
+                  maxFontSizeMultiplier={1.3}>
+                  Buy all
+                </Text>
               </TouchableOpacity>
             ) : null}
           </View>
 
           {amountError ? (
-            <Text className="mt-2 font-caption text-caption text-[#FF7D7D]">{amountError}</Text>
+            <Text
+              className="mt-2 font-caption text-caption text-[#FF7D7D]"
+              maxFontSizeMultiplier={1.4}>
+              {amountError}
+            </Text>
           ) : null}
         </View>
 
@@ -241,7 +264,6 @@ export default function MarketTradeAmountScreen() {
           <Keypad
             onKeyPress={(key) => onAmountKeyPress(key as KeypadInput)}
             leftKey="decimal"
-            backspaceIcon="delete"
             variant="dark"
           />
 
@@ -249,12 +271,19 @@ export default function MarketTradeAmountScreen() {
             {QUICK_AMOUNTS.map((amount) => (
               <TouchableOpacity
                 key={amount}
-                onPress={() => onQuickAmount(amount)}
+                onPress={() => {
+                  triggerFeedback();
+                  onQuickAmount(amount);
+                }}
                 className="h-14 flex-1 items-center justify-center rounded-full border border-white/20 bg-white/5"
                 style={{ marginHorizontal: 4 }}
                 accessibilityRole="button"
                 accessibilityLabel={`Set amount to $${amount}`}>
-                <Text className="font-subtitle text-subtitle text-white">${amount}</Text>
+                <Text
+                  className="font-subtitle text-subtitle text-white"
+                  maxFontSizeMultiplier={1.3}>
+                  ${amount}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>

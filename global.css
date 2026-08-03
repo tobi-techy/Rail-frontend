@@ -1,3 +1,50 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --color-warm-canvas: #fbfaf9;
+    --color-stone-surface: #f2f0ed;
+    --color-parchment-card: #f8f7f4;
+    --color-graphite: #474645;
+    --color-charcoal-primary: #343433;
+    --color-midnight: #121212;
+    --color-obsidian: #000000;
+    --color-ash: #848281;
+    --color-fog: #c6c6c6;
+    --color-smoke: #a7a7a7;
+    --color-pepper: #282624;
+    --color-ember-orange: #ff3e00;
+    --color-meadow-green: #00ca48;
+    --color-sky-blue: #0090ff;
+    --color-sunburst-yellow: #ffbb26;
+    --color-deep-amber: #d48f00;
+    --color-ocean-blue: #0086fc;
+    --color-ice-blue: #64c6ff;
+    --color-spearmint: #00c978;
+    --color-flamingo: #ff58ae;
+    --color-violet-pop: #9f4fff;
+    --color-coral-red: #ff2b3a;
+    --color-valid-green: #00c454;
+
+    --font-sans: 'SFProDisplay-Regular';
+    --font-sans-medium: 'SFProDisplay-Medium';
+    --font-sans-semibold: 'SFProDisplay-Semibold';
+    --font-sans-bold: 'SFProDisplay-Bold';
+    --font-mono: 'CommitMono';
+    --font-mono-light: 'CommitMono-350';
+    --font-mono-book: 'CommitMono-450';
+    --font-mono-medium: 'CommitMono-500';
+    --font-mono-strong: 'CommitMono-550';
+    --font-mono-semibold: 'CommitMono-600';
+    --font-mono-heavy: 'CommitMono-625';
+    --font-mono-bold: 'CommitMono-700';
+  }
+
+  html,
+  body {
+    background-color: var(--color-warm-canvas);
+    color: var(--color-charcoal-primary);
+  }
+}

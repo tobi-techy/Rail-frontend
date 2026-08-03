@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, SectionList, ViewProps, RefreshControlProps } from 'react-native';
 import { Skeleton } from '../atoms';
 import { TransactionItem, Transaction, TransactionItemSkeleton } from './TransactionItem';
@@ -20,8 +20,6 @@ const groupByDate = (transactions: Transaction[]): Section[] => {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const weekAgo = new Date(today);
-  weekAgo.setDate(weekAgo.getDate() - 7);
 
   const groups: Record<string, Transaction[]> = {};
 
@@ -33,10 +31,12 @@ const groupByDate = (transactions: Transaction[]): Section[] => {
       label = 'Today';
     } else if (txDate.toDateString() === yesterday.toDateString()) {
       label = 'Yesterday';
-    } else if (txDate > weekAgo) {
-      label = 'This Week';
     } else {
-      label = txDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      label = txDate.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
     }
 
     if (!groups[label]) groups[label] = [];
@@ -57,6 +57,13 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   style,
   className,
 }) => {
+  const renderItem = useCallback(
+    ({ item: tx }: { item: Transaction }) => (
+      <TransactionItem transaction={tx} onPress={() => onTransactionPress?.(tx)} />
+    ),
+    [onTransactionPress]
+  );
+
   if (isLoading) {
     const firstGroupCount = Math.max(1, Math.ceil(loadingItems / 2));
     const secondGroupCount = Math.max(0, loadingItems - firstGroupCount);
@@ -95,11 +102,15 @@ export const TransactionList: React.FC<TransactionListProps> = ({
         )}
         {sections.map((section) => (
           <View key={section.label} className="mb-md">
-            <Text className="mb-sm font-caption text-[13px] uppercase tracking-wide text-text-secondary">
+            <Text className="mb-1 mt-2 font-body text-[13px] text-text-tertiary">
               {section.label}
             </Text>
             {section.data.map((tx) => (
-              <TransactionItem key={tx.id} transaction={tx} onPress={() => onTransactionPress?.(tx)} />
+              <TransactionItem
+                key={tx.id}
+                transaction={tx}
+                onPress={() => onTransactionPress?.(tx)}
+              />
             ))}
           </View>
         ))}
@@ -117,13 +128,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       refreshControl={refreshControl}
       stickySectionHeadersEnabled={false}
       renderSectionHeader={({ section }) => (
-        <Text className="mb-sm font-caption text-[13px] uppercase tracking-wide text-text-secondary">
-          {section.label}
-        </Text>
+        <Text className="mb-1 mt-2 font-body text-[13px] text-text-tertiary">{section.label}</Text>
       )}
-      renderItem={({ item: tx }) => (
-        <TransactionItem transaction={tx} onPress={() => onTransactionPress?.(tx)} />
-      )}
+      renderItem={renderItem}
       SectionSeparatorComponent={() => <View className="mb-md" />}
       ListHeaderComponent={
         title ? (

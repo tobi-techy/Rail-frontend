@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 export interface ListItemProps extends TouchableOpacityProps {
   title: string;
@@ -24,11 +25,15 @@ export const ListItem: React.FC<ListItemProps> = ({
   ...props
 }) => {
   const Component = onPress ? TouchableOpacity : View;
+  const triggerFeedback = useButtonFeedback();
 
   return (
     <>
       <Component
-        onPress={onPress}
+        onPress={() => {
+          triggerFeedback();
+          onPress?.();
+        }}
         className={`min-h-[56px] flex-row items-center px-4 py-4 ${onPress ? 'active:bg-surface' : ''} ${className || ''}`}
         accessibilityRole={onPress ? 'button' : undefined}
         accessibilityLabel={

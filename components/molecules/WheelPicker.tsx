@@ -1,6 +1,6 @@
 import React from 'react';
 import RNWheelPicker from '@quidone/react-native-wheel-picker';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 
 interface WheelPickerProps {
   items: string[];
@@ -21,7 +21,7 @@ export function WheelPicker({ items, selectedIndex, onIndexChange }: WheelPicker
       visibleItemCount={5}
       itemHeight={52}
       itemTextStyle={{ fontSize: 17 }}
-      overlayItemStyle={{ backgroundColor: '#F3F4F6', borderRadius: 12 }}
+      overlayItemStyle={{ backgroundColor: '#f7f2e8', borderRadius: 12 }}
     />
   );
 }

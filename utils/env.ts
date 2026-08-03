@@ -11,20 +11,28 @@ interface Env {
   EXPO_PUBLIC_ENV?: 'development' | 'staging' | 'production';
 }
 
+type RuntimeEnv = NonNullable<Env['EXPO_PUBLIC_ENV']>;
+
 const DEFAULT_REMOTE_API_URL = 'https://api.userail.money/api';
 const DEFAULT_STAGING_API_URL = 'https://api-staging.userail.money/api';
 const PHYSICAL_DEVICE_API_URL = process.env.EXPO_PUBLIC_STAGING_API_URL ?? DEFAULT_STAGING_API_URL;
 const SIMULATOR_API_URL =
   Platform.OS === 'android' ? 'http://10.0.2.2:8080/api' : 'http://localhost:8080/api';
 
-const DEFAULT_API_URLS: Record<NonNullable<Env['EXPO_PUBLIC_ENV']>, string> = {
+const DEFAULT_API_URLS: Record<RuntimeEnv, string> = {
   development: SIMULATOR_API_URL,
   staging: DEFAULT_STAGING_API_URL,
   production: DEFAULT_REMOTE_API_URL,
 };
 
+const VALID_ENVS = new Set<RuntimeEnv>(['development', 'staging', 'production']);
+
 function isLocalhostHost(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+}
+
+function isStagingHost(hostname: string): boolean {
+  return hostname === 'api-staging.userail.money';
 }
 
 function isPlaceholderHost(hostname: string): boolean {
@@ -48,8 +56,15 @@ function resolveDevApiUrl(rawApiUrl: string): string {
   const normalizedCandidate = normalizeUrl(rawApiUrl);
 
   if (!Device.isDevice) {
-    // Simulators/emulators should keep localhost defaults for local backend testing.
-    return normalizedCandidate ?? SIMULATOR_API_URL;
+    // On simulators, use the configured URL if it points to a real server;
+    // only fall back to localhost when no remote URL is configured.
+    if (normalizedCandidate) {
+      const parsed = new URL(normalizedCandidate);
+      if (!isLocalhostHost(parsed.hostname) && !isPlaceholderHost(parsed.hostname)) {
+        return normalizedCandidate;
+      }
+    }
+    return SIMULATOR_API_URL;
   }
 
   if (normalizedCandidate) {
@@ -63,33 +78,51 @@ function resolveDevApiUrl(rawApiUrl: string): string {
   return resolveDeviceFallbackUrl();
 }
 
+function resolveReleaseApiUrl(rawApiUrl: string): string {
+  const normalizedCandidate = normalizeUrl(rawApiUrl);
+
+  if (!normalizedCandidate) {
+    return DEFAULT_REMOTE_API_URL;
+  }
+
+  const parsed = new URL(normalizedCandidate);
+  if (
+    isPlaceholderHost(parsed.hostname) ||
+    isLocalhostHost(parsed.hostname) ||
+    isStagingHost(parsed.hostname)
+  ) {
+    return DEFAULT_REMOTE_API_URL;
+  }
+
+  return normalizedCandidate;
+}
+
 function resolveApiUrl(rawApiUrl: string): string {
   if (__DEV__) {
     return resolveDevApiUrl(rawApiUrl);
   }
 
-  try {
-    const parsed = new URL(rawApiUrl);
-    const normalized = parsed.toString().replace(/\/$/, '');
+  return resolveReleaseApiUrl(rawApiUrl);
+}
 
-    if (isPlaceholderHost(parsed.hostname)) {
-      return DEFAULT_REMOTE_API_URL;
-    }
+function resolveRuntimeEnv(): RuntimeEnv {
+  const configuredEnv = process.env.EXPO_PUBLIC_ENV;
+  const fallbackEnv: RuntimeEnv = __DEV__ ? 'development' : 'production';
+  const runtimeEnv = VALID_ENVS.has(configuredEnv as RuntimeEnv)
+    ? (configuredEnv as RuntimeEnv)
+    : fallbackEnv;
 
-    if (Device.isDevice && isLocalhostHost(parsed.hostname)) {
-      return resolveDeviceFallbackUrl();
-    }
-
-    return normalized;
-  } catch {
-    return normalizeUrl(rawApiUrl) ?? resolveDeviceFallbackUrl();
+  // Staging is only valid for development bundles. A TestFlight/App Store build
+  // must not inherit a local .env or update-time staging environment.
+  if (!__DEV__ && runtimeEnv !== 'production') {
+    return 'production';
   }
+
+  return runtimeEnv;
 }
 
 function validateEnv(): Env {
-  const fallbackEnv: NonNullable<Env['EXPO_PUBLIC_ENV']> = __DEV__ ? 'development' : 'production';
-  const runtimeEnv =
-    (process.env.EXPO_PUBLIC_ENV as Env['EXPO_PUBLIC_ENV']) || fallbackEnv || 'development';
+  const runtimeEnv = resolveRuntimeEnv();
 
   // In release builds (including TestFlight), env vars can be missing depending on build path.
   // Use deterministic fallback URLs by environment.
@@ -101,12 +134,15 @@ function validateEnv(): Env {
   }
 
   return {
-    EXPO_PUBLIC_API_URL: apiUrl || DEFAULT_API_URLS.development,
+    EXPO_PUBLIC_API_URL: apiUrl || DEFAULT_API_URLS[runtimeEnv],
     EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
     EXPO_PUBLIC_ENV: runtimeEnv,
   };
 }
 
 export const env = validateEnv();
+if (__DEV__) {
+  console.log('[Rail ENV]', env.EXPO_PUBLIC_ENV, '→', env.EXPO_PUBLIC_API_URL);
+}
 export const isDev = __DEV__ || env.EXPO_PUBLIC_ENV === 'development';
 export const isProd = env.EXPO_PUBLIC_ENV === 'production';

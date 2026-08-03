@@ -13,3 +13,6 @@ export * from './TransactionList';
 export * from './PasscodeInput';
 export { MaskedBalance } from './MaskedBalance';
 export { NotificationBell } from './NotificationBell';
+export { HealthScoreLever } from './HealthScoreLever';
+export { LeaderboardCard } from './LeaderboardCard';
+export { PointsCard } from './PointsCard';

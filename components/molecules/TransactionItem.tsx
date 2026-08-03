@@ -1,13 +1,26 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { CreditCard, Wallet, Mail, Tag } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { Icon, Skeleton } from '../atoms';
+import { Skeleton } from '../atoms';
 import { useUIStore } from '@/stores';
 import { MaskedBalance } from './MaskedBalance';
 import { resolveTransactionAssetIcon } from '@/utils/transactionIcon';
 import { formatTransactionAmount } from '@/utils/transactionFormat';
 import type { SvgComponent } from '@/utils/transactionIcon';
+import {
+  ArrowDownLeft01Icon,
+  ArrowUpRight01Icon,
+  CreditCardIcon,
+  DollarCircleIcon,
+  Mail01Icon,
+  MinusSignIcon,
+  PlusSignIcon,
+  RepeatIcon,
+  Tag01Icon,
+  Wallet01Icon,
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 export type TransactionType = 'send' | 'receive' | 'swap' | 'deposit' | 'withdraw';
 export type TransactionStatus = 'completed' | 'pending' | 'failed';
@@ -29,6 +42,8 @@ export interface Transaction {
   toAddress?: string;
   fee?: string;
   withdrawalMethod?: WithdrawalMethod;
+  /** Extra metadata for detail sheet / receipt */
+  metadata?: Record<string, string | number | undefined>;
   icon?: {
     type: 'token' | 'icon' | 'swap';
     Token?: SvgComponent;
@@ -46,7 +61,7 @@ export interface TransactionItemProps {
   onPress?: () => void;
 }
 
-const ICON_SIZE = 44;
+const ICON_SIZE = 48;
 
 const TokenIcon = ({
   Token,
@@ -64,24 +79,32 @@ const TokenIcon = ({
       width: ICON_SIZE,
       height: ICON_SIZE,
       borderRadius: ICON_SIZE / 2,
-      backgroundColor: bgColor || '#1B84FF',
+      backgroundColor: isSymbol ? bgColor || '#0090ff' : 'transparent',
       borderWidth: withBorder ? 1 : 0,
-      borderColor: '#E6E8EC',
+      borderColor: '#e8e6e3',
       overflow: 'hidden',
       alignItems: 'center',
       justifyContent: 'center',
     }}>
     {Token ? (
-      <Token width={isSymbol ? 28 : ICON_SIZE + 8} height={isSymbol ? 28 : ICON_SIZE + 8} />
+      <Token width={isSymbol ? 28 : ICON_SIZE} height={isSymbol ? 28 : ICON_SIZE} />
     ) : (
-      <Icon library="feather" name="dollar-sign" size={24} color="#FFFFFF" />
+      <HugeiconsIcon icon={DollarCircleIcon} size={24} color="#FFFFFF" />
     )}
   </View>
 );
 
+const ACTION_ICON_MAP: Record<string, any> = {
+  'arrow-up-right': ArrowUpRight01Icon,
+  'arrow-down-left': ArrowDownLeft01Icon,
+  repeat: RepeatIcon,
+  plus: PlusSignIcon,
+  minus: MinusSignIcon,
+};
+
 const ActionIcon = ({ name }: { name: string }) => (
   <View className="h-12 w-12 items-center justify-center rounded-full border border-surface bg-background-main">
-    <Icon library="feather" name={name} size={22} color="#757575" />
+    <HugeiconsIcon icon={ACTION_ICON_MAP[name] ?? ArrowUpRight01Icon} size={22} color="#848281" />
   </View>
 );
 
@@ -96,16 +119,36 @@ const SwapIcon = ({
   fromBg?: string;
   toBg?: string;
 }) => (
-  <View className="h-12 w-12">
+  <View style={{ width: ICON_SIZE, height: ICON_SIZE }}>
     <View
-      className="absolute left-0 top-0 h-8 w-8 items-center justify-center rounded-full"
-      style={{ backgroundColor: fromBg || '#000' }}>
-      {SwapFrom && <SwapFrom width={18} height={18} />}
+      style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        overflow: 'hidden',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      {SwapFrom && <SwapFrom width={36} height={36} />}
     </View>
     <View
-      className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full border-2 border-background-main"
-      style={{ backgroundColor: toBg || '#1B84FF' }}>
-      {SwapTo && <SwapTo width={18} height={18} />}
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        overflow: 'hidden',
+        borderWidth: 2,
+        borderColor: '#f7f4ef',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      {SwapTo && <SwapTo width={28} height={28} />}
     </View>
   </View>
 );
@@ -118,20 +161,31 @@ const DEFAULT_ICONS: Record<TransactionType, string> = {
   withdraw: 'minus',
 };
 
-const WITHDRAWAL_BADGE: Record<string, { Icon: React.ComponentType<any>; bg: string }> = {
-  fiat: { Icon: CreditCard, bg: '#3B82F6' },
-  card: { Icon: CreditCard, bg: '#3B82F6' },
-  crypto: { Icon: Wallet, bg: '#8B5CF6' },
-  p2p: { Icon: Mail, bg: '#10B981' },
+const WITHDRAWAL_BADGE: Record<string, { icon: any; bg: string }> = {
+  fiat: { icon: CreditCardIcon, bg: '#0090ff' },
+  card: { icon: CreditCardIcon, bg: '#0090ff' },
+  crypto: { icon: Wallet01Icon, bg: '#9f4fff' },
+  p2p: { icon: Mail01Icon, bg: '#00ca48' },
 };
 
 const WithdrawalBadge = ({ method }: { method: string }) => {
-  const badge = WITHDRAWAL_BADGE[method] ?? { Icon: Tag, bg: '#6B7280' };
+  const badge = WITHDRAWAL_BADGE[method] ?? { icon: Tag01Icon, bg: '#848281' };
   return (
     <View
-      className="absolute -bottom-0.5 -right-0.5 h-5 w-5 items-center justify-center rounded-full border-2 border-white"
-      style={{ backgroundColor: badge.bg }}>
-      <badge.Icon size={10} color="#fff" strokeWidth={2.5} />
+      style={{
+        position: 'absolute',
+        bottom: -2,
+        right: -2,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: badge.bg,
+        borderWidth: 2,
+        borderColor: '#f7f4ef',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      <HugeiconsIcon icon={badge.icon} size={11} color="#fff" strokeWidth={2.5} />
     </View>
   );
 };
@@ -163,7 +217,11 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
       />
     ) : (
       <View className="h-12 w-12 items-center justify-center rounded-full bg-surface">
-        <Icon library="feather" name={DEFAULT_ICONS[type]} size={24} color="#121212" />
+        <HugeiconsIcon
+          icon={ACTION_ICON_MAP[DEFAULT_ICONS[type]] ?? ArrowUpRight01Icon}
+          size={24}
+          color="#343433"
+        />
       </View>
     );
   }
@@ -178,82 +236,96 @@ const TransactionIcon = ({ transaction }: { transaction: Transaction }) => {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, onPress }) => {
-  const { text: amountText, isCredit } = formatTransactionAmount(
-    transaction.amount,
-    transaction.type,
-    transaction.currency
-  );
-  const isPending = transaction.status === 'pending';
-  const isFailed = transaction.status === 'failed';
-  const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+export const TransactionItem: React.FC<TransactionItemProps> = React.memo(
+  ({ transaction, onPress }) => {
+    const { text: amountText, isCredit } = formatTransactionAmount(
+      transaction.amount,
+      transaction.type,
+      transaction.currency
+    );
+    const isPending = transaction.status === 'pending';
+    const isFailed = transaction.status === 'failed';
+    const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
+    const scale = useSharedValue(1);
+    const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+    const triggerFeedback = useButtonFeedback();
 
-  return (
-    <AnimatedPressable
-      style={animStyle}
-      className="flex-row items-center py-[10px]"
-      onPress={onPress}
-      onPressIn={() => {
-        scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={`${transaction.title}, ${amountText}`}>
-      <View className="mr-sm">
-        <TransactionIcon transaction={transaction} />
-      </View>
-      <View className="flex-1">
-        <Text className="font-subtitle text-[15px] text-text-primary" numberOfLines={1}>
-          {transaction.title}
-        </Text>
-        <Text className="mt-[2px] font-caption text-[12px] text-text-secondary" numberOfLines={1}>
-          {transaction.subtitle}
-        </Text>
-      </View>
-      <View className="items-end">
-        <MaskedBalance
-          value={amountText}
-          visible={isBalanceVisible}
-          textClass="text-[16px]"
-          colorClass={
-            isPending
-              ? 'text-text-secondary'
-              : isFailed
-                ? 'text-destructive'
-                : isCredit
-                  ? 'text-success'
-                  : transaction.type === 'withdraw' || transaction.type === 'send'
-                    ? 'text-destructive'
-                    : 'text-text-primary'
-          }
-        />
-        {isPending && (
-          <Text className="mt-[2px] font-caption text-[12px] text-primary">Pending</Text>
-        )}
-        {isFailed && (
-          <Text className="mt-[2px] font-caption text-[12px] text-destructive">Failed</Text>
-        )}
-      </View>
-    </AnimatedPressable>
-  );
-};
+    return (
+      <AnimatedPressable
+        style={animStyle}
+        className="flex-row items-center py-[14px]"
+        onPress={() => {
+          triggerFeedback();
+          onPress?.();
+        }}
+        onPressIn={() => {
+          scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`${transaction.title}, ${amountText}`}>
+        <View className="mr-3">
+          <TransactionIcon transaction={transaction} />
+        </View>
+        <View className="flex-1">
+          <Text className="font-subtitle text-[15px] text-text-primary" numberOfLines={1}>
+            {transaction.title}
+          </Text>
+          <Text className="mt-0.5 font-caption text-[13px] text-text-secondary" numberOfLines={1}>
+            {transaction.subtitle}
+          </Text>
+        </View>
+        <View className="ml-3 items-end">
+          <MaskedBalance
+            value={amountText}
+            visible={isBalanceVisible}
+            textClass="text-[15px]"
+            colorClass={
+              isPending
+                ? 'text-text-secondary'
+                : isFailed
+                  ? 'text-destructive'
+                  : isCredit
+                    ? 'text-success'
+                    : transaction.type === 'withdraw' || transaction.type === 'send'
+                      ? 'text-destructive'
+                      : 'text-text-primary'
+            }
+          />
+          {transaction.amount > 0 && (
+            <Text
+              className="mt-0.5 font-mono-light text-[12px] text-text-tertiary"
+              style={{ fontVariant: ['tabular-nums'] }}>
+              ${Math.abs(transaction.amount).toFixed(2)}
+            </Text>
+          )}
+          {isPending && (
+            <Text className="mt-0.5 font-caption text-[11px] text-primary">Pending</Text>
+          )}
+          {isFailed && (
+            <Text className="mt-0.5 font-caption text-[11px] text-destructive">Failed</Text>
+          )}
+        </View>
+      </AnimatedPressable>
+    );
+  }
+);
+TransactionItem.displayName = 'TransactionItem';
 
 export const TransactionItemSkeleton: React.FC = () => (
-  <View className="flex-row items-center py-[10px]">
-    <View className="mr-sm">
+  <View className="flex-row items-center py-[14px]">
+    <View className="mr-3">
       <Skeleton className="h-12 w-12 rounded-full" />
     </View>
     <View className="flex-1">
       <Skeleton className="h-4 w-2/5 rounded-sm" />
-      <Skeleton className="mt-[6px] h-3 w-3/5 rounded-sm" />
+      <Skeleton className="mt-1.5 h-3 w-3/5 rounded-sm" />
     </View>
     <View className="ml-3 items-end">
-      <Skeleton className="h-4 w-[92px] rounded-sm" />
-      <Skeleton className="mt-[6px] h-3 w-[62px] rounded-sm" />
+      <Skeleton className="h-4 w-[80px] rounded-sm" />
+      <Skeleton className="mt-1.5 h-3 w-[50px] rounded-sm" />
     </View>
   </View>
 );

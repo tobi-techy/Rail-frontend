@@ -1,100 +1,88 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Pressable, Keyboard, StatusBar, Platform } from 'react-native';
-import type { TextInput } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+  Keyboard,
+  StatusBar,
+  Platform,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, InputField, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
-import { useLogin } from '@/api/hooks/useAuth';
+import { useAppleSignIn, useGoogleSignIn } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { getPostAuthRoute } from '@/utils/onboardingFlow';
+import { useAuthStore } from '@/stores/authStore';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import { ImpactFeedbackStyle } from 'expo-haptics';
 
+import { signupSchema, fieldError } from '@/utils/schemas';
 import { isSafeInput } from '@/utils/security';
-
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-const isValidPassword = (password: string): boolean => {
-  return password.length >= 8;
-};
+import { AppleLogo } from '@/assets/svg';
+import { GoogleLogoIcon } from 'phosphor-react-native';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
+import apiClient from '@/api/client';
 
 export default function SignIn() {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const passwordRef = useRef<TextInput>(null);
-  const { mutate: login, isPending } = useLogin();
+  const [isLoading, setIsLoading] = useState(false);
   const { showError, showWarning } = useFeedbackPopup();
+  const { mutate: appleSignIn } = useAppleSignIn();
+  const { mutate: googleSignIn } = useGoogleSignIn();
+  const triggerFeedback = useButtonFeedback();
+  const { impact, notification } = useHaptics();
+  const setPendingEmail = useAuthStore((s) => s.setPendingEmail);
 
-  const handleSignIn = () => {
-    if (!email || !password) {
-      if (!email) setEmailError('Email is required');
-      if (!password) setPasswordError('Password is required');
-      showWarning('Missing Fields', 'Please enter both email and password.');
+  const handleSignIn = async () => {
+    const result = signupSchema.safeParse({ email });
+    if (!result.success) {
+      setEmailError(fieldError(result.error, 'email'));
+      const first = result.error.issues[0]?.message ?? 'Please check your input.';
+      showWarning('Validation Error', first);
       return;
     }
 
-    if (!isValidEmail(email)) {
-      setEmailError('Please enter a valid email address');
-      showWarning('Invalid Email', 'Please enter a valid email address.');
-      return;
-    }
-
-    if (!isSafeInput(email) || !isSafeInput(password)) {
+    if (!isSafeInput(email)) {
       setEmailError('Invalid input detected');
       showWarning('Invalid Input', 'Please check your input and try again.');
       return;
     }
 
-    if (!isValidPassword(password)) {
-      setPasswordError('Password must be at least 8 characters');
-      showWarning('Weak Password', 'Password must be at least 8 characters.');
-      return;
-    }
-
     setEmailError('');
-    setPasswordError('');
+    impact(ImpactFeedbackStyle.Medium);
+    playUISound('buttonClick');
+    setIsLoading(true);
 
-    // Clear password from state immediately for security
-    // Store in temp variable to pass to login function
-    const passwordToUse = password;
-    setPassword('');
-
-    login(
-      { email: email.trim().toLowerCase(), password: passwordToUse },
-      {
-        onSuccess: (response) => {
-          const targetRoute = getPostAuthRoute(response.user?.onboardingStatus);
-          router.replace(targetRoute as never);
-        },
-        onError: (error: any) => {
-          // Categorize error for better user messaging
-          let userMessage = 'Sign in failed. Please try again.';
-
-          if (error?.code === 'NETWORK_ERROR') {
-            userMessage = 'Connection error. Check your internet and try again.';
-          } else if (error?.status === 429) {
-            userMessage = 'Too many attempts. Please wait a moment.';
-          } else if (error?.status >= 500) {
-            userMessage = 'Server error. Please try again later.';
-          } else if (error?.status === 401 || error?.status === 403) {
-            userMessage = 'Invalid email or password.';
-          } else if (error?.message) {
-            userMessage = error.message;
-          }
-
-          setPasswordError(userMessage);
-          showError('Sign In Failed', userMessage);
-          // Password already cleared from state above
-        },
+    try {
+      // Send OTP to email for signin
+      await apiClient.post('/v1/auth/email/start', { email: result.data.email });
+      setPendingEmail(result.data.email);
+      notification('success');
+      playUISound('transactionSuccess');
+      router.push({ pathname: ROUTES.AUTH.VERIFY_EMAIL, params: { mode: 'signin' } } as never);
+    } catch (error: any) {
+      let userMessage = 'Sign in failed. Please try again.';
+      if (error?.code === 'NETWORK_ERROR') {
+        userMessage = 'Connection error. Check your internet and try again.';
+      } else if (error?.status === 429) {
+        userMessage = 'Too many attempts. Please wait a moment.';
+      } else if (error?.status >= 500) {
+        userMessage = 'Server error. Please try again later.';
+      } else if (error?.message) {
+        userMessage = error.message;
       }
-    );
+      setEmailError(userMessage);
+      showError('Sign In Failed', userMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -110,10 +98,14 @@ export default function SignIn() {
         <View className="flex-1 px-6">
           <StaggeredChild index={0}>
             <View className="mb-10">
-              <Text className="font-headline text-auth-title leading-[1.1] text-black">
+              <Text
+                className="font-headline text-auth-title leading-[1.1] text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
                 Welcome Back
               </Text>
-              <Text className="mt-2 font-body text-body text-black/60">Sign in to continue</Text>
+              <Text className="mt-2 font-body text-body text-ash" maxFontSizeMultiplier={1.4}>
+                Sign in to continue
+              </Text>
             </View>
           </StaggeredChild>
 
@@ -129,52 +121,80 @@ export default function SignIn() {
                 }}
                 type="email"
                 error={emailError}
-                returnKeyType="next"
-                onSubmitEditing={() => passwordRef.current?.focus()}
-                // blurOnSubmit={false}
-              />
-            </StaggeredChild>
-
-            <StaggeredChild index={2}>
-              <InputField
-                ref={passwordRef}
-                label="Password"
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={(value) => {
-                  setPassword(value);
-                  if (passwordError) setPasswordError('');
-                }}
-                type="password"
-                error={passwordError}
-                isPasswordVisible={showPassword}
-                onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
                 returnKeyType="done"
                 onSubmitEditing={handleSignIn}
               />
             </StaggeredChild>
-
-            <StaggeredChild index={3}>
-              <TouchableOpacity
-                onPress={() => router.push(ROUTES.AUTH.FORGOT_PASSWORD)}
-                className="self-end"
-                accessibilityLabel="Forgot Password"
-                accessibilityHint="Navigate to reset your password">
-                <Text className="font-subtitle text-small text-black/50">Forgot Password?</Text>
-              </TouchableOpacity>
-            </StaggeredChild>
           </View>
 
-          <StaggeredChild index={4} delay={120} style={{ marginTop: 'auto' }}>
+          <StaggeredChild index={2} delay={120} style={{ marginTop: 'auto' }}>
             <View className="pt-8">
-              <Button title="Sign In" onPress={handleSignIn} loading={isPending} />
+              <View className="w-full flex-row items-stretch gap-3">
+                {Platform.OS === 'android' ? (
+                  <Button
+                    title="Sign Up with Google"
+                    leftIcon={<GoogleLogoIcon />}
+                    size="large"
+                    flex
+                    onPress={() => {
+                      googleSignIn(undefined, {
+                        onSuccess: (resp) =>
+                          router.replace(getPostAuthRoute(resp.user?.onboardingStatus) as never),
+                        onError: () =>
+                          showError(
+                            'Google Sign-In Failed',
+                            'Please try again or use email sign in.'
+                          ),
+                      });
+                    }}
+                    variant="white"
+                  />
+                ) : (
+                  <Button
+                    title="Sign In With Apple"
+                    leftIcon={<AppleLogo width={20} height={20} />}
+                    size="large"
+                    flex
+                    onPress={() => {
+                      appleSignIn(undefined, {
+                        onSuccess: (resp) =>
+                          router.replace(getPostAuthRoute(resp.user?.onboardingStatus) as never),
+                        onError: () =>
+                          showError(
+                            'Apple Sign-In Failed',
+                            'Please try again or use email sign in.'
+                          ),
+                      });
+                    }}
+                    variant="white"
+                  />
+                )}
+                <Button
+                  title="Sign In With Mail"
+                  onPress={handleSignIn}
+                  loading={isLoading}
+                  variant="orange"
+                  size="large"
+                  flex
+                />
+              </View>
               <TouchableOpacity
-                onPress={() => router.push(ROUTES.AUTH.SIGNUP as never)}
+                onPress={() => {
+                  triggerFeedback();
+                  router.push(ROUTES.AUTH.SIGNUP as never);
+                }}
                 className="mt-4"
                 accessibilityLabel="Sign up"
                 accessibilityHint="Navigate to registration">
-                <Text className="text-center font-body text-caption text-black/60">
-                  New to Rail? <Text className="font-subtitle text-black underline">Sign Up</Text>
+                <Text
+                  className="text-center font-body text-caption text-ash"
+                  maxFontSizeMultiplier={1.4}>
+                  New to Rail?{' '}
+                  <Text
+                    className="font-subtitle text-charcoal-primary underline"
+                    maxFontSizeMultiplier={1.3}>
+                    Sign Up
+                  </Text>
                 </Text>
               </TouchableOpacity>
             </View>

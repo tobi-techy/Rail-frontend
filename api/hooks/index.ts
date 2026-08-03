@@ -14,6 +14,7 @@ export * from './useOnboarding';
 
 // KYC hooks
 export * from './useKYC';
+export * from './useKYCFlow';
 
 // Portfolio hooks
 export * from './usePortfolio';
@@ -53,3 +54,24 @@ export * from './useVirtualAccount';
 
 // P2P hooks
 export * from './useP2P';
+
+// Paj Cash NGN ramp hooks
+export * from './usePaj';
+
+// RampHub unified NGN on/off ramp hooks (primary, Paj fallback)
+export * from './useRamp';
+
+// Withdrawal limits hooks
+export * from './useWithdrawalLimits';
+
+// Gameplay hooks
+export * from './useGameplay';
+
+// Security hooks
+export * from './useSecurity';
+
+// AI hooks
+export * from './useAI';
+
+// Daily spending limit (commitment device) hooks
+export * from './useSpendingCommitment';

@@ -1,0 +1,2399 @@
+{
+  "v": "sha256:cc3483ae9684f7aafedae1be185103bb4db14d07315df27eab74f333a30fd6f3",
+  "base": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/ngn/png/",
+  "banks": [
+    {
+      "n": "5TT Microfinance Bank",
+      "bc": "090832",
+      "p": "microfinance-banks/5TT%20Microfinance%20Bank.png",
+      "a": ["5TT MFB"]
+    },
+    {
+      "n": "78 Finance Company Limited",
+      "bc": "110072",
+      "p": "finance-companies/78%20Finance%20Company%20Limited.png",
+      "sc": "40195"
+    },
+    {
+      "n": "9 Payment Service Bank",
+      "bc": "120001",
+      "p": "payment-service-banks/9%20Payment%20Service%20Bank.png",
+      "a": ["9PSB", "9mobile PSB"]
+    },
+    {
+      "n": "9jaPay Microfinance Bank",
+      "bc": "090629",
+      "p": "microfinance-banks/9jaPay%20Microfinance%20Bank.png",
+      "a": ["9jaPay MFB"]
+    },
+    {
+      "n": "AB MFB",
+      "bc": "090270",
+      "p": "microfinance-banks/AB%20MFB.png",
+      "a": ["AB Microfinance Bank"]
+    },
+    {
+      "n": "Abbey Mortgage Bank",
+      "bc": "070010",
+      "p": "mortgage-banks/Abbey%20Mortgage%20Bank.png",
+      "sc": "404"
+    },
+    {
+      "n": "Above Only MFB",
+      "bc": "090260",
+      "p": "microfinance-banks/Above%20Only%20MFB.png",
+      "a": ["Above Only Microfinance Bank"],
+      "sc": "51204"
+    },
+    { "n": "ABSU MFB", "bc": "090640", "p": "microfinance-banks/ABSU%20MFB.png" },
+    {
+      "n": "ABU MFB",
+      "bc": "090197",
+      "p": "microfinance-banks/ABU%20MFB.png",
+      "a": ["ABU Microfinance Bank", "Ahmadu Bello University Microfinance Bank"]
+    },
+    {
+      "n": "Abulesoro MFB",
+      "bc": "51312",
+      "p": "microfinance-banks/Abulesoro%20MFB.png",
+      "sc": "51312"
+    },
+    {
+      "n": "Access Bank Nigeria",
+      "bc": "000014",
+      "p": "commercial-banks/Access%20Bank%20Nigeria.png",
+      "sc": "044"
+    },
+    {
+      "n": "Access Bank Plc (Diamond)",
+      "bc": "000005",
+      "p": "commercial-banks/Access%20Bank%20Plc%20(Diamond).png",
+      "sc": "063"
+    },
+    {
+      "n": "Access Mobile",
+      "bc": "323",
+      "p": "mobile-money/Access%20Mobile.png",
+      "a": ["ACCESS MOBILE"],
+      "sc": "323"
+    },
+    {
+      "n": "Access Money",
+      "bc": "927",
+      "p": "mobile-money/Access%20Money.png",
+      "a": ["Access Bank PSB"],
+      "sc": "927"
+    },
+    {
+      "n": "Access Yello & Beta",
+      "bc": "100052",
+      "p": "mobile-money/Access%20Yello%20%26%20Beta.png"
+    },
+    {
+      "n": "Accion MFB",
+      "bc": "090134",
+      "p": "microfinance-banks/Accion%20MFB.png",
+      "a": ["Accion Microfinance Bank"],
+      "sc": "602"
+    },
+    {
+      "n": "Ada MFB",
+      "bc": "090483",
+      "p": "microfinance-banks/Ada%20MFB.png",
+      "a": ["Ada Microfinance Bank"]
+    },
+    {
+      "n": "Adamawa Mortgage Bank Limited",
+      "bc": "070030",
+      "p": "mortgage-banks/Adamawa%20Mortgage%20Bank%20Limited.png",
+      "sc": "90102"
+    },
+    {
+      "n": "Addosser MFB",
+      "bc": "090160",
+      "p": "microfinance-banks/Addosser%20MFB.png",
+      "a": ["Addosser Microfinance Bank"]
+    },
+    {
+      "n": "Adeyemi College Staff MFB",
+      "bc": "090268",
+      "p": "microfinance-banks/Adeyemi%20College%20Staff%20MFB.png"
+    },
+    { "n": "Advancly MFB", "bc": "090759", "p": "microfinance-banks/Advancly%20MFB.png" },
+    { "n": "Aella MFB", "bc": "090614", "p": "microfinance-banks/Aella%20MFB.png", "sc": "50315" },
+    {
+      "n": "AG Mortgage Bank",
+      "bc": "100028",
+      "p": "mortgage-banks/AG%20Mortgage%20Bank.png",
+      "sc": "90077"
+    },
+    {
+      "n": "Airtel Smartcash PSB",
+      "bc": "120004",
+      "p": "payment-service-banks/Airtel%20Smartcash%20PSB.png",
+      "a": ["Smartcash", "Airtel PSB"]
+    },
+    { "n": "Akalabo MFB", "bc": "090698", "p": "microfinance-banks/Akalabo%20MFB.png" },
+    { "n": "AKSU MFB", "bc": "090756", "p": "microfinance-banks/AKSU%20MFB.png" },
+    {
+      "n": "AKU Microfinance Bank",
+      "bc": "090531",
+      "p": "microfinance-banks/AKU%20Microfinance%20Bank.png",
+      "sc": "51336"
+    },
+    {
+      "n": "Akuchukwu Microfinance Bank Limited",
+      "bc": "090561",
+      "p": "microfinance-banks/Akuchukwu%20Microfinance%20Bank%20Limited.png"
+    },
+    {
+      "n": "Al-Barakah MFB",
+      "bc": "090133",
+      "p": "microfinance-banks/Al-Barakah%20MFB.png",
+      "a": ["Al-Barakah Microfinance Bank"],
+      "sc": "50055"
+    },
+    {
+      "n": "Al-Hayat MFB",
+      "bc": "090277",
+      "p": "microfinance-banks/Al-Hayat%20MFB.png",
+      "a": ["Al-Hayat Microfinance Bank"]
+    },
+    {
+      "n": "ALAT by WEMA",
+      "bc": "035150103",
+      "p": "mobile-money/ALAT%20by%20WEMA.png",
+      "a": ["ALAT", "Wema Bank"],
+      "sc": "035A"
+    },
+    {
+      "n": "Alekun MFB",
+      "bc": "090259",
+      "p": "microfinance-banks/Alekun%20MFB.png",
+      "a": ["Alekun Microfinance Bank"]
+    },
+    {
+      "n": "Alert MFB",
+      "bc": "090297",
+      "p": "microfinance-banks/Alert%20MFB.png",
+      "a": ["Alert Microfinance Bank"]
+    },
+    {
+      "n": "Allworkers MFB",
+      "bc": "090131",
+      "p": "microfinance-banks/Allworkers%20MFB.png",
+      "a": ["Allworkers Microfinance Bank"]
+    },
+    {
+      "n": "Alpha Kapital MFB",
+      "bc": "090169",
+      "p": "microfinance-banks/Alpha%20Kapital%20MFB.png",
+      "a": ["Alpha Kapital Microfinance Bank"]
+    },
+    {
+      "n": "Alpha Morgan Bank",
+      "bc": "000041",
+      "p": "commercial-banks/Alpha%20Morgan%20Bank.png",
+      "sc": "108"
+    },
+    {
+      "n": "Alternative Bank Limited",
+      "bc": "000037",
+      "p": "commercial-banks/Alternative%20Bank%20Limited.png"
+    },
+    { "n": "Amaanah Finance", "bc": "050045", "p": "finance-companies/Amaanah%20Finance.png" },
+    { "n": "AMAC MFB", "bc": "090394", "p": "microfinance-banks/AMAC%20MFB.png" },
+    {
+      "n": "AMJU Unique MFB",
+      "bc": "090180",
+      "p": "microfinance-banks/AMJU%20Unique%20MFB.png",
+      "a": ["AMJU Unique Microfinance Bank"],
+      "sc": "50926"
+    },
+    {
+      "n": "AMML MFB",
+      "bc": "914",
+      "p": "microfinance-banks/AMML%20MFB.png",
+      "a": ["AMML Microfinance Bank"],
+      "sc": "914"
+    },
+    { "n": "Ample MFB", "bc": "090770", "p": "microfinance-banks/Ample%20MFB.png" },
+    { "n": "AMS Finance", "bc": "050048", "p": "finance-companies/AMS%20Finance.png" },
+    {
+      "n": "Anioma MFB",
+      "bc": "090751",
+      "p": "microfinance-banks/Anioma%20MFB.png",
+      "a": ["ANIOMA MFB"]
+    },
+    {
+      "n": "APEKS MFB",
+      "bc": "090143",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png",
+      "a": ["Apeks Microfinance Bank"]
+    },
+    { "n": "Apex Trust MFB", "bc": "090737", "p": "microfinance-banks/Apex%20Trust%20MFB.png" },
+    {
+      "n": "Aramoko MFB",
+      "bc": "50083",
+      "p": "microfinance-banks/Aramoko%20MFB.png",
+      "sc": "50083"
+    },
+    { "n": "ArcPay MFB", "bc": "090689", "p": "microfinance-banks/ArcPay%20MFB.png" },
+    {
+      "n": "Arise Microfinance Bank",
+      "bc": "090282",
+      "p": "microfinance-banks/Arise%20Microfinance%20Bank.png"
+    },
+    { "n": "ARM MFB", "bc": "090816", "p": "microfinance-banks/ARM%20MFB.png" },
+    { "n": "Ascensia Finance", "bc": "050040", "p": "finance-companies/Ascensia%20Finance.png" },
+    {
+      "n": "ASO Savings and Loans",
+      "bc": "401",
+      "p": "mortgage-banks/ASO%20Savings%20and%20Loans.png",
+      "sc": "null"
+    },
+    {
+      "n": "Aspire Mortgage Bank",
+      "bc": "070033",
+      "p": "mortgage-banks/Aspire%20Mortgage%20Bank.png"
+    },
+    { "n": "Asset Matrix MFB", "bc": "090287", "p": "microfinance-banks/Asset%20Matrix%20MFB.png" },
+    {
+      "n": "Assets Microfinance Bank",
+      "bc": "090473",
+      "p": "microfinance-banks/Assets%20Microfinance%20Bank.png",
+      "sc": "50092"
+    },
+    {
+      "n": "Astra Polaris MFB",
+      "bc": "090172",
+      "p": "microfinance-banks/Astra%20Polaris%20MFB.png",
+      "a": ["Astrapolaris Microfinance Bank"],
+      "sc": "MFB50094"
+    },
+    {
+      "n": "Auchi MFB",
+      "bc": "090264",
+      "p": "microfinance-banks/Auchi%20MFB.png",
+      "a": ["Auchi Microfinance Bank"]
+    },
+    {
+      "n": "Auchi Poly MFB",
+      "bc": "090817",
+      "p": "microfinance-banks/Auchi%20Poly%20MFB.png",
+      "a": ["Auchi Poly Microfinance Bank"]
+    },
+    {
+      "n": "AVUENEGBE MICROFINANCE BANK",
+      "bc": "090478",
+      "p": "microfinance-banks/AVUENEGBE%20MICROFINANCE%20BANK.png"
+    },
+    { "n": "Avvic MFB", "bc": "090853", "p": "microfinance-banks/Avvic%20MFB.png" },
+    {
+      "n": "AWACASH MICROFINANCE BANK",
+      "bc": "090633",
+      "p": "microfinance-banks/AWACASH%20MICROFINANCE%20BANK.png",
+      "sc": "51351"
+    },
+    { "n": "Awesome MFB", "bc": "090662", "p": "microfinance-banks/Awesome%20MFB.png" },
+    {
+      "n": "AZTEC MICROFINANCE BANK LIMITED",
+      "bc": "090540",
+      "p": "microfinance-banks/AZTEC%20MICROFINANCE%20BANK%20LIMITED.png",
+      "sc": "51337"
+    },
+    { "n": "Babcock MFB", "bc": "090729", "p": "microfinance-banks/Babcock%20MFB.png" },
+    { "n": "Baige MFB", "bc": "090862", "p": "microfinance-banks/Baige%20MFB.png" },
+    {
+      "n": "Baines Credit Microfinance Bank",
+      "bc": "090188",
+      "p": "microfinance-banks/Baines%20Credit%20Microfinance%20Bank.png",
+      "sc": "51229"
+    },
+    {
+      "n": "Balogun Gambari MFB",
+      "bc": "090326",
+      "p": "microfinance-banks/Balogun%20Gambari%20MFB.png"
+    },
+    { "n": "Bam MFB", "bc": "090651", "p": "microfinance-banks/Bam%20MFB.png" },
+    {
+      "n": "Banc Corp Microfinance Bank",
+      "bc": "090581",
+      "p": "microfinance-banks/Banc%20Corp%20Microfinance%20Bank.png",
+      "sc": "50117"
+    },
+    {
+      "n": "Bank of Agriculture",
+      "bc": "090367",
+      "p": "microfinance-banks/Bank%20of%20Agriculture.png"
+    },
+    {
+      "n": "Bank78 Microfinance Bank",
+      "bc": "090866",
+      "p": "microfinance-banks/Bank78%20Microfinance%20Bank.png",
+      "sc": "11072"
+    },
+    {
+      "n": "BankEasy MFB",
+      "bc": "090789",
+      "p": "microfinance-banks/BankEasy%20MFB.png",
+      "a": ["Bankeasy MFB"]
+    },
+    {
+      "n": "BANKIT MICROFINANCE BANK LTD",
+      "bc": "090275",
+      "p": "microfinance-banks/BANKIT%20MICROFINANCE%20BANK%20LTD.png",
+      "sc": "50572"
+    },
+    {
+      "n": "BANKLY MFB",
+      "bc": "090529",
+      "p": "microfinance-banks/BANKLY%20MFB.png",
+      "sc": "51341"
+    },
+    {
+      "n": "Baobab Microfinance Bank",
+      "bc": "090136",
+      "p": "microfinance-banks/Baobab%20Microfinance%20Bank.png",
+      "sc": "MFB50992"
+    },
+    { "n": "Barnawa MFB", "bc": "090783", "p": "microfinance-banks/Barnawa%20MFB.png" },
+    {
+      "n": "Bauchi CFA MFB",
+      "bc": "090387",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "Bayero Microfinance Bank",
+      "bc": "090316",
+      "p": "microfinance-banks/Bayero%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "BC Kash Microfinance Bank",
+      "bc": "090127",
+      "p": "microfinance-banks/BC%20Kash%20Microfinance%20Bank.png"
+    },
+    { "n": "Beamer MFB", "bc": "090591", "p": "microfinance-banks/Beamer%20MFB.png" },
+    {
+      "n": "BellBank Microfinance Bank",
+      "bc": "090672",
+      "p": "microfinance-banks/BellBank%20Microfinance%20Bank.png",
+      "sc": "51100"
+    },
+    {
+      "n": "Benysta Microfinance Bank Limited",
+      "bc": "090413",
+      "p": "microfinance-banks/Benysta%20Microfinance%20Bank%20Limited.png",
+      "sc": "51267"
+    },
+    {
+      "n": "Berachah Microfinance Bank Ltd.",
+      "bc": "090618",
+      "p": "microfinance-banks/Berachah%20Microfinance%20Bank%20Ltd..png",
+      "sc": "50122"
+    },
+    {
+      "n": "Beststar Microfinance Bank",
+      "bc": "090615",
+      "p": "microfinance-banks/Beststar%20Microfinance%20Bank.png",
+      "sc": "50123"
+    },
+    {
+      "n": "Betastack Technologies",
+      "bc": "110074",
+      "p": "mobile-money/Betastack%20Technologies.png"
+    },
+    { "n": "Bethel MFB", "bc": "090683", "p": "microfinance-banks/Bethel%20MFB.png" },
+    {
+      "n": "BIPC Microfinance Bank",
+      "bc": "090336",
+      "p": "microfinance-banks/BIPC%20Microfinance%20Bank.png"
+    },
+    { "n": "BKD New MFB", "bc": "090722", "p": "microfinance-banks/BKD%20New%20MFB.png" },
+    { "n": "Bloc MFB", "bc": "090977", "p": "microfinance-banks/Bloc%20MFB.png" },
+    {
+      "n": "Blooms Microfinance Bank",
+      "bc": "090743",
+      "p": "microfinance-banks/Blooms%20Microfinance%20Bank.png",
+      "a": ["Blooms MFB"]
+    },
+    { "n": "Bobble MFB", "bc": "090617", "p": "microfinance-banks/Bobble%20MFB.png" },
+    {
+      "n": "BOCTrust Microfinance Bank",
+      "bc": "090117",
+      "p": "microfinance-banks/BOCTrust%20Microfinance%20Bank.png",
+      "sc": "952"
+    },
+    { "n": "Bokkos MFB", "bc": "090703", "p": "microfinance-banks/Bokkos%20MFB.png" },
+    { "n": "BOLD MFB", "bc": "090753", "p": "microfinance-banks/BOLD%20MFB.png", "sc": "50725" },
+    {
+      "n": "Boost Microfinance Bank",
+      "bc": "090819",
+      "p": "microfinance-banks/Boost%20Microfinance%20Bank.png",
+      "sc": "51449"
+    },
+    { "n": "Borgu MFB", "bc": "090395", "p": "microfinance-banks/Borgu%20MFB.png" },
+    { "n": "Boromu MFB", "bc": "090501", "p": "microfinance-banks/Boromu%20MFB.png" },
+    { "n": "Borstal MFB", "bc": "090454", "p": "microfinance-banks/Borstal%20MFB.png" },
+    {
+      "n": "Bosak Microfinance Bank",
+      "bc": "090176",
+      "p": "microfinance-banks/Bosak%20Microfinance%20Bank.png",
+      "sc": "650"
+    },
+    {
+      "n": "Bowen Microfinance Bank",
+      "bc": "090148",
+      "p": "microfinance-banks/Bowen%20Microfinance%20Bank.png",
+      "sc": "50931"
+    },
+    { "n": "Bowman MFB", "bc": "090804", "p": "microfinance-banks/Bowman%20MFB.png" },
+    {
+      "n": "Branch International Finance Company Limited",
+      "bc": "050006",
+      "p": "finance-companies/Branch%20International%20Finance%20Company%20Limited.png",
+      "sc": "FC40163"
+    },
+    {
+      "n": "Brent Mortgage Bank",
+      "bc": "070015",
+      "p": "mortgage-banks/Brent%20Mortgage%20Bank.png",
+      "sc": "90070"
+    },
+    {
+      "n": "Brethren Microfinance Bank",
+      "bc": "090293",
+      "p": "microfinance-banks/Brethren%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Brightway Microfinance Bank",
+      "bc": "090308",
+      "p": "microfinance-banks/Brightway%20Microfinance%20Bank.png",
+      "a": ["Brightway MFB"]
+    },
+    {
+      "n": "Build MFB",
+      "bc": "090613",
+      "p": "microfinance-banks/Build%20MFB.png",
+      "a": ["Build Microfinance Bank"]
+    },
+    {
+      "n": "Bundi MFB",
+      "bc": "090661",
+      "p": "microfinance-banks/Bundi%20MFB.png",
+      "a": ["Bundi Microfinance Bank"]
+    },
+    { "n": "Bunkure MFB", "bc": "090655", "p": "microfinance-banks/Bunkure%20MFB.png" },
+    {
+      "n": "BuyPower MFB",
+      "bc": "090682",
+      "p": "microfinance-banks/BuyPower%20MFB.png",
+      "sc": "50645"
+    },
+    {
+      "n": "Bway MFB",
+      "bc": "090774",
+      "p": "microfinance-banks/Bway%20MFB.png",
+      "a": ["Bway Microfiance Bank", "Bridgeway MFB"]
+    },
+    { "n": "Canaan MFB", "bc": "090647", "p": "microfinance-banks/Canaan%20MFB.png" },
+    {
+      "n": "Capitalmetriq Swift Microfinance Bank",
+      "bc": "090509",
+      "p": "microfinance-banks/Capitalmetriq%20Swift%20Microfinance%20Bank.png"
+    },
+    { "n": "Capstone MFB", "bc": "090445", "p": "microfinance-banks/Capstone%20MFB.png" },
+    {
+      "n": "Carbon",
+      "bc": "100026",
+      "p": "mobile-money/Carbon.png",
+      "a": ["Carbon MFB", "OneFi", "Paylater"],
+      "sc": "565"
+    },
+    { "n": "Cardinalstone", "bc": "050017", "p": "finance-companies/Cardinalstone.png" },
+    { "n": "Casa MFB", "bc": "090840", "p": "microfinance-banks/Casa%20MFB.png" },
+    { "n": "Casha MFB", "bc": "090848", "p": "microfinance-banks/Casha%20MFB.png" },
+    {
+      "n": "Cashbridge Microfinance Bank Limited",
+      "bc": "090634",
+      "p": "microfinance-banks/Cashbridge%20Microfinance%20Bank%20Limited.png",
+      "sc": "51353"
+    },
+    {
+      "n": "CASHCONNECT MFB",
+      "bc": "090360",
+      "p": "microfinance-banks/CASHCONNECT%20MFB.png",
+      "sc": "865"
+    },
+    { "n": "CashRite MFB", "bc": "090649", "p": "microfinance-banks/CashRite%20MFB.png" },
+    { "n": "Cedrus MFB", "bc": "090851", "p": "microfinance-banks/Cedrus%20MFB.png" },
+    { "n": "Cellulant", "bc": "919", "p": "mobile-money/Cellulant.png", "sc": "919" },
+    {
+      "n": "CEMCS Microfinance Bank",
+      "bc": "090154",
+      "p": "microfinance-banks/CEMCS%20Microfinance%20Bank.png",
+      "sc": "50823"
+    },
+    { "n": "CENTRUM FINANCE", "bc": "050032", "p": "finance-companies/CENTRUM%20FINANCE.png" },
+    {
+      "n": "Ceviant Finance Limited",
+      "bc": "050043",
+      "p": "finance-companies/Ceviant%20Finance%20Limited.png"
+    },
+    { "n": "Chams Mobile", "bc": "929", "p": "mobile-money/Chams%20Mobile.png", "sc": "929" },
+    {
+      "n": "Chanelle Microfinance Bank Limited",
+      "bc": "090397",
+      "p": "microfinance-banks/Chanelle%20Microfinance%20Bank%20Limited.png",
+      "sc": "50171"
+    },
+    { "n": "Charis MFB", "bc": "090815", "p": "microfinance-banks/Charis%20MFB.png" },
+    { "n": "Chase MFB", "bc": "090523", "p": "microfinance-banks/Chase%20MFB.png" },
+    {
+      "n": "Chikum Microfinance Bank",
+      "bc": "090141",
+      "p": "microfinance-banks/Chikum%20Microfinance%20Bank.png",
+      "sc": "312"
+    },
+    {
+      "n": "Citibank",
+      "bc": "000009",
+      "p": "commercial-banks/Citibank.png",
+      "a": ["Citibank Nigeria"],
+      "sc": "023"
+    },
+    {
+      "n": "CITYCODE MORTAGE BANK",
+      "bc": "070027",
+      "p": "mortgage-banks/CITYCODE%20MORTAGE%20BANK.png"
+    },
+    { "n": "Clearpay MFB", "bc": "090482", "p": "microfinance-banks/Clearpay%20MFB.png" },
+    {
+      "n": "Consistent Trust MFB",
+      "bc": "090553",
+      "p": "microfinance-banks/Consistent%20Trust%20MFB.png"
+    },
+    {
+      "n": "Consumer Microfinance Bank",
+      "bc": "090130",
+      "p": "microfinance-banks/Consumer%20Microfinance%20Bank.png",
+      "sc": "50910"
+    },
+    {
+      "n": "Contec Global (NowNow)",
+      "bc": "100032",
+      "p": "mobile-money/Contec%20Global%20(NowNow).png",
+      "sc": "100032"
+    },
+    {
+      "n": "Cool Microfinance Bank Limited",
+      "bc": "090842",
+      "p": "microfinance-banks/Cool%20Microfinance%20Bank%20Limited.png",
+      "sc": "51458"
+    },
+    {
+      "n": "Cooperative Mortgage Bank",
+      "bc": "90089",
+      "p": "mortgage-banks/Cooperative%20Mortgage%20Bank.png",
+      "sc": "90089"
+    },
+    { "n": "COOPFUND MFB", "bc": "090717", "p": "microfinance-banks/COOPFUND%20MFB.png" },
+    {
+      "n": "Corestep MFB",
+      "bc": "090365",
+      "p": "microfinance-banks/Corestep%20MFB.png",
+      "sc": "50204"
+    },
+    {
+      "n": "Coronation Merchant Bank",
+      "bc": "060001",
+      "p": "merchant-banks/Coronation%20Merchant%20Bank.png",
+      "a": ["Coronation"],
+      "sc": "559"
+    },
+    {
+      "n": "County Finance Limited",
+      "bc": "050001",
+      "p": "finance-companies/County%20Finance%20Limited.png",
+      "sc": "40128"
+    },
+    {
+      "n": "Covenant MFB",
+      "bc": "070006",
+      "p": "microfinance-banks/Covenant%20MFB.png",
+      "a": ["Covenant Microfinance Bank"],
+      "sc": "949"
+    },
+    {
+      "n": "Credit Afrique Microfinance Bank",
+      "bc": "090159",
+      "p": "microfinance-banks/Credit%20Afrique%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Credit Direct Limited",
+      "bc": "110049",
+      "p": "finance-companies/Credit%20Direct%20Limited.png",
+      "sc": "40119"
+    },
+    {
+      "n": "Creditville MFB",
+      "bc": "090611",
+      "p": "microfinance-banks/Creditville%20MFB.png",
+      "a": ["Creditville Microfinance Bank"]
+    },
+    {
+      "n": "Crescent MFB",
+      "bc": "51297",
+      "p": "microfinance-banks/Crescent%20MFB.png",
+      "a": ["Crescent Microfinance Bank"],
+      "sc": "51297"
+    },
+    {
+      "n": "Crust Microfinance Bank",
+      "bc": "090560",
+      "p": "microfinance-banks/Crust%20Microfinance%20Bank.png",
+      "a": ["Crust MFB"]
+    },
+    {
+      "n": "CRUTECH MICROFINANCE BANK LTD",
+      "bc": "50216",
+      "p": "microfinance-banks/CRUTECH%20MICROFINANCE%20BANK%20LTD.png",
+      "a": ["CRUTECH MFB"],
+      "sc": "50216"
+    },
+    {
+      "n": "Crystal Finance Company Limited",
+      "bc": "050029",
+      "p": "finance-companies/Crystal%20Finance%20Company%20Limited.png"
+    },
+    { "n": "Dabtikir MFB", "bc": "090802", "p": "microfinance-banks/Dabtikir%20MFB.png" },
+    { "n": "Daily Trust MFB", "bc": "090705", "p": "microfinance-banks/Daily%20Trust%20MFB.png" },
+    { "n": "Dal MFB", "bc": "090596", "p": "microfinance-banks/Dal%20MFB.png" },
+    {
+      "n": "Dash Microfinance Bank",
+      "bc": "090845",
+      "p": "microfinance-banks/Dash%20Microfinance%20Bank.png",
+      "sc": "51368"
+    },
+    {
+      "n": "Davenport MICROFINANCE BANK",
+      "bc": "090673",
+      "p": "microfinance-banks/Davenport%20MICROFINANCE%20BANK.png",
+      "sc": "51334"
+    },
+    {
+      "n": "Daylight Microfinance Bank",
+      "bc": "090167",
+      "p": "microfinance-banks/Daylight%20Microfinance%20Bank.png"
+    },
+    { "n": "Dayspring MFB", "bc": "090873", "p": "microfinance-banks/Dayspring%20MFB.png" },
+    {
+      "n": "Delta Trust Mortgage Bank",
+      "bc": "070023",
+      "p": "mortgage-banks/Delta%20Trust%20Mortgage%20Bank.png"
+    },
+    { "n": "Destiny MFB", "bc": "090723", "p": "microfinance-banks/Destiny%20MFB.png" },
+    {
+      "n": "Dew MFB",
+      "bc": "090978",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Digitvant MFB", "bc": "090745", "p": "microfinance-banks/Digitvant%20MFB.png" },
+    {
+      "n": "Dillon Microfinance Bank",
+      "bc": "090828",
+      "p": "microfinance-banks/Dillon%20Microfinance%20Bank.png",
+      "sc": "51450"
+    },
+    { "n": "Doje MFB", "bc": "090404", "p": "microfinance-banks/Doje%20MFB.png" },
+    {
+      "n": "Dot Microfinance Bank",
+      "bc": "090470",
+      "p": "microfinance-banks/Dot%20Microfinance%20Bank.png",
+      "sc": "50162"
+    },
+    {
+      "n": "DSC Microfinance Bank",
+      "bc": "090821",
+      "p": "microfinance-banks/DSC%20Microfinance%20Bank.png"
+    },
+    { "n": "Duxbank MFB", "bc": "090847", "p": "microfinance-banks/Duxbank%20MFB.png" },
+    { "n": "DW MFB", "bc": "090721", "p": "microfinance-banks/DW%20MFB.png" },
+    {
+      "n": "e-Barcs Microfinance Bank",
+      "bc": "090156",
+      "p": "microfinance-banks/e-Barcs%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Eagle Flight Microfinance Bank",
+      "bc": "090294",
+      "p": "microfinance-banks/Eagle%20Flight%20Microfinance%20Bank.png"
+    },
+    { "n": "Earnwell MFB", "bc": "090674", "p": "microfinance-banks/Earnwell%20MFB.png" },
+    { "n": "Eartholeum", "bc": "935", "p": "mobile-money/Eartholeum.png", "sc": "935" },
+    { "n": "Eastman MFB", "bc": "090707", "p": "microfinance-banks/Eastman%20MFB.png" },
+    {
+      "n": "EBSU Microfinance Bank",
+      "bc": "50922",
+      "p": "microfinance-banks/EBSU%20Microfinance%20Bank.png",
+      "sc": "50922"
+    },
+    {
+      "n": "Ecobank",
+      "bc": "000010",
+      "p": "commercial-banks/Ecobank.png",
+      "a": ["Ecobank Nigeria"],
+      "sc": "050"
+    },
+    { "n": "Ecobank Mobile", "bc": "307", "p": "mobile-money/Ecobank%20Mobile.png", "sc": "307" },
+    {
+      "n": "Ecobank Xpress Account",
+      "bc": "100008",
+      "p": "mobile-money/Ecobank%20Xpress%20Account.png",
+      "sc": "922"
+    },
+    {
+      "n": "Edfin Microfinance Bank",
+      "bc": "090310",
+      "p": "microfinance-banks/Edfin%20Microfinance%20Bank.png"
+    },
+    { "n": "Ejindu MFB", "bc": "090694", "p": "microfinance-banks/Ejindu%20MFB.png" },
+    {
+      "n": "Ekimogun MFB",
+      "bc": "50263",
+      "p": "microfinance-banks/Ekimogun%20MFB.png",
+      "sc": "50263"
+    },
+    {
+      "n": "Ekondo Microfinance Bank",
+      "bc": "090097",
+      "p": "microfinance-banks/Ekondo%20Microfinance%20Bank.png",
+      "sc": "098"
+    },
+    { "n": "Ellington MFB", "bc": "090811", "p": "microfinance-banks/Ellington%20MFB.png" },
+    { "n": "Emaar MFB", "bc": "090712", "p": "microfinance-banks/Emaar%20MFB.png" },
+    {
+      "n": "Emeralds Microfinance Bank",
+      "bc": "090273",
+      "p": "microfinance-banks/Emeralds%20Microfinance%20Bank.png"
+    },
+    { "n": "Eminence MFB", "bc": "091002", "p": "microfinance-banks/Eminence%20MFB.png" },
+    {
+      "n": "Empire Trust Microfinance Bank",
+      "bc": "913",
+      "p": "microfinance-banks/Empire%20Trust%20Microfinance%20Bank.png",
+      "sc": "913"
+    },
+    { "n": "Entity MFB", "bc": "090656", "p": "microfinance-banks/Entity%20MFB.png" },
+    { "n": "Equator MFB", "bc": "090872", "p": "microfinance-banks/Equator%20MFB.png" },
+    {
+      "n": "Esan Microfinance Bank",
+      "bc": "090189",
+      "p": "microfinance-banks/Esan%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Eso-E Microfinance Bank",
+      "bc": "090166",
+      "p": "microfinance-banks/Eso-E%20Microfinance%20Bank.png"
+    },
+    { "n": "Ethica MFB", "bc": "090982", "p": "microfinance-banks/Ethica%20MFB.png" },
+    {
+      "n": "eTRANZACT",
+      "bc": "100006",
+      "p": "mobile-money/eTRANZACT.png",
+      "a": ["eTRANZACT NG"],
+      "sc": "920"
+    },
+    {
+      "n": "Evangel Microfinance Bank",
+      "bc": "090304",
+      "p": "microfinance-banks/Evangel%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Evergreen Microfinance Bank",
+      "bc": "090332",
+      "p": "microfinance-banks/Evergreen%20Microfinance%20Bank.png"
+    },
+    { "n": "Evib Finance", "bc": "050034", "p": "finance-companies/Evib%20Finance.png" },
+    {
+      "n": "EXCEL FINANCE BANK",
+      "bc": "090678",
+      "p": "microfinance-banks/EXCEL%20FINANCE%20BANK.png"
+    },
+    { "n": "Excellent MFB", "bc": "090541", "p": "microfinance-banks/Excellent%20MFB.png" },
+    {
+      "n": "eyowo",
+      "bc": "090328",
+      "p": "mobile-money/eyowo.png",
+      "a": ["Eyowo", "Eyowo MFB"],
+      "sc": "50126"
+    },
+    {
+      "n": "Factoring and Supply Chain Finance Limited",
+      "bc": "050042",
+      "p": "finance-companies/Factoring%20and%20Supply%20Chain%20Finance%20Limited.png"
+    },
+    {
+      "n": "Fairmoney Microfinance Bank",
+      "bc": "090551",
+      "p": "microfinance-banks/Fairmoney%20Microfinance%20Bank.png",
+      "sc": "51318"
+    },
+    { "n": "Fame MFB", "bc": "090330", "p": "microfinance-banks/Fame%20MFB.png" },
+    {
+      "n": "Fast Credit Limited",
+      "bc": "050009",
+      "p": "finance-companies/Fast%20Credit%20Limited.png"
+    },
+    {
+      "n": "FAST Microfinance Bank",
+      "bc": "090179",
+      "p": "microfinance-banks/FAST%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "FBN Mobile",
+      "bc": "309",
+      "p": "mobile-money/FBN%20Mobile.png",
+      "a": ["First Bank Mobile"],
+      "sc": "309"
+    },
+    {
+      "n": "FBNQuest Merchant Bank",
+      "bc": "911",
+      "p": "merchant-banks/FBNQuest%20Merchant%20Bank.png",
+      "sc": "911"
+    },
+    { "n": "FCMB Easy Account", "bc": "100031", "p": "mobile-money/FCMB%20Easy%20Account.png" },
+    { "n": "FCMB MFB", "bc": "090409", "p": "microfinance-banks/FCMB%20MFB.png", "sc": "51241" },
+    {
+      "n": "FCT Microfinance Bank",
+      "bc": "090290",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "Federal Polytechnic Nekede MFB",
+      "bc": "090398",
+      "p": "microfinance-banks/Federal%20Polytechnic%20Nekede%20MFB.png"
+    },
+    {
+      "n": "Federal University Dutse MFB",
+      "bc": "090318",
+      "p": "microfinance-banks/Federal%20University%20Dutse%20MFB.png"
+    },
+    {
+      "n": "FederalPoly Nasarawa MFB",
+      "bc": "090298",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Fedeth MFB", "bc": "50298", "p": "microfinance-banks/Fedeth%20MFB.png", "sc": "50298" },
+    { "n": "FETS", "bc": "100001", "p": "microfinance-banks/FETS.png", "sc": "915" },
+    { "n": "Fewchore Finance", "bc": "050003", "p": "finance-companies/Fewchore%20Finance.png" },
+    {
+      "n": "FFS Microfinance Bank",
+      "bc": "090153",
+      "p": "microfinance-banks/FFS%20Microfinance%20Bank.png",
+      "sc": "51110"
+    },
+    {
+      "n": "Fidelity Bank",
+      "bc": "000007",
+      "p": "commercial-banks/Fidelity%20Bank.png",
+      "sc": "070"
+    },
+    { "n": "Fidelity Mobile", "bc": "933", "p": "mobile-money/Fidelity%20Mobile.png", "sc": "933" },
+    {
+      "n": "Fidfund Microfinance Bank",
+      "bc": "090126",
+      "p": "microfinance-banks/Fidfund%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Finatrust Microfinance Bank",
+      "bc": "090111",
+      "p": "microfinance-banks/Finatrust%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Firmus Microfinance Bank",
+      "bc": "090366",
+      "p": "microfinance-banks/Firmus%20Microfinance%20Bank.png",
+      "sc": "51314"
+    },
+    { "n": "First Ally MFB", "bc": "090135", "p": "microfinance-banks/First%20Ally%20MFB.png" },
+    {
+      "n": "First Bank of Nigeria",
+      "bc": "000016",
+      "p": "commercial-banks/First%20Bank%20of%20Nigeria.png",
+      "a": ["FBN"],
+      "sc": "011"
+    },
+    {
+      "n": "First City Monument Bank",
+      "bc": "000003",
+      "p": "commercial-banks/First%20City%20Monument%20Bank.png",
+      "a": ["FCMB"],
+      "sc": "214"
+    },
+    {
+      "n": "First Generation Mortgage Bank",
+      "bc": "070014",
+      "p": "mortgage-banks/First%20Generation%20Mortgage%20Bank.png"
+    },
+    {
+      "n": "First Lowland MFB",
+      "bc": "090868",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "First Marina Trust Finance",
+      "bc": "050022",
+      "p": "finance-companies/First%20Marina%20Trust%20Finance.png"
+    },
+    {
+      "n": "First Multiple Microfinance Bank",
+      "bc": "090163",
+      "p": "microfinance-banks/First%20Multiple%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "First Option Microfinance Bank",
+      "bc": "090285",
+      "p": "microfinance-banks/First%20Option%20Microfinance%20Bank.png",
+      "sc": "50934"
+    },
+    {
+      "n": "First Royal Microfinance Bank",
+      "bc": "090164",
+      "p": "microfinance-banks/First%20Royal%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "FIRSTMIDAS MFB",
+      "bc": "51333",
+      "p": "microfinance-banks/FIRSTMIDAS%20MFB.png",
+      "sc": "51333"
+    },
+    {
+      "n": "FirstMonie Wallet",
+      "bc": "100014",
+      "p": "mobile-money/FirstMonie%20Wallet.png",
+      "sc": "928"
+    },
+    {
+      "n": "FirstTrust Mortgage Bank Nigeria",
+      "bc": "090107",
+      "p": "mortgage-banks/FirstTrust%20Mortgage%20Bank%20Nigeria.png",
+      "sc": "413"
+    },
+    { "n": "Fit MFB", "bc": "090856", "p": "microfinance-banks/Fit%20MFB.png" },
+    { "n": "Flexi MFB", "bc": "090835", "p": "microfinance-banks/Flexi%20MFB.png" },
+    { "n": "Flutterwave", "bc": "110002", "p": "mobile-money/Flutterwave.png" },
+    {
+      "n": "Flutterwave MFB",
+      "bc": "090567",
+      "p": "microfinance-banks/Flutterwave%20MFB.png",
+      "a": ["Flutterwave Microfinance Bank"]
+    },
+    { "n": "FOCUS MFB", "bc": "090709", "p": "microfinance-banks/FOCUS%20MFB.png" },
+    {
+      "n": "Foresight MFB",
+      "bc": "090521",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "Fortis Microfinance Bank",
+      "bc": "948",
+      "p": "microfinance-banks/Fortis%20Microfinance%20Bank.png",
+      "sc": "948"
+    },
+    { "n": "Fortis Mobile", "bc": "100016", "p": "mobile-money/Fortis%20Mobile.png", "sc": "930" },
+    {
+      "n": "Fortress MFB",
+      "bc": "090486",
+      "p": "microfinance-banks/Fortress%20MFB.png",
+      "sc": "D53"
+    },
+    {
+      "n": "FSDH Merchant Bank Limited",
+      "bc": "400001",
+      "p": "merchant-banks/FSDH%20Merchant%20Bank%20Limited.png",
+      "sc": "601"
+    },
+    {
+      "n": "Fullrange Microfinance Bank",
+      "bc": "090145",
+      "p": "microfinance-banks/Fullrange%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "FUTMINNA MICROFINANCE BANK",
+      "bc": "832",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png",
+      "sc": "832"
+    },
+    {
+      "n": "Futo Microfinance Bank",
+      "bc": "090158",
+      "p": "microfinance-banks/Futo%20Microfinance%20Bank.png",
+      "a": ["Futo MFB"]
+    },
+    { "n": "Gadol Finance", "bc": "050033", "p": "finance-companies/Gadol%20Finance.png" },
+    {
+      "n": "Garun Mallam MFB",
+      "bc": "MFB51093",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png",
+      "sc": "MFB51093"
+    },
+    {
+      "n": "Gashua Microfinance Bank",
+      "bc": "090168",
+      "p": "microfinance-banks/Gashua%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Gateway Mortgage Bank LTD",
+      "bc": "070009",
+      "p": "mortgage-banks/Gateway%20Mortgage%20Bank%20LTD.png",
+      "sc": "812"
+    },
+    { "n": "GDL Finance", "bc": "050026", "p": "finance-companies/GDL%20Finance.png" },
+    { "n": "Giant Stride MFB", "bc": "090475", "p": "microfinance-banks/Giant%20Stride%20MFB.png" },
+    {
+      "n": "Global Trust Savings and Loans Limited",
+      "bc": "070032",
+      "p": "mortgage-banks/Global%20Trust%20Savings%20and%20Loans%20Limited.png"
+    },
+    { "n": "Globus Bank", "bc": "000027", "p": "commercial-banks/Globus%20Bank.png", "sc": "103" },
+    {
+      "n": "Glory Microfinance Bank",
+      "bc": "090278",
+      "p": "microfinance-banks/Glory%20Microfinance%20Bank.png"
+    },
+    { "n": "Goldman MFB", "bc": "090574", "p": "microfinance-banks/Goldman%20MFB.png" },
+    { "n": "Gombe MFB", "bc": "090586", "p": "microfinance-banks/Gombe%20MFB.png" },
+    { "n": "GoMoney", "bc": "100022", "p": "mobile-money/GoMoney.png", "sc": "100022" },
+    {
+      "n": "GOOD SHEPHERD MICROFINANCE BANK",
+      "bc": "090664",
+      "p": "microfinance-banks/GOOD%20SHEPHERD%20MICROFINANCE%20BANK.png"
+    },
+    { "n": "Gosifechukwu MFB", "bc": "090687", "p": "microfinance-banks/Gosifechukwu%20MFB.png" },
+    {
+      "n": "Gowans Microfinance Bank",
+      "bc": "090122",
+      "p": "microfinance-banks/Gowans%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Grants Microfinance Bank",
+      "bc": "090335",
+      "p": "microfinance-banks/Grants%20Microfinance%20Bank.png"
+    },
+    { "n": "Granule MFB", "bc": "090857", "p": "microfinance-banks/Granule%20MFB.png" },
+    { "n": "Greenacres MFB", "bc": "090599", "p": "microfinance-banks/Greenacres%20MFB.png" },
+    {
+      "n": "GreenBank Microfinance Bank",
+      "bc": "090178",
+      "p": "microfinance-banks/GreenBank%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Greenville Microfinance Bank",
+      "bc": "090269",
+      "p": "microfinance-banks/Greenville%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Greenwich Merchant Bank",
+      "bc": "060004",
+      "p": "merchant-banks/Greenwich%20Merchant%20Bank.png",
+      "sc": "562"
+    },
+    { "n": "Griffin Finance", "bc": "050041", "p": "finance-companies/Griffin%20Finance.png" },
+    {
+      "n": "Grooming Microfinance Bank",
+      "bc": "090195",
+      "p": "microfinance-banks/Grooming%20Microfinance%20Bank.png",
+      "sc": "51276"
+    },
+    { "n": "GT Mobile", "bc": "923", "p": "mobile-money/GT%20Mobile.png", "sc": "923" },
+    {
+      "n": "GTBank Mobile Money",
+      "bc": "315",
+      "p": "mobile-money/GTBank%20Mobile%20Money.png",
+      "sc": "315"
+    },
+    {
+      "n": "GTBank Plc",
+      "bc": "000013",
+      "p": "commercial-banks/GTBank%20Plc.png",
+      "a": ["Guaranty Trust Bank", "GTB", "GTCO"],
+      "sc": "058"
+    },
+    { "n": "GTI MFB", "bc": "090385", "p": "microfinance-banks/GTI%20MFB.png", "sc": "50368" },
+    { "n": "Gwong MFB", "bc": "090500", "p": "microfinance-banks/Gwong%20MFB.png" },
+    {
+      "n": "Hackman Microfinance Bank",
+      "bc": "090147",
+      "p": "microfinance-banks/Hackman%20Microfinance%20Bank.png",
+      "sc": "51251"
+    },
+    {
+      "n": "Haggai Mortgage Bank",
+      "bc": "070017",
+      "p": "mortgage-banks/Haggai%20Mortgage%20Bank.png"
+    },
+    {
+      "n": "Hala Microfinance Bank",
+      "bc": "090291",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Halo MFB", "bc": "090539", "p": "microfinance-banks/Halo%20MFB.png" },
+    {
+      "n": "Hamada MFB",
+      "bc": "090980",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "Hasal Microfinance Bank",
+      "bc": "958",
+      "p": "microfinance-banks/Hasal%20Microfinance%20Bank.png",
+      "sc": "958"
+    },
+    {
+      "n": "Hayat Trust MFB",
+      "bc": "090777",
+      "p": "microfinance-banks/Hayat%20Trust%20MFB.png",
+      "sc": "51364"
+    },
+    { "n": "Hedonmark", "bc": "931", "p": "mobile-money/Hedonmark.png", "sc": "931" },
+    { "n": "Heritage Bank", "bc": "030", "p": "commercial-banks/Heritage%20Bank.png", "sc": "030" },
+    {
+      "n": "Hillpost MFB",
+      "bc": "090761",
+      "p": "microfinance-banks/Hillpost%20MFB.png",
+      "a": ["HILLPOST MFB"]
+    },
+    { "n": "HopePSB", "bc": "120002", "p": "payment-service-banks/HopePSB.png" },
+    { "n": "IBBU MFB", "bc": "090697", "p": "microfinance-banks/IBBU%20MFB.png", "sc": "51279" },
+    {
+      "n": "IBILE Microfinance Bank",
+      "bc": "090118",
+      "p": "microfinance-banks/IBILE%20Microfinance%20Bank.png",
+      "sc": "51244"
+    },
+    {
+      "n": "Ibom Mortgage Bank",
+      "bc": "070025",
+      "p": "mortgage-banks/Ibom%20Mortgage%20Bank.png",
+      "sc": "90012"
+    },
+    { "n": "Igbo-Ukwu MFB", "bc": "090803", "p": "microfinance-banks/Igbo-Ukwu%20MFB.png" },
+    { "n": "Ihiala MFB", "bc": "090725", "p": "microfinance-banks/Ihiala%20MFB.png" },
+    { "n": "Ijare MFB", "bc": "090730", "p": "microfinance-banks/Ijare%20MFB.png" },
+    {
+      "n": "Ikenne Microfinance Bank",
+      "bc": "090324",
+      "p": "microfinance-banks/Ikenne%20Microfinance%20Bank.png"
+    },
+    { "n": "Ikere MFB", "bc": "090799", "p": "microfinance-banks/Ikere%20MFB.png" },
+    {
+      "n": "Ikire Microfinance Bank",
+      "bc": "090279",
+      "p": "microfinance-banks/Ikire%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Ikorodu Division MFB",
+      "bc": "090844",
+      "p": "microfinance-banks/Ikorodu%20Division%20MFB.png"
+    },
+    {
+      "n": "Ikoyi ile MFB",
+      "bc": "090681",
+      "p": "microfinance-banks/Ikoyi%20ile%20MFB.png",
+      "a": ["Ikoyi ile Microfinance Bank"]
+    },
+    {
+      "n": "Ikoyi Osun MFB",
+      "bc": "50439",
+      "p": "microfinance-banks/Ikoyi%20Osun%20MFB.png",
+      "sc": "50439"
+    },
+    {
+      "n": "Ilaro Poly Microfinance Bank",
+      "bc": "50442",
+      "p": "microfinance-banks/Ilaro%20Poly%20Microfinance%20Bank.png",
+      "sc": "50442"
+    },
+    { "n": "Ile Oluji MFB", "bc": "090710", "p": "microfinance-banks/Ile%20Oluji%20MFB.png" },
+    {
+      "n": "Ilishan MFB",
+      "bc": "090037",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Ilora MFB", "bc": "090430", "p": "microfinance-banks/Ilora%20MFB.png" },
+    {
+      "n": "ILUTITUN-OSORO MFB",
+      "bc": "090834",
+      "p": "microfinance-banks/ILUTITUN-OSORO%20MFB.png"
+    },
+    {
+      "n": "Imo State Microfinance Bank",
+      "bc": "090258",
+      "p": "microfinance-banks/Imo%20State%20Microfinance%20Bank.png"
+    },
+    { "n": "Imowo MFB", "bc": "090417", "p": "microfinance-banks/Imowo%20MFB.png", "sc": "50453" },
+    {
+      "n": "Imperial Homes Mortgage Bank",
+      "bc": "100024",
+      "p": "mortgage-banks/Imperial%20Homes%20Mortgage%20Bank.png",
+      "sc": "938"
+    },
+    { "n": "IMSU MFB", "bc": "090670", "p": "microfinance-banks/IMSU%20MFB.png" },
+    {
+      "n": "INDULGE MFB",
+      "bc": "090772",
+      "p": "microfinance-banks/INDULGE%20MFB.png",
+      "sc": "51392"
+    },
+    {
+      "n": "INEBA GOGO MFB",
+      "bc": "090838",
+      "p": "microfinance-banks/INEBA%20GOGO%20MFB.png",
+      "sc": "51462"
+    },
+    {
+      "n": "Infinity Microfinance Bank",
+      "bc": "090157",
+      "p": "microfinance-banks/Infinity%20Microfinance%20Bank.png",
+      "sc": "50457"
+    },
+    {
+      "n": "Infinity Trust Mortgage Bank",
+      "bc": "070016",
+      "p": "mortgage-banks/Infinity%20Trust%20Mortgage%20Bank.png",
+      "sc": "070016"
+    },
+    {
+      "n": "Innovative MFB",
+      "bc": "090115",
+      "p": "microfinance-banks/Innovative%20MFB.png",
+      "a": ["IBANK Microfinance Bank"],
+      "sc": "51211"
+    },
+    { "n": "Innovectives Kesh", "bc": "100029", "p": "mobile-money/Innovectives%20Kesh.png" },
+    { "n": "Insight MFB", "bc": "090434", "p": "microfinance-banks/Insight%20MFB.png" },
+    { "n": "Intellifin", "bc": "941", "p": "mobile-money/Intellifin.png", "sc": "941" },
+    { "n": "Investin MFB", "bc": "090998", "p": "microfinance-banks/Investin%20MFB.png" },
+    {
+      "n": "IRL Microfinance Bank",
+      "bc": "090149",
+      "p": "microfinance-banks/IRL%20Microfinance%20Bank.png"
+    },
+    { "n": "Isi-Uzo MFB", "bc": "090849", "p": "microfinance-banks/Isi-Uzo%20MFB.png" },
+    {
+      "n": "ISUA MFB",
+      "bc": "090701",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Isuofia MFB", "bc": "090353", "p": "microfinance-banks/Isuofia%20MFB.png" },
+    { "n": "Jaiz Bank", "bc": "000006", "p": "commercial-banks/Jaiz%20Bank.png", "sc": "301" },
+    {
+      "n": "Jigawa Savings and Loans Limited",
+      "bc": "070029",
+      "p": "mortgage-banks/Jigawa%20Savings%20and%20Loans%20Limited.png"
+    },
+    {
+      "n": "JubileeLife",
+      "bc": "090003",
+      "p": "mortgage-banks/JubileeLife.png",
+      "a": ["JubileeLife Mortgage Bank"],
+      "sc": "906"
+    },
+    { "n": "Kadick Integration", "bc": "110008", "p": "mobile-money/Kadick%20Integration.png" },
+    {
+      "n": "Kadpoly MFB",
+      "bc": "090320",
+      "p": "microfinance-banks/Kadpoly%20MFB.png",
+      "sc": "50502"
+    },
+    { "n": "Kadupe MFB", "bc": "090669", "p": "microfinance-banks/Kadupe%20MFB.png" },
+    { "n": "Kaizen MFB", "bc": "090800", "p": "microfinance-banks/Kaizen%20MFB.png" },
+    {
+      "n": "KANOPOLY MFB",
+      "bc": "51308",
+      "p": "microfinance-banks/KANOPOLY%20MFB.png",
+      "sc": "51308"
+    },
+    { "n": "Katagum MFB", "bc": "090684", "p": "microfinance-banks/Katagum%20MFB.png" },
+    { "n": "Katsu MFB", "bc": "090749", "p": "microfinance-banks/Katsu%20MFB.png" },
+    { "n": "Kayi MFB", "bc": "090667", "p": "microfinance-banks/Kayi%20MFB.png" },
+    {
+      "n": "Kayvee Microfinance Bank",
+      "bc": "090554",
+      "p": "microfinance-banks/Kayvee%20Microfinance%20Bank.png",
+      "sc": "5129"
+    },
+    {
+      "n": "KC Microfinance Bank",
+      "bc": "090549",
+      "p": "microfinance-banks/KC%20Microfinance%20Bank.png",
+      "a": ["KC MFB"]
+    },
+    {
+      "n": "KCMB Microfinance Bank",
+      "bc": "090191",
+      "p": "microfinance-banks/KCMB%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Kebbi State Home Savings and Loans",
+      "bc": "070031",
+      "p": "mortgage-banks/Kebbi%20State%20Home%20Savings%20and%20Loans.png",
+      "sc": "90028"
+    },
+    { "n": "Kegow", "bc": "100015", "p": "mobile-money/Kegow.png" },
+    {
+      "n": "KEGOW (ChamsMobile)",
+      "bc": "100036",
+      "p": "mobile-money/KEGOW%20(ChamsMobile).png",
+      "a": ["Kegow"]
+    },
+    { "n": "Kenechukwu MFB", "bc": "090602", "p": "microfinance-banks/Kenechukwu%20MFB.png" },
+    {
+      "n": "Keystone Bank",
+      "bc": "000002",
+      "p": "commercial-banks/Keystone%20Bank.png",
+      "sc": "082"
+    },
+    {
+      "n": "KKU MFB",
+      "bc": "090606",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Koboweb MFB", "bc": "090865", "p": "microfinance-banks/Koboweb%20MFB.png" },
+    { "n": "Koins MFB", "bc": "090839", "p": "microfinance-banks/Koins%20MFB.png" },
+    { "n": "Kolisa MFB", "bc": "090830", "p": "microfinance-banks/Kolisa%20MFB.png" },
+    {
+      "n": "Kolomoni MFB",
+      "bc": "090480",
+      "p": "microfinance-banks/Kolomoni%20MFB.png",
+      "sc": "899"
+    },
+    {
+      "n": "Kontagora Microfinance Bank",
+      "bc": "090299",
+      "p": "microfinance-banks/Kontagora%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Kredi Money MFB LTD",
+      "bc": "090380",
+      "p": "microfinance-banks/Kredi%20Money%20MFB%20LTD.png",
+      "sc": "50200"
+    },
+    {
+      "n": "Kuda",
+      "bc": "090267",
+      "p": "microfinance-banks/Kuda.png",
+      "a": ["Kuda MFB", "Kuda Microfinance Bank"],
+      "sc": "50211"
+    },
+    {
+      "n": "La Fayette Microfinance Bank",
+      "bc": "090155",
+      "p": "microfinance-banks/La%20Fayette%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Lagos Building Investment Company",
+      "bc": "070012",
+      "p": "mortgage-banks/Lagos%20Building%20Investment%20Company.png",
+      "a": ["Lagos Building Investment Company Plc", "LBIC"],
+      "sc": "90052"
+    },
+    {
+      "n": "Lapo Microfinance Bank",
+      "bc": "090177",
+      "p": "microfinance-banks/Lapo%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Lavender Microfinance Bank",
+      "bc": "090271",
+      "p": "microfinance-banks/Lavender%20Microfinance%20Bank.png"
+    },
+    { "n": "Lawyers MFB", "bc": "090724", "p": "microfinance-banks/Lawyers%20MFB.png" },
+    { "n": "Leadcity MFB", "bc": "090650", "p": "microfinance-banks/Leadcity%20MFB.png" },
+    {
+      "n": "Lemmy MFB",
+      "bc": "091003",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "Letshego Microfinance Bank",
+      "bc": "090420",
+      "p": "microfinance-banks/Letshego%20Microfinance%20Bank.png"
+    },
+    { "n": "Levite MFB", "bc": "090731", "p": "microfinance-banks/Levite%20MFB.png" },
+    { "n": "LifeGate MFB", "bc": "090557", "p": "microfinance-banks/LifeGate%20MFB.png" },
+    { "n": "Lightway MFB", "bc": "090807", "p": "microfinance-banks/Lightway%20MFB.png" },
+    { "n": "Links MFB", "bc": "50549", "p": "microfinance-banks/Links%20MFB.png", "sc": "50549" },
+    { "n": "Liquidcrest MFB", "bc": "090780", "p": "microfinance-banks/Liquidcrest%20MFB.png" },
+    {
+      "n": "Living Trust Mortgage Bank",
+      "bc": "070007",
+      "p": "mortgage-banks/Living%20Trust%20Mortgage%20Bank.png",
+      "sc": "031"
+    },
+    { "n": "Loma Bank", "bc": "090620", "p": "microfinance-banks/Loma%20Bank.png", "sc": "50491" },
+    { "n": "Lotus Bank", "bc": "000029", "p": "commercial-banks/Lotus%20Bank.png", "sc": "303" },
+    {
+      "n": "Lovonus Microfinance Bank",
+      "bc": "090265",
+      "p": "microfinance-banks/Lovonus%20Microfinance%20Bank.png"
+    },
+    { "n": "M36", "bc": "100035", "p": "mobile-money/M36.png" },
+    { "n": "Maal MFB", "bc": "090764", "p": "microfinance-banks/Maal%20MFB.png", "sc": "51444" },
+    {
+      "n": "Madobi MFB",
+      "bc": "090605",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Maestro MFB", "bc": "090746", "p": "microfinance-banks/Maestro%20MFB.png" },
+    { "n": "MAHFUZ MFB", "bc": "090825", "p": "microfinance-banks/MAHFUZ%20MFB.png" },
+    {
+      "n": "Mainland Microfinance Bank",
+      "bc": "090323",
+      "p": "microfinance-banks/Mainland%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Mainstreet Microfinance Bank",
+      "bc": "090171",
+      "p": "microfinance-banks/Mainstreet%20Microfinance%20Bank.png",
+      "sc": "014"
+    },
+    {
+      "n": "Malachy Microfinance Bank",
+      "bc": "090174",
+      "p": "microfinance-banks/Malachy%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "Manny Microfinance Bank",
+      "bc": "090383",
+      "p": "microfinance-banks/Manny%20Microfinance%20Bank.png",
+      "sc": "51313"
+    },
+    {
+      "n": "Mautech Microfinance Bank",
+      "bc": "090423",
+      "p": "microfinance-banks/Mautech%20Microfinance%20Bank.png"
+    },
+    { "n": "Maxitrust MFB", "bc": "090843", "p": "microfinance-banks/Maxitrust%20MFB.png" },
+    { "n": "Mayden MFB", "bc": "090854", "p": "microfinance-banks/Mayden%20MFB.png" },
+    {
+      "n": "Mayfair Microfinance Bank",
+      "bc": "090321",
+      "p": "microfinance-banks/Mayfair%20Microfinance%20Bank.png",
+      "sc": "50563"
+    },
+    {
+      "n": "MayFresh Mortgage Bank",
+      "bc": "070019",
+      "p": "mortgage-banks/MayFresh%20Mortgage%20Bank.png",
+      "sc": "90003"
+    },
+    {
+      "n": "Mega Microfinance Bank",
+      "bc": "090824",
+      "p": "microfinance-banks/Mega%20Microfinance%20Bank.png",
+      "sc": "50570"
+    },
+    {
+      "n": "Memento MFB",
+      "bc": "090867",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Mercury MFB", "bc": "090589", "p": "microfinance-banks/Mercury%20MFB.png" },
+    { "n": "Mia MFB", "bc": "090859", "p": "microfinance-banks/Mia%20MFB.png" },
+    {
+      "n": "MICHAEL OKPARA UNIAGRIC MFB",
+      "bc": "090659",
+      "p": "microfinance-banks/MICHAEL%20OKPARA%20UNIAGRIC%20MFB.png",
+      "a": ["MOUA MFB"]
+    },
+    { "n": "Microbiz MFB", "bc": "090587", "p": "microfinance-banks/Microbiz%20MFB.png" },
+    {
+      "n": "Mint MFB",
+      "bc": "090763",
+      "p": "microfinance-banks/Mint%20MFB.png",
+      "a": ["MINT-FINEX MFB", "Mint Microfinance Bank"],
+      "sc": "50304"
+    },
+    { "n": "Mkobo MFB", "bc": "090455", "p": "microfinance-banks/Mkobo%20MFB.png", "a": ["Mkobo"] },
+    { "n": "Mkudi", "bc": "100011", "p": "mobile-money/Mkudi.png" },
+    { "n": "Model MFB", "bc": "090775", "p": "microfinance-banks/Model%20MFB.png" },
+    {
+      "n": "Money Master PSB",
+      "bc": "120005",
+      "p": "payment-service-banks/Money%20Master%20PSB.png",
+      "sc": "946"
+    },
+    {
+      "n": "MoneyBox",
+      "bc": "934",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png",
+      "sc": "934"
+    },
+    {
+      "n": "Moneyfield MFB",
+      "bc": "090144",
+      "p": "microfinance-banks/Moneyfield%20MFB.png",
+      "a": ["CIT Microfinance Bank"]
+    },
+    { "n": "Moneytronics MFB", "bc": "090692", "p": "microfinance-banks/Moneytronics%20MFB.png" },
+    {
+      "n": "Monieking MFB",
+      "bc": "090416",
+      "p": "microfinance-banks/Monieking%20MFB.png",
+      "sc": "000"
+    },
+    {
+      "n": "Moniepoint",
+      "bc": "090405",
+      "p": "microfinance-banks/Moniepoint.png",
+      "a": ["TeamApt"],
+      "sc": "50515"
+    },
+    { "n": "Moremonee MFB", "bc": "090685", "p": "microfinance-banks/Moremonee%20MFB.png" },
+    {
+      "n": "Movasco-op MFB",
+      "bc": "090979",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "MTN Momo PSB", "bc": "120003", "p": "payment-service-banks/MTN%20Momo%20PSB.png" },
+    {
+      "n": "Mutual Alliance Mortgage Bank",
+      "bc": "070028",
+      "p": "mortgage-banks/Mutual%20Alliance%20Mortgage%20Bank.png"
+    },
+    {
+      "n": "MUTUAL BENEFITS MICROFINANCE BANK",
+      "bc": "090190",
+      "p": "microfinance-banks/MUTUAL%20BENEFITS%20MICROFINANCE%20BANK.png"
+    },
+    { "n": "NAF MFB", "bc": "090740", "p": "microfinance-banks/NAF%20MFB.png" },
+    { "n": "Nasarawa MFB", "bc": "090349", "p": "microfinance-banks/Nasarawa%20MFB.png" },
+    {
+      "n": "NDDC MICROFINANCE BANK",
+      "bc": "090679",
+      "p": "microfinance-banks/NDDC%20MICROFINANCE%20BANK.png",
+      "a": ["NDDC MFB", "NDCC MICROFINANCE BANK"]
+    },
+    { "n": "Neptune MFB", "bc": "090329", "p": "microfinance-banks/Neptune%20MFB.png" },
+    {
+      "n": "NET MICROFINANCE BANK",
+      "bc": "090675",
+      "p": "microfinance-banks/NET%20MICROFINANCE%20BANK.png",
+      "sc": "51361"
+    },
+    { "n": "New Dawn MFB", "bc": "090205", "p": "microfinance-banks/New%20Dawn%20MFB.png" },
+    { "n": "Nexim Bank", "bc": "030001", "p": "commercial-banks/Nexim%20Bank.png" },
+    { "n": "Nexton MFB", "bc": "090818", "p": "microfinance-banks/Nexton%20MFB.png" },
+    {
+      "n": "Nigerian Navy Microfinance Bank Limited",
+      "bc": "090263",
+      "p": "microfinance-banks/Nigerian%20Navy%20Microfinance%20Bank%20Limited.png",
+      "sc": "51142"
+    },
+    {
+      "n": "Nigerian Prisons MFB",
+      "bc": "090505",
+      "p": "microfinance-banks/Nigerian%20Prisons%20MFB.png"
+    },
+    {
+      "n": "NIP Virtual Bank",
+      "bc": "999999",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "NIRSAL MICROFINANCE",
+      "bc": "51304",
+      "p": "microfinance-banks/NIRSAL%20MICROFINANCE.png",
+      "sc": "51304"
+    },
+    { "n": "Nolt Finance", "bc": "050037", "p": "finance-companies/Nolt%20Finance.png" },
+    { "n": "Nomase MFB", "bc": "090736", "p": "microfinance-banks/Nomase%20MFB.png" },
+    {
+      "n": "Nombank MFB",
+      "bc": "090645",
+      "p": "microfinance-banks/Nombank%20MFB.png",
+      "sc": "50072"
+    },
+    {
+      "n": "Northquest Finance",
+      "bc": "050030",
+      "p": "finance-companies/Northquest%20Finance.png"
+    },
+    { "n": "Noun MFB", "bc": "090822", "p": "microfinance-banks/Noun%20MFB.png" },
+    { "n": "NOVA Bank", "bc": "060003", "p": "commercial-banks/NOVA%20Bank.png", "sc": "561" },
+    { "n": "Novel MFB", "bc": "090863", "p": "microfinance-banks/Novel%20MFB.png" },
+    { "n": "Novus MFB", "bc": "090734", "p": "microfinance-banks/Novus%20MFB.png", "sc": "51371" },
+    {
+      "n": "NPF MICROFINANCE BANK",
+      "bc": "50629",
+      "p": "microfinance-banks/NPF%20MICROFINANCE%20BANK.png",
+      "sc": "50629"
+    },
+    {
+      "n": "NRI MFB",
+      "bc": "090984",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "NSUK MFB",
+      "bc": "090491",
+      "p": "microfinance-banks/NSUK%20MFB.png",
+      "a": ["NSUK MICROFINANACE BANK"],
+      "sc": "51261"
+    },
+    { "n": "Nsukka MFB", "bc": "090356", "p": "microfinance-banks/Nsukka%20MFB.png" },
+    { "n": "Nuggets MFB", "bc": "090676", "p": "microfinance-banks/Nuggets%20MFB.png" },
+    { "n": "Nwannegadi MFB", "bc": "090399", "p": "microfinance-banks/Nwannegadi%20MFB.png" },
+    { "n": "Oba MFB", "bc": "090981", "p": "microfinance-banks/Oba%20MFB.png" },
+    {
+      "n": "OBELEDU MFB",
+      "bc": "090755",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Obollo MFB", "bc": "090810", "p": "microfinance-banks/Obollo%20MFB.png" },
+    { "n": "Oche MFB", "bc": "090333", "p": "microfinance-banks/Oche%20MFB.png" },
+    { "n": "Octopus MFB", "bc": "090576", "p": "microfinance-banks/Octopus%20MFB.png" },
+    { "n": "Odoakpu MFB", "bc": "090654", "p": "microfinance-banks/Odoakpu%20MFB.png" },
+    {
+      "n": "OGBERURU MFB",
+      "bc": "090738",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Ogige MFB", "bc": "090739", "p": "microfinance-banks/Ogige%20MFB.png" },
+    { "n": "Ohha MFB", "bc": "090626", "p": "microfinance-banks/Ohha%20MFB.png" },
+    {
+      "n": "Okada MFB",
+      "bc": "090996",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "Okengwe MFB",
+      "bc": "090646",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "OKO MFB", "bc": "090348", "p": "microfinance-banks/OKO%20MFB.png" },
+    { "n": "Okpe MFB", "bc": "090855", "p": "microfinance-banks/Okpe%20MFB.png" },
+    { "n": "OKWO-OHA MFB", "bc": "090752", "p": "microfinance-banks/OKWO-OHA%20MFB.png" },
+    {
+      "n": "Olabisi Onabanjo University Microfinance Bank",
+      "bc": "090272",
+      "p": "microfinance-banks/Olabisi%20Onabanjo%20University%20Microfinance%20Bank.png",
+      "sc": "50689"
+    },
+    { "n": "Old Shoreham MFB", "bc": "090410", "p": "microfinance-banks/Old%20Shoreham%20MFB.png" },
+    { "n": "Olive MFB", "bc": "090696", "p": "microfinance-banks/Olive%20MFB.png" },
+    { "n": "Olomu Aperan MFB", "bc": "090852", "p": "microfinance-banks/Olomu%20Aperan%20MFB.png" },
+    {
+      "n": "OLUCHUKWU MICROFINANCE BANK LTD",
+      "bc": "50697",
+      "p": "microfinance-banks/OLUCHUKWU%20MICROFINANCE%20BANK%20LTD.png",
+      "sc": "50697"
+    },
+    { "n": "Omak MFB", "bc": "090700", "p": "microfinance-banks/Omak%20MFB.png" },
+    {
+      "n": "Omoluabi Mortgage Bank",
+      "bc": "950",
+      "p": "mortgage-banks/Omoluabi%20Mortgage%20Bank.png",
+      "sc": "950"
+    },
+    { "n": "One Finance", "bc": "940", "p": "mobile-money/One%20Finance.png", "sc": "940" },
+    {
+      "n": "OPay Digital Services Limited",
+      "bc": "100004",
+      "p": "mobile-money/OPay%20Digital%20Services%20Limited.png",
+      "a": ["PAYCOM (Opay)", "Paycom", "305"],
+      "sc": "999992"
+    },
+    {
+      "n": "Optimus Bank Limited",
+      "bc": "000036",
+      "p": "commercial-banks/Optimus%20Bank%20Limited.png",
+      "sc": "107"
+    },
+    { "n": "Oraukwu MFB", "bc": "090492", "p": "microfinance-banks/Oraukwu%20MFB.png" },
+    {
+      "n": "OSANTA MFB",
+      "bc": "090750",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Oscotech MFB", "bc": "090396", "p": "microfinance-banks/Oscotech%20MFB.png" },
+    {
+      "n": "Osomhe MFB",
+      "bc": "090715",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Otech MFB", "bc": "090580", "p": "microfinance-banks/Otech%20MFB.png" },
+    {
+      "n": "Otuo MFB",
+      "bc": "090542",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Ourpass MFB", "bc": "090767", "p": "microfinance-banks/Ourpass%20MFB.png" },
+    { "n": "Ours MFB", "bc": "090346", "p": "microfinance-banks/Ours%20MFB.png" },
+    { "n": "P-UP MFB", "bc": "090992", "p": "microfinance-banks/P-UP%20MFB.png" },
+    { "n": "Pact MFB", "bc": "090846", "p": "microfinance-banks/Pact%20MFB.png" },
+    { "n": "Paga", "bc": "100002", "p": "mobile-money/Paga.png", "a": ["PAGA"], "sc": "916" },
+    {
+      "n": "Palmpay",
+      "bc": "100033",
+      "p": "mobile-money/Palmpay.png",
+      "a": ["PALMPAY"],
+      "sc": "999991"
+    },
+    {
+      "n": "Parallex Bank",
+      "bc": "000030",
+      "p": "commercial-banks/Parallex%20Bank.png",
+      "a": ["Parallex"],
+      "sc": "104"
+    },
+    {
+      "n": "ParkWay-ReadyCash",
+      "bc": "100003",
+      "p": "mobile-money/ParkWay-ReadyCash.png",
+      "sc": "311"
+    },
+    {
+      "n": "PATHFINDER MICROFINANCE BANK LIMITED",
+      "bc": "090680",
+      "p": "microfinance-banks/PATHFINDER%20MICROFINANCE%20BANK%20LIMITED.png"
+    },
+    { "n": "Patrickgold MFB", "bc": "090317", "p": "microfinance-banks/Patrickgold%20MFB.png" },
+    {
+      "n": "PayAttitude Online",
+      "bc": "943",
+      "p": "mobile-money/PayAttitude%20Online.png",
+      "sc": "943"
+    },
+    { "n": "Payrep MFB", "bc": "090823", "p": "microfinance-banks/Payrep%20MFB.png" },
+    {
+      "n": "Paystack MFB",
+      "bc": "090986",
+      "p": "microfinance-banks/Paystack%20MFB.png",
+      "sc": "51457"
+    },
+    { "n": "Paystack-Titan", "bc": "100039", "p": "mobile-money/Paystack-Titan.png" },
+    {
+      "n": "Peace Microfinance Bank",
+      "bc": "090402",
+      "p": "microfinance-banks/Peace%20Microfinance%20Bank.png",
+      "sc": "50743"
+    },
+    {
+      "n": "PECANTRUST MICROFINANCE BANK LIMITED",
+      "bc": "090137",
+      "p": "microfinance-banks/PECANTRUST%20MICROFINANCE%20BANK%20LIMITED.png",
+      "sc": "51226"
+    },
+    { "n": "Pennywise MFB", "bc": "090196", "p": "microfinance-banks/Pennywise%20MFB.png" },
+    {
+      "n": "Pentecost MFB",
+      "bc": "090861",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "Personal Trust MFB",
+      "bc": "51146",
+      "p": "microfinance-banks/Personal%20Trust%20MFB.png",
+      "sc": "51146"
+    },
+    {
+      "n": "Petra Mircofinance Bank Plc",
+      "bc": "50746",
+      "p": "microfinance-banks/Petra%20Mircofinance%20Bank%20Plc.png",
+      "sc": "50746"
+    },
+    {
+      "n": "Pettysave MFB",
+      "bc": "090768",
+      "p": "microfinance-banks/Pettysave%20MFB.png",
+      "sc": "MFB51452"
+    },
+    {
+      "n": "PFI FINANCE COMPANY LIMITED",
+      "bc": "050021",
+      "p": "finance-companies/PFI%20FINANCE%20COMPANY%20LIMITED.png"
+    },
+    { "n": "Platinum MFB", "bc": "090993", "p": "microfinance-banks/Platinum%20MFB.png" },
+    {
+      "n": "Platinum Mortgage Bank",
+      "bc": "070013",
+      "p": "mortgage-banks/Platinum%20Mortgage%20Bank.png",
+      "sc": "268"
+    },
+    { "n": "Plug MFB", "bc": "090858", "p": "microfinance-banks/Plug%20MFB.png" },
+    {
+      "n": "Pocket App",
+      "bc": "100042",
+      "p": "mobile-money/Pocket%20App.png",
+      "a": ["Pocket by FirstBank"],
+      "sc": "00716"
+    },
+    { "n": "POINTONE MFB", "bc": "090754", "p": "microfinance-banks/POINTONE%20MFB.png" },
+    {
+      "n": "Polaris Bank",
+      "bc": "000008",
+      "p": "commercial-banks/Polaris%20Bank.png",
+      "a": ["Skye Bank"],
+      "sc": "076"
+    },
+    { "n": "Polyibadan MFB", "bc": "090534", "p": "microfinance-banks/Polyibadan%20MFB.png" },
+    {
+      "n": "Polyunwana MFB",
+      "bc": "50864",
+      "p": "microfinance-banks/Polyunwana%20MFB.png",
+      "sc": "50864"
+    },
+    {
+      "n": "PremiumTrust Bank",
+      "bc": "000031",
+      "p": "commercial-banks/PremiumTrust%20Bank.png",
+      "sc": "105"
+    },
+    { "n": "Prestige MFB", "bc": "090274", "p": "microfinance-banks/Prestige%20MFB.png" },
+    {
+      "n": "Pristine Divitis MFB",
+      "bc": "090499",
+      "p": "microfinance-banks/Pristine%20Divitis%20MFB.png"
+    },
+    { "n": "Prodigy MFB", "bc": "090784", "p": "microfinance-banks/Prodigy%20MFB.png" },
+    {
+      "n": "Prospa Capital Microfinance Bank",
+      "bc": "090495",
+      "p": "microfinance-banks/Prospa%20Capital%20Microfinance%20Bank.png"
+    },
+    {
+      "n": "PROSPERIS FINANCE LIMITED",
+      "bc": "050023",
+      "p": "finance-companies/PROSPERIS%20FINANCE%20LIMITED.png"
+    },
+    {
+      "n": "Providus Bank",
+      "bc": "000023",
+      "p": "commercial-banks/Providus%20Bank.png",
+      "sc": "101"
+    },
+    { "n": "Prudent Bank", "bc": "090690", "p": "microfinance-banks/Prudent%20Bank.png" },
+    { "n": "Purplemoney", "bc": "090303", "p": "mobile-money/Purplemoney.png" },
+    { "n": "Pyramid MFB", "bc": "090657", "p": "microfinance-banks/Pyramid%20MFB.png" },
+    { "n": "Qube MFB", "bc": "090569", "p": "microfinance-banks/Qube%20MFB.png" },
+    {
+      "n": "QuickFund MFB",
+      "bc": "090850",
+      "p": "microfinance-banks/QuickFund%20MFB.png",
+      "sc": "51293"
+    },
+    {
+      "n": "Rand Merchant Bank",
+      "bc": "000024",
+      "p": "merchant-banks/Rand%20Merchant%20Bank.png",
+      "a": ["RMB"],
+      "sc": "502"
+    },
+    {
+      "n": "RANDALPHA MICROFINANCE BANK",
+      "bc": "090496",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Rank MFB", "bc": "090860", "p": "microfinance-banks/Rank%20MFB.png" },
+    { "n": "Rayyan MFB", "bc": "090616", "p": "microfinance-banks/Rayyan%20MFB.png" },
+    {
+      "n": "Refuge Mortgage Bank",
+      "bc": "070011",
+      "p": "mortgage-banks/Refuge%20Mortgage%20Bank.png",
+      "sc": "90067"
+    },
+    {
+      "n": "REHOBOTH MICROFINANCE BANK",
+      "bc": "090463",
+      "p": "microfinance-banks/REHOBOTH%20MICROFINANCE%20BANK.png",
+      "sc": "50761"
+    },
+    { "n": "Reliance MFB", "bc": "090173", "p": "microfinance-banks/Reliance%20MFB.png" },
+    {
+      "n": "Renmoney MFB",
+      "bc": "090198",
+      "p": "microfinance-banks/Renmoney%20MFB.png",
+      "a": ["Renmoney"]
+    },
+    {
+      "n": "Rephidim Microfinance Bank",
+      "bc": "50994",
+      "p": "microfinance-banks/Rephidim%20Microfinance%20Bank.png",
+      "sc": "50994"
+    },
+    {
+      "n": "Retrust Mfb",
+      "bc": "090766",
+      "p": "microfinance-banks/Retrust%20Mfb.png",
+      "sc": "51375"
+    },
+    { "n": "Revelation MFB", "bc": "090666", "p": "microfinance-banks/Revelation%20MFB.png" },
+    { "n": "Rex MFB", "bc": "090449", "p": "microfinance-banks/Rex%20MFB.png" },
+    { "n": "Ric MFB", "bc": "090720", "p": "microfinance-banks/Ric%20MFB.png" },
+    {
+      "n": "Rigo Microfinance Bank Limited",
+      "bc": "51286",
+      "p": "microfinance-banks/Rigo%20Microfinance%20Bank%20Limited.png",
+      "sc": "51286"
+    },
+    {
+      "n": "Rima Growth Pathway MFB",
+      "bc": "090515",
+      "p": "microfinance-banks/Rima%20Growth%20Pathway%20MFB.png"
+    },
+    {
+      "n": "Rimin Gado MFB",
+      "bc": "090713",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "ROCKSHIELD MICROFINANCE BANK",
+      "bc": "090547",
+      "p": "microfinance-banks/ROCKSHIELD%20MICROFINANCE%20BANK.png",
+      "sc": "50767"
+    },
+    { "n": "Royal Blue MFB", "bc": "090622", "p": "microfinance-banks/Royal%20Blue%20MFB.png" },
+    {
+      "n": "Royal Excellent MFB",
+      "bc": "090990",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "Royal Exchange MFB",
+      "bc": "090138",
+      "p": "microfinance-banks/Royal%20Exchange%20MFB.png"
+    },
+    { "n": "RSU MFB", "bc": "090535", "p": "microfinance-banks/RSU%20MFB.png" },
+    {
+      "n": "Rubies MFB",
+      "bc": "090175",
+      "p": "microfinance-banks/Rubies%20MFB.png",
+      "a": ["Rubies Bank", "Rubies Microfinance Bank"],
+      "sc": "125"
+    },
+    { "n": "Run MFB", "bc": "090771", "p": "microfinance-banks/Run%20MFB.png" },
+    { "n": "Sabi MFB", "bc": "090727", "p": "microfinance-banks/Sabi%20MFB.png" },
+    {
+      "n": "Safe Haven MFB",
+      "bc": "090286",
+      "p": "microfinance-banks/Safe%20Haven%20MFB.png",
+      "sc": "51113"
+    },
+    { "n": "Sagamu MFB", "bc": "090140", "p": "microfinance-banks/Sagamu%20MFB.png" },
+    {
+      "n": "SAGE GREY FINANCE LIMITED",
+      "bc": "40165",
+      "p": "finance-companies/SAGE%20GREY%20FINANCE%20LIMITED.png",
+      "sc": "40165"
+    },
+    { "n": "Sciart Finance", "bc": "050024", "p": "finance-companies/Sciart%20Finance.png" },
+    { "n": "Seedvest MFB", "bc": "090369", "p": "microfinance-banks/Seedvest%20MFB.png" },
+    { "n": "Shalom MFB", "bc": "090502", "p": "microfinance-banks/Shalom%20MFB.png" },
+    { "n": "Shanono MFB", "bc": "090748", "p": "microfinance-banks/Shanono%20MFB.png" },
+    {
+      "n": "Shepherd Trust MFB",
+      "bc": "090401",
+      "p": "microfinance-banks/Shepherd%20Trust%20MFB.png"
+    },
+    { "n": "Shield MFB", "bc": "50582", "p": "microfinance-banks/Shield%20MFB.png", "sc": "50582" },
+    {
+      "n": "Signature Bank Ltd",
+      "bc": "000034",
+      "p": "commercial-banks/Signature%20Bank%20Ltd.png",
+      "sc": "106"
+    },
+    { "n": "Simplify Energy", "bc": "110034", "p": "mobile-money/Simplify%20Energy.png" },
+    { "n": "Sincere MFB", "bc": "090339", "p": "microfinance-banks/Sincere%20MFB.png" },
+    { "n": "Sofritrust MFB", "bc": "090435", "p": "microfinance-banks/Sofritrust%20MFB.png" },
+    {
+      "n": "Solid Allianze MFB",
+      "bc": "090506",
+      "p": "microfinance-banks/Solid%20Allianze%20MFB.png",
+      "sc": "51062"
+    },
+    {
+      "n": "Solid Rock MFB",
+      "bc": "50800",
+      "p": "microfinance-banks/Solid%20Rock%20MFB.png",
+      "sc": "50800"
+    },
+    { "n": "Soroman MFB", "bc": "090769", "p": "microfinance-banks/Soroman%20MFB.png" },
+    { "n": "Sosa MFB", "bc": "090836", "p": "microfinance-banks/Sosa%20MFB.png" },
+    { "n": "Source MFB", "bc": "090641", "p": "microfinance-banks/Source%20MFB.png" },
+    {
+      "n": "Sparkle MFB",
+      "bc": "090325",
+      "p": "microfinance-banks/Sparkle%20MFB.png",
+      "a": ["Sparkle Microfinance Bank"],
+      "sc": "51310"
+    },
+    { "n": "Spectrum MFB", "bc": "090436", "p": "microfinance-banks/Spectrum%20MFB.png" },
+    {
+      "n": "Spring Sky Finance",
+      "bc": "050036",
+      "p": "finance-companies/Spring%20Sky%20Finance.png"
+    },
+    {
+      "n": "Springfield Microfinance Bank",
+      "bc": "090806",
+      "p": "microfinance-banks/Springfield%20Microfinance%20Bank.png",
+      "sc": "51429"
+    },
+    { "n": "Springville MFB", "bc": "090786", "p": "microfinance-banks/Springville%20MFB.png" },
+    { "n": "Stable MFB", "bc": "090833", "p": "microfinance-banks/Stable%20MFB.png" },
+    {
+      "n": "Stanbic IBTC @ease",
+      "bc": "921",
+      "p": "mobile-money/Stanbic%20IBTC%20%40ease.png",
+      "sc": "921"
+    },
+    {
+      "n": "Stanbic IBTC Bank",
+      "bc": "000012",
+      "p": "commercial-banks/Stanbic%20IBTC%20Bank.png",
+      "sc": "221"
+    },
+    { "n": "Stanbic Mobile", "bc": "304", "p": "mobile-money/Stanbic%20Mobile.png", "sc": "304" },
+    { "n": "StanbicMobileMoney", "bc": "100007", "p": "mobile-money/StanbicMobileMoney.png" },
+    {
+      "n": "Standard Chartered Bank",
+      "bc": "000021",
+      "p": "commercial-banks/Standard%20Chartered%20Bank.png",
+      "sc": "068"
+    },
+    {
+      "n": "STANFORD MFB",
+      "bc": "090162",
+      "p": "microfinance-banks/STANFORD%20MFB.png",
+      "a": ["STANFORD MICROFINANCE BANK"]
+    },
+    {
+      "n": "STATESIDE MFB",
+      "bc": "50809",
+      "p": "microfinance-banks/STATESIDE%20MFB.png",
+      "a": ["STATESIDE MICROFINANCE BANK"],
+      "sc": "50809"
+    },
+    { "n": "STB Mortgage Bank", "bc": "070022", "p": "mortgage-banks/STB%20Mortgage%20Bank.png" },
+    {
+      "n": "Stellas MFB",
+      "bc": "090262",
+      "p": "microfinance-banks/Stellas%20MFB.png",
+      "a": ["Stellas Microfinance Bank"],
+      "sc": "51253"
+    },
+    {
+      "n": "Sterling Bank",
+      "bc": "000001",
+      "p": "commercial-banks/Sterling%20Bank.png",
+      "sc": "232"
+    },
+    { "n": "Sterling Mobile", "bc": "936", "p": "mobile-money/Sterling%20Mobile.png", "sc": "936" },
+    {
+      "n": "Strait Sahara MFB",
+      "bc": "090985",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png",
+      "a": ["Strait Sahara Microfinance Bank"]
+    },
+    {
+      "n": "Sulspap MFB",
+      "bc": "090305",
+      "p": "microfinance-banks/Sulspap%20MFB.png",
+      "a": ["Sulspap Microfinance Bank"]
+    },
+    {
+      "n": "Summit Bank",
+      "bc": "080003",
+      "p": "commercial-banks/Summit%20Bank.png",
+      "sc": "00305"
+    },
+    {
+      "n": "Suntop MFB",
+      "bc": "090644",
+      "p": "microfinance-banks/Suntop%20MFB.png",
+      "a": ["Suntop Microfinance Bank"]
+    },
+    {
+      "n": "SunTrust Bank",
+      "bc": "000022",
+      "p": "commercial-banks/SunTrust%20Bank.png",
+      "sc": "100"
+    },
+    {
+      "n": "Support MFB",
+      "bc": "090446",
+      "p": "microfinance-banks/Support%20MFB.png",
+      "a": ["Support Microfinance Bank"]
+    },
+    {
+      "n": "Supreme MFB",
+      "bc": "090564",
+      "p": "microfinance-banks/Supreme%20MFB.png",
+      "a": ["Supreme Microfinance Bank"],
+      "sc": "50968"
+    },
+    {
+      "n": "Sure Anchor MFB",
+      "bc": "090728",
+      "p": "microfinance-banks/Sure%20Anchor%20MFB.png",
+      "a": ["Sure Anchor Microfinance Bank"]
+    },
+    {
+      "n": "SWIFT TRUST MFB",
+      "bc": "090757",
+      "p": "microfinance-banks/SWIFT%20TRUST%20MFB.png",
+      "a": ["SWIFT TRUST Microfinance Bank"]
+    },
+    {
+      "n": "Sycamore MFB",
+      "bc": "090827",
+      "p": "microfinance-banks/Sycamore%20MFB.png",
+      "a": ["Sycamore Microfinance Bank"],
+      "sc": "51056"
+    },
+    { "n": "TAGPAY", "bc": "937", "p": "mobile-money/TAGPAY.png", "sc": "937" },
+    { "n": "TAJ Bank", "bc": "000026", "p": "commercial-banks/TAJ%20Bank.png", "sc": "302" },
+    { "n": "TAJ Pinspay", "bc": "080002", "p": "microfinance-banks/TAJ%20Pinspay.png" },
+    {
+      "n": "Tangerine Money",
+      "bc": "090426",
+      "p": "mobile-money/Tangerine%20Money.png",
+      "sc": "51269"
+    },
+    { "n": "Tatum Bank", "bc": "000042", "p": "commercial-banks/Tatum%20Bank.png", "sc": "109" },
+    { "n": "Teasy MOBILE", "bc": "924", "p": "mobile-money/Teasy%20MOBILE.png", "sc": "924" },
+    {
+      "n": "Teerus MFB",
+      "bc": "090991",
+      "p": "microfinance-banks/Teerus%20MFB.png",
+      "a": ["Teerus Microfinance Bank"]
+    },
+    {
+      "n": "Tellerone FI MFB",
+      "bc": "090788",
+      "p": "microfinance-banks/Tellerone%20FI%20MFB.png",
+      "a": ["Tellerone FI Microfinance Bank"]
+    },
+    { "n": "TENN", "bc": "51403", "p": "mobile-money/TENN.png", "sc": "51403" },
+    {
+      "n": "TENN MFB",
+      "bc": "090716",
+      "p": "microfinance-banks/TENN%20MFB.png",
+      "a": ["TENN Microfinance Bank"]
+    },
+    {
+      "n": "THE BROOK FINANCE LTD",
+      "bc": "050031",
+      "p": "finance-companies/THE%20BROOK%20FINANCE%20LTD.png"
+    },
+    {
+      "n": "The Millennium MFB",
+      "bc": "090711",
+      "p": "microfinance-banks/The%20Millennium%20MFB.png",
+      "a": ["The Millennium Microfinance Bank"]
+    },
+    {
+      "n": "Think Finance MFB",
+      "bc": "677",
+      "p": "microfinance-banks/Think%20Finance%20MFB.png",
+      "a": ["Think Finance Microfinance Bank"],
+      "sc": "677"
+    },
+    {
+      "n": "Titan Trust Bank",
+      "bc": "000025",
+      "p": "commercial-banks/Titan%20Trust%20Bank.png",
+      "sc": "102"
+    },
+    { "n": "TOFA MFB", "bc": "090714", "p": "microfinance-banks/TOFA%20MFB.png" },
+    { "n": "Toprate MFB", "bc": "090801", "p": "microfinance-banks/Toprate%20MFB.png" },
+    { "n": "TransPay MFB", "bc": "090708", "p": "microfinance-banks/TransPay%20MFB.png" },
+    {
+      "n": "Treasures MFB",
+      "bc": "090663",
+      "p": "microfinance-banks/Treasures%20MFB.png",
+      "a": ["Treasures Microfinance Bank"]
+    },
+    {
+      "n": "TRUSTBANC J6 MFB",
+      "bc": "51118",
+      "p": "microfinance-banks/TRUSTBANC%20J6%20MFB.png",
+      "a": ["TRUSTBANC J6 MICROFINANCE BANK"],
+      "sc": "51118"
+    },
+    {
+      "n": "Trustbond Mortgage Bank",
+      "bc": "090005",
+      "p": "mortgage-banks/Trustbond%20Mortgage%20Bank.png"
+    },
+    {
+      "n": "U & C MFB",
+      "bc": "090315",
+      "p": "microfinance-banks/U%20%26%20C%20MFB.png",
+      "a": ["U And C MFB", "U&C Microfinance Bank Ltd"],
+      "sc": "50840"
+    },
+    { "n": "UBA MONI", "bc": "000040", "p": "mobile-money/UBA%20MONI.png" },
+    { "n": "UBJ MFB", "bc": "090762", "p": "microfinance-banks/UBJ%20MFB.png" },
+    {
+      "n": "UCEE MFB",
+      "bc": "090706",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png",
+      "a": ["UCEE Microfinance Bank"]
+    },
+    { "n": "UDA MFB", "bc": "090403", "p": "microfinance-banks/UDA%20MFB.png" },
+    { "n": "Uforo MFB", "bc": "090869", "p": "microfinance-banks/Uforo%20MFB.png" },
+    { "n": "Uga MFB", "bc": "090782", "p": "microfinance-banks/Uga%20MFB.png" },
+    { "n": "Uhuru MFB", "bc": "51322", "p": "microfinance-banks/Uhuru%20MFB.png", "sc": "51322" },
+    {
+      "n": "Ukpor MFB",
+      "bc": "090820",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    { "n": "Ultimate MFB", "bc": "090776", "p": "microfinance-banks/Ultimate%20MFB.png" },
+    {
+      "n": "Ultraviolet Microfinance Bank",
+      "bc": "090781",
+      "p": "microfinance-banks/Ultraviolet%20Microfinance%20Bank.png",
+      "sc": "51080"
+    },
+    {
+      "n": "UMUCHINEMERE PROCREDIT MFB",
+      "bc": "090514",
+      "p": "microfinance-banks/UMUCHINEMERE%20PROCREDIT%20MFB.png"
+    },
+    { "n": "Umuchukwu Bank", "bc": "090652", "p": "microfinance-banks/Umuchukwu%20Bank.png" },
+    { "n": "Umunnachi MFB", "bc": "090510", "p": "microfinance-banks/Umunnachi%20MFB.png" },
+    { "n": "Umunri MFB", "bc": "090808", "p": "microfinance-banks/Umunri%20MFB.png" },
+    { "n": "Umuoji MFB", "bc": "090814", "p": "microfinance-banks/Umuoji%20MFB.png" },
+    {
+      "n": "Unaab Microfinance Bank Limited",
+      "bc": "50870",
+      "p": "microfinance-banks/Unaab%20Microfinance%20Bank%20Limited.png",
+      "sc": "50870"
+    },
+    {
+      "n": "UNIABUJA MFB",
+      "bc": "090778",
+      "p": "microfinance-banks/UNIABUJA%20MFB.png",
+      "sc": "51447"
+    },
+    { "n": "Unical MFB", "bc": "50871", "p": "microfinance-banks/Unical%20MFB.png", "sc": "50871" },
+    {
+      "n": "Unilag Microfinance Bank",
+      "bc": "090452",
+      "p": "microfinance-banks/Unilag%20Microfinance%20Bank.png",
+      "sc": "51316"
+    },
+    {
+      "n": "UNIMAID MICROFINANCE BANK",
+      "bc": "50875",
+      "p": "microfinance-banks/UNIMAID%20MICROFINANCE%20BANK.png",
+      "sc": "50875"
+    },
+    { "n": "Union Bank", "bc": "000018", "p": "commercial-banks/Union%20Bank.png", "sc": "032" },
+    {
+      "n": "United Bank for Africa",
+      "bc": "000004",
+      "p": "commercial-banks/United%20Bank%20for%20Africa.png",
+      "a": ["UBA"],
+      "sc": "033"
+    },
+    { "n": "Unity Bank", "bc": "000011", "p": "commercial-banks/Unity%20Bank.png", "sc": "215" },
+    {
+      "n": "UNIUYO Microfinance Bank Ltd",
+      "bc": "090338",
+      "p": "microfinance-banks/UNIUYO%20Microfinance%20Bank%20Ltd.png",
+      "sc": "50880"
+    },
+    {
+      "n": "Unlimit Nigeria Limited",
+      "bc": "110081",
+      "p": "mobile-money/Unlimit%20Nigeria%20Limited.png"
+    },
+    { "n": "Unubi MFB", "bc": "090719", "p": "microfinance-banks/Unubi%20MFB.png" },
+    {
+      "n": "URE MFB",
+      "bc": "090619",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "UVUOMA MFB",
+      "bc": "090765",
+      "p": "https://cdn.jsdelivr.net/gh/Nigerian-Bank-Logos/ng-bank-logos@main/logos/_default.png"
+    },
+    {
+      "n": "Uzondu MFB",
+      "bc": "090453",
+      "p": "microfinance-banks/Uzondu%20MFB.png",
+      "a": ["Uzondu Microfinance Bank Awka Anambra State"],
+      "sc": "50894"
+    },
+    {
+      "n": "Vale Finance Limited",
+      "bc": "050020",
+      "p": "finance-companies/Vale%20Finance%20Limited.png"
+    },
+    {
+      "n": "VFD Microfinance Bank Limited",
+      "bc": "090110",
+      "p": "microfinance-banks/VFD%20Microfinance%20Bank%20Limited.png",
+      "a": ["VFD MFB"],
+      "sc": "566"
+    },
+    { "n": "Victory MFB", "bc": "090813", "p": "microfinance-banks/Victory%20MFB.png" },
+    { "n": "Vista MFB", "bc": "090787", "p": "microfinance-banks/Vista%20MFB.png" },
+    { "n": "VT Networks", "bc": "100012", "p": "mobile-money/VT%20Networks.png", "sc": "926" },
+    { "n": "Waila MFB", "bc": "090829", "p": "microfinance-banks/Waila%20MFB.png" },
+    { "n": "Wallet MFB", "bc": "090805", "p": "microfinance-banks/Wallet%20MFB.png" },
+    {
+      "n": "Waya Microfinance Bank",
+      "bc": "090590",
+      "p": "microfinance-banks/Waya%20Microfinance%20Bank.png",
+      "sc": "51355"
+    },
+    { "n": "WE MFB", "bc": "090989", "p": "microfinance-banks/WE%20MFB.png" },
+    { "n": "Wema Bank", "bc": "000017", "p": "commercial-banks/Wema%20Bank.png", "sc": "035" },
+    {
+      "n": "Weston Charis MFB",
+      "bc": "090741",
+      "p": "microfinance-banks/Weston%20Charis%20MFB.png",
+      "sc": "51386"
+    },
+    {
+      "n": "Whitecrust Finance",
+      "bc": "050035",
+      "p": "finance-companies/Whitecrust%20Finance.png"
+    },
+    { "n": "Wudil MFB", "bc": "090253", "p": "microfinance-banks/Wudil%20MFB.png" },
+    { "n": "Xpress Wallet", "bc": "100040", "p": "mobile-money/Xpress%20Wallet.png" },
+    { "n": "XpressMTS", "bc": "100041", "p": "mobile-money/XpressMTS.png" },
+    { "n": "Yes MFB", "bc": "090142", "p": "microfinance-banks/Yes%20MFB.png", "sc": "594" },
+    { "n": "Zain MFB", "bc": "090976", "p": "microfinance-banks/Zain%20MFB.png" },
+    {
+      "n": "Zedvance Finance Limited",
+      "bc": "050019",
+      "p": "finance-companies/Zedvance%20Finance%20Limited.png"
+    },
+    { "n": "Zefa MFB", "bc": "090747", "p": "microfinance-banks/Zefa%20MFB.png" },
+    {
+      "n": "Zenith Bank Plc",
+      "bc": "000015",
+      "p": "commercial-banks/Zenith%20Bank%20Plc.png",
+      "sc": "057"
+    },
+    { "n": "Zenith Eazy Wallet", "bc": "100034", "p": "mobile-money/Zenith%20Eazy%20Wallet.png" },
+    { "n": "ZENITH Mobile", "bc": "322", "p": "mobile-money/ZENITH%20Mobile.png", "sc": "322" },
+    {
+      "n": "ZINTERNET - KONGAPAY",
+      "bc": "100025",
+      "p": "mobile-money/ZINTERNET%20-%20KONGAPAY.png",
+      "sc": "939"
+    },
+    { "n": "Zitra MFB", "bc": "090718", "p": "microfinance-banks/Zitra%20MFB.png", "sc": "51373" }
+  ]
+}

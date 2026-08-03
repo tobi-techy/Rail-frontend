@@ -20,8 +20,8 @@ describe('rateLimiter', () => {
   it('should reset after window expires', async () => {
     rateLimiter.check('test-key', 1, 50);
     expect(rateLimiter.check('test-key', 1, 50)).toBe(false);
-    
-    await new Promise(resolve => setTimeout(resolve, 60));
+
+    await new Promise((resolve) => setTimeout(resolve, 60));
     expect(rateLimiter.check('test-key', 1, 50)).toBe(true);
   });
 });
@@ -30,7 +30,7 @@ describe('maskSensitiveData', () => {
   it('should mask password fields', () => {
     const data = { email: 'test@example.com', password: 'secret123' };
     const masked = maskSensitiveData(data);
-    
+
     expect(masked.email).toBe('test@example.com');
     expect(masked.password).toBe('***REDACTED***');
   });
@@ -38,7 +38,7 @@ describe('maskSensitiveData', () => {
   it('should mask token fields', () => {
     const data = { accessToken: 'abc123', refreshToken: 'xyz789' };
     const masked = maskSensitiveData(data);
-    
+
     expect(masked.accessToken).toBe('***REDACTED***');
     expect(masked.refreshToken).toBe('***REDACTED***');
   });
@@ -46,7 +46,7 @@ describe('maskSensitiveData', () => {
   it('should not modify non-sensitive fields', () => {
     const data = { name: 'John', email: 'john@example.com' };
     const masked = maskSensitiveData(data);
-    
+
     expect(masked).toEqual(data);
   });
 });

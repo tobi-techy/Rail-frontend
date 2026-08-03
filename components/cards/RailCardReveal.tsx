@@ -13,7 +13,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import * as Crypto from 'expo-crypto';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import * as LocalAuthentication from 'expo-local-authentication';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 

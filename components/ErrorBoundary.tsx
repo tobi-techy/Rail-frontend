@@ -1,10 +1,13 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AlertTriangle } from 'lucide-react-native';
 import { logger } from '../lib/logger';
 import { safeError } from '../utils/logSanitizer';
 import { Sentry } from '../lib/sentry';
+import { Alert02Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { haptics } from '@/utils/haptics';
+import { playUISound } from '@/lib/uiSounds';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -105,7 +108,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <View style={styles.content}>
             {/* Icon — top left, Klarna-style */}
             <View style={styles.iconWrap}>
-              <AlertTriangle size={64} color="#0A0A0A" strokeWidth={1.5} />
+              <HugeiconsIcon icon={Alert02Icon} size={64} color="#0A0A0A" strokeWidth={1.5} />
             </View>
 
             <Text style={styles.title}>Something went wrong.</Text>
@@ -124,7 +127,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
           {/* CTA pinned to bottom */}
           <View style={styles.footer}>
-            <TouchableOpacity style={styles.button} onPress={this.resetError} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => {
+                playUISound('buttonClick');
+                haptics.tap();
+                this.resetError();
+              }}
+              activeOpacity={0.85}>
               <Text style={styles.buttonText}>Try again</Text>
             </TouchableOpacity>
           </View>
@@ -139,7 +149,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#f7f4ef',
   },
   content: {
     flex: 1,
@@ -151,40 +161,41 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#0A0A0A',
+    fontFamily: 'Satoshi-Bold',
+    color: '#343433',
     marginBottom: 12,
     lineHeight: 34,
   },
   message: {
     fontSize: 16,
-    color: '#6B7280',
+    fontFamily: 'Satoshi-Regular',
+    color: '#848281',
     lineHeight: 24,
   },
   devBox: {
     marginTop: 24,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: '#fff1f2',
     padding: 12,
     borderRadius: 10,
   },
   devText: {
     fontSize: 11,
-    color: '#991B1B',
-    fontFamily: 'monospace',
+    color: '#ff2b3a',
+    fontFamily: 'Satoshi-Regular',
   },
   footer: {
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
   button: {
-    backgroundColor: '#0A0A0A',
-    paddingVertical: 18,
-    borderRadius: 100,
+    backgroundColor: '#121212',
+    paddingVertical: 16,
+    borderRadius: 32,
     alignItems: 'center',
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontFamily: 'Satoshi-Medium',
     color: '#FFFFFF',
   },
 });

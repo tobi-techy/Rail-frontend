@@ -7,6 +7,11 @@
  * - Only biometric credentials are stored locally
  * - Biometric enrollment is tied to device
  * - Fallback to passcode if biometric fails
+ *
+ * SECURITY NOTE (M-1): Local biometric verification alone does NOT produce a
+ * passcode session token. For financial operations, always use usePasskeyAuthorize
+ * which performs backend verification and returns a valid session token.
+ * Do NOT use verifyWithBiometric() as the sole authorization for transactions.
  */
 
 import { useState, useEffect, useCallback } from 'react';

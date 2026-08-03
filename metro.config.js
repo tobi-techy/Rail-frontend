@@ -6,6 +6,13 @@ const path = require('path');
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
+// Suppress Metro bundler progress logs in development
+if (process.env.EXPO_PUBLIC_SUPPRESS_DEV_WARNINGS === 'true') {
+  config.reporter = {
+    update: () => {}, // Suppress progress updates
+  };
+}
+
 config.transformer = {
   ...config.transformer,
   babelTransformerPath: require.resolve('react-native-svg-transformer'),

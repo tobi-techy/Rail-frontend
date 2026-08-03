@@ -12,8 +12,7 @@ export { StaggeredChild } from './atoms/AnimatedScreen';
 export { Confetti } from './atoms/Confetti';
 
 // Templates
-export { AuthScreen, SelectionScreen } from './templates';
-export type { SelectionOption } from './templates';
+export { AuthScreen } from './templates';
 
 // Molecules
 export { BalanceCard } from './molecules/BalanceCard';

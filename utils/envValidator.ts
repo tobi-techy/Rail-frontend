@@ -27,6 +27,9 @@ export function validateEnvironmentVariables(): ValidationResult {
   }
 
   // SSL Pinning validation - warn but don't block app launch
+  // SECURITY FIX (M-7): Both pins should be configured — PIN_1 for current cert,
+  // PIN_2 for backup/next cert. This allows rotation without app updates.
+  // When rotating: set PIN_2 to the new cert's pin, then after rollout set PIN_1 to it too.
   if (isProduction) {
     const hasSslPinning = process.env.EXPO_PUBLIC_SSL_PINNING_ENABLED !== 'false';
     const hasPin1 = !!process.env.EXPO_PUBLIC_CERT_PIN_1;

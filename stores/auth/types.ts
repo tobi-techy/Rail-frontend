@@ -34,10 +34,12 @@ export interface AuthState {
   currentOnboardingStep: string | null;
   registrationData: RegistrationData;
   pendingVerificationEmail: string | null;
+  _pendingPasscode: string | null;
   hasPasscode: boolean;
   isBiometricEnabled: boolean;
   passcodeSessionToken?: string;
   passcodeSessionExpiresAt?: string;
+  appLockExpiresAt?: string;
   loginAttempts: number;
   lockoutUntil: string | null;
   isLoading: boolean;

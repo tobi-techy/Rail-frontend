@@ -1,94 +1,254 @@
-import { useNavigation } from 'expo-router';
-import React, { useState, useMemo } from 'react';
-import { Text, View, RefreshControl } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Text, View, RefreshControl, TextInput, Pressable, ScrollView } from 'react-native';
+import { router } from 'expo-router';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { Search01Icon } from '@/lib/icons';
 import { TransactionList } from '@/components/molecules/TransactionList';
-import type { Transaction } from '@/components/molecules/TransactionItem';
-import { TransactionDetailSheet } from '@/components/sheets/TransactionDetailSheet';
-import { useDeposits, useWithdrawals } from '@/api/hooks/useFunding';
-import { useCardTransactions } from '@/api/hooks/useCard';
-import type { Withdrawal } from '@/api/types';
-import {
-  normalizeWithdrawals,
-  depositToTransaction,
-  withdrawalToTransaction,
-} from '@/utils/transactionNormalizer';
+import type {
+  Transaction,
+  TransactionType,
+  TransactionStatus,
+  WithdrawalMethod,
+} from '@/components/molecules/TransactionItem';
+import { useTransactionDetailStore } from '@/stores';
+import { useActivityFeed } from '@/api/hooks/useActivity';
+import type { ActivityItem } from '@/api/types/activity';
 import TransactionsEmptyIllustration from '@/assets/Illustrations/transactions-empty.svg';
+import { NgnIcon, UsdcIcon } from '@/assets/svg';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import * as Haptics from '@/utils/platformHaptics';
 
-function cardTxToTransaction(tx: any): Transaction {
+// Convert unified ActivityItem → existing Transaction type for TransactionList/TransactionDetailSheet
+function activityToTransaction(item: ActivityItem): Transaction {
+  const typeMap: Record<string, TransactionType> = {
+    deposit: 'deposit',
+    naira_fund: 'deposit',
+    p2p_receive: 'receive',
+    withdrawal: 'withdraw',
+    naira_withdraw: 'withdraw',
+    p2p_send: 'send',
+    card_payment: 'withdraw',
+    investment: 'withdraw',
+  };
+
+  const statusMap: Record<string, TransactionStatus> = {
+    completed: 'completed',
+    pending: 'pending',
+    processing: 'pending',
+    failed: 'failed',
+    cancelled: 'failed',
+  };
+
+  const methodMap: Record<string, WithdrawalMethod> = {
+    withdrawal: 'crypto',
+    naira_withdraw: 'fiat',
+    p2p_send: 'p2p',
+    card_payment: 'card',
+  };
+
+  // For naira transactions with dual currency, show swap icon
+  const hasDualCurrency = !!item.currency.secondary;
+  let icon: Transaction['icon'];
+  if (hasDualCurrency) {
+    icon = {
+      type: 'swap' as const,
+      SwapFrom: item.direction === 'in' ? NgnIcon : UsdcIcon,
+      SwapTo: item.direction === 'in' ? UsdcIcon : NgnIcon,
+      swapFromBg: item.direction === 'in' ? '#008751' : '#2775CA',
+      swapToBg: item.direction === 'in' ? '#2775CA' : '#008751',
+    };
+  }
+
   return {
-    id: tx.id,
-    type: 'withdraw' as const,
-    title: tx.merchant_name || 'Card transaction',
-    subtitle: tx.merchant_category || 'Card',
-    amount: Math.abs(parseFloat(tx.amount) || 0),
-    currency: 'USD',
-    status:
-      tx.status === 'completed' ? 'completed' : tx.status === 'declined' ? 'failed' : 'pending',
-    createdAt: new Date(tx.created_at || tx.updated_at || '1970-01-01T00:00:00Z'),
-    withdrawalMethod: 'card' as any,
+    id: item.id,
+    type: typeMap[item.type] ?? 'deposit',
+    title: item.title,
+    subtitle: item.subtitle ?? '',
+    amount: parseFloat(item.amount) || 0,
+    currency: item.currency.primary,
+    status: statusMap[item.status] ?? 'pending',
+    createdAt: new Date(item.createdAt),
+    txHash: item.txHash,
+    toAddress: item.destination,
+    fee: item.feeAmount,
+    withdrawalMethod: methodMap[item.type],
+    icon,
+    metadata: {
+      sourceType: item.sourceType,
+      sourceId: item.sourceId,
+      chain: item.chain,
+      fiatAmount: item.fiatAmount,
+      secondaryCurrency: item.currency.secondary,
+      groupId: item.groupId,
+      bankName: item.bankName,
+      bankAccountName: item.receiverName,
+      bankAccountNumber: item.accountNumber,
+      rate: item.rate,
+      tokenAmount: item.tokenAmount,
+      fee: item.fee,
+      narration: item.narration,
+    },
   };
 }
 
+type FilterId = 'all' | 'deposit' | 'withdraw' | 'naira' | 'p2p';
+
 export default function History() {
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [search, setSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState<FilterId>('all');
+  const { impact } = useHaptics();
 
-  const deposits = useDeposits(50);
-  const withdrawals = useWithdrawals(50);
-  const cardTxQuery = useCardTransactions({ limit: 50 });
+  const openTransaction = useCallback((transaction: Transaction) => {
+    // The Transaction carries live SVG components in `icon`, which can't ride
+    // through router params — stash it in the transient store, then navigate to
+    // the full-screen detail route (mirrors every other entry point).
+    useTransactionDetailStore.getState().open(transaction);
+    router.push('/transaction-detail' as never);
+  }, []);
 
-  const isLoading = deposits.isLoading || withdrawals.isLoading || cardTxQuery.isLoading;
-  const isRefetching =
-    deposits.isRefetching || withdrawals.isRefetching || cardTxQuery.isRefetching;
+  const filters: { id: FilterId; label: string }[] = [
+    { id: 'all', label: 'All' },
+    { id: 'deposit', label: 'Deposits' },
+    { id: 'withdraw', label: 'Withdrawals' },
+    { id: 'naira', label: 'Naira' },
+    { id: 'p2p', label: 'P2P' },
+  ];
 
-  const refetch = () => {
-    deposits.refetch();
-    withdrawals.refetch();
-    cardTxQuery.refetch();
-  };
+  const activity = useActivityFeed(50);
 
   const transactions = useMemo(() => {
-    const withdrawalRows = normalizeWithdrawals(withdrawals.data);
-    const cardRows: Transaction[] = (cardTxQuery.data?.transactions ?? []).map(cardTxToTransaction);
+    if (!activity.data?.items) return [];
+    return activity.data.items.map(activityToTransaction);
+  }, [activity.data]);
 
-    const mapped: Transaction[] = [
-      ...(deposits.data?.deposits ?? []).map(depositToTransaction),
-      ...withdrawalRows.map(withdrawalToTransaction),
-      ...cardRows,
-    ];
-    return mapped.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }, [deposits.data, withdrawals.data, cardTxQuery.data]);
-  const showSkeleton = isLoading && transactions.length === 0;
+  const filteredTransactions = useMemo(() => {
+    let result = transactions;
+    if (activeFilter !== 'all') {
+      result = result.filter((t) => {
+        const meta = t.metadata as Record<string, string | undefined> | undefined;
+        const sourceType = meta?.sourceType;
+        if (activeFilter === 'deposit') return t.type === 'deposit' || t.type === 'receive';
+        if (activeFilter === 'withdraw') return t.type === 'withdraw' || t.type === 'send';
+        if (activeFilter === 'naira') return sourceType === 'paj_order';
+        if (activeFilter === 'p2p') return sourceType === 'p2p_transfer';
+        return true;
+      });
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          t.subtitle?.toLowerCase().includes(q) ||
+          t.amount.toString().includes(q)
+      );
+    }
+    return result;
+  }, [transactions, activeFilter, search]);
+
+  const showSkeleton = activity.isLoading && transactions.length === 0;
 
   return (
-    <View className="flex-1 bg-background-main">
-      {!showSkeleton && transactions.length === 0 ? (
+    <View className="flex-1">
+      {/* Search */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 2 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            height: 40,
+            backgroundColor: '#F2F2F2',
+            borderWidth: 1,
+            borderColor: 'rgba(0,0,0,0.07)',
+          }}>
+          <HugeiconsIcon icon={Search01Icon} size={18} color="#848281" />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search transactions..."
+            placeholderTextColor="#a7a7a7"
+            style={{
+              flex: 1,
+              fontFamily: 'Satoshi-Regular',
+              fontSize: 15,
+              color: '#343433',
+              marginLeft: 8,
+            }}
+          />
+        </View>
+      </View>
+
+      {/* Filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingVertical: 8,
+          gap: 8,
+          alignItems: 'center',
+        }}>
+        {filters.map((f) => (
+          <Pressable
+            key={f.id}
+            onPress={() => {
+              setActiveFilter(f.id);
+              impact(Haptics.ImpactFeedbackStyle.Light);
+              playUISound('buttonClick');
+            }}
+            style={{
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 20,
+              backgroundColor: activeFilter === f.id ? '#121212' : '#f2f0ed',
+            }}>
+            <Text
+              style={{
+                fontFamily: 'SFProDisplay-Medium',
+                fontSize: 13,
+                color: activeFilter === f.id ? '#FFF' : '#848281',
+              }}
+              maxFontSizeMultiplier={1.3}>
+              {f.label}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {!showSkeleton && filteredTransactions.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
           <TransactionsEmptyIllustration width={220} height={140} />
-          <Text className="mt-4 text-center font-subtitle text-subtitle text-text-primary">
+          <Text
+            className="mt-4 text-center font-subtitle text-subtitle text-text-primary"
+            maxFontSizeMultiplier={1.3}>
             No transactions yet
           </Text>
-          <Text className="mt-2 text-center font-body text-caption text-text-secondary">
+          <Text
+            className="mt-2 text-center font-body text-caption text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
             Your transaction history will appear here once you start using Rail
           </Text>
         </View>
       ) : (
         <TransactionList
-          transactions={transactions}
-          onTransactionPress={setSelectedTransaction}
+          transactions={filteredTransactions}
+          onTransactionPress={openTransaction}
           className="flex-1 px-md pt-md"
           isLoading={showSkeleton}
           loadingItems={6}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#000" />
+            <RefreshControl
+              refreshing={activity.isRefetching}
+              onRefresh={() => activity.refetch()}
+              tintColor="#000"
+            />
           }
         />
       )}
-
-      <TransactionDetailSheet
-        visible={!!selectedTransaction}
-        onClose={() => setSelectedTransaction(null)}
-        transaction={selectedTransaction}
-      />
     </View>
   );
 }

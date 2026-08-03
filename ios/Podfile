@@ -1,3 +1,5 @@
+# Set by expo-router. This enables Fabric-only features from react-native-screens
+ENV['RNS_GAMMA_ENABLED'] ||= '1'
 require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 
@@ -7,23 +9,28 @@ podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties
 def ccache_enabled?(podfile_properties)
   # Environment variable takes precedence
   return ENV['USE_CCACHE'] == '1' if ENV['USE_CCACHE']
-  
+
   # Fall back to Podfile properties
   podfile_properties['apple.ccacheEnabled'] == 'true'
 end
 
-ENV['RCT_NEW_ARCH_ENABLED'] ||= '0' if podfile_properties['newArchEnabled'] == 'false'
 ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] ||= podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
-ENV['RCT_USE_RN_DEP'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true' && podfile_properties['newArchEnabled'] != 'false'
-ENV['RCT_USE_PREBUILT_RNCORE'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true' && podfile_properties['newArchEnabled'] != 'false'
+ENV['RCT_USE_RN_DEP'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true'
+ENV['RCT_USE_PREBUILT_RNCORE'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true'
+ENV['RCT_HERMES_V1_ENABLED'] ||= '1' if podfile_properties['expo.useHermesV1'] == 'true'
 platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
 
 prepare_react_native_project!
 
 target 'RailMoney' do
   use_expo_modules!
-
-  pod 'DiditSDK', :podspec => 'https://raw.githubusercontent.com/didit-protocol/sdk-ios/main/DiditSDK.podspec'
+# @generated begin didit-sdk-react-native-pod - expo prebuild (DO NOT MODIFY) sync-5debe1b80a61a13e014dffd4e15e7912fdb38a15
+didit_sdk_ios_nfc_enabled = ENV.fetch('DIDIT_SDK_IOS_NFC_ENABLED', podfile_properties.fetch('didit.iosNfcEnabled', 'true')).downcase != 'false'
+didit_sdk_ios_pod = didit_sdk_ios_nfc_enabled ? 'DiditSDK' : 'DiditSDK/Core'
+pod didit_sdk_ios_pod, :podspec => 'https://raw.githubusercontent.com/didit-protocol/sdk-ios/3.6.1/DiditSDK.podspec'
+pod 'GoogleUtilities', :modular_headers => true
+pod 'RecaptchaInterop', :modular_headers => true
+# @generated end didit-sdk-react-native-pod
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
@@ -61,5 +68,55 @@ target 'RailMoney' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    # Force C++20 for all targets — React Native 0.83 uses C++20 features
+    # (concepts, std::identity, std::bit_width) in its public headers, so any
+    # pod compiling them must match. Downgrading to c++17 breaks the build.
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
+      end
+    end
+
+    # Disable strict warnings on AFNetworking legacy modules
+    installer.pods_project.targets.each do |target|
+      if target.name == 'AFNetworking'
+        target.build_configurations.each do |config|
+          config.build_settings['CLANG_WARN_PRIVATE_MODULE'] = 'NO'
+          config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+        end
+      end
+    end
+
+    # Patch 1: Comment out netinet6 inside AFNetworking files
+    %w[
+      AFNetworking/AFNetworking/AFHTTPSessionManager.m
+      AFNetworking/AFNetworking/AFNetworkReachabilityManager.m
+    ].each do |relative_path|
+      path = File.join(installer.sandbox.root, relative_path)
+      if File.exist?(path)
+        File.chmod(0644, path)
+        content = File.read(path)
+        patched_content = content.gsub('#import <netinet6/in6.h>', '// #import <netinet6/in6.h>')
+        File.write(path, patched_content)
+      end
+    end
+
+    # Patch 2: Fix C++17+ rvalue std::string::data() issue in jsi.h
+    # buffer.data() returns const char* on rvalues in C++17+; &buffer[0] works in all standards.
+    # Patch all copies: Public header, Private symlink target, and all xcframework slices.
+    jsi_header_paths = Dir.glob(File.join(installer.sandbox.root, '**/jsi/jsi.h')) +
+                       Dir.glob(File.join(installer.sandbox.root, '**/React_jsi/jsi.h')) +
+                       Dir.glob(File.join(installer.sandbox.root, 'hermes-engine/destroot/include/jsi/jsi.h'))
+    jsi_header_paths.uniq.each do |jsi_path|
+      next unless File.file?(jsi_path) # skip symlinks (their targets are patched above)
+      File.chmod(0644, jsi_path)
+      content = File.read(jsi_path)
+      if content.include?('buffer.data(),')
+        File.write(jsi_path, content.gsub('buffer.data(),', '&buffer[0],'))
+        puts "Patched jsi.h: #{jsi_path}"
+      end
+    end
+
   end
 end

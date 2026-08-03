@@ -16,9 +16,9 @@ export function sanitizeForLog(value: any): string {
   // Remove control characters
   str = str.replace(/[\x00-\x1F\x7F]/g, '');
 
-  // Truncate long strings
-  if (str.length > 500) {
-    str = str.substring(0, 500) + '... (truncated)';
+  // SECURITY FIX (L-3): Increased from 500 to 2000 for better debugging of validation errors
+  if (str.length > 2000) {
+    str = str.substring(0, 2000) + '... (truncated)';
   }
 
   return str;

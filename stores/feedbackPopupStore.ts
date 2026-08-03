@@ -37,4 +37,3 @@ export const useFeedbackPopupStore = create<FeedbackPopupState>((set) => ({
     }),
   dismissPopup: () => set({ popup: null }),
 }));
-

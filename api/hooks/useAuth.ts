@@ -9,6 +9,8 @@ import { authService, passcodeService } from '../services';
 import { queryKeys, invalidateQueries } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
 import { useAnalytics, ANALYTICS_EVENTS } from '../../utils/analytics';
+import { initActivationTracking, checkActivationWindow } from '../../utils/activation';
+import { SESSION_DURATION_MS, PASSCODE_SESSION_MS } from '../../utils/sessionConstants';
 import type {
   LoginRequest,
   RegisterRequest,
@@ -16,15 +18,13 @@ import type {
   ResendCodeRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  VerifyResetCodeRequest,
 } from '../types';
 
-const TOKEN_EXPIRY_DAYS = 7;
+const getSessionExpiryIso = (sessionExpiresAt?: string): string => {
+  if (sessionExpiresAt) return new Date(sessionExpiresAt).toISOString();
 
-const getTokenExpiryIso = (expiresAt?: string): string => {
-  if (expiresAt) return new Date(expiresAt).toISOString();
-
-  const now = new Date();
-  return new Date(now.getTime() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  return new Date(Date.now() + SESSION_DURATION_MS).toISOString();
 };
 
 const syncPasscodeStatus = async () => {
@@ -42,8 +42,7 @@ const syncPasscodeStatus = async () => {
  * The user already proved identity via credentials — requiring passcode again is redundant.
  */
 const grantPostLoginPasscodeSession = () => {
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + 10 * 60 * 1000); // 10 minutes
+  const expiresAt = new Date(Date.now() + PASSCODE_SESSION_MS);
   useAuthStore.getState().setPasscodeSession('login-granted', expiresAt.toISOString());
 };
 
@@ -51,11 +50,11 @@ const grantPostLoginPasscodeSession = () => {
  * Login mutation
  */
 export function useLogin() {
-   const { track, identify } = useAnalytics();
+  const { track, identify, setUserProperties } = useAnalytics();
 
-   return useMutation({
-     mutationFn: (data: LoginRequest) => authService.login(data),
-     onSuccess: async (response) => {
+  return useMutation({
+    mutationFn: (data: LoginRequest) => authService.login(data),
+    onSuccess: async (response) => {
       const nowIso = new Date().toISOString();
 
       // Update auth store with response data
@@ -68,7 +67,7 @@ export function useLogin() {
         onboardingStatus: response.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,
-        tokenExpiresAt: getTokenExpiryIso(response.expiresAt),
+        tokenExpiresAt: getSessionExpiryIso(response.sessionExpiresAt),
       });
 
       // Grant passcode session BEFORE syncing status so routing doesn't bounce to /login-passcode
@@ -83,12 +82,19 @@ export function useLogin() {
         onboarding_status: response.user.onboardingStatus,
       });
 
-      // Identify user in PostHog
+      // Identify user in PostHog with rich person properties for cohort building
       if (response.user.id) {
         identify(response.user.id, {
           email: response.user.email,
           first_name: response.user.firstName,
           last_name: response.user.lastName,
+          $created: response.user.createdAt || undefined,
+          kyc_status: response.user.kycStatus || 'none',
+          onboarding_status: response.user.onboardingStatus || 'unknown',
+        });
+        setUserProperties({
+          last_login_at: new Date().toISOString(),
+          lifecycle_stage: 'returning',
         });
       }
 
@@ -96,6 +102,9 @@ export function useLogin() {
       invalidateQueries.auth();
       invalidateQueries.wallet();
       invalidateQueries.user();
+
+      // Check if activation window expired (non-blocking)
+      checkActivationWindow(track);
     },
     onError: (error) => {
       track(ANALYTICS_EVENTS.SIGN_IN_STARTED, {
@@ -143,6 +152,7 @@ export function useRegister() {
  */
 export function useVerifyCode() {
   const DEFAULT_ONBOARDING_STATUS = 'started';
+  const { track, identify, setUserProperties } = useAnalytics();
 
   return useMutation({
     mutationFn: (data: VerifyCodeRequest) => authService.verifyCode(data),
@@ -153,7 +163,7 @@ export function useVerifyCode() {
       }
 
       const now = new Date();
-      const tokenExpiresAt = getTokenExpiryIso(response.expiresAt);
+      const tokenExpiresAt = getSessionExpiryIso(response.sessionExpiresAt);
       const refreshToken = response.refreshToken || useAuthStore.getState().refreshToken;
 
       useAuthStore.setState({
@@ -171,6 +181,29 @@ export function useVerifyCode() {
       });
 
       void syncPasscodeStatus();
+
+      // Identify the newly verified user in PostHog so all future events are tied to them
+      if (response.user.id) {
+        identify(response.user.id, {
+          email: response.user.email,
+          $created: now.toISOString(),
+          signup_method: 'email',
+        });
+        setUserProperties({
+          lifecycle_stage: 'new',
+          account_age_days: 0,
+          retention_cohort: `${now.getFullYear()}-W${String(Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7)).padStart(2, '0')}`,
+        });
+      }
+
+      track(ANALYTICS_EVENTS.SIGN_UP_COMPLETED, {
+        user_id: response.user.id,
+        email: response.user.email,
+        onboarding_status: response.user.onboardingStatus || DEFAULT_ONBOARDING_STATUS,
+      });
+
+      // Initialize activation tracking for this new user
+      initActivationTracking(now.toISOString());
     },
   });
 }
@@ -188,30 +221,33 @@ export function useResendCode() {
  * Logout mutation
  */
 export function useLogout() {
-   const queryClient = useQueryClient();
-   const { track } = useAnalytics();
+  const queryClient = useQueryClient();
+  const { track, reset } = useAnalytics();
 
-   return useMutation({
-     mutationFn: () => authService.logout(),
-     onSuccess: () => {
-       // Track logout event
-       track(ANALYTICS_EVENTS.SIGN_OUT, {
-         timestamp: new Date().toISOString(),
-       });
+  return useMutation({
+    mutationFn: () => authService.logout(),
+    onSuccess: () => {
+      // Track logout event
+      track(ANALYTICS_EVENTS.SIGN_OUT, {
+        timestamp: new Date().toISOString(),
+      });
 
-       // Clear auth store
-       useAuthStore.getState().reset();
+      // Reset PostHog identity so next user gets a fresh anonymous ID
+      reset();
 
-       // Clear all cached data
-       queryClient.clear();
-     },
-     onError: (error) => {
-       track(ANALYTICS_EVENTS.ERROR_OCCURRED, {
-         component: 'useLogout',
-         error: error instanceof Error ? error.message : 'Logout failed',
-       });
-     },
-   });
+      // Clear auth store
+      useAuthStore.getState().reset();
+
+      // Clear all cached data
+      queryClient.clear();
+    },
+    onError: (error) => {
+      track(ANALYTICS_EVENTS.ERROR_OCCURRED, {
+        component: 'useLogout',
+        error: error instanceof Error ? error.message : 'Logout failed',
+      });
+    },
+  });
 }
 
 /**
@@ -220,6 +256,15 @@ export function useLogout() {
 export function useForgotPassword() {
   return useMutation({
     mutationFn: (data: ForgotPasswordRequest) => authService.forgotPassword(data),
+  });
+}
+
+/**
+ * Verify reset code mutation
+ */
+export function useVerifyResetCode() {
+  return useMutation({
+    mutationFn: (data: VerifyResetCodeRequest) => authService.verifyResetCode(data),
   });
 }
 
@@ -250,9 +295,9 @@ export function useCurrentUser() {
  * Apple Sign-In mutation
  */
 export function useAppleSignIn() {
-   const { track, identify } = useAnalytics();
+  const { track, identify } = useAnalytics();
 
-   return useMutation({
+  return useMutation({
     mutationFn: async () => {
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -284,7 +329,7 @@ export function useAppleSignIn() {
         onboardingStatus: response.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,
-        tokenExpiresAt: response.expiresAt,
+        tokenExpiresAt: getSessionExpiryIso(response.sessionExpiresAt),
       });
 
       grantPostLoginPasscodeSession();
@@ -312,9 +357,9 @@ export function useAppleSignIn() {
       invalidateQueries.auth();
       invalidateQueries.wallet();
       invalidateQueries.user();
-      },
-      });
-      }
+    },
+  });
+}
 
 /**
  * Google Sign-In mutation (Android)
@@ -325,9 +370,8 @@ export function useGoogleSignIn() {
 
   return useMutation({
     mutationFn: async () => {
-      const { GoogleSignin, statusCodes } = await import(
-        '@react-native-google-signin/google-signin'
-      );
+      const { GoogleSignin, statusCodes } =
+        await import('@react-native-google-signin/google-signin');
 
       GoogleSignin.configure({
         webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -338,7 +382,9 @@ export function useGoogleSignIn() {
       const response = await GoogleSignin.signIn();
 
       if (response.type !== 'success') {
-        throw Object.assign(new Error('Google Sign-In cancelled'), { code: statusCodes.SIGN_IN_CANCELLED });
+        throw Object.assign(new Error('Google Sign-In cancelled'), {
+          code: statusCodes.SIGN_IN_CANCELLED,
+        });
       }
 
       const idToken = response.data?.idToken;
@@ -365,7 +411,7 @@ export function useGoogleSignIn() {
         onboardingStatus: response.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,
-        tokenExpiresAt: response.expiresAt,
+        tokenExpiresAt: getSessionExpiryIso(response.sessionExpiresAt),
       });
 
       grantPostLoginPasscodeSession();

@@ -7,34 +7,36 @@ import { InputField, AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { personalInfoSchema, fieldError } from '@/utils/schemas';
 
 export default function PersonalInfo() {
   const registrationData = useAuthStore((state) => state.registrationData);
   const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
   const [firstName, setFirstName] = useState(registrationData.firstName || '');
+  const [middleName, setMiddleName] = useState(registrationData.middleName || '');
   const [lastName, setLastName] = useState(registrationData.lastName || '');
   const [firstNameError, setFirstNameError] = useState('');
   const [lastNameError, setLastNameError] = useState('');
   const { showWarning } = useFeedbackPopup();
 
   const handleNext = () => {
-    const normalizedFirstName = firstName.trim();
-    const normalizedLastName = lastName.trim();
-
-    if (!normalizedFirstName || !normalizedLastName) {
-      if (!normalizedFirstName) setFirstNameError('First name is required');
-      if (!normalizedLastName) setLastNameError('Last name is required');
-      showWarning('Missing Information', 'Please enter your first and last name.');
+    const result = personalInfoSchema.safeParse({ firstName, lastName });
+    if (!result.success) {
+      setFirstNameError(fieldError(result.error, 'firstName'));
+      setLastNameError(fieldError(result.error, 'lastName'));
+      const first = result.error.issues[0]?.message ?? 'Please check your input.';
+      showWarning('Invalid Input', first);
       return;
     }
 
     setFirstNameError('');
     setLastNameError('');
     updateRegistrationData({
-      firstName: normalizedFirstName,
-      lastName: normalizedLastName,
+      firstName: result.data.firstName,
+      middleName: middleName.trim() || undefined,
+      lastName: result.data.lastName,
     });
-    router.push(ROUTES.AUTH.COMPLETE_PROFILE.DATE_OF_BIRTH as never);
+    router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_RAILTAG as never);
   };
 
   return (
@@ -48,11 +50,13 @@ export default function PersonalInfo() {
         <View className="flex-1 px-6 pt-4">
           <StaggeredChild index={0}>
             <View className="mb-8 mt-4">
-              <Text className="font-headline-2 text-auth-title leading-[1.1] text-black">
+              <Text
+                className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
+                maxFontSizeMultiplier={1.3}>
                 Personal Info
               </Text>
-              <Text className="mt-2 font-body text-caption text-black/60">
-                Let&apos;s start with your name
+              <Text className="mt-2 font-body text-caption text-ash" maxFontSizeMultiplier={1.4}>
+                Enter your legal name exactly as it appears on your ID document.
               </Text>
             </View>
           </StaggeredChild>
@@ -72,6 +76,14 @@ export default function PersonalInfo() {
             </StaggeredChild>
             <StaggeredChild index={2}>
               <InputField
+                label="Middle Name"
+                placeholder="Middle Name (optional)"
+                value={middleName}
+                onChangeText={setMiddleName}
+              />
+            </StaggeredChild>
+            <StaggeredChild index={3}>
+              <InputField
                 label="Last Name"
                 placeholder="Last Name"
                 value={lastName}
@@ -84,9 +96,9 @@ export default function PersonalInfo() {
             </StaggeredChild>
           </View>
 
-          <StaggeredChild index={3} delay={80} style={{ marginTop: 'auto' }}>
+          <StaggeredChild index={4} delay={80} style={{ marginTop: 'auto' }}>
             <View className="pb-4">
-              <Button title="Next" onPress={handleNext} />
+              <Button title="Next" onPress={handleNext} variant="orange" />
             </View>
           </StaggeredChild>
         </View>

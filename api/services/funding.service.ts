@@ -68,12 +68,22 @@ export const fundingService = {
     if (req.narration) {
       payload.narration = req.narration;
     }
+    if (req.source_account) {
+      payload.source_account = req.source_account;
+    }
+
+    const headers: Record<string, string> = {};
+    if (req.idempotencyKey) {
+      headers['Idempotency-Key'] = req.idempotencyKey;
+    }
 
     try {
-      return await apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals/crypto', payload);
+      return await apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals/crypto', payload, {
+        headers,
+      });
     } catch (error) {
       if (isNotFoundError(error)) {
-        return apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals', payload);
+        return apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals', payload, { headers });
       }
       throw error;
     }
@@ -83,10 +93,50 @@ export const fundingService = {
   async initiateFiatWithdrawal(
     req: InitiateFiatWithdrawalRequest
   ): Promise<InitiateWithdrawalResponse> {
-    return apiClient.post<InitiateWithdrawalResponse>('/v1/withdrawals/fiat', {
-      ...req,
-      amount: typeof req.amount === 'number' ? req.amount.toFixed(2) : req.amount,
-    });
+    const { idempotencyKey, ...body } = req;
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+    return apiClient.post<InitiateWithdrawalResponse>(
+      '/v1/withdrawals/fiat',
+      {
+        ...body,
+        amount: typeof body.amount === 'number' ? body.amount.toFixed(2) : body.amount,
+      },
+      { headers }
+    );
+  },
+
+  // Cancel a pending withdrawal
+  async cancelWithdrawal(withdrawalId: string): Promise<void> {
+    return apiClient.delete(`/v1/withdrawals/${withdrawalId}`);
+  },
+
+  // Early withdrawal preview (fee calculation)
+  async getEmergencyPreview(
+    amount: string
+  ): Promise<import('../types').EmergencyWithdrawalPreview> {
+    return apiClient.get('/v1/withdrawals/emergency/preview', { params: { amount } });
+  },
+
+  // Early withdrawal: stash → spending with fee
+  async emergencyStashToSpending(
+    amount: string
+  ): Promise<import('../types').EmergencyWithdrawalResult> {
+    return apiClient.post('/v1/withdrawals/emergency/to-spending', { amount });
+  },
+
+  // Fund stash: spending → stash (no fee)
+  async fundStash(amount: string): Promise<import('../types').FundStashResult> {
+    const idempotencyKey = `fund-stash-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    return apiClient.post(
+      '/v1/funding/stash',
+      { amount },
+      {
+        headers: { 'Idempotency-Key': idempotencyKey },
+      }
+    );
   },
 };
 

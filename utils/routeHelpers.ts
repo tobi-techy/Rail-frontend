@@ -2,12 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { userService } from '@/api/services';
 import { logger } from '@/lib/logger';
 import { ROUTES } from '@/constants/routes';
-import {
-  isKycSubmissionRequired,
-  isOnboardingAppReady,
-  isProfileCompletionRequired,
-} from '@/utils/onboardingFlow';
-import { isAuthSessionInvalidError } from '@/utils/authErrorClassifier';
+import { isOnboardingAppReady, isProfileCompletionRequired } from '@/utils/onboardingFlow';
+import { isAuthSessionInvalidError, summarizeAuthError } from '@/utils/authErrorClassifier';
 import type { RouteConfig, AuthState } from '@/types/routing.types';
 
 export const normalizeRoutePath = (route: string): string =>
@@ -30,7 +26,7 @@ export const validateAccessToken = async (): Promise<boolean> => {
     logger.warn('[Auth] Token validation failed', {
       component: 'routeHelpers',
       action: isSessionInvalid ? 'token-validation-auth-invalid' : 'token-validation-transient',
-      error: error instanceof Error ? error.message : String(error),
+      error: summarizeAuthError(error),
       isSessionInvalid,
     });
 
@@ -68,11 +64,14 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname === normalizeRoutePath(ROUTES.AUTH.SIGNIN) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.VERIFY_EMAIL) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.FORGOT_PASSWORD) ||
-    pathname === normalizeRoutePath(ROUTES.AUTH.RESET_PASSWORD) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_PASSCODE) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CONFIRM_PASSCODE) ||
-    pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_RAILTAG) ||
-    pathname.startsWith('/complete-profile/'),
+    pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_RAILTAG) ||
+    pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.EMPLOYMENT_STATUS) ||
+    pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.ACCOUNT_PURPOSE) ||
+    pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.SOURCE_OF_FUNDS) ||
+    pathname.startsWith('/complete-profile/') ||
+    pathname.startsWith('/complete-kyc/'),
   inTabsGroup: segments[0] === '(tabs)',
   inAppGroup:
     segments[0] === '(tabs)' ||
@@ -86,6 +85,24 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     segments[0] === 'notifications' ||
     segments[0] === 'kyc' ||
     segments[0] === 'card' ||
+    segments[0] === 'fund-crosschain' ||
+    segments[0] === 'fund-naira' ||
+    segments[0] === 'fund-stash' ||
+    segments[0] === 'withdraw-naira' ||
+    segments[0] === 'paj-verify' ||
+    segments[0] === 'ai-chat' ||
+    segments[0] === 'voice-mode' ||
+    segments[0] === 'transaction-detail' ||
+    segments[0] === 'tap-to-pay' ||
+    segments[0] === 'account-level' ||
+    segments[0] === 'profile' ||
+    segments[0] === 'daily-spending-limit' ||
+    segments[0] === 'sprout-upgrade' ||
+    segments[0] === 'bloom-upgrade' ||
+    segments[0] === 'support' ||
+    segments[0] === 'link-miriam' ||
+    segments[0] === 'passkey-settings' ||
+    segments[0] === 'authorize' ||
     pathname.startsWith('/spending-stash') ||
     pathname.startsWith('/investment-stash') ||
     pathname.startsWith('/withdraw') ||
@@ -98,15 +115,40 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname.startsWith('/authorize-transaction') ||
     pathname.startsWith('/passkey-settings') ||
     pathname.startsWith('/receive') ||
+    pathname.startsWith('/fund-crosschain') ||
+    pathname.startsWith('/fund-naira') ||
+    pathname.startsWith('/fund-stash') ||
+    pathname.startsWith('/withdraw-naira') ||
+    pathname.startsWith('/paj-verify') ||
+    pathname.startsWith('/ai-chat') ||
+    pathname.startsWith('/voice-mode') ||
+    pathname.startsWith('/transaction-detail') ||
+    pathname.startsWith('/tap-to-pay') ||
+    pathname.startsWith('/account-level') ||
+    pathname.startsWith('/daily-spending-limit') ||
+    pathname.startsWith('/receipt-scanner') ||
     pathname.startsWith('/kyc') ||
-    pathname.startsWith('/card'),
+    pathname.startsWith('/card') ||
+    pathname.startsWith('/gameplay') ||
+    pathname.startsWith('/subscription') ||
+    pathname.startsWith('/complete-profile') ||
+    pathname.startsWith('/complete-kyc') ||
+    pathname.startsWith('/sprout-upgrade') ||
+    pathname.startsWith('/bloom-upgrade') ||
+    pathname.startsWith('/support') ||
+    pathname.startsWith('/link-miriam'),
   isOnWelcomeScreen: pathname === '/' || pathname === normalizeRoutePath(ROUTES.INTRO),
   isOnLoginPasscode: pathname === '/login-passcode',
   isOnVerifyEmail: pathname === normalizeRoutePath(ROUTES.AUTH.VERIFY_EMAIL),
   isOnCreatePasscode: pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_PASSCODE),
   isOnConfirmPasscode: pathname === normalizeRoutePath(ROUTES.AUTH.CONFIRM_PASSCODE),
-  isOnCreateRailTag: pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_RAILTAG),
+  isOnCreateRailTag: pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_RAILTAG),
+  isOnEmploymentStatus:
+    pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.EMPLOYMENT_STATUS),
+  isOnAccountPurpose: pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.ACCOUNT_PURPOSE),
+  isOnSourceOfFunds: pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.SOURCE_OF_FUNDS),
   isOnCompleteProfile: pathname.startsWith('/complete-profile/'),
+  isOnCompleteKyc: pathname.startsWith('/complete-kyc/'),
 });
 
 /**
@@ -118,7 +160,9 @@ export const isInCriticalAuthFlow = (config: RouteConfig): boolean => {
     config.isOnVerifyEmail ||
     config.isOnCreatePasscode ||
     config.isOnConfirmPasscode ||
-    config.isOnCreateRailTag
+    config.isOnCreateRailTag ||
+    config.isOnCompleteProfile ||
+    config.isOnCompleteKyc
   );
 };
 
@@ -132,11 +176,12 @@ const handleAuthenticatedUser = (
   hasValidPasscodeSession: boolean
 ): string | null => {
   const { user, onboardingStatus, hasPasscode } = authState;
-  // Prefer top-level onboardingStatus because it is updated during onboarding flows
-  // (e.g. after complete-profile) before the nested user object is refreshed.
   const userOnboardingStatus = onboardingStatus || user?.onboardingStatus;
-  const needsKYC = isKycSubmissionRequired(userOnboardingStatus);
   const needsProfile = isProfileCompletionRequired(userOnboardingStatus);
+  // Don't redirect to create-passcode if user has a valid passcode session.
+  // This means they just logged in and syncPasscodeStatus hasn't completed yet.
+  const needsPasscodeSetup =
+    !hasPasscode && !needsProfile && Boolean(userOnboardingStatus) && !hasValidPasscodeSession;
 
   if (needsProfile) {
     if (
@@ -150,35 +195,37 @@ const handleAuthenticatedUser = (
     return ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO;
   }
 
-  // KYC-required users can stay in the app, on passcode creation, on profile screens (transitioning), or on KYC screens.
-  if (needsKYC) {
-    if (
-      config.inAppGroup ||
-      config.isOnCreatePasscode ||
-      config.isOnConfirmPasscode ||
-      config.isOnCreateRailTag ||
-      config.isOnCompleteProfile
-    )
+  if (needsPasscodeSetup) {
+    if (config.isOnCreatePasscode || config.isOnConfirmPasscode || config.isOnCreateRailTag) {
       return null;
+    }
+    return ROUTES.AUTH.CREATE_PASSCODE;
   }
 
-  // If on passcode screen and session is valid -> go to dashboard
+  // If user is in the complete-kyc flow, let them stay there
+  if (config.isOnCompleteKyc) {
+    return null;
+  }
+
+  // If on passcode screen, let the screen handle its own navigation
+  // via consumeReturnRoute(). The routing effect must NOT race against
+  // the passcode screen's onSuccess navigation, otherwise the user ends
+  // up on the home screen instead of their last route.
   if (config.isOnLoginPasscode) {
-    if (hasValidPasscodeSession) {
-      return ROUTES.TABS;
-    }
     return null;
   }
 
   // SECURITY: Completed users must present a valid passcode session before app access.
-  const shouldRequirePasscode = hasPasscode || userOnboardingStatus === 'completed';
+  const shouldRequirePasscode = hasPasscode;
   if (
     shouldRequirePasscode &&
     !hasValidPasscodeSession &&
     !config.isOnLoginPasscode &&
     !config.isOnCreatePasscode &&
     !config.isOnConfirmPasscode &&
-    !config.isOnCreateRailTag
+    !config.isOnCreateRailTag &&
+    !config.isOnCompleteProfile &&
+    !config.isOnCompleteKyc
   ) {
     logger.info('[RouteHelpers] Passcode session missing/expired, redirecting to login-passcode', {
       component: 'routeHelpers',
@@ -198,8 +245,8 @@ const handleAuthenticatedUser = (
 
 /**
  * Handles routing for users with stored credentials but no active session
- * Routes to login-passcode if user data exists (passcode session expired)
- * Routes to signin if no user data exists (full session token expired after 7 days)
+ * Routes to login-passcode only when a refresh token is available.
+ * Routes to signin when the full app session is gone and passcode cannot re-authenticate.
  */
 const handleStoredCredentials = (
   authState: AuthState,
@@ -209,24 +256,23 @@ const handleStoredCredentials = (
   const { user, hasPasscode, onboardingStatus } = authState;
   const resolvedOnboardingStatus = onboardingStatus || user?.onboardingStatus;
 
-  // If full 7-day session has expired (no tokens, user data cleared by SessionManager)
-  // Route to signin for full re-authentication
-  if (hasSessionExpired && !user) {
-    logger.info('[RouteHelpers] Session token expired (7 days), redirecting to signin', {
+  if (hasSessionExpired) {
+    logger.info('[RouteHelpers] Session token unavailable, redirecting to signin', {
       component: 'routeHelpers',
       action: 'session-expired-redirect',
     });
-    if (config.inAuthGroup && !config.isOnWelcomeScreen) return null;
+    if (config.inAuthGroup && !isInCriticalAuthFlow(config) && !config.isOnWelcomeScreen) {
+      return null;
+    }
     return ROUTES.AUTH.SIGNIN;
   }
 
   // If already on login-passcode screen, stay there
   if (config.isOnLoginPasscode) return null;
 
-  // CRITICAL FIX: User has passcode and stored credentials but not authenticated
-  // This happens when app backgrounded and passcode session expired
-  // OLD USERS: After closing the app, they must enter passcode to re-auth, not signin
-  if (user && (hasPasscode || resolvedOnboardingStatus === 'completed')) {
+  // User has a valid refresh token but no active app unlock.
+  // Passcode can restore the authenticated session without showing signin.
+  if (user && hasPasscode) {
     logger.info(
       '[RouteHelpers] User has stored credentials with passcode, routing to passcode login',
       {

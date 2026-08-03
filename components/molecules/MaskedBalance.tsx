@@ -37,8 +37,8 @@ export const MaskedBalance: React.FC<MaskedBalanceProps> = ({
   return (
     <Animated.View style={animStyle} className="min-w-0">
       <Text
-        className={`font-subtitle ${textClass} ${colorClass}`}
-        style={{ fontVariant: ['tabular-nums'] }}
+        className={`font-mono-semibold ${textClass} ${colorClass}`}
+        style={{ fontVariant: ['tabular-nums'], letterSpacing: -0.5 }}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.62}

@@ -16,10 +16,10 @@ export function initSentry() {
   try {
     Sentry.init({
       dsn: SENTRY_DSN,
-      debug: __DEV__,
+      debug: false, // Disable debug logging even in dev to reduce noise
       environment: __DEV__ ? 'development' : 'production',
       enableAutoSessionTracking: true,
-      tracesSampleRate: __DEV__ ? 1.0 : 0.1,
+      tracesSampleRate: __DEV__ ? 0 : 0.1, // No tracing in dev
       maxBreadcrumbs: 50,
       beforeSend(event) {
         if (__DEV__ && !process.env.EXPO_PUBLIC_SENTRY_ENABLE_DEV) {
@@ -39,6 +39,16 @@ export function initSentry() {
         }
 
         return event;
+      },
+      integrations: (integrations) => {
+        // Reduce console spam from integration installation logs
+        return integrations.map((integration) => {
+          // Disable verbose logging from integrations
+          if ('_options' in integration && typeof integration._options === 'object') {
+            (integration._options as Record<string, unknown>).logLevel = 'error';
+          }
+          return integration;
+        });
       },
     });
     sentryInitialized = true;

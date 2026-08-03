@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { walletService } from '../api/services';
 import { logger } from '../lib/logger';
+import * as Crypto from 'expo-crypto';
 import type { Token, Network } from '@/lib/domain/wallet/models';
 import { ERROR_MESSAGES } from '@/lib/constants/messages';
 
@@ -228,11 +229,17 @@ export const useWithdrawalStore = create<WithdrawalState & WithdrawalActions>((s
       }
 
       // Call real API to create transfer
+      // SECURITY FIX (H-1): Client-side balance check is UX only.
+      // The backend MUST be the authoritative source for balance validation.
+      // SECURITY FIX (M-8): Include idempotency key to prevent duplicate withdrawals
+      // on network retries or lost responses.
+      const idempotencyKey = Crypto.randomUUID();
       const response = await walletService.createTransfer({
         toAddress: recipientAddress,
         tokenId: selectedToken.symbol,
         amount,
-        network: selectedToken.network, // Use network from selected token
+        network: selectedToken.network,
+        idempotencyKey,
       });
 
       // Update transaction with real data from API

@@ -10,21 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/utils/platformHaptics';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import {
-  ArrowLeft,
-  Snowflake,
-  Sun,
-  Shield,
-  HelpCircle,
-  Wallet,
-  FileText,
-  Repeat2,
-  Scale,
-  MessageSquare,
-  ScrollText,
-} from 'lucide-react-native';
 import {
   useCards,
   useFreezeCard,
@@ -40,18 +27,25 @@ import { BottomSheet, SettingsSheet } from '@/components/sheets';
 import { Button } from '@/components/ui';
 import { WheelPicker } from '@/components/molecules';
 import { Skeleton } from '@/components/atoms/Skeleton';
+import {
+  ArrowLeft01Icon,
+  File01Icon,
+  HelpCircleIcon,
+  Message01Icon,
+  RepeatIcon,
+  BalanceScaleIcon,
+  Scroll01Icon,
+  Shield01Icon,
+  SnowIcon,
+  Sun01Icon,
+  Wallet01Icon,
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type SheetType =
-  | 'freeze'
-  | 'limit'
-  | 'statement'
-  | 'roundup'
-  | 'support'
-  | 'feedback'
-  | 'terms'
-  | null;
+  'freeze' | 'limit' | 'statement' | 'roundup' | 'support' | 'feedback' | 'terms' | null;
 
 function SettingButton({
   icon,
@@ -83,7 +77,8 @@ function SettingButton({
       <View className="h-12 w-12 items-center justify-center">{icon}</View>
       <Text
         className={`mt-xs text-center font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}
-        numberOfLines={2}>
+        numberOfLines={2}
+        maxFontSizeMultiplier={1.4}>
         {label}
       </Text>
     </AnimatedPressable>
@@ -92,7 +87,9 @@ function SettingButton({
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
   <View className="border-b border-surface py-md">
-    <Text className="mb-md px-md font-subtitle text-body">{title}</Text>
+    <Text className="mb-md px-md font-subtitle text-body" maxFontSizeMultiplier={1.3}>
+      {title}
+    </Text>
     <View className="flex-row flex-wrap px-sm">{children}</View>
   </View>
 );
@@ -188,10 +185,10 @@ export default function CardSettingsScreen() {
 
   const handleAddToWallet = useCallback(() => {
     if (Platform.OS !== 'ios') {
-      showInfo('Not Available', 'Apple Wallet is only available on iOS');
+      showInfo('Not Available', 'Apple Wallet01Icon is only available on iOS');
       return;
     }
-    showInfo('Coming Soon', 'Apple Wallet integration will be available soon');
+    showInfo('Coming Soon', 'Apple Wallet01Icon integration will be available soon');
   }, [showInfo]);
 
   if (isLoading) {
@@ -238,9 +235,11 @@ export default function CardSettingsScreen() {
             }}
             hitSlop={12}
             className="mr-4 p-1">
-            <ArrowLeft size={24} color="#111" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#111" />
           </TouchableOpacity>
-          <Text className="font-subtitle text-lg text-text-primary">Card Settings</Text>
+          <Text className="font-subtitle text-lg text-text-primary" maxFontSizeMultiplier={1.3}>
+            Card Settings
+          </Text>
         </View>
       </SafeAreaView>
 
@@ -262,15 +261,16 @@ export default function CardSettingsScreen() {
                 last4={activeCard.last_4 ?? '••••'}
                 exp={activeCard.expiry ?? '••/••'}
                 currency="USD"
-                accentColor={isFrozen ? '#6B7280' : '#FF6A00'}
+                accentColor={isFrozen ? '#848281' : '#FF6A00'}
                 patternIntensity={0.35}
               />
             </View>
             <View
               className={`mt-3 rounded-full px-4 py-1.5 ${isFrozen ? 'bg-blue-100' : 'bg-green-100'}`}>
               <Text
-                className={`font-subtitle text-[13px] ${isFrozen ? 'text-blue-700' : 'text-green-700'}`}>
-                {isFrozen ? '❄️  Frozen' : '● Active'}
+                className={`font-subtitle text-[13px] ${isFrozen ? 'text-blue-700' : 'text-green-700'}`}
+                maxFontSizeMultiplier={1.4}>
+                {isFrozen ? 'Frozen' : 'Active'}
               </Text>
             </View>
           </View>
@@ -279,9 +279,9 @@ export default function CardSettingsScreen() {
         {Platform.OS === 'ios' && (
           <View className="mx-md mb-2">
             <Button
-              title="Add to Apple Wallet"
+              title="Add to Apple Wallet01Icon"
               variant="black"
-              leftIcon={<Wallet size={18} color="#fff" />}
+              leftIcon={<HugeiconsIcon icon={Wallet01Icon} size={18} color="#fff" />}
               onPress={handleAddToWallet}
               flex
             />
@@ -291,28 +291,32 @@ export default function CardSettingsScreen() {
         <Section title="Card">
           <SettingButton
             icon={
-              isFrozen ? <Sun size={22} color="#F59E0B" /> : <Snowflake size={22} color="#3B82F6" />
+              isFrozen ? (
+                <HugeiconsIcon icon={Sun01Icon} size={22} color="#F59E0B" />
+              ) : (
+                <HugeiconsIcon icon={SnowIcon} size={22} color="#0090ff" />
+              )
             }
             label={isFrozen ? 'Unfreeze' : 'Freeze Card'}
             onPress={() => setActiveSheet('freeze')}
           />
           <SettingButton
-            icon={<Scale size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={BalanceScaleIcon} size={22} color="#121212" />}
             label="Daily Limit"
             onPress={() => setActiveSheet('limit')}
           />
           <SettingButton
-            icon={<FileText size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={File01Icon} size={22} color="#121212" />}
             label="Statement"
             onPress={() => setActiveSheet('statement')}
           />
           <SettingButton
-            icon={<Shield size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={Shield01Icon} size={22} color="#121212" />}
             label="Change PIN"
             onPress={() => showInfo('Coming Soon', 'PIN management coming soon')}
           />
           <SettingButton
-            icon={<Repeat2 size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={RepeatIcon} size={22} color="#121212" />}
             label="Round-ups"
             onPress={() => setActiveSheet('roundup')}
           />
@@ -320,17 +324,17 @@ export default function CardSettingsScreen() {
 
         <Section title="About">
           <SettingButton
-            icon={<HelpCircle size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={HelpCircleIcon} size={22} color="#121212" />}
             label="Support"
             onPress={() => setActiveSheet('support')}
           />
           <SettingButton
-            icon={<MessageSquare size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={Message01Icon} size={22} color="#121212" />}
             label="Feedback"
             onPress={() => setActiveSheet('feedback')}
           />
           <SettingButton
-            icon={<ScrollText size={22} color="#121212" />}
+            icon={<HugeiconsIcon icon={Scroll01Icon} size={22} color="#121212" />}
             label="Terms"
             onPress={() => setActiveSheet('terms')}
           />
@@ -339,10 +343,10 @@ export default function CardSettingsScreen() {
 
       {/* Freeze sheet */}
       <BottomSheet visible={activeSheet === 'freeze'} onClose={closeSheet}>
-        <Text className="mb-2 font-subtitle text-xl">
+        <Text className="mb-2 font-subtitle text-xl" maxFontSizeMultiplier={1.3}>
           {isFrozen ? 'Unfreeze Card' : 'Freeze Card'}
         </Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-6 font-body text-base leading-6 text-ash" maxFontSizeMultiplier={1.4}>
           {isFrozen
             ? 'Reactivate your card to resume spending.'
             : 'Temporarily disable your card. No charges will be processed while frozen.'}
@@ -361,8 +365,10 @@ export default function CardSettingsScreen() {
 
       {/* Daily limit sheet */}
       <BottomSheet visible={activeSheet === 'limit'} onClose={closeSheet}>
-        <Text className="mb-2 font-subtitle text-xl">Daily Limit</Text>
-        <Text className="mb-4 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-2 font-subtitle text-xl" maxFontSizeMultiplier={1.3}>
+          Daily Limit
+        </Text>
+        <Text className="mb-4 font-body text-base leading-6 text-ash" maxFontSizeMultiplier={1.4}>
           Set a daily spending limit on your card.
         </Text>
         <WheelPicker
@@ -392,13 +398,19 @@ export default function CardSettingsScreen() {
 
       {/* Statement sheet */}
       <BottomSheet visible={activeSheet === 'statement'} onClose={closeSheet}>
-        <Text className="mb-1 text-center font-subtitle text-xl">Bank Statement</Text>
-        <Text className="mb-4 text-center font-body text-sm text-text-secondary">
+        <Text className="mb-1 text-center font-subtitle text-xl" maxFontSizeMultiplier={1.3}>
+          Bank Statement
+        </Text>
+        <Text
+          className="mb-4 text-center font-body text-sm text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
           Export your card transaction summary for any month.
         </Text>
-        <View className="mb-5 flex-row items-center gap-3 rounded-2xl border border-dashed border-gray-300 px-4 py-4">
-          <FileText size={18} color="#9CA3AF" />
-          <Text className="flex-1 font-body text-sm leading-5 text-text-secondary">
+        <View className="mb-5 flex-row items-center gap-3 rounded-2xl border border-dashed border-fog px-4 py-4">
+          <HugeiconsIcon icon={File01Icon} size={18} color="#848281" />
+          <Text
+            className="flex-1 font-body text-sm leading-5 text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
             Statements are available from the 2nd of the following month.
           </Text>
         </View>
@@ -442,8 +454,10 @@ export default function CardSettingsScreen() {
 
       {/* Support sheet */}
       <BottomSheet visible={activeSheet === 'support'} onClose={closeSheet}>
-        <Text className="mb-2 font-subtitle text-xl">Contact Support</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-2 font-subtitle text-xl" maxFontSizeMultiplier={1.3}>
+          Contact Support
+        </Text>
+        <Text className="mb-6 font-body text-base leading-6 text-ash" maxFontSizeMultiplier={1.4}>
           Having an issue with your card? Our team is here to help.
         </Text>
         <Button
@@ -459,8 +473,10 @@ export default function CardSettingsScreen() {
 
       {/* Feedback sheet */}
       <BottomSheet visible={activeSheet === 'feedback'} onClose={closeSheet}>
-        <Text className="mb-2 font-subtitle text-xl">Share Feedback</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-2 font-subtitle text-xl" maxFontSizeMultiplier={1.3}>
+          Share Feedback
+        </Text>
+        <Text className="mb-6 font-body text-base leading-6 text-ash" maxFontSizeMultiplier={1.4}>
           Help us improve your card experience.
         </Text>
         <Button
@@ -476,8 +492,10 @@ export default function CardSettingsScreen() {
 
       {/* Terms sheet */}
       <BottomSheet visible={activeSheet === 'terms'} onClose={closeSheet}>
-        <Text className="mb-2 font-subtitle text-xl">Terms & Conditions</Text>
-        <Text className="mb-6 font-body text-base leading-6 text-neutral-500">
+        <Text className="mb-2 font-subtitle text-xl" maxFontSizeMultiplier={1.3}>
+          Terms & Conditions
+        </Text>
+        <Text className="mb-6 font-body text-base leading-6 text-ash" maxFontSizeMultiplier={1.4}>
           Review the terms and conditions for your Rail card.
         </Text>
         <Button

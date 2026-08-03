@@ -8,7 +8,7 @@ interface AuthGradientProps {
 
 export function AuthGradient({ style, children }: AuthGradientProps) {
   return (
-    <View className="flex-1 bg-white" style={style}>
+    <View className="flex-1 bg-warm-canvas" style={style}>
       {children}
     </View>
   );

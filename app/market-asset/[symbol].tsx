@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Bell } from 'lucide-react-native';
 import { LineGraph, type GraphPoint } from 'react-native-graph';
 import { useMarketBars, useMarketInstrument } from '@/api/hooks';
 import type { Currency } from '@/stores/uiStore';
@@ -20,6 +19,10 @@ import { Button } from '@/components/ui';
 import { useUIStore } from '@/stores';
 import { layout, responsive } from '@/utils/layout';
 import type { InvestmentPositionDetail } from '@/api/types/investment';
+import { ArrowLeft01Icon, Notification03Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 
 type RangeKey = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y';
 
@@ -120,14 +123,19 @@ function TimeRangeTab({
   active: boolean;
   onPress: () => void;
 }) {
+  const triggerFeedback = useButtonFeedback();
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        triggerFeedback();
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={`${label} timeframe`}
       className="mr-6 min-h-[44px] justify-end">
       <Text
-        className={`font-subtitle text-subtitle ${active ? 'text-text-primary' : 'text-text-secondary'}`}>
+        className={`font-subtitle text-subtitle ${active ? 'text-text-primary' : 'text-text-secondary'}`}
+        maxFontSizeMultiplier={1.3}>
         {label}
       </Text>
       <View
@@ -140,8 +148,12 @@ function TimeRangeTab({
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-center justify-between border-b border-surface py-3">
-      <Text className="font-caption text-caption text-text-secondary">{label}</Text>
-      <Text className="font-body text-caption text-text-primary">{value}</Text>
+      <Text className="font-caption text-caption text-text-secondary" maxFontSizeMultiplier={1.4}>
+        {label}
+      </Text>
+      <Text className="font-body text-caption text-text-primary" maxFontSizeMultiplier={1.4}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -163,37 +175,53 @@ function PositionCard({ position: p }: { position: InvestmentPositionDetail }) {
   const sign = positive ? '+' : '';
   const pnlColor = positive ? 'text-success' : 'text-destructive';
   return (
-    <View className="mx-md mt-md rounded-xl border border-surface bg-surface/40 px-4 py-3">
-      <Text className="mb-2 font-subtitle text-caption text-text-secondary">Your position</Text>
+    <View className="mx-md mt-md rounded-lg border border-surface bg-surface/40 px-4 py-3">
+      <Text
+        className="mb-2 font-subtitle text-caption text-text-secondary"
+        maxFontSizeMultiplier={1.3}>
+        Your position
+      </Text>
       <View className="mb-1 flex-row justify-between">
-        <Text className="font-body text-caption text-text-secondary">Market value</Text>
-        <Text className="font-subtitle text-caption text-text-primary">
+        <Text className="font-body text-caption text-text-secondary" maxFontSizeMultiplier={1.4}>
+          Market value
+        </Text>
+        <Text className="font-subtitle text-caption text-text-primary" maxFontSizeMultiplier={1.3}>
           {p.market_value.formatted}
         </Text>
       </View>
       <View className="mb-1 flex-row justify-between">
-        <Text className="font-body text-caption text-text-secondary">Unrealized P&amp;L</Text>
-        <Text className={`font-subtitle text-caption ${pnlColor}`}>
+        <Text className="font-body text-caption text-text-secondary" maxFontSizeMultiplier={1.4}>
+          Unrealized P&amp;L
+        </Text>
+        <Text className={`font-subtitle text-caption ${pnlColor}`} maxFontSizeMultiplier={1.3}>
           {sign}
           {p.unrealized_pnl.formatted} ({sign}
           {p.unrealized_pnl_percent.toFixed(2)}%)
         </Text>
       </View>
       <View className="mb-1 flex-row justify-between">
-        <Text className="font-body text-caption text-text-secondary">Avg entry</Text>
-        <Text className="font-subtitle text-caption text-text-primary">
+        <Text className="font-body text-caption text-text-secondary" maxFontSizeMultiplier={1.4}>
+          Avg entry
+        </Text>
+        <Text className="font-subtitle text-caption text-text-primary" maxFontSizeMultiplier={1.3}>
           {p.avg_entry_price.formatted}
         </Text>
       </View>
       <View className="mb-1 flex-row justify-between">
-        <Text className="font-body text-caption text-text-secondary">Cost basis</Text>
-        <Text className="font-subtitle text-caption text-text-primary">
+        <Text className="font-body text-caption text-text-secondary" maxFontSizeMultiplier={1.4}>
+          Cost basis
+        </Text>
+        <Text className="font-subtitle text-caption text-text-primary" maxFontSizeMultiplier={1.3}>
           {p.cost_basis.formatted}
         </Text>
       </View>
       <View className="flex-row justify-between">
-        <Text className="font-body text-caption text-text-secondary">Shares</Text>
-        <Text className="font-subtitle text-caption text-text-primary">{p.quantity}</Text>
+        <Text className="font-body text-caption text-text-secondary" maxFontSizeMultiplier={1.4}>
+          Shares
+        </Text>
+        <Text className="font-subtitle text-caption text-text-primary" maxFontSizeMultiplier={1.3}>
+          {p.quantity}
+        </Text>
       </View>
     </View>
   );
@@ -204,6 +232,8 @@ export default function MarketAssetDetailScreen() {
   const insets = useSafeAreaInsets();
   const currency = useUIStore((s) => s.currency);
   const rates = useUIStore((s) => s.currencyRates);
+  const triggerFeedback = useButtonFeedback();
+  const { requireCapability } = useFeatureGate();
 
   const symbol = useMemo(
     () => (typeof params.symbol === 'string' ? params.symbol.toUpperCase() : ''),
@@ -252,7 +282,7 @@ export default function MarketAssetDetailScreen() {
   const change = instrument ? getEffectiveChange(instrument.quote) : 0;
   const changePct = instrument ? getEffectiveChangePct(instrument.quote) : 0;
   const positive = change >= 0;
-  const lineColor = positive ? '#E83E8C' : '#FF2E01';
+  const lineColor = positive ? '#E83E8C' : '#ff3e00';
   const chartFrameHeight = layout.isSeekerDevice
     ? 300
     : responsive({ default: 260, tall: 292, android: 280 });
@@ -265,13 +295,15 @@ export default function MarketAssetDetailScreen() {
 
   const onOpenTrade = (side: 'buy' | 'sell') => {
     if (!instrument) return;
-    router.push({
-      pathname: '/withdraw/[method]',
-      params: {
-        method: side === 'buy' ? 'asset-buy' : 'asset-sell',
-        symbol: instrument.symbol,
-      },
-    } as never);
+    requireCapability('invest', () => {
+      router.push({
+        pathname: '/withdraw/[method]',
+        params: {
+          method: side === 'buy' ? 'asset-buy' : 'asset-sell',
+          symbol: instrument.symbol,
+        },
+      } as never);
+    });
   };
 
   return (
@@ -282,11 +314,14 @@ export default function MarketAssetDetailScreen() {
         <View className="px-md pb-sm pt-sm">
           <View className="flex-row items-center justify-between">
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => {
+                triggerFeedback();
+                router.back();
+              }}
               accessibilityRole="button"
               accessibilityLabel="Go back"
               className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-surface">
-              <ArrowLeft size={20} color="#111111" />
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#111111" />
             </Pressable>
 
             <View className="mx-2 flex-1">
@@ -300,16 +335,23 @@ export default function MarketAssetDetailScreen() {
                         resizeMode="cover"
                       />
                     ) : (
-                      <Text className="font-subtitle text-subtitle text-text-primary">
+                      <Text
+                        className="font-subtitle text-subtitle text-text-primary"
+                        maxFontSizeMultiplier={1.3}>
                         {instrument.symbol[0]}
                       </Text>
                     )}
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="font-subtitle text-body text-text-primary" numberOfLines={1}>
+                    <Text
+                      className="font-subtitle text-body text-text-primary"
+                      numberOfLines={1}
+                      maxFontSizeMultiplier={1.3}>
                       {instrument.symbol}
                     </Text>
-                    <Text className="font-caption text-caption text-text-secondary">
+                    <Text
+                      className="font-caption text-caption text-text-secondary"
+                      maxFontSizeMultiplier={1.4}>
                       {instrument.name}
                     </Text>
                   </View>
@@ -321,23 +363,28 @@ export default function MarketAssetDetailScreen() {
 
             <Pressable
               onPress={() => {
+                triggerFeedback();
                 void instrumentQuery.refetch();
                 void barsQuery.refetch();
               }}
               accessibilityRole="button"
               accessibilityLabel="Market alerts"
               className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-surface">
-              <Bell size={19} color="#111111" />
+              <HugeiconsIcon icon={Notification03Icon} size={19} color="#111111" />
             </Pressable>
           </View>
         </View>
 
         {hasInstrumentError ? (
           <View className="mx-md mt-md rounded-lg border border-surface bg-surface/40 p-md">
-            <Text className="font-subtitle text-subtitle text-text-primary">
+            <Text
+              className="font-subtitle text-subtitle text-text-primary"
+              maxFontSizeMultiplier={1.3}>
               Unable to load this asset right now
             </Text>
-            <Text className="mt-1 font-caption text-caption text-text-secondary">
+            <Text
+              className="mt-1 font-caption text-caption text-text-secondary"
+              maxFontSizeMultiplier={1.4}>
               Check your connection and retry.
             </Text>
             <View className="mt-md">
@@ -356,24 +403,30 @@ export default function MarketAssetDetailScreen() {
               ) : instrument ? (
                 <>
                   <Text
-                    className="font-headline text-headline-1 text-text-primary"
-                    style={{ fontVariant: ['tabular-nums'] }}>
+                    className="font-mono-semibold text-headline-1 text-text-primary"
+                    style={{ fontVariant: ['tabular-nums'], letterSpacing: -0.5 }}
+                    maxFontSizeMultiplier={1.3}>
                     {formatPrice(price, currency, rates)}
                   </Text>
 
                   <View className="mt-2 flex-row items-center">
                     <Text
                       className={`font-body text-body ${positive ? 'text-success' : 'text-destructive'}`}
-                      style={{ fontVariant: ['tabular-nums'] }}>
+                      style={{ fontVariant: ['tabular-nums'] }}
+                      maxFontSizeMultiplier={1.4}>
                       {positive ? '+' : '-'}
                       {formatPrice(Math.abs(change), currency, rates)} ({formatPercent(changePct)})
                     </Text>
-                    <Text className="ml-2 font-body text-body text-text-secondary">
+                    <Text
+                      className="ml-2 font-body text-body text-text-secondary"
+                      maxFontSizeMultiplier={1.4}>
                       {selectedOption.contextLabel}
                     </Text>
                   </View>
 
-                  <Text className="mt-1 font-caption text-caption text-text-secondary">
+                  <Text
+                    className="mt-1 font-caption text-caption text-text-secondary"
+                    maxFontSizeMultiplier={1.4}>
                     {sessionLabel(instrument.market_session)} • Updated{' '}
                     {formatAsOf(instrument.quote.timestamp)}
                   </Text>
@@ -407,7 +460,7 @@ export default function MarketAssetDetailScreen() {
               {isChartLoading ? (
                 <View className="w-full justify-center px-md" style={{ height: chartFrameHeight }}>
                   <Skeleton
-                    className="w-full rounded-xl"
+                    className="w-full rounded-lg"
                     style={{ height: chartFrameHeight - 40 }}
                   />
                 </View>
@@ -424,24 +477,35 @@ export default function MarketAssetDetailScreen() {
                 />
               ) : hasChartError ? (
                 <View
-                  className="mx-md items-center justify-center rounded-xl border border-surface bg-surface/30 px-md"
+                  className="mx-md items-center justify-center rounded-lg border border-surface bg-surface/30 px-md"
                   style={{ height: chartFrameHeight }}>
-                  <Text className="text-center font-caption text-caption text-text-primary">
+                  <Text
+                    className="text-center font-caption text-caption text-text-primary"
+                    maxFontSizeMultiplier={1.4}>
                     Market history is temporarily unavailable.
                   </Text>
                   <Pressable
-                    onPress={() => barsQuery.refetch()}
+                    onPress={() => {
+                      triggerFeedback();
+                      barsQuery.refetch();
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel="Retry chart"
                     className="mt-3 min-h-[44px] min-w-[100px] items-center justify-center rounded-full bg-black px-4">
-                    <Text className="font-subtitle text-caption text-white">Retry</Text>
+                    <Text
+                      className="font-subtitle text-caption text-white"
+                      maxFontSizeMultiplier={1.3}>
+                      Retry
+                    </Text>
                   </Pressable>
                 </View>
               ) : (
                 <View
-                  className="mx-md items-center justify-center rounded-xl border border-surface bg-surface/30 px-md"
+                  className="mx-md items-center justify-center rounded-lg border border-surface bg-surface/30 px-md"
                   style={{ height: chartFrameHeight }}>
-                  <Text className="text-center font-caption text-caption text-text-secondary">
+                  <Text
+                    className="text-center font-caption text-caption text-text-secondary"
+                    maxFontSizeMultiplier={1.4}>
                     No market bars were returned for this symbol in the selected range.
                   </Text>
                 </View>
@@ -464,16 +528,24 @@ export default function MarketAssetDetailScreen() {
             {instrument ? (
               <>
                 <View className="mt-lg px-md">
-                  <Text className="font-subtitle text-subtitle text-text-primary">
+                  <Text
+                    className="font-subtitle text-subtitle text-text-primary"
+                    maxFontSizeMultiplier={1.3}>
                     About {instrument.name}
                   </Text>
-                  <Text className="mt-2 font-body text-caption text-text-secondary">
+                  <Text
+                    className="mt-2 font-body text-caption text-text-secondary"
+                    maxFontSizeMultiplier={1.4}>
                     {instrument.description}
                   </Text>
                 </View>
 
                 <View className="mt-lg px-md">
-                  <Text className="font-subtitle text-subtitle text-text-primary">Statistics</Text>
+                  <Text
+                    className="font-subtitle text-subtitle text-text-primary"
+                    maxFontSizeMultiplier={1.3}>
+                    Statistics
+                  </Text>
                   <View className="mt-sm rounded-md border border-surface px-4">
                     <StatRow label="Opening price" value={formatNumber(instrument.quote.open)} />
                     <StatRow label="Today's maximum" value={formatNumber(instrument.quote.high)} />

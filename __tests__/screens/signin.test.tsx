@@ -1,31 +1,56 @@
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Mock expo-router
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn() },
   useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
 }));
 
-// Mock the auth hooks
 jest.mock('../../api/hooks/useAuth', () => ({
-  useLogin: () => ({
-    mutate: jest.fn(),
-    mutateAsync: jest.fn(),
-    isPending: false,
-    isError: false,
-    error: null,
-  }),
+  useAppleSignIn: () => ({ mutate: jest.fn() }),
+  useGoogleSignIn: () => ({ mutate: jest.fn() }),
 }));
 
-// Mock auth store
+jest.mock('../../api/client', () => ({
+  __esModule: true,
+  default: { post: jest.fn() },
+}));
+
 jest.mock('../../stores/authStore', () => ({
-  useAuthStore: jest.fn(() => ({
-    isAuthenticated: false,
-    error: null,
-    clearError: jest.fn(),
-  })),
+  useAuthStore: Object.assign(
+    jest.fn(() => ({
+      isAuthenticated: false,
+      error: null,
+      clearError: jest.fn(),
+      setPendingEmail: jest.fn(),
+    })),
+    { getState: jest.fn(() => ({ setPendingEmail: jest.fn() })) }
+  ),
+}));
+
+jest.mock('../../hooks/useFeedbackPopup', () => ({
+  useFeedbackPopup: () => ({ showError: jest.fn(), showWarning: jest.fn() }),
+}));
+
+jest.mock('../../hooks/useHaptics', () => ({
+  useHaptics: () => ({ impact: jest.fn(), notification: jest.fn() }),
+}));
+
+jest.mock('../../lib/uiSounds', () => ({
+  playUISound: jest.fn(),
+}));
+
+jest.mock('../../hooks/useButtonFeedback', () => ({
+  useButtonFeedback: () => jest.fn(),
+}));
+
+jest.mock('expo-haptics', () => ({
+  ImpactFeedbackStyle: { Medium: 'medium' },
+}));
+
+jest.mock('phosphor-react-native', () => ({
+  GoogleLogoIcon: () => null,
 }));
 
 describe('SignIn Screen', () => {
@@ -37,25 +62,21 @@ describe('SignIn Screen', () => {
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 
-  it('should render email and password inputs', async () => {
-    // Dynamic import to ensure mocks are applied
+  it('should render email input', async () => {
     const SignIn = require('../../app/(auth)/signin').default;
-    
     const { getByPlaceholderText } = render(<SignIn />, { wrapper });
 
     await waitFor(() => {
       expect(getByPlaceholderText(/email/i)).toBeTruthy();
-      expect(getByPlaceholderText(/password/i)).toBeTruthy();
     });
   });
 
   it('should have a sign in button', async () => {
     const SignIn = require('../../app/(auth)/signin').default;
-    
     const { getByText } = render(<SignIn />, { wrapper });
 
     await waitFor(() => {
-      expect(getByText(/sign in/i)).toBeTruthy();
+      expect(getByText(/sign in with mail/i)).toBeTruthy();
     });
   });
 });

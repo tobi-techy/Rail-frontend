@@ -77,6 +77,16 @@ describe('routeHelpers', () => {
       expect(result).toBe(false);
     });
 
+    it('returns false when backend reports a revoked refresh/session token', async () => {
+      (userService.getProfile as jest.Mock).mockRejectedValue({
+        code: 'TOKEN_REVOKED',
+        message: 'Session is no longer valid',
+      });
+
+      const result = await validateAccessToken();
+      expect(result).toBe(false);
+    });
+
     it('returns true on transient network errors', async () => {
       (userService.getProfile as jest.Mock).mockRejectedValue({
         status: 0,
@@ -95,18 +105,34 @@ describe('routeHelpers', () => {
       expect(route).toBe(ROUTES.INTRO);
     });
 
-    it('routes persisted completed user without active auth session to login-passcode', () => {
+    it('routes persisted completed user with refresh token to login-passcode', () => {
       const route = determineRoute(
         {
           ...baseAuthState,
           user: { id: 'u1', onboardingStatus: 'completed' },
-          hasPasscode: false,
+          refreshToken: 'refresh-token',
+          hasPasscode: true,
         },
         baseConfig,
         true,
         false
       );
       expect(route).toBe('/login-passcode');
+    });
+
+    it('routes persisted completed user without refresh token to signin', () => {
+      const route = determineRoute(
+        {
+          ...baseAuthState,
+          user: { id: 'u1', onboardingStatus: 'completed' },
+          refreshToken: null,
+          hasPasscode: true,
+        },
+        { ...baseConfig, isOnLoginPasscode: true },
+        true,
+        false
+      );
+      expect(route).toBe(ROUTES.AUTH.SIGNIN);
     });
 
     it('returns verify-email for pending verification', () => {
@@ -188,7 +214,7 @@ describe('routeHelpers', () => {
           user: { id: 'u1', onboardingStatus: 'started' },
           onboardingStatus: 'completed',
           isAuthenticated: false,
-          hasPasscode: false,
+          hasPasscode: true,
           refreshToken: 'refresh-token',
         },
         baseConfig,

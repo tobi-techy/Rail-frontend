@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { Canvas, RoundedRect, Group } from '@shopify/react-native-skia';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -104,7 +106,7 @@ export function BarChart({
           entering={FadeIn.duration(300)}
           exiting={FadeOut.duration(200)}
           key={selectedPeriod}
-          className="mb-3 text-center font-body text-xs text-neutral-400">
+          className="mb-3 text-center font-body text-xs text-ash">
           {subtitle}
         </Animated.Text>
       )}
@@ -152,6 +154,7 @@ function PeriodButton({
   onPress: (period: string) => void;
 }) {
   const scale = useSharedValue(1);
+  const haptics = useHaptics();
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -159,7 +162,11 @@ function PeriodButton({
 
   return (
     <Pressable
-      onPress={() => onPress(period)}
+      onPress={() => {
+        playUISound('buttonClick');
+        haptics.selection();
+        onPress(period);
+      }}
       onPressIn={() => {
         scale.value = withSpring(0.92, { damping: 15 });
       }}
@@ -167,9 +174,10 @@ function PeriodButton({
         scale.value = withSpring(1, { damping: 15 });
       }}>
       <Animated.View
-        className={`mx-1 rounded-full px-4 py-2 ${isActive ? 'bg-neutral-100' : ''}`}
+        className={`mx-1 rounded-full px-4 py-2 ${isActive ? 'bg-stone-surface' : ''}`}
         style={animatedStyle}>
-        <Text className={`text-sm font-medium ${isActive ? 'text-black' : 'text-neutral-300'}`}>
+        <Text
+          className={`text-sm font-medium ${isActive ? 'text-charcoal-primary' : 'text-smoke'}`}>
           {period}
         </Text>
       </Animated.View>

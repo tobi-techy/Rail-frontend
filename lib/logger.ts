@@ -10,12 +10,29 @@ interface LogContext {
 }
 
 const isProduction = !__DEV__;
+const LOG_LEVEL = (process.env.LOG_LEVEL || 'info').toLowerCase() as LogLevel;
+
+const LOG_LEVELS: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+};
+
+function shouldLog(level: LogLevel): boolean {
+  return LOG_LEVELS[level] >= LOG_LEVELS[LOG_LEVEL];
+}
 
 function shouldSendToSentry(level: LogLevel): boolean {
   return isProduction && isSentryInitialized() && (level === 'error' || level === 'warn');
 }
 
 function log(level: LogLevel, message: string, context?: LogContext | Error) {
+  // Check if this log level should be output
+  if (!shouldLog(level)) {
+    return;
+  }
+
   const sanitizedMessage = sanitizeForLog(message);
 
   // Dev: log to console
@@ -37,7 +54,7 @@ function log(level: LogLevel, message: string, context?: LogContext | Error) {
       data = context ? sanitizeObject(context) : undefined;
     }
 
-    console[level](sanitizedMessage, data ?? '');
+    console[level](sanitizedMessage, data ? JSON.stringify(data, null, 2) : '');
     return;
   }
 

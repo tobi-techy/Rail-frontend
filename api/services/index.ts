@@ -18,6 +18,14 @@ export { marketService } from './market.service';
 export { investmentService } from './investment.service';
 export { notificationService } from './notification.service';
 export { cardService } from './card.service';
+export { pajService } from './paj.service';
+export { rampService } from './ramp.service';
+export { aiService } from './ai.service';
+export { premiumService } from './premium.service';
+export { gameplayService } from './gameplay.service';
+export { securityService } from './security.service';
+export { statementV2Service } from './statementV2.service';
+export { spendingCommitmentService } from './spendingCommitment.service';
 
 // Re-export for convenience
 export { default as auth } from './auth.service';

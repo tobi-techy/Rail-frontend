@@ -52,26 +52,26 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
     if (autoValidate) Keyboard.dismiss();
   };
 
-  const boxSize = Math.min((width - 60) / length - 4, 90);
+  const boxSize = Math.min((width - 60) / length - 4, 56);
 
   const colors = isDark
     ? {
-        border: hasError ? '#F44336' : 'rgba(255,255,255,0.2)',
+        border: hasError ? '#ff2b3a' : 'rgba(255,255,255,0.2)',
         bg: hasError ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.1)',
-        focusBorder: hasError ? '#F44336' : 'rgba(255,255,255,0.5)',
+        focusBorder: hasError ? '#ff2b3a' : 'rgba(255,255,255,0.5)',
         focusBg: 'rgba(255,255,255,0.15)',
-        filledBorder: hasError ? '#F44336' : 'rgba(255,255,255,0.4)',
+        filledBorder: hasError ? '#ff2b3a' : 'rgba(255,255,255,0.4)',
         filledBg: 'rgba(255,255,255,0.1)',
         text: '#FFFFFF',
       }
     : {
-        border: hasError ? '#F44336' : '#F5F5F5',
-        bg: hasError ? '#FFFFFF' : '#F5F5F5',
-        focusBorder: hasError ? '#F44336' : '#1B84FF',
-        focusBg: '#FFFFFF',
-        filledBorder: hasError ? '#F44336' : '#757575',
-        filledBg: '#FFFFFF',
-        text: '#121212',
+        border: hasError ? '#ff2b3a' : 'rgba(23,23,23,0.10)',
+        bg: hasError ? '#f7f4ef' : 'transparent',
+        focusBorder: hasError ? '#ff2b3a' : 'rgba(255,59,31,0.40)',
+        focusBg: '#f7f4ef',
+        filledBorder: hasError ? '#ff2b3a' : 'rgba(23,23,23,0.20)',
+        filledBg: 'transparent',
+        text: '#343433',
       };
 
   return (
@@ -89,11 +89,11 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
           accessibilityHint: 'Enter your verification code',
         }}
         theme={{
-          containerStyle: { width: '100%', justifyContent: 'center', gap: 8 },
+          containerStyle: { width: '100%', justifyContent: 'flex-start', gap: 8 },
           pinCodeContainerStyle: {
             width: boxSize,
             height: boxSize,
-            borderRadius: 16,
+            borderRadius: 10,
             borderWidth: 2,
             borderColor: colors.border,
             backgroundColor: colors.bg,
@@ -101,7 +101,7 @@ const OTPInputComponent: React.ForwardRefRenderFunction<OTPInputRef, OTPInputPro
             justifyContent: 'center',
           },
           pinCodeTextStyle: {
-            fontFamily: 'InstrumentSans-SemiBold',
+            fontFamily: 'Satoshi-Medium',
             fontSize: 24,
             color: colors.text,
             textAlign: 'center',

@@ -96,17 +96,19 @@ export const csrfTokenService = {
 
   /**
    * Fetch CSRF token from backend
-   * SECURITY: Must be called over HTTPS and origin must be validated by backend
+   * SECURITY FIX (H-6): Use GET instead of POST to avoid circular CSRF dependency.
+   * A POST to fetch a CSRF token itself requires CSRF protection — chicken-and-egg.
+   * GET is appropriate here since fetching a token is a read operation.
    */
   async fetchTokenFromServer(): Promise<CSRFTokenData> {
     // Import here to avoid circular dependency with api/client.ts
     const { default: apiClient } = await import('../api/client');
 
     try {
-      const response = await apiClient.post<{
+      const response = await apiClient.get<{
         token: string;
         expiresAt?: string;
-      }>('/v1/csrf-token', {});
+      }>('/v1/csrf-token');
 
       const now = new Date();
       const expiresAt = response.expiresAt

@@ -8,6 +8,7 @@ import { passcodeService } from '../services';
 import { queryKeys } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
 import { logger } from '../../lib/logger';
+import { PASSCODE_SESSION_MS, SESSION_DURATION_MS } from '../../utils/sessionConstants';
 import type {
   CreatePasscodeRequest,
   UpdatePasscodeRequest,
@@ -143,6 +144,7 @@ export function useVerifyPasscode() {
           hasPasscode: true,
           lastActivityAt: now.toISOString(),
           tokenIssuedAt: now.toISOString(),
+          appLockExpiresAt: new Date(now.getTime() + PASSCODE_SESSION_MS).toISOString(),
         };
 
         // Add authentication tokens (for login flow) - tokens are optional
@@ -154,10 +156,9 @@ export function useVerifyPasscode() {
           updates.accessToken = response.accessToken;
           updates.refreshToken = response.refreshToken;
 
-          // Set token expiry (7 days or from response)
-          const tokenExpiresAt = response.expiresAt
-            ? new Date(response.expiresAt)
-            : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+          const tokenExpiresAt = response.sessionExpiresAt
+            ? new Date(response.sessionExpiresAt)
+            : new Date(now.getTime() + SESSION_DURATION_MS);
           updates.tokenExpiresAt = tokenExpiresAt.toISOString();
         }
 

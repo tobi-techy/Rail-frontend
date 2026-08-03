@@ -7,23 +7,25 @@ import { queryKeys } from '@/api/queryClient';
 
 export function usePushNotifications() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const isInitialized = useRef(false);
 
   const initializePush = useCallback(async () => {
     if (isInitialized.current) return;
 
-    const token = await pushNotificationService.initialize();
+    const token = await pushNotificationService.initialize(user?.id ?? null);
     if (token && isAuthenticated) {
       await pushNotificationService.registerTokenWithBackend(token);
       isInitialized.current = true;
     }
 
     pushNotificationService.setupListeners(queryClient);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id, queryClient]);
 
   const cleanup = useCallback(async () => {
     if (isAuthenticated === false && isInitialized.current) {
+      pushNotificationService.removeUserAlias();
       await pushNotificationService.unregisterToken();
       isInitialized.current = false;
     }

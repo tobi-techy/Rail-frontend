@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
-import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   FlatList,
+  Image,
   useWindowDimensions,
   StatusBar,
   NativeScrollEvent,
@@ -11,23 +12,16 @@ import {
 } from 'react-native';
 import { AppleLogo } from '../assets/svg';
 import { Button } from '@/components/ui';
-import Animated, {
-  SharedValue,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  interpolate,
-  Extrapolation,
-} from 'react-native-reanimated';
+import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAppleSignIn, useGoogleSignIn } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { getPostAuthRoute } from '@/utils/onboardingFlow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { onboardingSlides, SLIDE_INTERVAL } from './intro/onboardingSlides';
-import { ActiveVideoSlide } from './intro/ActiveVideoSlide';
-import { SlideContent } from './intro/SlideContent';
-import type { OnboardingSlide } from './intro/onboardingSlides';
+import { onboardingSlides, SLIDE_INTERVAL } from '@/components/intro/onboardingSlides';
+import { ActiveVideoSlide } from '@/components/intro/ActiveVideoSlide';
+import { SlideContent } from '@/components/intro/SlideContent';
+import type { OnboardingSlide } from '@/components/intro/onboardingSlides';
 import Svg, { Path, G } from 'react-native-svg';
 
 const GoogleLogo = () => (
@@ -53,28 +47,6 @@ const GoogleLogo = () => (
   </Svg>
 );
 
-const IndicatorBar = memo(function IndicatorBar({
-  index,
-  currentIndex,
-  progress,
-}: {
-  index: number;
-  currentIndex: number;
-  progress: SharedValue<number>;
-}) {
-  const animatedStyle = useAnimatedStyle(() => {
-    if (index < currentIndex) return { width: '100%' };
-    if (index === currentIndex)
-      return { width: `${interpolate(progress.value, [0, 1], [0, 100], Extrapolation.CLAMP)}%` };
-    return { width: '0%' };
-  });
-  return (
-    <View className="h-1 flex-1 rounded-full bg-white/30">
-      <Animated.View className="h-1 rounded-full bg-white" style={animatedStyle} />
-    </View>
-  );
-});
-
 export default function App() {
   const { width, height } = useWindowDimensions();
   const isCompactWidth = width < 380;
@@ -87,12 +59,20 @@ export default function App() {
   const { mutate: appleSignIn } = useAppleSignIn();
   const { mutate: googleSignIn } = useGoogleSignIn();
   const { showError } = useFeedbackPopup();
+  const footerHorizontalPadding = width < 380 ? 16 : 20;
+  const buttonHeight = 58;
 
-  const footerBottom = Math.max(insets.bottom, 16) + 0.55;
-  // buttons height ~108px (2 × large button + gap), content sits 16px above that
-  const contentBottom = footerBottom + 108 + 16;
-  // progress bar sits 12px above content
-  const progressBottom = contentBottom + 80 + 12;
+  // Prefetch all slide images on mount so swiping is instant
+  useEffect(() => {
+    onboardingSlides.forEach((slide) => {
+      const resolved = Image.resolveAssetSource(slide.image);
+      if (resolved?.uri) Image.prefetch(resolved.uri);
+    });
+  }, []);
+
+  const footerBottom = Math.max(insets.bottom, 16);
+  const footerHeight = buttonHeight;
+  const contentBottom = footerBottom + footerHeight + (height < 700 ? 12 : 16);
 
   const clampIndex = useCallback(
     (i: number) => Math.min(onboardingSlides.length - 1, Math.max(0, i)),
@@ -169,22 +149,24 @@ export default function App() {
           onMomentumScrollEnd={onMomentumScrollEnd}
           onScrollToIndexFailed={onScrollToIndexFailed}
           getItemLayout={getItemLayout}
-          initialNumToRender={1}
-          maxToRenderPerBatch={1}
-          windowSize={1}
+          initialNumToRender={2}
+          maxToRenderPerBatch={2}
+          windowSize={3}
           removeClippedSubviews
         />
 
         {/* Slide text — above buttons */}
-        <View className="absolute left-0 right-0 mb-3" style={{ bottom: contentBottom }}>
+        <View className="absolute left-0 right-0" style={{ bottom: contentBottom }}>
           {currentSlide && <SlideContent item={currentSlide} isCompactWidth={isCompactWidth} />}
         </View>
 
         {/* CTA buttons */}
-        <View className="absolute w-full gap-x-2 px-2" style={{ bottom: footerBottom }}>
+        <View
+          className="absolute w-full flex-row items-stretch gap-3"
+          style={{ bottom: footerBottom, paddingHorizontal: footerHorizontalPadding }}>
           {Platform.OS === 'android' ? (
             <Button
-              title="Sign Up with Google"
+              title="Google"
               leftIcon={<GoogleLogo />}
               size="large"
               onPress={() => {
@@ -196,10 +178,11 @@ export default function App() {
                 });
               }}
               variant="white"
+              flex
             />
           ) : (
             <Button
-              title="Sign Up with Apple"
+              title="Apple"
               leftIcon={<AppleLogo width={20} height={20} />}
               size="large"
               onPress={() => {
@@ -211,13 +194,15 @@ export default function App() {
                 });
               }}
               variant="white"
+              flex
             />
           )}
           <Button
-            title="Continue with mail"
+            title="Email"
             size="large"
             onPress={() => router.push('/(auth)/signup')}
-            variant="ghost"
+            variant="orange"
+            flex
           />
         </View>
       </View>

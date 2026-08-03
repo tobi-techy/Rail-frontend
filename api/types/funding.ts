@@ -8,9 +8,12 @@ export interface VirtualAccount {
   account_number: string;
   routing_number: string;
   bank_name?: string;
+  bank_address?: string;
   beneficiary_name?: string;
+  beneficiary_address?: string;
+  payment_rails?: string[];
   status: 'pending' | 'active' | 'closed' | 'failed';
-  currency: 'USD' | 'EUR' | 'GBP';
+  currency: 'USD' | 'EUR' | 'GBP' | 'NGN';
   created_at: string;
   updated_at: string;
 }
@@ -18,6 +21,43 @@ export interface VirtualAccount {
 export interface CreateVirtualAccountResponse {
   virtual_account: VirtualAccount;
   message: string;
+}
+
+// ============= NGN Named Virtual Account =============
+
+export interface NgnVirtualAccount {
+  id: string;
+  provider: string;
+  account_number: string;
+  routing_number: string;
+  bank_name: string;
+  bank_code: string;
+  bank_address: string;
+  beneficiary_name: string;
+  beneficiary_address: string;
+  payment_rails: string[];
+  currency: 'NGN';
+  status: 'pending' | 'active' | 'closed' | 'failed';
+  created_at: string;
+  updated_at: string;
+}
+
+export type NgnIdType = 'nin' | 'voters_card' | 'drivers_license' | 'passport';
+
+export interface ProvisionNgnAccountRequest {
+  /** Transient — used once to create the Graph person, never persisted/logged. */
+  bvn: string;
+  id_number: string;
+  id_type?: NgnIdType;
+  id_document_url?: string;
+  employment_status?: string;
+  occupation?: string;
+  source_of_funds?: string;
+  primary_purpose?: string;
+}
+
+export interface NgnVirtualAccountResponse {
+  virtual_account: NgnVirtualAccount;
 }
 
 // ============= Deposit Types (GET /v1/deposits) =============
@@ -64,24 +104,57 @@ export interface InitiateWithdrawalRequest {
   amount: number | string;
   destination_address: string;
   destination_chain?: string;
+  source_account?: 'spending_balance' | 'stash_balance';
   category?: string;
   narration?: string;
+  idempotencyKey?: string;
 }
 
 export interface InitiateFiatWithdrawalRequest {
   amount: number | string;
-  currency: 'USD' | 'EUR';
+  currency: 'USD' | 'EUR' | 'GBP' | 'NGN';
   account_holder_name: string;
   account_number: string;
   routing_number: string;
+  iban?: string;
+  bic?: string;
+  source_account?: 'spending_balance' | 'stash_balance';
   category?: string;
   narration?: string;
+  idempotencyKey?: string;
 }
 
 export interface InitiateWithdrawalResponse {
   withdrawal_id: string;
   status: string;
   message: string;
+}
+
+// ============= Early Withdrawal Types =============
+
+export interface EmergencyWithdrawalPreview {
+  amount: string;
+  fee_percent: string;
+  fee_amount: string;
+  net_amount: string;
+  lock_age_days: number;
+  fee_tier: string;
+}
+
+export interface EmergencyWithdrawalResult {
+  amount: string;
+  fee: string;
+  fee_percent: string;
+  net_amount: string;
+  transfer_id: string;
+}
+
+// ============= Fund Stash Types =============
+
+export interface FundStashResult {
+  transfer_id: string;
+  amount: string;
+  status: string;
 }
 
 // ============= Unified Transaction (for history display) =============

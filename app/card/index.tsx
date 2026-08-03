@@ -5,11 +5,13 @@ import { CardMainScreen } from '@/components/card/CardMainScreen';
 import { CardIntroScreen } from '@/components/card/CardIntroScreen';
 import { useCards, useCreateCard } from '@/api/hooks/useCard';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 export default function CardScreen() {
   const { data: cardsData, isLoading, isError, refetch } = useCards();
   const createCard = useCreateCard();
   const { showError } = useFeedbackPopup();
+  const triggerFeedback = useButtonFeedback();
 
   const hasCard = useMemo(
     () => cardsData?.cards?.some((c) => c.status === 'active' || c.status === 'frozen') ?? false,
@@ -35,7 +37,7 @@ export default function CardScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 items-center justify-center bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
         <ActivityIndicator size="small" color="#000" />
       </SafeAreaView>
@@ -44,11 +46,20 @@ export default function CardScreen() {
 
   if (isError) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 items-center justify-center bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
-        <Text className="mb-4 font-body text-[15px] text-gray-500">Unable to load card</Text>
-        <Pressable onPress={() => refetch()} className="rounded-full bg-black px-5 py-3">
-          <Text className="font-subtitle text-white">Retry</Text>
+        <Text className="mb-4 font-body text-[15px] text-ash" maxFontSizeMultiplier={1.4}>
+          Unable to load card
+        </Text>
+        <Pressable
+          onPress={() => {
+            triggerFeedback();
+            refetch();
+          }}
+          className="rounded-full bg-black px-5 py-3">
+          <Text className="font-subtitle text-white" maxFontSizeMultiplier={1.3}>
+            Retry
+          </Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -56,7 +67,7 @@ export default function CardScreen() {
 
   if (!hasCard) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
         <CardIntroScreen onCreateCard={handleCreateCard} loading={createCard.isPending} />
       </SafeAreaView>
@@ -64,7 +75,7 @@ export default function CardScreen() {
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-warm-canvas">
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <CardMainScreen />
     </View>

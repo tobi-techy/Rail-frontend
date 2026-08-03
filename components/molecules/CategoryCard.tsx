@@ -7,9 +7,10 @@ import {
   TouchableOpacityProps,
   ImageSourcePropType,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SvgProps } from 'react-native-svg';
 import { Icon } from '../atoms/Icon';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 export interface CategoryCardProps extends Omit<TouchableOpacityProps, 'children'> {
   /** Unique identifier */
@@ -24,7 +25,7 @@ export interface CategoryCardProps extends Omit<TouchableOpacityProps, 'children
   icon?: React.ComponentType<SvgProps>;
   /** Optional Lucide icon fallback when an asset icon is not supplied */
   iconName?: string;
-  /** Optional gradient colours for the icon bubble */
+  /** Optional legacy icon colours. The card renders a restrained solid Rail surface. */
   iconGradient?: readonly [string, string];
   /** Token/logo images shown as overlapping avatars */
   tokenLogos?: ImageSourcePropType[];
@@ -41,9 +42,9 @@ export interface CategoryCardProps extends Omit<TouchableOpacityProps, 'children
  * - Title and baskets count
  * - Performance indicator
  * - Row of overlapping token avatars
- * Matches the reference design while using shared atoms and tokens.
+ * Matches Rail's restrained money UI: warm surfaces, inset borders, and one accent.
  */
-const DEFAULT_GRADIENT: readonly [string, string] = ['#F7F8FF', '#E2E5FF'];
+const DEFAULT_ICON_COLOR = '#ff3e00';
 
 export const CategoryCard: React.FC<CategoryCardProps> = ({
   id,
@@ -52,7 +53,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
   performancePercent,
   icon: SvgIcon,
   iconName = 'layers-3',
-  iconGradient = DEFAULT_GRADIENT,
+  iconGradient,
   tokenLogos = [],
   onPress,
   className,
@@ -69,53 +70,36 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
     [title, basketLabel, isPositive, performanceLabel]
   );
 
-  const gradientColors: readonly [string, string] =
-    Array.isArray(iconGradient) && iconGradient.length === 2 ? iconGradient : DEFAULT_GRADIENT;
+  const haptics = useHaptics();
+
+  const iconColor =
+    Array.isArray(iconGradient) && iconGradient.length === 2 ? iconGradient[0] : DEFAULT_ICON_COLOR;
 
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={() => {
+        haptics.selection();
+        playUISound('buttonClick');
+        onPress?.();
+      }}
       activeOpacity={0.9}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       className={['w-full active:opacity-90', className].filter(Boolean).join(' ')}
       style={style}
       {...props}>
-      <View
-        className="w-full rounded-[28px] border border-[#EEF1F8] bg-white px-4 py-5"
-        style={{
-          shadowColor: '#1E1A3E',
-          shadowOpacity: 0.06,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 12 },
-          elevation: 3,
-        }}>
+      <View className="w-full rounded-2xl border border-stone-surface bg-parchment-card px-4 py-5">
         <View className="flex-row items-start justify-between">
-          <LinearGradient
-            colors={gradientColors}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{
-              height: 45,
-              width: 45,
-              borderRadius: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-              shadowColor: '#1E1A3E',
-              shadowOpacity: 0.12,
-              shadowOffset: { width: 0, height: 8 },
-              shadowRadius: 16,
-              elevation: 6,
-            }}>
+          <View className="h-[45px] w-[45px] items-center justify-center rounded-full bg-stone-surface">
             {SvgIcon ? (
               <SvgIcon width={24} height={24} />
             ) : (
-              <Icon name={iconName} size={32} color="#1E1A3E" />
+              <Icon name={iconName} size={30} color={iconColor} />
             )}
-          </LinearGradient>
+          </View>
 
-          <View className="rounded-full bg-[#F4F5FA] px-3 py-1">
-            <Text className="font-body-medium text-[12px] text-[#5A5D72]">{basketLabel}</Text>
+          <View className="rounded-full bg-stone-surface px-3 py-1">
+            <Text className="font-body-medium text-[12px] text-ash">{basketLabel}</Text>
           </View>
         </View>
 
@@ -126,11 +110,11 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
             </Text>
             <View className="mt-2 flex-row items-center">
               <View
-                className={`mr-2 h-2 w-2 rounded-full ${isPositive ? 'bg-[#1BC773]' : 'bg-[#FB088F]'}`}
+                className={`mr-2 h-2 w-2 rounded-full ${isPositive ? 'bg-meadow-green' : 'bg-coral-red'}`}
                 accessibilityLabel={isPositive ? 'Positive performance' : 'Negative performance'}
               />
               <Text
-                className={`font-body-medium text-[14px] ${isPositive ? 'text-[#1E1A3E]' : 'text-[#FB088F]'}`}>
+                className={`font-body-medium text-[14px] ${isPositive ? 'text-charcoal-primary' : 'text-coral-red'}`}>
                 {isPositive ? '↑' : '↓'} {performanceLabel}
               </Text>
             </View>
@@ -141,7 +125,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
               {tokenLogos.slice(0, 3).map((src, index) => (
                 <View
                   key={`${id}-token-${index}`}
-                  className="h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-white"
+                  className="h-8 w-8 items-center justify-center rounded-full border-2 border-parchment-card bg-parchment-card"
                   style={{
                     marginLeft: index > 0 ? -10 : 0,
                     zIndex: 3 - index,
@@ -151,9 +135,9 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
               ))}
               {tokenLogos.length > 3 && (
                 <View
-                  className="h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#949FFF]"
+                  className="h-8 w-8 items-center justify-center rounded-full border-2 border-parchment-card bg-sky-blue"
                   style={{ marginLeft: -10 }}>
-                  <Text className="font-body-bold text-[12px] text-white">
+                  <Text className="font-body-bold text-[12px] text-text-inverse">
                     +{tokenLogos.length - 3}
                   </Text>
                 </View>

@@ -21,13 +21,12 @@ import type {
   GetNetworksResponse,
   GetWalletAddressesRequest,
   WalletAddressesResponse,
-  ApiResponse,
 } from '../types';
 import type { Transaction } from '../types/wallet';
 
 const WALLET_ENDPOINTS = {
   BALANCE: '/v1/balances',
-  TRANSACTIONS: '/v1/withdrawals',
+  TRANSACTIONS: '/v1/funding/transactions',
   TRANSACTION_DETAIL: '/v1/withdrawals/:id',
   TRANSFER: '/v1/withdrawals/crypto',
   DEPOSIT_ADDRESS: '/v1/funding/deposit/address',
@@ -82,23 +81,24 @@ export const walletService = {
 
     const rows = Array.isArray(response)
       ? response
-      : response?.items ||
+      : response?.transactions ||
+        response?.items ||
         response?.withdrawals ||
+        response?.data?.transactions ||
         response?.data?.items ||
-        response?.data?.withdrawals ||
         [];
     const items = rows.map((tx: any) => ({
       id: tx?.id || tx?.withdrawal_id || '',
       type: (tx?.type as Transaction['type']) || 'withdraw',
-      tokenId: 'USDC',
+      tokenId: tx?.currency || 'USDC',
       amount: String(tx?.amount ?? '0'),
       usdAmount: String(tx?.amount ?? '0'),
       from: '',
-      to: tx?.destination_address || '',
+      to: tx?.destination_address || tx?.address || '',
       timestamp: tx?.created_at || tx?.updated_at || new Date().toISOString(),
       status: tx?.status || 'pending',
       txHash: tx?.tx_hash || undefined,
-      network: tx?.destination_chain || 'SOL',
+      network: tx?.chain || tx?.destination_chain || 'SOL',
       fee: undefined,
       confirmations: undefined,
     }));
@@ -146,13 +146,17 @@ export const walletService = {
       payload.destination_chain = data.network;
     }
 
+    const config = data.idempotencyKey
+      ? { headers: { 'Idempotency-Key': data.idempotencyKey } }
+      : undefined;
+
     let response: any;
     try {
-      response = await apiClient.post<any>(WALLET_ENDPOINTS.TRANSFER, payload);
+      response = await apiClient.post<any>(WALLET_ENDPOINTS.TRANSFER, payload, config);
     } catch (error) {
       // Compatibility fallback for environments that have not mounted /withdrawals/crypto yet.
       if (isNotFoundError(error)) {
-        response = await apiClient.post<any>(WALLET_ENDPOINTS.TRANSACTIONS, payload);
+        response = await apiClient.post<any>(WALLET_ENDPOINTS.TRANSACTIONS, payload, config);
       } else {
         throw error;
       }
@@ -181,23 +185,51 @@ export const walletService = {
    * Validate wallet address
    */
   async validateAddress(data: ValidateAddressRequest): Promise<ValidateAddressResponse> {
-    const isValid = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test((data.address || '').trim());
+    const address = (data.address || '').trim();
+    const network = data.network?.toUpperCase() || 'SOL';
+
+    let isValid = false;
+
+    // Validate based on network type
+    if (network === 'SOL' || network === 'SOL-DEVNET') {
+      // Solana address validation (base58, 32-44 characters)
+      isValid = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
+    } else {
+      // EVM chains (MATIC, CELO, BASE, AVAX, ETH) - Ethereum-style addresses
+      // 0x prefix + 40 hex characters (with optional checksum)
+      isValid = /^0x[a-fA-F0-9]{40}$/.test(address);
+    }
+
     return {
       valid: isValid,
       addressType: 'wallet',
-      resolvedAddress: isValid ? data.address.trim() : undefined,
+      resolvedAddress: isValid ? address : undefined,
     };
   },
 
   /**
-   * Estimate transaction fee
+   * Estimate transaction fee via backend
    */
   async estimateFee(data: EstimateFeeRequest): Promise<EstimateFeeResponse> {
-    return {
-      fee: '0',
-      feeUSD: '0',
-      estimatedTime: '1-2 minutes',
-    };
+    try {
+      const response = await apiClient.get<any>('/v1/withdrawals/fees', {
+        params: {
+          amount: data.amount,
+          withdrawal_type: data.network?.startsWith('fiat') ? 'fiat' : 'crypto',
+          source_chain: data.network || 'SOL',
+          dest_chain: data.network || 'SOL',
+          currency: 'USDC',
+        },
+      });
+      return {
+        fee: String(response?.fee_amount ?? '0'),
+        feeUSD: String(response?.fee_usd ?? response?.fee_amount ?? '0'),
+        estimatedTime: response?.estimated_time || '1-2 minutes',
+      };
+    } catch {
+      // Fallback to zero fee if endpoint unavailable
+      return { fee: '0', feeUSD: '0', estimatedTime: '1-2 minutes' };
+    }
   },
 
   /**
@@ -245,6 +277,56 @@ export const walletService = {
           explorerUrl: 'https://solscan.io',
           isTestnet: false,
           nativeCurrency: { name: 'Solana', symbol: 'SOL', decimals: 9 },
+        },
+        {
+          id: 'polygon',
+          name: 'Polygon',
+          symbol: 'MATIC',
+          chainId: 137,
+          rpcUrl: '',
+          explorerUrl: 'https://polygonscan.com',
+          isTestnet: false,
+          nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+        },
+        {
+          id: 'celo',
+          name: 'Celo',
+          symbol: 'CELO',
+          chainId: 42220,
+          rpcUrl: '',
+          explorerUrl: 'https://celoscan.io',
+          isTestnet: false,
+          nativeCurrency: { name: 'Celo', symbol: 'CELO', decimals: 18 },
+        },
+        {
+          id: 'tron',
+          name: 'Tron',
+          symbol: 'TRX',
+          chainId: -1, // Tron uses a different chain ID system
+          rpcUrl: '',
+          explorerUrl: 'https://tronscan.org',
+          isTestnet: false,
+          nativeCurrency: { name: 'Tron', symbol: 'TRX', decimals: 6 },
+        },
+        {
+          id: 'base',
+          name: 'Base',
+          symbol: 'ETH',
+          chainId: 8453,
+          rpcUrl: '',
+          explorerUrl: 'https://basescan.org',
+          isTestnet: false,
+          nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
+        },
+        {
+          id: 'avalanche',
+          name: 'Avalanche',
+          symbol: 'AVAX',
+          chainId: 43114,
+          rpcUrl: '',
+          explorerUrl: 'https://snowscan.io',
+          isTestnet: false,
+          nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
         },
       ],
     };

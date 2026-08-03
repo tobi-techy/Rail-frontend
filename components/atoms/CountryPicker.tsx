@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, Modal, FlatList } from 'react-native';
 import { Ionicons } from './SafeIonicons';
 import { InputField } from './InputField';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 interface Country {
   code: string;
@@ -96,6 +98,7 @@ export function CountryPicker({
   required = false,
   variant = 'blended',
 }: CountryPickerProps) {
+  const haptics = useHaptics();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const isDark = variant === 'dark';
@@ -109,18 +112,20 @@ export function CountryPicker({
 
   const getContainerStyle = () => {
     if (isDark) {
-      return `h-[56px] rounded-xl border px-4 ${hasError ? 'border-destructive' : 'border-white/30'} bg-white/5`;
+      return `h-[56px] rounded-lg border px-4 ${hasError ? 'border-destructive' : 'border-white/30'} bg-white/5`;
     }
     if (hasError) {
-      return 'h-[56px] rounded-xl border border-destructive bg-white px-4';
+      return 'h-[56px] rounded-lg border border-destructive bg-parchment-card px-4';
     }
     if (isModalVisible) {
-      return 'h-[56px] rounded-xl border border-black/20 bg-white px-4';
+      return 'h-[56px] rounded-lg border border-fog bg-parchment-card px-4';
     }
-    return 'h-[56px] rounded-xl border border-[#D4D4D8] bg-white px-4';
+    return 'h-[56px] rounded-lg border border-[#f7f2e8] bg-parchment-card px-4';
   };
 
   const handleCountrySelect = (country: Country) => {
+    haptics.selection();
+    playUISound('buttonClick');
     onSelect(country);
     setIsModalVisible(false);
     setSearchQuery('');
@@ -129,7 +134,7 @@ export function CountryPicker({
   const renderCountryItem = ({ item }: { item: Country }) => (
     <Pressable
       onPress={() => handleCountrySelect(item)}
-      className="flex-row items-center border-b border-black/5 px-5 py-3">
+      className="flex-row items-center border-b border-fog/40 px-5 py-3">
       <Text className="mr-3 text-2xl">{item.flag}</Text>
       <Text className="flex-1 font-body text-body text-text-primary">{item.name}</Text>
     </Pressable>
@@ -154,7 +159,11 @@ export function CountryPicker({
       )}
 
       <Pressable
-        onPress={() => setIsModalVisible(true)}
+        onPress={() => {
+          haptics.selection();
+          playUISound('buttonClick');
+          setIsModalVisible(true);
+        }}
         className={`flex-row items-center justify-between ${getContainerStyle()}`}>
         <View className="flex-1 flex-row items-center">
           {selectedCountry ? (
@@ -175,7 +184,7 @@ export function CountryPicker({
         <Ionicons
           name="chevron-down"
           size={20}
-          color={hasError ? '#F44336' : isDark ? '#FFFFFF' : isModalVisible ? '#1B84FF' : '#757575'}
+          color={hasError ? '#ff2b3a' : isDark ? '#FFFFFF' : isModalVisible ? '#0090ff' : '#848281'}
         />
       </Pressable>
 
@@ -187,15 +196,21 @@ export function CountryPicker({
       )}
 
       <Modal visible={isModalVisible} animationType="slide" presentationStyle="pageSheet">
-        <View className="flex-1 bg-white">
-          <View className="flex-row items-center justify-between border-b border-black/5 px-5 py-4">
+        <View className="flex-1 bg-parchment-card">
+          <View className="flex-row items-center justify-between border-b border-fog/40 px-5 py-4">
             <Text className="font-subtitle text-[30px] text-text-primary">Select Country</Text>
-            <Pressable onPress={() => setIsModalVisible(false)} className="p-2">
+            <Pressable
+              onPress={() => {
+                haptics.selection();
+                playUISound('dismiss');
+                setIsModalVisible(false);
+              }}
+              className="p-2">
               <Ionicons name="close" size={24} color="#000000" />
             </Pressable>
           </View>
 
-          <View className="border-b border-black/5 px-5 py-3">
+          <View className="border-b border-fog/40 px-5 py-3">
             <InputField
               value={searchQuery}
               onChangeText={setSearchQuery}

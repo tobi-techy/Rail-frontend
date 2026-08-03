@@ -1,17 +1,13 @@
 import React from 'react';
 import { View, Text, ViewProps, TouchableOpacity } from 'react-native';
-import { Eye, EyeOff } from 'lucide-react-native';
 import { useUIStore } from '@/stores';
 import { sanitizeNumber } from '@/utils/sanitizeInput';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
 import { Skeleton } from '@/components/atoms/Skeleton';
 import type { Currency } from '@/stores/uiStore';
 import { formatCurrencyAmount, convertFromUsd, type FxRates } from '@/utils/currency';
+import { EyeIcon, ViewOffIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 export interface BalanceCardProps extends ViewProps {
   balance?: string;
@@ -26,36 +22,26 @@ function formatBalance(usdValue: number, currency: Currency, rates: FxRates): st
   return formatCurrencyAmount(converted, currency);
 }
 
+const DIGIT_H = 66; // text-balance-lg is 50px, lineHeight 1.1 = 55px — add 1px buffer
+
 function AnimatedBalance({ value, isVisible }: { value: string; isVisible: boolean }) {
-  const opacity = useSharedValue(1);
-  const displayValue = isVisible ? value : '****';
-  const isFirst = React.useRef(true);
-
-  React.useEffect(() => {
-    if (isFirst.current) {
-      isFirst.current = false;
-      return;
-    }
-    opacity.value = 0;
-    opacity.value = withTiming(1, { duration: 140, easing: Easing.out(Easing.ease) });
-  }, [displayValue, opacity]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
+  const display = isVisible ? value : value.replace(/[0-9]/g, '•');
 
   return (
-    <Animated.View style={[animatedStyle, { maxWidth: '86%' }]} className="min-w-0">
-      <Animated.Text
-        className="font-subtitle text-balance-lg text-text-primary"
-        style={{ fontVariant: ['tabular-nums'] }}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.58}
-        ellipsizeMode="tail">
-        {displayValue}
-      </Animated.Text>
-    </Animated.View>
+    <View style={{ maxWidth: '86%', flexDirection: 'row', alignItems: 'flex-end' }}>
+      <Text
+        style={{
+          height: DIGIT_H,
+          lineHeight: DIGIT_H,
+          fontFamily: 'CommitMono-600',
+          fontVariant: ['tabular-nums'],
+          fontSize: 50,
+          letterSpacing: -1.5,
+          color: '#343433',
+        }}>
+        {display}
+      </Text>
+    </View>
   );
 }
 
@@ -67,14 +53,27 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   isLoading,
   ...props
 }) => {
-  const { isBalanceVisible, toggleBalanceVisibility, currency, currencyRates } = useUIStore();
+  const isBalanceVisible = useUIStore((s) => s.isBalanceVisible);
+  const toggleBalanceVisibility = useUIStore((s) => s.toggleBalanceVisibility);
+  const currency = useUIStore((s) => s.currency);
+  const currencyRates = useUIStore((s) => s.currencyRates);
   const isNegative = percentChange.startsWith('-');
   const rawUsd = parseFloat(balance.replace(/[^0-9.-]/g, '')) || 0;
-  const dataLoading = isLoading ?? (rawUsd === 0 && percentChange === '0.00%');
+  const dataLoading = isLoading === true;
   const displayBalance = dataLoading ? '---' : formatBalance(rawUsd, currency, currencyRates);
+  const triggerFeedback = useButtonFeedback();
 
   return (
-    <View className={`overflow-hidden ${className || ''}`} {...props}>
+    <View
+      className={`overflow-hidden ${className || ''}`}
+      style={{
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+      }}
+      {...props}>
       <View className="items-start pb-4 pt-6">
         <Text className="mb-2 font-caption text-caption text-text-secondary">Total balance</Text>
 
@@ -89,14 +88,17 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
               <AnimatedBalance value={displayBalance} isVisible={isBalanceVisible} />
               <TouchableOpacity
                 className="ml-2 shrink-0"
-                onPress={toggleBalanceVisibility}
+                onPress={() => {
+                  triggerFeedback();
+                  toggleBalanceVisibility();
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={isBalanceVisible ? 'Hide balance' : 'Show balance'}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 {isBalanceVisible ? (
-                  <Eye size={24} color="#757575" strokeWidth={0.9} />
+                  <HugeiconsIcon icon={EyeIcon} size={24} color="#848281" strokeWidth={0.9} />
                 ) : (
-                  <EyeOff size={24} color="#757575" strokeWidth={0.9} />
+                  <HugeiconsIcon icon={ViewOffIcon} size={24} color="#848281" strokeWidth={0.9} />
                 )}
               </TouchableOpacity>
             </View>

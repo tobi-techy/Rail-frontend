@@ -29,9 +29,18 @@ export const queryClient = new QueryClient({
         if (isTransformedApiError(error) && error.status >= 400 && error.status < 500) {
           return false;
         }
-        return failureCount < 3;
+        return failureCount < 2;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      // COST GUARD: every request hits the backend's Redis (rate-limiter +
+      // session). Continuous background polling (refetchInterval) fires forever
+      // while a screen is open — even when the user is idle — and was the main
+      // Upstash cost driver. Default it OFF; freshness comes from focus/reconnect
+      // refetch + mutation invalidation + push notifications. Only short-lived,
+      // self-terminating pollers (active deposit/withdrawal order status) may
+      // opt back in per-hook.
+      refetchInterval: false,
+      refetchIntervalInBackground: false,
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
       refetchOnMount: true,
@@ -62,6 +71,15 @@ export const queryKeys = {
     all: ['station'] as const,
     home: () => [...queryKeys.station.all, 'home'] as const,
   },
+  gameplay: {
+    all: ['gameplay'] as const,
+    profile: () => [...queryKeys.gameplay.all, 'profile'] as const,
+    streaks: () => [...queryKeys.gameplay.all, 'streaks'] as const,
+    challenges: () => [...queryKeys.gameplay.all, 'challenges'] as const,
+    achievements: () => [...queryKeys.gameplay.all, 'achievements'] as const,
+    xpHistory: () => [...queryKeys.gameplay.all, 'xp-history'] as const,
+    subscription: () => [...queryKeys.gameplay.all, 'subscription'] as const,
+  },
   allocation: {
     all: ['allocation'] as const,
     balances: () => [...queryKeys.allocation.all, 'balances'] as const,
@@ -80,6 +98,7 @@ export const queryKeys = {
     all: ['user'] as const,
     profile: () => [...queryKeys.user.all, 'profile'] as const,
     settings: () => [...queryKeys.user.all, 'settings'] as const,
+    tos: () => [...queryKeys.user.all, 'tos'] as const,
     kycBridgeLink: () => [...queryKeys.user.all, 'kyc-bridge-link'] as const,
     kycStatus: () => [...queryKeys.user.all, 'kyc-status'] as const,
     kycSession: () => [...queryKeys.user.all, 'kyc-session'] as const,
@@ -93,6 +112,7 @@ export const queryKeys = {
   virtualAccount: {
     all: ['virtual-account'] as const,
     list: () => [...queryKeys.virtualAccount.all, 'list'] as const,
+    ngn: () => [...queryKeys.virtualAccount.all, 'ngn'] as const,
   },
   market: {
     all: ['market'] as const,
@@ -124,6 +144,10 @@ export const queryKeys = {
     all: ['spending'] as const,
     stash: () => [...queryKeys.spending.all, 'stash'] as const,
   },
+  spendingCommitment: {
+    all: ['spending-commitment'] as const,
+    status: () => [...queryKeys.spendingCommitment.all, 'status'] as const,
+  },
   investment: {
     all: ['investment'] as const,
     stash: () => [...queryKeys.investment.all, 'stash'] as const,
@@ -150,6 +174,21 @@ export const queryKeys = {
     list: (params?: unknown) => [...queryKeys.notifications.all, 'list', params] as const,
     unreadCount: () => [...queryKeys.notifications.all, 'unread-count'] as const,
   },
+  ai: {
+    all: ['ai'] as const,
+    operatingPlan: () => [...queryKeys.ai.all, 'operating-plan'] as const,
+    moneyAcrossBorders: () => [...queryKeys.ai.all, 'money-across-borders'] as const,
+    automations: () => [...queryKeys.ai.all, 'automations'] as const,
+    obligations: (params?: unknown) => [...queryKeys.ai.all, 'obligations', params] as const,
+    actionReceipts: () => [...queryKeys.ai.all, 'action-receipts'] as const,
+    receiptSplits: () => [...queryKeys.ai.all, 'receipt-splits'] as const,
+    receiptSplit: (id: string) => [...queryKeys.ai.all, 'receipt-split', id] as const,
+    financialHealth: () => [...queryKeys.ai.all, 'financial-health'] as const,
+  },
+  onboarding: {
+    all: ['onboarding'] as const,
+    missingKycFields: () => [...queryKeys.onboarding.all, 'missing-kyc-fields'] as const,
+  },
 };
 
 /**
@@ -163,12 +202,15 @@ export const invalidateQueries = {
   wallet: () => queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all }),
   funding: () => queryClient.invalidateQueries({ queryKey: queryKeys.funding.all }),
   virtualAccount: () => queryClient.invalidateQueries({ queryKey: queryKeys.virtualAccount.all }),
+  kycStatus: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.kycStatus() }),
   market: () => queryClient.invalidateQueries({ queryKey: queryKeys.market.all }),
   news: () => queryClient.invalidateQueries({ queryKey: queryKeys.news.all }),
   investment: () => queryClient.invalidateQueries({ queryKey: queryKeys.investment.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
   passkeys: () => queryClient.invalidateQueries({ queryKey: queryKeys.passkeys.all }),
   notifications: () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
+  gameplay: () => queryClient.invalidateQueries({ queryKey: queryKeys.gameplay.all }),
+  ai: () => queryClient.invalidateQueries({ queryKey: queryKeys.ai.all }),
   all: () => queryClient.invalidateQueries(),
 };
 

@@ -1,13 +1,22 @@
 // Token SVG exports
 export { default as UsdcIcon } from './usdc.svg';
 export { default as UsdtIcon } from './usdt.svg';
+export { default as EurcIcon } from './eurc.svg';
+export { default as PyusdIcon } from './pyusd.svg';
 export { default as SolanaIcon } from './solana.svg';
 export { default as BnbIcon } from './bnb.svg';
 export { default as MaticIcon } from './matic.svg';
 export { default as BaseIcon } from './base.svg';
 export { default as AvalancheIcon } from './avalanche.svg';
+export { default as CeloIcon } from './celo.svg';
+export { default as TronIcon } from './tron.svg';
 export { default as PhantomIcon } from './phantom.svg';
 export { default as SolflareIcon } from './solflare.svg';
+export { default as EthereumIcon } from './ethereum.svg';
+export { default as ArbitrumIcon } from './arbitrum.svg';
+export { default as OptimismIcon } from './optimism.svg';
+export { default as StarknetIcon } from './starknet.svg';
+export { default as LiskIcon } from './lisk.svg';
 
 // Fiat currency flag icons
 export { default as NgnIcon } from './ngn.svg';
@@ -15,13 +24,9 @@ export { default as UsdIcon } from './usd.svg';
 export { default as GbpIcon } from './gbp.svg';
 export { default as EurIcon } from './eur.svg';
 export { default as CadIcon } from './CAD.svg';
+export { default as GhsIcon } from './ghana.svg';
+export { default as KesIcon } from './kenya.svg';
 export { default as MxnIcon } from './MXN.svg';
-
-// Currency symbol icons
-export { default as DollarCurrencyIcon } from './Currency=Dollar.svg';
-export { default as EuroCurrencyIcon } from './Currency=Euro.svg';
-export { default as NairaCurrencyIcon } from './Currency=Naira.svg';
-export { default as PoundCurrencyIcon } from './Currency=Pound.svg';
 
 // Company logos
 export * from './company';

@@ -5,22 +5,27 @@ export const ROUTES = {
     SIGNIN: '/(auth)/signin',
     VERIFY_EMAIL: '/(auth)/verify-email',
     FORGOT_PASSWORD: '/(auth)/forgot-password',
-    RESET_PASSWORD: '/(auth)/reset-password',
     CREATE_PASSCODE: '/(auth)/create-passcode',
     CONFIRM_PASSCODE: '/(auth)/confirm-passcode',
-    CREATE_RAILTAG: '/(auth)/create-railtag',
     COMPLETE_PROFILE: {
       PERSONAL_INFO: '/(auth)/complete-profile/personal-info',
-      DATE_OF_BIRTH: '/(auth)/complete-profile/date-of-birth',
-      ADDRESS: '/(auth)/complete-profile/address',
-      PHONE: '/(auth)/complete-profile/phone',
-      CREATE_PASSWORD: '/(auth)/complete-profile/create-password',
+      CREATE_RAILTAG: '/(auth)/complete-profile/create-railtag',
+      EMPLOYMENT_STATUS: '/(auth)/complete-profile/employment-status',
+      ACCOUNT_PURPOSE: '/(auth)/complete-profile/account-purpose',
+      SOURCE_OF_FUNDS: '/(auth)/complete-profile/source-of-funds',
+    },
+    COMPLETE_KYC: {
+      DATE_OF_BIRTH: '/(auth)/complete-kyc/date-of-birth',
+      ADDRESS: '/(auth)/complete-kyc/address',
+      PHONE: '/(auth)/complete-kyc/phone',
     },
   },
   TABS: '/(tabs)',
   SPENDING_STASH: '/spending-stash',
   INVESTMENT_STASH: '/investment-stash',
   CARD: '/card',
+  RECEIPT_SCANNER: '/receipt-scanner',
+  VOICE_MODE: '/voice-mode',
 } as const;
 
 export type AuthRoute = (typeof ROUTES.AUTH)[keyof typeof ROUTES.AUTH];

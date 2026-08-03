@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { InputField } from '@/components/atoms/InputField';
+import { useButtonFeedback } from '@/hooks/useButtonFeedback';
 
 export interface SearchBarProps {
   placeholder?: string;
@@ -27,6 +28,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const [internalValue, setInternalValue] = useState('');
   const isControlled = controlledValue !== undefined;
   const value = isControlled ? controlledValue : internalValue;
+  const triggerFeedback = useButtonFeedback();
 
   const handleChangeText = (text: string) => {
     if (!isControlled) setInternalValue(text);
@@ -58,11 +60,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         rightAccessory={
           value.length > 0 && !disabled ? (
             <TouchableOpacity
-              onPress={handleClear}
+              onPress={() => {
+                triggerFeedback();
+                handleClear();
+              }}
               className="min-h-[44px] min-w-[44px] items-center justify-center"
               accessibilityRole="button"
               accessibilityLabel="Clear search">
-              <Ionicons name="close" size={18} color="#757575" />
+              <Ionicons name="close" size={18} color="#848281" />
             </TouchableOpacity>
           ) : undefined
         }

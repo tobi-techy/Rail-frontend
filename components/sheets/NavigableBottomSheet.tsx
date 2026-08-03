@@ -9,7 +9,10 @@ import Animated, {
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { X, ChevronLeft } from 'lucide-react-native';
+import { ArrowLeft01Icon, Cancel01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
 
@@ -64,6 +67,7 @@ export function NavigableBottomSheet({
   );
   const defaultScreenId = initialStack[0];
   const localNavigation = useNavigableBottomSheet(defaultScreenId);
+  const haptics = useHaptics();
   const { screenStack, setScreenStack, goBack, reset } = navigation ?? localNavigation;
 
   useEffect(() => {
@@ -139,24 +143,36 @@ export function NavigableBottomSheet({
         <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill}>
           <Pressable
             style={StyleSheet.absoluteFill}
-            onPress={dismissible && !canGoBack ? animateClose : undefined}
+            onPress={
+              dismissible && !canGoBack
+                ? () => {
+                    playUISound('buttonClick');
+                    haptics.selection();
+                    animateClose();
+                  }
+                : undefined
+            }
           />
         </BlurView>
 
         <GestureDetector gesture={pan}>
           <Animated.View
-            className="absolute bottom-6 left-3 right-3 rounded-[34px] bg-white px-6 pt-6"
+            className="absolute bottom-6 left-3 right-3 rounded-[34px] bg-parchment-card px-6 pt-6"
             style={[sheetStyle, { paddingBottom: Math.max(insets.bottom, 10) }]}>
             {/* Header with Navigation */}
             <View className="mb-6 flex-row items-center justify-between">
               {canGoBack ? (
                 <Pressable
-                  onPress={goToPreviousScreen}
+                  onPress={() => {
+                    playUISound('buttonClick');
+                    haptics.selection();
+                    goToPreviousScreen();
+                  }}
                   className="p-1"
                   hitSlop={12}
                   accessibilityLabel="Back"
                   accessibilityRole="button">
-                  <ChevronLeft size={24} color="#1F2937" />
+                  <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#1F2937" />
                 </Pressable>
               ) : (
                 <View className="w-6" />
@@ -167,7 +183,7 @@ export function NavigableBottomSheet({
                   {currentScreen.title}
                 </Text>
                 {currentScreen.subtitle && (
-                  <Text className="mt-1 text-center font-caption text-[13px] leading-4 text-gray-500">
+                  <Text className="mt-1 text-center font-caption text-[13px] leading-4 text-ash">
                     {currentScreen.subtitle}
                   </Text>
                 )}
@@ -176,11 +192,15 @@ export function NavigableBottomSheet({
               {showCloseButton ? (
                 <Pressable
                   className="p-1"
-                  onPress={animateClose}
+                  onPress={() => {
+                    playUISound('buttonClick');
+                    haptics.selection();
+                    animateClose();
+                  }}
                   hitSlop={12}
                   accessibilityLabel="Close"
                   accessibilityRole="button">
-                  <X size={24} color="#757575" />
+                  <HugeiconsIcon icon={Cancel01Icon} size={24} color="#757575" />
                 </Pressable>
               ) : (
                 <View className="w-6" />

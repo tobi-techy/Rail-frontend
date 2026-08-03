@@ -66,9 +66,9 @@ export function useStation() {
       (queryClient.getQueryData(queryKeys.station.home()) as StationResponse | undefined) ??
       inMemoryStationCache ??
       undefined,
-    staleTime: 10 * 1000, // 10 seconds - aggressive cache for balance visibility
-    refetchInterval: 40 * 1000, // Refetch every 40 seconds (more frequent)
-    refetchOnMount: 'always',
+    staleTime: 5 * 60 * 1000, // 5 min — focus/reconnect refetch + mutation invalidation keep balances fresh
+    // No background interval (Redis cost). Refetches on app foreground/reconnect
+    // and whenever a transaction mutation invalidates the station.
     refetchOnWindowFocus: true, // Update when user brings app to foreground
     refetchOnReconnect: true, // Update when network connection restored
     retry: (failureCount, error: any) => {

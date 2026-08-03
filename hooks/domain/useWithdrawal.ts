@@ -18,10 +18,10 @@ export function useWithdrawal() {
     isLoading: store.isLoading,
     step: store.step,
     showConfirmModal: store.showConfirmModal,
-    
+
     // Computed
     isValid,
-    
+
     // Actions
     setAmount: store.setAmount,
     setRecipientAddress: store.setRecipientAddress,

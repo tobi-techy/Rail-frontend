@@ -1,0 +1,420 @@
+import type { StateCreator } from 'zustand';
+import { aiService } from '@/api/services/ai.service';
+import { presentCanvas } from '@/stores/miriamCanvasStore';
+import type { AIMessage, InsightCard, PendingAction, ToneMode } from '@/api/types/ai';
+import type { AIChatStore } from './types';
+
+// Derive contextually relevant follow-up suggestions from Miriam's last reply.
+// Runs client-side instantly — no extra network call.
+function deriveSmartSuggestions(reply: string, cards: InsightCard[]): string[] {
+  const lower = reply.toLowerCase();
+  const chips: string[] = [];
+
+  // Topic-based follow-ups from the reply text
+  if (
+    lower.includes('spend') ||
+    lower.includes('spent') ||
+    lower.includes('food') ||
+    lower.includes('uber')
+  ) {
+    chips.push('Break it down by category', 'Show recent transactions');
+  }
+  if (lower.includes('stash') || lower.includes('savings') || lower.includes('yield')) {
+    chips.push('Move money to stash', 'Show stash history');
+  }
+  if (lower.includes('budget')) {
+    chips.push('Update my budget', 'Show spending vs budget');
+  }
+  if (lower.includes('automat') || lower.includes('rule') || lower.includes('every week')) {
+    chips.push('Show my automations', 'Set up another rule');
+  }
+  if (lower.includes('obligation') || lower.includes('bill') || lower.includes('rent')) {
+    chips.push('Show all my bills', 'Mark one as paid');
+  }
+  if (lower.includes('goal')) {
+    chips.push('Update my savings goal', 'How long until I hit it?');
+  }
+  if (lower.includes('withdrawal') || lower.includes('withdraw')) {
+    chips.push('Show withdrawal history', 'Move more to spend');
+  }
+
+  // Card-type follow-ups
+  const cardTypes = new Set(cards.map((c) => c.type));
+  if (cardTypes.has('financial_audit')) chips.push('What should I fix first?');
+  if (cardTypes.has('runway')) chips.push('How do I extend my runway?');
+  if (cardTypes.has('subscription_audit')) chips.push('Which can I cancel?');
+
+  // Deduplicate and cap at 5
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const c of chips) {
+    const key = c.toLowerCase();
+    if (!seen.has(key) && result.length < 5) {
+      seen.add(key);
+      result.push(c);
+    }
+  }
+
+  // Always include a sensible fallback
+  if (result.length === 0) {
+    return ['How am I doing overall?', "What's my balance?", 'Show my spending breakdown'];
+  }
+  return result;
+}
+
+// Extract a celebration trigger from a set of cards, if present.
+function celebrationFromCards(
+  cards: InsightCard[]
+): { level: 'small' | 'big' | 'epic'; title: string; subtitle?: string; at: number } | null {
+  const card = cards.find((c) => c.type === 'celebration');
+  if (!card) return null;
+  const level = (card.data?.level as string) ?? 'big';
+  return {
+    level: level === 'small' || level === 'epic' ? level : 'big',
+    title: card.title || (card.data?.title as string) || 'Nice work!',
+    subtitle: card.subtitle || (card.data?.subtitle as string) || undefined,
+    at: Date.now(),
+  };
+}
+
+export const createStreamingSlice: StateCreator<
+  AIChatStore,
+  [],
+  [],
+  Pick<
+    AIChatStore,
+    | 'sendMessage'
+    | 'sendImage'
+    | 'stopStreaming'
+    | 'retryLastMessage'
+    | 'deleteMessage'
+    | 'retryFromMessage'
+    | 'processQueue'
+    | 'addReaction'
+    | 'clearCelebration'
+  >
+> = (set, get) => ({
+  clearCelebration: () => set({ celebration: null }),
+
+  addReaction: (messageIndex: number, emoji: string) => {
+    set((s) => {
+      if (messageIndex < 0 || messageIndex >= s.messages.length) return s;
+      const messages = [...s.messages];
+      const msg = { ...messages[messageIndex] };
+      const existing = (msg.metadata?.reactions ?? {}) as Record<string, boolean>;
+      const reactions = { ...existing, [emoji]: !existing[emoji] };
+      msg.metadata = { ...msg.metadata, reactions };
+      messages[messageIndex] = msg;
+      return { messages };
+    });
+  },
+  stopStreaming: () => {
+    const { streamAbortController } = get();
+    if (streamAbortController) {
+      streamAbortController.abort();
+      set({ streamAbortController: null, isStreaming: false, connectionStatus: 'online' });
+    }
+  },
+
+  retryLastMessage: () => {
+    const { messages, retryCount } = get();
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        const trimmedMessages = messages.slice(0, i + 1);
+        set({ messages: trimmedMessages, lastError: null, retryCount: retryCount + 1 });
+        void get().sendMessage(messages[i].content);
+        return;
+      }
+    }
+  },
+
+  deleteMessage: ({ id, index }) => {
+    const { messages, isStreaming } = get();
+    if (isStreaming) return;
+    const targetIndex =
+      typeof id === 'string'
+        ? messages.findIndex((m) => m.id === id)
+        : typeof index === 'number'
+          ? index
+          : -1;
+    if (targetIndex < 0 || targetIndex >= messages.length) return;
+    const next = messages.filter((_, i) => i !== targetIndex);
+    const removedWasLast = targetIndex === messages.length - 1;
+    set({ messages: next, ...(removedWasLast ? { cards: [], lastError: null } : {}) });
+  },
+
+  retryFromMessage: ({ id, index }) => {
+    const { messages, retryCount, isStreaming } = get();
+    if (isStreaming) return;
+    const targetIndex =
+      typeof id === 'string'
+        ? messages.findIndex((m) => m.id === id)
+        : typeof index === 'number'
+          ? index
+          : -1;
+    if (targetIndex < 0 || targetIndex >= messages.length) return;
+    let userIndex = targetIndex;
+    while (userIndex >= 0 && messages[userIndex].role !== 'user') userIndex -= 1;
+    if (userIndex < 0) return;
+    const userContent = messages[userIndex].content;
+    set({
+      messages: messages.slice(0, userIndex + 1),
+      cards: [],
+      lastError: null,
+      retryCount: retryCount + 1,
+    });
+    void get().sendMessage(userContent);
+  },
+
+  sendMessage: async (
+    message: string,
+    conversationId?: string,
+    options?: { toneMode?: ToneMode }
+  ) => {
+    const state = get();
+    const toneMode = options?.toneMode ?? state.tonePreference;
+
+    if (state.isStreaming) {
+      set({ messageQueue: [...state.messageQueue, { message, toneMode }] });
+      return;
+    }
+
+    const convId = conversationId ?? state.activeConversationId;
+    const userMsg: AIMessage = {
+      role: 'user',
+      content: message,
+      created_at: new Date().toISOString(),
+    };
+
+    set((s) => ({
+      messages: [...s.messages, userMsg],
+      isStreaming: true,
+      streamedContent: '',
+      cards: [],
+      pendingAction: null,
+      overCeiling: false,
+      lastError: null,
+      streamingPhase: '',
+      connectionStatus: 'streaming',
+    }));
+
+    let accumulated = '';
+    let finalCards: InsightCard[] = [];
+    let finalPending: PendingAction | null = null;
+    let hitCeiling = false;
+    let resolvedConvId = convId;
+    let receivedAnyEvent = false;
+
+    const controller = aiService.streamChat(
+      { message, tone_mode: toneMode, ...(convId ? { conversation_id: convId } : {}) },
+      (event) => {
+        receivedAnyEvent = true;
+        switch (event.type) {
+          case 'thinking':
+            // No phase text — the iMessage typing dots (TypingBubble) are the loader.
+            break;
+          case 'token':
+            accumulated += event.content;
+            set({ streamedContent: accumulated });
+            break;
+          case 'tool_result':
+            break;
+          case 'ui_directive':
+            // Render the card on the global Miriam Canvas — pops over the chat
+            // screen with the same fluid animation as voice.
+            presentCanvas(event.data);
+            break;
+          case 'cards': {
+            finalCards = event.data;
+            const celebration = celebrationFromCards(event.data);
+            set({ cards: event.data, ...(celebration ? { celebration } : {}) });
+            break;
+          }
+          case 'action_chips':
+            set({ actionChips: event.data });
+            break;
+          case 'pending_action':
+            finalPending = event.data;
+            set({ pendingAction: event.data });
+            break;
+          case 'done':
+            if (event.data?.conversation_id) resolvedConvId = event.data.conversation_id;
+            if (event.data?.over_ceiling) hitCeiling = true;
+            break;
+          case 'error':
+            accumulated += accumulated ? '' : (event.content ?? 'Something went wrong');
+            break;
+        }
+      },
+      () => {
+        const content =
+          accumulated ||
+          (receivedAnyEvent ? '' : "I'm having a moment — try again in a few seconds");
+        const assistantMsg: AIMessage = {
+          role: 'assistant',
+          content,
+          metadata: { cards: finalCards },
+          created_at: new Date().toISOString(),
+        };
+        set((s) => ({
+          messages: content ? [...s.messages, assistantMsg] : s.messages,
+          cards: finalCards,
+          pendingAction: finalPending,
+          isStreaming: false,
+          streamedContent: '',
+          streamingPhase: '',
+          overCeiling: hitCeiling,
+          activeConversationId: resolvedConvId ?? s.activeConversationId,
+          connectionStatus: 'online',
+          streamAbortController: null,
+          lastError: null,
+          suggestions: content ? deriveSmartSuggestions(content, finalCards) : s.suggestions,
+        }));
+        void get().processQueue();
+      },
+      (err) => {
+        if (accumulated || receivedAnyEvent) {
+          const assistantMsg: AIMessage = {
+            role: 'assistant',
+            content: accumulated,
+            metadata: { cards: finalCards },
+            created_at: new Date().toISOString(),
+          };
+          set((s) => ({
+            messages: accumulated ? [...s.messages, assistantMsg] : s.messages,
+            cards: finalCards,
+            pendingAction: finalPending,
+            isStreaming: false,
+            streamedContent: '',
+            streamingPhase: '',
+            overCeiling: hitCeiling,
+            activeConversationId: resolvedConvId ?? s.activeConversationId,
+            connectionStatus: 'online',
+            streamAbortController: null,
+            lastError: null,
+          }));
+          void get().processQueue();
+          return;
+        }
+        const is404 = err?.includes('404') || err?.includes('Not Found');
+        const errorMsg: AIMessage = {
+          role: 'assistant',
+          content: is404
+            ? 'Miriam is not available right now — the AI service is being set up on the backend.'
+            : "I'm having a moment — try again in a few seconds",
+          created_at: new Date().toISOString(),
+        };
+        set((s) => ({
+          messages: [...s.messages, errorMsg],
+          isStreaming: false,
+          streamedContent: '',
+          streamingPhase: '',
+          lastError: err,
+          connectionStatus: 'online',
+          streamAbortController: null,
+        }));
+        void get().processQueue();
+      }
+    );
+
+    set({ streamAbortController: controller });
+  },
+
+  sendImage: async (base64Image: string, message?: string, conversationId?: string) => {
+    const state = get();
+    if (state.isStreaming) {
+      set({
+        messageQueue: [
+          ...state.messageQueue,
+          { message: message ?? 'Image analysis', image: base64Image },
+        ],
+      });
+      return;
+    }
+
+    const userContent = message || 'Analyze this receipt';
+
+    // Show the user's receipt bubble immediately — don't wait on the network.
+    const userMsg: AIMessage = {
+      role: 'user',
+      content: userContent,
+      image_url: `data:image/jpeg;base64,${base64Image}`,
+      created_at: new Date().toISOString(),
+    };
+
+    set((s) => ({
+      messages: [...s.messages, userMsg],
+      isStreaming: true,
+      cards: [],
+      pendingAction: null,
+      connectionStatus: 'streaming',
+    }));
+
+    // Then ensure a conversation exists so the receipt exchange is persisted and
+    // follow-ups stay in the same thread. This runs after the bubble is on screen.
+    let convId = conversationId ?? state.activeConversationId;
+    if (!convId) {
+      try {
+        convId = await get().createConversation(userContent.slice(0, 50));
+      } catch {
+        /* proceed without — image still analyzed */
+      }
+    }
+
+    try {
+      const res = await aiService.analyzeImage(base64Image, message, convId ?? undefined);
+      const response = res.data;
+      const assistantMsg: AIMessage = {
+        role: 'assistant',
+        content: response.content,
+        metadata: { cards: response.cards ?? [], tool_calls: response.tool_calls ?? [] },
+        created_at: new Date().toISOString(),
+      };
+      // Extract receipt-specific follow-up suggestions from the response
+      const receiptSuggestions: string[] = (response as any).suggestions
+        ? (response as any).suggestions.map((s: any) => s.prompt ?? s.label)
+        : [];
+      const imgCelebration = celebrationFromCards(response.cards ?? []);
+      set((s) => ({
+        messages: [...s.messages, assistantMsg],
+        cards: response.cards ?? [],
+        pendingAction: response.pending_action ?? null,
+        isStreaming: false,
+        connectionStatus: 'online',
+        activeConversationId: convId ?? s.activeConversationId,
+        lastError: null,
+        ...(receiptSuggestions.length > 0 ? { suggestions: receiptSuggestions } : {}),
+        ...(imgCelebration ? { celebration: imgCelebration } : {}),
+      }));
+      if (convId) void get().fetchConversations();
+      void get().processQueue();
+    } catch (err: any) {
+      const errorMsg: AIMessage = {
+        role: 'assistant',
+        content: err?.message?.includes('network')
+          ? 'Network issue — check your connection and try again'
+          : "I couldn't analyze that image. Try again or describe it in text.",
+        created_at: new Date().toISOString(),
+      };
+      set((s) => ({
+        messages: [...s.messages, errorMsg],
+        isStreaming: false,
+        connectionStatus: navigator?.onLine === false ? 'offline' : 'online',
+        lastError: err?.message ?? 'Image analysis failed',
+      }));
+      void get().processQueue();
+    }
+  },
+
+  processQueue: async () => {
+    const { messageQueue, isStreaming } = get();
+    if (isStreaming || messageQueue.length === 0) return;
+    const [next, ...rest] = messageQueue;
+    set({ messageQueue: rest });
+    if (next.image) {
+      await get().sendImage(next.image, next.message);
+    } else {
+      await get().sendMessage(next.message, undefined, { toneMode: next.toneMode });
+    }
+  },
+});

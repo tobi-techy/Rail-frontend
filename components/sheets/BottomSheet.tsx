@@ -11,13 +11,17 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withTiming,
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
-import { X } from 'lucide-react-native';
 import { layout, responsive } from '@/utils/layout';
+import { useHaptics } from '@/hooks/useHaptics';
+import * as Haptics from '@/utils/platformHaptics';
+import { Cancel01Icon } from '@/lib/icons';
+import { playUISound } from '@/lib/uiSounds';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
 const KB_SPRING = { damping: 22, stiffness: 280, mass: 0.8 };
@@ -41,6 +45,7 @@ export function BottomSheet({
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(screenHeight);
   const keyboardOffset = useSharedValue(0);
+  const backdropOpacity = useSharedValue(0);
   const sheetBottomBase = layout.isSeekerDevice
     ? 14
     : responsive({ default: 24, tall: 20, android: 18 });
@@ -57,17 +62,23 @@ export function BottomSheet({
     ? 20
     : responsive({ default: 24, tall: 22, android: 20 });
 
+  const { impact } = useHaptics();
+
   const animateClose = useCallback(() => {
+    playUISound('buttonClick');
+    impact(Haptics.ImpactFeedbackStyle.Light);
+    backdropOpacity.value = withTiming(0, { duration: 200 });
     translateY.value = withSpring(screenHeight, SPRING_CONFIG, () => {
       runOnJS(onClose)();
     });
-  }, [onClose, screenHeight, translateY]);
+  }, [impact, onClose, screenHeight, translateY, backdropOpacity]);
 
   useEffect(() => {
     if (visible) {
+      backdropOpacity.value = withTiming(1, { duration: 220 });
       translateY.value = withSpring(0, SPRING_CONFIG);
     }
-  }, [visible, translateY]);
+  }, [visible, translateY, backdropOpacity]);
 
   // Track keyboard to lift the sheet
   useEffect(() => {
@@ -108,26 +119,30 @@ export function BottomSheet({
     bottom: sheetBottomBase + keyboardOffset.value,
   }));
 
+  const backdropAnimStyle = useAnimatedStyle(() => ({
+    backgroundColor: `rgba(0,0,0,${backdropOpacity.value * 0.45})`,
+  }));
+
   if (!visible) return null;
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="none"
       statusBarTranslucent
       onRequestClose={dismissible ? animateClose : undefined}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill}>
+        <Animated.View style={[StyleSheet.absoluteFill, backdropAnimStyle]}>
           <Pressable
             style={StyleSheet.absoluteFill}
             onPress={dismissible ? animateClose : undefined}
           />
-        </BlurView>
+        </Animated.View>
 
         <GestureDetector gesture={pan}>
           <Animated.View
-            className="absolute bg-white"
+            className="absolute bg-warm-canvas"
             style={[
               sheetStyle,
               {
@@ -146,7 +161,7 @@ export function BottomSheet({
                 hitSlop={12}
                 accessibilityLabel="Close"
                 accessibilityRole="button">
-                <X size={24} color="#757575" />
+                <HugeiconsIcon icon={Cancel01Icon} size={24} color="#848281" />
               </Pressable>
             )}
             {children}

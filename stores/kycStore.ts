@@ -19,6 +19,11 @@ const DEFAULT_DISCLOSURES: KycDisclosures = {
   immediate_family_exposed: false,
 };
 
+// Steps in the KYC flow, tracked for resume/skip
+export const KYC_STEPS = ['identity', 'financial'] as const;
+
+export type KycStep = (typeof KYC_STEPS)[number];
+
 interface KycState {
   country: Country;
   taxIdType: TaxIdType;
@@ -40,6 +45,9 @@ interface KycState {
   diditSessionId: string | null;
   localSubmissionPendingAt: string | null;
 
+  // Persisted flow tracking — non-sensitive, survives app kills
+  completedSteps: KycStep[];
+
   setCountry: (country: Country) => void;
   setTaxIdType: (taxIdType: TaxIdType) => void;
   setTaxId: (taxId: string) => void;
@@ -51,17 +59,20 @@ interface KycState {
   setMostRecentOccupation: (value: string | null) => void;
   setActingAsIntermediary: (value: boolean) => void;
   toggleInvestmentPurpose: (value: InvestmentPurpose) => void;
+  clearInvestmentPurposes: () => void;
   setDisclosure: (key: keyof KycDisclosures, value: boolean) => void;
   setDisclosuresConfirmed: (confirmed: boolean) => void;
   setMissingProfileFields: (fields: string[]) => void;
   setDiditSession: (sessionToken: string, sessionId: string) => void;
   setLocalSubmissionPendingAt: (submittedAt: string | null) => void;
+  addCompletedStep: (step: KycStep) => void;
+  hasCompletedStep: (step: KycStep) => boolean;
   resetKycState: () => void;
 }
 
 export const useKycStore = create<KycState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       country: 'USA',
       taxIdType: COUNTRY_TAX_CONFIG['USA'].type,
       taxId: '',
@@ -79,6 +90,7 @@ export const useKycStore = create<KycState>()(
       diditSessionToken: null,
       diditSessionId: null,
       localSubmissionPendingAt: null,
+      completedSteps: [],
 
       setCountry: (country) =>
         set({
@@ -95,6 +107,7 @@ export const useKycStore = create<KycState>()(
           investmentPurposes: [],
           disclosures: DEFAULT_DISCLOSURES,
           disclosuresConfirmed: false,
+          completedSteps: [],
         }),
 
       setTaxIdType: (taxIdType) => set({ taxIdType }),
@@ -116,6 +129,8 @@ export const useKycStore = create<KycState>()(
           return { investmentPurposes: [...state.investmentPurposes, value] };
         }),
 
+      clearInvestmentPurposes: () => set({ investmentPurposes: [] }),
+
       setDisclosure: (key, value) =>
         set((state) => ({ disclosures: { ...state.disclosures, [key]: value } })),
 
@@ -124,6 +139,14 @@ export const useKycStore = create<KycState>()(
       setDiditSession: (diditSessionToken, diditSessionId) =>
         set({ diditSessionToken, diditSessionId }),
       setLocalSubmissionPendingAt: (localSubmissionPendingAt) => set({ localSubmissionPendingAt }),
+
+      addCompletedStep: (step) =>
+        set((state) => {
+          if (state.completedSteps.includes(step)) return state;
+          return { completedSteps: [...state.completedSteps, step] };
+        }),
+
+      hasCompletedStep: (step) => get().completedSteps.includes(step),
 
       resetKycState: () =>
         set({
@@ -144,6 +167,7 @@ export const useKycStore = create<KycState>()(
           diditSessionToken: null,
           diditSessionId: null,
           localSubmissionPendingAt: null,
+          completedSteps: [],
         }),
     }),
     {

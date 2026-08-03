@@ -1,46 +1,217 @@
+import { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
-import { useState, useMemo } from 'react';
-import Avatar from '@zamplyy/react-native-nice-avatar';
-import { getAvatarConfig } from '@/utils/avatarConfig';
-
+import { router, useLocalSearchParams } from 'expo-router';
+import { CountryPicker } from '@/components';
 import { Input, Button } from '@/components/ui';
+import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
 import { useAuthStore } from '@/stores/authStore';
+import { useKycStore } from '@/stores/kycStore';
 import { useUpdateProfile } from '@/api/hooks/useUser';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
+import { profileEditSchema, fieldError } from '@/utils/schemas';
+import { ArrowLeft01Icon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import { ImpactFeedbackStyle } from '@/utils/platformHaptics';
+
+const COUNTRY_NAMES: Record<string, string> = {
+  US: 'United States',
+  GB: 'United Kingdom',
+  CA: 'Canada',
+  AU: 'Australia',
+  DE: 'Germany',
+  FR: 'France',
+  IT: 'Italy',
+  ES: 'Spain',
+  NL: 'Netherlands',
+  SE: 'Sweden',
+  IN: 'India',
+  SG: 'Singapore',
+  BR: 'Brazil',
+  MX: 'Mexico',
+  ZA: 'South Africa',
+  NG: 'Nigeria',
+  KE: 'Kenya',
+  AE: 'United Arab Emirates',
+};
+
+const REQUIRED_KYC_FIELDS = [
+  'first_name',
+  'last_name',
+  'date_of_birth',
+  'address_street',
+  'address_city',
+  'address_postal_code',
+  'address_country',
+] as const;
+
+const toDateOnly = (value?: string | null) => {
+  if (!value) return '';
+  return value.includes('T') ? value.slice(0, 10) : value;
+};
+
+const normalizeOptional = (value: string) => {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
 
 export default function ProfileEdit() {
   const insets = useSafeAreaInsets();
+  const { impact } = useHaptics();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { showError, showSuccess } = useFeedbackPopup();
 
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
+  const missingProfileFields = useKycStore((s) => s.missingProfileFields);
+  const setMissingProfileFields = useKycStore((s) => s.setMissingProfileFields);
   const { mutateAsync: updateProfile, isPending } = useUpdateProfile();
 
-  const [firstName, setFirstName] = useState(user?.firstName ?? '');
-  const [lastName, setLastName] = useState(user?.lastName ?? '');
+  const initialValues = useMemo(
+    () => ({
+      firstName: user?.firstName ?? '',
+      lastName: user?.lastName ?? '',
+      phone: user?.phone ?? user?.phoneNumber ?? '',
+      dateOfBirth: toDateOnly(user?.dateOfBirth),
+      countryCode: user?.country ?? '',
+      countryName: user?.country ? (COUNTRY_NAMES[user.country] ?? user.country) : '',
+      street: user?.addressStreet ?? '',
+      city: user?.addressCity ?? '',
+      state: user?.addressState ?? '',
+      postalCode: user?.addressPostalCode ?? '',
+      addressCountry: user?.addressCountry ?? user?.country ?? '',
+    }),
+    [
+      user?.addressCity,
+      user?.addressCountry,
+      user?.addressPostalCode,
+      user?.addressState,
+      user?.addressStreet,
+      user?.country,
+      user?.dateOfBirth,
+      user?.firstName,
+      user?.lastName,
+      user?.phone,
+      user?.phoneNumber,
+    ]
+  );
+
+  const [firstName, setFirstName] = useState(initialValues.firstName);
+  const [lastName, setLastName] = useState(initialValues.lastName);
+  const [phone, setPhone] = useState(initialValues.phone);
+  const [dateOfBirth, setDateOfBirth] = useState(initialValues.dateOfBirth);
+  const [countryCode, setCountryCode] = useState(initialValues.countryCode);
+  const [countryName, setCountryName] = useState(initialValues.countryName);
+  const [street, setStreet] = useState(initialValues.street);
+  const [city, setCity] = useState(initialValues.city);
+  const [state, setState] = useState(initialValues.state);
+  const [postalCode, setPostalCode] = useState(initialValues.postalCode);
+
+  const isReturningToKyc = returnTo === '/kyc';
+  const requiredFields = useMemo(
+    () => new Set(isReturningToKyc ? REQUIRED_KYC_FIELDS : missingProfileFields),
+    [isReturningToKyc, missingProfileFields]
+  );
 
   const avatarName = useMemo(
     () => [firstName, lastName].filter(Boolean).join(' ') || user?.email || 'Rail User',
     [firstName, lastName, user?.email]
   );
 
-  const avatarConfig = useMemo(() => getAvatarConfig(avatarName), [avatarName]);
+  const isDirty = useMemo(
+    () =>
+      firstName !== initialValues.firstName ||
+      lastName !== initialValues.lastName ||
+      phone !== initialValues.phone ||
+      dateOfBirth !== initialValues.dateOfBirth ||
+      countryCode !== initialValues.countryCode ||
+      street !== initialValues.street ||
+      city !== initialValues.city ||
+      state !== initialValues.state ||
+      postalCode !== initialValues.postalCode,
+    [
+      city,
+      countryCode,
+      dateOfBirth,
+      firstName,
+      initialValues,
+      lastName,
+      phone,
+      postalCode,
+      state,
+      street,
+    ]
+  );
 
-  const isDirty =
-    firstName.trim() !== (user?.firstName ?? '') || lastName.trim() !== (user?.lastName ?? '');
+  // Fields that cannot be edited once set
+  const isEmailLocked = Boolean(user?.email);
+  const isNameLocked = Boolean(user?.firstName?.trim() && user?.lastName?.trim());
+  const isDobLocked = Boolean(user?.dateOfBirth);
+
+  const validateForm = () => {
+    const result = profileEditSchema.safeParse({
+      firstName,
+      lastName,
+      phone,
+      dateOfBirth,
+      street,
+      city,
+      state,
+      postalCode,
+      country: countryCode,
+    });
+
+    if (!result.success) {
+      const first = result.error.issues[0];
+      showError('Validation Error', first?.message ?? 'Please check your input.');
+      return false;
+    }
+    return true;
+  };
 
   const handleSave = async () => {
     if (!isDirty || isPending) return;
+    if (!validateForm()) return;
+
     try {
       const updated = await updateProfile({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        ...(isNameLocked
+          ? {}
+          : {
+              firstName: normalizeOptional(firstName),
+              lastName: normalizeOptional(lastName),
+            }),
+        phone: normalizeOptional(phone),
+        ...(isDobLocked ? {} : { dateOfBirth: normalizeOptional(dateOfBirth) }),
+        country: normalizeOptional(countryCode),
+        addressStreet: normalizeOptional(street),
+        addressCity: normalizeOptional(city),
+        addressState: normalizeOptional(state),
+        addressPostalCode: normalizeOptional(postalCode),
+        addressCountry: normalizeOptional(countryCode),
       });
-      updateUser({ firstName: updated.firstName, lastName: updated.lastName });
-      showSuccess('Profile updated', 'Your name has been saved.');
+
+      updateUser({
+        ...updated,
+        fullName:
+          [updated.firstName ?? firstName.trim(), updated.lastName ?? lastName.trim()]
+            .filter(Boolean)
+            .join(' ')
+            .trim() || undefined,
+        phone: updated.phone ?? normalizeOptional(phone),
+        phoneNumber: updated.phone ?? normalizeOptional(phone),
+      });
+
+      if (isReturningToKyc) {
+        setMissingProfileFields([]);
+        showSuccess('Profile updated', 'Your profile is ready for verification.');
+        router.replace('/kyc');
+        return;
+      }
+
+      showSuccess('Profile updated', 'Your details have been saved.');
       router.back();
     } catch (e: any) {
       showError('Update failed', e?.message ?? 'Please try again.');
@@ -49,15 +220,18 @@ export default function ProfileEdit() {
 
   return (
     <View className="flex-1 bg-background-main" style={{ paddingTop: insets.top }}>
-      {/* Header */}
       <View className="flex-row items-center justify-between px-md py-3">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            router.back();
+          }}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           className="h-9 w-9 items-center justify-center rounded-full bg-surface">
-          <ChevronLeft size={20} color="#121212" strokeWidth={2} />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#121212" strokeWidth={2} />
         </Pressable>
-        <Text className="font-subtitle text-body text-text-primary">Edit Profile</Text>
+        <Text className="font-subtitle text-body text-text-primary" maxFontSizeMultiplier={1.3}>
+          {isReturningToKyc ? 'Complete Profile' : 'Edit Profile'}
+        </Text>
         <View className="w-9" />
       </View>
 
@@ -65,19 +239,30 @@ export default function ProfileEdit() {
         className="flex-1"
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
         keyboardShouldPersistTaps="handled">
-        {/* Avatar section */}
         <View className="items-center py-8">
-          <Avatar size={88} {...avatarConfig} />
-          <Text className="mt-4 font-subtitle text-[20px] text-text-primary">
+          <DiceBearAvatar seed={avatarName} size={88} />
+          <Text
+            className="mt-4 font-subtitle text-[20px] text-text-primary"
+            maxFontSizeMultiplier={1.3}>
             {[firstName, lastName].filter(Boolean).join(' ') || 'Rail User'}
           </Text>
-          <Text className="mt-1 font-caption text-caption text-text-secondary">{user?.email}</Text>
+          <Text
+            className="mt-1 font-caption text-caption text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
+            {user?.email}
+          </Text>
         </View>
 
-        {/* Divider */}
-        <View className="mx-md mb-6 h-px bg-surface" />
+        <View className="mx-md mb-2 h-px bg-surface" />
 
-        {/* Fields */}
+        {(isNameLocked || isDobLocked) && (
+          <Text
+            className="mx-md mb-4 font-body text-[12px] leading-5 text-text-secondary"
+            maxFontSizeMultiplier={1.4}>
+            Name, date of birth, and email cannot be changed as they must match your verified ID.
+          </Text>
+        )}
+
         <View className="gap-4 px-md">
           <Input
             label="First Name"
@@ -86,6 +271,8 @@ export default function ProfileEdit() {
             placeholder="Enter first name"
             autoCapitalize="words"
             returnKeyType="next"
+            editable={!isNameLocked}
+            style={isNameLocked ? { opacity: 0.5 } : undefined}
           />
           <Input
             label="Last Name"
@@ -93,20 +280,87 @@ export default function ProfileEdit() {
             onChangeText={setLastName}
             placeholder="Enter last name"
             autoCapitalize="words"
+            returnKeyType="next"
+            editable={!isNameLocked}
+            style={isNameLocked ? { opacity: 0.5 } : undefined}
+          />
+          <Input
+            label="Phone Number"
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="+2348012345678"
+            keyboardType="phone-pad"
+            autoCapitalize="none"
+            returnKeyType="next"
+          />
+          <Input
+            label="Date of Birth"
+            value={dateOfBirth}
+            onChangeText={setDateOfBirth}
+            placeholder="YYYY-MM-DD"
+            autoCapitalize="none"
+            returnKeyType="next"
+            editable={!isDobLocked}
+            style={isDobLocked ? { opacity: 0.5 } : undefined}
+          />
+
+          <CountryPicker
+            label="Country"
+            value={countryName}
+            onSelect={(country) => {
+              setCountryCode(country.code);
+              setCountryName(country.name);
+            }}
+          />
+
+          <Input
+            label="Street Address"
+            value={street}
+            onChangeText={setStreet}
+            placeholder="123 Main St"
+            autoCapitalize="words"
+            returnKeyType="next"
+          />
+          <Input
+            label="City"
+            value={city}
+            onChangeText={setCity}
+            placeholder="City"
+            autoCapitalize="words"
+            returnKeyType="next"
+          />
+          <Input
+            label="State / Province"
+            value={state}
+            onChangeText={setState}
+            placeholder="State or province"
+            autoCapitalize="words"
+            returnKeyType="next"
+          />
+          <Input
+            label="Postal Code"
+            value={postalCode}
+            onChangeText={setPostalCode}
+            placeholder="Postal code"
+            autoCapitalize="characters"
             returnKeyType="done"
             onSubmitEditing={handleSave}
           />
 
-          {/* Email — read only */}
           <View>
-            <Text className="mb-1.5 font-caption text-caption text-text-secondary">Email</Text>
-            <View className="rounded-xl border border-surface bg-surface px-4 py-4">
-              <Text className="font-body text-body text-text-secondary">{user?.email}</Text>
+            <Text
+              className="mb-1.5 font-caption text-caption text-text-secondary"
+              maxFontSizeMultiplier={1.4}>
+              Email {isEmailLocked && '(locked)'}
+            </Text>
+            <View className="rounded-lg border border-surface bg-surface px-4 py-4">
+              <Text className="font-body text-body text-text-secondary" maxFontSizeMultiplier={1.4}>
+                {user?.email}
+              </Text>
             </View>
           </View>
         </View>
 
-        {/* Save */}
         <View className="mt-8 px-md">
           <Button
             title={isPending ? '' : 'Save Changes'}

@@ -21,8 +21,14 @@ const ERROR_MESSAGES: Record<string, string> = {
   PAYMASTER_SOL_ATA_CREATION_NOT_ALLOWED:
     'This Solana wallet needs to receive USDC at least once before you can send to it. Ask the recipient to set up their USDC wallet first.',
   LIMIT_EXCEEDED: 'Withdrawal limit exceeded. Please try a smaller amount.',
+  COMMITMENT_EXCEEDED:
+    'This would put you over your daily spending limit. Adjust it in Settings or try again after it resets.',
   TRANSFER_FAILED: 'Transfer failed. Please try again.',
   WITHDRAWAL_ERROR: 'Withdrawal could not be processed. Please try again.',
+  FUND_STASH_ERROR: 'Could not move funds to stash. Please try again.',
+  NO_LOCKED_CYCLES:
+    'Your stash has no locked funds to withdraw. Funds need to be deposited through auto-allocation first.',
+  PREVIEW_ERROR: 'Could not calculate withdrawal fee. A default fee will apply.',
   NO_WALLET: 'No wallet found for your account. Please contact support.',
   PROVIDER_NOT_CONFIGURED: 'Withdrawal service is temporarily unavailable.',
   BANK_ACCOUNT_ERROR: 'There was an issue with your bank account details.',
@@ -55,6 +61,11 @@ export function parseApiError(
   // TransformedApiError (from api/client.ts transformError)
   const e = err as Partial<TransformedApiError>;
   if (e.code && e.message) {
+    // For INVALID_REQUEST, prefer the server's specific message (e.g. "amount must be at least...")
+    // over the generic mapped text, since the backend provides actionable detail.
+    if (e.code === 'INVALID_REQUEST' && e.message !== e.code) {
+      return e.message;
+    }
     // Prefer mapped user-friendly message, fall back to server message
     return ERROR_MESSAGES[e.code] ?? e.message;
   }
@@ -73,9 +84,5 @@ export function parseApiError(
  */
 export function isPasscodeSessionError(err: unknown): boolean {
   const e = err as Partial<TransformedApiError>;
-  return (
-    e.code === 'PASSCODE_SESSION_REQUIRED' ||
-    e.code === 'PASSCODE_SESSION_INVALID' ||
-    e.status === 403
-  );
+  return e.code === 'PASSCODE_SESSION_REQUIRED' || e.code === 'PASSCODE_SESSION_INVALID';
 }

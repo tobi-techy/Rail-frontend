@@ -1,37 +1,41 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { Building2, Zap, ShieldCheck } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { BottomSheet } from './BottomSheet';
+import { GorhomBottomSheet } from './GorhomBottomSheet';
 import { Button } from '@/components/ui';
 import { useCreateVirtualAccount } from '@/api/hooks/useVirtualAccount';
 import { virtualAccountService } from '@/api/services/virtualAccount.service';
 import { BankIcon } from '@/assets/svg/filled';
-import { UsdIcon } from '@/assets/svg';
+import CountryFlag from 'react-native-country-flag';
+import { Building04Icon, ShieldKeyIcon, ZapIcon } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 
 interface VirtualAccountIntroSheetProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  currency?: 'USD' | 'EUR' | 'GBP' | 'NGN';
 }
 
 const FEATURES = [
   {
-    icon: <Building2 size={20} color="#3B82F6" />,
+    icon: <HugeiconsIcon icon={Building04Icon} size={20} color="#0090ff" />,
     bg: '#EFF6FF',
     title: 'Your own bank account',
     desc: 'A dedicated USD account in your name, ready for ACH and wire transfers.',
   },
   {
-    icon: <Zap size={20} color="#F59E0B" />,
+    icon: <HugeiconsIcon icon={ZapIcon} size={20} color="#F59E0B" />,
     bg: '#FFFBEB',
     title: 'Instant conversion',
     desc: 'Deposits auto-convert to USDC and split 70/30 into spend and invest.',
   },
   {
-    icon: <ShieldCheck size={20} color="#10B981" />,
-    bg: '#ECFDF5',
+    icon: <HugeiconsIcon icon={ShieldKeyIcon} size={20} color="#00ca48" />,
+    bg: '#f0fdf4',
     title: 'Secured by Bridge',
     desc: 'Bank-grade infrastructure with FDIC-eligible custody partners.',
   },
@@ -41,7 +45,9 @@ export function VirtualAccountIntroSheet({
   visible,
   onClose,
   onSuccess,
+  currency = 'USD',
 }: VirtualAccountIntroSheetProps) {
+  const haptics = useHaptics();
   const [awaitingTos, setAwaitingTos] = useState(false);
   const { mutate: create, isPending, error, reset } = useCreateVirtualAccount();
 
@@ -54,7 +60,7 @@ export function VirtualAccountIntroSheet({
   };
 
   const handleCreate = () => {
-    create('USD', {
+    create(currency, {
       onSuccess,
       onError: async (err) => {
         if (isTosError(err)) {
@@ -66,7 +72,7 @@ export function VirtualAccountIntroSheet({
             await WebBrowser.openAuthSessionAsync(url);
             setAwaitingTos(false);
             reset();
-            create('USD', { onSuccess });
+            create(currency, { onSuccess });
           } catch {
             setAwaitingTos(false);
           }
@@ -78,24 +84,24 @@ export function VirtualAccountIntroSheet({
   const loading = isPending || awaitingTos;
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
+    <GorhomBottomSheet visible={visible} onClose={onClose}>
       {/* Header icons */}
       <View className="mb-5 mt-2 items-center">
         <View className="flex-row items-center">
-          <View className="z-10 h-14 w-14 items-center justify-center rounded-full bg-gray-900">
+          <View className="z-10 h-14 w-14 items-center justify-center rounded-full bg-midnight">
             <BankIcon width={26} height={26} color="#fff" />
           </View>
-          <View className="-ml-3 h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-gray-100 bg-white">
-            <UsdIcon width={56} height={56} />
+          <View className="-ml-3 h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-stone-surface bg-warm-canvas">
+            <CountryFlag isoCode="US" size={40} />
           </View>
         </View>
       </View>
 
       {/* Title */}
-      <Text className="mb-2 text-center font-subtitle text-[22px] leading-7 text-gray-900">
-        Get a virtual USD account
+      <Text className="mb-2 text-center font-subtitle text-[22px] leading-7 text-charcoal-primary">
+        Get a virtual {currency} account
       </Text>
-      <Text className="mb-8 text-center font-body text-[15px] leading-[22px] text-gray-400">
+      <Text className="mb-8 text-center font-body text-[15px] leading-[22px] text-smoke">
         Receive bank transfers directly into Rail.{'\n'}Your money starts working immediately.
       </Text>
 
@@ -113,8 +119,8 @@ export function VirtualAccountIntroSheet({
               {f.icon}
             </View>
             <View className="flex-1">
-              <Text className="font-subtitle text-[15px] text-gray-900">{f.title}</Text>
-              <Text className="mt-0.5 font-body text-[13px] leading-[19px] text-gray-400">
+              <Text className="font-subtitle text-[15px] text-charcoal-primary">{f.title}</Text>
+              <Text className="mt-0.5 font-body text-[13px] leading-[19px] text-smoke">
                 {f.desc}
               </Text>
             </View>
@@ -124,15 +130,15 @@ export function VirtualAccountIntroSheet({
 
       {/* Error */}
       {error && !isTosError(error) && (
-        <View className="mb-4 rounded-2xl bg-red-50 px-4 py-3">
-          <Text className="font-body text-[13px] text-red-600">
+        <View className="mb-4 rounded-2xl bg-coral-red/10 px-4 py-3">
+          <Text className="font-body text-[13px] text-coral-red">
             {(error as any)?.message ?? 'Something went wrong. Please try again.'}
           </Text>
         </View>
       )}
 
       {awaitingTos && (
-        <View className="mb-4 rounded-2xl bg-amber-50 px-4 py-3">
+        <View className="mb-4 rounded-2xl bg-sunburst-yellow/10 px-4 py-3">
           <Text className="font-body text-[13px] text-amber-700">
             Accept the Terms of Service in your browser, then return here.
           </Text>
@@ -140,22 +146,28 @@ export function VirtualAccountIntroSheet({
       )}
 
       {/* Disclaimer */}
-      <Text className="mb-4 text-center font-body text-[12px] text-gray-300">
+      <Text className="mb-4 text-center font-body text-[12px] text-smoke">
         *Available to US residents. Not available in NY and AK.
       </Text>
 
       {/* CTA */}
       <Button
-        title={loading ? 'Setting up…' : 'Create USD Account'}
+        title={loading ? 'Setting up…' : `Create ${currency} Account`}
         onPress={handleCreate}
         disabled={loading}
         variant="black"
       />
 
       {/* Cancel */}
-      <TouchableOpacity onPress={onClose} className="mt-3 items-center py-2">
-        <Text className="font-body text-[15px] text-gray-400">Cancel</Text>
+      <TouchableOpacity
+        onPress={() => {
+          haptics.selection();
+          playUISound('dismiss');
+          onClose();
+        }}
+        className="mt-3 items-center py-2">
+        <Text className="font-body text-[15px] text-smoke">Cancel</Text>
       </TouchableOpacity>
-    </BottomSheet>
+    </GorhomBottomSheet>
   );
 }

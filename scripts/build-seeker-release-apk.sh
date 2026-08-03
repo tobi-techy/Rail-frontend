@@ -25,6 +25,17 @@ echo "==> Building release APK for Seeker/dApp Store"
 
 cd "$ANDROID_DIR"
 
+export EXPO_PUBLIC_ENV="${EXPO_PUBLIC_ENV:-staging}"
+export EXPO_PUBLIC_API_URL="${EXPO_PUBLIC_API_URL:-https://api-staging.userail.money/api}"
+export EXPO_PUBLIC_SOLANA_RPC_URL="${EXPO_PUBLIC_SOLANA_RPC_URL:-https://api.devnet.solana.com}"
+export EXPO_PUBLIC_SOLANA_USDC_MINT="${EXPO_PUBLIC_SOLANA_USDC_MINT:-4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU}"
+
+echo "==> Build environment:"
+echo "    EXPO_PUBLIC_ENV=$EXPO_PUBLIC_ENV"
+echo "    EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL"
+echo "    EXPO_PUBLIC_SOLANA_RPC_URL=$EXPO_PUBLIC_SOLANA_RPC_URL"
+echo "    EXPO_PUBLIC_SOLANA_USDC_MINT=$EXPO_PUBLIC_SOLANA_USDC_MINT"
+
 GRADLE_PROPS=()
 if [[ -n "${RAIL_UPLOAD_STORE_FILE:-}" && -n "${RAIL_UPLOAD_STORE_PASSWORD:-}" && -n "${RAIL_UPLOAD_KEY_ALIAS:-}" && -n "${RAIL_UPLOAD_KEY_PASSWORD:-}" ]]; then
   echo "==> Using signing values from environment variables"
@@ -65,7 +76,6 @@ Next when ready:
 1) Publish UI: https://publish.solanamobile.com
 2) Or CLI:
    npm install --global @solana-mobile/dapp-store-cli
-   dapp-store --version
-   dapp-store login
-   dapp-store publish submit-version --version-manifest <path-to-version-manifest>
+   export DAPP_STORE_API_KEY=<portal-api-key>
+   dapp-store --apk-file "$APK_PATH" --keypair <path-to-solana-keypair.json> --whats-new "Rail Money Android test build"
 EOF

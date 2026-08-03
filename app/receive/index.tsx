@@ -1,75 +1,66 @@
-import React, { useState, useCallback } from 'react';
-import { StatusBar, Text, View, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useCallback } from 'react';
+import { StatusBar, Text, View, Pressable, ScrollView } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  FadeInUp,
-} from 'react-native-reanimated';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { CryptoReceiveSheet } from '@/components/sheets';
-import { SolanaIcon, MaticIcon, AvalancheIcon, UsdcIcon } from '@/assets/svg';
+import { ChainLogo } from '@/components/ChainLogo';
 import { SUPPORTED_CHAINS, type ChainConfig } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
 import type { WalletChain } from '@/api/types';
 import { useAnalytics, ANALYTICS_EVENTS } from '@/utils/analytics';
+import { recordActivationStep } from '@/utils/activation';
+import { ArrowLeft01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
-  SOL: SolanaIcon,
-  'SOL-DEVNET': SolanaIcon,
-  'MATIC-AMOY': MaticIcon,
-  'AVAX-FUJI': AvalancheIcon,
+const ARRIVAL_TIMES: Record<string, string> = {
+  SOL: '~15 seconds',
+  ETH: '~5 minutes',
+  BASE: '~1 minute',
+  ARB: '~1 minute',
+  OP: '~1 minute',
+  MATIC: '~2 minutes',
+  AVAX: '~2 minutes',
+  BSC: '~3 minutes',
+  STARKNET: '~5 minutes',
 };
 
-function ChainCard({ config, onPress }: { config: ChainConfig; onPress: () => void }) {
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const Icon = CHAIN_ICONS[config.chain];
-
+function ChainRow({ config, onPress }: { config: ChainConfig; onPress: () => void }) {
+  const arrivalTime = ARRIVAL_TIMES[config.chain] ?? '';
   return (
-    <AnimatedPressable
-      style={animStyle}
-      className="flex-row items-center gap-4 rounded-3xl bg-surface px-5 py-4"
+    <Pressable
       onPress={onPress}
-      onPressIn={() => {
-        scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
-      }}
+      className="flex-row items-center px-5 py-4 active:scale-[0.96]"
       accessibilityRole="button"
       accessibilityLabel={`Receive on ${config.label}`}>
-      {/* Chain icon with USDC badge */}
-      <View className="relative size-14 items-center justify-center">
-        <View
-          className="size-14 items-center justify-center rounded-full"
-          style={{ backgroundColor: config.color + '18' }}>
-          {Icon && <Icon width={32} height={32} />}
-        </View>
-        <View className="absolute -bottom-1 -right-1 size-6 items-center justify-center rounded-full bg-white shadow-sm">
-          <UsdcIcon width={18} height={18} />
-        </View>
+      <View
+        className="mr-4 size-11 items-center justify-center overflow-hidden rounded-full"
+        style={{ borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.08)' }}>
+        <ChainLogo chain={config.chain} size={44} />
       </View>
-
       <View className="flex-1">
-        <Text className="font-subtitle text-[18px] text-text-primary">{config.label}</Text>
-        <Text className="mt-0.5 font-body text-[13px] text-text-secondary">
-          USDC · {config.shortLabel}
+        <Text className="font-subtitle text-[16px] text-text-primary" maxFontSizeMultiplier={1.3}>
+          {config.shortLabel}
+        </Text>
+        <Text
+          className="mt-0.5 font-body text-[13px] text-text-secondary"
+          maxFontSizeMultiplier={1.4}>
+          {config.label}
         </Text>
       </View>
-
-      <View className="h-2 w-2 rounded-full" style={{ backgroundColor: config.color }} />
-    </AnimatedPressable>
+      {arrivalTime ? (
+        <Text
+          className="font-body text-[14px] text-text-secondary"
+          style={{ fontVariant: ['tabular-nums'] }}
+          maxFontSizeMultiplier={1.4}>
+          {arrivalTime}
+        </Text>
+      ) : null}
+    </Pressable>
   );
 }
 
 export default function ReceiveChainSelectScreen() {
-  const [selectedChain, setSelectedChain] = useState<WalletChain | null>(null);
+  const insets = useSafeAreaInsets();
   const { selection } = useHaptics();
   const { track } = useAnalytics();
 
@@ -77,7 +68,8 @@ export default function ReceiveChainSelectScreen() {
     (chain: WalletChain) => {
       selection();
       track(ANALYTICS_EVENTS.DEPOSIT_INITIATED, { chain });
-      setSelectedChain(chain);
+      recordActivationStep('first_deposit', track);
+      router.push({ pathname: '/receive/address', params: { chain } });
     },
     [selection, track]
   );
@@ -87,38 +79,38 @@ export default function ReceiveChainSelectScreen() {
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
 
-        <View className="flex-1 px-5">
-          <View className="flex-row items-center pb-2 pt-1">
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 32) }}>
+          {/* Back button */}
+          <Animated.View entering={FadeInUp.duration(220)} className="px-5 pt-2">
             <Pressable
-              className="size-11 items-center justify-center rounded-full bg-surface"
               onPress={() => router.back()}
               accessibilityRole="button"
-              accessibilityLabel="Go back">
-              <ArrowLeft size={20} color="#111827" />
+              accessibilityLabel="Go back"
+              hitSlop={12}
+              className="active:opacity-70">
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#343433" />
             </Pressable>
-          </View>
+          </Animated.View>
 
-          <View className="mt-4">
-            <Text className="font-subtitle text-[32px] text-text-primary">Receive USDC</Text>
-            <Text className="mt-2 font-body text-[14px] text-text-secondary">
-              Pick the network you want to receive on.
+          {/* Title */}
+          <Animated.View entering={FadeInUp.delay(60).duration(250)} className="mb-6 mt-6 px-5">
+            <Text
+              className="font-heading text-[32px] leading-[38px] text-[#1a1a1a]"
+              maxFontSizeMultiplier={1.3}>
+              Select network
             </Text>
-          </View>
+          </Animated.View>
 
-          <View className="mt-8 gap-3">
-            {SUPPORTED_CHAINS.map((config, i) => (
-              <Animated.View key={config.chain} entering={FadeInUp.delay(i * 60).duration(350)}>
-                <ChainCard config={config} onPress={() => handleChainPress(config.chain)} />
-              </Animated.View>
-            ))}
-          </View>
-        </View>
-
-        <CryptoReceiveSheet
-          visible={selectedChain !== null}
-          chain={selectedChain ?? 'SOL'}
-          onClose={() => setSelectedChain(null)}
-        />
+          {/* Chain list */}
+          {SUPPORTED_CHAINS.map((config, i) => (
+            <Animated.View key={config.chain} entering={FadeInUp.delay(100 + i * 35).duration(260)}>
+              <ChainRow config={config} onPress={() => handleChainPress(config.chain)} />
+              {i < SUPPORTED_CHAINS.length - 1 && <View className="mx-5 h-px bg-[#f0ece4]" />}
+            </Animated.View>
+          ))}
+        </ScrollView>
       </SafeAreaView>
     </ErrorBoundary>
   );

@@ -4,6 +4,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-na
 import { useUIStore } from '@/stores';
 import { MaskedBalance } from './MaskedBalance';
 import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
 import { Skeleton } from '@/components/atoms/Skeleton';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -31,12 +32,6 @@ interface StashCardProps {
   getStarted?: boolean | string;
 }
 
-const BADGE_COLORS: Record<StashCardBadge['color'], { bg: string; text: string; dot: string }> = {
-  green: { bg: '#ECFDF3', text: '#15803D', dot: '#22C55E' },
-  red: { bg: '#FEF2F2', text: '#B91C1C', dot: '#EF4444' },
-  gray: { bg: '#F3F4F6', text: '#374151', dot: '#9CA3AF' },
-};
-
 export const StashCard: React.FC<StashCardProps> = ({
   title,
   amount,
@@ -58,13 +53,24 @@ export const StashCard: React.FC<StashCardProps> = ({
   const { impact } = useHaptics();
 
   const isColored = !!cardColor;
-  const badgeColors = badge ? BADGE_COLORS[badge.color] : null;
 
   return (
     <AnimatedPressable
-      style={[animStyle, isColored ? { backgroundColor: cardColor } : undefined]}
-      className={`flex-1 rounded-3xl ${isColored ? '' : 'border border-gray-200 bg-white'} px-4 py-4 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
+      style={[
+        animStyle,
+        isColored
+          ? { backgroundColor: cardColor }
+          : {
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.06,
+              shadowRadius: 6,
+              elevation: 2,
+            },
+      ]}
+      className={`flex-1 rounded-3xl ${isColored ? '' : 'border border-black/[0.07] bg-[#F8F8F8]'} px-4 py-4 ${className || ''} ${disabled ? 'opacity-50' : ''}`}
       onPress={() => {
+        playUISound('buttonClick');
         impact();
         onPress?.();
       }}
@@ -80,10 +86,7 @@ export const StashCard: React.FC<StashCardProps> = ({
       accessibilityLabel={onPress ? `${title}: ${amount}${amountCents || ''}` : undefined}
       accessibilityState={{ disabled }}>
       {/* Top row: icon + dot */}
-      <View className="mb-16 flex-row items-start justify-between">
-        {/* Icon in frosted circle */}
-        <View>{icon}</View>
-      </View>
+      <View className="mb-16 flex-row items-start justify-between">{icon}</View>
 
       {/* Bottom: amount + title */}
       {isLoading ? (
@@ -95,7 +98,7 @@ export const StashCard: React.FC<StashCardProps> = ({
         <View>
           <Text
             className="font-subtitle text-lg text-white"
-            style={{ color: isColored ? 'white' : '#FF2E01' }}>
+            style={{ color: isColored ? 'white' : '#ff3e00' }}>
             {typeof getStarted === 'string' ? getStarted : 'Get started'}
           </Text>
           <Text

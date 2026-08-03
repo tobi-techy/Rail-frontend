@@ -2,10 +2,22 @@ import React, { useState } from 'react';
 import { Dimensions, Platform, Text, View, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { Button } from '../ui/Button';
-import { BottomSheet } from '../sheets/BottomSheet';
+import { GorhomBottomSheet } from '../sheets/GorhomBottomSheet';
+import {
+  ArrowLeft01Icon,
+  ZapIcon,
+  Wallet01Icon,
+  ChartUpIcon,
+  SnowIcon,
+  FingerPrintIcon,
+  Tag01Icon,
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { useHaptics } from '@/hooks/useHaptics';
+import { playUISound } from '@/lib/uiSounds';
+import { ImpactFeedbackStyle } from '@/utils/platformHaptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -46,7 +58,7 @@ function CardStack() {
     <View className="items-center justify-center" style={{ height: cardHeight + 40 }}>
       {/* Back card (white) */}
       <View
-        className="absolute rounded-2xl bg-gray-100"
+        className="absolute rounded-2xl bg-stone-surface"
         style={{
           width: cardWidth,
           height: cardHeight,
@@ -63,7 +75,7 @@ function CardStack() {
         }}>
         <View className="absolute left-5 top-8">
           <Text
-            className="font-subtitle text-sm text-gray-400"
+            className="font-subtitle text-sm text-smoke"
             style={{ transform: [{ rotate: '-90deg' }, { translateX: -30 }, { translateY: -20 }] }}>
             $yourname
           </Text>
@@ -112,20 +124,25 @@ function CardStack() {
 
 export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps) {
   const [showLearnMore, setShowLearnMore] = useState(false);
+  const { impact } = useHaptics();
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center px-4 pt-2">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            impact(ImpactFeedbackStyle.Light);
+            playUISound('dismiss');
+            router.back();
+          }}
           className="size-11 items-center justify-center"
           hitSlop={8}>
-          <ChevronLeft size={24} color="#111827" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#343433" />
         </Pressable>
         <View className="px-5 pt-1">
-          <Text className="font-headline text-3xl text-gray-900">Free Debit Card</Text>
-          <Text className="mt-1 font-body text-base text-gray-400">With Instant Discounts</Text>
+          <Text className="font-headline text-3xl text-charcoal-primary">Free Debit Card</Text>
+          <Text className="mt-1 font-body text-base text-smoke">With Instant Discounts</Text>
         </View>
       </View>
 
@@ -153,51 +170,86 @@ export function CardIntroScreen({ onCreateCard, loading }: CardIntroScreenProps)
         />
       </View>
 
-      <BottomSheet visible={showLearnMore} onClose={() => setShowLearnMore(false)} showCloseButton>
+      <GorhomBottomSheet
+        visible={showLearnMore}
+        onClose={() => setShowLearnMore(false)}
+        showCloseButton>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 40 }}>
-          <View className="mb-8">
-            <Text className="font-headline text-[26px] leading-[32px] text-gray-900">
+          {/* Header */}
+          <View className="mb-6">
+            <Text className="font-headline text-[26px] leading-[32px] text-charcoal-primary">
               Rail Debit Card
             </Text>
-            <Text className="mt-2 font-body text-[14px] text-gray-400">
-              Free virtual Visa — linked to your spend balance.
+            <Text className="mt-1.5 font-body text-sm text-smoke">
+              A free virtual Visa linked to your spend balance.
             </Text>
           </View>
 
+          {/* Feature rows */}
           {[
             {
+              icon: ZapIcon,
+              bg: '#FFF3E0',
+              color: '#F57C00',
               title: 'Instant Issuance',
               body: 'Ready to use the moment you create it — no waiting, no shipping.',
             },
             {
+              icon: Wallet01Icon,
+              bg: '#E8F5E9',
+              color: '#2E7D32',
               title: 'Spend Your Balance',
               body: 'Every purchase draws from your 70% spend allocation.',
             },
             {
+              icon: ChartUpIcon,
+              bg: '#EDE7F6',
+              color: '#6A1B9A',
               title: 'Round-Up Investing',
               body: 'Spare change from every transaction auto-invests into your stash.',
             },
             {
+              icon: SnowIcon,
+              bg: '#E3F2FD',
+              color: '#1565C0',
               title: 'Freeze Anytime',
               body: 'Freeze or unfreeze your card instantly from settings.',
             },
             {
-              title: 'PCI-Secure Details',
+              icon: FingerPrintIcon,
+              bg: '#FCE4EC',
+              color: '#C62828',
+              title: 'Biometric Security',
               body: 'Card numbers revealed only after Face ID or Touch ID.',
             },
-            { title: 'Zero Fees', body: 'No annual fee, no issuance fee. Completely free.' },
-          ].map((item, i) => (
-            <View key={item.title} className={`py-4 ${i < 5 ? 'border-b border-gray-100' : ''}`}>
-              <Text className="font-button text-[15px] text-gray-900">{item.title}</Text>
-              <Text className="mt-1 font-body text-[14px] leading-5 text-gray-400">
-                {item.body}
-              </Text>
+            {
+              icon: Tag01Icon,
+              bg: '#f7f2e8',
+              color: '#474645',
+              title: 'Zero Fees',
+              body: 'No annual fee, no issuance fee. Completely free.',
+            },
+          ].map((item, i, arr) => (
+            <View
+              key={item.title}
+              className={`flex-row gap-4 py-4 ${i < arr.length - 1 ? 'border-b border-stone-surface' : ''}`}>
+              <View
+                className="mt-0.5 h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                style={{ backgroundColor: item.bg }}>
+                <HugeiconsIcon icon={item.icon} size={20} color={item.color} strokeWidth={1.5} />
+              </View>
+              <View className="flex-1">
+                <Text className="font-button text-[15px] text-charcoal-primary">{item.title}</Text>
+                <Text className="mt-0.5 font-body text-[13px] leading-5 text-smoke">
+                  {item.body}
+                </Text>
+              </View>
             </View>
           ))}
         </ScrollView>
-      </BottomSheet>
+      </GorhomBottomSheet>
     </SafeAreaView>
   );
 }

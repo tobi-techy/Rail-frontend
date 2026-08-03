@@ -11,6 +11,8 @@ import { API_CONFIG } from './config';
 import { generateRequestId } from '../utils/requestId';
 import { useAuthStore } from '../stores/authStore';
 import { sslPinningAdapter, SSL_PINNING_ACTIVE } from './sslPinningAdapter';
+import { getDeviceFingerprint } from '../utils/deviceFingerprint';
+import { isAuthSessionInvalidError, summarizeAuthError } from '../utils/authErrorClassifier';
 
 /**
  * SSL Certificate Pinning Configuration
@@ -53,6 +55,7 @@ const AUTH_ENDPOINTS = [
   '/v1/auth/verify',
   '/v1/auth/resend-code',
   '/v1/auth/forgot-password',
+  '/v1/auth/verify-reset-code',
   '/v1/auth/reset-password',
   '/v1/auth/refresh',
   '/v1/auth/social/login',
@@ -85,13 +88,9 @@ function isAuthEndpoint(url?: string): boolean {
   if (!rawPath) return false;
   const path = stripApiPrefix(rawPath);
 
-  return AUTH_ENDPOINTS.some(
-    (endpoint) =>
-      path === endpoint ||
-      rawPath === endpoint ||
-      path.endsWith(endpoint) ||
-      rawPath.endsWith(endpoint)
-  );
+  // SECURITY FIX (R3-L3): Use exact match only — endsWith could match
+  // unintended paths like /v1/admin/auth/login, skipping CSRF protection.
+  return AUTH_ENDPOINTS.some((endpoint) => path === endpoint || rawPath === endpoint);
 }
 
 function isPasscodeProtectedEndpoint(method?: string, url?: string): boolean {
@@ -102,19 +101,33 @@ function isPasscodeProtectedEndpoint(method?: string, url?: string): boolean {
   const normalizedMethod = method.toUpperCase();
   if (normalizedMethod === 'POST' && /^\/v1\/withdrawals(?:\/(?:crypto|fiat))?$/.test(path))
     return true;
+  if (normalizedMethod === 'POST' && path === '/v1/withdrawals/emergency/to-spending') return true;
+  if (normalizedMethod === 'POST' && path === '/v1/funding/stash') return true;
+  if (normalizedMethod === 'POST' && path === '/v1/funding/paj/offramp') return true;
+  if (normalizedMethod === 'POST' && path === '/v1/funding/ramp/offramp') return true;
   if (normalizedMethod === 'POST' && path === '/v1/security/ip-whitelist') return true;
   if (normalizedMethod === 'POST' && path === '/v1/security/withdrawals/confirm') return true;
+  if (normalizedMethod === 'POST' && path === '/v1/p2p/tap/confirm') return true;
   if (normalizedMethod === 'POST' && /^\/v1\/security\/devices\/[^/]+\/trust$/.test(path))
     return true;
   if (normalizedMethod === 'DELETE' && /^\/v1\/security\/devices\/[^/]+$/.test(path)) return true;
   if (normalizedMethod === 'DELETE' && /^\/v1\/security\/ip-whitelist\/[^/]+$/.test(path))
     return true;
+  // SECURITY FIX (NEW-M5): Account deletion must require passcode verification
+  if (normalizedMethod === 'DELETE' && path === '/v1/users/me') return true;
 
   return false;
 }
 
 // Token refresh state to prevent race conditions
 let refreshPromise: Promise<void> | null = null;
+
+/**
+ * SECURITY FIX (H-2): Mutex for passcode-protected requests.
+ * Prevents concurrent requests from reusing a single-use passcode session token.
+ * The token is consumed (cleared) BEFORE the request is sent, not after the response.
+ */
+let _passcodeRequestInFlight = false;
 
 /**
  * SECURITY: Atomic refresh promise getter/creator
@@ -141,7 +154,7 @@ function getOrCreateRefreshPromise(): Promise<void> {
         logger.error('[API Client] Token refresh failed', {
           component: 'ApiClient',
           action: 'refresh-failure',
-          error: err instanceof Error ? err.message : String(err),
+          error: summarizeAuthError(err),
         });
         throw err;
       })
@@ -188,11 +201,40 @@ axiosInstance.interceptors.request.use(
       csrfToken,
     } = useAuthStore.getState();
 
+    // SECURITY FIX (NEW-M1): Acquire passcode mutex BEFORE any await to prevent
+    // race conditions where two requests enter the interceptor concurrently.
+    if (config.headers && isPasscodeProtectedEndpoint(config.method, config.url)) {
+      const hasPasscodeHeader = !!config.headers['X-Passcode-Session'];
+      const isPasscodeSessionExpired = checkPasscodeSessionExpiry();
+
+      if (!hasPasscodeHeader && passcodeSessionToken && !isPasscodeSessionExpired) {
+        if (_passcodeRequestInFlight) {
+          return Promise.reject(
+            new Error('Another passcode-protected request is already in progress')
+          );
+        }
+        _passcodeRequestInFlight = true;
+        config.headers['X-Passcode-Session'] = passcodeSessionToken;
+      } else if (!hasPasscodeHeader && passcodeSessionToken && isPasscodeSessionExpired) {
+        clearPasscodeSession();
+      }
+    }
+
     if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
     config.headers['X-Request-ID'] = generateRequestId();
+
+    // Attach device fingerprint for fraud detection (cross-account device correlation)
+    try {
+      const fingerprint = await getDeviceFingerprint();
+      if (fingerprint) {
+        config.headers['X-Device-Fingerprint'] = fingerprint;
+      }
+    } catch {
+      // Non-blocking — don't fail requests if fingerprint generation fails
+    }
 
     // Add CSRF token for state-changing requests
     // SECURITY: Only for authenticated, non-auth endpoints
@@ -220,17 +262,6 @@ axiosInstance.interceptors.request.use(
       }
     }
 
-    if (config.headers && isPasscodeProtectedEndpoint(config.method, config.url)) {
-      const hasPasscodeHeader = !!config.headers['X-Passcode-Session'];
-      const isPasscodeSessionExpired = checkPasscodeSessionExpiry();
-
-      if (!hasPasscodeHeader && passcodeSessionToken && !isPasscodeSessionExpired) {
-        config.headers['X-Passcode-Session'] = passcodeSessionToken;
-      } else if (!hasPasscodeHeader && passcodeSessionToken && isPasscodeSessionExpired) {
-        clearPasscodeSession();
-      }
-    }
-
     if (isAuthenticated) updateLastActivity();
 
     return config;
@@ -246,8 +277,12 @@ axiosInstance.interceptors.request.use(
  */
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Keep local passcode-session state in sync with one-time server validation middleware.
+    // SECURITY FIX (H-2): Release passcode request mutex on success
     if (isPasscodeProtectedEndpoint(response.config?.method, response.config?.url)) {
+      _passcodeRequestInFlight = false;
+      // Token is invalidated server-side on success; clear locally so a stale
+      // token doesn't sit in state. If the request failed, keep the token so
+      // the user can retry without re-verifying.
       useAuthStore.getState().clearPasscodeSession();
     }
     return response.data;
@@ -261,6 +296,8 @@ axiosInstance.interceptors.response.use(
     const statusCode = error.response?.status;
 
     if (isPasscodeProtectedEndpoint(originalRequest?.method, originalRequest?.url)) {
+      // SECURITY FIX (H-2): Release mutex on error path too
+      _passcodeRequestInFlight = false;
       const passcodeErrorCode = String(
         (error.response?.data as any)?.code ||
           (error.response?.data as any)?.error ||
@@ -286,7 +323,7 @@ axiosInstance.interceptors.response.use(
 
       if (retryCount < 3 && retryAfter) {
         originalRequest._retryCount = retryCount + 1;
-        const delay = parseInt(retryAfter, 10) * 1000 || 5000;
+        const delay = Math.min(parseInt(retryAfter, 10) * 1000 || 5000, 30_000);
         await new Promise((resolve) => setTimeout(resolve, delay));
         return axiosInstance.request(originalRequest);
       }
@@ -296,8 +333,16 @@ axiosInstance.interceptors.response.use(
     if (statusCode === 401 && !originalRequest._retry && !isAuthEndpoint(originalRequest.url)) {
       originalRequest._retry = true;
 
-      const { isAuthenticated, refreshToken, clearSession, clearPasscodeSession } =
+      const { isAuthenticated, refreshToken, accessToken, clearSession, clearPasscodeSession } =
         useAuthStore.getState();
+
+      // If the access token in the store is different from the one that got 401,
+      // another auth flow (passkey/passcode) already replaced it — just retry with the new token.
+      const failedToken = originalRequest.headers?.Authorization?.toString().replace('Bearer ', '');
+      if (failedToken && accessToken && failedToken !== accessToken) {
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return axiosInstance.request(originalRequest);
+      }
 
       // SECURITY: If this is a passcode-protected endpoint returning 401,
       // the passcode session is invalid and should be cleared
@@ -343,26 +388,25 @@ axiosInstance.interceptors.response.use(
           logger.error('[API Client] Token refresh error', {
             component: 'ApiClient',
             action: 'refresh-error',
-            error: refreshError instanceof Error ? refreshError.message : String(refreshError),
+            error: summarizeAuthError(refreshError),
           });
 
-          // Only clear session if refresh token is invalid (401 from refresh endpoint)
-          // Network errors should NOT clear session - user may still have valid tokens
-          const isRefreshEndpoint = isAuthEndpoint(originalRequest.url);
-          const isInvalidTokenError = error.response?.status === 401 && isRefreshEndpoint;
+          // Clear only when the refresh response itself proves the auth session is invalid.
+          // Network/server failures keep the local session so the app can retry later.
+          const isInvalidRefreshSession = isAuthSessionInvalidError(refreshError);
 
-          if (isInvalidTokenError) {
+          if (isInvalidRefreshSession) {
             logger.debug('[API Client] Clearing session due to invalid refresh token', {
               component: 'ApiClient',
               action: 'clear-session-invalid-token',
+              error: summarizeAuthError(refreshError),
             });
             clearSession();
           } else {
-            logger.debug('[API Client] Not clearing session - network error or non-refresh 401', {
+            logger.debug('[API Client] Not clearing session - refresh failure is transient', {
               component: 'ApiClient',
               action: 'skip-clear-session',
-              isRefreshEndpoint,
-              status: error.response?.status,
+              error: summarizeAuthError(refreshError),
             });
           }
 
@@ -480,7 +524,7 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
   if (data?.code && data?.message) {
     return {
       code: data.code,
-      message: data.message,
+      message: sanitizeErrorMessage(data.message, status),
       details,
       status,
       requestId: data.requestId || requestId,
@@ -491,7 +535,7 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
   if (typeof data?.error === 'string') {
     return {
       code: `HTTP_${status}`,
-      message: data.error,
+      message: sanitizeErrorMessage(data.error, status),
       details,
       status,
       requestId,
@@ -502,7 +546,7 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
   if (data?.error) {
     return {
       code: data.error.code || `HTTP_${status}`,
-      message: data.error.message || getDefaultMessage(status),
+      message: sanitizeErrorMessage(data.error.message || getDefaultMessage(status), status),
       details: data.error.details ?? details,
       status,
       requestId,
@@ -511,7 +555,7 @@ function transformError(error: AxiosError<any>, requestId?: string): Transformed
 
   return {
     code: `HTTP_${status}`,
-    message: data?.message || getDefaultMessage(status),
+    message: sanitizeErrorMessage(data?.message || getDefaultMessage(status), status),
     details,
     status,
     requestId,
@@ -527,7 +571,32 @@ function getDefaultMessage(status: number): string {
     429: 'Too many requests. Please try again later.',
     500: 'Server error. Please try again later.',
   };
-  return messages[status] || `Request failed with status ${status}`;
+  return messages[status] || `Request failed. Please try again.`;
+}
+
+/**
+ * SECURITY FIX (M-4): Sanitize backend error messages before showing to users.
+ * Internal details (token names, auth mechanisms) should not leak to the UI.
+ */
+const INTERNAL_PATTERNS = [
+  /refresh.?token/i,
+  /access.?token/i,
+  /jwt/i,
+  /bearer/i,
+  /session.?id/i,
+  /internal.?server/i,
+  /stack.?trace/i,
+  /sql/i,
+  /query/i,
+  /database/i,
+];
+
+function sanitizeErrorMessage(message: string, status: number): string {
+  if (!message) return getDefaultMessage(status);
+  if (INTERNAL_PATTERNS.some((p) => p.test(message))) {
+    return getDefaultMessage(status);
+  }
+  return message;
 }
 
 // This type assertion relies on the response interceptor to unwrap the data.
@@ -544,13 +613,30 @@ export async function handleApiRequest<T>(request: Promise<ApiResponse<T>>): Pro
 
 /**
  * Upload file helper
+ * SECURITY FIX (R3-M1): Validates file size and MIME type before upload.
  */
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'application/pdf',
+];
+
 export async function uploadFile(
   endpoint: string,
   file: File | Blob,
   fieldName: string = 'file',
   additionalData?: Record<string, unknown>
 ): Promise<unknown> {
+  if (file.size > MAX_UPLOAD_SIZE) {
+    throw new Error(`File too large. Maximum size is ${MAX_UPLOAD_SIZE / 1024 / 1024}MB.`);
+  }
+  if (file.type && !ALLOWED_MIME_TYPES.includes(file.type)) {
+    throw new Error('File type not allowed.');
+  }
+
   const formData = new FormData();
   formData.append(fieldName, file);
 

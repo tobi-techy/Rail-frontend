@@ -1,88 +1,42 @@
 import React from 'react';
-import { View, ViewProps, Text } from 'react-native';
-import * as Lucide from 'lucide-react-native';
-import { Ionicons, Feather, MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import { View, ViewProps } from 'react-native';
+import { IconComponent, resolveIcon, type PhosphorIcon } from '@/lib/icons';
+import type { IconWeight } from 'phosphor-react-native';
 
-export type IconLibrary = 'lucide' | 'ionicons' | 'feather' | 'material' | 'fontawesome';
+export type HugeIconType = PhosphorIcon;
 
 export interface IconProps extends Omit<ViewProps, 'children'> {
-  name: string;
-  library?: IconLibrary;
+  icon?: PhosphorIcon;
+  name?: string;
   size?: number;
   color?: string;
+  fill?: string;
   className?: string;
   testID?: string;
   strokeWidth?: number;
-  fill?: string;
-}
-
-const FallbackIcon = ({ size = 24, color = '#000', style, ...props }: any) => {
-  return React.createElement(
-    Text,
-    {
-      style: [
-        {
-          fontSize: size,
-          color,
-          fontFamily: 'System',
-        },
-        style,
-      ],
-      ...props,
-    },
-    '●'
-  );
-};
-
-function kebabToPascal(input: string) {
-  return input
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join('');
-}
-
-function resolveLucideComponent(name: string) {
-  const pascalName = kebabToPascal(name);
-  const component = (Lucide as any)[pascalName];
-  return component || (Lucide as any).Circle || FallbackIcon;
+  weight?: IconWeight;
 }
 
 export const Icon: React.FC<IconProps> = ({
+  icon,
   name,
-  library = 'lucide',
   size = 24,
   color = '#000000',
+  fill,
   className,
   testID,
   style,
-  strokeWidth = 0.8,
-  fill = 'none',
+  weight = 'regular',
   ...props
 }) => {
-  const LucideIcon = resolveLucideComponent(name);
-  const vectorLibraries = {
-    ionicons: Ionicons,
-    feather: Feather,
-    material: MaterialIcons,
-    fontawesome: FontAwesome,
-  } as const;
-
-  const VectorIcon = library !== 'lucide' ? vectorLibraries[library] : null;
-
+  const resolvedIcon = icon ?? (name ? resolveIcon(name) : resolveIcon('HelpCircleIcon'));
   return (
     <View
       style={[{ alignItems: 'center', justifyContent: 'center' }, style]}
       className={className}
       testID={testID}
       {...props}>
-      {library === 'lucide' ? (
-        <LucideIcon size={size} color={color} strokeWidth={strokeWidth} fill={fill} />
-      ) : VectorIcon ? (
-        <VectorIcon name={name as any} size={size} color={color} />
-      ) : (
-        <FallbackIcon size={size} color={color} />
-      )}
+      <IconComponent icon={resolvedIcon} size={size} color={color} fill={fill} weight={weight} />
     </View>
   );
 };

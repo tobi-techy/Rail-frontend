@@ -1,19 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import {
-  AlertTriangle,
-  Camera,
-  CheckCircle2,
-  Clock3,
-  FileText,
-  RefreshCw,
-} from 'lucide-react-native';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { type KYCStatusResponse, type KycStatus, isKycInReview } from '@/api/types/kyc';
 import { useKYCStatus, useKycStatusPolling } from '@/api/hooks/useKYC';
+import { useMissingKycFields } from '@/api/hooks/useOnboarding';
 import { useAuthStore } from '@/stores/authStore';
 import { useKycStore } from '@/stores/kycStore';
+import { ROUTES } from '@/constants/routes';
+import { getKycResumeRoute } from '@/utils/onboardingFlow';
+import {
+  Alert02Icon,
+  Camera01Icon,
+  CheckmarkCircle02Icon,
+  Clock01Icon,
+  File01Icon,
+  RefreshIcon,
+  ShieldKeyIcon,
+  LockPasswordIcon,
+} from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import {
   NavigableBottomSheet,
   type BottomSheetScreen,
@@ -109,14 +115,42 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
     if (visible && statusMode === 'approved') resetNavigation('approved');
   }, [visible, statusMode, resetNavigation]);
 
+  const hasRequiredProfileFields = Boolean(
+    user?.dateOfBirth &&
+    (user?.addressStreet || user?.addressCity) &&
+    (user?.phone || user?.phoneNumber)
+  );
+
+  const { data: missingFieldsData } = useMissingKycFields(visible);
+  const backendStartStep = missingFieldsData?.startStep;
+
   const handleStart = useCallback(() => {
     onClose();
-    requestAnimationFrame(() => router.push('/kyc'));
-  }, [onClose]);
+    if (backendStartStep && backendStartStep !== 'none') {
+      const resumeRoute = getKycResumeRoute(backendStartStep);
+      requestAnimationFrame(() => router.push(resumeRoute as never));
+    } else if (!hasRequiredProfileFields && !backendStartStep) {
+      // Fallback to client-side check if backend hasn't responded
+      const resumeRoute = getKycResumeRoute(useAuthStore.getState().currentOnboardingStep);
+      requestAnimationFrame(() => router.push(resumeRoute as never));
+    } else {
+      requestAnimationFrame(() => router.push('/kyc'));
+    }
+  }, [onClose, hasRequiredProfileFields, backendStartStep]);
 
   const handleContinue = useCallback(() => {
+    const state = useKycStore.getState();
+    const { completedSteps, diditSessionToken } = state;
+
+    let screen = '/kyc';
+    if (diditSessionToken || completedSteps.includes('financial')) {
+      screen = '/kyc/didit-sdk';
+    } else if (completedSteps.includes('identity')) {
+      screen = '/kyc/financial';
+    }
+
     onClose();
-    requestAnimationFrame(() => router.push('/kyc'));
+    requestAnimationFrame(() => router.push(screen as never));
   }, [onClose]);
 
   const handleCheckStatus = useCallback(async () => {
@@ -130,8 +164,16 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
 
   const handleRetry = useCallback(() => {
     onClose();
-    requestAnimationFrame(() => router.push('/kyc'));
-  }, [onClose]);
+    if (backendStartStep && backendStartStep !== 'none') {
+      const resumeRoute = getKycResumeRoute(backendStartStep);
+      requestAnimationFrame(() => router.push(resumeRoute as never));
+    } else if (!hasRequiredProfileFields && !backendStartStep) {
+      const resumeRoute = getKycResumeRoute(useAuthStore.getState().currentOnboardingStep);
+      requestAnimationFrame(() => router.push(resumeRoute as never));
+    } else {
+      requestAnimationFrame(() => router.push('/kyc'));
+    }
+  }, [onClose, hasRequiredProfileFields, backendStartStep]);
 
   const closeSheet = useCallback(() => onClose(), [onClose]);
 
@@ -152,7 +194,7 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
         : statusMode === 'rejected'
           ? status?.rejection_reason ||
             'Your last submission was not approved. You can retry now with clear ID photos.'
-          : 'We use this info to confirm your identity and comply with legal requirements.';
+          : 'We use this info to confirm your identity and comply with financial regulations. Takes under 5 minutes.';
 
   const screens: BottomSheetScreen[] = [
     {
@@ -174,66 +216,77 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
                           : '#FEF2F2',
                   }}>
                   {statusMode === 'approved' ? (
-                    <CheckCircle2 size={30} color="#10B981" />
+                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={30} color="#00ca48" />
                   ) : statusMode === 'pending' ? (
-                    <Clock3 size={30} color="#F59E0B" />
+                    <HugeiconsIcon icon={Clock01Icon} size={30} color="#F59E0B" />
                   ) : (
-                    <AlertTriangle size={30} color="#EF4444" />
+                    <HugeiconsIcon icon={Alert02Icon} size={30} color="#ff2b3a" />
                   )}
                 </View>
               )}
               <Text
                 className={
                   statusMode === 'not_started'
-                    ? 'font-display text-[26px] leading-8 text-gray-900'
-                    : 'text-center font-subtitle text-[28px] leading-8 text-gray-900'
+                    ? 'font-display text-[26px] leading-8 text-charcoal-primary'
+                    : 'text-center font-subtitle text-[28px] leading-8 text-charcoal-primary'
                 }>
                 {introTitle}
               </Text>
               <Text
                 className={
                   statusMode === 'not_started'
-                    ? 'mt-3 font-body text-[16px] leading-6 text-gray-500'
-                    : 'mt-2 text-center font-body text-[15px] leading-6 text-gray-500'
+                    ? 'mt-3 font-body text-[16px] leading-6 text-ash'
+                    : 'mt-2 text-center font-body text-[15px] leading-6 text-ash'
                 }>
                 {introBody}
               </Text>
             </View>
 
             {statusMode === 'not_started' && (
-              <View className="mb-6 rounded-3xl border border-gray-200 bg-white">
-                <View className="flex-row items-center gap-4 border-b border-gray-100 p-5">
-                  <FileText size={24} color="#111827" />
-                  <View className="flex-1">
-                    <Text className="font-subtitle text-[15px] text-gray-900">Your photo ID</Text>
-                    <Text className="mt-1 font-body text-[13px] leading-5 text-gray-500">
-                      We accept most common forms of ID.
+              <>
+                <View className="mb-4 rounded-3xl border border-fog bg-warm-canvas">
+                  <View className="flex-row items-center gap-4 border-b border-stone-surface p-5">
+                    <HugeiconsIcon icon={File01Icon} size={24} color="#343433" />
+                    <View className="flex-1">
+                      <Text className="font-subtitle text-[15px] text-charcoal-primary">
+                        Your photo ID
+                      </Text>
+                      <Text className="mt-1 font-body text-[13px] leading-5 text-ash">
+                        We accept most common forms of ID.
+                      </Text>
+                    </View>
+                  </View>
+                  <View className="flex-row items-center gap-4 p-5">
+                    <HugeiconsIcon icon={Camera01Icon} size={24} color="#343433" />
+                    <View className="flex-1">
+                      <Text className="font-subtitle text-[15px] text-charcoal-primary">
+                        A quick scan of your face
+                      </Text>
+                      <Text className="mt-1 font-body text-[13px] leading-5 text-ash">
+                        This is to confirm that you match your ID.
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                <View className="mb-6 flex-row gap-3">
+                  <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-stone-surface px-3 py-2.5">
+                    <HugeiconsIcon icon={ShieldKeyIcon} size={16} color="#848281" />
+                    <Text className="flex-1 font-body text-[12px] leading-4 text-ash">
+                      256-bit encrypted & never sold
+                    </Text>
+                  </View>
+                  <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-stone-surface px-3 py-2.5">
+                    <HugeiconsIcon icon={LockPasswordIcon} size={16} color="#848281" />
+                    <Text className="flex-1 font-body text-[12px] leading-4 text-ash">
+                      Required by financial regulations
                     </Text>
                   </View>
                 </View>
-                <View className="flex-row items-center gap-4 p-5">
-                  <Camera size={24} color="#111827" />
-                  <View className="flex-1">
-                    <Text className="font-subtitle text-[15px] text-gray-900">
-                      A quick scan of your face
-                    </Text>
-                    <Text className="mt-1 font-body text-[13px] leading-5 text-gray-500">
-                      This is to confirm that you match your ID.
-                    </Text>
-                  </View>
-                </View>
-              </View>
+              </>
             )}
 
-            {statusMode === 'rejected' && (
-              <View className="mb-4 rounded-2xl bg-red-50 px-4 py-3">
-                <Text className="font-body text-[13px] text-red-700">{introBody}</Text>
-              </View>
-            )}
-
-            {/* #7: Polling timeout recovery */}
             {statusMode === 'pending' && pollingTimedOut && (
-              <View className="mb-4 rounded-2xl bg-amber-50 px-4 py-3">
+              <View className="mb-4 rounded-2xl bg-sunburst-yellow/10 px-4 py-3">
                 <Text className="font-body text-[13px] leading-5 text-amber-800">
                   Verification is taking longer than usual. Tap &quot;Refresh status&quot; to check
                   manually.
@@ -244,14 +297,15 @@ export function KYCVerificationSheet({ visible, onClose, kycStatus }: KYCVerific
             {statusMode === 'approved' ? (
               <Button title="Close" onPress={closeSheet} />
             ) : statusMode === 'pending' ? (
-              <View className="gap-y-3">
-                <Button title="Continue verification" onPress={handleContinue} />
+              <View className="flex-row gap-3">
+                <Button title="Continue verification" onPress={handleContinue} flex />
                 <Button
                   title="Refresh status"
                   variant="white"
                   onPress={handleCheckStatus}
                   loading={isRefetchingStatus}
-                  leftIcon={<RefreshCw size={16} color="#111827" />}
+                  leftIcon={<HugeiconsIcon icon={RefreshIcon} size={16} color="#343433" />}
+                  flex
                 />
               </View>
             ) : (

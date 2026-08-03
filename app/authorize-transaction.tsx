@@ -1,17 +1,39 @@
-import { View, Text, Pressable, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Fingerprint } from 'lucide-react-native';
-import { Passkey } from 'react-native-passkey';
-import { PasscodeInput } from '@/components/molecules/PasscodeInput';
 import { useVerifyPasscode } from '@/api/hooks';
 import { useAuthStore } from '@/stores/authStore';
 import { usePasskeyAuthorize } from '@/hooks/usePasskeyAuthorize';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useHaptics } from '@/hooks/useHaptics';
+import { ArrowLeft01Icon, EyeIcon, ViewOffIcon, IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { logger } from '@/lib/logger';
+import Animated, {
+  FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 
 export default function AuthorizeTransactionScreen() {
   const params = useLocalSearchParams();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  // SECURITY FIX (NEW-M4): Reject deep link access — this screen must only be
+  // reached from internal navigation. If not authenticated, redirect immediately.
+  useEffect(() => {
+    if (!isAuthenticated) {
+      logger.warn(
+        '[AuthorizeTransaction] Unauthenticated access attempt — possible deep link abuse',
+        {
+          component: 'AuthorizeTransaction',
+          action: 'unauthorized-access',
+        }
+      );
+      router.replace('/');
+    }
+  }, [isAuthenticated]);
+
   const amount = (typeof params.amount === 'string' ? params.amount : '')
     .replace(/[^0-9.]/g, '')
     .slice(0, 20);
@@ -29,21 +51,40 @@ export default function AuthorizeTransactionScreen() {
 
   const { mutate: verifyPasscode, isPending: isLoading } = useVerifyPasscode();
 
-  const {
-    isPasskeyLoading,
-    authError,
-    authPasscode,
-    setAuthError,
-    onAuthPasscodeChange,
-    onPasskeyAuthorize,
-  } = usePasskeyAuthorize({
-    email: user?.email,
-    passkeyPromptScope,
-    autoTrigger: isBiometricEnabled,
-    onAuthorized: () => router.back(),
-  });
+  const { isPasskeyLoading, authError, authPasscode, setAuthError, onAuthPasscodeChange } =
+    usePasskeyAuthorize({
+      email: user?.email,
+      passkeyPromptScope,
+      autoTrigger: isBiometricEnabled,
+      onAuthorized: () => router.back(),
+    });
 
   const { notification, impact } = useHaptics();
+  const [showPin, setShowPin] = useState(false);
+
+  // Crossfade between eye / eye-slash icons
+  const eyeOpacity = useSharedValue(0);
+  const eyeSlashOpacity = useSharedValue(1);
+  const eyeScale = useSharedValue(0.25);
+  const eyeSlashScale = useSharedValue(1);
+
+  useEffect(() => {
+    eyeOpacity.value = withTiming(showPin ? 1 : 0, { duration: 180 });
+    eyeSlashOpacity.value = withTiming(showPin ? 0 : 1, { duration: 180 });
+    eyeScale.value = withTiming(showPin ? 1 : 0.25, { duration: 180 });
+    eyeSlashScale.value = withTiming(showPin ? 0.25 : 1, { duration: 180 });
+  }, [showPin]);
+
+  const eyeAnimStyle = useAnimatedStyle(() => ({
+    opacity: eyeOpacity.value,
+    transform: [{ scale: eyeScale.value }],
+    position: 'absolute',
+  }));
+  const eyeSlashAnimStyle = useAnimatedStyle(() => ({
+    opacity: eyeSlashOpacity.value,
+    transform: [{ scale: eyeSlashScale.value }],
+    position: 'absolute',
+  }));
 
   const handlePasscodeSubmit = useCallback(
     (code: string) => {
@@ -70,7 +111,15 @@ export default function AuthorizeTransactionScreen() {
         }
       );
     },
-    [verifyPasscode, isLoading, isPasskeyLoading, setAuthError, onAuthPasscodeChange, notification, impact]
+    [
+      verifyPasscode,
+      isLoading,
+      isPasskeyLoading,
+      setAuthError,
+      onAuthPasscodeChange,
+      notification,
+      impact,
+    ]
   );
 
   return (
@@ -78,71 +127,156 @@ export default function AuthorizeTransactionScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
       <View className="flex-1">
-        <View className="mt-2 px-6">
+        {/* Back button */}
+        <Animated.View entering={FadeInUp.duration(220)} className="mt-2 px-6">
           <Pressable
             onPress={() => router.back()}
-            className="h-12 w-12 items-center justify-center rounded-full bg-[#F3F4F6]">
-            <ArrowLeft size={24} color="#070914" strokeWidth={2} />
+            className="h-11 w-11 items-center justify-center rounded-full bg-[#F0F0F0] active:scale-[0.96]">
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} color="#343433" strokeWidth={2} />
           </Pressable>
-        </View>
+        </Animated.View>
 
-        <View className="mt-12 px-6">
-          <Text className="font-heading text-[36px] leading-[42px] text-[#070914]">
+        {/* Title */}
+        <Animated.View entering={FadeInUp.delay(60).duration(250)} className="mt-6 px-6">
+          <Text
+            className="font-heading text-[32px] leading-[38px] text-[#1a1a1a]"
+            maxFontSizeMultiplier={1.3}>
             Authorize{'\n'}transaction
           </Text>
-          {amount ? (
-            <Text className="mt-2 font-body text-base text-[#6B7280]">
-              Confirm {type ? String(type).toLowerCase() : 'transaction'}
-              {amount ? ` of $${amount}` : ''}
-              {recipient ? ` to ${recipient}` : ''}
-            </Text>
-          ) : null}
-        </View>
+        </Animated.View>
 
-        <View className="mt-8 px-6">
-        {isBiometricEnabled && Passkey.isSupported() && (
-          <>
+        {/* Subtitle */}
+        <Animated.View entering={FadeInUp.delay(100).duration(250)} className="mt-4 px-6">
+          <Text className="font-body text-[15px] text-[#848281]" maxFontSizeMultiplier={1.4}>
+            Enter Your Account Pin
+          </Text>
+        </Animated.View>
+
+        {/* PIN boxes + eye toggle */}
+        <Animated.View
+          entering={FadeInUp.delay(140).duration(260)}
+          className="mt-5 flex-row items-center justify-between px-6">
+          <View className="flex-row gap-x-3">
+            {[0, 1, 2, 3].map((i) => {
+              const filled = i < authPasscode.length;
+              return (
+                <View
+                  key={i}
+                  className="h-[56px] w-[56px] items-center justify-center rounded-xl bg-[#F0F0F0]">
+                  {filled &&
+                    (showPin ? (
+                      <Text
+                        className="font-mono-semibold text-[22px] text-[#1a1a1a]"
+                        style={{ fontVariant: ['tabular-nums'] }}
+                        maxFontSizeMultiplier={1.3}>
+                        {authPasscode[i]}
+                      </Text>
+                    ) : (
+                      <View className="h-3 w-3 rounded-full bg-[#343433]" />
+                    ))}
+                </View>
+              );
+            })}
+          </View>
+          <Pressable
+            onPress={() => setShowPin((v) => !v)}
+            className="h-12 w-12 items-center justify-center rounded-full bg-[#EEF2FF] active:scale-[0.96]">
+            {/* Two icons cross-fading */}
+            <View className="size-[22px] items-center justify-center">
+              <Animated.View style={eyeAnimStyle}>
+                <HugeiconsIcon icon={EyeIcon} size={22} color="#6366F1" />
+              </Animated.View>
+              <Animated.View style={eyeSlashAnimStyle}>
+                <HugeiconsIcon icon={ViewOffIcon} size={22} color="#6366F1" />
+              </Animated.View>
+            </View>
+          </Pressable>
+        </Animated.View>
+
+        {/* Error */}
+        {authError ? (
+          <View className="mt-3 px-6">
+            <Text className="font-body text-[13px] text-coral-red" maxFontSizeMultiplier={1.4}>
+              {authError}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Spacer */}
+        <View className="flex-1" />
+
+        {/* Number pad */}
+        <Animated.View entering={FadeInUp.delay(180).duration(280)} className="px-6 pb-2">
+          {[
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+          ].map((row, ri) => (
+            <View key={ri} className="mb-2 flex-row justify-between">
+              {row.map((n) => (
+                <Pressable
+                  key={n}
+                  onPress={() => {
+                    if (authPasscode.length < 4) {
+                      const next = authPasscode + String(n);
+                      onAuthPasscodeChange(next);
+                      if (next.length === 4) handlePasscodeSubmit(next);
+                    }
+                  }}
+                  className="h-[64px] flex-1 items-center justify-center active:scale-[0.96]">
+                  <Text
+                    className="font-mono-semibold text-[28px] text-[#343433]"
+                    style={{ fontVariant: ['tabular-nums'] }}
+                    maxFontSizeMultiplier={1.3}>
+                    {n}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ))}
+          <View className="mb-2 flex-row justify-between">
+            <View className="h-[64px] flex-1" />
             <Pressable
-              onPress={onPasskeyAuthorize}
-              disabled={isPasskeyLoading || isLoading}
-              className="flex-row items-center justify-center gap-3 rounded-2xl border border-[#E5E7EB] bg-[#F9FAFB] py-4">
-              {isPasskeyLoading ? (
-                <ActivityIndicator size="small" color="#070914" />
-              ) : (
-                <Fingerprint size={22} color="#070914" />
-              )}
-              <Text className="font-subtitle text-base text-[#070914]">
-                {isPasskeyLoading ? 'Verifying…' : 'Use Passkey'}
+              onPress={() => {
+                if (authPasscode.length < 4) {
+                  const next = authPasscode + '0';
+                  onAuthPasscodeChange(next);
+                  if (next.length === 4) handlePasscodeSubmit(next);
+                }
+              }}
+              className="h-[64px] flex-1 items-center justify-center active:scale-[0.96]">
+              <Text
+                className="font-mono-semibold text-[28px] text-[#343433]"
+                style={{ fontVariant: ['tabular-nums'] }}
+                maxFontSizeMultiplier={1.3}>
+                0
               </Text>
             </Pressable>
+            <Pressable
+              onPress={() => {
+                if (authPasscode.length > 0) {
+                  onAuthPasscodeChange(authPasscode.slice(0, -1));
+                }
+              }}
+              className="h-[64px] flex-1 items-center justify-center active:scale-[0.96]">
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={24} color="#343433" strokeWidth={2} />
+            </Pressable>
+          </View>
+        </Animated.View>
 
-            <View className="my-6 flex-row items-center gap-3">
-              <View className="h-px flex-1 bg-[#E5E7EB]" />
-              <Text className="font-caption text-sm text-[#9CA3AF]">or enter PIN</Text>
-              <View className="h-px flex-1 bg-[#E5E7EB]" />
-            </View>
-          </>
-        )}
-        </View>
-
-        <PasscodeInput
-          subtitle="Enter your account PIN"
-          length={4}
-          value={authPasscode}
-          onValueChange={onAuthPasscodeChange}
-          onComplete={handlePasscodeSubmit}
-          errorText={authError}
-          showToggle
-          autoSubmit
-          className="mt-10 flex-1"
-        />
-
-        <View className="mb-8 items-center px-6">
+        {/* Forgot PIN */}
+        <Animated.View entering={FadeInUp.delay(220).duration(280)} className="mb-6 items-center">
           <Pressable
-            onPress={() => router.push('/(auth)/forgot-password')}>
-            <Text className="font-body-semibold text-[16px] text-[#3B82F6]">Forgot PIN?</Text>
+            onPress={() => router.push('/(auth)/forgot-password')}
+            className="active:opacity-70"
+            hitSlop={8}>
+            <Text
+              className="font-body text-[15px] text-[#0090ff] underline"
+              maxFontSizeMultiplier={1.4}>
+              Forgot PIN?
+            </Text>
           </Pressable>
-        </View>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );
