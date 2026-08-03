@@ -3,21 +3,15 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
+import {
+  OneSignal,
+  NotificationClickEvent,
+  NotificationWillDisplayEvent,
+} from 'react-native-onesignal';
 import apiClient from '@/api/client';
 import { queryKeys } from '@/api/queryClient';
 import { logger } from '@/lib/logger';
 import { useWithdrawalEventStore } from '@/stores/withdrawalEventStore';
-
-// Configure how notifications appear when app is in foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
 
 export type PushNotificationData = {
   type?: string;
@@ -26,12 +20,14 @@ export type PushNotificationData = {
   [key: string]: unknown;
 };
 
+const ONESIGNAL_EXTERNAL_ID_ALIAS = 'external_id';
+
 class PushNotificationService {
   private expoPushToken: string | null = null;
-  private notificationListener: Notifications.EventSubscription | null = null;
-  private responseListener: Notifications.EventSubscription | null = null;
+  private foregroundListener: ((event: NotificationWillDisplayEvent) => void) | null = null;
+  private clickListener: ((event: NotificationClickEvent) => void) | null = null;
 
-  async initialize(): Promise<string | null> {
+  async initialize(userId: string | null): Promise<string | null> {
     if (!Device.isDevice) {
       logger.debug('Push notifications require a physical device', {
         component: 'PushNotifications',
@@ -39,23 +35,48 @@ class PushNotificationService {
       return null;
     }
 
-    // Request permissions
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
+    // OneSignal transport. Guarded so a missing app id (dashboard not set up
+    // yet) falls back to the legacy Expo permission flow below.
+    const onesignalAppId = Constants.expoConfig?.extra?.onesignalAppId;
+    if (onesignalAppId) {
+      try {
+        OneSignal.initialize(onesignalAppId);
 
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+        const granted = await OneSignal.Notifications.requestPermission(true);
+        if (!granted) {
+          logger.debug('Push notification permission denied', { component: 'PushNotifications' });
+          return null;
+        }
+
+        // OneSignal routes pushes via include_external_user_ids: [RAIL user UUID],
+        // so the external_id alias must match the user id.
+        if (userId) {
+          OneSignal.User.addAlias(ONESIGNAL_EXTERNAL_ID_ALIAS, userId);
+        }
+      } catch (error) {
+        logger.error('Failed to initialize OneSignal', {
+          component: 'PushNotifications',
+          error: error instanceof Error ? error.message : error,
+        });
+      }
+    } else {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== 'granted') {
+        logger.debug('Push notification permission denied', { component: 'PushNotifications' });
+        return null;
+      }
     }
 
-    if (finalStatus !== 'granted') {
-      logger.debug('Push notification permission denied', { component: 'PushNotifications' });
-      return null;
-    }
-
-    // Get the Expo push token — the backend delivers exclusively via Expo's
-    // push service (AWS SNS was decommissioned; native APNs/FCM tokens are
-    // undeliverable there and get dropped server-side).
+    // Get the Expo push token — the backend delivers via OneSignal
+    // (PUSH_PROVIDER=onesignal) but the Expo token is kept in flight during the
+    // dual-registration rollback window (PUSH_PROVIDER=expo fallback).
     try {
       const projectId =
         Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
@@ -151,18 +172,25 @@ class PushNotificationService {
 
   setupListeners(queryClient?: import('@tanstack/react-query').QueryClient) {
     // Handle notifications received while app is foregrounded
-    this.notificationListener = Notifications.addNotificationReceivedListener((notification) => {
-      const data = notification.request.content.data as PushNotificationData;
+    const foregroundListener = (event: NotificationWillDisplayEvent) => {
+      const data = (event.notification.additionalData ?? {}) as PushNotificationData;
+      event.preventDefault();
       if (queryClient) {
         this.invalidateForType(data.type, queryClient, data);
       }
-    });
+      event.notification.display();
+    };
 
     // Handle notification taps
-    this.responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as PushNotificationData;
-      this.handleNotificationTap(data);
-    });
+    const clickListener = (event: NotificationClickEvent) => {
+      this.handleNotificationTap((event.notification.additionalData ?? {}) as PushNotificationData);
+    };
+
+    OneSignal.Notifications.addEventListener('foregroundWillDisplay', foregroundListener);
+    OneSignal.Notifications.addEventListener('click', clickListener);
+
+    this.foregroundListener = foregroundListener;
+    this.clickListener = clickListener;
   }
 
   private invalidateForType(
@@ -364,14 +392,18 @@ class PushNotificationService {
   }
 
   removeListeners() {
-    if (this.notificationListener) {
-      this.notificationListener.remove();
-      this.notificationListener = null;
+    if (this.foregroundListener) {
+      OneSignal.Notifications.removeEventListener('foregroundWillDisplay', this.foregroundListener);
+      this.foregroundListener = null;
     }
-    if (this.responseListener) {
-      this.responseListener.remove();
-      this.responseListener = null;
+    if (this.clickListener) {
+      OneSignal.Notifications.removeEventListener('click', this.clickListener);
+      this.clickListener = null;
     }
+  }
+
+  removeUserAlias(): void {
+    OneSignal.User.removeAlias(ONESIGNAL_EXTERNAL_ID_ALIAS);
   }
 
   getToken(): string | null {
