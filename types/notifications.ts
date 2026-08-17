@@ -1,11 +1,5 @@
 export type NotificationType =
-  | 'transaction'
-  | 'deposit'
-  | 'withdrawal'
-  | 'investment'
-  | 'alert'
-  | 'promo'
-  | 'system';
+  'transaction' | 'deposit' | 'withdrawal' | 'investment' | 'alert' | 'promo' | 'system';
 
 export interface NotificationData {
   type: NotificationType;

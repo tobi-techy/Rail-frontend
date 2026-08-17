@@ -32,15 +32,14 @@ export function StatementSummaryCard({ card }: { card: InsightCard }) {
   const months = typeof d.months_covered === 'number' ? d.months_covered : null;
   const periodStart = typeof d.period_start === 'string' ? d.period_start : null;
   const periodEnd = typeof d.period_end === 'string' ? d.period_end : null;
-  const cats: Category[] = Array.isArray(d.top_categories)
-    ? (d.top_categories as Category[])
-    : [];
+  const cats: Category[] = Array.isArray(d.top_categories) ? (d.top_categories as Category[]) : [];
 
   // spending=0 is valid — only bail when truly absent
   const spendingAbsent = spending === null || spending === undefined || spending === '';
   if (spendingAbsent || cats.length === 0) return <CardErrorFallback />;
 
-  const hasIncome = income !== null && income !== undefined && income !== '' && parseMoney(income) > 0;
+  const hasIncome =
+    income !== null && income !== undefined && income !== '' && parseMoney(income) > 0;
   const period =
     periodStart !== null && periodEnd !== null
       ? `${periodStart} – ${periodEnd}`
@@ -81,9 +80,7 @@ export function StatementSummaryCard({ card }: { card: InsightCard }) {
           {hasIncome ? (
             <View className="flex-1 rounded-2xl bg-stone-surface px-4 py-3">
               <Text className="font-body text-[12px] text-text-secondary">Total income</Text>
-              <Text
-                className="mt-1 font-heading-bold text-[20px] text-success"
-                numberOfLines={1}>
+              <Text className="mt-1 font-heading-bold text-[20px] text-success" numberOfLines={1}>
                 {money(income, currency)}
               </Text>
             </View>

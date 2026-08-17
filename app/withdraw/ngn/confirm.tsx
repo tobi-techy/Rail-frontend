@@ -16,8 +16,7 @@ import { useRampQuote, useRampOfframp, useRampOrderStatus } from '@/api/hooks/us
 import { useAuthStore } from '@/stores/authStore';
 import { SessionManager } from '@/utils/sessionManager';
 import { NgnIcon } from '@/assets/svg';
-import { ArrowLeft01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
-import { ReviewCard, DetailRow, Sep } from '@/components/withdraw/shared';
+import { ArrowLeft01Icon, Wallet01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { formatCurrency } from '@/components/withdraw/method-screen/utils';
 import { commitmentDeclineMessage, isCommitmentExceededError } from '@/utils/spendingCommitment';
 import {
@@ -28,6 +27,16 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { playUISound } from '@/lib/uiSounds';
 import * as Haptics from '@/utils/platformHaptics';
 import { isPasscodeSessionError } from '@/utils/apiError';
+import {
+  DetailCard,
+  DetailField,
+  AmountHero,
+  SectionLabel,
+  Hairline,
+  SenderReceiver,
+  CurrencyBadge,
+  STAGGER_MS,
+} from '@/components/withdraw/shared';
 
 const mapRampStatus = (status?: string): WithdrawalStatusType => {
   if (status === 'completed') return 'success';
@@ -203,7 +212,7 @@ export default function NgnConfirmScreen() {
         <Text
           className="mt-4 font-subtitle text-[17px] text-text-primary"
           maxFontSizeMultiplier={1.3}>
-          Processing withdrawal...
+          Processing withdrawal…
         </Text>
       </SafeAreaView>
     );
@@ -236,25 +245,16 @@ export default function NgnConfirmScreen() {
           <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#EA580C" />
         }>
         {/* Amount hero */}
-        <Animated.View entering={FadeInUp.duration(250)} className="items-center py-8">
+        <Animated.View entering={FadeInUp.duration(250)} className="items-center py-6">
           <View className="mb-3 size-14 items-center justify-center overflow-hidden rounded-full">
             <NgnIcon width={56} height={56} />
           </View>
-          <Text
-            className="font-mono-semibold text-[42px] leading-[46px] text-text-primary"
-            style={{ letterSpacing: -1 }}
-            maxFontSizeMultiplier={1.3}>
-            ₦{formatCurrency(numericAmount)}
-          </Text>
-          {ngnUsdEquivalent > 0 && (
-            <Text
-              className="mt-1 font-body text-[14px] text-text-secondary"
-              maxFontSizeMultiplier={1.4}>
-              ≈ ${ngnUsdEquivalent.toFixed(2)} USDC
-            </Text>
-          )}
+          <AmountHero
+            amount={`₦${formatCurrency(numericAmount)}`}
+            subtitle={ngnUsdEquivalent > 0 ? `≈ $${ngnUsdEquivalent.toFixed(2)} USDC` : undefined}
+          />
           {isQuoteStale && (
-            <View className="mt-2 flex-row items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2">
+            <View className="mt-3 flex-row items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2">
               <Text className="font-body text-[12px] text-amber-700" maxFontSizeMultiplier={1.3}>
                 ⚠ Rate may have changed. Pull down to refresh the rate.
               </Text>
@@ -263,40 +263,43 @@ export default function NgnConfirmScreen() {
         </Animated.View>
 
         {/* Destination */}
-        <Animated.View entering={FadeInUp.delay(40).duration(250)}>
-          <ReviewCard title="Destination">
-            <DetailRow label="Recipient" value={params.accountName ?? '—'} />
-            <Sep />
-            <DetailRow label="Bank" value={params.bankName ?? '—'} />
-            <Sep />
-            <DetailRow label="Account" value={params.accountNumber ?? '—'} />
-            <Sep />
-            <DetailRow label="Source" value="Spend Wallet" />
-          </ReviewCard>
+        <Animated.View entering={FadeInUp.delay(STAGGER_MS).duration(250)}>
+          <SectionLabel>Destination</SectionLabel>
+          <DetailCard>
+            <SenderReceiver
+              fromLabel="From"
+              fromValue="Spend Wallet"
+              fromIcon={<HugeiconsIcon icon={Wallet01Icon} size={16} color="#848281" />}
+              toLabel="To"
+              toValue={params.accountName ?? '—'}
+              toIcon={<CurrencyBadge code="NGN" />}
+            />
+            <Hairline />
+            <DetailField label="Bank" value={params.bankName ?? '—'} />
+            <Hairline />
+            <DetailField label="Account" value={params.accountNumber ?? '—'} mono />
+            <Hairline />
+            <DetailField label="Currency" value="NGN" />
+          </DetailCard>
         </Animated.View>
 
         {/* Transaction */}
-        <Animated.View entering={FadeInUp.delay(80).duration(250)}>
-          <ReviewCard title="Transaction">
+        <Animated.View entering={FadeInUp.delay(STAGGER_MS * 2).duration(250)} className="mt-6">
+          <SectionLabel>Transaction</SectionLabel>
+          <DetailCard>
             {offRampRate > 0 && (
               <>
-                <DetailRow label="Rate" value={`₦${offRampRate.toLocaleString()}/USD`} />
-                <Sep />
+                <DetailField label="Rate" value={`₦${offRampRate.toLocaleString()}/USD`} />
+                <Hairline />
               </>
             )}
-            <View className="flex-row items-center justify-between px-5 py-4">
-              <Text
-                className="font-subtitle text-[14px] text-text-primary"
-                maxFontSizeMultiplier={1.4}>
-                You send
-              </Text>
-              <Text
-                className="font-subtitle text-[16px] text-text-primary"
-                maxFontSizeMultiplier={1.3}>
-                ₦{formatCurrency(numericAmount)}
-              </Text>
-            </View>
-          </ReviewCard>
+            <DetailField label="You send" value={`₦${formatCurrency(numericAmount)}`} />
+            <Hairline />
+            <DetailField
+              label="Fee"
+              value={rampQuote?.fee ? `₦${Number(rampQuote.fee).toLocaleString()}` : '—'}
+            />
+          </DetailCard>
         </Animated.View>
 
         <Text

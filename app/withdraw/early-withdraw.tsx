@@ -268,10 +268,6 @@ export default function EarlyWithdrawScreen() {
         authorizeTitle="Authorize Withdrawal"
         authError={passkey.authError}
         authPasscode={passkey.authPasscode}
-        isAuthorizing={passkey.isPasskeyLoading || isPasscodeVerifying}
-        isSubmitting={isSubmitting}
-        authorizingTitle="Verifying..."
-        submittingTitle="Withdrawing from stash..."
         summaryAmount={numericAmount}
         onClose={() => setShowAuthScreen(false)}
         onPasscodeAuthorize={onPasscodeAuthorize}
@@ -393,13 +389,7 @@ export default function EarlyWithdrawScreen() {
         </Animated.View>
 
         <Animated.View entering={SlideInUp.delay(100).duration(500)} style={keypadAnimatedStyle}>
-          <Keypad
-            className="pb-2"
-            onKeyPress={onAmountKeyPress}
-            backspaceIcon="delete"
-            variant="dark"
-            leftKey="decimal"
-          />
+          <Keypad className="pb-2" onKeyPress={onAmountKeyPress} variant="dark" leftKey="decimal" />
         </Animated.View>
       </View>
     </SafeAreaView>

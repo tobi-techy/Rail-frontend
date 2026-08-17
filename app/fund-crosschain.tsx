@@ -139,13 +139,7 @@ export default function FundCrosschainScreen() {
           </Animated.View>
 
           <Animated.View entering={SlideInUp.delay(100).duration(500)} style={keypadStyle}>
-            <Keypad
-              className="pb-2"
-              onKeyPress={onKeyPress}
-              backspaceIcon="delete"
-              variant="dark"
-              leftKey="decimal"
-            />
+            <Keypad className="pb-2" onKeyPress={onKeyPress} variant="dark" leftKey="decimal" />
           </Animated.View>
         </View>
 

@@ -701,13 +701,7 @@ function TapToPayActiveScreen() {
             />
           </View>
 
-          <Keypad
-            className="pb-2"
-            onKeyPress={onKey}
-            backspaceIcon="delete"
-            variant="dark"
-            leftKey="decimal"
-          />
+          <Keypad className="pb-2" onKeyPress={onKey} variant="dark" leftKey="decimal" />
         </View>
         <View style={{ paddingBottom: Math.max(insets.bottom, 12) }} />
       </SafeAreaView>

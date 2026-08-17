@@ -28,6 +28,14 @@ import { invalidateQueries } from '@/api/queryClient';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import type { RampOnrampOrder } from '@/api/types/ramp';
 import { MIN_NGN_TRANSACTION_AMOUNT, MAX_NGN_DEPOSIT_AMOUNT } from '@/constants/transactionLimits';
+import {
+  DetailCard,
+  DetailField,
+  StatusBadge,
+  AmountHero,
+  SectionLabel,
+  Hairline,
+} from '@/components/withdraw/shared';
 
 type Step = 'amount' | 'bank-details' | 'waiting';
 
@@ -213,13 +221,7 @@ export default function FundNairaScreen() {
 
           {/* Keypad */}
           <Animated.View entering={SlideInUp.delay(100).duration(500)} style={keypadStyle}>
-            <Keypad
-              className="pb-2"
-              onKeyPress={onKeyPress}
-              backspaceIcon="delete"
-              variant="dark"
-              leftKey="decimal"
-            />
+            <Keypad className="pb-2" onKeyPress={onKeyPress} variant="dark" leftKey="decimal" />
           </Animated.View>
         </View>
         <View style={{ paddingBottom: Math.max(insets.bottom, 12) }} />
@@ -252,6 +254,8 @@ function BankDetailsStep({
     setTimeout(() => setCopiedField((cur) => (cur === label ? null : cur)), 2000);
   }, []);
 
+  const usdValue = order.rate > 0 ? (order.fiatAmount / order.rate).toFixed(2) : '—';
+
   return (
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" />
@@ -267,66 +271,68 @@ function BankDetailsStep({
             accessibilityLabel="Close">
             <HugeiconsIcon icon={Cancel01Icon} size={20} color="#343433" />
           </Pressable>
-          <Text className="font-subtitle text-[20px] text-text-primary" maxFontSizeMultiplier={1.3}>
+          <Text className="font-subtitle text-[17px] text-text-primary" maxFontSizeMultiplier={1.3}>
             Transfer Details
           </Text>
           <View className="size-11" />
         </Animated.View>
 
-        {/* Amount summary */}
-        <Animated.View entering={FadeInDown.delay(100).duration(400)} className="mt-6 items-center">
-          <Text className="font-body text-[14px] text-text-secondary" maxFontSizeMultiplier={1.4}>
-            Transfer exactly
-          </Text>
-          <Text
-            className="mt-1 font-mono-semibold text-[40px] text-text-primary"
-            style={{ fontVariant: ['tabular-nums'] }}
-            maxFontSizeMultiplier={1.3}>
-            ₦{order.fiatAmount.toLocaleString()}
-          </Text>
-          <Text
-            className="mt-1 font-body text-[14px] text-text-secondary"
-            maxFontSizeMultiplier={1.4}>
-            ≈ ${order.rate > 0 ? (order.fiatAmount / order.rate).toFixed(2) : '—'} USDC
-          </Text>
-        </Animated.View>
+        {/* Amount hero */}
+        <View className="mt-4 items-center py-6">
+          <AmountHero
+            amount={`₦${order.fiatAmount.toLocaleString()}`}
+            subtitle={`≈ $${usdValue} USDC`}
+            status="pending"
+            description="Transfer exactly this amount"
+          />
+        </View>
 
         {/* Bank details card */}
-        <Animated.View
-          entering={FadeInDown.delay(200).duration(400)}
-          className="mt-8 rounded-3xl bg-stone-surface px-5 py-5">
-          <BankDetailRow
-            label="Bank"
-            value={order.bank}
-            onCopy={() => copyToClipboard(order.bank, 'Bank')}
-            copied={copiedField === 'Bank'}
-          />
-          <View className="my-4 h-px bg-fog/40" />
-          <BankDetailRow
-            label="Account Number"
-            value={order.accountNumber}
-            onCopy={() => copyToClipboard(order.accountNumber, 'Account number')}
-            copied={copiedField === 'Account number'}
-            mono
-          />
-          <View className="my-4 h-px bg-fog/40" />
-          <BankDetailRow
-            label="Account Name"
-            value={order.accountName}
-            onCopy={() => copyToClipboard(order.accountName, 'Account name')}
-            copied={copiedField === 'Account name'}
-          />
-        </Animated.View>
+        <View className="mt-6">
+          <SectionLabel>Bank Account</SectionLabel>
+          <DetailCard>
+            <DetailField label="Bank" value={order.bank} />
+            <Hairline />
+            <DetailField label="Account Number" value={order.accountNumber} mono />
+            <Hairline />
+            <DetailField label="Account Name" value={order.accountName} />
+          </DetailCard>
+        </View>
+
+        {/* Copy-all helper */}
+        <View className="mt-4">
+          <Pressable
+            onPress={() =>
+              copyToClipboard(
+                `Bank: ${order.bank}\nAccount Number: ${order.accountNumber}\nAccount Name: ${order.accountName}`,
+                'All details'
+              )
+            }
+            className="flex-row items-center justify-center gap-2 rounded-full bg-stone-surface px-4 py-3 active:scale-[0.98]"
+            accessibilityRole="button"
+            accessibilityLabel="Copy all bank details">
+            <HugeiconsIcon
+              icon={copiedField === 'All details' ? CheckmarkCircle01Icon : Copy01Icon}
+              size={16}
+              color={copiedField === 'All details' ? '#00ca48' : '#848281'}
+            />
+            <Text
+              className="font-subtitle text-[14px] text-text-secondary"
+              maxFontSizeMultiplier={1.3}>
+              {copiedField === 'All details' ? 'Copied' : 'Copy all details'}
+            </Text>
+          </Pressable>
+        </View>
 
         {/* Instructions */}
-        <Animated.View entering={FadeInDown.delay(300).duration(400)} className="mt-6 px-2">
+        <View className="mt-6 px-2">
           <Text
             className="text-center font-body text-[13px] leading-5 text-text-secondary"
             maxFontSizeMultiplier={1.4}>
             Transfer the exact amount above to this account. Your deposit will be credited
             automatically once confirmed.
           </Text>
-        </Animated.View>
+        </View>
 
         {/* CTA */}
         <View className="mt-auto pb-4">
@@ -334,48 +340,6 @@ function BankDetailsStep({
         </View>
       </View>
     </SafeAreaView>
-  );
-}
-
-function BankDetailRow({
-  label,
-  value,
-  onCopy,
-  mono,
-  copied,
-}: {
-  label: string;
-  value: string;
-  onCopy: () => void;
-  mono?: boolean;
-  copied?: boolean;
-}) {
-  return (
-    <View className="flex-row items-center justify-between">
-      <View className="mr-3 flex-1">
-        <Text className="font-caption text-caption text-text-secondary" maxFontSizeMultiplier={1.4}>
-          {label}
-        </Text>
-        <Text
-          className={`mt-1 text-[16px] text-text-primary ${mono ? 'font-mono-semibold' : 'font-subtitle'}`}
-          style={mono ? { fontVariant: ['tabular-nums'], letterSpacing: 0.5 } : undefined}
-          selectable
-          maxFontSizeMultiplier={1.3}>
-          {value}
-        </Text>
-      </View>
-      <Pressable
-        className="size-10 items-center justify-center rounded-full bg-warm-canvas active:bg-fog/30"
-        onPress={onCopy}
-        accessibilityRole="button"
-        accessibilityLabel={`Copy ${label}`}>
-        <HugeiconsIcon
-          icon={copied ? CheckmarkCircle01Icon : Copy01Icon}
-          size={18}
-          color={copied ? '#22c55e' : '#848281'}
-        />
-      </Pressable>
-    </View>
   );
 }
 
@@ -497,6 +461,8 @@ function WaitingStep({
     Linking.openURL(`mailto:support@userail.money?subject=${subject}&body=${body}`);
   }, [transactionId, fiatDisplay, status?.status]);
 
+  const statusMap = isCompleted ? 'completed' : isFailed ? 'failed' : 'pending';
+
   return (
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" />
@@ -504,64 +470,59 @@ function WaitingStep({
         {/* Header */}
         <View className="flex-row items-center justify-between pb-2 pt-1">
           <View className="size-11" />
-          <Text className="font-subtitle text-[20px] text-text-primary" maxFontSizeMultiplier={1.3}>
+          <Text className="font-subtitle text-[17px] text-text-primary" maxFontSizeMultiplier={1.3}>
             Deposit Status
           </Text>
           <View className="size-11" />
         </View>
 
         {/* Hero */}
-        <Animated.View entering={FadeInDown.delay(100).duration(400)} className="mt-8 items-center">
-          <Text className="font-subtitle text-[24px] text-text-primary" maxFontSizeMultiplier={1.3}>
-            {isCompleted
-              ? 'Deposit complete'
-              : isFailed
-                ? 'Something went wrong'
-                : 'We received your request'}
-          </Text>
-          <Text
-            className="mt-2 text-center font-body text-[15px] leading-[22px] text-text-secondary"
-            maxFontSizeMultiplier={1.4}>
-            {isCompleted
-              ? `₦${fiatDisplay} has been converted and credited.`
-              : isFailed
-                ? 'Your deposit could not be processed.'
-                : `Your deposit of ₦${fiatDisplay} is now being processed.`}
-          </Text>
-        </Animated.View>
+        <View className="mt-4 items-center py-6">
+          <AmountHero
+            amount={`₦${fiatDisplay}`}
+            status={statusMap}
+            description={
+              isCompleted
+                ? 'Deposit converted and credited'
+                : isFailed
+                  ? 'Your deposit could not be processed'
+                  : 'Your deposit is being processed'
+            }
+          />
+        </View>
 
         {/* Timeline card */}
-        <Animated.View
-          entering={FadeInDown.delay(250).duration(400)}
-          style={cardStyle}
-          className="mt-8 rounded-3xl bg-stone-surface px-5 py-6">
-          {STEPS.map((step, i) => {
-            const s = stepStatuses[i];
-            const isLast = i === STEPS.length - 1;
-            return (
-              <TimelineRow
-                key={step.key}
-                status={s}
-                title={s === 'failed' ? step.failTitle : step.title}
-                description={s === 'failed' ? step.failDesc() : step.desc(fiatDisplay)}
-                isLast={isLast}
-                index={i}
-              />
-            );
-          })}
-        </Animated.View>
+        <View style={cardStyle} className="mt-6">
+          <SectionLabel>Progress</SectionLabel>
+          <DetailCard className="py-5">
+            {STEPS.map((step, i) => {
+              const s = stepStatuses[i];
+              const isLast = i === STEPS.length - 1;
+              return (
+                <TimelineRow
+                  key={step.key}
+                  status={s}
+                  title={s === 'failed' ? step.failTitle : step.title}
+                  description={s === 'failed' ? step.failDesc() : step.desc(fiatDisplay)}
+                  isLast={isLast}
+                  index={i}
+                />
+              );
+            })}
+          </DetailCard>
+        </View>
 
         {/* Timing hint */}
         {!isTerminal && (
-          <Animated.View entering={FadeIn.delay(400).duration(300)} className="mt-5 items-center">
-            <View className="rounded-full bg-surface px-4 py-2">
+          <View className="mt-5 items-center">
+            <View className="rounded-full bg-stone-surface px-4 py-2">
               <Text
                 className="font-body text-[13px] text-text-secondary"
                 maxFontSizeMultiplier={1.4}>
                 Usually takes 1–5 minutes
               </Text>
             </View>
-          </Animated.View>
+          </View>
         )}
 
         {/* CTAs */}
@@ -609,14 +570,14 @@ function TimelineRow({
   const isDone = status === 'done';
   const isActive = status === 'active';
 
-  const iconColor = isFailed ? '#ff2b3a' : isDone ? '#ff3e00' : '#c6c6c6';
+  const iconColor = isFailed ? '#ff2b3a' : isDone ? '#00ca48' : '#c6c6c6';
   const titleColor = isFailed ? '#ff2b3a' : '#343433';
-  const lineColor = isDone ? '#c6c6c6' : '#f7f2e8';
+  const lineColor = isDone ? '#00ca48' : '#f2f2f2';
 
   return (
     <Animated.View
       entering={FadeInDown.delay(300 + index * 100).duration(350)}
-      className="flex-row">
+      className="flex-row px-5">
       {/* Icon column with connector line */}
       <View className="mr-4 items-center" style={{ width: 24 }}>
         {isActive ? (
@@ -647,13 +608,13 @@ function TimelineRow({
       {/* Content */}
       <View className={`flex-1 ${isLast ? '' : 'pb-5'}`}>
         <Text
-          className="font-subtitle text-body"
+          className="font-subtitle text-[15px]"
           style={{ color: titleColor }}
           maxFontSizeMultiplier={1.3}>
           {title}
         </Text>
         <Text
-          className="mt-0.5 font-body text-caption leading-[18px] text-text-secondary"
+          className="mt-0.5 font-body text-[13px] leading-[18px] text-text-secondary"
           maxFontSizeMultiplier={1.4}>
           {description}
         </Text>

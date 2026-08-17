@@ -413,9 +413,6 @@ export default function WithdrawAmountScreen() {
         authorizeTitle={authorizeTitle}
         authError={auth.passkey.authError}
         authPasscode={auth.passkey.authPasscode}
-        isAuthorizing={auth.isAuthorizing}
-        isSubmitting={withdrawal.isSubmitting}
-        authorizingTitle={auth.authorizingTitle}
         onClose={() => {
           if (!auth.isAuthorizing && !withdrawal.isSubmitting) setIsAuthVisible(false);
         }}
@@ -423,7 +420,6 @@ export default function WithdrawAmountScreen() {
         onPasskeyPress={auth.handlePasskeyPress}
         onValueChange={auth.passkey.onAuthPasscodeChange}
         showPasskey={auth.passkeySupported}
-        submittingTitle={submittingTitle}
         summaryAmount={numericAmount}
         pinAttemptsRemaining={auth.MAX_PIN_ATTEMPTS - auth.pinAttempts}
         isLockedOut={!!auth.lockoutUntil}
@@ -549,7 +545,6 @@ export default function WithdrawAmountScreen() {
             <Keypad
               className="pb-2"
               onKeyPress={amount.onAmountKeyPress}
-              backspaceIcon="delete"
               variant="dark"
               leftKey="decimal"
             />
