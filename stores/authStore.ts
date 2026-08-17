@@ -634,7 +634,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       setPasscode: async (passcode) => {
         try {
           await passcodeService.createPasscode({ passcode, confirmPasscode: passcode });
-          set({ hasPasscode: true });
+          const expiresAt = new Date(Date.now() + PASSCODE_SESSION_MS).toISOString();
+          set({
+            hasPasscode: true,
+            passcodeSessionToken: 'newly-created',
+            passcodeSessionExpiresAt: expiresAt,
+            appLockExpiresAt: expiresAt,
+          });
         } catch (error) {
           safeError('[AuthStore] Failed to set passcode:', error);
           throw error;

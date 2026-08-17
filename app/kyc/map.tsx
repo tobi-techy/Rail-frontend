@@ -26,6 +26,10 @@ export default function KycMapScreen() {
 
   const firstName = data.firstName || user?.firstName || '';
   const lastName = data.lastName || user?.lastName || '';
+  const dob = data.dob || user?.dateOfBirth || '';
+  const street = data.street || user?.addressStreet || '';
+  const employmentStatus = data.employmentStatus || '';
+  const sourceOfFunds = data.sourceOfFunds || '';
 
   const steps = useMemo(
     () => [
@@ -38,19 +42,19 @@ export default function KycMapScreen() {
       {
         title: 'Date of birth',
         detail: 'Must be 18 or older',
-        done: Boolean(data.dob),
+        done: Boolean(dob),
         icon: Calendar03Icon,
       },
       {
         title: 'Address & phone',
         detail: 'About 1 minute',
-        done: Boolean(data.street),
+        done: Boolean(street),
         icon: PinIcon,
       },
       {
         title: 'About you',
         detail: 'Employment, purpose, source of funds',
-        done: Boolean(data.employmentStatus && data.sourceOfFunds),
+        done: Boolean(employmentStatus && sourceOfFunds),
         icon: Building04Icon,
       },
       {
@@ -60,16 +64,16 @@ export default function KycMapScreen() {
         icon: ShieldKeyIcon,
       },
     ],
-    [data.dob, data.employmentStatus, data.sourceOfFunds, data.street, firstName, lastName]
+    [dob, employmentStatus, sourceOfFunds, street, firstName, lastName]
   );
 
   const startRoute = getVerifyStartRoute({
     firstName,
     lastName,
-    dob: data.dob,
-    street: data.street,
-    employmentStatus: data.employmentStatus,
-    sourceOfFunds: data.sourceOfFunds,
+    dob,
+    street,
+    employmentStatus,
+    sourceOfFunds,
   });
 
   return (

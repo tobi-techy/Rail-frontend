@@ -16,7 +16,7 @@ import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAppleSignIn, useGoogleSignIn } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { getPostAuthRoute } from '@/utils/onboardingFlow';
+import { getSocialLoginRoute } from '@/utils/onboardingFlow';
 import { useAuthStore } from '@/stores/authStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onboardingSlides, SLIDE_INTERVAL } from '@/components/intro/onboardingSlides';
@@ -174,9 +174,11 @@ export default function App() {
                 googleSignIn(undefined, {
                   onSuccess: (resp) =>
                     router.replace(
-                      getPostAuthRoute(resp.user?.onboardingStatus, {
-                        firstJob: useAuthStore.getState().registrationData.firstJob,
-                      }) as never
+                      getSocialLoginRoute(
+                        resp.user?.onboardingStatus,
+                        useAuthStore.getState().hasPasscode,
+                        { firstJob: useAuthStore.getState().registrationData.firstJob }
+                      ) as never
                     ),
                   onError: () =>
                     showError('Google Sign-In Failed', 'Please try again or use email sign in.'),
@@ -194,9 +196,11 @@ export default function App() {
                 appleSignIn(undefined, {
                   onSuccess: (resp) =>
                     router.replace(
-                      getPostAuthRoute(resp.user?.onboardingStatus, {
-                        firstJob: useAuthStore.getState().registrationData.firstJob,
-                      }) as never
+                      getSocialLoginRoute(
+                        resp.user?.onboardingStatus,
+                        useAuthStore.getState().hasPasscode,
+                        { firstJob: useAuthStore.getState().registrationData.firstJob }
+                      ) as never
                     ),
                   onError: () =>
                     showError('Apple Sign-In Failed', 'Please try again or use email sign in.'),

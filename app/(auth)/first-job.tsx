@@ -10,7 +10,13 @@ import { useAuthStore } from '@/stores/authStore';
 import type { FirstJob } from '@/stores/authStore';
 import { useHaptics } from '@/hooks/useHaptics';
 import { playUISound } from '@/lib/uiSounds';
-import { ArrowDownLeft01Icon, InternetIcon, SavingsIcon, Message01Icon } from '@/lib/icons';
+import {
+  ArrowDownLeft01Icon,
+  InternetIcon,
+  SavingsIcon,
+  Message01Icon,
+  ArrowLeft01Icon,
+} from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
 const JOBS: {
@@ -73,6 +79,18 @@ export default function FirstJobScreen() {
         <View className="flex-1 px-6 pt-6">
           <StaggeredChild index={0}>
             <View className="mb-8 items-center">
+              <Pressable
+                onPress={() => {
+                  selection();
+                  if (router.canGoBack()) router.back();
+                  else router.replace(ROUTES.AUTH.CREATE_PASSCODE as never);
+                }}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                className="mb-4 size-10 items-center justify-center self-start rounded-full bg-stone-surface">
+                <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color="#343433" />
+              </Pressable>
               <MiriamCharacter size={72} emotion="happy" animate />
               <Text
                 className="mt-5 text-center font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"

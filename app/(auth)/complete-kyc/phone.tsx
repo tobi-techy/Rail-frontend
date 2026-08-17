@@ -35,7 +35,6 @@ const normalizePhone = (
 export default function Phone() {
   const registrationData = useAuthStore((state) => state.registrationData);
   const updateRegistrationData = useAuthStore((state) => state.updateRegistrationData);
-  const clearRegistrationData = useAuthStore((state) => state.clearRegistrationData);
   const updateUser = useAuthStore((state) => state.updateUser);
   const setOnboardingStatus = useAuthStore((state) => state.setOnboardingStatus);
   const [phone, setPhone] = useState(registrationData.phone || '');
@@ -119,7 +118,6 @@ export default function Phone() {
         });
 
         setOnboardingStatus(response.onboarding?.onboardingStatus || 'kyc_pending');
-        clearRegistrationData();
         if (!pendingEmployment) {
           router.replace(ROUTES.AUTH.COMPLETE_PROFILE.EMPLOYMENT_STATUS as never);
           return;

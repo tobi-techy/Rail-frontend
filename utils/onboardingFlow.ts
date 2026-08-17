@@ -31,7 +31,7 @@ export const isFirstJobRequired = (status?: string | null, firstJob?: FirstJob |
 
 export const isOnboardingAppReady = (status?: string | null): boolean => {
   const resolved = resolveOnboardingStatus(status);
-  return APP_READY_STATUSES.has(resolved) || resolved.length === 0;
+  return APP_READY_STATUSES.has(resolved);
 };
 
 export interface VerifyProgressInput {
@@ -78,10 +78,15 @@ export const getKycContinuationRoute = ({
   progress,
 }: KycContinuationStatus): string => {
   const resolved = resolveOnboardingStatus(status);
-  if (resolved === 'pending' || resolved === 'processing' || hasSubmitted) {
+  if (
+    resolved === 'pending' ||
+    resolved === 'processing' ||
+    resolved === 'kyc_pending' ||
+    hasSubmitted
+  ) {
     return ROUTES.KYC.PENDING;
   }
-  if (resolved === 'rejected' || resolved === 'expired') {
+  if (resolved === 'rejected' || resolved === 'expired' || resolved === 'kyc_rejected') {
     return ROUTES.KYC.INDEX;
   }
   if (!hasVerifyProgress(progress)) return ROUTES.KYC.MAP;
@@ -94,8 +99,15 @@ export const getKycContinuationLabel = ({
   progress,
 }: KycContinuationStatus): string => {
   const resolved = resolveOnboardingStatus(status);
-  if (resolved === 'rejected' || resolved === 'expired') return 'Try again';
-  if (resolved === 'pending' || resolved === 'processing' || hasSubmitted) return 'In review';
+  if (resolved === 'rejected' || resolved === 'expired' || resolved === 'kyc_rejected')
+    return 'Try again';
+  if (
+    resolved === 'pending' ||
+    resolved === 'processing' ||
+    resolved === 'kyc_pending' ||
+    hasSubmitted
+  )
+    return 'In review';
   if (hasVerifyProgress(progress)) return 'Continue';
   return 'Get started';
 };
@@ -134,4 +146,17 @@ export const getPostAuthRoute = (
 ): string => {
   if (isFirstJobRequired(status, opts?.firstJob)) return ROUTES.AUTH.FIRST_JOB;
   return ROUTES.TABS;
+};
+
+/**
+ * Route after social login. Forces passcode creation if user has none,
+ * otherwise falls through to the standard post-auth route.
+ */
+export const getSocialLoginRoute = (
+  status?: string | null,
+  hasPasscode?: boolean,
+  opts?: { firstJob?: FirstJob | null }
+): string => {
+  if (!hasPasscode) return ROUTES.AUTH.CREATE_PASSCODE;
+  return getPostAuthRoute(status, opts);
 };

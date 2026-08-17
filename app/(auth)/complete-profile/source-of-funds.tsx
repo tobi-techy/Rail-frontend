@@ -52,10 +52,16 @@ export default function SourceOfFundsScreen() {
         account_purpose: registrationData.accountPurpose,
       });
     } catch (err: any) {
-      console.warn('source-of-funds save failed (non-fatal):', err?.message);
+      showError(
+        'Save Failed',
+        err?.message || 'Could not save your source of funds. Please try again.'
+      );
+      setIsSaving(false);
+      return;
     }
 
     updateRegistrationData({ sourceOfFunds: selected });
+    useAuthStore.getState().clearRegistrationData();
     notification('success');
     playUISound('transactionSuccess');
     useAuthStore.getState().setOnboardingStatus('basic_complete');

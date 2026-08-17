@@ -45,16 +45,11 @@ export default function ConfirmPasscodeScreen() {
         router.replace(ROUTES.AUTH.FIRST_JOB as never);
       };
 
-      if (!registrationData.firstName || !registrationData.lastName) {
-        goNext();
-        return;
-      }
-
       basicComplete(
         {
-          firstName: registrationData.firstName,
+          firstName: registrationData.firstName || '',
           middleName: registrationData.middleName || undefined,
-          lastName: registrationData.lastName,
+          lastName: registrationData.lastName || '',
         },
         {
           onSuccess: goNext,

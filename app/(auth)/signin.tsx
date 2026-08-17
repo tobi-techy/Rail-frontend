@@ -15,7 +15,7 @@ import { AuthGradient, InputField, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAppleSignIn, useGoogleSignIn } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
-import { getPostAuthRoute } from '@/utils/onboardingFlow';
+import { getSocialLoginRoute } from '@/utils/onboardingFlow';
 import { useAuthStore } from '@/stores/authStore';
 import { useHaptics } from '@/hooks/useHaptics';
 import { playUISound } from '@/lib/uiSounds';
@@ -140,9 +140,11 @@ export default function SignIn() {
                       googleSignIn(undefined, {
                         onSuccess: (resp) =>
                           router.replace(
-                            getPostAuthRoute(resp.user?.onboardingStatus, {
-                              firstJob: useAuthStore.getState().registrationData.firstJob,
-                            }) as never
+                            getSocialLoginRoute(
+                              resp.user?.onboardingStatus,
+                              useAuthStore.getState().hasPasscode,
+                              { firstJob: useAuthStore.getState().registrationData.firstJob }
+                            ) as never
                           ),
                         onError: () =>
                           showError(
@@ -163,9 +165,11 @@ export default function SignIn() {
                       appleSignIn(undefined, {
                         onSuccess: (resp) =>
                           router.replace(
-                            getPostAuthRoute(resp.user?.onboardingStatus, {
-                              firstJob: useAuthStore.getState().registrationData.firstJob,
-                            }) as never
+                            getSocialLoginRoute(
+                              resp.user?.onboardingStatus,
+                              useAuthStore.getState().hasPasscode,
+                              { firstJob: useAuthStore.getState().registrationData.firstJob }
+                            ) as never
                           ),
                         onError: () =>
                           showError(
