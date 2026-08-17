@@ -139,7 +139,11 @@ export default function SignIn() {
                     onPress={() => {
                       googleSignIn(undefined, {
                         onSuccess: (resp) =>
-                          router.replace(getPostAuthRoute(resp.user?.onboardingStatus) as never),
+                          router.replace(
+                            getPostAuthRoute(resp.user?.onboardingStatus, {
+                              firstJob: useAuthStore.getState().registrationData.firstJob,
+                            }) as never
+                          ),
                         onError: () =>
                           showError(
                             'Google Sign-In Failed',
@@ -158,7 +162,11 @@ export default function SignIn() {
                     onPress={() => {
                       appleSignIn(undefined, {
                         onSuccess: (resp) =>
-                          router.replace(getPostAuthRoute(resp.user?.onboardingStatus) as never),
+                          router.replace(
+                            getPostAuthRoute(resp.user?.onboardingStatus, {
+                              firstJob: useAuthStore.getState().registrationData.firstJob,
+                            }) as never
+                          ),
                         onError: () =>
                           showError(
                             'Apple Sign-In Failed',

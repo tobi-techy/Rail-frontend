@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, Pressable, Share, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -247,13 +247,24 @@ function NgnAccountCard({
 }
 
 function NgnSheetBody({ onNavigateToUpgrade }: { onNavigateToUpgrade: () => void }) {
-  const { ngnAccount, isNgnLoading, ngnError, hasBegunVerification, autoProvisionNgn, refetchAll } =
-    useKYCFlow();
+  const {
+    ngnAccount,
+    isNgnLoading,
+    ngnError,
+    hasBegunVerification,
+    isStatusLoading,
+    autoProvisionNgn,
+    refetchAll,
+  } = useKYCFlow();
 
   const [isProvisioning, setIsProvisioning] = useState(false);
   const [provisionError, setProvisionError] = useState<string | null>(null);
 
   const handleSetupAccount = useCallback(async () => {
+    // Don't act while KYC status is still loading — otherwise hasBegunVerification
+    // is false (default) and we'd incorrectly redirect to /sprout-upgrade.
+    if (isStatusLoading) return;
+
     if (!hasBegunVerification) {
       onNavigateToUpgrade();
       return;
@@ -277,7 +288,7 @@ function NgnSheetBody({ onNavigateToUpgrade }: { onNavigateToUpgrade: () => void
     } finally {
       setIsProvisioning(false);
     }
-  }, [hasBegunVerification, autoProvisionNgn, refetchAll, onNavigateToUpgrade]);
+  }, [isStatusLoading, hasBegunVerification, autoProvisionNgn, refetchAll, onNavigateToUpgrade]);
 
   const meta = CURRENCY_META.NGN;
 
@@ -293,7 +304,7 @@ function NgnSheetBody({ onNavigateToUpgrade }: { onNavigateToUpgrade: () => void
         </View>
       </View>
 
-      {isNgnLoading || isProvisioning ? (
+      {isStatusLoading || isNgnLoading || isProvisioning ? (
         <NgnAccountLoading />
       ) : ngnAccount ? (
         <NgnAccountCard account={ngnAccount} onRetry={onNavigateToUpgrade} />
@@ -322,6 +333,7 @@ export function VirtualAccountSheet({ visible, onClose, currency }: VirtualAccou
   const [showIntro, setShowIntro] = useState(false);
   const { data: kycStatus } = useKYCStatus();
   const isApproved = kycStatus?.status === 'approved';
+  const navigatingRef = useRef(false);
   const {
     data: accountsData,
     isLoading,
@@ -336,13 +348,15 @@ export function VirtualAccountSheet({ visible, onClose, currency }: VirtualAccou
 
   if (currency === 'NGN') {
     return (
-      <GorhomBottomSheet visible={visible} onClose={onClose}>
+      <GorhomBottomSheet
+        visible={visible}
+        onClose={onClose}
+        onAfterDismiss={navigatingRef.current ? () => router.push('/sprout-upgrade') : undefined}>
         <ErrorBoundary>
           <NgnSheetBody
             onNavigateToUpgrade={() => {
+              navigatingRef.current = true;
               onClose();
-              // Small delay to let the sheet dismiss before navigating
-              setTimeout(() => router.push('/sprout-upgrade'), 300);
             }}
           />
         </ErrorBoundary>

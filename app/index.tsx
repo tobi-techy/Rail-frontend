@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { SessionManager } from '@/utils/sessionManager';
 import { ROUTES } from '@/constants/routes';
-import { getPostAuthRoute, isProfileCompletionRequired } from '@/utils/onboardingFlow';
+import { getPostAuthRoute } from '@/utils/onboardingFlow';
 
 /**
  * Root index — waits for store hydration, then routes:
@@ -21,6 +21,7 @@ export default function IndexScreen() {
   const onboardingStatus = useAuthStore(
     (s) => s.onboardingStatus || s.user?.onboardingStatus || null
   );
+  const firstJob = useAuthStore((s) => s.registrationData.firstJob);
 
   useEffect(() => {
     if (!hydrated) {
@@ -38,26 +39,24 @@ export default function IndexScreen() {
 
   const targetRoute = !hydrated
     ? null
-    : hasValidAuthSession && isProfileCompletionRequired(onboardingStatus)
-      ? ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO
-      : hasValidAuthSession && hasValidPasscodeSession
-        ? getPostAuthRoute(onboardingStatus)
-        : hasValidAuthSession && hasPasscode
-          ? '/login-passcode'
-          : hasValidAuthSession &&
-              !hasPasscode &&
-              getPostAuthRoute(onboardingStatus) === ROUTES.TABS
-            ? // User is authenticated and onboarding is complete but passcode status
-              // may not have synced yet (e.g. right after Apple sign-in).
-              // Route to tabs — the passcode gate on protected routes will handle it.
-              (ROUTES.TABS as string)
-            : hasValidAuthSession && !hasPasscode
-              ? ROUTES.AUTH.CREATE_PASSCODE
-              : user && hasPasscode
-                ? '/login-passcode'
-                : user && !hasPasscode
-                  ? '/(auth)/signin'
-                  : '/intro';
+    : hasValidAuthSession && hasValidPasscodeSession
+      ? getPostAuthRoute(onboardingStatus, { firstJob })
+      : hasValidAuthSession && hasPasscode
+        ? '/login-passcode'
+        : hasValidAuthSession &&
+            !hasPasscode &&
+            getPostAuthRoute(onboardingStatus, { firstJob }) === ROUTES.TABS
+          ? // User is authenticated and onboarding is complete but passcode status
+            // may not have synced yet (e.g. right after Apple sign-in).
+            // Route to tabs — the passcode gate on protected routes will handle it.
+            (ROUTES.TABS as string)
+          : hasValidAuthSession && !hasPasscode
+            ? ROUTES.AUTH.CREATE_PASSCODE
+            : user && hasPasscode
+              ? '/login-passcode'
+              : user && !hasPasscode
+                ? '/(auth)/signin'
+                : '/intro';
 
   useEffect(() => {
     if (targetRoute) {

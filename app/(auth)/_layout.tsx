@@ -43,6 +43,7 @@ export default function AuthLayout() {
           <Stack.Screen name="verify-email" />
           <Stack.Screen name="create-passcode" />
           <Stack.Screen name="confirm-passcode" />
+          <Stack.Screen name="first-job" />
 
           <Stack.Screen name="complete-profile" />
           <Stack.Screen name="complete-kyc" />

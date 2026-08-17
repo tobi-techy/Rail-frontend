@@ -82,7 +82,9 @@ export default function VerifyEmail() {
         if (response.user?.hasPasscode !== undefined) setHasPasscode(response.user.hasPasscode);
         useAuthStore.setState({ isAuthenticated: true });
         // Route based on onboarding status (handles incomplete profiles)
-        const route = getPostAuthRoute(response.user?.onboardingStatus);
+        const route = getPostAuthRoute(response.user?.onboardingStatus, {
+          firstJob: useAuthStore.getState().registrationData.firstJob,
+        });
         router.replace(route as never);
       } catch (error: any) {
         setIsTransitioning(false);
@@ -102,7 +104,11 @@ export default function VerifyEmail() {
             if (response.accessToken) {
               const onboardingStatus =
                 response.onboarding_status || response.user?.onboardingStatus;
-              router.replace(getPostAuthRoute(onboardingStatus) as never);
+              router.replace(
+                getPostAuthRoute(onboardingStatus, {
+                  firstJob: useAuthStore.getState().registrationData.firstJob,
+                }) as never
+              );
               return;
             }
             router.replace(ROUTES.AUTH.SIGNIN as never);

@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Button } from '../../../components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
+import { OnboardingWizardHeader } from '@/components/onboarding/OnboardingWizardHeader';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
@@ -73,8 +74,9 @@ export default function DateOfBirth() {
           translucent={Platform.OS === 'android'}
         />
         <View className="flex-1 px-6 pt-4">
+          <OnboardingWizardHeader step={2} total={4} />
           <StaggeredChild index={0}>
-            <View className="mb-8 mt-4">
+            <View className="mb-8">
               <Text
                 className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
                 maxFontSizeMultiplier={1.3}>

@@ -22,6 +22,7 @@ import * as Haptics from '@/utils/platformHaptics';
 import { Cancel01Icon } from '@/lib/icons';
 import { playUISound } from '@/lib/uiSounds';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { BlurView } from 'expo-blur';
 
 const SPRING_CONFIG = { damping: 30, stiffness: 400, mass: 0.8 };
 const KB_SPRING = { damping: 22, stiffness: 280, mass: 0.8 };
@@ -134,6 +135,7 @@ export function BottomSheet({
       onRequestClose={dismissible ? animateClose : undefined}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Animated.View style={[StyleSheet.absoluteFill, backdropAnimStyle]}>
+          <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
           <Pressable
             style={StyleSheet.absoluteFill}
             onPress={dismissible ? animateClose : undefined}

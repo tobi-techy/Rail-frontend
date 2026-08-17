@@ -216,21 +216,6 @@ export function useProtectedRoute() {
             hasPasscode: freshState.hasPasscode,
           });
         }
-
-        // SECURITY: On cold start (app killed and relaunched), ALWAYS force-expire
-        // the passcode lock so users must re-authenticate via passcode/biometrics.
-        // This must run unconditionally (no expiry check) because SessionManager
-        // initialize() → updateLastActivity() may have already extended the lock
-        // to a future time before we get here. Setting it to now overrides that.
-        // The routing effect (Effect 3) will see the expired lock and redirect.
-        if (isMounted) {
-          const freshState2 = useAuthStore.getState();
-          if (freshState2.isAuthenticated && freshState2.hasPasscode) {
-            useAuthStore.setState({
-              appLockExpiresAt: new Date().toISOString(),
-            });
-          }
-        }
       } catch (error) {
         logger.error(
           '[Auth] Error initializing app',
@@ -241,16 +226,33 @@ export function useProtectedRoute() {
       }
     };
 
+    // SECURITY: Force-expire the passcode lock synchronously at hydration time.
+    // This MUST run before initializeApp() and SessionManager.initialize() so
+    // that no matter what order they execute in, the lock is already expired
+    // when the routing effect first checks it. Without this, SessionManager
+    // initialize() → updateLastActivity() extends the lock to now+10min before
+    // the async force-expire in initializeApp() can override it.
+    const forceExpirePasscodeLock = () => {
+      const state = useAuthStore.getState();
+      if (state.isAuthenticated && state.hasPasscode) {
+        useAuthStore.setState({
+          appLockExpiresAt: new Date().toISOString(),
+        });
+      }
+    };
+
     // Subscribe BEFORE checking hasHydrated to close the TOCTOU race where
     // hydration could complete in the gap between the check and the subscribe.
     // onFinishHydration is a no-op if already hydrated — it just won't fire again,
     // so we do a synchronous check immediately after subscribing.
     const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
+      forceExpirePasscodeLock();
       void initializeApp();
     });
 
     if (useAuthStore.persist.hasHydrated()) {
       unsubscribe(); // Don't need the listener — hydration already done
+      forceExpirePasscodeLock();
       void initializeApp();
       return () => {
         isMounted = false;

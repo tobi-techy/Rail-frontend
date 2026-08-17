@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StatusBar, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -14,15 +14,45 @@ import { useRampBanks } from '@/api/hooks/useRamp';
 import { useHaptics } from '@/hooks/useHaptics';
 import { playUISound } from '@/lib/uiSounds';
 import * as Haptics from '@/utils/platformHaptics';
-import { ScreenHeader } from '@/components/withdraw/shared';
+import { ScreenHeader, RecipientRow } from '@/components/withdraw/shared';
+import { useFiatRecipients } from '@/hooks/useFiatRecipients';
 
 export default function NgnRecipientsScreen() {
-  const { impact } = useHaptics();
+  const { selection, impact } = useHaptics();
 
   // Bank list preloaded so select-bank renders instantly
   useRampBanks();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const { recipients } = useFiatRecipients('NGN');
+
+  const filtered = useMemo(() => {
+    if (!searchQuery.trim()) return recipients;
+    const q = searchQuery.toLowerCase();
+    return recipients.filter(
+      (r) => r.accountHolderName.toLowerCase().includes(q) || r.routingNumber.includes(q)
+    );
+  }, [recipients, searchQuery]);
+
+  const parseNgnRouting = (r: (typeof recipients)[number]) => {
+    const parts = r.routingNumber.split(':');
+    return { bankCode: parts[0], bankName: parts[1] ?? '' };
+  };
+
+  const handleSelect = (r: (typeof recipients)[number]) => {
+    selection();
+    const { bankCode, bankName } = parseNgnRouting(r);
+    router.push({
+      pathname: '/withdraw/ngn/enter-amount' as never,
+      params: {
+        currency: 'NGN',
+        bankCode,
+        bankName,
+        accountNumber: r.accountNumber,
+        accountName: r.accountHolderName,
+      },
+    } as never);
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-warm-canvas" edges={['top']}>
@@ -101,18 +131,36 @@ export default function NgnRecipientsScreen() {
 
         <View className="my-5 h-px bg-stone-surface" />
 
-        {/* Saved recipients — not available with RampHub */}
         <Animated.View entering={FadeInUp.delay(140).duration(250)}>
           <Text
             className="mb-3 font-subtitle text-[15px] text-text-primary"
             maxFontSizeMultiplier={1.3}>
             Recent Recipients
           </Text>
-          <Text
-            className="py-6 text-center font-body text-[14px] text-text-secondary"
-            maxFontSizeMultiplier={1.4}>
-            No saved recipients yet
-          </Text>
+          {filtered.length === 0 ? (
+            <Text
+              className="py-6 text-center font-body text-[14px] text-text-secondary"
+              maxFontSizeMultiplier={1.4}>
+              {searchQuery ? 'No matching recipients' : 'No saved recipients yet'}
+            </Text>
+          ) : (
+            filtered.map((r, i) => {
+              const { bankName } = parseNgnRouting(r);
+              const masked =
+                r.accountNumber.length >= 4
+                  ? `${r.accountNumber.slice(0, 4)}••••${r.accountNumber.slice(-4)}`
+                  : r.accountNumber;
+              return (
+                <RecipientRow
+                  key={r.id}
+                  name={r.accountHolderName}
+                  subtitle={bankName ? `${bankName} · ${masked}` : masked}
+                  index={i}
+                  onPress={() => handleSelect(r)}
+                />
+              );
+            })
+          )}
         </Animated.View>
 
         <View style={{ height: 40 }} />

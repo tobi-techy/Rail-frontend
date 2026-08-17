@@ -34,5 +34,7 @@ export const initialState: AuthState = {
     phone: '',
     password: '',
     authMethod: 'password',
+    firstJob: null,
+    verifyCardDismissed: false,
   },
 };

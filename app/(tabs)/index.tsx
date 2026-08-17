@@ -30,7 +30,8 @@ import { MiriamMandateSheet } from '@/components/ai/MiriamMandateSheet';
 import { MiriamIntroSheet } from '@/components/ai/MiriamIntroSheet';
 import { useFeatureGate } from '@/hooks/useFeatureGate';
 import aiService from '@/api/services/ai.service';
-import { getKycResumeRoute } from '@/utils/onboardingFlow';
+import { ROUTES } from '@/constants/routes';
+import { getKycContinuationLabel, getKycContinuationRoute } from '@/utils/onboardingFlow';
 import { useStation, useKYCStatus, useTOSStatus, useAcceptTOS } from '@/api/hooks';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores';
@@ -52,6 +53,7 @@ import {
   IconComponent as HugeiconsIcon,
   CreditCardIcon,
   SavingsIcon,
+  ShieldKeyIcon,
 } from '@/lib/icons';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -223,6 +225,22 @@ function DashboardScreen() {
   }, []);
   const [kycEnabled, setKycEnabled] = useState(false);
   const { data: kycStatus, refetch: refetchKYC } = useKYCStatus(kycEnabled);
+  const registrationData = useAuthStore((s) => s.registrationData);
+  const user = useAuthStore((s) => s.user);
+  const kycProgress = {
+    firstName: registrationData.firstName || user?.firstName,
+    lastName: registrationData.lastName || user?.lastName,
+    dob: registrationData.dob || user?.dateOfBirth,
+    street: registrationData.street || user?.addressStreet,
+    employmentStatus: registrationData.employmentStatus,
+    sourceOfFunds: registrationData.sourceOfFunds,
+  };
+  const showVerifyStash = kycStatus?.status !== 'approved';
+  const kycContinuation = {
+    status: kycStatus?.status,
+    hasSubmitted: kycStatus?.has_submitted,
+    progress: kycProgress,
+  };
 
   // Defer KYC fetch until after first paint
   useEffect(() => {
@@ -336,8 +354,7 @@ function DashboardScreen() {
         onProfileRequired: () => {
           setShowSendSheet(false);
           setShowReceiveSheet(false);
-          const resumeRoute = getKycResumeRoute(useAuthStore.getState().currentOnboardingStep);
-          router.push(resumeRoute as never);
+          router.push(ROUTES.KYC.MAP as never);
         },
         onKycRequired: () => {
           setShowSendSheet(false);
@@ -690,11 +707,22 @@ function DashboardScreen() {
               amountCents={spend.cents}
               icon={<VisaWhite width={32} height={32} strokeWidth={1.8} />}
               cardColor="#000"
-              className="max-w-[50%] flex-1"
+              className={showVerifyStash ? 'flex-1' : 'max-w-[50%] flex-1'}
               isLoading={isStationPending}
               getStarted={!hasCard}
               onPress={() => gateFeature(() => setShowCardComingSheet(true))}
             />
+            {showVerifyStash ? (
+              <StashCard
+                title="Verify"
+                amount=""
+                icon={<HugeiconsIcon icon={ShieldKeyIcon} size={26} color="white" />}
+                cardColor="#343433"
+                className="flex-1"
+                getStarted={getKycContinuationLabel(kycContinuation)}
+                onPress={() => router.push(getKycContinuationRoute(kycContinuation) as never)}
+              />
+            ) : null}
             {/* GameplayCard — feature-gated, re-enable when gameplay is ready */}
             {false && (
               <GameplayCard data={gameplayData} isLoading={isGameplayPending} className="flex-1" />

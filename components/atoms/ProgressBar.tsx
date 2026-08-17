@@ -12,7 +12,7 @@ export interface ProgressBarProps extends ViewProps {
 export const ProgressBar: React.FC<ProgressBarProps> = ({
   progress,
   height = 8,
-  backgroundColor = '#f7f2e8',
+  backgroundColor = '#f2f2f2',
   progressColor = '#ff3e00',
   className,
   style,

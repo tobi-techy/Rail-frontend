@@ -11,6 +11,7 @@ import type { OnboardingCompleteRequest } from '@/api/types';
 import { addressSchema, fieldError } from '@/utils/schemas';
 import { ROUTES } from '@/constants/routes';
 import { useButtonFeedback } from '@/hooks/useButtonFeedback';
+import { OnboardingWizardHeader } from '@/components/onboarding/OnboardingWizardHeader';
 
 const E164_REGEX = /^\+[1-9]\d{7,14}$/;
 
@@ -100,6 +101,8 @@ export default function Phone() {
       return;
     }
 
+    const pendingEmployment = nextRegistrationData.employmentStatus;
+
     completeOnboarding(payload, {
       onSuccess: (response) => {
         const trimmedFirst = payload.firstName.trim();
@@ -117,6 +120,10 @@ export default function Phone() {
 
         setOnboardingStatus(response.onboarding?.onboardingStatus || 'kyc_pending');
         clearRegistrationData();
+        if (!pendingEmployment) {
+          router.replace(ROUTES.AUTH.COMPLETE_PROFILE.EMPLOYMENT_STATUS as never);
+          return;
+        }
         router.replace('/kyc?autoLaunch=true' as never);
       },
       onError: (error: any) => {
@@ -145,8 +152,9 @@ export default function Phone() {
           translucent={Platform.OS === 'android'}
         />
         <View className="flex-1 px-6 pt-4">
+          <OnboardingWizardHeader step={4} total={4} />
           <StaggeredChild index={0}>
-            <View className="mb-8 mt-4">
+            <View className="mb-8">
               <Text
                 className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
                 maxFontSizeMultiplier={1.3}>

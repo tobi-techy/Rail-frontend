@@ -7,6 +7,7 @@ export const ROUTES = {
     FORGOT_PASSWORD: '/(auth)/forgot-password',
     CREATE_PASSCODE: '/(auth)/create-passcode',
     CONFIRM_PASSCODE: '/(auth)/confirm-passcode',
+    FIRST_JOB: '/(auth)/first-job',
     COMPLETE_PROFILE: {
       PERSONAL_INFO: '/(auth)/complete-profile/personal-info',
       CREATE_RAILTAG: '/(auth)/complete-profile/create-railtag',
@@ -19,6 +20,11 @@ export const ROUTES = {
       ADDRESS: '/(auth)/complete-kyc/address',
       PHONE: '/(auth)/complete-kyc/phone',
     },
+  },
+  KYC: {
+    MAP: '/kyc/map',
+    INDEX: '/kyc',
+    PENDING: '/kyc/pending',
   },
   TABS: '/(tabs)',
   SPENDING_STASH: '/spending-stash',

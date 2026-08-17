@@ -39,7 +39,17 @@ export default function ConfirmPasscodeScreen() {
       await setPasscode(code);
       useAuthStore.setState({ _pendingPasscode: null });
 
-      // Submit name to backend (basicComplete without password)
+      const goNext = () => {
+        notification('success');
+        playUISound('transactionSuccess');
+        router.replace(ROUTES.AUTH.FIRST_JOB as never);
+      };
+
+      if (!registrationData.firstName || !registrationData.lastName) {
+        goNext();
+        return;
+      }
+
       basicComplete(
         {
           firstName: registrationData.firstName,
@@ -47,16 +57,10 @@ export default function ConfirmPasscodeScreen() {
           lastName: registrationData.lastName,
         },
         {
-          onSuccess: () => {
-            notification('success');
-            playUISound('transactionSuccess');
-            // Navigate to employment status (first of 3 onboarding detail screens)
-            router.replace(ROUTES.AUTH.COMPLETE_PROFILE.EMPLOYMENT_STATUS as never);
-          },
-          onError: (err: any) => {
-            // Even if basicComplete fails, continue to employment status
+          onSuccess: goNext,
+          onError: (err: unknown) => {
             console.warn('basicComplete failed:', err);
-            router.replace(ROUTES.AUTH.COMPLETE_PROFILE.EMPLOYMENT_STATUS as never);
+            goNext();
           },
         }
       );

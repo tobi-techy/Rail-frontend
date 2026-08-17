@@ -60,6 +60,8 @@ export interface User extends ApiUser {
   addressCountry?: string;
 }
 
+export type FirstJob = 'receive' | 'send' | 'save' | 'explore';
+
 export interface RegistrationData {
   firstName: string;
   middleName: string;
@@ -75,6 +77,8 @@ export interface RegistrationData {
   sourceOfFunds: string;
   employmentStatus: string;
   accountPurpose: string;
+  firstJob?: FirstJob | null;
+  verifyCardDismissed?: boolean;
 }
 
 interface AuthState {
@@ -179,6 +183,8 @@ const initialState: AuthState = {
     sourceOfFunds: '',
     employmentStatus: '',
     accountPurpose: '',
+    firstJob: null,
+    verifyCardDismissed: false,
   },
 };
 
@@ -616,7 +622,14 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
       updateRegistrationData: (data) =>
         set((s) => ({ registrationData: { ...s.registrationData, ...data } })),
-      clearRegistrationData: () => set({ registrationData: initialState.registrationData }),
+      clearRegistrationData: () =>
+        set((s) => ({
+          registrationData: {
+            ...initialState.registrationData,
+            firstJob: s.registrationData.firstJob,
+            verifyCardDismissed: s.registrationData.verifyCardDismissed,
+          },
+        })),
 
       setPasscode: async (passcode) => {
         try {

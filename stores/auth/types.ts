@@ -7,9 +7,12 @@ export interface User extends Omit<ApiUser, 'phone'> {
   phoneNumber?: string;
 }
 
+export type FirstJob = 'receive' | 'send' | 'save' | 'explore';
+
 export interface RegistrationData {
   firstName: string;
   lastName: string;
+  middleName?: string;
   dob: string;
   street: string;
   city: string;
@@ -19,6 +22,11 @@ export interface RegistrationData {
   phone: string;
   password: string;
   authMethod: 'password' | 'passkey';
+  firstJob?: FirstJob | null;
+  employmentStatus?: string;
+  accountPurpose?: string;
+  sourceOfFunds?: string;
+  verifyCardDismissed?: boolean;
 }
 
 export interface AuthState {

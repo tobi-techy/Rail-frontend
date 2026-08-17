@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '../../../components/ui';
 import { InputField, AuthGradient, StaggeredChild } from '@/components';
+import { OnboardingWizardHeader } from '@/components/onboarding/OnboardingWizardHeader';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
@@ -36,7 +37,7 @@ export default function PersonalInfo() {
       middleName: middleName.trim() || undefined,
       lastName: result.data.lastName,
     });
-    router.push(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_RAILTAG as never);
+    router.push(ROUTES.AUTH.COMPLETE_KYC.DATE_OF_BIRTH as never);
   };
 
   return (
@@ -48,12 +49,13 @@ export default function PersonalInfo() {
           translucent={Platform.OS === 'android'}
         />
         <View className="flex-1 px-6 pt-4">
+          <OnboardingWizardHeader step={1} total={4} />
           <StaggeredChild index={0}>
-            <View className="mb-8 mt-4">
+            <View className="mb-8">
               <Text
                 className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
                 maxFontSizeMultiplier={1.3}>
-                Personal Info
+                Legal name
               </Text>
               <Text className="mt-2 font-body text-caption text-ash" maxFontSizeMultiplier={1.4}>
                 Enter your legal name exactly as it appears on your ID document.

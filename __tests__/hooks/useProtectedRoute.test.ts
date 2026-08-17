@@ -27,6 +27,11 @@ describe('routeHelpers', () => {
     isOnConfirmPasscode: false,
     isOnCreateRailTag: false,
     isOnCompleteProfile: false,
+    isOnEmploymentStatus: false,
+    isOnAccountPurpose: false,
+    isOnSourceOfFunds: false,
+    isOnCompleteKyc: false,
+    isOnFirstJob: false,
   };
 
   const baseAuthState: AuthState = {
@@ -173,6 +178,22 @@ describe('routeHelpers', () => {
         false
       );
       expect(route).toBe('/login-passcode');
+    });
+
+    it('lets started users into tabs instead of trapping them in profile forms', () => {
+      const route = determineRoute(
+        {
+          ...baseAuthState,
+          user: { id: 'u1', onboardingStatus: 'started' },
+          onboardingStatus: 'started',
+          isAuthenticated: true,
+          accessToken: 'token',
+        },
+        { ...baseConfig, inAppGroup: false },
+        true,
+        true
+      );
+      expect(route).toBe(ROUTES.TABS);
     });
 
     it('prefers latest onboardingStatus over stale user.onboardingStatus', () => {

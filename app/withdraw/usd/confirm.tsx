@@ -100,7 +100,7 @@ export default function UsdConfirmScreen() {
       const id = response.withdrawal_id ?? null;
       setWithdrawalId(id);
       if (id) sessionStore.set(sessionKey, id);
-      setStatus('pending');
+      setStatus('success');
     } catch (err) {
       if (isPasscodeSessionError(err)) {
         setAwaitingAuth(true);

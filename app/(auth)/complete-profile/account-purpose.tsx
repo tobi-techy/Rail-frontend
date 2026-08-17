@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
+import { OnboardingWizardHeader } from '@/components/onboarding/OnboardingWizardHeader';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
@@ -60,12 +61,13 @@ export default function AccountPurposeScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             contentContainerClassName="pb-6">
+            <OnboardingWizardHeader step={2} total={3} />
             <StaggeredChild index={0}>
-              <View className="mb-8 mt-4">
+              <View className="mb-8">
                 <Text
                   className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
                   maxFontSizeMultiplier={1.3}>
-                  Account Purpose
+                  Account purpose
                 </Text>
                 <Text className="mt-2 font-body text-caption text-ash" maxFontSizeMultiplier={1.4}>
                   What will you primarily use your account for?

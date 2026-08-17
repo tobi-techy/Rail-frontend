@@ -45,7 +45,7 @@ export default function SproutUpgradeScreen() {
   const profilePhone = user?.phone ?? user?.phoneNumber ?? '';
   const profileDob = user?.dateOfBirth ?? '';
 
-  // Consolidated KYC + NGN state
+  // Consolidated KYC + NGN state — always fetch NGN on this screen
   const { kycStatus, canReceiveNgn, hasNgnAccount, isNgnLoading, autoProvisionNgn, refetchAll } =
     useKYCFlow();
 

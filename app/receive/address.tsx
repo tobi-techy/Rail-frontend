@@ -16,13 +16,14 @@ import { ChainLogo } from '@/components/ChainLogo';
 import { useWalletAddresses, useGetDepositAddress } from '@/api/hooks/useWallet';
 import { getChainConfig, isSolanaChain } from '@/utils/chains';
 import { useHaptics } from '@/hooks/useHaptics';
-import type { WalletChain } from '@/api/types';
+import type { WalletChain, TransformedApiError } from '@/api/types';
 import {
   ArrowLeft01Icon,
   Copy01Icon,
   CheckmarkCircle01Icon,
   Share01Icon,
   RefreshIcon,
+  AlertCircleIcon,
   IconComponent as HugeiconsIcon,
 } from '@/lib/icons';
 
@@ -38,11 +39,14 @@ export default function ReceiveAddressScreen() {
   const provisionWallet = useGetDepositAddress();
   const [copied, setCopied] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
+  const [provisionError, setProvisionError] = useState('');
 
   useEffect(() => {
-    const status = (error as any)?.status;
+    const apiErr = error as unknown as TransformedApiError | undefined;
+    const status = apiErr?.status;
     if (isError && (status === 404 || status === undefined) && !provisioning) {
       setProvisioning(true);
+      setProvisionError('');
       provisionWallet.mutate(
         { tokenId: 'usdc', network: chain },
         {
@@ -50,7 +54,17 @@ export default function ReceiveAddressScreen() {
             refetch();
             setProvisioning(false);
           },
-          onError: () => setProvisioning(false),
+          onError: (err) => {
+            setProvisioning(false);
+            const e = err as unknown as TransformedApiError;
+            if (e?.code === 'WALLET_CREATION_FAILED' || e?.code === 'PROVISIONING_FAILED') {
+              setProvisionError(
+                'Unable to create a wallet for this network. Please try again later.'
+              );
+            } else {
+              setProvisionError(e?.message || 'Wallet setup failed. Please try again.');
+            }
+          },
         }
       );
     }
@@ -164,16 +178,17 @@ export default function ReceiveAddressScreen() {
         )}
 
         {isError && !provisioning && !address && (
-          <View className="items-center gap-3">
+          <View className="items-center gap-3 px-4">
+            <HugeiconsIcon icon={AlertCircleIcon} size={32} color="#DC2626" />
             <Text
               className="font-subtitle text-[16px] text-text-primary"
               maxFontSizeMultiplier={1.3}>
-              Unable to load wallet
+              {provisionError ? 'Wallet setup failed' : 'Unable to load wallet'}
             </Text>
             <Text
               className="text-center font-body text-[13px] text-text-secondary"
               maxFontSizeMultiplier={1.4}>
-              Check your connection and try again.
+              {provisionError || 'Check your connection and try again.'}
             </Text>
             <Pressable
               onPress={() => refetch()}
@@ -191,7 +206,7 @@ export default function ReceiveAddressScreen() {
 
       {/* Bottom section */}
       <View
-        className="border-t border-stone-surface px-5 pt-5"
+        className="border-t border-stone-surface px-5 pt-4"
         style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
         {/* Token + network */}
         <View className="mb-3 flex-row items-center gap-2">
@@ -206,7 +221,7 @@ export default function ReceiveAddressScreen() {
         </View>
 
         {/* Address + copy */}
-        <Pressable onPress={handleCopy} className="mb-5 flex-row items-start justify-between gap-3">
+        <Pressable onPress={handleCopy} className="mb-4 flex-row items-start justify-between gap-3">
           <Text
             className="flex-1 font-body text-[14px] leading-5 text-text-secondary"
             selectable
@@ -219,6 +234,18 @@ export default function ReceiveAddressScreen() {
             color={copied ? '#00ca48' : '#848281'}
           />
         </Pressable>
+
+        {/* Minimum deposit notice */}
+        {address && (
+          <View className="mb-4 rounded-xl bg-amber-50 px-3 py-2.5">
+            <Text
+              className="font-body text-[12px] leading-[18px] text-amber-800"
+              maxFontSizeMultiplier={1.3}>
+              Minimum deposit: $1.00 USDC. Only send {chainConfig.label} USDC to this address.
+              Sending other tokens may result in permanent loss.
+            </Text>
+          </View>
+        )}
 
         {/* Action buttons */}
         <View className="flex-row gap-3">

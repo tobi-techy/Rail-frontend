@@ -9,10 +9,6 @@ export { useAuthStore } from './authStore';
 export { useWalletStore } from './walletStore';
 export type { Token, Transaction } from './walletStore';
 
-// Withdrawal store
-export { useWithdrawalStore } from './withdrawalStore';
-export type { Network, BridgeProvider, Recipient, TransactionDetails } from './withdrawalStore';
-
 // Withdrawal event store (push-notification driven status updates)
 export { useWithdrawalEventStore } from './withdrawalEventStore';
 export type { WithdrawalEvent, WithdrawalEventStatus } from './withdrawalEventStore';

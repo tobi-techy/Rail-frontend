@@ -17,6 +17,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAppleSignIn, useGoogleSignIn } from '@/api/hooks/useAuth';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { getPostAuthRoute } from '@/utils/onboardingFlow';
+import { useAuthStore } from '@/stores/authStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onboardingSlides, SLIDE_INTERVAL } from '@/components/intro/onboardingSlides';
 import { ActiveVideoSlide } from '@/components/intro/ActiveVideoSlide';
@@ -172,7 +173,11 @@ export default function App() {
               onPress={() => {
                 googleSignIn(undefined, {
                   onSuccess: (resp) =>
-                    router.replace(getPostAuthRoute(resp.user?.onboardingStatus) as never),
+                    router.replace(
+                      getPostAuthRoute(resp.user?.onboardingStatus, {
+                        firstJob: useAuthStore.getState().registrationData.firstJob,
+                      }) as never
+                    ),
                   onError: () =>
                     showError('Google Sign-In Failed', 'Please try again or use email sign in.'),
                 });
@@ -188,7 +193,11 @@ export default function App() {
               onPress={() => {
                 appleSignIn(undefined, {
                   onSuccess: (resp) =>
-                    router.replace(getPostAuthRoute(resp.user?.onboardingStatus) as never),
+                    router.replace(
+                      getPostAuthRoute(resp.user?.onboardingStatus, {
+                        firstJob: useAuthStore.getState().registrationData.firstJob,
+                      }) as never
+                    ),
                   onError: () =>
                     showError('Apple Sign-In Failed', 'Please try again or use email sign in.'),
                 });

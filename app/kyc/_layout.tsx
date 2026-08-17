@@ -4,6 +4,7 @@ export default function KycLayout() {
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="map" />
       <Stack.Screen name="financial" />
       <Stack.Screen
         name="didit-sdk"

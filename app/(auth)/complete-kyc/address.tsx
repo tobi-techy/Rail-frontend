@@ -12,6 +12,7 @@ import {
   hasSubdivisions,
   getSubdivisionLabel,
 } from '@/components';
+import { OnboardingWizardHeader } from '@/components/onboarding/OnboardingWizardHeader';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
@@ -123,8 +124,9 @@ export default function Address() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View className="flex-1 px-6 pt-4">
+            <OnboardingWizardHeader step={3} total={4} />
             <StaggeredChild index={0}>
-              <View className="mb-6 mt-4">
+              <View className="mb-6">
                 <Text
                   className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
                   maxFontSizeMultiplier={1.3}>

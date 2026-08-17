@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
-import { ROUTES } from '@/constants/routes';
+import { OnboardingWizardHeader } from '@/components/onboarding/OnboardingWizardHeader';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -59,7 +59,7 @@ export default function SourceOfFundsScreen() {
     notification('success');
     playUISound('transactionSuccess');
     useAuthStore.getState().setOnboardingStatus('basic_complete');
-    router.replace(ROUTES.TABS as never);
+    router.replace('/kyc?autoLaunch=true' as never);
   };
 
   return (
@@ -77,12 +77,13 @@ export default function SourceOfFundsScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             contentContainerClassName="pb-6">
+            <OnboardingWizardHeader step={3} total={3} />
             <StaggeredChild index={0}>
-              <View className="mb-8 mt-4">
+              <View className="mb-8">
                 <Text
                   className="font-headline-2 text-auth-title leading-[1.1] text-charcoal-primary"
                   maxFontSizeMultiplier={1.3}>
-                  Source of Funds
+                  Source of funds
                 </Text>
                 <Text className="mt-2 font-body text-caption text-ash" maxFontSizeMultiplier={1.4}>
                   Where does your money primarily come from?

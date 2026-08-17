@@ -9,6 +9,7 @@ import { Keypad } from '@/components/molecules/Keypad';
 import { Button } from '@/components/ui';
 import { isPasscodeSessionError, parseApiError } from '@/utils/apiError';
 import { commitmentDeclineMessage, isCommitmentExceededError } from '@/utils/spendingCommitment';
+import type { TransformedApiError } from '@/api/types';
 import { AnimatedAmount } from '@/components/withdraw/method-screen/AnimatedAmount';
 import {
   BRAND_RED,
@@ -188,15 +189,16 @@ export default function WithdrawAmountScreen() {
           setIsAuthVisible(true);
           return;
         }
-        const errMsg = parseApiError(err, '');
-        if (
-          errMsg.toLowerCase().includes('not whitelisted') ||
-          errMsg.toLowerCase().includes('cooling period')
-        ) {
+        const apiErr = err as Partial<TransformedApiError>;
+        if (apiErr.code === 'ADDRESS_NOT_WHITELISTED') {
           setShowWhitelistPrompt(true);
           return;
         }
-        if (errMsg.toLowerCase().includes('step_up') || errMsg.toLowerCase().includes('mfa')) {
+        if (
+          apiErr.code === 'MFA_REQUIRED' ||
+          apiErr.code === 'HTTP_403' ||
+          (typeof apiErr.message === 'string' && apiErr.message.includes('MFA_REQUIRED'))
+        ) {
           setShowMFASheet(true);
           return;
         }

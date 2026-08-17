@@ -26,6 +26,7 @@ import {
   MessageIcon,
 } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
+import { Tick02Icon, UserIcon, PinIcon, ShieldKeyIcon } from '@/lib/icons';
 
 export default function KycPendingScreen() {
   const triggerFeedback = useButtonFeedback();
@@ -301,6 +302,34 @@ export default function KycPendingScreen() {
               maxFontSizeMultiplier={1.4}>
               {getTimeoutMessage()}
             </Text>
+            <View className="mt-8 w-full rounded-[20px] bg-parchment-card px-4 py-3">
+              {[
+                { label: 'Legal name', done: true, icon: UserIcon },
+                { label: 'Address', done: true, icon: PinIcon },
+                {
+                  label: 'Photo ID',
+                  done: false,
+                  icon: ShieldKeyIcon,
+                  status: 'In review',
+                },
+              ].map((row) => (
+                <View key={row.label} className="flex-row items-center py-2.5">
+                  <HugeiconsIcon
+                    icon={row.done ? Tick02Icon : row.icon}
+                    size={18}
+                    color={row.done ? '#00c454' : '#343433'}
+                  />
+                  <Text
+                    className="ml-3 flex-1 font-subtitle text-[15px] text-charcoal-primary"
+                    maxFontSizeMultiplier={1.3}>
+                    {row.label}
+                  </Text>
+                  <Text className="font-body text-[13px] text-ash" maxFontSizeMultiplier={1.3}>
+                    {row.done ? 'Completed' : row.status}
+                  </Text>
+                </View>
+              ))}
+            </View>
             <Pressable
               onPress={() => {
                 if (router.canDismiss()) {

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { userService } from '@/api/services';
 import { logger } from '@/lib/logger';
 import { ROUTES } from '@/constants/routes';
-import { isOnboardingAppReady, isProfileCompletionRequired } from '@/utils/onboardingFlow';
+import { isOnboardingAppReady } from '@/utils/onboardingFlow';
 import { isAuthSessionInvalidError, summarizeAuthError } from '@/utils/authErrorClassifier';
 import type { RouteConfig, AuthState } from '@/types/routing.types';
 
@@ -66,12 +66,14 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
     pathname === normalizeRoutePath(ROUTES.AUTH.FORGOT_PASSWORD) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CREATE_PASSCODE) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.CONFIRM_PASSCODE) ||
+    pathname === normalizeRoutePath(ROUTES.AUTH.FIRST_JOB) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.CREATE_RAILTAG) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.EMPLOYMENT_STATUS) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.ACCOUNT_PURPOSE) ||
     pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.SOURCE_OF_FUNDS) ||
     pathname.startsWith('/complete-profile/') ||
-    pathname.startsWith('/complete-kyc/'),
+    pathname.startsWith('/complete-kyc/') ||
+    pathname.startsWith('/first-job'),
   inTabsGroup: segments[0] === '(tabs)',
   inAppGroup:
     segments[0] === '(tabs)' ||
@@ -149,6 +151,8 @@ export const buildRouteConfig = (segments: string[], pathname: string): RouteCon
   isOnSourceOfFunds: pathname === normalizeRoutePath(ROUTES.AUTH.COMPLETE_PROFILE.SOURCE_OF_FUNDS),
   isOnCompleteProfile: pathname.startsWith('/complete-profile/'),
   isOnCompleteKyc: pathname.startsWith('/complete-kyc/'),
+  isOnFirstJob:
+    pathname === normalizeRoutePath(ROUTES.AUTH.FIRST_JOB) || pathname.startsWith('/first-job'),
 });
 
 /**
@@ -162,7 +166,8 @@ export const isInCriticalAuthFlow = (config: RouteConfig): boolean => {
     config.isOnConfirmPasscode ||
     config.isOnCreateRailTag ||
     config.isOnCompleteProfile ||
-    config.isOnCompleteKyc
+    config.isOnCompleteKyc ||
+    config.isOnFirstJob
   );
 };
 
@@ -177,23 +182,10 @@ const handleAuthenticatedUser = (
 ): string | null => {
   const { user, onboardingStatus, hasPasscode } = authState;
   const userOnboardingStatus = onboardingStatus || user?.onboardingStatus;
-  const needsProfile = isProfileCompletionRequired(userOnboardingStatus);
   // Don't redirect to create-passcode if user has a valid passcode session.
   // This means they just logged in and syncPasscodeStatus hasn't completed yet.
   const needsPasscodeSetup =
-    !hasPasscode && !needsProfile && Boolean(userOnboardingStatus) && !hasValidPasscodeSession;
-
-  if (needsProfile) {
-    if (
-      config.isOnCompleteProfile ||
-      config.isOnCreatePasscode ||
-      config.isOnConfirmPasscode ||
-      config.isOnCreateRailTag
-    ) {
-      return null;
-    }
-    return ROUTES.AUTH.COMPLETE_PROFILE.PERSONAL_INFO;
-  }
+    !hasPasscode && Boolean(userOnboardingStatus) && !hasValidPasscodeSession;
 
   if (needsPasscodeSetup) {
     if (config.isOnCreatePasscode || config.isOnConfirmPasscode || config.isOnCreateRailTag) {
@@ -225,7 +217,8 @@ const handleAuthenticatedUser = (
     !config.isOnConfirmPasscode &&
     !config.isOnCreateRailTag &&
     !config.isOnCompleteProfile &&
-    !config.isOnCompleteKyc
+    !config.isOnCompleteKyc &&
+    !config.isOnFirstJob
   ) {
     logger.info('[RouteHelpers] Passcode session missing/expired, redirecting to login-passcode', {
       component: 'routeHelpers',

@@ -1,4 +1,4 @@
-import { onBoard1, onBoard2, onBoard3, onBoard4 } from '@/assets/images';
+import { onBoard1, onBoard2, onBoard3 } from '@/assets/images';
 import { ImageSourcePropType } from 'react-native';
 
 export interface OnboardingSlide {
@@ -7,36 +7,31 @@ export interface OnboardingSlide {
   subtitle: string;
   description: string;
   image: ImageSourcePropType;
+  showMiriam?: boolean;
 }
 
 export const onboardingSlides: OnboardingSlide[] = [
   {
     key: '1',
-    title: 'Your money shouldn’t depend on willpower.',
-    subtitle: 'Rail acts the moment money arrives.',
-    description: 'A portion is locked in instantly. You don’t get the chance to spend it first.',
+    title: 'Receive across borders.',
+    subtitle: 'Named accounts and crypto, in one place.',
+    description: 'Get paid in. Spend what’s left. Verify only when you need bank details.',
     image: onBoard1,
   },
   {
     key: '2',
-    title: 'Your balance is already split.',
+    title: 'What arrives is already split.',
     subtitle: 'You don’t have to figure it out.',
-    description: 'What’s left is safe to spend. Everything else is taken care of.',
+    description: 'A portion is locked the moment money lands. The rest is safe to spend.',
     image: onBoard2,
   },
   {
     key: '3',
-    title: 'Wealth builds without your attention.',
-    subtitle: 'In the background. Always on.',
-    description: 'The part you don’t touch keeps working while you live normally.',
+    title: 'Ask Miriam.',
+    subtitle: 'She handles the next step.',
+    description: 'Funding, sending, or verifying — one question at a time.',
     image: onBoard3,
-  },
-  {
-    key: '4',
-    title: 'This is how progress should work.',
-    subtitle: 'Automatic. Relentless.',
-    description: 'No habits. No discipline. Just a system that moves you forward.',
-    image: onBoard4,
+    showMiriam: true,
   },
 ];
 

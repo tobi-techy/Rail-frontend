@@ -22,6 +22,7 @@ import { useRampResolveBankAccount } from '@/api/hooks/useRamp';
 import { useHaptics } from '@/hooks/useHaptics';
 import { playUISound } from '@/lib/uiSounds';
 import * as Haptics from '@/utils/platformHaptics';
+import { useFiatRecipients } from '@/hooks/useFiatRecipients';
 
 export default function NgnEnterAccountScreen() {
   const insets = useSafeAreaInsets();
@@ -35,6 +36,7 @@ export default function NgnEnterAccountScreen() {
   const [resolveError, setResolveError] = useState('');
   const { mutate: resolve, isPending: isResolving } = useRampResolveBankAccount();
   const { notification, impact } = useHaptics();
+  const { save } = useFiatRecipients('NGN');
 
   useEffect(() => {
     if (accountNumber.length !== 10 || !params.bankCode) {
@@ -70,6 +72,11 @@ export default function NgnEnterAccountScreen() {
   const onContinue = useCallback(() => {
     impact(Haptics.ImpactFeedbackStyle.Medium);
     playUISound('buttonClick');
+    save({
+      accountHolderName: accountName,
+      accountNumber,
+      routingNumber: `${params.bankCode}:${params.bankName}`,
+    });
     router.push({
       pathname: '/withdraw/ngn/enter-amount' as never,
       params: {
@@ -80,7 +87,7 @@ export default function NgnEnterAccountScreen() {
         accountName,
       },
     } as never);
-  }, [params, accountNumber, accountName, impact]);
+  }, [params, accountNumber, accountName, impact, save]);
 
   return (
     <Pressable

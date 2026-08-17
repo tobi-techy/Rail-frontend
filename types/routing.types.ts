@@ -17,6 +17,7 @@ export interface RouteConfig {
   isOnSourceOfFunds: boolean;
   isOnCompleteProfile: boolean;
   isOnCompleteKyc: boolean;
+  isOnFirstJob: boolean;
 }
 
 export interface AuthState {

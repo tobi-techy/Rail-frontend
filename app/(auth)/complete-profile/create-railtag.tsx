@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StatusBar, Platform, TextInput } from 'react-native';
+import { View, Text, StatusBar, Platform, TextInput, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui';
@@ -11,6 +11,7 @@ import { railTagSchema } from '@/utils/schemas';
 import { useHaptics } from '@/hooks/useHaptics';
 import { playUISound } from '@/lib/uiSounds';
 import { ImpactFeedbackStyle } from 'expo-haptics';
+import { OnboardingWizardHeader } from '@/components/onboarding/OnboardingWizardHeader';
 
 export default function CreateRailTagScreen() {
   const [tag, setTag] = useState('');
@@ -68,7 +69,7 @@ export default function CreateRailTagScreen() {
       onSuccess: () => {
         notification('success');
         playUISound('transactionSuccess');
-        router.push(ROUTES.AUTH.CREATE_PASSCODE as never);
+        router.replace(ROUTES.TABS as never);
       },
       onError: (err: any) =>
         showError('Could not set RailTag', err?.message || 'Please try again.'),
@@ -98,8 +99,14 @@ export default function CreateRailTagScreen() {
           translucent={Platform.OS === 'android'}
         />
         <View className="flex-1 px-6 pt-4">
+          <OnboardingWizardHeader
+            step={1}
+            total={1}
+            showSaveAndExit
+            onSaveAndExit={() => router.replace(ROUTES.TABS as never)}
+          />
           <StaggeredChild index={0}>
-            <View className="mb-8 mt-4">
+            <View className="mb-8">
               <Text
                 className="font-display text-[32px] leading-[36px] text-charcoal-primary"
                 maxFontSizeMultiplier={1.3}>
@@ -153,6 +160,14 @@ export default function CreateRailTagScreen() {
                 disabled={!canSubmit}
                 variant="orange"
               />
+              <Pressable
+                onPress={() => router.replace(ROUTES.TABS as never)}
+                className="mt-4 items-center py-2"
+                accessibilityRole="button">
+                <Text className="font-body text-[14px] text-ash" maxFontSizeMultiplier={1.4}>
+                  Skip for now
+                </Text>
+              </Pressable>
             </View>
           </StaggeredChild>
         </View>

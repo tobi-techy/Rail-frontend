@@ -114,7 +114,7 @@ export default function NgnConfirmScreen() {
         expectedRate: offRampRate > 0 ? offRampRate : undefined,
       });
       setTransactionId(res.transactionId);
-      setStatus(mapRampStatus(res.status));
+      setStatus('success');
     } catch (err: any) {
       if (isPasscodeSessionError(err)) {
         setAwaitingAuth(true);

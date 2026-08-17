@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Dimensions, Keyboard, Pressable } from 'react-native';
+import { Dimensions, Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from '@/utils/platformHaptics';
 import { Cancel01Icon, IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { GlassView } from '@/components/ui/GlassView';
+import { BlurView } from 'expo-blur';
 import { playUISound } from '@/lib/uiSounds';
 import { useUIStore } from '@/stores';
 
@@ -30,6 +31,11 @@ interface GorhomBottomSheetProps {
    * on top and keep the parent mounted. See CurrencySelectorPill.
    */
   stackBehavior?: 'push' | 'replace' | 'switch';
+  /**
+   * Called after the dismiss animation completes. Use this for post-dismiss
+   * actions like navigation — it fires once the sheet is fully off-screen.
+   */
+  onAfterDismiss?: () => void;
 }
 
 function GlassBackground({ style }: BottomSheetBackgroundProps) {
@@ -53,6 +59,7 @@ export function GorhomBottomSheet({
   snapPoints,
   glassBackground = false,
   stackBehavior,
+  onAfterDismiss,
 }: GorhomBottomSheetProps) {
   const ref = useRef<BottomSheetModal>(null);
   const insets = useSafeAreaInsets();
@@ -74,17 +81,21 @@ export function GorhomBottomSheet({
     playUISound('buttonClick');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onClose();
-  }, [onClose]);
+    onAfterDismiss?.();
+  }, [onClose, onAfterDismiss]);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.5}
-        pressBehavior={dismissible ? 'close' : 'none'}
-      />
+      <View style={StyleSheet.absoluteFill}>
+        <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+        <BottomSheetBackdrop
+          {...props}
+          disappearsOnIndex={-1}
+          appearsOnIndex={0}
+          opacity={0.5}
+          pressBehavior={dismissible ? 'close' : 'none'}
+        />
+      </View>
     ),
     [dismissible]
   );

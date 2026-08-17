@@ -18,6 +18,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   // Withdrawal
   INSUFFICIENT_FUNDS: 'Insufficient balance for this withdrawal.',
   INVALID_AMOUNT: 'Minimum withdrawal is $1.00.',
+  ADDRESS_NOT_WHITELISTED:
+    'This address needs to be whitelisted first. Please add it to your whitelist and try again.',
   PAYMASTER_SOL_ATA_CREATION_NOT_ALLOWED:
     'This Solana wallet needs to receive USDC at least once before you can send to it. Ask the recipient to set up their USDC wallet first.',
   LIMIT_EXCEEDED: 'Withdrawal limit exceeded. Please try a smaller amount.',
