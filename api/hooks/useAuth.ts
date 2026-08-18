@@ -9,6 +9,7 @@ import { authService, passcodeService } from '../services';
 import { queryKeys, invalidateQueries } from '../queryClient';
 import { useAuthStore } from '../../stores/authStore';
 import { useAnalytics, ANALYTICS_EVENTS } from '../../utils/analytics';
+import { logger } from '../../lib/logger';
 import { initActivationTracking, checkActivationWindow } from '../../utils/activation';
 import { SESSION_DURATION_MS, PASSCODE_SESSION_MS } from '../../utils/sessionConstants';
 import type {
@@ -19,6 +20,8 @@ import type {
   ForgotPasswordRequest,
   ResetPasswordRequest,
   VerifyResetCodeRequest,
+  EmailOTPLoginRequest,
+  EmailOTPLoginResponse,
 } from '../types';
 
 const getSessionExpiryIso = (sessionExpiresAt?: string): string => {
@@ -40,10 +43,26 @@ const syncPasscodeStatus = async () => {
  * After a successful email/password login, grant a passcode session so the user
  * isn't immediately redirected to /login-passcode by useProtectedRoute.
  * The user already proved identity via credentials — requiring passcode again is redundant.
+ * Validates the expiry date to prevent silent failures if PASSCODE_SESSION_MS is invalid.
  */
 const grantPostLoginPasscodeSession = () => {
+  if (!Number.isFinite(PASSCODE_SESSION_MS)) {
+    logger.warn('[Auth] PASSCODE_SESSION_MS is not a finite number; skipping passcode session grant', {
+      component: 'useAuth',
+      action: 'passcode-session-grant-skipped',
+    });
+    return;
+  }
   const expiresAt = new Date(Date.now() + PASSCODE_SESSION_MS);
-  useAuthStore.getState().setPasscodeSession('login-granted', expiresAt.toISOString());
+  const expiresAtIso = expiresAt.toISOString();
+  if (expiresAtIso === 'Invalid Date') {
+    logger.warn('[Auth] Computed passcode session expiry is invalid; skipping grant', {
+      component: 'useAuth',
+      action: 'passcode-session-grant-invalid-date',
+    });
+    return;
+  }
+  useAuthStore.getState().setPasscodeSession('login-granted', expiresAtIso);
 };
 
 /**
@@ -64,6 +83,7 @@ export function useLogin() {
         refreshToken: response.refreshToken,
         isAuthenticated: true,
         pendingVerificationEmail: null,
+        pendingVerificationMode: null,
         onboardingStatus: response.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,
@@ -128,6 +148,7 @@ export function useRegister() {
       // DO NOT set isAuthenticated or user yet - wait for verification
       useAuthStore.setState({
         pendingVerificationEmail: variables.email || variables.phone || response.identifier,
+        pendingVerificationMode: 'signup',
         isAuthenticated: false, // Explicitly ensure not authenticated
         user: null, // No user object until verified
       });
@@ -158,7 +179,7 @@ export function useVerifyCode() {
     mutationFn: (data: VerifyCodeRequest) => authService.verifyCode(data),
     onSuccess: (response) => {
       if (!response.user || !response.accessToken) {
-        useAuthStore.setState({ pendingVerificationEmail: null });
+        useAuthStore.setState({ pendingVerificationEmail: null, pendingVerificationMode: null });
         return;
       }
 
@@ -172,6 +193,7 @@ export function useVerifyCode() {
         refreshToken: refreshToken || null,
         isAuthenticated: true,
         pendingVerificationEmail: null,
+        pendingVerificationMode: null,
         onboardingStatus:
           response.onboarding_status || response.user.onboardingStatus || DEFAULT_ONBOARDING_STATUS,
         currentOnboardingStep: response.onboarding?.currentStep ?? null,
@@ -204,6 +226,75 @@ export function useVerifyCode() {
 
       // Initialize activation tracking for this new user
       initActivationTracking(now.toISOString());
+    },
+  });
+}
+
+/**
+ * Email OTP Login mutation (passwordless signin for existing users).
+ * Validates the response before updating auth state, grants a passcode
+ * session, syncs passcode status, and invalidates cached queries —
+ * matching the post-login behavior of useLogin.
+ */
+export function useEmailOTPLogin() {
+  const { track, identify, setUserProperties } = useAnalytics();
+
+  return useMutation({
+    mutationFn: (data: EmailOTPLoginRequest) => authService.emailOTPLogin(data),
+    onSuccess: async (response: EmailOTPLoginResponse) => {
+      // Validate response before touching auth state — malformed responses
+      // must not mark the user as authenticated.
+      if (!response.user || !response.accessToken || !response.refreshToken) {
+        throw new Error('Email login response is missing required fields');
+      }
+
+      const nowIso = new Date().toISOString();
+
+      useAuthStore.setState({
+        user: response.user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        isAuthenticated: true,
+        pendingVerificationEmail: null,
+        pendingVerificationMode: null,
+        onboardingStatus: response.user.onboardingStatus || null,
+        lastActivityAt: nowIso,
+        tokenIssuedAt: nowIso,
+        tokenExpiresAt: getSessionExpiryIso(response.sessionExpiresAt),
+      });
+
+      grantPostLoginPasscodeSession();
+
+      await syncPasscodeStatus();
+
+      track(ANALYTICS_EVENTS.SIGN_IN_COMPLETED, {
+        user_id: response.user.id,
+        email: response.user.email,
+        login_method: 'email_otp',
+        onboarding_status: response.user.onboardingStatus,
+      });
+
+      if (response.user.id) {
+        identify(response.user.id, {
+          email: response.user.email,
+          first_name: response.user.firstName,
+          last_name: response.user.lastName,
+          login_method: 'email_otp',
+        });
+        setUserProperties({
+          last_login_at: nowIso,
+          lifecycle_stage: 'returning',
+        });
+      } else {
+        logger.warn('[Auth] User authenticated without ID; analytics tracking skipped', {
+          component: 'useEmailOTPLogin',
+          action: 'analytics-skipped-no-user-id',
+        });
+      }
+
+      invalidateQueries.auth();
+      invalidateQueries.wallet();
+      invalidateQueries.user();
     },
   });
 }
@@ -326,6 +417,7 @@ export function useAppleSignIn() {
         refreshToken: response.refreshToken,
         isAuthenticated: true,
         pendingVerificationEmail: null,
+        pendingVerificationMode: null,
         onboardingStatus: response.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,
@@ -408,6 +500,7 @@ export function useGoogleSignIn() {
         refreshToken: response.refreshToken,
         isAuthenticated: true,
         pendingVerificationEmail: null,
+        pendingVerificationMode: null,
         onboardingStatus: response.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,

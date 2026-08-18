@@ -22,6 +22,8 @@ import type {
   ResetPasswordRequest,
   VerifyResetCodeRequest,
   VerifyResetCodeResponse,
+  EmailOTPLoginRequest,
+  EmailOTPLoginResponse,
   SocialLoginRequest,
   SocialLoginResponse,
   WebAuthnLoginBeginRequest,
@@ -36,6 +38,7 @@ const AUTH_ENDPOINTS = {
   LOGOUT: '/v1/auth/logout',
   REFRESH: '/v1/auth/refresh',
   VERIFY: '/v1/auth/verify',
+  EMAIL_LOGIN: '/v1/auth/email/login',
   RESEND_CODE: '/v1/auth/resend-code',
   FORGOT_PASSWORD: '/v1/auth/forgot-password',
   VERIFY_RESET_CODE: '/v1/auth/verify-reset-code',
@@ -170,6 +173,15 @@ export const authService = {
    */
   async verifyCode(data: VerifyCodeRequest): Promise<VerifyCodeResponse> {
     return withNetworkRetry(() => apiClient.post<VerifyCodeResponse>(AUTH_ENDPOINTS.VERIFY, data));
+  },
+
+  /**
+   * Complete passwordless email login by verifying the OTP code.
+   * Used for existing users signing in via email.
+   * @returns User info with access and refresh tokens
+   */
+  async emailOTPLogin(data: EmailOTPLoginRequest): Promise<EmailOTPLoginResponse> {
+    return apiClient.post<EmailOTPLoginResponse>(AUTH_ENDPOINTS.EMAIL_LOGIN, data);
   },
 
   /**

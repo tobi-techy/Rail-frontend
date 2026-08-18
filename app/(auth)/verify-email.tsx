@@ -15,16 +15,18 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { OTPInput, Button } from '../../components/ui';
 import { AuthGradient, StaggeredChild } from '@/components';
 import { ROUTES } from '@/constants/routes';
-import { useVerifyCode, useResendCode } from '@/api/hooks/useAuth';
+import { useVerifyCode, useResendCode, useEmailOTPLogin } from '@/api/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { getPostAuthRoute } from '@/utils/onboardingFlow';
 import { useButtonFeedback } from '@/hooks/useButtonFeedback';
-import apiClient from '@/api/client';
 
 export default function VerifyEmail() {
   const { mode } = useLocalSearchParams<{ mode?: string }>();
-  const isSigninMode = mode === 'signin';
+  const storedMode = useAuthStore((state) => state.pendingVerificationMode);
+  // Prefer mode from store (survives navigation/reload) over URL param.
+  // Default to 'signup' only when neither source explicitly says 'signin'.
+  const isSigninMode = (storedMode ?? mode) === 'signin';
 
   const [otp, setOtp] = useState('');
   const [resendTimer, setResendTimer] = useState(60);
@@ -34,17 +36,21 @@ export default function VerifyEmail() {
   const pendingEmail = useAuthStore((state) => state.pendingVerificationEmail);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { mutate: verifyCode, isPending: isVerifying } = useVerifyCode();
+  const { mutate: emailOTPLogin, isPending: isEmailOTPLoggingIn } = useEmailOTPLogin();
   const { mutate: resendCode, isPending: isResending } = useResendCode();
   const otpRef = useRef<any>(null);
   const { showError, showInfo, showWarning } = useFeedbackPopup();
   const triggerFeedback = useButtonFeedback();
 
   useEffect(() => {
-    if (!pendingEmail && !isAuthenticated && !isVerifying && !isTransitioning) {
-      router.replace(ROUTES.AUTH.SIGNUP as never);
+    if (!pendingEmail && !isAuthenticated && !isVerifying && !isEmailOTPLoggingIn && !isTransitioning) {
+      // Pending email was cleared (e.g. stale state, deep link, or completed flow).
+      // Route to signin — user can choose signin or signup from there. Routing to
+      // signup assumes the user is new, which is wrong for existing users.
+      router.replace(ROUTES.AUTH.SIGNIN as never);
       return;
     }
-  }, [pendingEmail, isAuthenticated, isVerifying, isTransitioning]);
+  }, [pendingEmail, isAuthenticated, isVerifying, isEmailOTPLoggingIn, isTransitioning]);
 
   useEffect(() => {
     if (!pendingEmail) return;
@@ -60,40 +66,38 @@ export default function VerifyEmail() {
     setErrorMessage('');
     setOtp(code);
     Keyboard.dismiss();
-    if (code.length === 6 && pendingEmail && !isVerifying && !isTransitioning) {
+    if (code.length === 6 && pendingEmail && !isVerifying && !isEmailOTPLoggingIn && !isTransitioning) {
       handleVerifyWithCode(code);
     }
   };
 
   const handleVerifyWithCode = async (code: string) => {
     if (isSigninMode) {
-      // Signin mode: call email OTP login endpoint
+      // Signin mode: use the typed email OTP login hook. The hook handles
+      // response validation, auth state updates, passcode session grant,
+      // passcode status sync, cache invalidation, and analytics — following
+      // the Services → Hooks → Components boundary.
       setIsTransitioning(true);
-      try {
-        const response: any = await apiClient.post('/v1/auth/email/login', {
-          email: pendingEmail,
-          code,
-        });
-        // Store tokens and user
-        const { setTokens, setUser, setOnboardingStatus, setHasPasscode } = useAuthStore.getState();
-        if (response.accessToken) setTokens(response.accessToken, response.refreshToken);
-        if (response.user) setUser(response.user);
-        if (response.user?.onboardingStatus) setOnboardingStatus(response.user.onboardingStatus);
-        if (response.user?.hasPasscode !== undefined) setHasPasscode(response.user.hasPasscode);
-        useAuthStore.setState({ isAuthenticated: true });
-        // Route based on onboarding status (handles incomplete profiles)
-        const route = getPostAuthRoute(response.user?.onboardingStatus, {
-          firstJob: useAuthStore.getState().registrationData.firstJob,
-        });
-        router.replace(route as never);
-      } catch (error: any) {
-        setIsTransitioning(false);
-        const message = error?.message || 'Invalid or expired verification code';
-        setErrorMessage(message);
-        setOtp('');
-        otpRef.current?.clear?.();
-        showError('Verification Failed', message);
-      }
+      emailOTPLogin(
+        { email: pendingEmail!, code },
+        {
+          onSuccess: (response) => {
+            setIsTransitioning(false);
+            const route = getPostAuthRoute(response.user.onboardingStatus, {
+              firstJob: useAuthStore.getState().registrationData.firstJob,
+            });
+            router.replace(route as never);
+          },
+          onError: (error: any) => {
+            setIsTransitioning(false);
+            const message = error?.message || 'Invalid or expired verification code';
+            setErrorMessage(message);
+            setOtp('');
+            otpRef.current?.clear?.();
+            showError('Verification Failed', message);
+          },
+        }
+      );
     } else {
       // Signup mode: use existing verify code
       verifyCode(

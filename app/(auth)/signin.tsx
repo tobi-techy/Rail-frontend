@@ -39,6 +39,7 @@ export default function SignIn() {
   const triggerFeedback = useButtonFeedback();
   const { impact, notification } = useHaptics();
   const setPendingEmail = useAuthStore((s) => s.setPendingEmail);
+  const setPendingVerificationMode = useAuthStore((s) => s.setPendingVerificationMode);
 
   const handleSignIn = async () => {
     const result = signupSchema.safeParse({ email });
@@ -64,6 +65,7 @@ export default function SignIn() {
       // Send OTP to email for signin
       await apiClient.post('/v1/auth/email/start', { email: result.data.email });
       setPendingEmail(result.data.email);
+      setPendingVerificationMode('signin');
       notification('success');
       playUISound('transactionSuccess');
       router.push({ pathname: ROUTES.AUTH.VERIFY_EMAIL, params: { mode: 'signin' } } as never);
@@ -146,11 +148,12 @@ export default function SignIn() {
                               { firstJob: useAuthStore.getState().registrationData.firstJob }
                             ) as never
                           ),
-                        onError: () =>
-                          showError(
-                            'Google Sign-In Failed',
-                            'Please try again or use email sign in.'
-                          ),
+                        onError: (err: any) => {
+                          const message =
+                            err?.message ||
+                            'Google sign-in failed. Please try again or use email sign in.';
+                          showError('Google Sign-In Failed', message);
+                        },
                       });
                     }}
                     variant="white"
@@ -171,11 +174,12 @@ export default function SignIn() {
                               { firstJob: useAuthStore.getState().registrationData.firstJob }
                             ) as never
                           ),
-                        onError: () =>
-                          showError(
-                            'Apple Sign-In Failed',
-                            'Please try again or use email sign in.'
-                          ),
+                        onError: (err: any) => {
+                          const message =
+                            err?.message ||
+                            'Apple sign-in failed. Please try again or use email sign in.';
+                          showError('Apple Sign-In Failed', message);
+                        },
                       });
                     }}
                     variant="white"

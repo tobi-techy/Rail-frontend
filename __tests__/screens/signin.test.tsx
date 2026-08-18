@@ -24,6 +24,7 @@ jest.mock('../../stores/authStore', () => ({
       error: null,
       clearError: jest.fn(),
       setPendingEmail: jest.fn(),
+      setPendingVerificationMode: jest.fn(),
     })),
     { getState: jest.fn(() => ({ setPendingEmail: jest.fn() })) }
   ),
