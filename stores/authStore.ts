@@ -96,6 +96,7 @@ interface AuthState {
   currentOnboardingStep: string | null;
   registrationData: RegistrationData;
   pendingVerificationEmail: string | null;
+  pendingVerificationMode: 'signin' | 'signup' | null;
   _pendingPasscode: string | null;
   hasPasscode: boolean;
   isBiometricEnabled: boolean;
@@ -128,6 +129,7 @@ interface AuthActions {
   setUser: (user: User) => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   setPendingEmail: (email: string | null) => void;
+  setPendingVerificationMode: (mode: 'signin' | 'signup' | null) => void;
   setOnboardingStatus: (status: string, step?: string) => void;
   setHasCompletedOnboarding: (completed: boolean) => void;
   setHasAcknowledgedDisclaimer: (acknowledged: boolean) => void;
@@ -156,6 +158,7 @@ const initialState: AuthState = {
   onboardingStatus: null,
   currentOnboardingStep: null,
   pendingVerificationEmail: null,
+  pendingVerificationMode: null,
   _pendingPasscode: null,
   hasPasscode: false,
   // On by default — devices without enrolled biometrics degrade gracefully
@@ -410,6 +413,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           const response = await authService.register({ email });
           set({
             pendingVerificationEmail: email || response.identifier,
+            pendingVerificationMode: 'signup',
             isAuthenticated: false,
             user: null,
             isLoading: false,
@@ -607,6 +611,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }),
 
       setPendingEmail: (email) => set({ pendingVerificationEmail: email }),
+      setPendingVerificationMode: (mode) => set({ pendingVerificationMode: mode }),
       setOnboardingStatus: (status, step?) =>
         set({ onboardingStatus: status, currentOnboardingStep: step || null }),
       setHasCompletedOnboarding: (completed) => {
@@ -715,6 +720,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         onboardingStatus: state.onboardingStatus,
         currentOnboardingStep: state.currentOnboardingStep,
         pendingVerificationEmail: state.pendingVerificationEmail,
+        pendingVerificationMode: state.pendingVerificationMode,
         isBiometricEnabled: state.isBiometricEnabled,
         passcodeSessionToken: state.passcodeSessionToken,
         passcodeSessionExpiresAt: state.passcodeSessionExpiresAt,

@@ -12,6 +12,7 @@ export const initialState: AuthState = {
   onboardingStatus: null,
   currentOnboardingStep: null,
   pendingVerificationEmail: null,
+  pendingVerificationMode: null,
   _pendingPasscode: null,
   hasPasscode: false,
   isBiometricEnabled: true,

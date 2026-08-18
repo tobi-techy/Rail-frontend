@@ -42,6 +42,7 @@ export interface AuthState {
   currentOnboardingStep: string | null;
   registrationData: RegistrationData;
   pendingVerificationEmail: string | null;
+  pendingVerificationMode: 'signin' | 'signup' | null;
   _pendingPasscode: string | null;
   hasPasscode: boolean;
   isBiometricEnabled: boolean;
@@ -73,6 +74,7 @@ export interface AuthActions {
   setUser: (user: User) => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   setPendingEmail: (email: string | null) => void;
+  setPendingVerificationMode: (mode: 'signin' | 'signup' | null) => void;
   setOnboardingStatus: (status: string, step?: string) => void;
   setHasCompletedOnboarding: (completed: boolean) => void;
   setHasPasscode: (hasPasscode: boolean) => void;

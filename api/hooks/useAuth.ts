@@ -64,6 +64,7 @@ export function useLogin() {
         refreshToken: response.refreshToken,
         isAuthenticated: true,
         pendingVerificationEmail: null,
+        pendingVerificationMode: null,
         onboardingStatus: response.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,
@@ -128,6 +129,7 @@ export function useRegister() {
       // DO NOT set isAuthenticated or user yet - wait for verification
       useAuthStore.setState({
         pendingVerificationEmail: variables.email || variables.phone || response.identifier,
+        pendingVerificationMode: 'signup',
         isAuthenticated: false, // Explicitly ensure not authenticated
         user: null, // No user object until verified
       });
@@ -158,7 +160,7 @@ export function useVerifyCode() {
     mutationFn: (data: VerifyCodeRequest) => authService.verifyCode(data),
     onSuccess: (response) => {
       if (!response.user || !response.accessToken) {
-        useAuthStore.setState({ pendingVerificationEmail: null });
+        useAuthStore.setState({ pendingVerificationEmail: null, pendingVerificationMode: null });
         return;
       }
 
@@ -172,6 +174,7 @@ export function useVerifyCode() {
         refreshToken: refreshToken || null,
         isAuthenticated: true,
         pendingVerificationEmail: null,
+        pendingVerificationMode: null,
         onboardingStatus:
           response.onboarding_status || response.user.onboardingStatus || DEFAULT_ONBOARDING_STATUS,
         currentOnboardingStep: response.onboarding?.currentStep ?? null,
@@ -326,6 +329,7 @@ export function useAppleSignIn() {
         refreshToken: response.refreshToken,
         isAuthenticated: true,
         pendingVerificationEmail: null,
+        pendingVerificationMode: null,
         onboardingStatus: response.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,
@@ -408,6 +412,7 @@ export function useGoogleSignIn() {
         refreshToken: response.refreshToken,
         isAuthenticated: true,
         pendingVerificationEmail: null,
+        pendingVerificationMode: null,
         onboardingStatus: response.user.onboardingStatus || null,
         lastActivityAt: nowIso,
         tokenIssuedAt: nowIso,

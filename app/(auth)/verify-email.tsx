@@ -20,11 +20,15 @@ import { useAuthStore } from '@/stores/authStore';
 import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { getPostAuthRoute } from '@/utils/onboardingFlow';
 import { useButtonFeedback } from '@/hooks/useButtonFeedback';
+import { PASSCODE_SESSION_MS } from '@/utils/sessionConstants';
 import apiClient from '@/api/client';
 
 export default function VerifyEmail() {
   const { mode } = useLocalSearchParams<{ mode?: string }>();
-  const isSigninMode = mode === 'signin';
+  const storedMode = useAuthStore((state) => state.pendingVerificationMode);
+  // Prefer mode from store (survives navigation/reload) over URL param.
+  // Default to 'signup' only when neither source explicitly says 'signin'.
+  const isSigninMode = (storedMode ?? mode) === 'signin';
 
   const [otp, setOtp] = useState('');
   const [resendTimer, setResendTimer] = useState(60);
@@ -41,7 +45,10 @@ export default function VerifyEmail() {
 
   useEffect(() => {
     if (!pendingEmail && !isAuthenticated && !isVerifying && !isTransitioning) {
-      router.replace(ROUTES.AUTH.SIGNUP as never);
+      // Pending email was cleared (e.g. stale state, deep link, or completed flow).
+      // Route to signin — user can choose signin or signup from there. Routing to
+      // signup assumes the user is new, which is wrong for existing users.
+      router.replace(ROUTES.AUTH.SIGNIN as never);
       return;
     }
   }, [pendingEmail, isAuthenticated, isVerifying, isTransitioning]);
@@ -75,12 +82,23 @@ export default function VerifyEmail() {
           code,
         });
         // Store tokens and user
-        const { setTokens, setUser, setOnboardingStatus, setHasPasscode } = useAuthStore.getState();
+        const { setTokens, setUser, setOnboardingStatus, setHasPasscode, setPasscodeSession } =
+          useAuthStore.getState();
         if (response.accessToken) setTokens(response.accessToken, response.refreshToken);
         if (response.user) setUser(response.user);
         if (response.user?.onboardingStatus) setOnboardingStatus(response.user.onboardingStatus);
         if (response.user?.hasPasscode !== undefined) setHasPasscode(response.user.hasPasscode);
-        useAuthStore.setState({ isAuthenticated: true });
+        useAuthStore.setState({
+          isAuthenticated: true,
+          pendingVerificationEmail: null,
+          pendingVerificationMode: null,
+        });
+        // Grant a passcode session so useProtectedRoute doesn't immediately
+        // bounce existing users (with passcode) to /login-passcode. The user
+        // already proved identity via email OTP — requiring passcode again is
+        // redundant and creates a confusing signin → passcode loop.
+        const passcodeExpiresAt = new Date(Date.now() + PASSCODE_SESSION_MS).toISOString();
+        setPasscodeSession('email-otp-granted', passcodeExpiresAt);
         // Route based on onboarding status (handles incomplete profiles)
         const route = getPostAuthRoute(response.user?.onboardingStatus, {
           firstJob: useAuthStore.getState().registrationData.firstJob,

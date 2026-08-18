@@ -92,6 +92,7 @@ export function usePasskeyAuthorize({
           csrfToken: finishResponse.csrfToken || useAuthStore.getState().csrfToken,
           isAuthenticated: true,
           pendingVerificationEmail: null,
+          pendingVerificationMode: null,
           onboardingStatus: finishResponse.user.onboardingStatus || null,
           lastActivityAt: nowIso,
           tokenIssuedAt: nowIso,

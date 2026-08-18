@@ -28,6 +28,7 @@ export interface AuthState {
   hasPasscode: boolean;
   onboardingStatus: string | null;
   pendingVerificationEmail: string | null;
+  pendingVerificationMode?: 'signin' | 'signup' | null;
   lastActivityAt?: string | null;
   passcodeSessionExpiresAt?: string;
   appLockExpiresAt?: string;
