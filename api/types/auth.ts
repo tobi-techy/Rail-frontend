@@ -46,6 +46,13 @@ export interface VerifyCodeResponse {
   verified?: boolean;
 }
 
+export interface EmailOTPLoginRequest {
+  email: string;
+  code: string;
+}
+
+export type EmailOTPLoginResponse = LoginResponse;
+
 export interface ResendCodeRequest {
   email?: string; // Optional: required if phone not provided
   phone?: string; // Optional: required if email not provided
