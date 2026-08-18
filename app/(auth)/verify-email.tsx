@@ -82,6 +82,7 @@ export default function VerifyEmail() {
         { email: pendingEmail!, code },
         {
           onSuccess: (response) => {
+            setIsTransitioning(false);
             const route = getPostAuthRoute(response.user.onboardingStatus, {
               firstJob: useAuthStore.getState().registrationData.firstJob,
             });

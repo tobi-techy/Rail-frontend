@@ -285,6 +285,11 @@ export function useEmailOTPLogin() {
           last_login_at: nowIso,
           lifecycle_stage: 'returning',
         });
+      } else {
+        logger.warn('[Auth] User authenticated without ID; analytics tracking skipped', {
+          component: 'useEmailOTPLogin',
+          action: 'analytics-skipped-no-user-id',
+        });
       }
 
       invalidateQueries.auth();
