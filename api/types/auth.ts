@@ -91,6 +91,7 @@ export interface User {
   addressCountry?: string;
   emailVerified: boolean;
   phoneVerified: boolean;
+  hasPasscode: boolean;
   kycStatus: 'pending' | 'processing' | 'approved' | 'rejected' | 'expired';
   onboardingStatus:
     'started' | 'wallets_pending' | 'kyc_pending' | 'kyc_approved' | 'kyc_rejected' | 'completed';
