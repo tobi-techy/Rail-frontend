@@ -513,7 +513,9 @@ export const ChatBubble = React.memo(function ChatBubble({
 function ImageWithLoader({ uri }: { uri: string }) {
   const [loading, setLoading] = useState(true);
   return (
-    <View className="mb-1.5 h-52 w-52 overflow-hidden rounded-[20px] bg-[#1c1c1e]">
+    <View 
+      className="mb-1.5 h-52 w-52 overflow-hidden rounded-[20px] bg-[#1c1c1e]"
+      style={{ boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.1)' }}>
       {loading && (
         <View className="absolute inset-0 z-10 items-center justify-center">
           <ActivityIndicator size="small" color="#ffffff" />

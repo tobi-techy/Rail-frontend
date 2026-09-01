@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   stateLabel: {
     marginTop: 20,
     fontSize: 14,
-    fontFamily: Platform.select({ ios: 'SF Pro Display', android: undefined }),
+    fontFamily: Platform.select({ ios: 'Satoshi', android: undefined }),
     fontWeight: '500',
     color: '#8C8C8C',
   },

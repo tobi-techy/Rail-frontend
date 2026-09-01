@@ -32,8 +32,9 @@ export const SuggestionChips = React.memo(function SuggestionChips({
         <Pressable
           key={i}
           onPress={() => onPress(s)}
-          className="rounded-full border border-black/[0.08] bg-white px-4 py-2 active:bg-black/[0.03]">
-          <Text className="font-body text-[13px] text-charcoal-primary" numberOfLines={1}>
+          className="rounded-full border border-ember-orange/30 bg-white px-4 py-2 active:scale-[0.96] active:bg-ember-orange/5"
+          style={{ transitionProperty: 'transform, backgroundColor' }}>
+          <Text className="font-body-medium text-[13px] text-ember-orange" numberOfLines={1}>
             {s}
           </Text>
         </Pressable>
