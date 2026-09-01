@@ -1,8 +1,8 @@
 # Rail Money Design System
 
-Rail Money should feel like a serious consumer finance product: clean, bright, direct, and trustworthy. The visual language is Rail's own: precise money UI, restrained surfaces, Satoshi for interface text, CommitMono for money and account data, and clean ASCII-inspired imagery. Rail has exactly one brand character, Miriam, the AI assistant, rendered as a single expressive illustration rather than a cast of mascots or playful story scenes.
+Rail Money should feel like a serious consumer finance product: clean, bright, direct, and trustworthy. The visual language is Rail's own: precise money UI, restrained surfaces, Satoshi for interface text, and CommitMono for money and account data. Rail has exactly one brand character, Miriam, the AI assistant, rendered as a single expressive illustration rather than a cast of mascots or playful story scenes.
 
-Rail runs a deliberate human-vs-money typographic split: everything a person reads (copy, labels, headings, buttons) is set in Satoshi; everything about money or machines (balances, prices, account numbers, card digits, codes, ASCII imagery) is set in CommitMono with tabular figures. This split is the core signal of precision and trust.
+Rail runs a deliberate human-vs-money typographic split: everything a person reads (copy, labels, headings, buttons) is set in Satoshi; everything about money or machines (balances, prices, account numbers, card digits, codes) is set in CommitMono with tabular figures. This split is the core signal of precision and trust.
 
 ## Direction
 
@@ -14,8 +14,8 @@ Use:
 - Bright accent colors for action, status, and market movement.
 - Rounded controls with crisp hierarchy.
 - Satoshi for interface text.
-- CommitMono for money, account data, balances, codes, and ASCII imagery.
-- Real product context, financial data, and generated ASCII-style visuals.
+- CommitMono for money, account data, balances, codes, and machine data.
+- Real product context, financial data, and clean abstract visuals.
 - Miriam, the single brand character, for AI and assistant moments.
 - Smooth surfaces, rounded controls, crisp data hierarchy, and quiet motion.
 
@@ -30,26 +30,10 @@ Avoid:
 
 ## Visual Language
 
-### ASCII Imagery
-
-Rail imagery should use clean ASCII-style compositions: monospaced linework, chart-like grids, terminal-inspired patterns, contour maps, vault diagrams, market traces, routes, card silhouettes, and money-flow diagrams. Imagery should look like a polished financial operating system, not an illustrated world.
-
-Rules:
-
-- ASCII visuals must feel designed, not nostalgic or gimmicky.
-- Use CommitMono and tight grid alignment.
-- Keep imagery high contrast, sparse, and data-led.
-- Prefer off-white, graphite, ember, green, blue, yellow, and pink accents.
-- Use ASCII visuals for onboarding, empty states, loading states, insight cards, and campaign surfaces.
-- Use real app concepts as subjects: balances, rails, ledgers, routes, cards, vaults, charts, exchange flows, and account security.
-- Do not use scattered cartoon characters, secondary mascots, Pixar-like lighting, story panels, or adventure-game scenes. Miriam is the one exception, and she never appears inside ASCII compositions.
-
 ### Image System
 
 Images should reinforce precision and trust. When the app needs a visual, default to one of these:
 
-- ASCII-rendered financial diagrams.
-- Monospaced charts and market traces.
 - Clean product screenshots or UI-derived compositions.
 - Abstract money-flow maps built from lines, dots, numbers, and labels.
 - Security and identity visuals built from grids, masks, keys, and account patterns.
@@ -125,7 +109,7 @@ Rail uses two typefaces. **Satoshi** (Fontshare, geometric sans) carries all int
 | `font-body-medium`      | Satoshi Medium     | Emphasized body copy               |
 | `font-button`           | Satoshi Medium     | Button labels                      |
 | `font-caption`          | Satoshi Regular    | Labels and metadata                |
-| `font-mono`             | CommitMono Regular | Codes and ASCII visuals            |
+| `font-mono`             | CommitMono Regular | Codes and machine output           |
 | `font-numeric`          | CommitMono Regular | Balances, prices, and account data |
 | `font-mono-light`       | CommitMono 350     | De-emphasized numeric metadata     |
 | `font-mono-book`        | CommitMono 450     | Numeric body copy                  |
@@ -296,11 +280,11 @@ Circular icon badge: background in brand color (Meadow Green for Receive, Flamin
 
 ## Imagery
 
-Rail's imagery is two layers: ASCII-style financial visuals (the default) and Miriam (the single brand character). No photography. ASCII visuals are high-contrast monospaced compositions built from lines, dots, numbers, and labels on the white canvas. Miriam is a single expressive ember sphere, never a group and never scattered as decoration, used only for AI and assistant moments. Product screenshots appear inside dark rounded phone mockups (border-radius 24px) — contained and framed, never bleeding to page edge. Icons are filled monochrome at small sizes; action badges use filled circles with white icon glyphs. Flat shading with subtle inset highlights, never heavy gradients — imagery reads as a precise financial operating system with one warm, approachable character.
+Rail's imagery is centered on Miriam (the single brand character). No photography. Miriam is a single expressive ember sphere, never a group and never scattered as decoration, used only for AI and assistant moments. Product screenshots appear inside dark rounded phone mockups (border-radius 24px) — contained and framed, never bleeding to page edge. Icons are filled monochrome at small sizes; action badges use filled circles with white icon glyphs. Flat shading with subtle inset highlights, never heavy gradients — imagery reads as a precise financial operating system with one warm, approachable character.
 
 ## Layout
 
-Max-width ~1200px centered on the canvas. Hero uses centered headline text (Satoshi Bold), flanked by ASCII-style financial imagery rather than a split layout. Below hero: alternating sections with generous vertical gaps (120-180px). Feature section uses a 3-column card grid (white cards with inset borders). Phone mockup sections show 2-3 device frames side by side on white or gray bands. Navigation is a fixed top bar with logo left, links center, actions right. Footer is minimal — link grid on canvas background. No sidebar, no mega-menu. Page is text-dominant with imagery as punctuation, not wallpaper.
+Max-width ~1200px centered on the canvas. Hero uses centered headline text (Satoshi Bold), flanked by clean abstract imagery rather than a split layout. Below hero: alternating sections with generous vertical gaps (120-180px). Feature section uses a 3-column card grid (white cards with inset borders). Phone mockup sections show 2-3 device frames side by side on white or gray bands. Navigation is a fixed top bar with logo left, links center, actions right. Footer is minimal — link grid on canvas background. No sidebar, no mega-menu. Page is text-dominant with imagery as punctuation, not wallpaper.
 
 ## Agent Prompt Guide
 
@@ -339,7 +323,7 @@ Rail's one brand character. Miriam carries warmth so the rest of the UI can stay
 
 **Motion**: Quiet idle life — bob, sway, tilt, breathe, and randomized blink, all on inout-sine easing. Processing speeds the sway. Never bouncy, springy, or cartoonish.
 
-**Placement**: Only in AI and assistant contexts (chat, drawer, health, intro, voice). Miriam is never scattered as page decoration and never appears inside ASCII compositions.
+**Placement**: Only in AI and assistant contexts (chat, drawer, health, intro, voice). Miriam is never scattered as page decoration.
 
 ## Motion Philosophy
 

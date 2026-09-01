@@ -23,6 +23,8 @@ import {
 import { useSpeechToText } from '@/hooks/useSpeechToText';
 import { useRouter } from 'expo-router';
 import * as Haptics from '@/utils/platformHaptics';
+import { VoiceBar } from './VoiceBar';
+import { SPRING_PRESS } from '@/lib/motion';
 
 const ACCENT = '#E8503A';
 const LISTENING_COLOR = '#FF5733';
@@ -238,7 +240,10 @@ export function InputBar({
       )}
 
       {/* iMessage-style composer row: [ + ]  [ pill: input · mic ]  [ accent ] */}
-      <View className="flex-row items-end gap-2">
+      {isListening ? (
+        <VoiceBar onStop={stopListening} />
+      ) : (
+        <View className="flex-row items-end gap-2">
         {/* Plus — tap: attachments · long-press: toggle Agent mode */}
         {onPlusPress && (
           <Pressable
@@ -353,7 +358,8 @@ export function InputBar({
               <HugeiconsIcon icon={PhoneIcon} size={18} color="#FFFFFF" />
             </Pressable>
           ))}
-      </View>
+        </View>
+      )}
     </View>
   );
 }

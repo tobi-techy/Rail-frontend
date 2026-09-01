@@ -7,11 +7,13 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
+  withSpring,
   cancelAnimation,
 } from 'react-native-reanimated';
 import { createAudioPlayer, type AudioPlayer } from 'expo-audio';
 import * as Haptics from '@/utils/platformHaptics';
 import { CaretRightIcon, SquareIcon } from 'phosphor-react-native';
+import { SPRING_PRESS } from '@/lib/motion';
 
 interface Props {
   audioUrl: string;
@@ -52,6 +54,8 @@ export const VoiceMessageBubble = React.memo(function VoiceMessageBubble({
 
   const playerRef = useRef<AudioPlayer | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pressScale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: pressScale.value }] }));
 
   // Animated waveform bars pulse when playing
   const pulseProgress = useSharedValue(0);
@@ -91,6 +95,11 @@ export const VoiceMessageBubble = React.memo(function VoiceMessageBubble({
   const handleToggle = useCallback(async () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (!audioUrl) return;
+
+    pressScale.value = withSpring(0.96, SPRING_PRESS);
+    setTimeout(() => {
+      pressScale.value = withSpring(1, SPRING_PRESS);
+    }, 120);
 
     const player = await ensurePlayer();
     if (!player) return;
@@ -152,25 +161,27 @@ export const VoiceMessageBubble = React.memo(function VoiceMessageBubble({
         className="flex-row items-center gap-3 rounded-[20px] bg-[#E9E9EB] px-4 py-3"
         style={{ minWidth: 200 }}>
         {/* Play / Pause */}
-        <Pressable
-          onPress={handleToggle}
-          disabled={loading || error}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            backgroundColor: error ? '#C7C7CC' : '#FF3E00',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={playing ? 'Pause voice message' : 'Play voice message'}>
-          {playing ? (
-            <SquareIcon size={12} color="#fff" weight="fill" />
-          ) : (
-            <CaretRightIcon size={16} color="#fff" weight="fill" />
-          )}
-        </Pressable>
+        <Animated.View style={pressStyle}>
+          <Pressable
+            onPress={handleToggle}
+            disabled={loading || error}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: error ? '#C7C7CC' : '#FF3E00',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={playing ? 'Pause voice message' : 'Play voice message'}>
+            {playing ? (
+              <SquareIcon size={12} color="#fff" weight="fill" />
+            ) : (
+              <CaretRightIcon size={16} color="#fff" weight="fill" />
+            )}
+          </Pressable>
+        </Animated.View>
 
         {/* Waveform + timer */}
         <View className="flex-1 gap-1">
