@@ -1,12 +1,11 @@
-import { View, Text, ScrollView, ActivityIndicator, Switch, Pressable } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { Passkey } from 'react-native-passkey';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
 
 import { GorhomBottomSheet, SettingsSheet } from '@/components/sheets';
-import { SegmentedSlider } from '@/components/molecules';
+import { SegmentedSlider, SettingsSection, ListItem } from '@/components/molecules';
 import { Button, Input } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores';
@@ -20,6 +19,7 @@ import { useFeedbackPopup } from '@/hooks/useFeedbackPopup';
 import { useBiometric } from '@/hooks/useBiometric';
 import {
   ArrowLeftRightIcon,
+  ArrowRight01Icon,
   ChartUpIcon,
   Delete02Icon,
   EyeIcon,
@@ -41,7 +41,6 @@ import {
 } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { useHaptics } from '@/hooks/useHaptics';
-import { playUISound } from '@/lib/uiSounds';
 import * as Haptics from '@/utils/platformHaptics';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -88,79 +87,9 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
-// ── UI Primitives ─────────────────────────────────────────────────────────────
+// ── Reusable row helper ───────────────────────────────────────────────────────
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-function SettingButton({
-  icon,
-  label,
-  onPress,
-  danger,
-  right,
-}: {
-  icon: ReactNode;
-  label: string;
-  onPress?: () => void;
-  danger?: boolean;
-  right?: ReactNode;
-}) {
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const { impact } = useHaptics();
-  return (
-    <AnimatedPressable
-      style={animStyle}
-      className={
-        right
-          ? 'mb-md w-full flex-row items-center justify-between px-1'
-          : 'mb-md w-[25%] items-center'
-      }
-      onPress={() => {
-        onPress?.();
-      }}
-      onPressIn={() => {
-        impact(Haptics.ImpactFeedbackStyle.Light);
-        scale.value = withSpring(0.9, { damping: 20, stiffness: 300 });
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
-      }}>
-      {right ? (
-        <>
-          <View className="flex-row items-center gap-3">
-            <View className="h-12 w-12 items-center justify-center">{icon}</View>
-            <Text
-              className={`font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}
-              maxFontSizeMultiplier={1.4}>
-              {label}
-            </Text>
-          </View>
-          {right}
-        </>
-      ) : (
-        <>
-          <View className="h-12 w-12 items-center justify-center">{icon}</View>
-          <Text
-            className={`mt-xs text-center font-caption text-caption ${danger ? 'text-destructive' : 'text-text-primary'}`}
-            numberOfLines={2}
-            maxFontSizeMultiplier={1.4}>
-            {label}
-          </Text>
-        </>
-      )}
-    </AnimatedPressable>
-  );
-}
-
-const Section = ({ title, children }: { title: string; children: ReactNode }) => (
-  <View className="border-b border-black/[0.07] py-md">
-    <Text className="mb-md px-md font-subtitle text-body" maxFontSizeMultiplier={1.3}>
-      {title}
-    </Text>
-    <View className="flex-row flex-wrap px-sm">{children}</View>
-  </View>
-);
+const chevron = <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#a7a7a7" />;
 
 const SheetRow = ({
   label,
@@ -173,21 +102,15 @@ const SheetRow = ({
 }) => {
   const { impact } = useHaptics();
   return (
-    <Pressable
-      className="flex-row items-center justify-between border-b border-black/[0.07] py-4"
+    <ListItem
+      title={label}
+      rightText={value}
       onPress={() => {
         impact(Haptics.ImpactFeedbackStyle.Light);
         onPress?.();
-      }}>
-      <Text className="font-body text-base text-text-primary" maxFontSizeMultiplier={1.4}>
-        {label}
-      </Text>
-      {value && (
-        <Text className="font-body text-base text-text-secondary" maxFontSizeMultiplier={1.4}>
-          {value}
-        </Text>
-      )}
-    </Pressable>
+      }}
+      className="px-0"
+    />
   );
 };
 
@@ -196,35 +119,20 @@ const SheetToggleRow = ({
   subtitle,
   value,
   onChange,
-  disableSound,
 }: {
   label: string;
   subtitle?: string;
   value: boolean;
   onChange: (v: boolean) => void;
-  disableSound?: boolean;
 }) => (
-  <View className="flex-row items-center justify-between border-b border-black/[0.07] py-4">
-    <View className="flex-1 pr-4">
-      <Text className="font-body text-base text-text-primary" maxFontSizeMultiplier={1.4}>
-        {label}
-      </Text>
-      {subtitle && (
-        <Text
-          className="mt-0.5 font-caption text-caption text-text-secondary"
-          maxFontSizeMultiplier={1.4}>
-          {subtitle}
-        </Text>
-      )}
-    </View>
-    <Switch
-      value={value}
-      onValueChange={(v) => {
-        if (!disableSound) playUISound('toggle');
-        onChange(v);
-      }}
-    />
-  </View>
+  <ListItem
+    title={label}
+    subtitle={subtitle}
+    toggle
+    toggleValue={value}
+    onToggle={onChange}
+    className="px-0"
+  />
 );
 
 export default function Settings() {
@@ -384,89 +292,138 @@ export default function Settings() {
         className="flex-1"
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}>
-        <Section title="Spend">
-          <SettingButton
-            icon={<HugeiconsIcon icon={ArrowLeftRightIcon} size={22} color="#121212" />}
+        {/* Profile summary card */}
+        <View className="mb-6 px-4">
+          <Pressable
+            onPress={() => router.push('/profile')}
+            className="flex-row items-center rounded-2xl bg-white px-4 py-4 shadow-subtle active:bg-surface">
+            <View className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-stone-surface">
+              <DiceBearAvatar size={44} />
+            </View>
+            <View className="flex-1">
+              <Text
+                className="font-subtitle text-body text-text-primary"
+                numberOfLines={1}
+                maxFontSizeMultiplier={1.3}>
+                {user?.firstName || user?.email?.split('@')[0] || 'Your account'}
+              </Text>
+              <Text
+                className="mt-0.5 font-caption text-caption text-text-secondary"
+                numberOfLines={1}
+                maxFontSizeMultiplier={1.4}>
+                View profile &gt; settings
+              </Text>
+            </View>
+            {chevron}
+          </Pressable>
+        </View>
+
+        <SettingsSection title="Spend">
+          <ListItem
+            icon={ArrowLeftRightIcon}
+            iconTile
             label="Base/Active Split"
             onPress={() => {
               setAllocationFeedback(null);
               setActiveSheet('allocation');
               void refetchAllocationBalances();
             }}
+            rightElement={chevron}
           />
-          <SettingButton
-            icon={<HugeiconsIcon icon={ChartUpIcon} size={22} color="#121212" />}
+          <ListItem
+            icon={ChartUpIcon}
+            iconTile
             label="Auto Invest"
             onPress={() => setActiveSheet('autoInvest')}
+            rightText={autoInvestEnabled ? 'On' : undefined}
+            rightElement={chevron}
           />
-          <SettingButton
-            icon={<HugeiconsIcon icon={RepeatIcon} size={22} color="#121212" />}
+          <ListItem
+            icon={RepeatIcon}
+            iconTile
             label="Round-ups"
             onPress={() => setActiveSheet('roundups')}
+            rightText={roundupsEnabled ? 'On' : undefined}
+            rightElement={chevron}
           />
-          <SettingButton
-            icon={<HugeiconsIcon icon={BalanceScaleIcon} size={22} color="#121212" />}
+          <ListItem
+            icon={BalanceScaleIcon}
+            iconTile
             label="Daily Limit"
             onPress={() => router.push('/daily-spending-limit' as never)}
+            rightElement={chevron}
+            showDivider={false}
           />
-        </Section>
+        </SettingsSection>
 
-        <Section title="Preferences">
-          <SettingButton
-            icon={
-              isBalanceVisible ? (
-                <HugeiconsIcon icon={EyeIcon} size={22} color="#121212" />
-              ) : (
-                <HugeiconsIcon icon={ViewOffIcon} size={22} color="#121212" />
-              )
-            }
+        <SettingsSection title="Preferences">
+          <ListItem
+            icon={isBalanceVisible ? EyeIcon : ViewOffIcon}
+            iconTile
             label="Privacy"
             onPress={() => setActiveSheet('privacy')}
+            rightElement={chevron}
           />
-          <SettingButton
-            icon={<HugeiconsIcon icon={SmartPhone01Icon} size={22} color="#121212" />}
+          <ListItem
+            icon={SmartPhone01Icon}
+            iconTile
             label="Feedback"
             onPress={() => setActiveSheet('haptics')}
+            rightElement={chevron}
           />
-          <SettingButton
-            icon={<HugeiconsIcon icon={LockIcon} size={22} color="#121212" />}
+          <ListItem
+            icon={LockIcon}
+            iconTile
             label="App Lock"
             onPress={() => setActiveSheet('lockOnResume')}
+            rightElement={chevron}
           />
-          <SettingButton
-            icon={<HugeiconsIcon icon={Notification03Icon} size={22} color="#121212" />}
+          <ListItem
+            icon={Notification03Icon}
+            iconTile
             label="Notifications"
             onPress={() => router.push('/settings-notifications')}
+            rightElement={chevron}
           />
-          <SettingButton
-            icon={<HugeiconsIcon icon={InternetIcon} size={22} color="#121212" />}
+          <ListItem
+            icon={InternetIcon}
+            iconTile
             label="Currency"
             onPress={() => setActiveSheet('currency')}
+            rightElement={chevron}
+            showDivider={false}
           />
-        </Section>
+        </SettingsSection>
 
-        <Section title="Security">
-          <SettingButton
-            icon={<HugeiconsIcon icon={Shield01Icon} size={22} color="#121212" />}
+        <SettingsSection title="Security">
+          <ListItem
+            icon={Shield01Icon}
+            iconTile
             label="PIN"
             onPress={() => setActiveSheet('pin')}
+            rightElement={chevron}
           />
           {biometricHardwareAvailable && (
-            <SettingButton
-              icon={<HugeiconsIcon icon={FingerPrintIcon} size={22} color="#121212" />}
+            <ListItem
+              icon={FingerPrintIcon}
+              iconTile
               label="Biometrics"
               onPress={() => setActiveSheet('biometric')}
+              rightElement={chevron}
             />
           )}
           {Passkey.isSupported() && (
-            <SettingButton
-              icon={<HugeiconsIcon icon={Key01Icon} size={22} color="#121212" />}
+            <ListItem
+              icon={Key01Icon}
+              iconTile
               label="Passkeys"
               onPress={() => router.push('/passkey-settings')}
+              rightElement={chevron}
             />
           )}
-          <SettingButton
-            icon={<HugeiconsIcon icon={ShieldKeyIcon} size={22} color="#121212" />}
+          <ListItem
+            icon={ShieldKeyIcon}
+            iconTile
             label="2-Factor Auth"
             onPress={() =>
               showInfo(
@@ -474,45 +431,62 @@ export default function Settings() {
                 '2-Factor authentication will be available in a future update.'
               )
             }
+            rightElement={chevron}
+            showDivider={false}
           />
-        </Section>
+        </SettingsSection>
 
-        <Section title="More">
-          <SettingButton
-            icon={<HugeiconsIcon icon={UserGroupIcon} size={22} color="#121212" />}
+        <SettingsSection title="More">
+          <ListItem
+            icon={UserGroupIcon}
+            iconTile
             label="Referrals"
             onPress={() =>
               showInfo('Coming Soon', 'Referrals will be available in a future update.')
             }
+            rightElement={chevron}
           />
-          <SettingButton
-            icon={<HugeiconsIcon icon={BalanceScaleIcon} size={22} color="#121212" />}
+          <ListItem
+            icon={BalanceScaleIcon}
+            iconTile
             label="Legal"
             onPress={() =>
               showInfo('Legal', 'Legal documents will be available in a future update.')
             }
+            rightElement={chevron}
           />
-          <SettingButton
-            icon={<HugeiconsIcon icon={HeadphonesIcon} size={22} color="#121212" />}
+          <ListItem
+            icon={HeadphonesIcon}
+            iconTile
             label="Support"
             onPress={() => router.push('/support')}
+            rightElement={chevron}
+            showDivider={false}
           />
-        </Section>
+        </SettingsSection>
 
-        <Section title="Account">
-          <SettingButton
-            icon={<HugeiconsIcon icon={Logout01Icon} size={22} color="#ff2b3a" />}
+        <SettingsSection title="Account">
+          <ListItem
+            icon={Logout01Icon}
+            iconTile
+            iconColor="#ff2b3a"
+            iconBg="rgba(255,43,58,0.08)"
             label="Logout"
-            danger
+            destructive
             onPress={() => setActiveSheet('logout')}
+            rightElement={chevron}
           />
-          <SettingButton
-            icon={<HugeiconsIcon icon={Delete02Icon} size={22} color="#ff2b3a" />}
+          <ListItem
+            icon={Delete02Icon}
+            iconTile
+            iconColor="#ff2b3a"
+            iconBg="rgba(255,43,58,0.08)"
             label="Delete Account"
-            danger
+            destructive
             onPress={() => setActiveSheet('delete')}
+            showDivider={false}
           />
-        </Section>
+        </SettingsSection>
       </ScrollView>
 
       {/* Spend */}
@@ -611,14 +585,12 @@ export default function Settings() {
           subtitle="Vibration feedback on interactions"
           value={hapticsEnabled}
           onChange={setHapticsEnabled}
-          disableSound
         />
         <SheetToggleRow
           label="Enable Sound Effects"
           subtitle="Click sounds on button presses and taps"
           value={soundsEnabled}
           onChange={setSoundsEnabled}
-          disableSound
         />
       </GorhomBottomSheet>
 

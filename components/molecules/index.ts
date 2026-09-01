@@ -16,3 +16,4 @@ export { NotificationBell } from './NotificationBell';
 export { HealthScoreLever } from './HealthScoreLever';
 export { LeaderboardCard } from './LeaderboardCard';
 export { PointsCard } from './PointsCard';
+export { SettingsSection } from './SettingsSection';
