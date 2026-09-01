@@ -1,4 +1,4 @@
-import React, { useCallback, useState, type ReactNode } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, Share } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,9 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
 
 import { DiceBearAvatar } from '@/components/atoms/DiceBearAvatar';
-import { HealthScoreLever } from '@/components/molecules/HealthScoreLever';
-import { LeaderboardCard } from '@/components/molecules/LeaderboardCard';
-import { PointsCard } from '@/components/molecules/PointsCard';
+import { HealthScoreLever, LeaderboardCard, PointsCard, SettingsSection, ListItem } from '@/components/molecules';
 import { useAuthStore } from '@/stores/authStore';
 import { useTierCapabilities, useFinancialHealth, useGameplayProfile } from '@/api/hooks';
 import { invalidateQueries } from '@/api/queryClient';
@@ -25,52 +23,53 @@ import {
   ArrowRight01Icon,
   CheckmarkCircle01Icon,
   UserGroupIcon,
-  IconComponent as HugeiconsIcon,
 } from '@/lib/icons';
+import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 
-function Row({
-  icon,
-  iconBg,
-  label,
-  sublabel,
-  onPress,
-  index,
-}: {
-  icon: ReactNode;
-  iconBg: string;
-  label: string;
-  sublabel: string;
-  onPress: () => void;
-  index: number;
-}) {
+const chevron = <HugeiconsIcon icon={ArrowRight01Icon} size={16} color="#a7a7a7" />;
+
+function ProfileScreenHeader() {
+  const user = useAuthStore((s) => s.user);
+  const name =
+    user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Your Account';
+  const tag = user?.railTag ? `@${user.railTag}` : null;
+  const seed = user?.id || user?.email || name;
   const { impact } = useHaptics();
+  const { showInfo } = useFeedbackPopup();
+
+  const handleCopyTag = useCallback(async () => {
+    if (!user?.railTag) return;
+    impact();
+    await Clipboard.setStringAsync(user.railTag);
+    showInfo('Copied', 'Your tag was copied.');
+  }, [user?.railTag, impact, showInfo]);
+
   return (
-    <Animated.View entering={FadeInDown.delay(index * 50 + 120).duration(350)}>
-      <Pressable
-        onPress={() => {
-          impact();
-          playUISound('buttonClick');
-          onPress();
-        }}
-        className="flex-row items-center gap-4 border-b border-black/[0.06] py-4 active:opacity-70">
-        <View
-          className="size-11 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: iconBg }}>
-          {icon}
+    <View className="mb-4 px-4">
+      <View className="overflow-hidden rounded-2xl bg-white p-5 shadow-subtle">
+        <View className="flex-row items-center gap-4">
+          <DiceBearAvatar seed={seed} size={72} />
+          <View className="flex-1">
+            <Text
+              className="font-display text-heading-sm text-charcoal-primary"
+              maxFontSizeMultiplier={1.2}>
+              {name}
+            </Text>
+            {tag && (
+              <Pressable
+                onPress={handleCopyTag}
+                className="mt-1 flex-row items-center gap-1.5 active:opacity-70"
+                hitSlop={8}>
+                <Text className="font-mono text-caption text-ash" maxFontSizeMultiplier={1.3}>
+                  {tag}
+                </Text>
+                <HugeiconsIcon icon={Copy01Icon} size={13} color="#a7a7a7" />
+              </Pressable>
+            )}
+          </View>
         </View>
-        <View className="flex-1">
-          <Text
-            className="font-subtitle text-[16px] text-charcoal-primary"
-            maxFontSizeMultiplier={1.3}>
-            {label}
-          </Text>
-          <Text className="mt-0.5 font-body text-[13px] text-ash" maxFontSizeMultiplier={1.4}>
-            {sublabel}
-          </Text>
-        </View>
-        <HugeiconsIcon icon={ArrowRight01Icon} size={18} color="#c6c6c6" />
-      </Pressable>
-    </Animated.View>
+      </View>
+    </View>
   );
 }
 
@@ -84,10 +83,6 @@ export default function ProfileScreen() {
   const { data: healthData, isLoading: isHealthLoading } = useFinancialHealth();
   const { data: gameplayProfile, isPending: isGameplayLoading } = useGameplayProfile();
 
-  const name =
-    user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Your Account';
-  const tag = user?.railTag ? `@${user.railTag}` : null;
-  const seed = user?.id || user?.email || name;
   const tierMeta = getTierMeta(tier || 1);
 
   const healthScore = healthData?.score ?? 0;
@@ -99,13 +94,6 @@ export default function ProfileScreen() {
     await invalidateQueries.ai();
     setRefreshing(false);
   }, []);
-
-  const handleCopyTag = useCallback(async () => {
-    if (!user?.railTag) return;
-    impact();
-    await Clipboard.setStringAsync(user.railTag);
-    showInfo('Copied', 'Your tag was copied.');
-  }, [user?.railTag, impact, showInfo]);
 
   const handleInvite = useCallback(async () => {
     impact();
@@ -141,39 +129,22 @@ export default function ProfileScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
         }>
-        {/* Identity row — avatar left, health lever right */}
-        <Animated.View entering={FadeInDown.duration(400)} className="pt-2">
-          <View className="flex-row items-center justify-center gap-6">
-            {/* Avatar + name */}
-            <View className="items-center">
-              <DiceBearAvatar seed={seed} size={96} />
-              <Text
-                className="mt-4 font-display text-[24px] text-charcoal-primary"
-                maxFontSizeMultiplier={1.2}>
-                {name}
-              </Text>
-              {tag ? (
-                <Pressable
-                  onPress={handleCopyTag}
-                  className="mt-1 flex-row items-center gap-1.5 active:opacity-70"
-                  hitSlop={8}>
-                  <Text className="font-mono text-[14px] text-ash" maxFontSizeMultiplier={1.3}>
-                    {tag}
-                  </Text>
-                  <HugeiconsIcon icon={Copy01Icon} size={13} color="#a7a7a7" />
-                </Pressable>
-              ) : null}
-            </View>
+        {/* Profile summary card */}
+        <Animated.View entering={FadeInDown.duration(400)}>
+          <ProfileScreenHeader />
+        </Animated.View>
 
-            {/* Health score lever */}
+        {/* Financial health lever */}
+        <View className="mb-4 px-4">
+          <View className="overflow-hidden rounded-2xl bg-white px-5 py-4 shadow-subtle">
+            <Text className="mb-3 font-caption text-caption uppercase text-text-secondary">
+              Financial Health
+            </Text>
             <View className="items-center">
-              <Text className="mb-2 font-caption text-[10px] uppercase tracking-[1px] text-ash">
-                Health
-              </Text>
               <HealthScoreLever score={healthScore} isLoading={isHealthLoading} height={120} />
             </View>
           </View>
-        </Animated.View>
+        </View>
 
         {/* KYC Tier card — dark shell hero (the one dark punch), tier color as accent */}
         <Animated.View entering={FadeInDown.delay(80).duration(400)} className="mt-7">
@@ -252,43 +223,46 @@ export default function ProfileScreen() {
           />
         </Animated.View>
 
-        {/* Account rows */}
-        <View className="mt-6">
-          <Row
-            index={0}
-            icon={<HugeiconsIcon icon={UserIcon} size={20} color="#474645" />}
-            iconBg="#f2f2f2"
-            label="My account"
-            sublabel="Update your personal details"
-            onPress={() => router.push('/profile-edit' as never)}
-          />
-          <Row
-            index={1}
-            icon={<HugeiconsIcon icon={ShieldKeyIcon} size={20} color="#474645" />}
-            iconBg="#f2f2f2"
-            label="Identity Verification"
-            sublabel={`${tierMeta.name} · manage your account level`}
-            onPress={() => router.push('/account-level' as never)}
-          />
-          {!user?.railTag && (
-            <Row
-              index={2}
-              icon={<HugeiconsIcon icon={UserIcon} size={20} color="#474645" />}
-              iconBg="#f2f2f2"
-              label="Create RailTag"
-              sublabel="Claim your unique handle for sending and receiving"
-              onPress={() => router.push('/(auth)/complete-profile/create-railtag' as never)}
+        {/* Account rows — grouped white card */}
+        <Animated.View entering={FadeInDown.delay(240).duration(400)} className="mt-7">
+          <SettingsSection title="Account">
+            <ListItem
+              icon={UserIcon}
+              iconTile
+              label="My account"
+              subtitle="Update your personal details"
+              onPress={() => router.push('/profile-edit' as never)}
+              rightElement={chevron}
             />
-          )}
-          <Row
-            index={user?.railTag ? 2 : 3}
-            icon={<HugeiconsIcon icon={UserGroupIcon} size={20} color="#474645" />}
-            iconBg="#f2f2f2"
-            label="Invite a friend"
-            sublabel="Share Rail with people you know"
-            onPress={handleInvite}
-          />
-        </View>
+            <ListItem
+              icon={ShieldKeyIcon}
+              iconTile
+              label="Identity Verification"
+              subtitle={`${tierMeta.name} · manage your account level`}
+              onPress={() => router.push('/account-level' as never)}
+              rightElement={chevron}
+            />
+            {!user?.railTag && (
+              <ListItem
+                icon={UserIcon}
+                iconTile
+                label="Create RailTag"
+                subtitle="Claim your unique handle for sending and receiving"
+                onPress={() => router.push('/(auth)/complete-profile/create-railtag' as never)}
+                rightElement={chevron}
+              />
+            )}
+            <ListItem
+              icon={UserGroupIcon}
+              iconTile
+              label="Invite a friend"
+              subtitle="Share Rail with people you know"
+              onPress={handleInvite}
+              rightElement={chevron}
+              showDivider={false}
+            />
+          </SettingsSection>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );

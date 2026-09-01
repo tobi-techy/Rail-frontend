@@ -1,52 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useUIStore } from '@/stores';
 import { ArrowLeft01Icon, BellDotIcon, Mail01Icon } from '@/lib/icons';
 import { IconComponent as HugeiconsIcon } from '@/lib/icons';
 import { useHaptics } from '@/hooks/useHaptics';
-import { playUISound } from '@/lib/uiSounds';
-import { ImpactFeedbackStyle } from '@/utils/platformHaptics';
-
-function NotificationRow({
-  icon,
-  title,
-  subtitle,
-  value,
-  onChange,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  value: boolean;
-  onChange: (value: boolean) => void;
-}) {
-  return (
-    <View className="bg-surface-secondary mb-3 flex-row items-center rounded-2xl border border-surface px-4 py-4">
-      <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-surface">
-        {icon}
-      </View>
-      <View className="flex-1 pr-3">
-        <Text className="font-subtitle text-body text-text-primary" maxFontSizeMultiplier={1.3}>
-          {title}
-        </Text>
-        <Text
-          className="mt-0.5 font-caption text-caption text-text-secondary"
-          maxFontSizeMultiplier={1.4}>
-          {subtitle}
-        </Text>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={(v) => {
-          playUISound('toggle');
-          onChange(v);
-        }}
-      />
-    </View>
-  );
-}
+import { SettingsSection, ListItem } from '@/components/molecules';
 
 export default function SettingsNotificationsScreen() {
   const { impact } = useHaptics();
@@ -78,20 +38,27 @@ export default function SettingsNotificationsScreen() {
           Choose how you want to receive updates from Rail.
         </Text>
 
-        <NotificationRow
-          icon={<HugeiconsIcon icon={BellDotIcon} size={18} color="#343433" />}
-          title="Push Notifications"
-          subtitle="Alerts for account activity and transaction updates."
-          value={pushNotificationsEnabled}
-          onChange={setPushNotificationsEnabled}
-        />
-        <NotificationRow
-          icon={<HugeiconsIcon icon={Mail01Icon} size={18} color="#343433" />}
-          title="Email Notifications"
-          subtitle="Product and account updates sent to your inbox."
-          value={emailNotificationsEnabled}
-          onChange={setEmailNotificationsEnabled}
-        />
+        <SettingsSection title="Channels">
+          <ListItem
+            icon={BellDotIcon}
+            iconTile
+            label="Push Notifications"
+            subtitle="Alerts for account activity and transaction updates."
+            toggle
+            toggleValue={pushNotificationsEnabled}
+            onToggle={setPushNotificationsEnabled}
+          />
+          <ListItem
+            icon={Mail01Icon}
+            iconTile
+            label="Email Notifications"
+            subtitle="Product and account updates sent to your inbox."
+            toggle
+            toggleValue={emailNotificationsEnabled}
+            onToggle={setEmailNotificationsEnabled}
+            showDivider={false}
+          />
+        </SettingsSection>
       </View>
     </SafeAreaView>
   );
