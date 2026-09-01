@@ -33,7 +33,7 @@ export const SuggestionChips = React.memo(function SuggestionChips({
           key={i}
           onPress={() => onPress(s)}
           className="rounded-full border border-ember-orange/30 bg-white px-4 py-2 active:scale-[0.96] active:bg-ember-orange/5"
-          style={{ transitionProperty: 'transform, backgroundColor' }}>
+        >
           <Text className="font-body-medium text-[13px] text-ember-orange" numberOfLines={1}>
             {s}
           </Text>

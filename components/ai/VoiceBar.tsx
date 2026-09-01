@@ -65,7 +65,7 @@ export const VoiceBar = React.memo(function VoiceBar({ onStop }: Props) {
   };
 
   return (
-    <Animated.View entering={FadeIn.duration(160)} className="mx-4 mb-1">
+    <Animated.View entering={FadeIn.duration(160)}>
       <View
         className="flex-row items-center gap-3 rounded-[22px] bg-[#F1F0EC] px-4 py-3"
         style={{ minHeight: 44, borderWidth: 2, borderColor: `rgba(255, 87, 51, 0.4)` }}>

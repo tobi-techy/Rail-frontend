@@ -349,7 +349,7 @@ export default function AIChatScreen() {
         />
 
         {isEmpty ? (
-          <EmptyChatState hideForTyping={isKeyboardVisible} onStartConversation={() => handleSend('Hello Miriam!', undefined, 'suggestion')} />
+          <EmptyChatState hideForTyping={isKeyboardVisible} onStartConversation={() => handleSend('Hello Miriam!', undefined, 'prompt')} />
         ) : (
           <View className="flex-1">
             <FlatList
